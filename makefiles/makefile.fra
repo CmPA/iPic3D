@@ -1,0 +1,33 @@
+#makefile for PARSEK PROJECT
+CPP=CC
+OPTFLAGS= -O2 -DMPICH_IGNORE_CXX_SEEK
+LIB_DIR=	-L/usr/lib/mpich-gcc/lib -L/u0/g/gianni/Parsek/kvf/src
+INC_DIR= -I/usr/lib/mpich-gcc/include -I/u0/g/gianni/Parsek/kvf/src -Iinclude_lib2
+
+#HDF5DIR = /apps/prod/hdf5/1.6.5/
+#HDF5INCDIR = $(HDF5DIR)/include
+#HDF5LIBDIR = $(HDF5DIR)/lib
+#HDF5LIBS = -lz -lhdf5 -lhdf5_hl 
+#HDF5LIBS = -lhdf5 -lhdf5_hl 
+
+KVFDIR = /u0/g/gianni/Parsek/kvf/src
+KVFLIB = -lkvf 
+#MPELIB = -lmpe
+
+
+ipic3D: iPIC3D.cpp  Particles3Dcomm.o Particles3D.o
+	${CPP}	${OPTFLAGS} -o  iPIC3D ${INC_DIR} ${HDF5} ${LIB_DIR}\
+	iPIC3D.cpp Particles3Dcomm.o Particles3D.o  ${HDF5}  \
+	${KVFLIB}	${MPELIB}
+
+#iPIC3D.o:	iPIC3D.cpp
+#	${CPP} ${OPTFLAGS} ${INC_DIR} ${HDF5}  -c iPIC3D.cpp 
+
+Particles3Dcomm.o:	./particles/Particles3Dcomm.cpp
+	${CPP}	${OPTFLAGS}	${INC_DIR}  ${HDF5} ${LIB_DIR} -c ./particles/Particles3Dcomm.cpp
+
+Particles3D.o:	./particles/Particles3D.cpp 
+	${CPP}	${OPTFLAGS} ${INC_DIR} ${HDF5}  ${LIB_DIR} -c ./particles/Particles3D.cpp
+
+clean:
+	rm -rf *.o iPIC3D Parsek

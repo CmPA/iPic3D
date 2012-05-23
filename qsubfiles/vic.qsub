@@ -1,0 +1,16 @@
+#!/bin/sh
+
+#PBS -l walltime=00:05:00
+#PBS -l nodes=4:ppn=4
+#PBS -N prova3D
+#PBS -j oe -k eo
+
+echo Start: host `hostname`, date `date`
+NPROCS=`wc -l < $PBS_NODEFILE`
+echo Number of nodes is $NPROCS
+echo PBS id is $PBS_JOBID
+echo Assigned nodes: `cat $PBS_NODEFILE`
+
+cd ~/parsek3D
+mpirun -v -machinefile $PBS_NODEFILE -np $NPROCS ./Parsek3D inputfile.3D
+

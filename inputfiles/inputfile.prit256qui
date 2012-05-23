@@ -1,0 +1,127 @@
+// INPUT FILE for GEM Challenge with Pritchett set-up
+// 4 Species: 2 drifting species, 2 background species
+
+
+// DIRECTORIES WITHOUT  / at the end !!!!!
+SaveDirName = "/nobackup/gianni/mms256";
+RestartDirName = "/nobackup/gianni/mms256";
+//SaveDirName = "/data/leuven/300/vsc30007/mms256";
+//RestartDirName = "/data/leuven/300/vsc30007/mms256";
+//SaveDirName = "/l/users/u0052182/prit";
+//RestartDirName = "/l/users/u0052182/prit";
+//SaveDirName = "/l/users/u0052182/stefano/results";
+//RestartDirName = "/l/users/u0052182/stefano/results";
+//SaveDirName = "/data/home/u0052182/stefano/results";
+//RestartDirName = "/data/home/u0052182/stefano/results";
+//SaveDirName = "/home/gianni/Documents/workspace/Parsek2D/results";
+//RestartDirName = "/home/gianni/Documents/workspace/Parsek2D/results";
+//SaveDirName = "/scratch/gianni";
+//RestartDirName = "/scratch/gianni";
+
+
+// set the maximum number of particles allocated  
+NpMaxNpRatio = 3.0;
+
+//  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
+B0x = 0.0097;
+B0y = 0.0;
+B0z = 0.0097;
+delta = 0.5;
+rhoINIT = {1.0, 1.0, 0.1, 0.1};
+    
+//  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
+dt = 0.125; // dt = time step  
+ncycles = 20005;  // # cycles
+th = 1.0; // th =   decentering parameter
+c = 1;    // c = light speed 
+//  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
+Smooth =0.2; // Smoothing value (5-points stencil)
+//Nvolte =5; // Number of times smoothing is done
+// %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
+Lx = 20;   // Lx = simulation box length - x direction   
+Ly = 10;   // Ly = simulation box length - y direction   
+Lz = 1;  // Lz = simulation box length - z direction
+nxc = 256; // nxc = number of cells - x direction        
+nyc = 128; // nyc = number of cells - y direction        
+nzc = 1; // nzc = number of cells - z direction
+// %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+//    ns = number of species
+//    0 = electrons
+//    1 = protons
+//    2,3,4,5,... = ions
+ns = 4;
+// TrackParticleID[species] =true, false --> Assign ID to particles */
+TrackParticleID={1,1,1,1};
+// npcelx = number of particles per cell - Direction X 
+npcelx = {14,14,14,14};  
+// npcely = number of particles per cell - Direction Y */
+npcely = {14,14,14,14};  
+// npcelz = number of particles per cell - Direction Z */
+npcelz = {1,1,1,1};  
+// qom = charge to mass ratio for different species */
+qom = {-256.0,1.0,-256.0,1.0};
+// uth = thermal velocity for different species - Direction X  */
+uth  = {0.045,0.0063,0.045,0.0063};
+// vth = thermal velocity for different species - Direction Y */
+vth  = {0.045,0.0063,0.045,0.0063};
+// wth = thermal velocity for different species - Direction Z */
+wth  = {0.045,0.0063,0.045,0.0063};
+// u0 = drift velocity   - Direction X    */
+u0 = {0.0,0.0,0.0,0.0};
+// v0 = drift velocity   - Direction Y    */
+v0 = {0.0,0.0,0.0,0.0};
+// w0 = drift velocity   - Direction Z    */
+w0 = {0.00325,-0.01624,0.0,0.0};
+
+// &&&&&&&&&&&& boundary conditions &&&&&&&&&&&&&&&
+// PHI Electrostatic Potential     
+// 0,1 = Dirichilet boundary condition ;     
+// 2   = Neumann boundary condition
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+
+    bcPHIfaceXright = 1;
+    bcPHIfaceXleft  = 1;
+    bcPHIfaceYright = 1;
+    bcPHIfaceYleft  = 1;
+    bcPHIfaceZright = 1;
+    bcPHIfaceZleft  = 1;
+    
+//    EM field boundary condition
+//    0 = perfect conductor
+//    1 = magnetic mirror
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcEMfaceXright = 0;
+    bcEMfaceXleft =  0;
+    bcEMfaceYright = 0;
+    bcEMfaceYleft =  0;
+    bcEMfaceZright = 0;
+    bcEMfaceZleft =  0;
+//    Particles Boundary condition
+//    0 = exit
+//    1 = perfect mirror
+//    2 = riemission
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcPfaceXright = 1;
+    bcPfaceXleft =  1;
+    bcPfaceYright = 1;
+    bcPfaceYleft =  1;
+    bcPfaceZright = 1;
+    bcPfaceZleft =  1;
+
+//  print to video results */
+    verbose = 1;
+// velocity of the injection from the wall
+    Vinj= 0.0;
+
+// CG solver stopping criterium tolerance
+    CGtol = 1E-3;
+// GMRES solver stopping criterium tolerance
+    GMREStol = 1E-3;
+// mover predictor corrector iteration
+    NiterMover = 6;
+// Output for field
+   FieldOutputCycle=40;
+// Output for particles if 1 it doesnt save particles data
+   ParticlesOutputCycle =1;
+// restart cycle
+   RestartOutputCycle = 2000;

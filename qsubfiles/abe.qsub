@@ -1,0 +1,69 @@
+#!/bin/tcsh
+#  Sample Batch Script for a VMI2-Intel job
+#
+# $HOME/.soft contains:
+#
+#  +mpichvmi-intel
+#  @teragrid-basic
+#  @globus-4.0
+#  @teragrid-dev
+#
+#  Submit this script using the command: qsub <script_name>
+#
+#  Use the "qstat" command to check the status of a job.
+#
+# The following are embedded QSUB options. The syntax is #PBS (the # does
+# _not_  denote that the lines are commented out so do not remove).
+#
+# walltime : maximum wall clock time (hh:mm:ss)
+#PBS -l walltime=00:08:00
+#
+# nodes: number of 8-core nodes
+#   ppn: how many cores per node to use (1 through 8)
+#       (you are always charged for the entire node)
+#PBS -l nodes=8:ppn=8
+#
+# export all my environment variables to the job
+#PBS -V
+#
+#
+# job name (default = name of script file)
+#PBS -N test4
+#
+#
+# filename for standard output (default = <job_name>.o<job_id>)
+# at end of job, it is in directory from which qsub was executed
+# remove extra ## from the line below if you want to name your own file
+###PBS -o testjob.out
+#
+# filename for standard error (default = <job_name>.e<job_id>)
+# at end of job, it is in directory from which qsub was executed
+# remove extra ## from the line below if you want to name your own file
+###PBS -e testjob.err
+#
+# End of embedded QSUB options
+#
+# set echo               # echo commands before execution; use for debugging
+#
+
+cd ~/Parsek3D          # change to job scratch directory 
+                       # use cdjob <jobid> to go to this directory once
+                       # the job has started
+
+# get executable and input files from mass storage
+# msscmd cd dir1, get a.out, mget *.input
+
+# mss doesn't keep executable bit set, so need to set it on program
+chmod +x Parsek3D
+
+setenv NP `wc -l ${PBS_NODEFILE} | cut -d' ' -f1`
+
+# mpirun -np ${NP} -disable-profiling -machinefile ${PBS_NODEFILE} a.out
+
+# If your application reads input from stdin, use the following mpirun syntax:
+mpirun -np ${NP} -machinefile ${PBS_NODEFILE} ./Parsek3D inputfile.homa
+
+# save output files back to mass storage
+#msscmd cd dir1, mput *.output
+
+

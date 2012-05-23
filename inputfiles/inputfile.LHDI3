@@ -1,0 +1,95 @@
+// INPUT FILE for LHDI, as in the Dawson PRL vol 93 n.10 2004
+// 4 Species: 2 drifting species, 2 background species
+// inputfile.05 Celeste
+
+// DIRECTORIES WITHOUT  / at the end !!!!!
+//SaveDirName = "/pvfs/users/u0052182/prit";
+//RestartDirName = "/pvfs/users/u0052182/prit";
+SaveDirName = "/l/users/s0198231/LHDI_stef";
+RestartDirName = "/l/users/s0198231/LHDI_stef";
+//SaveDirName = "/l/users/u0052182/stefano/results";
+//RestartDirName = "/l/users/u0052182/stefano/results";
+//SaveDirName = "/data/home/u0052182/stefano/results";
+//RestartDirName = "/data/home/u0052182/stefano/results";
+
+// set the maximum number of particles allocated  
+NpMaxNpRatio = 3.0;
+
+//  %%%%%%%%%%%%%%%%%%% LHDI %%%%%%%%%%%%%%%%%%
+B0x = 0.0;
+B0y = 0.0;
+B0z = 0.011049;
+delta = 0.5;
+rhoINIT = {1.0, 1.0};
+    
+//  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
+dt = 0.1; // dt = time step  
+ncycles = 2005;  // # cycles
+th = 1.0; // th =   decentering parameter
+c = 1;    // c = light speed 
+//  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
+Smooth =0.9; // Smoothing value (5-points stencil)
+// %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
+Lx = 17.889;   // Lx = simulation box length - x direction   
+Ly = 17.889;   // Ly = simulation box length - y direction   
+nxc = 512; // nxc = number of cells - x direction        
+nyc = 256; // nyc = number of cells - y direction        
+// %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+//    ns = number of species
+//    0 = electrons
+//    1 = protons
+//    2,3,4,5,... = ions
+ns = 2;
+// TrackParticleID[species] =true, false --> Assign ID to particles */
+TrackParticleID={0,0};
+// npcelx = number of particles per cell - Direction X 
+npcelx = {14,14};  
+// npcely = number of particles per cell - Direction Y */
+npcely = {14,14};  
+// qom = charge to mass ratio for different species */
+qom = {-512.0,1.0};
+// uth = thermal velocity for different species - Direction X  */
+uth  = {0.1,0.0098821};
+// vth = thermal velocity for different species - Direction Y */
+vth  = {0.1,0.0098821};
+// wth = thermal velocity for different species - Direction Z */
+wth  = {0.1,0.0098821};
+// u0 = drift velocity   - Direction X    */
+u0 = {-0.0017678,0.0088388};
+// v0 = drift velocity   - Direction Y    */
+v0 = {0.0,0.0};
+// w0 = drift velocity   - Direction Z    */
+w0 = {0.0,0.0};
+
+// &&&&&&&&&&&& boundary conditions &&&&&&&&&&&&&&&
+// PHI Electrostatic Potential     
+// 0,1 = Dirichilet boundary condition ;     
+// 2   = Neumann boundary condition
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+
+    bcPHIfaceXright = 1;
+    bcPHIfaceXleft  = 1;
+    bcPHIfaceYright = 1;
+    bcPHIfaceYleft  = 1;
+    
+//    EM field boundary condition
+//    0 = perfect conductor
+//    1 = magnetic mirror
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcEMfaceXright = 0;
+    bcEMfaceXleft =  0;
+    bcEMfaceYright = 0;
+    bcEMfaceYleft =  0;
+//    Particles Boundary condition
+//    0 = exit
+//    1 = perfect mirror
+//    2 = riemission
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcPfaceXright = 1;
+    bcPfaceXleft =  1;
+    bcPfaceYright = 1;
+    bcPfaceYleft =  1;
+
+//  print to video results */
+    verbose = 1;
+

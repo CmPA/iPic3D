@@ -1,0 +1,17 @@
+a/x_value = "asdf";
+
+// comment goes here
+
+y_value = 23.234982982389298234234;
+
+   apples = "green";
+
+z_value = 2348  ; // comment here
+
+Lists/Sequence = { "cats","dogs", "rabbits" , "whoops" } ; // comment
+
+
+Random/values/ahah = {12, 23.4, 2, 3,  4,  4, 0 };
+Random/values/lottery = { 9, 3, 4, 5, 112, 344, 56, 345, 2,4,2 ,22, 34 };
+
+// end { "asefdsa" "sdfasf" }

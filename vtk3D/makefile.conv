@@ -1,0 +1,20 @@
+#makefile for PARSEK PROJECT
+CPP=	g++
+OPTFLAGS=  -O2
+#INC_HDF5 = -I/apps/prod/hdf5/1.6.5/include
+#INC_HDF5 = -I/nasa/hdf5/1.6.5/serial/include
+INC_HDF5 = -I/Users/gianni/Downloads/hdf5-1.6.10/hdf5/include
+#LIB_HDF5 = -L/apps/prod/hdf5/1.6.5/lib 
+#LIB_HDF5 = -L/nasa/hdf5/1.6.5/serial/lib
+LIB_HDF5 = -L/Users/gianni/Downloads/hdf5-1.6.10/hdf5/lib
+
+HDF5LIBS = -lhdf5 -lhdf5_hl 
+
+convHDF5_EPAR: convHDF5_EPAR.cpp 
+	${CPP}	${OPTFLAGS} -o  convHDF5_EPAR ${INC_HDF5} \
+	convHDF5_EPAR.cpp  ${LIB_HDF5}  \
+${HDF5LIBS}	
+
+
+clean:
+	rm -rf convHDF5_EPAR

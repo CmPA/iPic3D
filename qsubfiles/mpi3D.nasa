@@ -1,0 +1,23 @@
+#PBS -S /bin/csh
+
+#PBS -l walltime=24:00:00
+#!PBS -l walltime=06:00:00
+#!PBS -l select=192:ncpus=8
+#PBS -l select=128:ncpus=12:model=wes
+
+#PBS -N ipic3D
+#PBS -j oe -k eo
+
+echo Start: host `hostname`, date `date`
+echo PBS id is $PBS_JOBID
+echo Assigned nodes: `cat $PBS_NODEFILE`
+
+module load hdf5/1.6.5  
+#module load mpi/mpt.1.23.pre
+module load mpi/mpt.1.25
+module load comp/intel/10.1.021_64
+
+cd ~/iPic3D
+
+mpiexec -np 1536 ./iPIC3D restart inputfile.prit2563D3
+

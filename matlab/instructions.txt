@@ -1,0 +1,43 @@
+1) load all the data in MATLAB workspace using parsek2D.m
+2) execute analysis tools, ie pdf.m, energy.m, A_jmovie,...
+
+****************************************************
+parsek2D.m to load all the data in MATLAB workspace
+
+1) you need to set the directory with the data in parsek2D.m, changing the variable results_dir at line 32
+
+ie: results_dir='/home/markidis/dist001/parsek2D/results'
+
+2) if the simulation is running and you want to check the intermediate results, you need to open the restart file, that is updated every x cycle. To open the intermediate results, change the variable processor_name, from:
+
+processor_name=[results_dir '/proc']; ---> to read the file with the final results
+
+to:
+
+processor_name=[results_dir '/restart']; ---> to read the file with the intermediate results
+
+Restart files contain only information about E, B, species density, and particles positions.
+
+3) change the variable list you want to load in the MATLAB workspace (line 44). For instance if you are only interested in EM fields you can just, load E and B, as
+
+ie: variable_list=' B E';
+
+or: variable_list='k_energy e_energy b_energy x v q';
+to load energies, particle positions and charges
+
+The list is:
+B, E -> magnetic and electric field
+A, phi -> potentials
+J, rho -> current and number densities
+pressure -> magnetic pressure
+x, v, ID, q -> position , velocity, ID, q
+k_energy -> kinetic energy
+E_energy, B_energy -> electric and magnetic energy
+
+**********************************************
+After you used parsek2D.m, Analysis tool:
+
+pdf.m --> 2D particle distribution function plot
+energy --> plot of the energies history
+parsek2D_fft --> Fourier analysis of the EM field
+A_j_movie --> Magnetic field lines and current density magnitude history

@@ -1,0 +1,127 @@
+// INPUT FILE for GEM Challenge
+
+// ******************************
+// REMEMBER TO SET IN THE TOPOLOGY
+// X PERIOD = TRUE
+// Y PERIDO = FALSE
+
+
+// DIRECTORIES WITHOUT  / at the end !!!!!
+SaveDirName = "/Users/markidis/Parsek2D/results";
+RestartDirName = "/Users/markidis/Parsek2D/results";
+
+NpMaxNpRatio = 2.5;
+
+B0x = 0.0195;
+B0y = 0.0;
+B0z = 0.0;
+
+delta = 0.5;
+rhoINIT={1.0,1.0};
+// c = light speed 
+c = 1;
+    
+//  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
+dt = 0.15; // dt = time step 
+ncycles = 3; // ncycles = number of time cycles 
+//ncycles = 100; 
+
+
+th = 0.5; // th =   decentering parameter
+Smooth =0.9; // Smoothing value (5-points stencil)
+Nvolte = 5; // Number of times smoothing is done
+
+// %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
+
+   
+Lx = 51.2;   // Lx = simulation box length - x direction   
+Ly = 25.6;   // Ly = simulation box length - y direction   
+nxc = 64; // nxc = number of cells - x direction        
+nyc = 32; // nyc = number of cells - y direction        
+
+
+// %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+
+//    ns = number of species
+//    0 = electrons
+//    1 = protons
+//    2,3,4,5,... = ions
+   
+ns = 2;
+
+// TrackParticleID[species] =true, false --> Assign ID to particles */
+
+TrackParticleID={0,0};
+    
+// npcelx = number of particles per cell - Direction X 
+npcelx = {4,4};  
+    
+// npcely = number of particles per cell - Direction Y */
+npcely = {4,4};  
+    
+// qom = charge to mass ratio for different species */
+qom = {-64.0,1.0};
+
+// uth = thermal velocity for different species - Direction X Te/Ti = .2, mi/me = 25 -> vthe = 2.23*vthi */
+uth  = {0.045,0.0126};
+ 
+// vth = thermal velocity for different species - Direction Y */
+vth  = {0.045,0.0126};
+
+// wth = thermal velocity for different species - Direction Z */
+wth  = {0.045,0.0126};
+
+// u0 = drift velocity   - Direction X    */
+u0 = {0.0,0.0};
+
+// v0 = drift velocity   - Direction Y    */
+v0 = {0.0,0.0};
+// w0 = drift velocity   - Direction Z    */
+w0 = {0.0065,-0.0325};
+
+// &&&&&&&&&&&& boundary conditions &&&&&&&&&&&&&&&
+// PHI Electrostatic Potential     
+// 0,1 = Dirichilet boundary condition ;     
+// 2   = Neumann boundary condition
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+
+    bcPHIfaceXright = 1;
+    bcPHIfaceXleft  = 1;
+    bcPHIfaceYright = 1;
+    bcPHIfaceYleft  = 1;
+    
+//    EM field boundary condition
+//    0 = perfect conductor
+//    1 = magnetic mirror
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcEMfaceXright = 0;
+    bcEMfaceXleft =  0;
+    bcEMfaceYright = 0;
+    bcEMfaceYleft =  0;
+//    Particles Boundary condition
+//    0 = exit
+//    1 = perfect mirror
+//    2 = riemission
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcPfaceXright = 1;
+    bcPfaceXleft =  1;
+    bcPfaceYright = 1;
+    bcPfaceYleft =  1;
+
+//  print to video results */
+    verbose = 1;
+// velocity of the injection from the wall 
+    Vinj= 0.0;
+	
+// CG solver stopping criterium tolerance 
+    CGtol = 1E-6;
+// GMRES solver stopping criterium tolerance 
+    GMREStol = 1E-6;
+// mover predictor corrector iteration 
+    NiterMover = 7;
+// Output for field 
+   FieldOutputCycle=50;
+// Output for particles if 1 it doesnt save particles data
+   ParticlesOutputCycle = 1;
+// restart cycle 
+   RestartOutputCycle = 20000;

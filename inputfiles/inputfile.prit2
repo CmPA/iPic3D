@@ -1,0 +1,114 @@
+// INPUT FILE for GEM Challenge with Pritchett set-up
+// 2 Species: 2 drifting species
+
+
+// DIRECTORIES WITHOUT  / at the end !!!!!
+//SaveDirName = "/l/users/u0052182/parsek2/results";
+//RestartDirName = "/l/users/u0052182/parsek2/results";
+//SaveDirName = "/l/users/s0198231/prit2/results";
+//RestartDirName = "/l/users/s0198231/prit2/results";
+//SaveDirName = "/Users/stef/stefano/results";
+//RestartDirName = "/Users/stef/stefano/results";
+SaveDirName = "/u/gianni/Parsek2D/results";
+RestartDirName = "/u/gianni/Parsek2D/results";
+
+// set the maximum number of particles allocated  
+NpMaxNpRatio = 3.0;
+
+//  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
+B0x = 0.0195;
+B0y = 0.0;
+B0z = 0.0195;
+
+delta = 0.5;
+rhoINIT = {1.0, 1.0};
+    
+//  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
+dt = 0.25; // dt = time step  
+ncycles = 4000;  // # cycles
+th = 1.0; // th =   decentering parameter
+c = 1;    // c = light speed 
+//  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
+Smooth =0.9; // Smoothing value (5-points stencil)
+Nvolte = 1;
+// %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
+Lx = 20;   // Lx = simulation box length - x direction   
+Ly = 10;   // Ly = simulation box length - y direction   
+nxc = 256; // nxc = number of cells - x direction        
+nyc = 128; // nyc = number of cells - y direction        
+// %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+//    ns = number of species
+//    0 = electrons
+//    1 = protons
+//    2,3,4,5,... = ions
+ns = 2;
+// TrackParticleID[species] =true, false --> Assign ID to particles */
+TrackParticleID={0,0};
+// npcelx = number of particles per cell - Direction X 
+npcelx = {12,12};  
+// npcely = number of particles per cell - Direction Y */
+npcely = {12,12};  
+// qom = charge to mass ratio for different species */
+qom = {-64.0,1.0};
+// uth = thermal velocity for different species - Direction X  */
+uth  = {0.045,0.0126};
+// vth = thermal velocity for different species - Direction Y */
+vth  = {0.045,0.0126};
+// wth = thermal velocity for different species - Direction Z */
+wth  = {0.045,0.0126};
+// u0 = drift velocity   - Direction X    */
+u0 = {0.0,0.0};
+// v0 = drift velocity   - Direction Y    */
+v0 = {0.0,0.0};
+// w0 = drift velocity   - Direction Z    */
+w0 = {0.0065,-0.0325};
+
+// &&&&&&&&&&&& boundary conditions &&&&&&&&&&&&&&&
+// PHI Electrostatic Potential     
+// 0,1 = Dirichilet boundary condition ;     
+// 2   = Neumann boundary condition
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+
+    bcPHIfaceXright = 1;
+    bcPHIfaceXleft  = 1;
+    bcPHIfaceYright = 1;
+    bcPHIfaceYleft  = 1;
+    
+//    EM field boundary condition
+//    0 = perfect conductor
+//    1 = magnetic mirror
+//    2 = open boundary
+//    3 = perfect conductor with no plasma on the boundary
+//    4 = open boundary with no injection
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcEMfaceXright = 0;
+    bcEMfaceXleft =  0;
+    bcEMfaceYright = 0;
+    bcEMfaceYleft =  0;
+//    Particles Boundary condition
+//    0 = exit
+//    1 = perfect mirror
+//    2 = riemission
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcPfaceXright = 1;
+    bcPfaceXleft =  1;
+    bcPfaceYright = 1;
+    bcPfaceYleft =  1;
+
+//  print to video results */
+    verbose = 1;
+// velocity of the injection from the wall 
+    Vinj= 0.0;
+	
+// CG solver stopping criterium tolerance 
+    CGtol = 1E-6;
+// GMRES solver stopping criterium tolerance 
+    GMREStol = 1E-6;
+// mover predictor corrector iteration 
+    NiterMover = 7;
+// Output for field 
+   FieldOutputCycle=50;
+// Output for particles if 1 it doesnt save particles data
+   ParticlesOutputCycle =1;
+// restart cycle 
+   RestartOutputCycle = 20000;

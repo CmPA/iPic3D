@@ -1,0 +1,98 @@
+// INPUT FILE for PARSEK2D
+
+
+SaveDirName = "/home/ec/results/run9";
+wave_amplitudes_file = "/home/ec/parsek2D/perturbation/ampl_set2_KAW.txt";
+initial_amplitude = 0.1;
+Number_of_waves = 1;
+Amplitude_scale = {318.252845781801, 20146.374585542697, 12730.113831267407 }; // scaling factors for delta_E, delta_rho, delta_J
+
+// c = light speed 
+c = 1;
+    
+//  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
+dt = 0.0029412; // dt = time step 
+ncycles = 60000; // ncycles = number of time cycles 
+th =1; // th =   decentering parameter
+Smooth = 0.95; // Smoothing value (5-points stencil)
+
+// %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
+
+   
+Lx =  1.2836 ;   // Lx = simulation box length - x direction   
+Ly =  0.009627000;  // Ly = simulation box length - y direction   
+nxc = 400; // nxc = number of cells - x direction        
+nyc = 3; // nyc = number of cells - y direction        
+
+
+// %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+
+//    ns = number of species
+//    0 = electrons
+//    1 = protons
+//    2,3,4,5,... = ions
+   
+ns = 2;
+
+// TrackParticleID[species] =true, false --> Assign ID to particles */
+
+TrackParticleID={0,0};
+    
+// npcelx = number of particles per cell - Direction X 
+npcelx = {25,25};  
+// npcely = number of particles per cell - Direction Y */
+npcely = {25,25};  
+    
+// qom = charge to mass ratio for different species */
+qom = {-400,1};
+
+// uth = thermal velocity for different species - Direction X */
+uth  = {0.63188112467653,0.03159405623383};
+ 
+// vth = thermal velocity for different species - Direction Y */
+vth  = {0.63188112467653,0.03159405623383};
+
+// wth = thermal velocity for different species - Direction Z */
+wth  = {0.63188112467653,0.03159405623383};
+
+// u0 = drift velocity   - Direction X    */
+u0 = {0.0,0.0};
+
+// v0 = drift velocity   - Direction Y    */
+v0 = {0.0,0.0};
+
+// w0 = drift velocity   - Direction Z    */
+w0 = {0.0,0.0};
+
+// &&&&&&&&&&&& boundary conditions &&&&&&&&&&&&&&&
+// PHI Electrostatic Potential     
+// 0,1 = Dirichilet boundary condition ;     
+// 2   = Neumann boundary condition
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+
+    bcPHIfaceXright = 1;
+    bcPHIfaceXleft  = 1;
+    bcPHIfaceYright = 1;
+    bcPHIfaceYleft  = 1;
+    
+//    EM field boundary condition
+//    0 = perfect conductor
+//    1 = magnetic mirror
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcEMfaceXright = 0;
+    bcEMfaceXleft =  0;
+    bcEMfaceYright = 0;
+    bcEMfaceYleft =  0;
+//    Particles Boundary condition
+//    0 = exit
+//    1 = perfect mirror
+//    2 = riemission
+//    Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic*/
+    bcPfaceXright = 1;
+    bcPfaceXleft =  1;
+    bcPfaceYright = 1;
+    bcPfaceYleft =  1;
+
+//  print to video results */
+    verbose = 1;
+
