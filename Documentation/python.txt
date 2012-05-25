@@ -1,0 +1,28 @@
+This explains how to use Arnaud Beck's python script to convert iPic3D HDF5 output to vtr.
+If you have sudo permissions on your linux machine, you can skip the installation part.
+
+1. Installing python and necessary libraries.
+
+Install your favourite distribution of Python (if it's not installed yet).
+I recommend the one from Enthought: http://www.enthought.com/products/epd.php
+
+Install the libraries: scipy, tables, vtk, mpi4py. 
+The EPD python distribution from Enthought already has everything except the mpi4py.
+
+Installing mpi4py (http://mpi4py.scipy.org/) could be a mess, and should be managed individually in each case.
+On the ESAT computer at KU Leuven with CentOS Linux I found the following option the easisest:
+ - Install the EPD Python locally (don't need sudo)
+ - $PATH=EPDP_Python_prefix/bin/:$PATH
+ - download mpi4py, unzip, untar
+ - go to the folder with unpacked libs, run:
+   $ python setup.py build
+   $ python setup.py install
+If there are errors... google!
+I found out that it doesn't work with MPICH2 on neither 64 bit CentOS, or 64 bit Win7.
+
+2. Running the script.
+
+In iPic3D directory (check out from svn) there is folder python that contains file read_proc_para.py.
+To simply run it, you should just set the "directory" variable to where your data files are.
+Then just run:
+$ python read_proc_para.py
