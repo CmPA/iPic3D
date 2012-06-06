@@ -4,6 +4,13 @@ Doesn't need sudo or root permissions, everything could be installed locally.
 1. Install HDF5 library. The version should not be higher than 1.6.8
 http://www.hdfgroup.org/ftp/HDF5/releases/hdf5-1.6/
 
+$ cd <top HDF5 source code directory>
+$ ./configure --prefix=<location for HDF5 software> 
+$ make 
+$ make check
+$ make install 
+
+
 2. Install the MPICH2 that supports -lmpe library. For example, this one:
 http://www.mcs.anl.gov/research/projects/mpich2/downloads/tarballs/1.3.2p1/mpich2-1.3.2p1.tar.gz
 During the installation of MPICH follow all the instructions in the README file.
