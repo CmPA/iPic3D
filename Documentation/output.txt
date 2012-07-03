@@ -1,0 +1,7 @@
+To quickly check the hdf5 output in your terminal, use something like this:
+
+$> h5ls proc0.hdf
+
+or
+
+$> h5dump proc0.hdf | less
