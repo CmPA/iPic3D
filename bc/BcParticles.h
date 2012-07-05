@@ -120,7 +120,7 @@ inline void BCpart(double *x, double *u, double *v, double *w, double Lx,double 
 }
 /** set the boundary condition on boundaries for particle in 3D*/
 inline void BCpart(double *x, double *y, double *z, double *u, double *v, double *w, double Lx, double Ly, double Lz, double ut, double vt, double wt,  int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft,int bcFaceZright,int bcFaceZleft, VirtualTopology3D *vct){
-        if (*x > Lx && vct->getXright_neighbor()==-1){
+        if (*x > Lx && vct->getXright_neighbor()==MPI_PROC_NULL){
           switch(bcFaceXright){
             case 1:   // perfect mirror
              MODULO(x,Lx);
@@ -149,7 +149,7 @@ inline void BCpart(double *x, double *y, double *z, double *u, double *v, double
 
           }
         }
-        if (*x < 0 && vct->getXleft_neighbor()==-1){
+        if (*x < 0 && vct->getXleft_neighbor()==MPI_PROC_NULL){
           switch(bcFaceXleft){
             case 1:   // perfect mirror
               MODULO(x,Lx);
@@ -178,7 +178,7 @@ inline void BCpart(double *x, double *y, double *z, double *u, double *v, double
 
           }
         }
-        if (*y > Ly && vct->getYright_neighbor()==-1){
+        if (*y > Ly && vct->getYright_neighbor()==MPI_PROC_NULL){
           switch(bcFaceYright){
             case 1:   // perfect mirror
               MODULO(y,Ly);
@@ -207,7 +207,7 @@ inline void BCpart(double *x, double *y, double *z, double *u, double *v, double
 
           }
         }
-        if (*y < 0 && vct->getYleft_neighbor()==-1){
+        if (*y < 0 && vct->getYleft_neighbor()==MPI_PROC_NULL){
           switch(bcFaceYleft){
             case 1:   // perfect mirror
               MODULO(y,Ly);
@@ -236,7 +236,7 @@ inline void BCpart(double *x, double *y, double *z, double *u, double *v, double
 
           }
         }
-/*        if (*z > Lz && vct->getZright_neighbor()==-1){
+/*        if (*z > Lz && vct->getZright_neighbor()==MPI_PROC_NULL){
           switch(bcFaceZright){
             case 1:   // perfect mirror
             MODULO(z,Lz);
@@ -266,7 +266,7 @@ inline void BCpart(double *x, double *y, double *z, double *u, double *v, double
           }
         }
 	
-        if (*z < 0 && vct->getZleft_neighbor()==-1){
+        if (*z < 0 && vct->getZleft_neighbor()==MPI_PROC_NULL){
           switch(bcFaceZleft){
             case 1:   // perfect mirror
              MODULO(z,Lz);

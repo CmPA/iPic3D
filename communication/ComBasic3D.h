@@ -25,7 +25,7 @@ inline void communicateParticlesDIR(int buffer_size, int myrank, int right_neigh
   }
   if (myrank%2==0){
             // On the boundaries send e receive only if you have periodic condition: send to X-RIGHT
-            if (right_neighbor != -1){
+            if (right_neighbor != MPI_PROC_NULL){
               if (LEN[DIR] > 1)
                 MPI_Sendrecv_replace(&b_right[0],buffer_size,MPI_DOUBLE,right_neighbor,1,right_neighbor,1, MPI_COMM_WORLD, &status);
               else
@@ -33,7 +33,7 @@ inline void communicateParticlesDIR(int buffer_size, int myrank, int right_neigh
             }
          } else {
             // On the boundaries send e receive only if you have periodic condition: send to X-LEFT
-            if (left_neighbor != -1){
+            if (left_neighbor != MPI_PROC_NULL){
               if (LEN[DIR] > 1)
                 MPI_Sendrecv_replace(&b_left[0],buffer_size,MPI_DOUBLE,left_neighbor,1,left_neighbor,1, MPI_COMM_WORLD, &status);
               else
@@ -42,14 +42,14 @@ inline void communicateParticlesDIR(int buffer_size, int myrank, int right_neigh
          }
    if (myrank%2==1){
             // On the boundaries send e receive only if you have periodic condition: send to X-RIGHT
-            if (right_neighbor != -1){
+            if (right_neighbor != MPI_PROC_NULL){
               if (LEN[DIR] > 1)
                 MPI_Sendrecv_replace(&b_right[0],buffer_size,MPI_DOUBLE,right_neighbor,1,right_neighbor,1, MPI_COMM_WORLD, &status);
 
             }
          } else  {
             // On the boundaries send e receive only if you have periodic condition: send to X-LEFT
-            if (left_neighbor != -1){
+            if (left_neighbor != MPI_PROC_NULL){
               if (LEN[DIR] > 1)
                 MPI_Sendrecv_replace(&b_left[0],buffer_size,MPI_DOUBLE,left_neighbor,1,left_neighbor,1, MPI_COMM_WORLD, &status);
               }
@@ -74,17 +74,17 @@ inline void communicateGhostFace(int b_len, int myrank, int right_neighbor, int 
       rankF = myrank;
       break;
   }
-  if (rankF%2==0 && right_neighbor != -1 && LEN[DIR] > 1)       //
+  if (rankF%2==0 && right_neighbor != MPI_PROC_NULL && LEN[DIR] > 1)       //
               MPI_Sendrecv_replace(&ghostRightFace[0],b_len,MPI_DOUBLE,right_neighbor,1,right_neighbor,1, MPI_COMM_WORLD, &status);
-  else if (rankF%2== 1 && left_neighbor != -1 && LEN[DIR] > 1)           //
+  else if (rankF%2== 1 && left_neighbor != MPI_PROC_NULL && LEN[DIR] > 1)           //
               MPI_Sendrecv_replace(&ghostLeftFace[0],b_len,MPI_DOUBLE,left_neighbor,1,left_neighbor,1, MPI_COMM_WORLD, &status);
 
-  if (rankF%2==1 && right_neighbor != -1 &&  LEN[DIR] > 1)             //
+  if (rankF%2==1 && right_neighbor != MPI_PROC_NULL &&  LEN[DIR] > 1)             //
               MPI_Sendrecv_replace(&ghostRightFace[0],b_len,MPI_DOUBLE,right_neighbor,1,right_neighbor,1, MPI_COMM_WORLD, &status);
-  else if (rankF%2==0 && left_neighbor != -1  && LEN[DIR] > 1 )   //
+  else if (rankF%2==0 && left_neighbor != MPI_PROC_NULL  && LEN[DIR] > 1 )   //
               MPI_Sendrecv_replace(&ghostLeftFace[0],b_len,MPI_DOUBLE,left_neighbor,1,left_neighbor,1, MPI_COMM_WORLD, &status);
   // just swap the buffer if you have just a1 processor in 1 direction
-  if (LEN[DIR] == 1 && right_neighbor != -1 && left_neighbor != -1)
+  if (LEN[DIR] == 1 && right_neighbor != MPI_PROC_NULL && left_neighbor != MPI_PROC_NULL)
     swapBuffer(b_len,ghostLeftFace,ghostRightFace);
 
 
@@ -144,18 +144,18 @@ inline void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int
 	 comNotDone = false;
   }
   //If processors are available in diagonal comunicate in Diagonal: use rankE to avoid deadlocks
-  if (rankE%2==0 && right_neighborD != -1 && comNotDone){    //
+  if (rankE%2==0 && right_neighborD != MPI_PROC_NULL && comNotDone){    //
               MPI_Sendrecv_replace(&ghostRightEdge[0],b_len,MPI_DOUBLE,right_neighborD,1,right_neighborD,1, MPI_COMM_WORLD, &status);
   }
-  else if (rankE%2== 1 && left_neighborD != -1 && comNotDone){           //
+  else if (rankE%2== 1 && left_neighborD != MPI_PROC_NULL && comNotDone){           //
               MPI_Sendrecv_replace(&ghostLeftEdge[0],b_len,MPI_DOUBLE,left_neighborD,1,left_neighborD,1, MPI_COMM_WORLD, &status);
  }
 
-  if (rankE%2==1 && right_neighborD != -1 && comNotDone){             //
+  if (rankE%2==1 && right_neighborD != MPI_PROC_NULL && comNotDone){             //
               MPI_Sendrecv_replace(&ghostRightEdge[0],b_len,MPI_DOUBLE,right_neighborD,1,right_neighborD,1, MPI_COMM_WORLD, &status);
               
   }
-  else if (rankE%2==0 && left_neighborD != -1 && comNotDone){
+  else if (rankE%2==0 && left_neighborD != MPI_PROC_NULL && comNotDone){
               MPI_Sendrecv_replace(&ghostLeftEdge[0],b_len,MPI_DOUBLE,left_neighborD,1,left_neighborD,1, MPI_COMM_WORLD, &status);
               
   }
@@ -191,19 +191,19 @@ inline void communicateGhostCorner(int myrank, int right_neighborC, int left_nei
 	  comNotDone = false;
   }
   // if it's possible communicate corners
-  if (rankC%2==0 && right_neighborC != -1 && comNotDone){     //
+  if (rankC%2==0 && right_neighborC != MPI_PROC_NULL && comNotDone){     //
               MPI_Sendrecv_replace(ghostRightCorner,1,MPI_DOUBLE,right_neighborC,1,right_neighborC,1, MPI_COMM_WORLD, &status);
              
   }
-  else if (rankC%2== 1 && left_neighborC != -1 && comNotDone){           //
+  else if (rankC%2== 1 && left_neighborC != MPI_PROC_NULL && comNotDone){           //
               MPI_Sendrecv_replace(ghostLeftCorner,1,MPI_DOUBLE,left_neighborC,1,left_neighborC,1, MPI_COMM_WORLD, &status);
              
   }
 
-  if (rankC%2==1 && right_neighborC != -1 && comNotDone){             //
+  if (rankC%2==1 && right_neighborC != MPI_PROC_NULL && comNotDone){             //
               MPI_Sendrecv_replace(ghostRightCorner,1,MPI_DOUBLE,right_neighborC,1,right_neighborC,1, MPI_COMM_WORLD, &status);
               
-  } else if (rankC%2==0 && left_neighborC != -1 && comNotDone){   //
+  } else if (rankC%2==0 && left_neighborC != MPI_PROC_NULL && comNotDone){   //
               MPI_Sendrecv_replace(ghostLeftCorner,1,MPI_DOUBLE,left_neighborC,1,left_neighborC,1, MPI_COMM_WORLD, &status);
               
   }

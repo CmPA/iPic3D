@@ -680,22 +680,22 @@ inline void EMfields3D::MaxwellSource(double *bkrylov, Grid *grid, VirtualTopolo
 
    // Boundary condition in the known term
    // boundary condition: Xleft
-   if(vct->getXleft_neighbor()==-1 && bcEMfaceXleft ==0) // perfect conductor
+   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==0) // perfect conductor
 		perfectConductorLeftS(tempX,tempY,tempZ,0);
    // boundary condition: Xright
-   if(vct->getXright_neighbor()==-1 && bcEMfaceXright==0) // perfect conductor
+   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright==0) // perfect conductor
            perfectConductorRightS(tempX,tempY,tempZ,0);
 	// boundary condition: Yleft
-	if(vct->getYleft_neighbor()==-1 && bcEMfaceYleft ==0) // perfect conductor
+	if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==0) // perfect conductor
            perfectConductorLeftS(tempX,tempY,tempZ,1);
      // boundary condition: Yright
-     if(vct->getYright_neighbor()==-1 && bcEMfaceYright==0) // perfect conductor
+     if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright==0) // perfect conductor
            perfectConductorRightS(tempX,tempY,tempZ,1);
      // boundary condition: Zleft
-     if(vct->getZleft_neighbor()==-1 && bcEMfaceZleft ==0) // perfect conductor
+     if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==0) // perfect conductor
            perfectConductorLeftS(tempX,tempY,tempZ,2);
      // boundary condition: Zright
-     if(vct->getZright_neighbor()==-1 && bcEMfaceZright==0 ) // perfect conductor
+     if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright==0 ) // perfect conductor
            perfectConductorRightS(tempX,tempY,tempZ,2);
     	   
      // physical space -> Krylov space
@@ -738,22 +738,22 @@ inline void EMfields3D::MaxwellImage(double *im, double *vector, Grid *grid, Vir
    sum(imageX,vectX,nxn,nyn,nzn); sum(imageY,vectY,nxn,nyn,nzn); sum(imageZ,vectZ,nxn,nyn,nzn);
    
    // boundary condition: Xleft
-   if(vct->getXleft_neighbor()==-1 && bcEMfaceXleft ==0) // perfect conductor
+   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==0) // perfect conductor
            perfectConductorLeft(imageX,imageY,imageZ,vectX,vectY,vectZ,0,grid);
    // boundary condition: Xright
-   if(vct->getXright_neighbor()==-1 && bcEMfaceXright==0) // perfect conductor
+   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright==0) // perfect conductor
            perfectConductorRight(imageX,imageY,imageZ,vectX,vectY,vectZ,0,grid);
    // boundary condition: Yleft
-   if(vct->getYleft_neighbor()==-1 && bcEMfaceYleft ==0) // perfect conductor
+   if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==0) // perfect conductor
            perfectConductorLeft(imageX,imageY,imageZ,vectX,vectY,vectZ,1,grid);
    // boundary condition: Yright
-   if(vct->getYright_neighbor()==-1 && bcEMfaceYright==0) // perfect conductor
+   if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright==0) // perfect conductor
            perfectConductorRight(imageX,imageY,imageZ,vectX,vectY,vectZ,1,grid);
    // boundary condition: Zleft
-   if(vct->getZleft_neighbor()==-1 && bcEMfaceZleft ==0) // perfect conductor
+   if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==0) // perfect conductor
            perfectConductorLeft(imageX,imageY,imageZ,vectX,vectY,vectZ,2,grid);
    // boundary condition: Zright
-   if(vct->getZright_neighbor()==-1 && bcEMfaceZright==0) // perfect conductor
+   if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright==0) // perfect conductor
            perfectConductorRight(imageX,imageY,imageZ,vectX,vectY,vectZ,2,grid);
    // move from physical space to krylov space
    phys2solver(im,imageX,imageY,imageZ,nxn,nyn,nzn);
@@ -926,7 +926,7 @@ inline void  EMfields3D::smooth(double value,double ****vector,int is, bool type
 
 /** fix the B boundary when running gem*/
 inline void EMfields3D::fixBgem(Grid *grid, VirtualTopology3D *vct){
-   if (vct->getYright_neighbor()==-1){
+   if (vct->getYright_neighbor()==MPI_PROC_NULL){
       for (int i=0; i < nxc;i++)
 	    for (int k=0; k < nzc;k++){
 			Bxc[i][nyc-1][k] = B0x*tanh((grid->getYC(i,nyc-1,k) - Ly/2)/delta);
@@ -938,7 +938,7 @@ inline void EMfields3D::fixBgem(Grid *grid, VirtualTopology3D *vct){
 			Bzc[i][nyc-3][k] = B0z;
 		}
 	}
-	if (vct->getYleft_neighbor()==-1){
+	if (vct->getYleft_neighbor()==MPI_PROC_NULL){
       for (int i=0; i < nxc;i++)
 	    for (int k=0; k < nzc;k++){
 			Bxc[i][0][k] = B0x*tanh((grid->getYC(i,0,k) - Ly/2)/delta);
@@ -955,7 +955,7 @@ inline void EMfields3D::fixBgem(Grid *grid, VirtualTopology3D *vct){
 
 /** fix the B boundary when running forcefree*/
 inline void EMfields3D::fixBforcefree(Grid *grid, VirtualTopology3D *vct){
-   if (vct->getYright_neighbor()==-1){
+   if (vct->getYright_neighbor()==MPI_PROC_NULL){
       for (int i=0; i < nxc;i++)
 	    for (int k=0; k < nzc;k++){
 			Bxc[i][nyc-1][k] = B0x*tanh((grid->getYC(i,nyc-1,k) - Ly/2)/delta);
@@ -965,7 +965,7 @@ inline void EMfields3D::fixBforcefree(Grid *grid, VirtualTopology3D *vct){
 			Bzc[i][nyc-3][k] = B0z/cosh((grid->getYC(i,nyc-3,k) - Ly/2)/delta);
 		}
 	}
-	if (vct->getYleft_neighbor()==-1){
+	if (vct->getYleft_neighbor()==MPI_PROC_NULL){
       for (int i=0; i < nxc;i++)
 	    for (int k=0; k < nzc;k++){
 			Bxc[i][0][k] = B0x*tanh((grid->getYC(i,0,k) - Ly/2)/delta);
@@ -981,7 +981,7 @@ inline void EMfields3D::fixBforcefree(Grid *grid, VirtualTopology3D *vct){
 
 /** adjust densities on boundaries that are not periodic */
 inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D *vct){
- if (vct->getXleft_neighbor_P()==-1){
+ if (vct->getXleft_neighbor_P()==MPI_PROC_NULL){
 	   for (int i=1; i < nyn-1;i++)
 	     for (int k=1; k < nzn-1;k++){
 	     rhons[is][1][i][k]+=   rhons[is][1][i][k];
@@ -996,7 +996,7 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D *vc
 		 pZZsn[is][1][i][k]  += pZZsn[is][1][i][k];
 	   }
   }
-  if (vct->getYleft_neighbor_P()==-1){
+  if (vct->getYleft_neighbor_P()==MPI_PROC_NULL){
 	   for (int i=1; i < nxn-1;i++)
 	    for (int k=1; k < nzn-1;k++){
 	     rhons[is][i][1][k]+=   rhons[is][i][1][k];
@@ -1011,7 +1011,7 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D *vc
 		 pZZsn[is][i][1][k]  += pZZsn[is][i][1][k];
 	   }
   }
-  if (vct->getZleft_neighbor_P()==-1){
+  if (vct->getZleft_neighbor_P()==MPI_PROC_NULL){
 	   for (int i=1; i < nxn-1;i++)
 	     for (int j=1; j < nyn-1;j++){
 	     rhons[is][i][j][1]+=   rhons[is][i][j][1];
@@ -1026,7 +1026,7 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D *vc
 		 pZZsn[is][i][j][1]  += pZZsn[is][i][j][1];
 	   }
   }
-  if (vct->getXright_neighbor_P()==-1){
+  if (vct->getXright_neighbor_P()==MPI_PROC_NULL){
 	   for (int i=1; i < nyn-1;i++)
 	     for (int k=1; k < nzn-1;k++){
 	     rhons[is][nxn-2][i][k]+=   rhons[is][1][nxn-2][k];
@@ -1041,7 +1041,7 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D *vc
 		 pZZsn[is][nxn-2][i][k]  += pZZsn[is][nxn-2][i][k];
 	   }
   }
-  if (vct->getYright_neighbor_P()==-1){
+  if (vct->getYright_neighbor_P()==MPI_PROC_NULL){
 	   for (int i=1; i < nxn-1;i++)
 	    for (int k=1; k < nzn-1;k++){
 	     rhons[is][i][nyn-2][k]+=   rhons[is][i][nyn-2][k];
@@ -1056,7 +1056,7 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D *vc
 		 pZZsn[is][i][nyn-2][k]  += pZZsn[is][i][nyn-2][k];
 	   }
   }
-  if (vct->getZright_neighbor_P()==-1){
+  if (vct->getZright_neighbor_P()==MPI_PROC_NULL){
 	   for (int i=1; i < nxn-1;i++)
 	     for (int j=1; j < nyn-1;j++){
 	     rhons[is][i][j][nzn-2]+=   rhons[is][i][j][nzn-2];

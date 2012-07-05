@@ -289,17 +289,17 @@ int Particles3D::mover_PC(Grid* grid,VirtualTopology3D* vct, Field* EMf){
 		y[i] = yptilde + vptilde*dt;
 		z[i] = zptilde + wptilde*dt;
 		// apply the BC
-		if (x[i] < 0 && vct->getXleft_neighbor() == -1)
+		if (x[i] < 0 && vct->getXleft_neighbor() == MPI_PROC_NULL)
 			BCpart(&x[i],&u[i],&v[i],&w[i],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft);
-		else if (x[i] > Lx && vct->getXright_neighbor() == -1)
+		else if (x[i] > Lx && vct->getXright_neighbor() == MPI_PROC_NULL)
 			BCpart(&x[i],&u[i],&v[i],&w[i],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft); 
-		if (y[i] < 0 && vct->getYleft_neighbor() == -1)  
+		if (y[i] < 0 && vct->getYleft_neighbor() == MPI_PROC_NULL)  
 			BCpart(&y[i],&v[i],&u[i],&w[i],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft);
-		else if (y[i] > Ly && vct->getYright_neighbor() == -1) 
+		else if (y[i] > Ly && vct->getYright_neighbor() == MPI_PROC_NULL) 
 			BCpart(&y[i],&v[i],&u[i],&w[i],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft); 
-		if (z[i] < 0 && vct->getZleft_neighbor() == -1)  
+		if (z[i] < 0 && vct->getZleft_neighbor() == MPI_PROC_NULL)  
 			BCpart(&z[i],&v[i],&u[i],&w[i],Lz,vth,uth,wth,bcPfaceZright,bcPfaceZleft);
-		else if (z[i] > Lz && vct->getZright_neighbor() == -1)
+		else if (z[i] > Lz && vct->getZright_neighbor() == MPI_PROC_NULL)
 		    BCpart(&z[i],&v[i],&u[i],&w[i],Lz,vth,uth,wth,bcPfaceZright,bcPfaceZleft);
 	} // end of particles
 	if (vct->getCartesian_rank()==0){

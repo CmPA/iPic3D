@@ -322,7 +322,7 @@ inline void addFace(int nx, int ny, int nz, double ***vector, double *ghostXrigh
   int counter;
   
   
-  if (vct->getXright_neighbor_P() != -1){  // XRIGHT
+  if (vct->getXright_neighbor_P() != MPI_PROC_NULL){  // XRIGHT
     counter=0;
 	for (register int j=1; j < ny-1; j++)
       for (register int k=1; k < nz-1; k++){
@@ -330,7 +330,7 @@ inline void addFace(int nx, int ny, int nz, double ***vector, double *ghostXrigh
 		counter++;
     }
   }
-  if (vct->getXleft_neighbor_P() != -1 ){  // XLEFT
+  if (vct->getXleft_neighbor_P() != MPI_PROC_NULL ){  // XLEFT
      counter=0;
 	for (register int j=1; j < ny-1; j++)
       for (register int k=1; k < nz-1; k++){
@@ -339,7 +339,7 @@ inline void addFace(int nx, int ny, int nz, double ***vector, double *ghostXrigh
     }
   }
  
-  if (vct->getYright_neighbor_P() != -1){  // YRIGHT
+  if (vct->getYright_neighbor_P() != MPI_PROC_NULL){  // YRIGHT
     counter =0; 
   for (register int i=1; i < nx-1; i++)
     for (register int k=1; k < nz-1; k++){
@@ -347,7 +347,7 @@ inline void addFace(int nx, int ny, int nz, double ***vector, double *ghostXrigh
       counter++;
     }
   }
-  if (vct->getYleft_neighbor_P() != -1){  // Y LEFT
+  if (vct->getYleft_neighbor_P() != MPI_PROC_NULL){  // Y LEFT
     counter =0; 
   for (register int i=1; i < nx-1; i++)
     for (register int k=1; k < nz-1; k++){
@@ -355,7 +355,7 @@ inline void addFace(int nx, int ny, int nz, double ***vector, double *ghostXrigh
       counter++;
     }
   }
-  if (vct->getZright_neighbor_P() != -1){  // ZRIGHT
+  if (vct->getZright_neighbor_P() != MPI_PROC_NULL){  // ZRIGHT
      counter =0;
      for (register int i=1; i < nx-1; i++)
       for (register int j=1; j < ny-1; j++){
@@ -363,7 +363,7 @@ inline void addFace(int nx, int ny, int nz, double ***vector, double *ghostXrigh
         counter++;
       }
   }
-  if (vct->getZleft_neighbor_P() != -1){ // ZLEFT
+  if (vct->getZleft_neighbor_P() != MPI_PROC_NULL){ // ZLEFT
      counter =0;
      for (register int i=1; i < nx-1; i++)
       for (register int j=1; j < ny-1; j++){
@@ -377,7 +377,7 @@ inline void addFace(int nx, int ny, int nz, double ***vector, double *ghostXrigh
 /** add the values of ghost cells faces to the 3D phisical vector */
 inline void addFace(int nx, int ny, int nz,  double ****vector, int ns,double *ghostXrightFace, double *ghostXleftFace, double *ghostYrightFace, double *ghostYleftFace, double *ghostZrightFace, double *ghostZleftFace,VirtualTopology3D *vct){
   int counter;
-  if (vct->getXright_neighbor_P() != -1){  // XRIGHT
+  if (vct->getXright_neighbor_P() != MPI_PROC_NULL){  // XRIGHT
     counter=0;
 	for (register int j=1; j < ny-1; j++)
       for (register int k=1; k < nz-1; k++){
@@ -385,7 +385,7 @@ inline void addFace(int nx, int ny, int nz,  double ****vector, int ns,double *g
 		counter++;
     }
   }
-  if (vct->getXleft_neighbor_P() != -1 ){  // XLEFT
+  if (vct->getXleft_neighbor_P() != MPI_PROC_NULL ){  // XLEFT
      counter=0;
 	for (register int j=1; j < ny-1; j++)
       for (register int k=1; k < nz-1; k++){
@@ -394,7 +394,7 @@ inline void addFace(int nx, int ny, int nz,  double ****vector, int ns,double *g
     }
   }
  
-  if (vct->getYright_neighbor_P() != -1){  // YRIGHT
+  if (vct->getYright_neighbor_P() != MPI_PROC_NULL){  // YRIGHT
     counter =0; 
   for (register int i=1; i < nx-1; i++)
     for (register int k=1; k < nz-1; k++){
@@ -402,7 +402,7 @@ inline void addFace(int nx, int ny, int nz,  double ****vector, int ns,double *g
       counter++;
     }
   }
-  if (vct->getYleft_neighbor_P() != -1){  // Y LEFT
+  if (vct->getYleft_neighbor_P() != MPI_PROC_NULL){  // Y LEFT
     counter =0; 
   for (register int i=1; i < nx-1; i++)
     for (register int k=1; k < nz-1; k++){
@@ -410,7 +410,7 @@ inline void addFace(int nx, int ny, int nz,  double ****vector, int ns,double *g
       counter++;
     }
   }
-  if (vct->getZright_neighbor_P() != -1){  // ZRIGHT
+  if (vct->getZright_neighbor_P() != MPI_PROC_NULL){  // ZRIGHT
      counter =0;
      for (register int i=1; i < nx-1; i++)
       for (register int j=1; j < ny-1; j++){
@@ -418,7 +418,7 @@ inline void addFace(int nx, int ny, int nz,  double ****vector, int ns,double *g
         counter++;
       }
   }
-  if (vct->getZleft_neighbor_P() != -1){ // ZLEFT
+  if (vct->getZleft_neighbor_P() != MPI_PROC_NULL){ // ZLEFT
      counter =0;
      for (register int i=1; i < nx-1; i++)
       for (register int j=1; j < ny-1; j++){
@@ -453,19 +453,19 @@ inline void parseEdgeZ(int nx, int ny, int nz, double ****vector,int ns, double 
 /** insert the ghost cells Edge Z in the 3D phisical vector */
 inline void addEdgeZ(int nx, int ny, int nz, double ****vector,int ns, double *ghostXrightYrightZsameEdge, double *ghostXleftYleftZsameEdge, double *ghostXrightYleftZsameEdge, double *ghostXleftYrightZsameEdge,VirtualTopology3D *vct){
 	   
-       if (vct->getXright_neighbor_P() != -1 && vct->getYright_neighbor_P() !=-1){
+       if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() !=MPI_PROC_NULL){
 	      for(register int i=1; i < (nz - 1); i++)
            vector[ns][nx-2][ny-2][i] += ghostXrightYrightZsameEdge[i-1];
 	   }
-	   if (vct->getXleft_neighbor_P() != -1 && vct->getYleft_neighbor_P() !=-1){
+	   if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() !=MPI_PROC_NULL){
 	     for(register int i=1; i < (nz - 1); i++)
 		   vector[ns][1][1][i]       += ghostXleftYleftZsameEdge[i-1];
 	   }
-	   if (vct->getXright_neighbor_P() != -1 && vct->getYleft_neighbor_P() !=-1){
+	   if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() !=MPI_PROC_NULL){
 	     for(register int i=1; i < (nz - 1); i++)
 		   vector[ns][nx-2][1][i]    += ghostXrightYleftZsameEdge[i-1];
 	   }
-	   if (vct->getXleft_neighbor_P() != -1 && vct->getYright_neighbor_P() !=-1){
+	   if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() !=MPI_PROC_NULL){
 	      for(register int i=1; i < (nz - 1); i++)
 		    vector[ns][1][ny-2][i]    += ghostXleftYrightZsameEdge[i-1];
 	   }
@@ -473,19 +473,19 @@ inline void addEdgeZ(int nx, int ny, int nz, double ****vector,int ns, double *g
 }
 /** insert the ghost cells Edge Z in the 3D phisical vector */
 inline void addEdgeZ(int nx, int ny, int nz, double ***vector, double *ghostXrightYrightZsameEdge, double *ghostXleftYleftZsameEdge, double *ghostXrightYleftZsameEdge, double *ghostXleftYrightZsameEdge,VirtualTopology3D *vct){
-       if (vct->getXright_neighbor_P() != -1 && vct->getYright_neighbor_P() !=-1){
+       if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() !=MPI_PROC_NULL){
 	      for(register int i=1; i < (nz - 1); i++)
            vector[nx-2][ny-2][i] += ghostXrightYrightZsameEdge[i-1];
 	   }
-	   if (vct->getXleft_neighbor_P() != -1 && vct->getYleft_neighbor_P() !=-1){
+	   if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() !=MPI_PROC_NULL){
 	     for(register int i=1; i < (nz - 1); i++)
 		   vector[1][1][i]       += ghostXleftYleftZsameEdge[i-1];
 	   }
-	   if (vct->getXright_neighbor_P() != -1 && vct->getYleft_neighbor_P() !=-1){
+	   if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() !=MPI_PROC_NULL){
 	     for(register int i=1; i < (nz - 1); i++)
 		   vector[nx-2][1][i]    += ghostXrightYleftZsameEdge[i-1];
 	   }
-	   if (vct->getXleft_neighbor_P() != -1 && vct->getYright_neighbor_P() !=-1){
+	   if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() !=MPI_PROC_NULL){
 	      for(register int i=1; i < (nz - 1); i++)
 		    vector[1][ny-2][i]    += ghostXleftYrightZsameEdge[i-1];
 	   }
@@ -510,38 +510,38 @@ inline void parseEdgeY(int nx, int ny, int nz,  double ****vector,int ns, double
 }
 /** add the ghost cell values Edge Y to the 3D phisical vector */
 inline void addEdgeY(int nx, int ny, int nz, double ***vector, double *ghostXrightYsameZrightEdge, double *ghostXleftYsameZleftEdge, double *ghostXleftYsameZrightEdge, double *ghostXrightYsameZleftEdge,VirtualTopology3D *vct){
-     if (vct->getXright_neighbor_P() != -1 && vct->getZright_neighbor_P() !=-1){
+     if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() !=MPI_PROC_NULL){
 	   for(register int i=1; i < (ny - 1); i++)
 	     vector[nx-2][i][nz-2]           += ghostXrightYsameZrightEdge[i-1];
 	 } 
-	 if (vct->getXleft_neighbor_P() != -1 && vct->getZleft_neighbor_P() !=-1){
+	 if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() !=MPI_PROC_NULL){
 	   for(register int i=1; i < (ny - 1); i++)
 	     vector[1][i][1]                 += ghostXleftYsameZleftEdge[i-1];
 	 } 
-	 if (vct->getXleft_neighbor_P() != -1 && vct->getZright_neighbor_P() !=-1){
+	 if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() !=MPI_PROC_NULL){
 	   for(register int i=1; i < (ny - 1); i++)
 	      vector[1][i][nz-2]              += ghostXleftYsameZrightEdge[i-1];
 	 } 
-	 if (vct->getXright_neighbor_P() != -1 && vct->getZleft_neighbor_P() !=-1){
+	 if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() !=MPI_PROC_NULL){
 	   for(register int i=1; i < (ny - 1); i++)
 	      vector[nx-2][i][1]           += ghostXrightYsameZleftEdge[i-1];
 	 } 
 }
 /** SPECIES: add the ghost cell values Edge Y to the 3D phisical vector */
 inline void addEdgeY(int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightYsameZrightEdge, double *ghostXleftYsameZleftEdge, double *ghostXleftYsameZrightEdge, double *ghostXrightYsameZleftEdge,VirtualTopology3D *vct){
-     if (vct->getXright_neighbor_P() != -1 && vct->getZright_neighbor_P() !=-1){
+     if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() !=MPI_PROC_NULL){
 	   for(register int i=1; i < (ny - 1); i++)
 	     vector[ns][nx-2][i][nz-2]           += ghostXrightYsameZrightEdge[i-1];
 	 } 
-	 if (vct->getXleft_neighbor_P() != -1 && vct->getZleft_neighbor_P() !=-1){
+	 if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() !=MPI_PROC_NULL){
 	   for(register int i=1; i < (ny - 1); i++)
 	     vector[ns][1][i][1]                 += ghostXleftYsameZleftEdge[i-1];
 	 }  
-	 if (vct->getXleft_neighbor_P() != -1 && vct->getZright_neighbor_P() !=-1){
+	 if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() !=MPI_PROC_NULL){
 	   for(register int i=1; i < (ny - 1); i++)
 	      vector[ns][1][i][nz-2]              += ghostXleftYsameZrightEdge[i-1];
 	 }  
-	 if (vct->getXright_neighbor_P() != -1 && vct->getZleft_neighbor_P() !=-1){
+	 if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() !=MPI_PROC_NULL){
 	   for(register int i=1; i < (ny - 1); i++)
 	      vector[ns][nx-2][i][1]           += ghostXrightYsameZleftEdge[i-1];
 	 }
@@ -568,38 +568,38 @@ inline void parseEdgeX(int nx, int ny, int nz, double ****vector, int ns, double
 }
 /** add the ghost values Edge X to the 3D phisical vector */
 inline void addEdgeX(int nx, int ny, int nz, double ***vector, double *ghostXsameYrightZrightEdge, double *ghostXsameYleftZleftEdge, double *ghostXsameYleftZrightEdge, double *ghostXsameYrightZleftEdge,VirtualTopology3D *vct){
-	   if (vct->getYright_neighbor_P() != -1 && vct->getZright_neighbor_P() !=-1){
+	   if (vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() !=MPI_PROC_NULL){
 	     for(register int i=1; i < (nx - 1); i++)
 		   vector[i][ny-2][nz-2]           += ghostXsameYrightZrightEdge[i-1];
 	   }
-	   if (vct->getYleft_neighbor_P() != -1 && vct->getZleft_neighbor_P() !=-1){
+	   if (vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() !=MPI_PROC_NULL){
 		 for(register int i=1; i < (nx - 1); i++)
 		   vector[i][1][1]                 += ghostXsameYleftZleftEdge[i-1];
 	   }
-	   if (vct->getYleft_neighbor_P() != -1 && vct->getZright_neighbor_P() !=-1){
+	   if (vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() !=MPI_PROC_NULL){
 	      for(register int i=1; i < (nx - 1); i++)
 		    vector[i][1][nz-2]              += ghostXsameYleftZrightEdge[i-1];
 	   }
-	   if (vct->getYright_neighbor_P() != -1 && vct->getZleft_neighbor_P() !=-1){
+	   if (vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() !=MPI_PROC_NULL){
           for(register int i=1; i < (nx - 1); i++)
 		    vector[i][ny-2][1]              += ghostXsameYrightZleftEdge[i-1];
        }
 }
 /** add the ghost values Edge X to the 3D phisical vector */
 inline void addEdgeX(int nx, int ny, int nz, double ****vector, int ns, double *ghostXsameYrightZrightEdge, double *ghostXsameYleftZleftEdge, double *ghostXsameYleftZrightEdge, double *ghostXsameYrightZleftEdge,VirtualTopology3D *vct){
-        if (vct->getYright_neighbor_P() != -1 && vct->getZright_neighbor_P() !=-1){
+        if (vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() !=MPI_PROC_NULL){
 	     for(register int i=1; i < (nx - 1); i++)
 		   vector[ns][i][ny-2][nz-2]           += ghostXsameYrightZrightEdge[i-1];
 	   }
-	   if (vct->getYleft_neighbor_P() != -1 && vct->getZleft_neighbor_P() !=-1){
+	   if (vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() !=MPI_PROC_NULL){
 		 for(register int i=1; i < (nx - 1); i++)
 		   vector[ns][i][1][1]                 += ghostXsameYleftZleftEdge[i-1];
 	   }
-	   if (vct->getYleft_neighbor_P() != -1 && vct->getZright_neighbor_P() !=-1){
+	   if (vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() !=MPI_PROC_NULL){
 	      for(register int i=1; i < (nx - 1); i++)
 		    vector[ns][i][1][nz-2]              += ghostXsameYleftZrightEdge[i-1];
 	   }
-	   if (vct->getYright_neighbor_P() != -1 && vct->getZleft_neighbor_P() !=-1){
+	   if (vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() !=MPI_PROC_NULL){
           for(register int i=1; i < (nx - 1); i++)
 		    vector[ns][i][ny-2][1]              += ghostXsameYrightZleftEdge[i-1];
        }
@@ -634,41 +634,41 @@ inline void parseCorner(int nx, int ny, int nz, double ****vector,int ns, double
 }
 /** add ghost cells values Corners in the 3D physical vector */
 inline void addCorner(int nx, int ny, int nz, double ***vector,double *ghostXrightYrightZrightCorner, double *ghostXleftYrightZrightCorner, double *ghostXrightYleftZrightCorner,double *ghostXleftYleftZrightCorner, double *ghostXrightYrightZleftCorner, double *ghostXleftYrightZleftCorner, double *ghostXrightYleftZleftCorner, double *ghostXleftYleftZleftCorner,VirtualTopology3D *vct){
-if (vct->getXright_neighbor_P() != -1 && vct->getYright_neighbor_P() != -1 && vct->getZright_neighbor_P() != -1)
+if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() != MPI_PROC_NULL)
 	   vector[nx-2][ny-2][nz-2]          += *ghostXrightYrightZrightCorner;
-if (vct->getXleft_neighbor_P() != -1 && vct->getYright_neighbor_P() != -1 && vct->getZright_neighbor_P() != -1)
+if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() != MPI_PROC_NULL)
        vector[1][ny-2][nz-2]             += *ghostXleftYrightZrightCorner;
-if (vct->getXright_neighbor_P() != -1 && vct->getYleft_neighbor_P() != -1 && vct->getZright_neighbor_P() != -1)
+if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() != MPI_PROC_NULL)
        vector[nx-2][1][nz-2]             += *ghostXrightYleftZrightCorner;
-if (vct->getXleft_neighbor_P() != -1 && vct->getYleft_neighbor_P() != -1 && vct->getZright_neighbor_P() != -1)
+if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() != MPI_PROC_NULL)
        vector[1][1][nz-2]                += *ghostXleftYleftZrightCorner;
-if (vct->getXright_neighbor_P() != -1 && vct->getYright_neighbor_P() != -1 && vct->getZleft_neighbor_P() != -1)
+if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() != MPI_PROC_NULL)
 	   vector[nx-2][ny-2][1]             += *ghostXrightYrightZleftCorner;
-if (vct->getXleft_neighbor_P() != -1 && vct->getYright_neighbor_P() != -1 && vct->getZleft_neighbor_P() != -1)
+if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() != MPI_PROC_NULL)
 	   vector[1][ny-2][1]               += *ghostXleftYrightZleftCorner;
-if (vct->getXright_neighbor_P() != -1 && vct->getYleft_neighbor_P() != -1 && vct->getZleft_neighbor_P() != -1)
+if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() != MPI_PROC_NULL)
        vector[nx-2][1][1]                += *ghostXrightYleftZleftCorner;
-if (vct->getXleft_neighbor_P() != -1 && vct->getYleft_neighbor_P() != -1 && vct->getZleft_neighbor_P() != -1)
+if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() != MPI_PROC_NULL)
        vector[1][1][1]                   += *ghostXleftYleftZleftCorner;
 
 }
 /** add ghost cells values Corners in the 3D physical vector */
 inline void addCorner(int nx, int ny, int nz,double ****vector, int ns, double *ghostXrightYrightZrightCorner, double *ghostXleftYrightZrightCorner, double *ghostXrightYleftZrightCorner,double *ghostXleftYleftZrightCorner, double *ghostXrightYrightZleftCorner, double *ghostXleftYrightZleftCorner, double *ghostXrightYleftZleftCorner, double *ghostXleftYleftZleftCorner,VirtualTopology3D *vct){
-if (vct->getXright_neighbor_P() != -1 && vct->getYright_neighbor_P() != -1 && vct->getZright_neighbor_P() != -1)
+if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() != MPI_PROC_NULL)
 	   vector[ns][nx-2][ny-2][nz-2]          += *ghostXrightYrightZrightCorner;
-if (vct->getXleft_neighbor_P() != -1 && vct->getYright_neighbor_P() != -1 && vct->getZright_neighbor_P() != -1)
+if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() != MPI_PROC_NULL)
        vector[ns][1][ny-2][nz-2]             += *ghostXleftYrightZrightCorner;
-if (vct->getXright_neighbor_P() != -1 && vct->getYleft_neighbor_P() != -1 && vct->getZright_neighbor_P() != -1)
+if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() != MPI_PROC_NULL)
        vector[ns][nx-2][1][nz-2]             += *ghostXrightYleftZrightCorner;
-if (vct->getXleft_neighbor_P() != -1 && vct->getYleft_neighbor_P() != -1 && vct->getZright_neighbor_P() != -1)
+if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZright_neighbor_P() != MPI_PROC_NULL)
        vector[ns][1][1][nz-2]                += *ghostXleftYleftZrightCorner;
-if (vct->getXright_neighbor_P() != -1 && vct->getYright_neighbor_P() != -1 && vct->getZleft_neighbor_P() != -1)
+if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() != MPI_PROC_NULL)
 	   vector[ns][nx-2][ny-2][1]             += *ghostXrightYrightZleftCorner;
-if (vct->getXleft_neighbor_P() != -1 && vct->getYright_neighbor_P() != -1 && vct->getZleft_neighbor_P() != -1)
+if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYright_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() != MPI_PROC_NULL)
 	   vector[ns][1][ny-2][1]               += *ghostXleftYrightZleftCorner;
-if (vct->getXright_neighbor_P() != -1 && vct->getYleft_neighbor_P() != -1 && vct->getZleft_neighbor_P() != -1)
+if (vct->getXright_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() != MPI_PROC_NULL)
        vector[ns][nx-2][1][1]                += *ghostXrightYleftZleftCorner;
-if (vct->getXleft_neighbor_P() != -1 && vct->getYleft_neighbor_P() != -1 && vct->getZleft_neighbor_P() != -1)
+if (vct->getXleft_neighbor_P() != MPI_PROC_NULL && vct->getYleft_neighbor_P() != MPI_PROC_NULL && vct->getZleft_neighbor_P() != MPI_PROC_NULL)
        vector[ns][1][1][1]                   += *ghostXleftYleftZleftCorner;
 }
 

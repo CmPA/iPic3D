@@ -12,7 +12,7 @@
 /** set the boundary condition on boundaries */
 inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN,int xEndActiveN, int yEndActiveN, int zEndActiveN,double ***vector, double value, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft,int bcFaceZright,int bcFaceZleft,double dx, double dy, double dz,VirtualTopology3D *vct){
    // XLEFT
-   if (vct->getXleft_neighbor()==-1){
+   if (vct->getXleft_neighbor()==MPI_PROC_NULL){
       switch(bcFaceXleft){
 
       case 0:   // multiply for value on boundaries
@@ -32,7 +32,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
 
    }
    // XRIGHT
-   if (vct->getXright_neighbor()==-1){
+   if (vct->getXright_neighbor()==MPI_PROC_NULL){
      switch(bcFaceXright){
 
       case 0:    // multiply for value on boundaries
@@ -49,7 +49,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
 
    }
    // YLEFT
-   if (vct->getYleft_neighbor()==-1){
+   if (vct->getYleft_neighbor()==MPI_PROC_NULL){
      switch(bcFaceYleft){
 
       case 0:  // multiply for value on boundaries
@@ -67,7 +67,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
      }
    }
    // YRIGHT
-   if (vct->getYright_neighbor()==-1){
+   if (vct->getYright_neighbor()==MPI_PROC_NULL){
       switch(bcFaceYright){
 
       case 0: // multiply for value on boundaries
@@ -87,7 +87,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
 
    }
    // ZRIGHT
-   if (vct->getZleft_neighbor()==-1){
+   if (vct->getZleft_neighbor()==MPI_PROC_NULL){
       switch(bcFaceZleft){
 
         case 0:  // multiply for value on boundaries
@@ -104,7 +104,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
       }
    }
    // ZLEFT
-   if (vct->getZright_neighbor()==-1){
+   if (vct->getZright_neighbor()==MPI_PROC_NULL){
       switch(bcFaceZright){
 
         case 0:  // multiply for value on boundaries
@@ -125,7 +125,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
 /** set the boundary condition on boundaries */
 inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN,int xEndActiveN, int yEndActiveN, int zEndActiveN, int ns, double ****vector, double value, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft,int bcFaceZright,int bcFaceZleft,double dx, double dy, double dz,VirtualTopology3D *vct){
    // XLEFT
-   if (vct->getXleft_neighbor()==-1){
+   if (vct->getXleft_neighbor()==MPI_PROC_NULL){
       switch(bcFaceXleft){
 
       case 0:   // multiply for value on boundaries
@@ -144,7 +144,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
 
    }
    // XRIGHT
-   if (vct->getXright_neighbor()==-1){
+   if (vct->getXright_neighbor()==MPI_PROC_NULL){
      switch(bcFaceXright){
 
       case 0:    // multiply for value on boundaries
@@ -161,7 +161,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
 
    }
    // YLEFT
-   if (vct->getYleft_neighbor()==-1){
+   if (vct->getYleft_neighbor()==MPI_PROC_NULL){
      switch(bcFaceYleft){
 
       case 0:  // multiply for value on boundaries
@@ -179,7 +179,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
      }
    }
    // YRIGHT
-   if (vct->getYright_neighbor()==-1){
+   if (vct->getYright_neighbor()==MPI_PROC_NULL){
       switch(bcFaceYright){
 
       case 0: // multiply for value on boundaries
@@ -199,7 +199,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
 
    }
    // ZRIGHT
-   if (vct->getZleft_neighbor()==-1){
+   if (vct->getZleft_neighbor()==MPI_PROC_NULL){
       switch(bcFaceZleft){
 
         case 0:  // multiply for value on boundaries
@@ -216,7 +216,7 @@ inline void BCfaceInterp(int xStartActiveN, int yStartActiveN, int zStartActiveN
       }
    }
    // ZLEFT
-   if (vct->getZright_neighbor()==-1){
+   if (vct->getZright_neighbor()==MPI_PROC_NULL){
       switch(bcFaceZright){
 
         case 0:  // multiply for value on boundaries

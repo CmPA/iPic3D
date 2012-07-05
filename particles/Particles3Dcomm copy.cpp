@@ -350,22 +350,22 @@ int Particles3Dcomm::communicate(VirtualTopology3D* ptVCT){
 	int np_current = 0, nplast = nop-1; // particles indices
 	while (np_current < nplast+1){
 	    // first apply the BC on particles, after this you dont have to check it anymore
-		if (x[np_current] < 0 && ptVCT->getXleft_neighbor() == -1)
+		if (x[np_current] < 0 && ptVCT->getXleft_neighbor() == MPI_PROC_NULL)
 			BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft);
-		if (x[np_current] > Lx && ptVCT->getXright_neighbor() == -1)
+		if (x[np_current] > Lx && ptVCT->getXright_neighbor() == MPI_PROC_NULL)
 			BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft); 
-		if (y[np_current] < 0 && ptVCT->getYleft_neighbor() == -1)  
+		if (y[np_current] < 0 && ptVCT->getYleft_neighbor() == MPI_PROC_NULL)  
 			BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft);
-		if (y[np_current] > Ly && ptVCT->getYright_neighbor() == -1) 
+		if (y[np_current] > Ly && ptVCT->getYright_neighbor() == MPI_PROC_NULL) 
 			BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft); 
-		if (z[np_current] < 0 && ptVCT->getZleft_neighbor() == -1)  
+		if (z[np_current] < 0 && ptVCT->getZleft_neighbor() == MPI_PROC_NULL)  
 			BCpart(&z[np_current],&v[np_current],&u[np_current],&w[np_current],Lz,vth,uth,wth,bcPfaceZright,bcPfaceZleft);
-		if (z[np_current] > Lz && ptVCT->getZright_neighbor() == -1) 
+		if (z[np_current] > Lz && ptVCT->getZright_neighbor() == MPI_PROC_NULL) 
 			BCpart(&z[np_current],&v[np_current],&u[np_current],&w[np_current],Lz,vth,uth,wth,bcPfaceZright,bcPfaceZleft);
 		// if the particle exits, apply the boundary conditions add the particle to communication buffer
 		if (x[np_current] < xstart || x[np_current] >xend){
         	// communicate if they don't belong to the domain
-			if (x[np_current] < xstart && ptVCT->getXleft_neighbor() != -1){
+			if (x[np_current] < xstart && ptVCT->getXleft_neighbor() != MPI_PROC_NULL){
 				// check if there is enough space in the buffer before putting in the particle
 				if(((npExitXleft+1)*nVar)>=buffer_size){
 					cout << "resizing the sending buffer to " << (int) (buffer_size*2) << " buffer size" << endl;
@@ -376,7 +376,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D* ptVCT){
 				// delete the particle and pack the particle array, the value of nplast changes
 				del_pack(np_current,&nplast);
 				npExitXleft++;
-        	} else if (x[np_current] > xend && ptVCT->getXright_neighbor() != -1){
+        	} else if (x[np_current] > xend && ptVCT->getXright_neighbor() != MPI_PROC_NULL){
 				// check if there is enough space in the buffer before putting in the particle
 				if(((npExitXright+1)*nVar)>=buffer_size){
 					cout << "resizing the sending buffer " << (int) (buffer_size*2) << endl; 
@@ -391,7 +391,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D* ptVCT){
 			
 		} else  if (y[np_current] < ystart || y[np_current] >yend){
         	// communicate if they don't belong to the domain
-			if (y[np_current] < ystart && ptVCT->getYleft_neighbor() != -1){
+			if (y[np_current] < ystart && ptVCT->getYleft_neighbor() != MPI_PROC_NULL){
 				// check if there is enough space in the buffer before putting in the particle
 				if(((npExitYleft+1)*nVar)>=buffer_size){
 					cout << "resizing the sending buffer " << (int) (buffer_size*2) << endl;
@@ -402,7 +402,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D* ptVCT){
 				// delete the particle and pack the particle array, the value of nplast changes
 				del_pack(np_current,&nplast);
 				npExitYleft++;
-        	} else if (y[np_current] > yend && ptVCT->getYright_neighbor() != -1){
+        	} else if (y[np_current] > yend && ptVCT->getYright_neighbor() != MPI_PROC_NULL){
 				// check if there is enough space in the buffer before putting in the particle
 				if(((npExitYright+1)*nVar)>=buffer_size){
 					cout << "resizing the sending buffer " << (int) (buffer_size*2) << endl; 
@@ -416,7 +416,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D* ptVCT){
 			}
 		} else  if (z[np_current] < zstart || z[np_current] >zend){
         	// communicate if they don't belong to the domain
-		    if (z[np_current] < zstart && ptVCT->getZleft_neighbor() != -1){
+		    if (z[np_current] < zstart && ptVCT->getZleft_neighbor() != MPI_PROC_NULL){
 				// check if there is enough space in the buffer before putting in the particle
 				if(((npExitZleft+1)*nVar)>=buffer_size){
 					cout << "resizing the sending buffer " << (int) (buffer_size*2) << endl;
@@ -428,7 +428,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D* ptVCT){
 				del_pack(np_current,&nplast);
 				
 				npExitZleft++;
-        	} else if (z[np_current] > zend && ptVCT->getZright_neighbor() != -1){
+        	} else if (z[np_current] > zend && ptVCT->getZright_neighbor() != MPI_PROC_NULL){
 				// check if there is enough space in the buffer before putting in the particle
 				if(((npExitZright+1)*nVar)>=buffer_size){
 					cout << "resizing the sending buffer " << (int) (buffer_size*2) << endl; 
@@ -641,16 +641,16 @@ int Particles3Dcomm::unbufferX(double* b1right, double* b1left, double* b2Yright
 		} else { // the particle is not in the correct domain
 		   if (b1right[nVar*np_current + 1] < ystart || b1right[nVar*np_current + 1] > yend){  // Y
         	   // communicate if they don't belong to the domain
-			   if (b1right[nVar*np_current + 1] < ystart && ptVCT->getYleft_neighbor() != -1){
+			   if (b1right[nVar*np_current + 1] < ystart && ptVCT->getYleft_neighbor() != MPI_PROC_NULL){
 				bufferYleft(b2Yleft,np_current,ptVCT); npExitYleft++;
-        	   } else if (b1right[nVar*np_current + 1] > yend && ptVCT->getYright_neighbor() != -1){
+        	   } else if (b1right[nVar*np_current + 1] > yend && ptVCT->getYright_neighbor() != MPI_PROC_NULL){
 				 bufferYright(b2Yright,np_current,ptVCT); npExitYright++;
 			   }
 		   } else  if (b1right[nVar*np_current + 2] < zstart || b1right[nVar*np_current + 2] >zend){ // Z
         	 // communicate if they don't belong to the domain
-		     if (b1right[nVar*np_current + 2] < zstart && ptVCT->getZleft_neighbor() != -1){
+		     if (b1right[nVar*np_current + 2] < zstart && ptVCT->getZleft_neighbor() != MPI_PROC_NULL){
 				bufferZleft(b2Zleft,np_current,ptVCT); npExitZleft++;
-        	 } else if (b1right[nVar*np_current + 2] > zend && ptVCT->getZright_neighbor() != -1){
+        	 } else if (b1right[nVar*np_current + 2] > zend && ptVCT->getZright_neighbor() != MPI_PROC_NULL){
 				bufferZright(b2Zright,np_current,ptVCT); npExitZright++;
 		     }
 		   } 
@@ -671,16 +671,16 @@ int Particles3Dcomm::unbufferX(double* b1right, double* b1left, double* b2Yright
 		 } else { // the particle is not in the correct domain
 		     if (b1left[nVar*np_current + 1] < ystart || b1left[nVar*np_current + 1] > yend){  // Y
         	      // communicate if they don't belong to the domain
-			      if (b1left[nVar*np_current + 1] < ystart && ptVCT->getYleft_neighbor() != -1){
+			      if (b1left[nVar*np_current + 1] < ystart && ptVCT->getYleft_neighbor() != MPI_PROC_NULL){
 				         bufferYleft(b2Yleft,np_current,ptVCT); npExitYleft++;
-        	      } else if (b1left[nVar*np_current + 1] > yend && ptVCT->getYright_neighbor() != -1){
+        	      } else if (b1left[nVar*np_current + 1] > yend && ptVCT->getYright_neighbor() != MPI_PROC_NULL){
 				         bufferYright(b2Yright,np_current,ptVCT); npExitYright++;
 			      }
 			 } else  if (b1right[nVar*np_current + 2] < zstart || b1right[nVar*np_current + 2] >zend){ // Z
         	      // communicate if they don't belong to the domain
-		          if (b1left[nVar*np_current + 2] < zstart && ptVCT->getZleft_neighbor() != -1){
+		          if (b1left[nVar*np_current + 2] < zstart && ptVCT->getZleft_neighbor() != MPI_PROC_NULL){
 				      bufferZleft(b2Zleft,np_current,ptVCT); npExitZleft++;
-        	      } else if (b1left[nVar*np_current + 2] > zend && ptVCT->getZright_neighbor() != -1){
+        	      } else if (b1left[nVar*np_current + 2] > zend && ptVCT->getZright_neighbor() != MPI_PROC_NULL){
 				      bufferZright(b2Zright,np_current,ptVCT); npExitZright++;
 		          }
 		     }
@@ -706,16 +706,16 @@ int Particles3Dcomm::unbufferY(double* b1right, double* b1left, double* b2Xright
 		} else { // the particle is not in the correct domain
 		   if (b1right[nVar*np_current] < xstart || b1right[nVar*np_current] > xend){  // X
         	   // communicate if they don't belong to the domain
-			   if (b1right[nVar*np_current] < xstart && ptVCT->getXleft_neighbor() != -1){
+			   if (b1right[nVar*np_current] < xstart && ptVCT->getXleft_neighbor() != MPI_PROC_NULL){
 				 bufferXleft(b2Xleft,np_current,ptVCT); npExitXleft++;
-        	   } else if (b1right[nVar*np_current] > xend && ptVCT->getXright_neighbor() != -1){
+        	   } else if (b1right[nVar*np_current] > xend && ptVCT->getXright_neighbor() != MPI_PROC_NULL){
 				 bufferXright(b2Xright,np_current,ptVCT); npExitXright++;
 			   }
 		 } else  if (b1right[nVar*np_current + 2] < zstart || b1right[nVar*np_current + 2] > zend){ // Z
         	 // communicate if they don't belong to the domain
-		     if (b1right[nVar*np_current + 2] < zstart && ptVCT->getZleft_neighbor() != -1){
+		     if (b1right[nVar*np_current + 2] < zstart && ptVCT->getZleft_neighbor() != MPI_PROC_NULL){
 				bufferZleft(b2Zleft,np_current,ptVCT); npExitZleft++;
-        	 } else if (b1right[nVar*np_current + 2] > zend && ptVCT->getZright_neighbor() != -1){
+        	 } else if (b1right[nVar*np_current + 2] > zend && ptVCT->getZright_neighbor() != MPI_PROC_NULL){
 				bufferZright(b2Zright,np_current,ptVCT); npExitZright++;
 		     }
 		   } 
@@ -736,16 +736,16 @@ int Particles3Dcomm::unbufferY(double* b1right, double* b1left, double* b2Xright
 		 } else { // the particle is not in the correct domain
 		   if (b1left[nVar*np_current] < xstart || b1left[nVar*np_current] > xend){  // X
         	   // communicate if they don't belong to the domain
-			   if (b1left[nVar*np_current] < xstart && ptVCT->getXleft_neighbor() != -1){
+			   if (b1left[nVar*np_current] < xstart && ptVCT->getXleft_neighbor() != MPI_PROC_NULL){
 				 bufferXleft(b2Xleft,np_current,ptVCT); npExitXleft++;
-        	   } else if (b1left[nVar*np_current] > yend && ptVCT->getXright_neighbor() != -1){
+        	   } else if (b1left[nVar*np_current] > yend && ptVCT->getXright_neighbor() != MPI_PROC_NULL){
 				 bufferXright(b2Xright,np_current,ptVCT); npExitXright++;
 			   }
 		   } else  if (b1right[nVar*np_current + 2] < zstart || b1right[nVar*np_current + 2] >zend){ // Z
         	 // communicate if they don't belong to the domain
-		     if (b1left[nVar*np_current + 2] < zstart && ptVCT->getZleft_neighbor() != -1){
+		     if (b1left[nVar*np_current + 2] < zstart && ptVCT->getZleft_neighbor() != MPI_PROC_NULL){
 				bufferZleft(b2Zleft,np_current,ptVCT); npExitZleft++;
-        	 } else if (b1left[nVar*np_current + 2] > zend && ptVCT->getZright_neighbor() != -1){
+        	 } else if (b1left[nVar*np_current + 2] > zend && ptVCT->getZright_neighbor() != MPI_PROC_NULL){
 				bufferZright(b2Zright,np_current,ptVCT); npExitZright++;
 		     }
 		   } 
@@ -773,16 +773,16 @@ int Particles3Dcomm::unbufferZ(double* b1right, double* b1left, double* b2Xright
 		} else { // the particle is not in the correct domain
 		   if (b1right[nVar*np_current] < xstart || b1right[nVar*np_current] > xend){  // X
         	   // communicate if they don't belong to the domain
-			   if (b1right[nVar*np_current] < xstart && ptVCT->getXleft_neighbor() != -1){
+			   if (b1right[nVar*np_current] < xstart && ptVCT->getXleft_neighbor() != MPI_PROC_NULL){
 				 bufferXleft(b2Xleft,np_current,ptVCT); npExitXleft++;
-        	   } else if (b1right[nVar*np_current] > xend && ptVCT->getXright_neighbor() != -1){
+        	   } else if (b1right[nVar*np_current] > xend && ptVCT->getXright_neighbor() != MPI_PROC_NULL){
 				 bufferXright(b2Xright,np_current,ptVCT); npExitXright++;
 			   }
 		   } else  if (b1right[nVar*np_current + 1] < ystart || b1right[nVar*np_current + 1] > yend){ // Y
         	 // communicate if they don't belong to the domain
-		     if (b1right[nVar*np_current + 1] < ystart && ptVCT->getYleft_neighbor() != -1){
+		     if (b1right[nVar*np_current + 1] < ystart && ptVCT->getYleft_neighbor() != MPI_PROC_NULL){
 				bufferYleft(b2Yleft,np_current,ptVCT); npExitYleft++;
-        	 } else if (b1right[nVar*np_current + 1] > zend && ptVCT->getYright_neighbor() != -1){
+        	 } else if (b1right[nVar*np_current + 1] > zend && ptVCT->getYright_neighbor() != MPI_PROC_NULL){
 				bufferYright(b2Yright,np_current,ptVCT); npExitYright++;
 		     }
 		   } 
@@ -803,16 +803,16 @@ int Particles3Dcomm::unbufferZ(double* b1right, double* b1left, double* b2Xright
 		 } else { // the particle is not in the correct domain
 		   if (b1left[nVar*np_current] < xstart || b1left[nVar*np_current] > xend){  // X
         	   // communicate if they don't belong to the domain
-			   if (b1left[nVar*np_current] < xstart && ptVCT->getXleft_neighbor() != -1){
+			   if (b1left[nVar*np_current] < xstart && ptVCT->getXleft_neighbor() != MPI_PROC_NULL){
 				 bufferXleft(b2Xleft,np_current,ptVCT); npExitXleft++;
-        	   } else if (b1left[nVar*np_current] > yend && ptVCT->getXright_neighbor() != -1){
+        	   } else if (b1left[nVar*np_current] > yend && ptVCT->getXright_neighbor() != MPI_PROC_NULL){
 				 bufferXright(b2Xright,np_current,ptVCT); npExitXright++;
 			   }
 		   } else  if (b1right[nVar*np_current + 1] < ystart || b1right[nVar*np_current + 1] > yend){ // Y
         	 // communicate if they don't belong to the domain
-		     if (b1left[nVar*np_current + 1] < ystart && ptVCT->getYleft_neighbor() != -1){
+		     if (b1left[nVar*np_current + 1] < ystart && ptVCT->getYleft_neighbor() != MPI_PROC_NULL){
 				bufferYleft(b2Yleft,np_current,ptVCT); npExitYleft++;
-        	 } else if (b1left[nVar*np_current + 1] > zend && ptVCT->getYright_neighbor() != -1){
+        	 } else if (b1left[nVar*np_current + 1] > zend && ptVCT->getYright_neighbor() != MPI_PROC_NULL){
 				bufferYright(b2Yright,np_current,ptVCT); npExitYright++;
 		     }
 		   } 
