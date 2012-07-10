@@ -16,7 +16,8 @@ Base exception class
 #include <algorithm>
 
 #include "hdf5.h"
-#include "H5LT.h"
+//#include "H5LT.h"  // HDF 1.6
+#include "hdf5_hl.h" // HDF 1.8
 
 namespace PSK {
 
@@ -127,9 +128,10 @@ void HDF5OutputAdaptor::get_dataset_context( const std::string& name,
 /* HDF5 error handling 
    code from http://hdf.ncsa.uiuc.edu/HDF5/doc/Errors.html */
 /* Save old error handler */
-    herr_t (*old_func)(void*);
+    //herr_t (*old_func)(void*); // HDF 1.6
+    H5E_auto_t old_func;  // HDF 1.8.8
     void *old_client_data;
-    H5Eget_auto(&old_func, &old_client_data);
+    H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8
 
     hid_array[0] = _hdf5_file_id ;
 
@@ -141,17 +143,18 @@ void HDF5OutputAdaptor::get_dataset_context( const std::string& name,
       dataset_name = name_components[ncompx-1];
 
 /* Turn off error handling */
-      H5Eset_auto(NULL, NULL);
-      hid_array[i+1] = H5Gopen( hid_array[i], name_components[i].c_str() );
+      //H5Eset_auto(NULL, NULL); // HDF 1.6
+      H5Eset_auto(H5E_DEFAULT, 0, 0);  // HDF 1.8
+      hid_array[i+1] = H5Gopen(hid_array[i], name_components[i].c_str(), H5P_DEFAULT);
 /* Restore previous error handler */
-      H5Eset_auto(old_func, old_client_data);
+      H5Eset_auto(H5E_DEFAULT, old_func, old_client_data); // HDF 1.8
 
       if( hid_array[i+1] < 0 )
       {
 
 //std::cout << "group open failed \n" ;
     
-        hid_array[i+1] = H5Gcreate( hid_array[i], name_components[i].c_str(), 0 );
+        hid_array[i+1] = H5Gcreate( hid_array[i], name_components[i].c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT); // HDF 1.8
 
         if( hid_array[i+1] < 0 )
         {
@@ -246,17 +249,19 @@ void HDF5OutputAdaptor::open_append( const std::string& name )
 /* HDF5 error handling 
    code from http://hdf.ncsa.uiuc.edu/HDF5/doc/Errors.html */
 /* Save old error handler */
-    herr_t (*old_func)(void*);
+    //herr_t (*old_func)(void*); //HDF 1.6
+    H5E_auto_t old_func;  // HDF 1.8.8
     void *old_client_data;
-    H5Eget_auto(&old_func, &old_client_data);
+    H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data); // HDF 1.8
 
 
 /* Turn off error handling */
-      H5Eset_auto(NULL, NULL);
+    //H5Eset_auto(NULL, NULL); // HDF 1.6
+    H5Eset_auto(H5E_DEFAULT, 0, 0);
    _hdf5_file_id = H5Fcreate( name.c_str(), H5F_ACC_EXCL, H5P_DEFAULT, H5P_DEFAULT );
 
 /* Restore previous error handler */
-      H5Eset_auto(old_func, old_client_data);
+      H5Eset_auto(H5E_DEFAULT, old_func, old_client_data); // HDF 1.8
 
   if( _hdf5_file_id <= 0 ){
 
@@ -305,7 +310,7 @@ try
   std::string ptag = purify_object_name( tag );
   
   std::vector<hid_t> hid_array;
-  std::string dataset_name;
+  std::string dataset_name;  
 
   get_dataset_context( tag, hid_array, dataset_name );
   
@@ -315,13 +320,14 @@ try
   herr_t  hdf5err = H5LTfind_dataset ( hid_array[hid_array.size()-1],
                                          dataset_name.c_str());
   if (hdf5err<1)
-  herr_t hdf5err = H5LTmake_dataset_int( hid_array[hid_array.size()-1],
+    herr_t hdf5err = H5LTmake_dataset_int( hid_array[hid_array.size()-1],
                                          dataset_name.c_str(),
                                          1, hdf5dims, &i_value );
   else{
-  hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1],dataset_name.c_str()  );
-  herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &i_value);
-  hdf5err = H5Dclose(dataset_id  );}
+    hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+    herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &i_value);
+    hdf5err = H5Dclose(dataset_id);
+  }
 
   if( hdf5err < 0 )
   {
@@ -334,7 +340,7 @@ try
 // close groups, if any, but don't try to close the file id at [0]
   for( int i = hid_array.size()-1; i>0; --i )
     hdf5err = H5Gclose( hid_array[i] );
-  
+    
   delete[] hdf5dims;
 
 } catch( PSK::Exception& e )
@@ -351,7 +357,7 @@ try
   std::string ptag = purify_object_name( tag );
   
   std::vector<hid_t> hid_array;
-  std::string dataset_name;
+  std::string dataset_name;  
 
   get_dataset_context( tag, hid_array, dataset_name );
   
@@ -365,9 +371,10 @@ try
                                          dataset_name.c_str(),
                                          1, hdf5dims, &i_value );
   else{
-  hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1],dataset_name.c_str()  );
-  herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &i_value);
-  hdf5err = H5Dclose(dataset_id  );}
+    hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1],dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+    herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &i_value);
+    hdf5err = H5Dclose(dataset_id);
+  }
 
   if( hdf5err < 0 )
   {
@@ -380,7 +387,7 @@ try
 // close groups, if any, but don't try to close the file id at [0]
   for( int i = hid_array.size()-1; i>0; --i )
     hdf5err = H5Gclose( hid_array[i] );
-  
+
   delete[] hdf5dims;
 
 } catch( PSK::Exception& e )
@@ -422,9 +429,10 @@ try
                                          dataset_name.c_str(),
                                          dimens.size(), hdf5dims, i_array );
   else{
-  hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1],dataset_name.c_str()  );
-  herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, i_array);
-  hdf5err = H5Dclose(dataset_id  );}
+    hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1],dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+    herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, i_array);
+    hdf5err = H5Dclose(dataset_id  );
+  }
 
   if( hdf5err < 0 )
   {
@@ -733,9 +741,10 @@ try
                                          dataset_name.c_str(),
                                          1, hdf5dims, &d_value );
   else{
-  hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1],dataset_name.c_str()  );
-  herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &d_value);
-  hdf5err = H5Dclose(dataset_id  );}
+    hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1],dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+    herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &d_value);
+    hdf5err = H5Dclose(dataset_id  );
+  }
 
   if( hdf5err < 0 )
   {
@@ -789,9 +798,10 @@ try
                                          dataset_name.c_str(),
                                          dimens.size(), hdf5dims, d_array );
   else{
-  hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1],dataset_name.c_str()  );
-  hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, d_array);
-  hdf5err = H5Dclose(dataset_id  );}
+    hid_t dataset_id=H5Dopen(hid_array[hid_array.size()-1],dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+    hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, d_array);
+    hdf5err = H5Dclose(dataset_id  );
+  }
 
 
   if( hdf5err < 0 )

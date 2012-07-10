@@ -1,12 +1,12 @@
 CPP = mpicxx
 OPTFLAGS=  -O2 -DMPICH_IGNORE_CXX_SEEK -lz
 # include files
-INC_HDF5 = -I/ccc/cont005/home/ra0747/olshevkv/hdf5-1.6.5/install/include
+INC_HDF5 = -I${HDF5_INC_DIR}
 # libs
-LIB_HDF5 = -L/ccc/cont005/home/ra0747/olshevkv/hdf5-1.6.5/install/lib
+LIB_HDF5 = -L${HDF5_LIB_DIR}
 
-HDF5LIBS = -L/ccc/cont005/home/ra0747/olshevkv/hdf5-1.6.5/install/lib/ -lhdf5 -L/ccc/cont005/home/ra0747/olshevkv/hdf5-1.6.5/install/lib -lhdf5_hl 
-MPELIB = -L/opt/mpi/bullxmpi/1.1.14.3/lib/
+HDF5LIBS = -L${HDF5_LIB_DIR} -lhdf5 -L${HDF5_LIB_DIR} -lhdf5_hl 
+MPELIB = -L${MPI_ROOT/lib/}
 
 
 ipic3D: iPIC3D.cpp Particles3Dcomm.o Particles3D.o ConfigFile.o

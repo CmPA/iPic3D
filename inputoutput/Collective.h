@@ -608,129 +608,129 @@ inline int Collective::ReadRestart(string inputfile){
 		return -1;}
 	
 	// read c
-    dataset_id = H5Dopen(file_id, "/collective/c");
+    dataset_id = H5Dopen(file_id, "/collective/c", H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&c);
     status = H5Dclose(dataset_id);
 	
 	// read Lx	
-	dataset_id = H5Dopen(file_id, "/collective/Lx");
+	dataset_id = H5Dopen(file_id, "/collective/Lx", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&Lx);
 	status = H5Dclose(dataset_id);
 	// read Ly	
-	dataset_id = H5Dopen(file_id, "/collective/Ly");
+	dataset_id = H5Dopen(file_id, "/collective/Ly", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&Ly);
 	status = H5Dclose(dataset_id);
 	// read Lz	
-	dataset_id = H5Dopen(file_id, "/collective/Lz");
+	dataset_id = H5Dopen(file_id, "/collective/Lz", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&Lz);
 	status = H5Dclose(dataset_id);
 	// read x_center
-	dataset_id = H5Dopen(file_id, "/collective/x_center");
+	dataset_id = H5Dopen(file_id, "/collective/x_center", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&x_center);
 	status = H5Dclose(dataset_id);
 	// read y_center
-	dataset_id = H5Dopen(file_id, "/collective/y_center");
+	dataset_id = H5Dopen(file_id, "/collective/y_center", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&y_center);
 	status = H5Dclose(dataset_id);
 	// read z_center
-	dataset_id = H5Dopen(file_id, "/collective/z_center");
+	dataset_id = H5Dopen(file_id, "/collective/z_center", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&z_center);
 	status = H5Dclose(dataset_id);
 	// read L_square
-	dataset_id = H5Dopen(file_id, "/collective/L_square");
+	dataset_id = H5Dopen(file_id, "/collective/L_square", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&L_square);
 	status = H5Dclose(dataset_id);
 	// read nxc
-	dataset_id = H5Dopen(file_id, "/collective/Nxc");
+	dataset_id = H5Dopen(file_id, "/collective/Nxc", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&nxc);
 	status = H5Dclose(dataset_id);
 	// read nyc 	
-	dataset_id = H5Dopen(file_id, "/collective/Nyc");
+	dataset_id = H5Dopen(file_id, "/collective/Nyc", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&nyc);
 	status = H5Dclose(dataset_id);
 	// read nyc 	
-	dataset_id = H5Dopen(file_id, "/collective/Nzc");
+	dataset_id = H5Dopen(file_id, "/collective/Nzc", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&nzc);
 	status = H5Dclose(dataset_id);
 	// read ns
-	dataset_id = H5Dopen(file_id, "/collective/Ns");
+	dataset_id = H5Dopen(file_id, "/collective/Ns", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&ns);
 	status = H5Dclose(dataset_id);
     
 	
 	/** Boundary condition information */
 	// read EMfaceXleft
-	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceXleft");
+	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceXleft", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcEMfaceXleft);
 	status = H5Dclose(dataset_id);
 	// read EMfaceXright
-	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceXright");
+	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceXright", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcEMfaceXright);
 	status = H5Dclose(dataset_id);
 	// read EMfaceYleft
-	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceYleft");
+	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceYleft", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcEMfaceYleft);
 	status = H5Dclose(dataset_id);
 	// read EMfaceYright
-	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceYright");
+	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceYright", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcEMfaceYright);
 	status = H5Dclose(dataset_id);
 	// read EMfaceZleft
-	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceZleft");
+	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceZleft", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcEMfaceZleft);
 	status = H5Dclose(dataset_id);
 	// read EMfaceZright
-	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceZright");
+	dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceZright", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcEMfaceZright);
 	status = H5Dclose(dataset_id);
 	
 	// read PHIfaceXleft
-	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceXleft");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceXleft", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPHIfaceXleft);
 	status = H5Dclose(dataset_id);
 	// read PHIfaceXright
-	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceXright");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceXright", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPHIfaceXright);
 	status = H5Dclose(dataset_id);
 	// read PHIfaceYleft
-	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceYleft");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceYleft", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPHIfaceYleft);
 	status = H5Dclose(dataset_id);
 	// read PHIfaceYright
-	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceYright");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceYright", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPHIfaceYright);
 	status = H5Dclose(dataset_id);
 	// read PHIfaceZleft
-	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceZleft");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceZleft", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPHIfaceZleft);
 	status = H5Dclose(dataset_id);
 	// read PHIfaceZright
-	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceZright");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PHIfaceZright", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPHIfaceZright);
 	status = H5Dclose(dataset_id);
 	
 	// read PfaceXleft
-	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceXleft");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceXleft", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPfaceXleft);
 	status = H5Dclose(dataset_id);
 	// read PfaceXright
-	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceXright");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceXright", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPfaceXright);
 	status = H5Dclose(dataset_id);
 	// read PfaceYleft
-	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceYleft");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceYleft", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPfaceYleft);
 	status = H5Dclose(dataset_id);
 	// read PfaceYright
-	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceYright");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceYright", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPfaceYright);
 	status = H5Dclose(dataset_id);
 	// read PfaceZleft
-	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceZleft");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceZleft", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPfaceZleft);
 	status = H5Dclose(dataset_id);
 	// read PfaceZright
-	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceZright");
+	dataset_id = H5Dopen(file_id, "/collective/bc/PfaceZright", H5P_DEFAULT); // HDF 1.8.8
 	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&bcPfaceZright);
 	status = H5Dclose(dataset_id);
     // allocate fields depending on species
@@ -754,25 +754,25 @@ inline int Collective::ReadRestart(string inputfile){
 	}
     // npcelx for different species
 	for(int i=0;i < ns;i++){
-		dataset_id = H5Dopen(file_id, (name_species[i]+"Npcelx").c_str());
+		dataset_id = H5Dopen(file_id, (name_species[i]+"Npcelx").c_str(), H5P_DEFAULT);  // HDF 1.8.8
 		status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&npcelx[i]);
 		status = H5Dclose(dataset_id);
 	}
 	// npcely for different species
 	for(int i=0;i < ns;i++){
-		dataset_id = H5Dopen(file_id, (name_species[i]+"Npcely").c_str());
+		dataset_id = H5Dopen(file_id, (name_species[i]+"Npcely").c_str(), H5P_DEFAULT); // HDF 1.8.8
 		status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&npcely[i]);
 		status = H5Dclose(dataset_id);
 	}
 	// npcelz for different species
 	for(int i=0;i < ns;i++){
-		dataset_id = H5Dopen(file_id, (name_species[i]+"Npcelz").c_str());
+		dataset_id = H5Dopen(file_id, (name_species[i]+"Npcelz").c_str(), H5P_DEFAULT);  // HDF 1.8.8
 		status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&npcelz[i]);
 		status = H5Dclose(dataset_id);
 	}
 	// qom for different species
 	for(int i=0;i < ns;i++){
-		dataset_id = H5Dopen(file_id, (name_species[i]+"qom").c_str());
+		dataset_id = H5Dopen(file_id, (name_species[i]+"qom").c_str(), H5P_DEFAULT);  // HDF 1.8.8
 		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&qom[i]);
 		status = H5Dclose(dataset_id);
 	}
@@ -797,15 +797,15 @@ inline int Collective::ReadRestart(string inputfile){
 	if (RestartDirName == SaveDirName){
 		restart_status=2;
 		// read dt
-		dataset_id = H5Dopen(file_id, "/collective/Dt");
+		dataset_id = H5Dopen(file_id, "/collective/Dt", H5P_DEFAULT);  // HDF 1.8.8
 		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&dt);
 		status = H5Dclose(dataset_id);
 		// read th	
-		dataset_id = H5Dopen(file_id, "/collective/Th");
+		dataset_id = H5Dopen(file_id, "/collective/Th", H5P_DEFAULT);  // HDF 1.8.8
 		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&th);
 		status = H5Dclose(dataset_id);
 		// read Smooth
-		dataset_id = H5Dopen(file_id, "/collective/Smooth");
+		dataset_id = H5Dopen(file_id, "/collective/Smooth", H5P_DEFAULT);  // HDF 1.8.8
 		status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT,&Smooth);
 		status = H5Dclose(dataset_id);
 	}
@@ -820,7 +820,7 @@ inline int Collective::ReadRestart(string inputfile){
         cout << "couldn't open file: " << inputfile << endl;\
 		return -1;}
 	
-    dataset_id = H5Dopen(file_id, "/last_cycle");
+    dataset_id = H5Dopen(file_id, "/last_cycle", H5P_DEFAULT);  // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&last_cycle);
     status = H5Dclose(dataset_id);
     status = H5Fclose(file_id);
