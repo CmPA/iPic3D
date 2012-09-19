@@ -1,14 +1,14 @@
-DYLD_LIBRARY_PATH = /opt/hdf5-1.6.8/lib
+LD_LIBRARY_PATH=/home/alexander/lib/hdf5-1.8.9/lib/:$LD_LIBRARY_PATH
 
-CPP = /opt/mpich2-trunk-r9185/bin/mpicxx
+CPP = mpicxx
 OPTFLAGS=  -O2 -DMPICH_IGNORE_CXX_SEEK
 # include files
-INC_HDF5 = -I/opt/hdf5-1.6.8/include
+INC_HDF5 = -I/home/alexander/lib/hdf5-1.8.9/include
 # libs
-LIB_HDF5 = -L/opt/hdf5-1.6.8/lib
+LIB_HDF5 = -L/home/alexander/lib/hdf5-1.8.9/lib
 
-HDF5LIBS = -L/opt/hdf5-1.6.8/lib/ -lhdf5 -L/opt/hdf5-1.6.8/lib/ -lhdf5_hl 
-MPELIB = -L/opt/mpich2-trunk-r9185/lib/ -lmpe
+HDF5LIBS = -L/home/alexander/lib/hdf5-1.8.9/lib/ -lhdf5 -L/home/alexander/lib/hdf5-1.8.9/lib/ -lhdf5_hl 
+MPELIB = 
 
 
 ipic3D: iPIC3D.cpp Particles3Dcomm.o Particles3D.o ConfigFile.o
