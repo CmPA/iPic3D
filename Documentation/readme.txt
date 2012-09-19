@@ -1,8 +1,8 @@
 How-to install and run iPic3D on your (local) Linux machine.
 Doesn't need sudo or root permissions, everything could be installed locally.
 
-1. Install HDF5 library. The version should not be higher than 1.6.8
-http://www.hdfgroup.org/ftp/HDF5/releases/hdf5-1.6/
+1. Install HDF5 library. The current version working properly with iPIC3D is 1.8.9
+http://www.hdfgroup.org/ftp/HDF5/releases/
 
 $ cd <top HDF5 source code directory>
 $ ./configure --prefix=<location for HDF5 software> 
@@ -11,15 +11,19 @@ $ make check
 $ make install 
 
 
-2. Install the MPICH2 that supports -lmpe library. For example, this one:
+2. Install the MPICH2 (or OpenMPI) that supports -lmpe library. For example, this one:
 http://www.mcs.anl.gov/research/projects/mpich2/downloads/tarballs/1.3.2p1/mpich2-1.3.2p1.tar.gz
 During the installation of MPICH follow all the instructions in the README file.
+
+Newer versions of OpenMPI should be fine by default in a linux distro.
 
 3. Set environment variables:
  
 $ PATH=mpich2_install_path/bin/:$PATH
 $ PATH=hdf5_install_path/lib/:$PATH
 $ LD_LIBRARY_PATH=hdf5_install_path/lib/:$LD_LIBRARY_PATH
+
+Note: these paths can also go at the beginning of the makefile.
 
 where mpich2_install_path is the path to the installed MPICH2, and hdf5_install_path is the path to the installed HDF5.
 
@@ -48,4 +52,4 @@ $ make
 
 6. Running iPic3D
 
-$ mpiexec -n 4 ./iPic3D inputfiles/GEM.inp
+$ mpiexec (or mpirun) -n 4 ./iPic3D inputfiles/GEM.inp
