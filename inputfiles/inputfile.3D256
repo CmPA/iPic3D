@@ -1,0 +1,128 @@
+# Input file for iPic3D 
+# Reconnection in big box
+# G. Lapenta
+
+# Directories (should be without "/" at the end)
+SaveDirName = data
+RestartDirName = data
+
+# set the maximum number of particles allocated  
+NpMaxNpRatio = 6.0
+
+# Magnetic field amplitudes. Only B0x should matter so far.
+B0x = 0.0097
+B0y = 0.0
+B0z = 0.0
+delta = 0.5         # Don't know what delta is
+
+# Time
+dt = .125             # Time step  
+ncycles = 4005		# Number of cycles
+th = 1.0            # Decentering parameter Theta
+c = 1.0             # Light speed 
+
+# Smooth
+Smooth = 0.5        # Smoothing value (5-points stencil)
+
+# Box dimensions
+Lx =   40.0          # Lx = simulation box length - x direction   
+Ly =   30.0         # Ly = simulation box length - y direction
+Lz =   10.0         # Lz = simulation box length - z direction   
+
+# The *_center and L_square parameters were introduced for BEAM
+# You can use it in your init* methods for various purposes
+x_center =   1.     #   
+y_center =   1.     # 
+z_center =   1.     #   
+L_square =   1.     # 
+
+nxc =  512           # nxc = number of cells - x direction        
+nyc =  384         # nyc = number of cells - y direction
+nzc =  128          # nzc = number of cells - z direction        
+
+# %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+#    ns = number of species
+#    0 = electrons
+#    1 = protons
+#    2,3,4,5,... = ions
+ns = 4 
+# Initial density (make sure you are neutral)
+rhoINIT =  0.02   0.02   0.2   0.2
+# TrackParticleID[species] = 1=true, 0=false --> Assign ID to particles 
+TrackParticleID = 0    0    0    0
+# npcelx = number of particles per cell - Direction X 
+npcelx =   1    1    3    3
+# npcely = number of particles per cell - Direction Y 
+npcely =   1    1    5    5
+# npcelz = number of particles per cell - Direction Z 
+npcelz =   1    1    5    5
+# qom = charge to mass ratio for different species 
+qom =  -256.0	1.0	-256.0	1.0
+
+# Assume Te/Ti=0.5, as in magnetosphere
+# uth = thermal velocity for different species - Direction X  
+uth  = 0.045	0.0063	0.045	0.0063
+# vth = thermal velocity for different species - Direction Y 
+vth  = 0.045	0.0063	0.045	0.0063
+# wth = thermal velocity for different species - Direction Z 
+wth  = 0.045	0.0063	0.045	0.0063
+# u0 = drift velocity   - Direction X    
+u0 = 0.0	0.0  	0.0	0.0
+# v0 = drift velocity   - Direction Y    
+v0 = 0.0	0.0  	0.0	0.0
+# w0 = drift velocity   - Direction Z    
+w0 = 0.00325	-0.01624   0.0	0.0
+
+
+# &&&&&&&&&&&& boundary conditions &&&&&&&&&&&&&&&
+# PHI Electrostatic Potential     
+# 0,1 = Dirichilet boundary condition ;     
+# 2   = Neumann boundary condition
+# Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic
+    bcPHIfaceXright = 1
+    bcPHIfaceXleft  = 1
+    bcPHIfaceYright = 1
+    bcPHIfaceYleft  = 1
+    bcPHIfaceZright = 1
+    bcPHIfaceZleft  = 1
+    
+# EM field boundary condition
+# 0 = perfect conductor
+# 1 = magnetic mirror
+# Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic
+    bcEMfaceXright = 0
+    bcEMfaceXleft =  0
+    bcEMfaceYright = 0
+    bcEMfaceYleft =  0
+    bcEMfaceZright = 0
+    bcEMfaceZleft =  0
+    
+# Particles Boundary condition
+# 0 = exit
+# 1 = perfect mirror
+# 2 = riemission
+# Caveat: if your processor topology is set to be periodic in a direction, automatically the boundary condition in that direction will be periodic
+    bcPfaceXright = 1
+    bcPfaceXleft =  1
+    bcPfaceYright = 1
+    bcPfaceYleft =  1
+    bcPfaceZright = 1
+    bcPfaceZleft =  1
+
+#  print to video results 
+    verbose = 1
+# velocity of the injection from the wall
+    Vinj= 0.0
+
+# CG solver stopping criterium tolerance
+    CGtol = 1E-3
+# GMRES solver stopping criterium tolerance
+    GMREStol = 1E-3
+# mover predictor corrector iteration
+    NiterMover = 3
+# Output for field
+   FieldOutputCycle = 500
+# Output for particles if 1 it doesnt save particles data
+   ParticlesOutputCycle = 1
+# restart cycle
+   RestartOutputCycle = 2000
