@@ -184,7 +184,7 @@ for (register int itr=0; itr<max_iter; itr++){
    	delArr(V,xkrylovlen);
       return ;
       }
-    if (vct->getCartesian_rank() ==0 & GMRESVERBOSE)
+    if (vct->getCartesian_rank() ==0 && GMRESVERBOSE)
     cout << "Restart: " << itr <<" error: "<<initial_error / rho_tol * tol << endl;
 
     }

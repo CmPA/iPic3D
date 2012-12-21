@@ -6,15 +6,23 @@ Units in iPic3D
 Everything is normalized to ion plasma parameters.
 So that in the input file Lx, Ly, Lz are in units of ion skin depth:
 
-L == d_i.
+[L] == d_i.
 
 The time unit is reversed ion plasma frequency:
 
-T == 1 / f_{p,i}.
+[T] == 1 / f_{p,i}.
 
 Hence, the light speed is unity:
 
 c == 1.
+
+Charge is normalized to e:
+
+[e] == 1.
+
+Energy:
+
+[Energy] = m_i * c^2
 ---------------------------------------------------------------------------------------------------
 
 
@@ -31,10 +39,15 @@ p_{mag} = B^2 / (8*pi)
 
 For those who forget, I remind that
 
-\beta = p_{gas} / p_{mag}.
+\{beta} = p_{gas} / p_{mag}.
 ---------------------------------------------------------------------------------------------------
 
 
 3) Magnetic permittivity (permeability) of vacuum
 
 \mu_0 = 1.
+---------------------------------------------------------------------------------------------------
+
+4) Alfven speed equals to the B0 in the inputfile
+
+v_A = B_0
