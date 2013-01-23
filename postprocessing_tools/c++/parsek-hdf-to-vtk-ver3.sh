@@ -107,11 +107,14 @@ Input_HDF_folder="/shared/gianni/tred47"           # folder where HDF files resi
 Output_VTK_folder="/shared/gianni/tred47/vtk-data" # folder where VTK files will be dumped
 
 # compiler and library options and library path locations
-INCLUDE_HDF5_PATH="-I${HDF5_INC_DIR}/"
-LIBRARY_HDF5_PATH="-L${HDF5_LIB_DIR}/"
-HDF5_LIBRARY="${LIBRARY_HDF5_PATH} -lhdf5 ${LIBRARY_HDF5_PATH} -lhdf5_hl"
+INCLUDE_HDF5_PATH="${HDF5_INC_DIR}/"
+LIBRARY_HDF5_PATH="${HDF5_LIB_DIR}/"
+HDF5_LIBRARY="-L${LIBRARY_HDF5_PATH} -lhdf5 -L${LIBRARY_HDF5_PATH} -lhdf5_hl"
 CPP="g++"
 OPTFLAGS="-O2"
+
+# next line may be necessary for the HDF5 libs to work properly - if not, it does not hurt
+LD_LIBRARY_PATH=${LIBRARY_HDF5_PATH}:$LD_LIBRARY_PATH
 
 # HDF library version compatibility
 export HDF5_DISABLE_VERSION_CHECK=2 # use this line if HDF5 libraries are newer than 1.6.5 - the check can be also set to 1.
@@ -275,8 +278,8 @@ fi
 
 # clean up the old makefile if it exists and create a new one
 
-INC_HDF5="${INCLUDE_HDF5_PATH}"
-LIB_HDF5="${LIBRARY_HDF5_PATH}"
+INC_HDF5="-I${INCLUDE_HDF5_PATH}"
+LIB_HDF5="-L${LIBRARY_HDF5_PATH}"
 HDF5LIBS="${HDF5_LIBRARY}"
 
 if [ -e makefile.conv ]; then
