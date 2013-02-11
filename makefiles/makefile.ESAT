@@ -3,11 +3,11 @@
 CPP = mpicxx
 OPTFLAGS=  -O2 -DMPICH_IGNORE_CXX_SEEK
 # include files
-INC_HDF5 = -I/users/cpa/volshevs/local/hdf5/include
+INC_HDF5 = -I/users/cpa/volshevs/local/hdf5-1.8.8/install/include
 # libs
-LIB_HDF5 = -L/users/cpa/volshevs/local/hdf5/lib
+LIB_HDF5 = -L/users/cpa/volshevs/local/hdf5-1.8.8/install/lib
 
-HDF5LIBS = -L/users/cpa/volshevs/local/hdf5/lib/ -lhdf5 -L/users/cpa/volshevs/local/hdf5/lib/ -lhdf5_hl 
+HDF5LIBS = -L/users/cpa/volshevs/local/hdf5-1.8.8/install/lib/ -lhdf5 -L/users/cpa/volshevs/local/hdf5-1.8.8/install/ -lhdf5_hl 
 MPELIB = -L/users/cpa/volshevs/local/mpich2-install/lib/ -lmpe
 
 
