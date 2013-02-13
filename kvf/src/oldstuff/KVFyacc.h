@@ -26,24 +26,24 @@
 /* Tokens.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
-   /* Put the tokens into the symbol table, so that GDB and other debuggers
-      know about them.  */
-   enum yytokentype {
-     T_CHARACTER_LITERAL = 258,
-     T_INTEGER_LITERAL = 259,
-     T_FLOATING_PT_LITERAL = 260,
-     T_STRING_LITERAL = 261,
-     T_IDENTIFIER = 262,
-     T_LEFT_CURLY_BRACKET = 263,
-     T_LEFT_PARANTHESIS = 264,
-     T_LEFT_SQUARE_BRACKET = 265,
-     T_RIGHT_CURLY_BRACKET = 266,
-     T_RIGHT_PARANTHESIS = 267,
-     T_RIGHT_SQUARE_BRACKET = 268,
-     T_SEMI_COLON = 269,
-     T_EQUALS = 270,
-     T_COMMA = 271
-   };
+/* Put the tokens into the symbol table, so that GDB and other debuggers
+   know about them.  */
+enum yytokentype {
+    T_CHARACTER_LITERAL = 258,
+    T_INTEGER_LITERAL = 259,
+    T_FLOATING_PT_LITERAL = 260,
+    T_STRING_LITERAL = 261,
+    T_IDENTIFIER = 262,
+    T_LEFT_CURLY_BRACKET = 263,
+    T_LEFT_PARANTHESIS = 264,
+    T_LEFT_SQUARE_BRACKET = 265,
+    T_RIGHT_CURLY_BRACKET = 266,
+    T_RIGHT_PARANTHESIS = 267,
+    T_RIGHT_SQUARE_BRACKET = 268,
+    T_SEMI_COLON = 269,
+    T_EQUALS = 270,
+    T_COMMA = 271
+};
 #endif
 #define T_CHARACTER_LITERAL 258
 #define T_INTEGER_LITERAL 259
@@ -66,11 +66,11 @@
 #if ! defined (YYSTYPE) && ! defined (YYSTYPE_IS_DECLARED)
 #line 19 "KVFyacc.y"
 typedef union YYSTYPE {
-  char         *ident;
-  int            _int;
-  char         *_str;
-  char           _char;
-  double         _float;
+    char         *ident;
+    int            _int;
+    char         *_str;
+    char           _char;
+    double         _float;
 } YYSTYPE;
 /* Line 1240 of yacc.c.  */
 #line 76 "KVFyacc.h"

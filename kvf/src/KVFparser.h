@@ -11,9 +11,9 @@
 
 namespace KVF {
 
-extern int KVFyylex();            // Defined in KVFDataSource.cc
-extern int KVF_line_no;           // Defined in KVFDataSource.cc 
-extern KVFDataSource *theParser;  // Defined in KVFDataSource.cc
+    extern int KVFyylex();            // Defined in KVFDataSource.cc
+    extern int KVF_line_no;           // Defined in KVFDataSource.cc 
+    extern KVFDataSource *theParser;  // Defined in KVFDataSource.cc
 }
 
 using namespace KVF;
