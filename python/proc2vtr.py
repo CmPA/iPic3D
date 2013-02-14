@@ -27,7 +27,7 @@ import time
 # Directory of the simulation data
 directory = 'data/' 
 # Which quantities to process
-data_read = {'Fields': True, 'Currents': True, 'Rho': True, 'Pressure': False}
+data_read = {'Fields': True, 'Currents': True, 'Rho': True, 'Pressure': True}
 # Which cycles to process
 first_cycle = 0
 last_cycle = 1001
@@ -322,7 +322,7 @@ if len(list_read_proc) > 0:
                     Nxc, Nyc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
             if rankproc == 0:
                 pvtr_fields_list.append(str_fields + repr(cycle).rjust(8,"0") + ".pvtr")
-                writePVTR(directory + pvtr_fields_list[-1], cycle, str_fields, [], field_vec_names, Nxc, Nyc, Nzc, numproc)
+                writePVTR(directory + pvtr_fields_list[-1], cycle, str_fields, [], vector_fields.keys(), Nxc, Nyc, Nzc, numproc)
             #end if
         #end for
         if rankproc == 0:
@@ -351,7 +351,7 @@ if len(list_read_proc) > 0:
                         if type(node) == tables.array.Array:
                             num = int(node.name[6:])
                             if num == cycle:
-                                Fields_local[specie + 1, bounds[0]:bounds[1], bounds[2]:bounds[3], bounds[4]:bounds[5]] = node.read()
+                                Fields_local[specie+1, bounds[0]:bounds[1], bounds[2]:bounds[3], bounds[4]:bounds[5]] = node.read()
                             #end if
                         #end if
                     #end for
@@ -359,16 +359,13 @@ if len(list_read_proc) > 0:
                 h5proc_file.close()
             #end for
             rho_fields = {str_rho: Fields_local[0,:,:,:]}
-            for c in xrange(1, ns+1): 
-                rho_fields[str_rho + repr(c)] = Fields_local[c,:,:,:]
+            for specie in species: 
+                rho_fields[str_rho + repr(specie)] = Fields_local[specie+1,:,:,:]
             writeVTR(directory + str_rho + repr(cycle).rjust(8,"0") + "-" + repr(rankproc) + ".vtr", rho_fields, {}, 
                     Nxc, Nyc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
             if rankproc == 0:            
                 pvtr_rho_list.append(str_rho + repr(cycle).rjust(8,"0") + ".pvtr")
-                rhos_list = [str_rho]
-                for specie in species: 
-                    rhos_list.append(str_rho + repr(specie))
-                writePVTR(directory + pvtr_rho_list[-1], cycle, str_rho, rhos_list, [], Nxc, Nyc, Nzc, numproc)
+                writePVTR(directory + pvtr_rho_list[-1], cycle, str_rho, rho_fields.keys(), [], Nxc, Nyc, Nzc, numproc)
             #end if
         #end for
         if rankproc == 0:
@@ -404,10 +401,7 @@ if len(list_read_proc) > 0:
                     Nxc, Nyc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
             if rankproc == 0:
                 pvtr_currents_list.append(str_currents + repr(cycle).rjust(8,"0")+".pvtr")
-                currs_list = []
-                for specie in species: 
-                    currs_list.append(current_vec_name + repr(specie))
-                writePVTR(directory + pvtr_currents_list[-1], cycle, str_currents, [], currs_list, Nxc, Nyc, Nzc, numproc)
+                writePVTR(directory + pvtr_currents_list[-1], cycle, str_currents, [], j_fields.keys(), Nxc, Nyc, Nzc, numproc)
             #end if
         #end for
         if rankproc == 0:
