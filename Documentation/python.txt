@@ -1,4 +1,4 @@
-This explains how to use Arnaud Beck's python script to convert iPic3D HDF5 output to vtr.
+This explains how to use proc2vtr.py python script to convert iPic3D HDF5 output to vtr.
 If you have sudo permissions on your linux machine, you can skip the installation part.
 
 1. Installing python and necessary libraries.
@@ -22,7 +22,9 @@ I found out that it doesn't work with MPICH2 on neither 64 bit CentOS, or 64 bit
 
 2. Running the script.
 
-In iPic3D directory (check out from svn) there is folder python that contains file read_proc_para.py.
-To simply run it, you should just set the "directory" variable to where your data files are.
-Then just run:
-$ python read_proc_para.py
+In iPic3D directory (check out from svn) there is folder "python" that contains file "proc2vtr.py".
+You'll have to set a few parameters in the file (see comments inside), like data directory and number of cycles in your run.
+Then execute:
+
+$ mpirun -n 4 python proc2vtr.py                                    
+
