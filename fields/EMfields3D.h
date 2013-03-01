@@ -1029,10 +1029,10 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D *vc
     if (vct->getXright_neighbor_P()==MPI_PROC_NULL){
         for (int i=1; i < nyn-1;i++)
             for (int k=1; k < nzn-1;k++){
-                rhons[is][nxn-2][i][k]+=   rhons[is][1][nxn-2][k];
-                Jxs[is][nxn-2][i][k]  +=   Jxs[is][1][nxn-2][k];
-                Jys[is][nxn-2][i][k]  +=   Jys[is][1][nxn-2][k];
-                Jzs[is][nxn-2][i][k]  +=   Jzs[is][1][nxn-2][k];
+                rhons[is][nxn-2][i][k]+=   rhons[is][nxn-2][i][k];
+                Jxs[is][nxn-2][i][k]  +=   Jxs[is][nxn-2][i][k];
+                Jys[is][nxn-2][i][k]  +=   Jys[is][nxn-2][i][k];
+                Jzs[is][nxn-2][i][k]  +=   Jzs[is][nxn-2][i][k];
                 pXXsn[is][nxn-2][i][k]  += pXXsn[is][nxn-2][i][k];
                 pXYsn[is][nxn-2][i][k]  += pXYsn[is][nxn-2][i][k];
                 pXZsn[is][nxn-2][i][k]  += pXZsn[is][nxn-2][i][k];
