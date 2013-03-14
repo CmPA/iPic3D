@@ -60,6 +60,11 @@ class Field {
         virtual double &getJy(int indexX, int indexY, int indexZ) const=0;
         /** get current -Direction Z */
         virtual double &getJz(int indexX, int indexY, int indexZ) const=0;
+    virtual double &getJxs(int indexX, int indexY, int indexZ,int is) const=0;
+    /** get current -Direction Y  */
+    virtual double &getJys(int indexX, int indexY, int indexZ,int is) const=0;
+    /** get current -Direction Z */
+    virtual double &getJzs(int indexX, int indexY, int indexZ,int is) const=0;
 
         /** get density array defined on centers cells */
         virtual double*** getRHOc() =0;
