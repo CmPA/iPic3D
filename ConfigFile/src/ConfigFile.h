@@ -171,7 +171,7 @@ template <> inline bool ConfigFile::string_as_T < bool > (const string & s) {
 }
 
 
-template < class T > T ConfigFile::read(const string & key) const const {
+template < class T > T ConfigFile::read(const string & key) const {
   // Read the value corresponding to key
   mapci p = myContents.find(key);
   if (p == myContents.end())
@@ -180,7 +180,7 @@ template < class T > T ConfigFile::read(const string & key) const const {
 }
 
 
-template < class T > T ConfigFile::read(const string & key, const T & value) const const {
+template < class T > T ConfigFile::read(const string & key, const T & value) const {
   // Return the value corresponding to key or given default value
   // if key is not found
   mapci p = myContents.find(key);
@@ -190,7 +190,7 @@ template < class T > T ConfigFile::read(const string & key, const T & value) con
 }
 
 
-template < class T > bool ConfigFile::readInto(T & var, const string & key) const const {
+template < class T > bool ConfigFile::readInto(T & var, const string & key) const {
   // Get the value corresponding to key and store in var
   // Return true if key is found
   // Otherwise leave var untouched
@@ -202,7 +202,7 @@ template < class T > bool ConfigFile::readInto(T & var, const string & key) cons
 }
 
 
-template < class T > bool ConfigFile::readInto(T & var, const string & key, const T & value) const const {
+template < class T > bool ConfigFile::readInto(T & var, const string & key, const T & value) const {
   // Get the value corresponding to key and store in var
   // Return true if key is found
   // Otherwise set var to given default

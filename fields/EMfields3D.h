@@ -2045,7 +2045,7 @@ inline double ***EMfields3D::getPHI() {
   return (PHI);
 }
 /** get Ex(X,Y,Z)  */
-inline double &EMfields3D::getEx(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getEx(int indexX, int indexY, int indexZ) const {
   return (Ex[indexX][indexY][indexZ]);
 }
 /** get Electric field  component X array*/
@@ -2053,7 +2053,7 @@ inline double ***EMfields3D::getEx() {
   return (Ex);
 }
 /** get Ey(X,Y,Z)  */
-inline double &EMfields3D::getEy(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getEy(int indexX, int indexY, int indexZ) const {
   return (Ey[indexX][indexY][indexZ]);
 }
 /** get Electric field  component Y array*/
@@ -2061,7 +2061,7 @@ inline double ***EMfields3D::getEy() {
   return (Ey);
 }
 /** get Ez(X,Y,Z)  */
-inline double &EMfields3D::getEz(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getEz(int indexX, int indexY, int indexZ) const {
   return (Ez[indexX][indexY][indexZ]);
 }
 /** get Electric field  component Z array*/
@@ -2069,7 +2069,7 @@ inline double ***EMfields3D::getEz() {
   return (Ez);
 }
 /** get Bx(X,Y,Z)  */
-inline double &EMfields3D::getBx(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getBx(int indexX, int indexY, int indexZ) const {
   return (Bxn[indexX][indexY][indexZ]);
 }
 /** get Magnetic Field component X array*/
@@ -2077,7 +2077,7 @@ inline double ***EMfields3D::getBx() {
   return (Bxn);
 }
 /**  get By(X,Y,Z) */
-inline double &EMfields3D::getBy(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getBy(int indexX, int indexY, int indexZ) const {
   return (Byn[indexX][indexY][indexZ]);
 }
 /** get Magnetic Field component Y array*/
@@ -2085,7 +2085,7 @@ inline double ***EMfields3D::getBy() {
   return (Byn);
 }
 /**  get Bz(X,Y,Z) */
-inline double &EMfields3D::getBz(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getBz(int indexX, int indexY, int indexZ) const {
   return (Bzn[indexX][indexY][indexZ]);
 }
 /** get Magnetic Field component Z array*/
@@ -2093,14 +2093,14 @@ inline double ***EMfields3D::getBz() {
   return (Bzn);
 }
 /** get rhoc(X,Y,Z) */
-inline double &EMfields3D::getRHOc(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getRHOc(int indexX, int indexY, int indexZ) const {
   return (rhoc[indexX][indexY][indexZ]);
 }
 inline double ***EMfields3D::getRHOc() {
   return (rhoc);
 }
 /** get density on node(indexX,indexY,indexZ)  */
-inline double &EMfields3D::getRHOn(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getRHOn(int indexX, int indexY, int indexZ) const {
   return (rhon[indexX][indexY][indexZ]);
 }
 /** get density array defined on nodes*/
@@ -2108,11 +2108,11 @@ inline double ***EMfields3D::getRHOn() {
   return (rhon);
 }
 /** get rhos(X,Y,Z) : density for species*/
-inline double &EMfields3D::getRHOns(int indexX, int indexY, int indexZ, int is) const const {
+inline double &EMfields3D::getRHOns(int indexX, int indexY, int indexZ, int is) const {
   return (rhons[is][indexX][indexY][indexZ]);
 }
 /** SPECIES: get density array defined on center cells  */
-inline double &EMfields3D::getRHOcs(int indexX, int indexY, int indexZ, int is) const const {
+inline double &EMfields3D::getRHOcs(int indexX, int indexY, int indexZ, int is) const {
   return (rhocs[is][indexX][indexY][indexZ]);
 }
 /** get density array defined on nodes*/
@@ -2144,7 +2144,7 @@ inline double ****EMfields3D::getpZZsn() {
   return (pZZsn);
 }
 /** get current -Direction X */
-inline double &EMfields3D::getJx(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getJx(int indexX, int indexY, int indexZ) const {
   return (Jx[indexX][indexY][indexZ]);
 }
 /** get current array X component **/
@@ -2152,7 +2152,7 @@ inline double ***EMfields3D::getJx() {
   return (Jx);
 }
 /** get current -Direction Y */
-inline double &EMfields3D::getJy(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getJy(int indexX, int indexY, int indexZ) const {
   return (Jy[indexX][indexY][indexZ]);
 }
 /** get current array Y component **/
@@ -2160,7 +2160,7 @@ inline double ***EMfields3D::getJy() {
   return (Jy);
 }
 /** get current -Direction Z */
-inline double &EMfields3D::getJz(int indexX, int indexY, int indexZ) const const {
+inline double &EMfields3D::getJz(int indexX, int indexY, int indexZ) const {
   return (Jz[indexX][indexY][indexZ]);
 }
 /** get current array Z component **/
@@ -2172,7 +2172,7 @@ inline double ****EMfields3D::getJxs() {
   return (Jxs);
 }
 /** get Jxs(X,Y,Z,is) : density for species*/
-inline double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const const {
+inline double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const {
   return (Jxs[is][indexX][indexY][indexZ]);
 }
 /**SPECIES: get current array Y component */
@@ -2180,7 +2180,7 @@ inline double ****EMfields3D::getJys() {
   return (Jys);
 }
 /** get Jxs(X,Y,Z,is) : density for species*/
-inline double &EMfields3D::getJys(int indexX, int indexY, int indexZ, int is) const const {
+inline double &EMfields3D::getJys(int indexX, int indexY, int indexZ, int is) const {
   return (Jys[is][indexX][indexY][indexZ]);
 }
 /**SPECIES: get current array Z component */
@@ -2188,7 +2188,7 @@ inline double ****EMfields3D::getJzs() {
   return (Jzs);
 }
 /** get Jxs(X,Y,Z,is) : density for species*/
-inline double &EMfields3D::getJzs(int indexX, int indexY, int indexZ, int is) const const {
+inline double &EMfields3D::getJzs(int indexX, int indexY, int indexZ, int is) const {
   return (Jzs[is][indexX][indexY][indexZ]);
 }
 
@@ -2221,7 +2221,7 @@ inline double EMfields3D::getBenergy(void) {
 
 
 /** Print info about electromagnetic field */
-inline void EMfields3D::print(void) const const {
+inline void EMfields3D::print(void) const {
 
 
 }

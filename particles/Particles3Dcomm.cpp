@@ -784,71 +784,71 @@ int Particles3Dcomm::maxNpExiting() {
   return (maxNp);
 }
 /** return X-coordinate of particle array */
-double *Particles3Dcomm::getXall() const const {
+double *Particles3Dcomm::getXall() const {
   return (x);
 }
 /** return Y-coordinate  of particle array */
-double *Particles3Dcomm::getYall() const const {
+double *Particles3Dcomm::getYall() const {
   return (y);
 }
 /** return Z-coordinate  of particle array*/
-double *Particles3Dcomm::getZall() const const {
+double *Particles3Dcomm::getZall() const {
   return (z);
 }
 /** get X-velocity of particle with label indexPart */
-double *Particles3Dcomm::getUall() const const {
+double *Particles3Dcomm::getUall() const {
   return (u);
 }
 /** get Y-velocity of particle with label indexPart */
-double *Particles3Dcomm::getVall() const const {
+double *Particles3Dcomm::getVall() const {
   return (v);
 }
 /**get Z-velocity of particle with label indexPart */
-double *Particles3Dcomm::getWall() const const {
+double *Particles3Dcomm::getWall() const {
   return (w);
 }
 /**get ID of particle with label indexPart */
-unsigned long *Particles3Dcomm::getParticleIDall() const const {
+unsigned long *Particles3Dcomm::getParticleIDall() const {
   return (ParticleID);
 }
 /**get charge of particle with label indexPart */
-double *Particles3Dcomm::getQall() const const {
+double *Particles3Dcomm::getQall() const {
   return (q);
 }
 /** return X-coordinate of particle with index indexPart */
-double Particles3Dcomm::getX(int indexPart) const const {
+double Particles3Dcomm::getX(int indexPart) const {
   return (x[indexPart]);
 }
 /** return Y-coordinate  of particle with index indexPart */
-double Particles3Dcomm::getY(int indexPart) const const {
+double Particles3Dcomm::getY(int indexPart) const {
   return (y[indexPart]);
 }
 /** return Y-coordinate  of particle with index indexPart */
-double Particles3Dcomm::getZ(int indexPart) const const {
+double Particles3Dcomm::getZ(int indexPart) const {
   return (z[indexPart]);
 }
 /** get u (X-velocity) of particle with label indexPart */
-double Particles3Dcomm::getU(int indexPart) const const {
+double Particles3Dcomm::getU(int indexPart) const {
   return (u[indexPart]);
 }
 /** get v (Y-velocity) of particle with label indexPart */
-double Particles3Dcomm::getV(int indexPart) const const {
+double Particles3Dcomm::getV(int indexPart) const {
   return (v[indexPart]);
 }
 /**get w (Z-velocity) of particle with label indexPart */
-double Particles3Dcomm::getW(int indexPart) const const {
+double Particles3Dcomm::getW(int indexPart) const {
   return (w[indexPart]);
 }
 /**get ID of particle with label indexPart */
-unsigned long Particles3Dcomm::getParticleID(int indexPart) const const {
+unsigned long Particles3Dcomm::getParticleID(int indexPart) const {
   return (ParticleID[indexPart]);
 }
 /**get charge of particle with label indexPart */
-double Particles3Dcomm::getQ(int indexPart) const const {
+double Particles3Dcomm::getQ(int indexPart) const {
   return (q[indexPart]);
 }
 /** return the number of particles */
-int Particles3Dcomm::getNOP() const const {
+int Particles3Dcomm::getNOP() const {
   return (nop);
 }
 /** return the Kinetic energy */
@@ -870,7 +870,7 @@ double Particles3Dcomm::getP() {
   return (totalP);
 }
 /** print particles info */
-void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const const {
+void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
   cout << endl;
   cout << "Number of Particles: " << nop << endl;
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
@@ -883,7 +883,7 @@ void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const const {
   cout << endl;
 }
 /** print just the number of particles */
-void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT) const const {
+void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT) const {
   cout << endl;
   cout << "Number of Particles of species " << ns << ": " << nop << endl;
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;

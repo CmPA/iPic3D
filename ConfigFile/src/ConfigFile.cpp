@@ -30,7 +30,7 @@ void ConfigFile::remove(const string & key) {
 }
 
 
-bool ConfigFile::keyExists(const string & key) const const {
+bool ConfigFile::keyExists(const string & key) const {
   // Indicate whether key is found
   mapci p = myContents.find(key);
   return (p != myContents.end());
