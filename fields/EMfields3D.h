@@ -52,6 +52,8 @@ public:
   void initBEAM(VirtualTopology3D * vct, Grid * grid, double x_center, double y_center, double z_center, double radius);
   /** initialize GEM challenge */
   void initGEM(VirtualTopology3D * vct, Grid * grid);
+  /** initialize GEM challenge with dipole-like tail without perturbation */
+  void initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid);
   /** initialize GEM challenge with no Perturbation */
   void initGEMnoPert(VirtualTopology3D * vct, Grid * grid);
   /**  Init Force Free (JxB=0) */
