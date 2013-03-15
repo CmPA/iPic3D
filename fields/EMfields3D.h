@@ -1686,6 +1686,96 @@ inline void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid) {
   }
 }
 
+/** initialize GEM challenge with no Perturbation with dipole-like tail topology */
+inline void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid){
+
+      // parameters controling the field topology
+      // e.g., x1=Lx/5,x2=Lx/4 give 'separated' fields, x1=Lx/4,x2=Lx/3 give 'reconnected' topology
+
+      double x1             = Lx/6.0;  // minimal position of the gaussian peak 
+      double x2             = Lx/4.0;  // maximal position of the gaussian peak (the one closer to the center)
+      double sigma          = Lx/15;   // base sigma of the gaussian - later it changes with the grid
+      double stretch_curve  = 2.0;     // stretch the sin^2 function over the x dimension - also can regulate the number of 'knots/reconnecitons points' if less than 1
+      double skew_parameter = 0.50;    // skew of the shape of the gaussian
+      double pi             = 3.1415927;
+      double r1,r2,delta_x1x2;
+
+         if (restart1 ==0){
+   
+       // initialize
+       if (vct->getCartesian_rank() ==0){
+          cout << "----------------------------------------------" << endl;
+          cout << "Initialize GEM Challenge without Perturbation" << endl; 
+          cout << "----------------------------------------------" << endl;
+          cout << "B0x                              = " << B0x << endl;
+          cout << "B0y                              = " << B0y << endl;
+          cout << "B0z                              = " << B0z << endl;
+          cout << "Delta (current sheet thickness) = " << delta << endl;
+          for (int i=0; i < ns; i++){
+              cout << "rho species " << i <<" = " << rhoINIT[i];
+              if (DriftSpecies[i])
+                 cout << " DRIFTING " << endl;
+              else
+                 cout << " BACKGROUND " << endl;
+          }
+       cout << "-------------------------" << endl;
+       }
+
+       for (int i=0; i < nxn; i++)
+           for (int j=0; j < nyn; j++)
+               for (int k=0; k < nzn; k++){
+                   // initialize the density for species
+                   for (int is=0; is < ns; is++){
+                       if (DriftSpecies[is])
+                          rhons[is][i][j][k] = ((rhoINIT[is]/(cosh((grid->getYN(i,j,k)-Ly/2)/delta)*cosh((grid->getYN(i,j,k)-Ly/2)/delta))))/FourPI;
+                       else
+                          rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+                   }
+                   // electric field
+                   Ex[i][j][k] =  0.0;
+                   Ey[i][j][k] =  0.0;
+                   Ez[i][j][k] =  0.0;
+                   // Magnetic field
+
+                   delta_x1x2 = x1-x2*(sin( (( grid->getXN(i,j,k) - Lx/2 )/Lx*180.0/stretch_curve ) * (0.25*FourPI)/180.0 ))*(sin( (( grid->getXN(i,j,k) - Lx/2 )/Lx*180.0/stretch_curve ) * (0.25*FourPI)/180.0 ));
+
+                   r1 = ( grid->getYN(i,j,k) - (    x1 +delta_x1x2) ) * ( 1.0 - skew_parameter*(sin( (( grid->getXN(i,j,k) - Lx/2 )/Lx*180.0 ) * (0.25*FourPI)/180.0 ))*(sin( (( grid->getXN(i,j,k) - Lx/2 )/Lx*180.0 ) * (0.25*FourPI)/180.0 )) );
+                   r2 = ( grid->getYN(i,j,k) - ((Lx-x1)-delta_x1x2) ) * ( 1.0 - skew_parameter*(sin( (( grid->getXN(i,j,k) - Lx/2 )/Lx*180.0 ) * (0.25*FourPI)/180.0 ))*(sin( (( grid->getXN(i,j,k) - Lx/2 )/Lx*180.0 ) * (0.25*FourPI)/180.0 )) );
+
+                   // tail-like field topology
+                   Bxn[i][j][k] = B0x*0.5*( - exp(-( (r1)*(r1) )/( sigma*sigma )) + exp(-( (r2)*(r2) )/( sigma*sigma )) );
+
+                   Byn[i][j][k] = B0y; 
+                   // guide field
+                   Bzn[i][j][k] = B0z;
+               }
+       // initialize B on centers
+       for (int i=0; i < nxc; i++)
+           for (int j=0; j < nyc; j++)
+               for (int k=0; k < nzc; k++){
+                   // Magnetic field
+
+                   delta_x1x2 = x1-x2*(sin( (( grid->getXC(i,j,k) - Lx/2 )/Lx*180.0/stretch_curve ) * (0.25*FourPI)/180.0 ))*(sin( (( grid->getXC(i,j,k) - Lx/2 )/Lx*180.0/stretch_curve ) * (0.25*FourPI)/180.0 ));
+
+                   r1 = ( grid->getYC(i,j,k) - (    x1 +delta_x1x2) ) * ( 1.0 - skew_parameter*(sin( (( grid->getXC(i,j,k) - Lx/2 )/Lx*180.0 ) * (0.25*FourPI)/180.0 ))*(sin( (( grid->getXC(i,j,k) - Lx/2 )/Lx*180.0 ) * (0.25*FourPI)/180.0 )) );
+                   r2 = ( grid->getYC(i,j,k) - ((Lx-x1)-delta_x1x2) ) * ( 1.0 - skew_parameter*(sin( (( grid->getXC(i,j,k) - Lx/2 )/Lx*180.0 ) * (0.25*FourPI)/180.0 ))*(sin( (( grid->getXC(i,j,k) - Lx/2 )/Lx*180.0 ) * (0.25*FourPI)/180.0 )) );
+                     
+                   // tail-like field topology
+                   Bxn[i][j][k] = B0x*0.5*( - exp(-( (r1)*(r1) )/( sigma*sigma )) + exp(-( (r2)*(r2) )/( sigma*sigma )) );
+
+                   Byc[i][j][k] = B0y; 
+                   // guide field
+                   Bzc[i][j][k] = B0z;
+                 
+               }
+        for (int is=0 ; is<ns; is++)
+            grid->interpN2C(rhocs,is,rhons);
+        } else {
+            init(vct,grid);  // use the fields from restart file
+        }
+        
+}
+
 /** initialize GEM challenge with no Perturbation */
 inline void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid) {
   if (restart1 == 0) {
