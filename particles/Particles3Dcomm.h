@@ -93,7 +93,11 @@ public:
   int getNOP() const;
   /** return the Kinetic energy */
   double getKe();
-  /** retturn the momentum */
+  /** return the maximum kinetic energy */
+  double getMaxVelocity();
+  /** return energy distribution */
+  unsigned long *getVelocityDistribution(int nBins, double maxVel);
+  /** return the momentum */
   double getP();
   /** Print particles info: positions, velocities */
   void Print(VirtualTopology3D * ptVCT) const;

@@ -869,6 +869,45 @@ double Particles3Dcomm::getP() {
   MPI_Allreduce(&localP, &totalP, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalP);
 }
+
+/** return the highest kinetic energy */
+double Particles3Dcomm::getMaxVelocity(){  
+  double localVel = 0.0;
+  double maxVel = 0.0;
+  for (int i=0; i < nop; i++)
+    localVel = max(localVel, (u[i]*u[i] + v[i]*v[i] + w[i]*w[i]));
+  MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  return(maxVel);
+}
+
+
+/** get energy spectrum */
+unsigned long* Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel){  
+  unsigned long* f = new unsigned long [nBins];
+  for (int i=0; i < nBins; i++)
+      f[i] = 0;
+  double Vel = 0.0;
+  double dv = maxVel / nBins;
+  int bin = 0;
+  for (int i=0; i < nop; i++) {
+    Vel = (u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
+    bin = int(floor(Vel/dv));
+    if (bin >= nBins) 
+      f[nBins-1] += 1;
+    else
+      f[bin] += 1;
+  }
+  unsigned long localN = 0;
+  unsigned long totalN = 0;
+  for (int i=0; i < nBins; i++) {
+    localN = f[i];
+    MPI_Allreduce(&localN, &totalN, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+    f[i] = totalN;
+  }
+  return f;
+}
+
+
 /** print particles info */
 void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
   cout << endl;

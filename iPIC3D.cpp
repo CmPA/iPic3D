@@ -142,6 +142,15 @@ int main(int argc, char **argv) {
     ofstream my_file(cq.c_str());
     my_file.close();
   }
+  // Distribution functions
+  int nDistributionBins = 1000;
+  double maxVel = 0.;
+  unsigned long* VelocityDist = new unsigned long [nDistributionBins];
+  string ds = SaveDirName + "/DistributionFunctions.txt";  
+  if (myrank==0) {
+    ofstream my_file(ds.c_str());
+    my_file.close();
+  }
   string cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
   ofstream my_file(cqsat.c_str(), fstream::binary);
@@ -179,7 +188,7 @@ int main(int argc, char **argv) {
     // OUTPUT to large file, called proc**
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("Eall + Ball + rhos + Jsall", cycle);
+      output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
       // Pressure tensor is available
       hdf5_agent.close();
     }
@@ -204,13 +213,6 @@ int main(int argc, char **argv) {
             my_file << EMf->getJxs(index1, index2, index3, 1) + EMf->getJxs(index1, index2, index3, 3) << "\t" << EMf->getJys(index1, index2, index3, 1) + EMf->getJys(index1, index2, index3, 3) << "\t" << EMf->getJzs(index1, index2, index3, 1) + EMf->getJzs(index1, index2, index3, 3) << "\t";
             my_file << EMf->getRHOns(index1, index2, index3, 0) + EMf->getRHOns(index1, index2, index3, 2) << "\t";
             my_file << EMf->getRHOns(index1, index2, index3, 1) + EMf->getRHOns(index1, index2, index3, 3) << "\t";
-            // my_file << EMf->getBx(1,1,0) << "\t" << EMf->getBy(1,1,0) << "\t" <<EMf->getBz(1,1,0) << "\t";
-            // my_file << EMf->getEx(1,1,0) << "\t" << EMf->getEy(1,1,0) << "\t" <<EMf->getEz(1,1,0) << "\t";
-            // my_file << EMf->getJxs(1,1,0,0) + EMf->getJxs(1,1,0,2) << "\t" << EMf->getJys(1,1,0,0) + EMf->getJys(1,1,0,2) << "\t" <<EMf->getJzs(1,1,0,0) + EMf->getJzs(1,1,0,2)<< "\t";
-            // my_file << EMf->getJxs(1,1,0,1) + EMf->getJxs(1,1,0,3) << "\t" << EMf->getJys(1,1,0,1) + EMf->getJys(1,1,0,3) << "\t" <<EMf->getJzs(1,1,0,1) + EMf->getJzs(1,1,0,3)<< "\t";
-            // my_file << EMf->getRHOns(1,1,0,0) + EMf->getRHOns(1,1,0,2) << "\t" ;
-            // my_file << EMf->getRHOns(1,1,0,1) + EMf->getRHOns(1,1,0,3) << "\t" << endl;
-            // my_file.close();
       }}}
       my_file << endl;
       my_file.close();
@@ -235,7 +237,7 @@ int main(int argc, char **argv) {
     EMf->calculateB(grid, vct); // calculate the B field
 
     // write the conserved quantities
-    if (cycle % col->getFieldOutputCycle() == 0) {
+    if (cycle % col->getDiagnosticsOutputCycle() == 0) {
       Eenergy = EMf->getEenergy();
       Benergy = EMf->getBenergy();
       TOTenergy = 0.0;
@@ -251,6 +253,19 @@ int main(int argc, char **argv) {
         my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
         my_file.close();
       }
+      // Velocity distribution
+      for (int is=0; is < ns; is++) {
+        maxVel = part[is].getMaxVelocity();
+        VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
+        if (myrank == 0){
+          ofstream my_file(ds.c_str(), fstream::app);
+          my_file << cycle << "\t" << is << "\t" << maxVel;
+          for (int i=0; i < nDistributionBins; i++)
+            my_file << "\t" << VelocityDist[i];
+          my_file << endl;
+          my_file.close();
+        }
+      }           
     }
     // write the RESTART file
     if (cycle % restart_cycle == 0 && cycle != first_cycle)

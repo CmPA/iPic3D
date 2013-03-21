@@ -60,7 +60,11 @@ public:
   /** get the number of particles of this subdomain */
   virtual int getNOP() const = 0;
   /** return the Kinetic energy */
-  virtual double getKe() = 0;
+  virtual double getKe() = 0;  
+  /** return the maximum kinetic energy */
+  virtual double getMaxVelocity() = 0;
+  /** return energy distribution*/
+  virtual unsigned long *getVelocityDistribution(int nBins, double maxVel) = 0;
   /** retturn the momentum */
   virtual double getP() = 0;
   /** Print particles info: positions, velocities */

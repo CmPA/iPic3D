@@ -178,6 +178,8 @@ public:
   virtual int getParticlesOutputCycle() = 0;
   /** output of fields */
   virtual int getRestartOutputCycle() = 0;
+  /** output of fields */
+  virtual int getDiagnosticsOutputCycle() = 0;
 
   /** get the velocity of injection of the plasma from the wall */
   virtual double getVinj() = 0;

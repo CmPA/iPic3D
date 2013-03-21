@@ -197,10 +197,12 @@ public:
 
   /** output of fields */
   int getFieldOutputCycle();
-  /** output of fields */
+  /** output of particles */
   int getParticlesOutputCycle();
-  /** output of fields */
+  /** output of restart */
   int getRestartOutputCycle();
+  /** output of diagnostics */
+  int getDiagnosticsOutputCycle();
 private:
   /** inputfile */
   string inputfile;
@@ -371,6 +373,8 @@ private:
   int ParticlesOutputCycle;
   /** restart cycle */
   int RestartOutputCycle;
+  /** Output for diagnostics */
+  int DiagnosticsOutputCycle;
 };
 /** Read the input file from text file and put the data in a collective wrapper:
   if it's a restart read from input file basic sim data and load particles and EM field
@@ -420,6 +424,7 @@ inline void Collective::ReadInput(string inputfile) {
     FieldOutputCycle = config.read < int >("FieldOutputCycle");
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle");
     RestartOutputCycle = config.read < int >("RestartOutputCycle");
+    DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
   }
 
   if (RESTART1) {               // you are restarting
@@ -1272,12 +1277,16 @@ inline int Collective::getNiterMover() {
 inline int Collective::getFieldOutputCycle() {
   return (FieldOutputCycle);
 }
-/** output of fields */
+/** output of particles */
 inline int Collective::getParticlesOutputCycle() {
   return (ParticlesOutputCycle);
 }
-/** output of fields */
+/** restart cycle */
 inline int Collective::getRestartOutputCycle() {
   return (RestartOutputCycle);
+}
+/** output of fields */
+inline int Collective::getDiagnosticsOutputCycle() {
+  return (DiagnosticsOutputCycle);
 }
 #endif
