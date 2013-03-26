@@ -557,7 +557,7 @@ inline EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
   tempXN = newArr3(double, nxn, nyn, nzn);
   tempYN = newArr3(double, nxn, nyn, nzn);
   tempZN = newArr3(double, nxn, nyn, nzn);
-  tempC = newArr3(double, nxc, nyc, nzn);
+  tempC = newArr3(double, nxc, nyc, nzc);
   tempX = newArr3(double, nxn, nyn, nzn);
   tempY = newArr3(double, nxn, nyn, nzn);
   tempZ = newArr3(double, nxn, nyn, nzn);
