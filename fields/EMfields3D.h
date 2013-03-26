@@ -52,6 +52,7 @@ public:
   void initBEAM(VirtualTopology3D * vct, Grid * grid, double x_center, double y_center, double z_center, double radius);
   /** initialize GEM challenge */
   void initGEM(VirtualTopology3D * vct, Grid * grid);
+  void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D *vct, Grid *grid);
   /** initialize GEM challenge with dipole-like tail without perturbation */
   void initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid);
   /** initialize GEM challenge with no Perturbation */
@@ -1686,6 +1687,109 @@ inline void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid) {
   else {
     init(vct, grid);            // use the fields from restart file
   }
+}
+
+inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
+   VirtualTopology3D *vct, Grid *grid)
+{
+    // perturbation localized in X
+    const double pertX = 0.4;
+    const double deltax = 8.*delta;
+    const double deltay = 4.*delta;
+    if (restart1 ==0){
+        // initialize
+        if (vct->getCartesian_rank() ==0){
+            cout << "------------------------------------------" << endl;
+            cout << "Initialize GEM Challenge with Pertubation" << endl; 
+            cout << "------------------------------------------" << endl;
+            cout << "B0x                              = " << B0x << endl;
+            cout << "B0y                              = " << B0y << endl;
+            cout << "B0z                              = " << B0z << endl;
+            cout << "Delta (current sheet thickness) = " << delta << endl;
+            for (int i=0; i < ns; i++){
+                cout << "rho species " << i <<" = " << rhoINIT[i];
+                if (DriftSpecies[i])
+                    cout << " DRIFTING " << endl;
+                else
+                    cout << " BACKGROUND " << endl;
+            }
+            cout << "-------------------------" << endl;
+        }
+        for (int i=0; i < nxn; i++)
+            for (int j=0; j < nyn; j++)
+                for (int k=0; k < nzn; k++){
+                    const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    const double yB = grid->getYN(i,j,k) - .25*Ly;
+                    const double yT = grid->getYN(i,j,k) - .75*Ly;
+                    const double yBd = yB/delta;
+                    const double yTd = yT/delta;
+                    // initialize the density for species
+                    for (int is=0; is < ns; is++){
+                        if (DriftSpecies[is]){
+                            const double sech_yBd = 1./cosh(yBd);
+                            const double sech_yTd = 1./cosh(yTd);
+                            rhons[is][i][j][k] = rhoINIT[is]*sech_yBd*sech_yBd/FourPI;
+                            rhons[is][i][j][k]+= rhoINIT[is]*sech_yTd*sech_yTd/FourPI;
+                        }
+                        else
+                            rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+                    }
+                    // electric field
+                    Ex[i][j][k] =  0.0;
+                    Ey[i][j][k] =  0.0;
+                    Ez[i][j][k] =  0.0;
+                    // Magnetic field
+                    Bxn[i][j][k] = B0x*(-1.0+tanh(yBd)-tanh(yTd));
+                    // add the initial GEM perturbation
+                    Bxn[i][j][k] += 0.;
+                    Byn[i][j][k] = B0y;
+                    // add the initial X perturbation
+                    const double xMdx = xM/deltax;
+                    const double yBdy = yB/deltay;
+                    const double yTdy = yT/deltay;
+                    const double humpB = exp(-xMdx*xMdx-yBdy*yBdy);
+                    Bxn[i][j][k] -=(B0x*pertX)*humpB*(2.0*yBdy);
+                    Byn[i][j][k] +=(B0x*pertX)*humpB*(2.0*xMdx);
+                    // add the second initial X perturbation
+                    const double humpT = exp(-xMdx*xMdx-yTdy*yTdy);
+                    Bxn[i][j][k] +=(B0x*pertX)*humpT*(2.0*yTdy);
+                    Byn[i][j][k] -=(B0x*pertX)*humpT*(2.0*xMdx);
+
+                    // guide field
+                    Bzn[i][j][k] = B0z;
+                }
+        // initialize B on centers
+        for (int i=0; i < nxc; i++)
+            for (int j=0; j < nyc; j++)
+                for (int k=0; k < nzc; k++){
+                    const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    const double yB = grid->getYN(i,j,k) - .25*Ly;
+                    const double yT = grid->getYN(i,j,k) - .75*Ly;
+                    const double yBd = yB/delta;
+                    const double yTd = yT/delta;
+                    Bxc[i][j][k] = B0x*(-1.0+tanh(yBd)-tanh(yTd));
+                    // add the initial GEM perturbation
+                    Bxc[i][j][k] += 0.;
+                    Byc[i][j][k] = B0y;
+                    // add the initial X perturbation
+                    const double xMdx = xM/deltax;
+                    const double yBdy = yB/deltay;
+                    const double yTdy = yT/deltay;
+                    const double humpB = exp(-xMdx*xMdx-yBdy*yBdy);
+                    Bxc[i][j][k] -=(B0x*pertX)*humpB*(2.0*yBdy);
+                    Byc[i][j][k] +=(B0x*pertX)*humpB*(2.0*xMdx);
+                    // add the second initial X perturbation
+                    const double humpT = exp(-xMdx*xMdx-yTdy*yTdy);
+                    Bxc[i][j][k] +=(B0x*pertX)*humpT*(2.0*yTdy);
+                    Byc[i][j][k] -=(B0x*pertX)*humpT*(2.0*xMdx);
+                    // guide field
+                    Bzc[i][j][k] = B0z;
+                }
+        for (int is=0 ; is<ns; is++)
+            grid->interpN2C(rhocs,is,rhons);
+    } else {
+        init(vct,grid);  // use the fields from restart file
+    }
 }
 
 /** initialize GEM challenge with no Perturbation with dipole-like tail topology */
