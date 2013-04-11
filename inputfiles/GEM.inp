@@ -10,24 +10,24 @@ RestartDirName = data
 NpMaxNpRatio = 3.0
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
-B0x = 0.0097
+B0x = 0.10
 B0y = 0.00
 B0z = 0.00
 delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-dt = 0.5                    # dt = time step  
-ncycles = 1001		     # cycles
-th = 1.0                     # th =   decentering parameter
-c = 1.0                      # c = light speed 
+dt = 0.25                   # dt = time step  
+ncycles = 1601              # cycles
+th = 1.0                    # th =   decentering parameter
+c = 1.0                     # c = light speed 
 
 #  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
 Smooth = 0.5                  # Smoothing value (5-points stencil)
 
 
 # %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
-Lx =   10.0                  # Lx = simulation box length - x direction   
-Ly =   10.0                  # Ly = simulation box length - y direction
+Lx =   25.6                  # Lx = simulation box length - x direction   
+Ly =   12.8                  # Ly = simulation box length - y direction
 Lz =   1.0                  # Lz = simulation box length - z direction   
 
 x_center =   1.                  # Lx = simulation box length - x direction in m  
@@ -50,26 +50,25 @@ rhoINIT =  1.0	1.0
 # TrackParticleID[species] = 1=true, 0=false --> Assign ID to particles 
 TrackParticleID = 0	0
 # npcelx = number of particles per cell - Direction X 
-npcelx =   3	3
+npcelx =   5	5
 # npcely = number of particles per cell - Direction Y 
-npcely =   3	3
+npcely =   5	5
 # npcelz = number of particles per cell - Direction Z 
-npcelz =   3	3
+npcelz =   1	1
 # qom = charge to mass ratio for different species 
-qom =  -256.0	1.0
+qom =  -25.0	1.0
 # uth = thermal velocity for different species - Direction X  
-uth  = 0.045      0.0063
+uth  = 0.14434  0.064550
 # vth = thermal velocity for different species - Direction Y 
-vth  = 0.045      0.0063
+vth  = 0.14434  0.064550
 # wth = thermal velocity for different species - Direction Z 
-wth  = 0.045      0.0063
+wth  = 0.14434  0.064550
 # u0 = drift velocity   - Direction X    
 u0 = 0.0	0.0  
 # v0 = drift velocity   - Direction Y    
 v0 = 0.0	0.0   
 # w0 = drift velocity   - Direction Z    
-w0 = 0.00325	-0.01624
-
+w0 = 0.19231  -0.0076923
 
 # &&&&&&&&&&&& boundary conditions &&&&&&&&&&&&&&&
 # PHI Electrostatic Potential     
@@ -118,8 +117,8 @@ w0 = 0.00325	-0.01624
 # mover predictor corrector iteration
     NiterMover = 3
 # Output for field
-   FieldOutputCycle = 100
+   FieldOutputCycle = 40
 # Output for particles if 1 it doesnt save particles data
-   ParticlesOutputCycle = 1
+   ParticlesOutputCycle = 200
 # restart cycle
-   RestartOutputCycle = 4000
+   RestartOutputCycle = 1600

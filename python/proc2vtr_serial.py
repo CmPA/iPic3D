@@ -29,8 +29,8 @@ directory = 'data/'
 data_read = {'Fields': True, 'Currents': True, 'Rho': True, 'Pressure': True}
 # Which cycles to process
 first_cycle = 0
-last_cycle = 1001
-step = 100
+last_cycle = 1601
+step = 40
 
 
 

@@ -1715,9 +1715,13 @@ inline void EMfields3D::initOriginalGEM(VirtualTopology3D *vct, Grid *grid){
             for (int j=0; j < nyn; j++)
                 for (int k=0; k < nzn; k++){
                     // initialize the density for species
+                    const double yM = grid->getYN(i,j,k)-.5*Ly;
+                    const double sech_yMd = 1./cosh(yM/delta);
+                    const double sech2_yMd = sech_yMd*sech_yMd;
+                    const double nb_over_n0 = .2; // .2 in original GEM
                     for (int is=0; is < ns; is++){
                         if (DriftSpecies[is])
-                            rhons[is][i][j][k] = ((rhoINIT[is]/(cosh((grid->getYN(i,j,k)-Ly/2)/delta)*cosh((grid->getYN(i,j,k)-Ly/2)/delta))))/FourPI;
+                            rhons[is][i][j][k] = rhoINIT[is]*(nb_over_n0+sech2_yMd)/FourPI;
                         else
                             rhons[is][i][j][k] = rhoINIT[is]/FourPI;
                     }
@@ -1726,7 +1730,6 @@ inline void EMfields3D::initOriginalGEM(VirtualTopology3D *vct, Grid *grid){
                     Ey[i][j][k] =  0.0;
                     Ez[i][j][k] =  0.0;
                     // Magnetic field
-                    const double yM = grid->getYN(i,j,k)-.5*Ly;
                     Bxn[i][j][k] = B0x*tanh(yM/delta);	
                     // add the initial GEM perturbation
                     const double xM = grid->getXN(i,j,k)-.5*Lx;
@@ -1758,9 +1761,9 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
    VirtualTopology3D *vct, Grid *grid)
 {
     // perturbation localized in X
-    const double pertX = 0.4;
-    const double deltax = 8.*delta;
-    const double deltay = 4.*delta;
+    const double pertX = 0.3;
+    const double deltax = 5.*delta;
+    const double deltay = 2.5*delta;
     if (restart1 ==0){
         // initialize
         if (vct->getCartesian_rank() ==0){
@@ -1783,7 +1786,9 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
         for (int i=0; i < nxn; i++)
             for (int j=0; j < nyn; j++)
                 for (int k=0; k < nzn; k++){
-                    const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    //const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    const double xB = grid->getXN(i,j,k)- .25*Lx;
+                    const double xT = grid->getXN(i,j,k)- .75*Lx;
                     const double yB = grid->getYN(i,j,k) - .25*Ly;
                     const double yT = grid->getYN(i,j,k) - .75*Ly;
                     const double yBd = yB/delta;
@@ -1809,16 +1814,17 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
                     Bxn[i][j][k] += 0.;
                     Byn[i][j][k] = B0y;
                     // add the initial X perturbation
-                    const double xMdx = xM/deltax;
+                    const double xBdx = xB/deltax;
+                    const double xTdx = xT/deltax;
                     const double yBdy = yB/deltay;
                     const double yTdy = yT/deltay;
-                    const double humpB = exp(-xMdx*xMdx-yBdy*yBdy);
+                    const double humpB = exp(-xBdx*xBdx-yBdy*yBdy);
                     Bxn[i][j][k] -=(B0x*pertX)*humpB*(2.0*yBdy);
-                    Byn[i][j][k] +=(B0x*pertX)*humpB*(2.0*xMdx);
+                    Byn[i][j][k] +=(B0x*pertX)*humpB*(2.0*xBdx);
                     // add the second initial X perturbation
-                    const double humpT = exp(-xMdx*xMdx-yTdy*yTdy);
+                    const double humpT = exp(-xTdx*xTdx-yTdy*yTdy);
                     Bxn[i][j][k] +=(B0x*pertX)*humpT*(2.0*yTdy);
-                    Byn[i][j][k] -=(B0x*pertX)*humpT*(2.0*xMdx);
+                    Byn[i][j][k] -=(B0x*pertX)*humpT*(2.0*xTdx);
 
                     // guide field
                     Bzn[i][j][k] = B0z;
@@ -1827,7 +1833,9 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
         for (int i=0; i < nxc; i++)
             for (int j=0; j < nyc; j++)
                 for (int k=0; k < nzc; k++){
-                    const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    //const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    const double xB = grid->getXN(i,j,k)- .25*Lx;
+                    const double xT = grid->getXN(i,j,k)- .75*Lx;
                     const double yB = grid->getYN(i,j,k) - .25*Ly;
                     const double yT = grid->getYN(i,j,k) - .75*Ly;
                     const double yBd = yB/delta;
@@ -1837,16 +1845,17 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
                     Bxc[i][j][k] += 0.;
                     Byc[i][j][k] = B0y;
                     // add the initial X perturbation
-                    const double xMdx = xM/deltax;
+                    const double xBdx = xB/deltax;
+                    const double xTdx = xT/deltax;
                     const double yBdy = yB/deltay;
                     const double yTdy = yT/deltay;
-                    const double humpB = exp(-xMdx*xMdx-yBdy*yBdy);
+                    const double humpB = exp(-xBdx*xBdx-yBdy*yBdy);
                     Bxc[i][j][k] -=(B0x*pertX)*humpB*(2.0*yBdy);
-                    Byc[i][j][k] +=(B0x*pertX)*humpB*(2.0*xMdx);
+                    Byc[i][j][k] +=(B0x*pertX)*humpB*(2.0*xBdx);
                     // add the second initial X perturbation
-                    const double humpT = exp(-xMdx*xMdx-yTdy*yTdy);
+                    const double humpT = exp(-xTdx*xTdx-yTdy*yTdy);
                     Bxc[i][j][k] +=(B0x*pertX)*humpT*(2.0*yTdy);
-                    Byc[i][j][k] -=(B0x*pertX)*humpT*(2.0*xMdx);
+                    Byc[i][j][k] -=(B0x*pertX)*humpT*(2.0*xTdx);
                     // guide field
                     Bzc[i][j][k] = B0z;
                 }
@@ -1856,6 +1865,7 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
         init(vct,grid);  // use the fields from restart file
     }
 }
+
 
 /** initialize GEM challenge with no Perturbation with dipole-like tail topology */
 inline void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid){
