@@ -30,7 +30,7 @@ using std::endl;
 #define max(a,b) (((a)>(b))?(a):(b));
 #define MIN_VAL   1E-16
 // particles processed together
-#define P_SAME_TIME 2
+#define P_SAME_TIME 8
 
 /**
  * 
@@ -260,8 +260,10 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   // move each particle with new fields: MOVE P_SAME_TIME PARTICLES AT THE SAME TIME TO ALLOW AUTOVECTORIZATION
   int i;
+  #pragma openmp parallel for
   for (i = 0; i < (nop - (P_SAME_TIME - 1)); i += P_SAME_TIME) {
     // copy x, y, z
+    #pragma simd
     for (int p = 0; p < P_SAME_TIME; p++) {
       xp[p] = x[i + p];
       yp[p] = y[i + p];
@@ -270,6 +272,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       vp[p] = v[i + p];
       wp[p] = w[i + p];
     }
+    #pragma simd
     for (int p = 0; p < P_SAME_TIME; p++) { // VECTORIZED
       xptilde[p] = xp[p];
       yptilde[p] = yp[p];
@@ -278,44 +281,55 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     // calculate the average velocity iteratively
     for (int innter = 0; innter < NiterMover; innter++) {
       // interpolation G-->P
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++)
         ixd[p] = floor((xp[p] - xstart) * inv_dx);  // VECTORIZED
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++)
         iyd[p] = floor((yp[p] - ystart) * inv_dy);  // VECTORIZED
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++)
         izd[p] = floor((zp[p] - zstart) * inv_dz);  // VECTORIZED
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) {
         ix[p] = 2 + int (ixd[p]);
         iy[p] = 2 + int (iyd[p]);
         iz[p] = 2 + int (izd[p]);
       }
       // check if they are out of the boundary
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) {
         if (ix[p] < 1)
           ix[p] = 1;
       }
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) {
         if (iy[p] < 1)
           iy[p] = 1;
       }
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) {
         if (iz[p] < 1)
           iz[p] = 1;
       }
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) {
         if (ix[p] > nxn - 1)
           ix[p] = nxn - 1;
       }
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) {
         if (iy[p] > nyn - 1)
           iy[p] = nyn - 1;
       }
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) {
         if (iz[p] > nzn - 1)
           iz[p] = nzn - 1;
       }
 
       // CALCULATE WEIGHTS
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) {
         xi[0] = xp[p] - grid->getXN(ix[p] - 1, iy[p], iz[p]);
         eta[0] = yp[p] - grid->getYN(ix[p], iy[p] - 1, iz[p]);
@@ -329,6 +343,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
               weight[p][ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
       }
       // clear the electric and the magnetic field field acting on the particles
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) {
         Exl[p] = 0.0;
         Eyl[p] = 0.0;
@@ -341,6 +356,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++) {
+            #pragma simd
             for (int p = 0; p < P_SAME_TIME; p++) {
               Exlp[p] = EMf->getEx(ix[p] - ii, iy[p] - jj, iz[p] - kk);
               Eylp[p] = EMf->getEy(ix[p] - ii, iy[p] - jj, iz[p] - kk);
@@ -349,6 +365,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
               Bylp[p] = EMf->getBy(ix[p] - ii, iy[p] - jj, iz[p] - kk);
               Bzlp[p] = EMf->getBz(ix[p] - ii, iy[p] - jj, iz[p] - kk);
             }
+            #pragma simd
             for (int p = 0; p < P_SAME_TIME; p++) { // VECTORIZED
               Exlp[p] = weight[p][ii][jj][kk] * Exlp[p];
               Eylp[p] = weight[p][ii][jj][kk] * Eylp[p];
@@ -358,6 +375,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
               Bzlp[p] = weight[p][ii][jj][kk] * Bzlp[p];
             }
             // finished with the two particles: add the contributions
+            #pragma simd
             for (int p = 0; p < P_SAME_TIME; p++) {
               Exl[p] += Exlp[p];
               Eyl[p] += Eylp[p];
@@ -369,6 +387,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
           }
       // end interpolation
+      #pragma simd
       for (int p = 0; p < P_SAME_TIME; p++) { // PARTIALLY VECTORIZED
         omdtsq[p] = qomdt2 * qomdt2 * (Bxl[p] * Bxl[p] + Byl[p] * Byl[p] + Bzl[p] * Bzl[p]);
         denom[p] = 1.0 / (1.0 + omdtsq[p]);
@@ -388,6 +407,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       }
     }                           // end of iteration
     // update the final position and velocity
+    #pragma simd
     for (int p = 0; p < P_SAME_TIME; p++) { // VECTORIZED
       up[p] = 2.0 * uptilde[p] - up[p];
       vp[p] = 2.0 * vptilde[p] - vp[p];
@@ -397,6 +417,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       zp[p] = zptilde[p] + wptilde[p] * dt;
     }
     // copy back the particles in the array
+    #pragma simd
     for (int p = 0; p < P_SAME_TIME; p++) {
       x[i + p] = xp[p];
       y[i + p] = yp[p];
