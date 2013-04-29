@@ -142,7 +142,7 @@ def writePVTR(pvtr_name, cycle, vtr_prefix, scalar_fields, vector_fields, Nxc, N
 #end writePVTR
 
 
-def writeVTR(vtr_name, scalar_fields, vector_fields, Nxc, Nyc, Nzlocal, 
+def writeVTR(vtr_name, scalar_fields, vector_fields, Nxc, Nyc, Nzc, Nzlocal, 
             vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc):
     """Writes a single VTR file per Python processor/variable
 
@@ -319,7 +319,7 @@ if len(list_read_proc) > 0:
             for c in xrange(len(field_vec_names)): 
                 vector_fields[field_vec_names[c]] = Fields_local[3*c:3*(c+1), :, :, :]
             writeVTR(directory + str_fields + repr(cycle).rjust(8,"0") + "-" + repr(rankproc) + ".vtr", {}, vector_fields,
-                    Nxc, Nyc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
+                    Nxc, Nyc, Nzc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
             if rankproc == 0:
                 pvtr_fields_list.append(str_fields + repr(cycle).rjust(8,"0") + ".pvtr")
                 writePVTR(directory + pvtr_fields_list[-1], cycle, str_fields, [], vector_fields.keys(), Nxc, Nyc, Nzc, numproc)
@@ -362,7 +362,7 @@ if len(list_read_proc) > 0:
             for specie in species: 
                 rho_fields[str_rho + repr(specie)] = Fields_local[specie+1,:,:,:]
             writeVTR(directory + str_rho + repr(cycle).rjust(8,"0") + "-" + repr(rankproc) + ".vtr", rho_fields, {}, 
-                    Nxc, Nyc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
+                    Nxc, Nyc, Nzc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
             if rankproc == 0:            
                 pvtr_rho_list.append(str_rho + repr(cycle).rjust(8,"0") + ".pvtr")
                 writePVTR(directory + pvtr_rho_list[-1], cycle, str_rho, rho_fields.keys(), [], Nxc, Nyc, Nzc, numproc)
@@ -398,7 +398,7 @@ if len(list_read_proc) > 0:
             for specie in species: 
                 j_fields[current_vec_name + repr(specie)] = Fields_local[3*specie:3*(specie+1), :, :, :]
             writeVTR(directory + str_currents + repr(cycle).rjust(8,"0") + "-" + repr(rankproc) + ".vtr", {}, j_fields,
-                    Nxc, Nyc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
+                    Nxc, Nyc, Nzc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
             if rankproc == 0:
                 pvtr_currents_list.append(str_currents + repr(cycle).rjust(8,"0")+".pvtr")
                 writePVTR(directory + pvtr_currents_list[-1], cycle, str_currents, [], j_fields.keys(), Nxc, Nyc, Nzc, numproc)
@@ -435,7 +435,7 @@ if len(list_read_proc) > 0:
                     p_fields[press_names[c] + repr(specie)] = Fields_local[press_comp_count*specie+c,:,:,:]
             #end for
             writeVTR(directory + str_pressure + repr(cycle).rjust(8,"0") + "-" + repr(rankproc) + ".vtr", p_fields, {}, 
-                    Nxc, Nyc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
+                    Nxc, Nyc, Nzc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
             if rankproc == 0:            
                 pvtr_press_list.append(str_pressure + repr(cycle).rjust(8,"0") + ".pvtr")
                 writePVTR(directory + pvtr_press_list[-1], cycle, str_pressure, p_fields.keys(), [], Nxc, Nyc, Nzc, numproc)
