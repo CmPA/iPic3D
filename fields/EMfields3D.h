@@ -1436,7 +1436,7 @@ inline void EMfields3D::sumOverSpeciesJ() {
   for (int is = 0; is < ns; is++)
     for (register int i = 0; i < nxn; i++)
       for (register int j = 0; j < nyn; j++)
-        for (register int k = 0; j < nzn; k++) {
+        for (register int k = 0; k < nzn; k++) {
           Jx[i][j][k] += Jxs[is][i][j][k];
           Jy[i][j][k] += Jys[is][i][j][k];
           Jz[i][j][k] += Jzs[is][i][j][k];
