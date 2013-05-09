@@ -265,7 +265,7 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
       if (dataset_id > 0)
         status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID);
       else {
-        for (register int counter = 0; counter < nop; counter++)
+        for (register long long counter = 0; counter < nop; counter++)
           ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
       }
     }
@@ -296,7 +296,7 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   double xi[2], eta[2], zeta[2];
   int ix, iy, iz;
   double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
-  for (register int i = 0; i < nop; i++) {
+  for (register long long i = 0; i < nop; i++) {
     ix = 2 + int (floor((x[i] - xstart) * inv_dx));
     iy = 2 + int (floor((y[i] - ystart) * inv_dy));
     iz = 2 + int (floor((z[i] - zstart) * inv_dz));
@@ -389,7 +389,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     b_Z_LEFT[i] = MIN_VAL;
   }
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
-  int np_current = 0, nplast = nop - 1;
+  long long np_current = 0, nplast = nop - 1;
   while (np_current < nplast + 1) {
     // BC on particles
     if (x[np_current] < 0 && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
@@ -621,7 +621,7 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   buffer_size = new_buffer_size;
 }
 /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
-void Particles3Dcomm::bufferXleft(double *b_, int np_current, VirtualTopology3D * vct) {
+void Particles3Dcomm::bufferXleft(double *b_, long long np_current, VirtualTopology3D * vct) {
   if (x[np_current] < 0)
     b_[npExitXleft * nVar] = x[np_current] + Lx;  // this applies to the the leftmost processor
   else
@@ -636,7 +636,7 @@ void Particles3Dcomm::bufferXleft(double *b_, int np_current, VirtualTopology3D 
     b_[npExitXleft * nVar + 7] = ParticleID[np_current];
 }
 /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
-void Particles3Dcomm::bufferXright(double *b_, int np_current, VirtualTopology3D * vct) {
+void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopology3D * vct) {
   if (x[np_current] > Lx)
     b_[npExitXright * nVar] = x[np_current] - Lx; // this applies to the right most processor
   else
@@ -651,7 +651,7 @@ void Particles3Dcomm::bufferXright(double *b_, int np_current, VirtualTopology3D
     b_[npExitXright * nVar + 7] = ParticleID[np_current];
 }
 /** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferYleft(double *b_, int np_current, VirtualTopology3D * vct) {
+inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, VirtualTopology3D * vct) {
   b_[npExitYleft * nVar] = x[np_current];
   if (y[np_current] < 0)
     b_[npExitYleft * nVar + 1] = y[np_current] + Ly;
@@ -666,7 +666,7 @@ inline void Particles3Dcomm::bufferYleft(double *b_, int np_current, VirtualTopo
     b_[npExitYleft * nVar + 7] = ParticleID[np_current];
 }
 /** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferYright(double *b_, int np_current, VirtualTopology3D * vct) {
+inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, VirtualTopology3D * vct) {
   b_[npExitYright * nVar] = x[np_current];
   if (y[np_current] > Ly)
     b_[npExitYright * nVar + 1] = y[np_current] - Ly;
@@ -681,7 +681,7 @@ inline void Particles3Dcomm::bufferYright(double *b_, int np_current, VirtualTop
     b_[npExitYright * nVar + 7] = ParticleID[np_current];
 }
 /** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferZleft(double *b_, int np_current, VirtualTopology3D * vct) {
+inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, VirtualTopology3D * vct) {
   b_[npExitZleft * nVar] = x[np_current];
   b_[npExitZleft * nVar + 1] = y[np_current];
   if (z[np_current] < 0)
@@ -696,7 +696,7 @@ inline void Particles3Dcomm::bufferZleft(double *b_, int np_current, VirtualTopo
     b_[npExitZleft * nVar + 7] = ParticleID[np_current];
 }
 /** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferZright(double *b_, int np_current, VirtualTopology3D * vct) {
+inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, VirtualTopology3D * vct) {
   b_[npExitZright * nVar] = x[np_current];
   b_[npExitZright * nVar + 1] = y[np_current];
   if (z[np_current] > Lz)
@@ -712,7 +712,7 @@ inline void Particles3Dcomm::bufferZright(double *b_, int np_current, VirtualTop
 }
 /** This unbuffer the last communication */
 int Particles3Dcomm::unbuffer(double *b_) {
-  int np_current = 0;
+  long long np_current = 0;
   // put the new particles at the end of the array, and update the number of particles
   while (b_[np_current * nVar] != MIN_VAL) {
     x[nop] = b_[nVar * np_current];
@@ -744,7 +744,7 @@ int Particles3Dcomm::unbuffer(double *b_) {
  * @param np = the index of the particle that must be deleted
  * @param nplast = the index of the last particle in the array
  */
-void Particles3Dcomm::del_pack(int np_current, int *nplast) {
+void Particles3Dcomm::del_pack(long long np_current, long long *nplast) {
   x[np_current] = x[*nplast];
   y[np_current] = y[*nplast];
   z[np_current] = z[*nplast];
@@ -816,46 +816,46 @@ double *Particles3Dcomm::getQall() const {
   return (q);
 }
 /** return X-coordinate of particle with index indexPart */
-double Particles3Dcomm::getX(int indexPart) const {
+double Particles3Dcomm::getX(long long indexPart) const {
   return (x[indexPart]);
 }
 /** return Y-coordinate  of particle with index indexPart */
-double Particles3Dcomm::getY(int indexPart) const {
+double Particles3Dcomm::getY(long long indexPart) const {
   return (y[indexPart]);
 }
 /** return Y-coordinate  of particle with index indexPart */
-double Particles3Dcomm::getZ(int indexPart) const {
+double Particles3Dcomm::getZ(long long indexPart) const {
   return (z[indexPart]);
 }
 /** get u (X-velocity) of particle with label indexPart */
-double Particles3Dcomm::getU(int indexPart) const {
+double Particles3Dcomm::getU(long long indexPart) const {
   return (u[indexPart]);
 }
 /** get v (Y-velocity) of particle with label indexPart */
-double Particles3Dcomm::getV(int indexPart) const {
+double Particles3Dcomm::getV(long long indexPart) const {
   return (v[indexPart]);
 }
 /**get w (Z-velocity) of particle with label indexPart */
-double Particles3Dcomm::getW(int indexPart) const {
+double Particles3Dcomm::getW(long long indexPart) const {
   return (w[indexPart]);
 }
 /**get ID of particle with label indexPart */
-unsigned long Particles3Dcomm::getParticleID(int indexPart) const {
+unsigned long Particles3Dcomm::getParticleID(long long indexPart) const {
   return (ParticleID[indexPart]);
 }
 /**get charge of particle with label indexPart */
-double Particles3Dcomm::getQ(int indexPart) const {
+double Particles3Dcomm::getQ(long long indexPart) const {
   return (q[indexPart]);
 }
 /** return the number of particles */
-int Particles3Dcomm::getNOP() const {
+long long Particles3Dcomm::getNOP() const {
   return (nop);
 }
 /** return the Kinetic energy */
 double Particles3Dcomm::getKe() {
   double localKe = 0.0;
   double totalKe = 0.0;
-  for (register int i = 0; i < nop; i++)
+  for (register long long i = 0; i < nop; i++)
     localKe += .5 * (q[i] / qom) * (u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
   MPI_Allreduce(&localKe, &totalKe, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalKe);
@@ -864,7 +864,7 @@ double Particles3Dcomm::getKe() {
 double Particles3Dcomm::getP() {
   double localP = 0.0;
   double totalP = 0.0;
-  for (register int i = 0; i < nop; i++)
+  for (register long long i = 0; i < nop; i++)
     localP += (q[i] / qom) * sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
   MPI_Allreduce(&localP, &totalP, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalP);
@@ -874,7 +874,7 @@ double Particles3Dcomm::getP() {
 double Particles3Dcomm::getMaxVelocity(){  
   double localVel = 0.0;
   double maxVel = 0.0;
-  for (int i=0; i < nop; i++)
+  for (long long i=0; i < nop; i++)
     localVel = max(localVel, (u[i]*u[i] + v[i]*v[i] + w[i]*w[i]));
   MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   return(maxVel);
@@ -889,7 +889,7 @@ unsigned long* Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel
   double Vel = 0.0;
   double dv = maxVel / nBins;
   int bin = 0;
-  for (int i=0; i < nop; i++) {
+  for (long long i=0; i < nop; i++) {
     Vel = (u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
     bin = int(floor(Vel/dv));
     if (bin >= nBins) 
@@ -917,7 +917,7 @@ void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
   cout << "Yin = " << ystart << "; Yfin = " << yend << endl;
   cout << "Zin = " << zstart << "; Zfin = " << zend << endl;
   cout << "Number of species = " << ns << endl;
-  for (int i = 0; i < nop; i++)
+  for (long long i = 0; i < nop; i++)
     cout << "Particles #" << i << " x=" << x[i] << " y=" << y[i] << " z=" << z[i] << " u=" << u[i] << " v=" << v[i] << " w=" << w[i] << endl;
   cout << endl;
 }
