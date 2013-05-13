@@ -59,7 +59,7 @@ Particles3D::~Particles3D() {
 
 /** particles are uniformly distributed with zero velocity   */
 void Particles3D::uniform_background(Grid * grid, Field * EMf) {
-  int counter = 0;
+  long long counter = 0;
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++)
@@ -92,15 +92,15 @@ void Particles3D::uniform_background(Grid * grid, Field * EMf) {
 void Particles3D::constantVelocity(double vel, int dim, Grid * grid, Field * EMf) {
   switch (dim) {
     case 0:
-      for (int i = 0; i < nop; i++)
+      for (long long i = 0; i < nop; i++)
         u[i] = vel, v[i] = 0.0, w[i] = 0.0;
       break;
     case 1:
-      for (register int i = 0; i < nop; i++)
+      for (register long long i = 0; i < nop; i++)
         u[i] = 0.0, v[i] = vel, w[i] = 0.0;
       break;
     case 2:
-      for (register int i = 0; i < nop; i++)
+      for (register long long i = 0; i < nop; i++)
         u[i] = 0.0, v[i] = 0.0, w[i] = vel;
       break;
 
@@ -122,7 +122,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
   double harvest;
   double prob, theta, sign;
-  int counter = 0;
+	long long counter=0;
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++)
@@ -163,7 +163,7 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
 
   double harvest, prob, theta;
-  int counter = 0;
+  long long counter = 0;
   double shaperx, shapery, shaperz;
   double flvx = 1.0, flvy = 1.0, flvz = 1.0;
 
@@ -226,7 +226,7 @@ inline void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky,
   jx_mod *= alpha;
   jy_mod *= alpha;
   jz_mod *= alpha;
-  for (register int i = 0; i < nop; i++) {
+  for (register long long i = 0; i < nop; i++) {
     u[i] += jx_mod / q[i] / npcel / invVOL * cos(kx * x[i] + ky * y[i] + jx_phase);
     v[i] += jy_mod / q[i] / npcel / invVOL * cos(kx * x[i] + ky * y[i] + jy_phase);
     w[i] += jz_mod / q[i] / npcel / invVOL * cos(kx * x[i] + ky * y[i] + jz_phase);
@@ -259,10 +259,10 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   double zeta[2];
   double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   // move each particle with new fields: MOVE P_SAME_TIME PARTICLES AT THE SAME TIME TO ALLOW AUTOVECTORIZATION
-  int i;
+  long long i;
   for (i = 0; i < (nop - (P_SAME_TIME - 1)); i += P_SAME_TIME) {
     // copy x, y, z
-    for (int p = 0; p < P_SAME_TIME; p++) {
+    for (long long p = 0; p < P_SAME_TIME; p++) {
       xp[p] = x[i + p];
       yp[p] = y[i + p];
       zp[p] = z[i + p];
@@ -270,53 +270,53 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       vp[p] = v[i + p];
       wp[p] = w[i + p];
     }
-    for (int p = 0; p < P_SAME_TIME; p++) { // VECTORIZED
+    for (long long p = 0; p < P_SAME_TIME; p++) { // VECTORIZED
       xptilde[p] = xp[p];
       yptilde[p] = yp[p];
       zptilde[p] = zp[p];
     }
     // calculate the average velocity iteratively
-    for (int innter = 0; innter < NiterMover; innter++) {
+    for (long long innter = 0; innter < NiterMover; innter++) {
       // interpolation G-->P
-      for (int p = 0; p < P_SAME_TIME; p++)
+      for (long long p = 0; p < P_SAME_TIME; p++)
         ixd[p] = floor((xp[p] - xstart) * inv_dx);  // VECTORIZED
-      for (int p = 0; p < P_SAME_TIME; p++)
+      for (long long p = 0; p < P_SAME_TIME; p++)
         iyd[p] = floor((yp[p] - ystart) * inv_dy);  // VECTORIZED
-      for (int p = 0; p < P_SAME_TIME; p++)
+      for (long long p = 0; p < P_SAME_TIME; p++)
         izd[p] = floor((zp[p] - zstart) * inv_dz);  // VECTORIZED
-      for (int p = 0; p < P_SAME_TIME; p++) {
+      for (long long p = 0; p < P_SAME_TIME; p++) {
         ix[p] = 2 + int (ixd[p]);
         iy[p] = 2 + int (iyd[p]);
         iz[p] = 2 + int (izd[p]);
       }
       // check if they are out of the boundary
-      for (int p = 0; p < P_SAME_TIME; p++) {
+      for (long long p = 0; p < P_SAME_TIME; p++) {
         if (ix[p] < 1)
           ix[p] = 1;
       }
-      for (int p = 0; p < P_SAME_TIME; p++) {
+      for (long long p = 0; p < P_SAME_TIME; p++) {
         if (iy[p] < 1)
           iy[p] = 1;
       }
-      for (int p = 0; p < P_SAME_TIME; p++) {
+      for (long long p = 0; p < P_SAME_TIME; p++) {
         if (iz[p] < 1)
           iz[p] = 1;
       }
-      for (int p = 0; p < P_SAME_TIME; p++) {
+      for (long long p = 0; p < P_SAME_TIME; p++) {
         if (ix[p] > nxn - 1)
           ix[p] = nxn - 1;
       }
-      for (int p = 0; p < P_SAME_TIME; p++) {
+      for (long long p = 0; p < P_SAME_TIME; p++) {
         if (iy[p] > nyn - 1)
           iy[p] = nyn - 1;
       }
-      for (int p = 0; p < P_SAME_TIME; p++) {
+      for (long long p = 0; p < P_SAME_TIME; p++) {
         if (iz[p] > nzn - 1)
           iz[p] = nzn - 1;
       }
 
       // CALCULATE WEIGHTS
-      for (int p = 0; p < P_SAME_TIME; p++) {
+      for (long long p = 0; p < P_SAME_TIME; p++) {
         xi[0] = xp[p] - grid->getXN(ix[p] - 1, iy[p], iz[p]);
         eta[0] = yp[p] - grid->getYN(ix[p], iy[p] - 1, iz[p]);
         zeta[0] = zp[p] - grid->getZN(ix[p], iy[p], iz[p] - 1);
@@ -329,7 +329,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
               weight[p][ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
       }
       // clear the electric and the magnetic field field acting on the particles
-      for (int p = 0; p < P_SAME_TIME; p++) {
+      for (long long p = 0; p < P_SAME_TIME; p++) {
         Exl[p] = 0.0;
         Eyl[p] = 0.0;
         Ezl[p] = 0.0;
@@ -341,7 +341,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++) {
-            for (int p = 0; p < P_SAME_TIME; p++) {
+            for (long long p = 0; p < P_SAME_TIME; p++) {
               Exlp[p] = EMf->getEx(ix[p] - ii, iy[p] - jj, iz[p] - kk);
               Eylp[p] = EMf->getEy(ix[p] - ii, iy[p] - jj, iz[p] - kk);
               Ezlp[p] = EMf->getEz(ix[p] - ii, iy[p] - jj, iz[p] - kk);
@@ -349,7 +349,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
               Bylp[p] = EMf->getBy(ix[p] - ii, iy[p] - jj, iz[p] - kk);
               Bzlp[p] = EMf->getBz(ix[p] - ii, iy[p] - jj, iz[p] - kk);
             }
-            for (int p = 0; p < P_SAME_TIME; p++) { // VECTORIZED
+            for (long long p = 0; p < P_SAME_TIME; p++) { // VECTORIZED
               Exlp[p] = weight[p][ii][jj][kk] * Exlp[p];
               Eylp[p] = weight[p][ii][jj][kk] * Eylp[p];
               Ezlp[p] = weight[p][ii][jj][kk] * Ezlp[p];
@@ -358,7 +358,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
               Bzlp[p] = weight[p][ii][jj][kk] * Bzlp[p];
             }
             // finished with the two particles: add the contributions
-            for (int p = 0; p < P_SAME_TIME; p++) {
+            for (long long p = 0; p < P_SAME_TIME; p++) {
               Exl[p] += Exlp[p];
               Eyl[p] += Eylp[p];
               Ezl[p] += Ezlp[p];
@@ -369,7 +369,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
           }
       // end interpolation
-      for (int p = 0; p < P_SAME_TIME; p++) { // PARTIALLY VECTORIZED
+      for (long long p = 0; p < P_SAME_TIME; p++) { // PARTIALLY VECTORIZED
         omdtsq[p] = qomdt2 * qomdt2 * (Bxl[p] * Bxl[p] + Byl[p] * Byl[p] + Bzl[p] * Bzl[p]);
         denom[p] = 1.0 / (1.0 + omdtsq[p]);
         // solve the position equation
@@ -388,7 +388,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       }
     }                           // end of iteration
     // update the final position and velocity
-    for (int p = 0; p < P_SAME_TIME; p++) { // VECTORIZED
+    for (long long p = 0; p < P_SAME_TIME; p++) { // VECTORIZED
       up[p] = 2.0 * uptilde[p] - up[p];
       vp[p] = 2.0 * vptilde[p] - vp[p];
       wp[p] = 2.0 * wptilde[p] - wp[p];
@@ -397,7 +397,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       zp[p] = zptilde[p] + wptilde[p] * dt;
     }
     // copy back the particles in the array
-    for (int p = 0; p < P_SAME_TIME; p++) {
+    for (long long p = 0; p < P_SAME_TIME; p++) {
       x[i + p] = xp[p];
       y[i + p] = yp[p];
       z[i + p] = zp[p];
@@ -409,7 +409,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   }
   // FINISH WITH PARTICLE LEFT, IF ANY (EVEN NUMBER OF PARTICLES)
   // move each particle with new fields
-  for (int rest = (i + 1); rest < nop; rest++) {
+  for (long long rest = (i + 1); rest < nop; rest++) {
     // copy the particle
     xp[0] = x[rest];
     yp[0] = y[rest];
@@ -421,7 +421,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     yptilde[0] = y[rest];
     zptilde[0] = z[rest];
     // calculate the average velocity iteratively
-    for (int innter = 0; innter < 1; innter++) {
+    for (long long innter = 0; innter < 1; innter++) {
       // interpolation G-->P
       ixd[0] = floor((xp[0] - xstart) * inv_dx);
       iyd[0] = floor((yp[0] - ystart) * inv_dy);
@@ -533,7 +533,7 @@ void Particles3D::interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * 
   double weight[2][2][2];
   double temp[2][2][2];
   int ix, iy, iz, temp1, temp2, temp3;
-  for (register int i = 0; i < nop; i++) {
+  for (register long long i = 0; i < nop; i++) {
     ix = 2 + int (floor((x[i] - grid->getXstart()) / grid->getDX()));
     iy = 2 + int (floor((y[i] - grid->getYstart()) / grid->getDY()));
     iz = 2 + int (floor((z[i] - grid->getZstart()) / grid->getDZ()));
@@ -570,7 +570,7 @@ void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * v
   double weight[2][2][2];
   double temp[2][2][2];
   int ix, iy, iz, temp2, temp1, temp3;
-  for (register int i = 0; i < nop; i++) {
+  for (register long long i = 0; i < nop; i++) {
     ix = 2 + int (floor((x[i] - grid->getXstart()) / grid->getDX()));
     iy = 2 + int (floor((y[i] - grid->getYstart()) / grid->getDY()));
     iz = 2 + int (floor((z[i] - grid->getZstart()) / grid->getDZ()));
@@ -605,7 +605,7 @@ void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * v
 void Particles3D::linear_perturbation(double deltaBoB, double kx, double ky, double angle, double omega_r, double omega_i, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
   double value1 = 0.0, value2 = 0.0, max_value = 0.0, min_value = 0.0, phi, n;
-  int counter = 0, total_generated = 0;
+  long long counter = 0, total_generated = 0;
   bool rejected;
   double harvest, prob, theta;
   // rescaling of amplitudes according to deltaBoB //
@@ -775,7 +775,7 @@ double Particles3D::f0(double vpar, double vperp) {
 
 void Particles3D::RotatePlaneXY(double theta) {
   double temp, temp2;
-  for (register int s = 0; s < nop; s++) {
+  for (register long long s = 0; s < nop; s++) {
     temp = u[s];
     temp2 = v[s];
     u[s] = temp * cos(theta) + v[s] * sin(theta);
