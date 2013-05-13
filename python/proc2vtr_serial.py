@@ -141,17 +141,26 @@ def writePVTR(pvtr_name, cycle, vtr_prefix, scalar_fields, vector_fields, Nxc, N
 #end writePVTR
 
 
-def writeVTR(vtr_name, scalar_fields, vector_fields, Nxc, Nyc, Nzc, Nzlocal, 
-            vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc):
+def writeVTR(vtr_name, scalar_fields, vector_fields, vtkX, vtkY, vtkZ, localZrange):
     """Writes a single VTR file per Python processor/variable
 
+    Parameters:
+     vtr_name - name of the VTR file
+     scalar_fields - dictionary with scalar field arrays ordered [x, y, z], e.g. {'p': array[nx,ny,nz], 'rho0': array[nx,ny,nz]}
+     vector_fields - dictionary with vector fields ordered [3, x, y, z], e.g. {'J': array[3,nx,ny,nz], 'B': array[3,nx,ny,nz]}
+     vtkX, vtkY, vtkZ - VTR coordinates, see createVtrCoordinates()
+     localZrange - local range for Z indices
+
     """
+    Nx = vtkX.GetNumberOfTuples() - 1
+    Ny = vtkY.GetNumberOfTuples() - 1
+    Nz = vtkZ.GetNumberOfTuples() - 1
+    numpoints = (Nx+1)*(Ny+1)*(Nz+1)
     rtg = vtk.vtkRectilinearGrid()
-    rtg.SetDimensions(Nxc+1, Nyc+1, Nzlocal)
-    rtg.SetExtent(0, Nxc, 0, Nyc, rankproc*Nzc/numproc, (rankproc+1)*Nzc/numproc)
-    rtg.SetXCoordinates(vtkXcoordinates)
-    rtg.SetYCoordinates(vtkYcoordinates)
-    rtg.SetZCoordinates(vtkZcoordinates)
+    rtg.SetExtent(0, Nx, 0, Ny, localZrange[0], localZrange[1])
+    rtg.SetXCoordinates(vtkX)
+    rtg.SetYCoordinates(vtkY)
+    rtg.SetZCoordinates(vtkZ)
     vtk_data = []
     array_list = []
     for f in scalar_fields:
@@ -271,14 +280,15 @@ for Z in Zrange:
 list_read_proc = scipy.array(list_read_proc)
 zread_proc = len(list_read_proc)/(YLEN*XLEN) #Number of proc file you want to read in the z direction
 
-Nzlocal = zread_proc*(shape[2] - 1) + 1
-Fields_local = scipy.zeros((field_comp_count,Nxc+1,Nyc+1,Nzlocal), dtype="float32")
+Nzlocal = zread_proc*(shape[2] - 1)
+Fields_local = scipy.zeros((field_comp_count,Nxc+1,Nyc+1,Nzlocal+1), dtype="float32")
 numproc = min(numproc, ZLEN) # To account for specific case where more processors are used here than in the Z direction of the simulation
 if len(list_read_proc) > 0:
-    numpoints = (Nxc+1)*(Nyc+1)*Nzlocal
+    numpoints = (Nxc+1)*(Nyc+1)*(Nzlocal+1)
+    RangeZlocal = rankproc*Nzc/numproc, (rankproc+1)*Nzc/numproc
     Xcoordinates = scipy.arange(Nxc+1).flatten().astype('float32')*dx
     Ycoordinates = scipy.arange(Nyc+1).flatten().astype('float32')*dy
-    Zcoordinates = (scipy.arange(Nzlocal).flatten().astype('float32') + list_read_proc[0]*(shape[2]-1))*dz
+    Zcoordinates = (scipy.arange(Nzlocal+1).flatten().astype('float32') + list_read_proc[0]*(shape[2]-1))*dz
     vtkXcoordinates = vtk.vtkFloatArray()
     vtkXcoordinates.SetNumberOfComponents(1)
     vtkXcoordinates.SetNumberOfTuples(Nxc+1)
@@ -289,8 +299,8 @@ if len(list_read_proc) > 0:
     vtkYcoordinates.SetVoidArray(Ycoordinates,Nyc+1,1)
     vtkZcoordinates = vtk.vtkFloatArray()
     vtkZcoordinates.SetNumberOfComponents(1)
-    vtkZcoordinates.SetNumberOfTuples(Nzlocal)
-    vtkZcoordinates.SetVoidArray(Zcoordinates,Nzlocal,1)
+    vtkZcoordinates.SetNumberOfTuples(Nzlocal+1)
+    vtkZcoordinates.SetVoidArray(Zcoordinates,Nzlocal+1,1)
     list_proc_files = []
     for read_proc in list_read_proc: 
         list_proc_files.append(directory + "proc" + repr(read_proc) + ".hdf")
@@ -317,7 +327,7 @@ if len(list_read_proc) > 0:
             for c in xrange(len(field_vec_names)): 
                 vector_fields[field_vec_names[c]] = Fields_local[3*c:3*(c+1), :, :, :]
             writeVTR(directory + str_fields + repr(cycle).rjust(8,"0") + "-" + repr(rankproc) + ".vtr", {}, vector_fields,
-                    Nxc, Nyc, Nzc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
+                     vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, RangeZlocal)
             if rankproc == 0:
                 pvtr_fields_list.append(str_fields + repr(cycle).rjust(8,"0") + ".pvtr")
                 writePVTR(directory + pvtr_fields_list[-1], cycle, str_fields, [], vector_fields.keys(), Nxc, Nyc, Nzc, numproc)
@@ -332,7 +342,7 @@ if len(list_read_proc) > 0:
     if data_read['Rho']: 
         if rankproc == 0: pvtr_rho_list = []
         for cycle in list_cycle:    
-            Fields_local = scipy.zeros((ns+1,Nxc+1,Nyc+1,Nzlocal), dtype="float32")            
+            Fields_local = scipy.zeros((ns+1,Nxc+1,Nyc+1,Nzlocal+1), dtype="float32")            
             for proc_filename in list_proc_files:
                 h5proc_file = openProcFile(proc_filename, list_read_proc[0], bounds)
                 # Read the total density first
@@ -360,7 +370,7 @@ if len(list_read_proc) > 0:
             for specie in species: 
                 rho_fields[str_rho + repr(specie)] = Fields_local[specie+1,:,:,:]
             writeVTR(directory + str_rho + repr(cycle).rjust(8,"0") + "-" + repr(rankproc) + ".vtr", rho_fields, {}, 
-                    Nxc, Nyc, Nzc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
+                     vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, RangeZlocal)
             if rankproc == 0:            
                 pvtr_rho_list.append(str_rho + repr(cycle).rjust(8,"0") + ".pvtr")
                 writePVTR(directory + pvtr_rho_list[-1], cycle, str_rho, rho_fields.keys(), [], Nxc, Nyc, Nzc, numproc)
@@ -375,7 +385,7 @@ if len(list_read_proc) > 0:
     if data_read['Currents']:
         if rankproc == 0: pvtr_currents_list = []
         for cycle in list_cycle:    
-            Fields_local = scipy.zeros((ns*3,Nxc+1,Nyc+1,Nzlocal), dtype="float32")
+            Fields_local = scipy.zeros((ns*3,Nxc+1,Nyc+1,Nzlocal+1), dtype="float32")
             for proc_filename in list_proc_files:
                 h5proc_file = openProcFile(proc_filename, list_read_proc[0], bounds)
                 ## Cycle over species to get current for each specie
@@ -396,7 +406,7 @@ if len(list_read_proc) > 0:
             for specie in species: 
                 j_fields[current_vec_name + repr(specie)] = Fields_local[3*specie:3*(specie+1), :, :, :]
             writeVTR(directory + str_currents + repr(cycle).rjust(8,"0") + "-" + repr(rankproc) + ".vtr", {}, j_fields,
-                    Nxc, Nyc, Nzc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
+                     vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, RangeZlocal)
             if rankproc == 0:
                 pvtr_currents_list.append(str_currents + repr(cycle).rjust(8,"0")+".pvtr")
                 writePVTR(directory + pvtr_currents_list[-1], cycle, str_currents, [], j_fields.keys(), Nxc, Nyc, Nzc, numproc)
@@ -411,7 +421,7 @@ if len(list_read_proc) > 0:
     if data_read['Pressure']: 
         if rankproc == 0: pvtr_press_list = []
         for cycle in list_cycle:    
-            Fields_local = scipy.zeros((ns*6, Nxc+1, Nyc+1, Nzlocal), dtype="float32")            
+            Fields_local = scipy.zeros((ns*6, Nxc+1, Nyc+1, Nzlocal+1), dtype="float32")            
             for proc_filename in list_proc_files:
                 h5proc_file = openProcFile(proc_filename, list_read_proc[0], bounds)
                 for specie in species:
@@ -433,7 +443,7 @@ if len(list_read_proc) > 0:
                     p_fields[press_names[c] + repr(specie)] = Fields_local[press_comp_count*specie+c,:,:,:]
             #end for
             writeVTR(directory + str_pressure + repr(cycle).rjust(8,"0") + "-" + repr(rankproc) + ".vtr", p_fields, {}, 
-                    Nxc, Nyc, Nzc, Nzlocal, vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, rankproc, numproc)
+                     vtkXcoordinates, vtkYcoordinates, vtkZcoordinates, RangeZlocal)
             if rankproc == 0:            
                 pvtr_press_list.append(str_pressure + repr(cycle).rjust(8,"0") + ".pvtr")
                 writePVTR(directory + pvtr_press_list[-1], cycle, str_pressure, p_fields.keys(), [], Nxc, Nyc, Nzc, numproc)
