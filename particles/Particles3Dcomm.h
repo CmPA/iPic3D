@@ -32,19 +32,19 @@ public:
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   int communicate(VirtualTopology3D * ptVCT);
   /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXleft(double *b_, int np, VirtualTopology3D * vct);
+  void bufferXleft(double *b_, long long np, VirtualTopology3D * vct);
   /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXright(double *b_, int np, VirtualTopology3D * vct);
+  void bufferXright(double *b_, long long np, VirtualTopology3D * vct);
   /** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYleft(double *b_, int np, VirtualTopology3D * vct);
+  void bufferYleft(double *b_, long long np, VirtualTopology3D * vct);
   /** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYright(double *b_, int np, VirtualTopology3D * vct);
+  void bufferYright(double *b_, long long np, VirtualTopology3D * vct);
   /** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZleft(double *b_, int np, VirtualTopology3D * vct);
+  void bufferZleft(double *b_, long long np, VirtualTopology3D * vct);
   /** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZright(double *b_, int np, VirtualTopology3D * vct);
+  void bufferZright(double *b_, long long np, VirtualTopology3D * vct);
   /** Delete the a particle from a list(array) and pack the list(array) */
-  void del_pack(int np, int *nplast);
+  void del_pack(long long np, long long *nplast);
 
   /** method to debuild the buffer received */
   int unbuffer(double *b_);
@@ -72,25 +72,25 @@ public:
   /** get the ID array   */
   unsigned long *getParticleIDall() const;
   /** get X-position of particle with label indexPart */
-  double getX(int indexPart) const;
+  double getX(long long indexPart) const;
   /** get Y-position of particle with label indexPart */
-  double getY(int indexPart) const;
+  double getY(long long indexPart) const;
   /** get Z-position of particle with label indexPart */
-  double getZ(int indexPart) const;
+  double getZ(long long indexPart) const;
   /** get u (X-velocity) of particle with label indexPart */
-  double getU(int indexPart) const;
+  double getU(long long indexPart) const;
   /** get v (Y-velocity) of particle with label indexPart */
-  double getV(int indexPart) const;
+  double getV(long long indexPart) const;
   /** get w (Z-velocity) of particle with label indexPart */
-  double getW(int indexPart) const;
+  double getW(long long indexPart) const;
   /** get ID of particle with label indexPart */
-  unsigned long getParticleID(int indexPart) const;
+  unsigned long getParticleID(long long indexPart) const;
   /**get charge of particle with label indexPart */
-  double getQ(int indexPart) const;
+  double getQ(long long indexPart) const;
   /** get charge of array for ID particles */
   double *getQall() const;
   /** get the number of particles of this subdomain */
-  int getNOP() const;
+  long long getNOP() const;
   /** return the Kinetic energy */
   double getKe();
   /** return the maximum kinetic energy */
@@ -108,11 +108,11 @@ protected:
   /** number of species */
   int ns;
   /** maximum number of particles of this species on this domain. used for memory allocation */
-  int npmax;
+  long long npmax;
   /** number of particles of this species on this domain */
-  int nop;
+  long long nop;
   /** total number of particles */
-  int np_tot;
+  long long np_tot;
   /** number of particles per cell */
   int npcel;
   /** number of particles per cell - X direction */
