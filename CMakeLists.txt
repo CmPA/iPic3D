@@ -10,7 +10,7 @@ project(iPic3D-clean)
 # Set exec path
 #
 
-set(EXECUTABLE_OUTPUT_PATH bin/${CMAKE_BUILD_TYPE})
+set(EXECUTABLE_OUTPUT_PATH work/${CMAKE_BUILD_TYPE})
 set(LIBRARY_OUTPUT_PATH lib)
 
 #
