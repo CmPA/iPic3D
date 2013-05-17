@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 2.8.10)
+cmake_minimum_required(VERSION 2.8.8)
 
 #
 # Project declaration
 #
 
-project(iPic3D-clean)
+project(iPic3D)
 
 #
 # Set exec path
