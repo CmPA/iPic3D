@@ -875,7 +875,7 @@ double Particles3Dcomm::getMaxVelocity(){
   double localVel = 0.0;
   double maxVel = 0.0;
   for (long long i=0; i < nop; i++)
-    localVel = max(localVel, (u[i]*u[i] + v[i]*v[i] + w[i]*w[i]));
+    localVel = max(localVel, sqrt(u[i]*u[i] + v[i]*v[i] + w[i]*w[i]));
   MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
   return(maxVel);
 }
@@ -890,7 +890,7 @@ unsigned long* Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel
   double dv = maxVel / nBins;
   int bin = 0;
   for (long long i=0; i < nop; i++) {
-    Vel = (u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
+    Vel = sqrt(u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
     bin = int(floor(Vel/dv));
     if (bin >= nBins) 
       f[nBins-1] += 1;
