@@ -1,0 +1,5 @@
+The matlab/octave script fft_along_probe_sat_line.m uses data already extracted with the scripts for single probe (point) satellite in the read-virt-sat-files-PIC suite.
+
+Usually the PIC runs are in two parts and the octave script uses that to stitch the respective matrices of data. But it can be easily adjusted for a single run. One needs the respective output_filename_*.txt for the desired quantity to be FFT-ed.
+
+Then the gnuplot script (which can also be adjusted) plot_fft_test.gnuplot plots out the matrix using the splot function and in that script the proper FFT scaling of the axes is done.

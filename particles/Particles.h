@@ -42,23 +42,23 @@ public:
   /**get charge of particle array */
   virtual double *getQall() const = 0;
   /** get X-position of particle with label indexPart */
-  virtual double getX(int indexPart) const = 0;
+  virtual double getX(long long indexPart) const = 0;
   /** get Y-position of particle with label indexPart */
-  virtual double getY(int indexPart) const = 0;
+  virtual double getY(long long indexPart) const = 0;
   /** get Z-position of particle with label indexPart */
-  virtual double getZ(int indexPart) const = 0;
+  virtual double getZ(long long indexPart) const = 0;
   /** get u (X-velocity) of particle with label indexPart */
-  virtual double getU(int indexPart) const = 0;
+  virtual double getU(long long indexPart) const = 0;
   /** get v (Y-velocity) of particle with label indexPart */
-  virtual double getV(int indexPart) const = 0;
+  virtual double getV(long long indexPart) const = 0;
   /** get w (Z-velocity) of particle with label indexPart */
-  virtual double getW(int indexPart) const = 0;
+  virtual double getW(long long indexPart) const = 0;
   /** get ID of particle with label indexPart */
-  virtual unsigned long getParticleID(int indexPart) const = 0;
+  virtual unsigned long getParticleID(long long indexPart) const = 0;
   /**get charge of particle with label indexPart */
-  virtual double getQ(int indexPart) const = 0;
+  virtual double getQ(long long indexPart) const = 0;
   /** get the number of particles of this subdomain */
-  virtual int getNOP() const = 0;
+  virtual long long getNOP() const = 0;
   /** return the Kinetic energy */
   virtual double getKe() = 0;  
   /** return the maximum kinetic energy */
