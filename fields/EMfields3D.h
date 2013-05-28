@@ -2030,7 +2030,7 @@ inline void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid) {
 
 inline void EMfields3D::initRandomField(VirtualTopology3D *vct, Grid *grid)
 {
-    double** modes_seed = newArr(double, 7, 7);
+    double** modes_seed = newArr2(double, 7, 7);
     if (restart1 ==0){
         // initialize
         if (vct->getCartesian_rank() ==0){
@@ -2127,7 +2127,7 @@ inline void EMfields3D::initRandomField(VirtualTopology3D *vct, Grid *grid)
     } else {
         init(vct,grid);  // use the fields from restart file
     }
-    delArr(modes_seed, 7);
+    delArr2(modes_seed, 7);
 }
 /*!
  *
@@ -2297,9 +2297,9 @@ inline void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY,
         }
       break;
     case 1:                    // boundary condition on Y-DIRECTION
-      susxy = newArr(double, nxn, nzn);
-      susyy = newArr(double, nxn, nzn);
-      suszy = newArr(double, nxn, nzn);
+      susxy = newArr2(double, nxn, nzn);
+      susyy = newArr2(double, nxn, nzn);
+      suszy = newArr2(double, nxn, nzn);
       sustensorLeftY(susxy, susyy, suszy);
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nzn - 1; j++) {
@@ -2317,9 +2317,9 @@ inline void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY,
         }
       break;
   }
-  delArr(susxy, nxn);
-  delArr(susyy, nxn);
-  delArr(suszy, nxn);
+  delArr2(susxy, nxn);
+  delArr2(susyy, nxn);
+  delArr2(suszy, nxn);
 }
 /*! Perfect conductor boundary conditions: RIGHT wall */
 inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid) {
@@ -2338,9 +2338,9 @@ inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY
         }
       break;
     case 1:                    // boundary condition on Y-DIRECTION RIGHT
-      susxy = newArr(double, nxn, nzn);
-      susyy = newArr(double, nxn, nzn);
-      suszy = newArr(double, nxn, nzn);
+      susxy = newArr2(double, nxn, nzn);
+      susyy = newArr2(double, nxn, nzn);
+      suszy = newArr2(double, nxn, nzn);
       sustensorRightY(susxy, susyy, suszy);
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nzn - 1; j++) {
@@ -2359,9 +2359,9 @@ inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY
         }
       break;
   }
-  delArr(susxy, nxn);
-  delArr(susyy, nxn);
-  delArr(suszy, nxn);
+  delArr2(susxy, nxn);
+  delArr2(susyy, nxn);
+  delArr2(suszy, nxn);
 }
 /*! Perfect conductor boundary conditions for source: LEFT WALL*/
 inline void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
