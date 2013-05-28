@@ -58,6 +58,8 @@ public:
   void initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid);
   /*! initialize GEM challenge with no Perturbation */
   void initGEMnoPert(VirtualTopology3D * vct, Grid * grid);
+  /** Random initial field */
+  void initRandomField(VirtualTopology3D *vct, Grid *grid);
   /*!  Init Force Free (JxB=0) */
   void initForceFree(VirtualTopology3D * vct, Grid * grid);
   /*! initialized with rotated magnetic field */
@@ -1829,6 +1831,10 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
                     // guide field
                     Bzn[i][j][k] = B0z;
                 }
+        // communicate ghost
+        communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
         // initialize B on centers
         for (int i=0; i < nxc; i++)
             for (int j=0; j < nyc; j++)
@@ -1859,12 +1865,17 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
                     // guide field
                     Bzc[i][j][k] = B0z;
                 }
+        // communicate ghost
+        communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
+        communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
+        communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
         for (int is=0 ; is<ns; is++)
             grid->interpN2C(rhocs,is,rhons);
     } else {
         init(vct,grid);  // use the fields from restart file
     }
 }
+
 
 /*! initialize GEM challenge with no Perturbation with dipole-like tail topology */
 inline void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid){
@@ -2015,6 +2026,108 @@ inline void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid) {
   else {
     init(vct, grid);            // use the fields from restart file
   }
+}
+
+inline void EMfields3D::initRandomField(VirtualTopology3D *vct, Grid *grid)
+{
+    double** modes_seed = newArr(double, 7, 7);
+    if (restart1 ==0){
+        // initialize
+        if (vct->getCartesian_rank() ==0){
+            cout << "------------------------------------------" << endl;
+            cout << "Initialize GEM Challenge with Pertubation" << endl;
+            cout << "------------------------------------------" << endl;
+            cout << "B0x                              = " << B0x << endl;
+            cout << "B0y                              = " << B0y << endl;
+            cout << "B0z                              = " << B0z << endl;
+            cout << "Delta (current sheet thickness) = " << delta << endl;
+            for (int i=0; i < ns; i++){
+                cout << "rho species " << i <<" = " << rhoINIT[i];
+                if (DriftSpecies[i])
+                    cout << " DRIFTING " << endl;
+                else
+                    cout << " BACKGROUND " << endl;
+            }
+            cout << "-------------------------" << endl;
+        }
+        double phixy;
+        double phix;
+        double phiy;
+        double phiz;
+        double kx;
+        double ky;
+		phixy = rand() / (double) RAND_MAX;
+		phiz = rand() / (double) RAND_MAX;
+		phix = rand() / (double) RAND_MAX;
+		phiy = rand() / (double) RAND_MAX;
+		for (int m=-3; m < 4; m++)
+            for (int n=-3; n < 4; n++){
+            	modes_seed[m+3][n+3] = rand() / (double) RAND_MAX;
+            }
+        for (int i=0; i < nxn; i++)
+            for (int j=0; j < nyn; j++)
+                for (int k=0; k < nzn; k++){
+                    // initialize the density for species
+                    for (int is=0; is < ns; is++){
+                            rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+                    }
+                    // electric field
+                    Ex[i][j][k] =  0.0;
+                    Ey[i][j][k] =  0.0;
+                    Ez[i][j][k] =  0.0;
+                    // Magnetic field
+                    Bxn[i][j][k] =  0.0;
+                    Byn[i][j][k] =  0.0;
+                    Bzn[i][j][k] =  0.0;
+                    for (int m=-3; m < 4; m++)
+                         for (int n=-3; n < 4; n++){
+
+                             kx=2.0*M_PI*m/Lx;
+                             ky=2.0*M_PI*n/Ly;
+                             Bxn[i][j][k] += -B0x*ky*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*modes_seed[m+3][n+3]);
+                             Byn[i][j][k] += B0x*kx*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*modes_seed[m+3][n+3]);
+                             Bzn[i][j][k] += B0x*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*modes_seed[m+3][n+3]);
+                                       	}
+
+/*                    for (int m=1; m < 4; m++)
+                    	for (int n=1; n < 4; n++){
+
+                    		kx=2.0*M_PI*m/Lx;
+                            ky=2.0*M_PI*n/Ly;
+                    		Bxn[i][j][k] += B0x/kx*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phixy);
+                    		Byn[i][j][k] += B0x/ky*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phixy);
+                    		Bzn[i][j][k] += B0x/(kx+ky)*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phiz);
+                    	}
+                    	for(int n=1; n < 4; n++){
+
+                            ky=2.0*M_PI*n/Ly;
+                    		Bxn[i][j][k] += B0x/(2.0*M_PI/Lx)*cos(grid->getYN(i,j,k)*ky+2.0*M_PI*phix);
+                    		}
+                    	for(int m=1; m < 4; m++){
+
+                            kx=2.0*M_PI*m/Lx;
+                    		Byn[i][j][k] += B0x/(2.0*M_PI/Ly)*cos(grid->getXN(i,j,k)*kx+2.0*M_PI*phiy);
+                    		}
+*/
+                }
+        // communicate ghost
+        communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
+        // initialize B on centers
+        grid->interpN2C(Bxc, Bxn);
+        grid->interpN2C(Byc, Byn);
+        grid->interpN2C(Bzc, Bzn);
+        // communicate ghost
+        communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
+        communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
+        communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
+        for (int is=0 ; is<ns; is++)
+            grid->interpN2C(rhocs,is,rhons);
+    } else {
+        init(vct,grid);  // use the fields from restart file
+    }
+    delArr(modes_seed, 7);
 }
 /*!
  *

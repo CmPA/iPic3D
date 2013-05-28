@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
   // EMf->initGEMnoPert(vct,grid);
   // EMf->initForceFree(vct,grid);
   //EMf->initGEM(vct, grid);
-  EMf->initOriginalGEM(vct, grid);
+  EMf->initRandomField(vct, grid);
   // Allocation of particles
   Particles3D *part = new Particles3D[ns];
   for (int i = 0; i < ns; i++)
