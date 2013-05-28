@@ -10,6 +10,7 @@ developers           : Stefano Markidis, Giovanni Lapenta
 #define ComParticles3D_H
 
 #include <mpi.h>
+#include "../utility/defs.h"
 #include "../communication/ComBasic3D.h"
 /** comunicate particles and receive particles to and from 6 processors */
 inline void communicateParticles(int buffer_size, double *b_Xleft, double *b_Xright, double *b_Yleft, double *b_Yright, double *b_Zleft, double *b_Zright, VirtualTopology3D * vct) {

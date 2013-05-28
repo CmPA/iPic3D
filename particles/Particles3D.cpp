@@ -7,6 +7,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "mpi.h"
 #include <iostream>
 #include <math.h>
+#include "../utility/defs.h"
 #include "../processtopology/VirtualTopology3D.h"
 #include "../processtopology/VCtopology3D.h"
 #include "../inputoutput/CollectiveIO.h"

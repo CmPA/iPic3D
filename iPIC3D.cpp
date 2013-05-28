@@ -3,8 +3,9 @@
   -------------------
  ************************************************************************** */
 
-// MPI
 #include <mpi.h>
+#include "utility/defs.h"
+// MPI
 #include "mpidata/MPIdata.h"
 // Topology
 #include "processtopology/VirtualTopology3D.h"
