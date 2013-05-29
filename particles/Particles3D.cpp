@@ -4,8 +4,10 @@
 developers: Stefano Markidis, Giovanni Lapenta
  ********************************************************************************************/
 
+#include "mpi.h"
 #include <iostream>
 #include <math.h>
+#include "../utility/defs.h"
 #include "../processtopology/VirtualTopology3D.h"
 #include "../processtopology/VCtopology3D.h"
 #include "../inputoutput/CollectiveIO.h"
@@ -30,7 +32,7 @@ using std::endl;
 #define max(a,b) (((a)>(b))?(a):(b));
 #define MIN_VAL   1E-16
 // particles processed together
-#define P_SAME_TIME 2
+#define P_SAME_TIME 8
 
 /**
  * 

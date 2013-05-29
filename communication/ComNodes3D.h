@@ -9,6 +9,7 @@ developers           : Stefano Markidis, Giovanni Lapenta
 
 #ifndef ComNodes3D_H
 #define ComNodes_H
+#include "../utility/defs.h"
 
 #include "ComBasic3D.h"
 // boundary condition for fields

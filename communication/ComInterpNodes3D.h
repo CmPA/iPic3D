@@ -11,6 +11,7 @@ developers           : Stefano Markidis, Giovanni Lapenta
 #define ComInterpNodes_H
 
 #include "ComBasic3D.h"
+#include "../utility/defs.h"
 
 
 /** communicate ghost cells and sum the contribution with a index indicating the number of species*/

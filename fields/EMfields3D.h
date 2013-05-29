@@ -58,6 +58,8 @@ public:
   void initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid);
   /*! initialize GEM challenge with no Perturbation */
   void initGEMnoPert(VirtualTopology3D * vct, Grid * grid);
+  /** Random initial field */
+  void initRandomField(VirtualTopology3D *vct, Grid *grid);
   /*!  Init Force Free (JxB=0) */
   void initForceFree(VirtualTopology3D * vct, Grid * grid);
   /*! initialized with rotated magnetic field */
@@ -1715,9 +1717,13 @@ inline void EMfields3D::initOriginalGEM(VirtualTopology3D *vct, Grid *grid){
             for (int j=0; j < nyn; j++)
                 for (int k=0; k < nzn; k++){
                     // initialize the density for species
+                    const double yM = grid->getYN(i,j,k)-.5*Ly;
+                    const double sech_yMd = 1./cosh(yM/delta);
+                    const double sech2_yMd = sech_yMd*sech_yMd;
+                    const double nb_over_n0 = .2; // .2 in original GEM
                     for (int is=0; is < ns; is++){
                         if (DriftSpecies[is])
-                            rhons[is][i][j][k] = ((rhoINIT[is]/(cosh((grid->getYN(i,j,k)-Ly/2)/delta)*cosh((grid->getYN(i,j,k)-Ly/2)/delta))))/FourPI;
+                            rhons[is][i][j][k] = rhoINIT[is]*(nb_over_n0+sech2_yMd)/FourPI;
                         else
                             rhons[is][i][j][k] = rhoINIT[is]/FourPI;
                     }
@@ -1726,7 +1732,6 @@ inline void EMfields3D::initOriginalGEM(VirtualTopology3D *vct, Grid *grid){
                     Ey[i][j][k] =  0.0;
                     Ez[i][j][k] =  0.0;
                     // Magnetic field
-                    const double yM = grid->getYN(i,j,k)-.5*Ly;
                     Bxn[i][j][k] = B0x*tanh(yM/delta);	
                     // add the initial GEM perturbation
                     const double xM = grid->getXN(i,j,k)-.5*Lx;
@@ -1758,9 +1763,9 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
    VirtualTopology3D *vct, Grid *grid)
 {
     // perturbation localized in X
-    const double pertX = 0.4;
-    const double deltax = 8.*delta;
-    const double deltay = 4.*delta;
+    const double pertX = 0.3;
+    const double deltax = 5.*delta;
+    const double deltay = 2.5*delta;
     if (restart1 ==0){
         // initialize
         if (vct->getCartesian_rank() ==0){
@@ -1783,7 +1788,9 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
         for (int i=0; i < nxn; i++)
             for (int j=0; j < nyn; j++)
                 for (int k=0; k < nzn; k++){
-                    const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    //const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    const double xB = grid->getXN(i,j,k)- .25*Lx;
+                    const double xT = grid->getXN(i,j,k)- .75*Lx;
                     const double yB = grid->getYN(i,j,k) - .25*Ly;
                     const double yT = grid->getYN(i,j,k) - .75*Ly;
                     const double yBd = yB/delta;
@@ -1809,25 +1816,32 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
                     Bxn[i][j][k] += 0.;
                     Byn[i][j][k] = B0y;
                     // add the initial X perturbation
-                    const double xMdx = xM/deltax;
+                    const double xBdx = xB/deltax;
+                    const double xTdx = xT/deltax;
                     const double yBdy = yB/deltay;
                     const double yTdy = yT/deltay;
-                    const double humpB = exp(-xMdx*xMdx-yBdy*yBdy);
+                    const double humpB = exp(-xBdx*xBdx-yBdy*yBdy);
                     Bxn[i][j][k] -=(B0x*pertX)*humpB*(2.0*yBdy);
-                    Byn[i][j][k] +=(B0x*pertX)*humpB*(2.0*xMdx);
+                    Byn[i][j][k] +=(B0x*pertX)*humpB*(2.0*xBdx);
                     // add the second initial X perturbation
-                    const double humpT = exp(-xMdx*xMdx-yTdy*yTdy);
+                    const double humpT = exp(-xTdx*xTdx-yTdy*yTdy);
                     Bxn[i][j][k] +=(B0x*pertX)*humpT*(2.0*yTdy);
-                    Byn[i][j][k] -=(B0x*pertX)*humpT*(2.0*xMdx);
+                    Byn[i][j][k] -=(B0x*pertX)*humpT*(2.0*xTdx);
 
                     // guide field
                     Bzn[i][j][k] = B0z;
                 }
+        // communicate ghost
+        communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
         // initialize B on centers
         for (int i=0; i < nxc; i++)
             for (int j=0; j < nyc; j++)
                 for (int k=0; k < nzc; k++){
-                    const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    //const double xM = grid->getXN(i,j,k)- .5*Lx;
+                    const double xB = grid->getXN(i,j,k)- .25*Lx;
+                    const double xT = grid->getXN(i,j,k)- .75*Lx;
                     const double yB = grid->getYN(i,j,k) - .25*Ly;
                     const double yT = grid->getYN(i,j,k) - .75*Ly;
                     const double yBd = yB/delta;
@@ -1837,25 +1851,31 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
                     Bxc[i][j][k] += 0.;
                     Byc[i][j][k] = B0y;
                     // add the initial X perturbation
-                    const double xMdx = xM/deltax;
+                    const double xBdx = xB/deltax;
+                    const double xTdx = xT/deltax;
                     const double yBdy = yB/deltay;
                     const double yTdy = yT/deltay;
-                    const double humpB = exp(-xMdx*xMdx-yBdy*yBdy);
+                    const double humpB = exp(-xBdx*xBdx-yBdy*yBdy);
                     Bxc[i][j][k] -=(B0x*pertX)*humpB*(2.0*yBdy);
-                    Byc[i][j][k] +=(B0x*pertX)*humpB*(2.0*xMdx);
+                    Byc[i][j][k] +=(B0x*pertX)*humpB*(2.0*xBdx);
                     // add the second initial X perturbation
-                    const double humpT = exp(-xMdx*xMdx-yTdy*yTdy);
+                    const double humpT = exp(-xTdx*xTdx-yTdy*yTdy);
                     Bxc[i][j][k] +=(B0x*pertX)*humpT*(2.0*yTdy);
-                    Byc[i][j][k] -=(B0x*pertX)*humpT*(2.0*xMdx);
+                    Byc[i][j][k] -=(B0x*pertX)*humpT*(2.0*xTdx);
                     // guide field
                     Bzc[i][j][k] = B0z;
                 }
+        // communicate ghost
+        communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
+        communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
+        communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
         for (int is=0 ; is<ns; is++)
             grid->interpN2C(rhocs,is,rhons);
     } else {
         init(vct,grid);  // use the fields from restart file
     }
 }
+
 
 /*! initialize GEM challenge with no Perturbation with dipole-like tail topology */
 inline void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid){
@@ -2006,6 +2026,108 @@ inline void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid) {
   else {
     init(vct, grid);            // use the fields from restart file
   }
+}
+
+inline void EMfields3D::initRandomField(VirtualTopology3D *vct, Grid *grid)
+{
+    double** modes_seed = newArr2(double, 7, 7);
+    if (restart1 ==0){
+        // initialize
+        if (vct->getCartesian_rank() ==0){
+            cout << "------------------------------------------" << endl;
+            cout << "Initialize GEM Challenge with Pertubation" << endl;
+            cout << "------------------------------------------" << endl;
+            cout << "B0x                              = " << B0x << endl;
+            cout << "B0y                              = " << B0y << endl;
+            cout << "B0z                              = " << B0z << endl;
+            cout << "Delta (current sheet thickness) = " << delta << endl;
+            for (int i=0; i < ns; i++){
+                cout << "rho species " << i <<" = " << rhoINIT[i];
+                if (DriftSpecies[i])
+                    cout << " DRIFTING " << endl;
+                else
+                    cout << " BACKGROUND " << endl;
+            }
+            cout << "-------------------------" << endl;
+        }
+        double phixy;
+        double phix;
+        double phiy;
+        double phiz;
+        double kx;
+        double ky;
+		phixy = rand() / (double) RAND_MAX;
+		phiz = rand() / (double) RAND_MAX;
+		phix = rand() / (double) RAND_MAX;
+		phiy = rand() / (double) RAND_MAX;
+		for (int m=-3; m < 4; m++)
+            for (int n=-3; n < 4; n++){
+            	modes_seed[m+3][n+3] = rand() / (double) RAND_MAX;
+            }
+        for (int i=0; i < nxn; i++)
+            for (int j=0; j < nyn; j++)
+                for (int k=0; k < nzn; k++){
+                    // initialize the density for species
+                    for (int is=0; is < ns; is++){
+                            rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+                    }
+                    // electric field
+                    Ex[i][j][k] =  0.0;
+                    Ey[i][j][k] =  0.0;
+                    Ez[i][j][k] =  0.0;
+                    // Magnetic field
+                    Bxn[i][j][k] =  0.0;
+                    Byn[i][j][k] =  0.0;
+                    Bzn[i][j][k] =  0.0;
+                    for (int m=-3; m < 4; m++)
+                         for (int n=-3; n < 4; n++){
+
+                             kx=2.0*M_PI*m/Lx;
+                             ky=2.0*M_PI*n/Ly;
+                             Bxn[i][j][k] += -B0x*ky*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*modes_seed[m+3][n+3]);
+                             Byn[i][j][k] += B0x*kx*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*modes_seed[m+3][n+3]);
+                             Bzn[i][j][k] += B0x*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*modes_seed[m+3][n+3]);
+                                       	}
+
+/*                    for (int m=1; m < 4; m++)
+                    	for (int n=1; n < 4; n++){
+
+                    		kx=2.0*M_PI*m/Lx;
+                            ky=2.0*M_PI*n/Ly;
+                    		Bxn[i][j][k] += B0x/kx*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phixy);
+                    		Byn[i][j][k] += B0x/ky*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phixy);
+                    		Bzn[i][j][k] += B0x/(kx+ky)*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phiz);
+                    	}
+                    	for(int n=1; n < 4; n++){
+
+                            ky=2.0*M_PI*n/Ly;
+                    		Bxn[i][j][k] += B0x/(2.0*M_PI/Lx)*cos(grid->getYN(i,j,k)*ky+2.0*M_PI*phix);
+                    		}
+                    	for(int m=1; m < 4; m++){
+
+                            kx=2.0*M_PI*m/Lx;
+                    		Byn[i][j][k] += B0x/(2.0*M_PI/Ly)*cos(grid->getXN(i,j,k)*kx+2.0*M_PI*phiy);
+                    		}
+*/
+                }
+        // communicate ghost
+        communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
+        // initialize B on centers
+        grid->interpN2C(Bxc, Bxn);
+        grid->interpN2C(Byc, Byn);
+        grid->interpN2C(Bzc, Bzn);
+        // communicate ghost
+        communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
+        communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
+        communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
+        for (int is=0 ; is<ns; is++)
+            grid->interpN2C(rhocs,is,rhons);
+    } else {
+        init(vct,grid);  // use the fields from restart file
+    }
+    delArr2(modes_seed, 7);
 }
 /*!
  *
@@ -2175,9 +2297,9 @@ inline void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY,
         }
       break;
     case 1:                    // boundary condition on Y-DIRECTION
-      susxy = newArr(double, nxn, nzn);
-      susyy = newArr(double, nxn, nzn);
-      suszy = newArr(double, nxn, nzn);
+      susxy = newArr2(double, nxn, nzn);
+      susyy = newArr2(double, nxn, nzn);
+      suszy = newArr2(double, nxn, nzn);
       sustensorLeftY(susxy, susyy, suszy);
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nzn - 1; j++) {
@@ -2195,9 +2317,9 @@ inline void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY,
         }
       break;
   }
-  delArr(susxy, nxn);
-  delArr(susyy, nxn);
-  delArr(suszy, nxn);
+  delArr2(susxy, nxn);
+  delArr2(susyy, nxn);
+  delArr2(suszy, nxn);
 }
 /*! Perfect conductor boundary conditions: RIGHT wall */
 inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid) {
@@ -2216,9 +2338,9 @@ inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY
         }
       break;
     case 1:                    // boundary condition on Y-DIRECTION RIGHT
-      susxy = newArr(double, nxn, nzn);
-      susyy = newArr(double, nxn, nzn);
-      suszy = newArr(double, nxn, nzn);
+      susxy = newArr2(double, nxn, nzn);
+      susyy = newArr2(double, nxn, nzn);
+      suszy = newArr2(double, nxn, nzn);
       sustensorRightY(susxy, susyy, suszy);
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nzn - 1; j++) {
@@ -2237,9 +2359,9 @@ inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY
         }
       break;
   }
-  delArr(susxy, nxn);
-  delArr(susyy, nxn);
-  delArr(suszy, nxn);
+  delArr2(susxy, nxn);
+  delArr2(susyy, nxn);
+  delArr2(suszy, nxn);
 }
 /*! Perfect conductor boundary conditions for source: LEFT WALL*/
 inline void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {

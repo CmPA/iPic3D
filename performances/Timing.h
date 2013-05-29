@@ -11,6 +11,7 @@ developers: Stefano Markidis, Enrico Camporeale, Giovanni Lapenta, David Burgess
 // #include "mpe.h"
 
 #include <iostream>
+#include "../utility/defs.h"
 
 using std::cout;
 using std::endl;

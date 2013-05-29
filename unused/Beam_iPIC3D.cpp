@@ -5,8 +5,9 @@ begin                : Jun 2008
 copyright            : (C) 2004 by Stefano Markidis, Giovanni Lapenta
  ************************************************************************** */
 
-// MPI
 #include <mpi.h>
+#include "utility/defs.h"
+// MPI
 #include "mpidata/MPIdata.h"
 // Topology
 #include "processtopology/VirtualTopology3D.h"

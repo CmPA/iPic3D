@@ -30,7 +30,7 @@ inline void swapBuffer(double *b_left, double *b_right) {
 }
 /** swap ghost cells */
 inline void swapGhostFace(int n1, int n2, double **ghostFaceLeft, double **ghostFaceRight) {
-  double **temp = newArr(double, n1, n2);
+  double **temp = newArr2(double, n1, n2);
   for (register int i = 0; i < n1; i++) {
     for (register int j = 0; j < n2; j++) {
       temp[i][j] = ghostFaceLeft[i][j];
@@ -38,7 +38,7 @@ inline void swapGhostFace(int n1, int n2, double **ghostFaceLeft, double **ghost
       ghostFaceRight[i][j] = temp[i][j];
     }
   }
-  delArr(temp, n1);
+  delArr2(temp, n1);
 }
 /** prepare ghost cells on 6 faces for communication of Nodes when ther is periodicity */
 inline void makeNodeFace(int nx, int ny, int nz, double ***vector, double *ghostXrightFace, double *ghostXleftFace, double *ghostYrightFace, double *ghostYleftFace, double *ghostZrightFace, double *ghostZleftFace) {
