@@ -44,13 +44,15 @@ using std::cerr;
 using std::endl;
 using std::ofstream;
 
+MPIdata *mpi;
+int get_rank(){ return mpi->rank; }
 
 int main(int argc, char **argv) {
   // initialize MPI environment
   // nprocs = number of processors
   // myrank = rank of tha process*/
   int nprocs, myrank, mem_avail;
-  MPIdata *mpi = new MPIdata(&argc, &argv);
+  mpi = new MPIdata(&argc, &argv);
   nprocs = mpi->nprocs;
   myrank = mpi->rank;
 
