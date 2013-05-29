@@ -26,8 +26,9 @@
 #include "PSKOutput3D/PSKOutput.h"
 #include "PSKOutput3D/PSKhdf5adaptor.h"
 #include "inputoutput/Restart3D.h"
-// performance
+// diagnostics
 #include "performances/Timing.h"
+#include "utility/debug.h"
 // wave
 // #include "perturbation/Planewave.h"
 // serial ASCII output
@@ -47,13 +48,15 @@ using std::cerr;
 using std::endl;
 using std::ofstream;
 
+/* global variables */
+MPIdata *mpi;
 
 int main(int argc, char **argv) {
   // initialize MPI environment
   // nprocs = number of processors
   // myrank = rank of tha process*/
   int nprocs, myrank, mem_avail;
-  MPIdata *mpi = new MPIdata(&argc, &argv);
+  mpi = new MPIdata(&argc, &argv);
   nprocs = mpi->nprocs;
   myrank = mpi->rank;
 
