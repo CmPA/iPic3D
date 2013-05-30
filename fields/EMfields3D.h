@@ -2175,9 +2175,9 @@ inline void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY,
         }
       break;
     case 1:                    // boundary condition on Y-DIRECTION
-      susxy = newArr(double, nxn, nzn);
-      susyy = newArr(double, nxn, nzn);
-      suszy = newArr(double, nxn, nzn);
+      susxy = newArr2(double, nxn, nzn);
+      susyy = newArr2(double, nxn, nzn);
+      suszy = newArr2(double, nxn, nzn);
       sustensorLeftY(susxy, susyy, suszy);
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nzn - 1; j++) {
@@ -2195,9 +2195,9 @@ inline void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY,
         }
       break;
   }
-  delArr(susxy, nxn);
-  delArr(susyy, nxn);
-  delArr(suszy, nxn);
+  delArr2(susxy, nxn);
+  delArr2(susyy, nxn);
+  delArr2(suszy, nxn);
 }
 /*! Perfect conductor boundary conditions: RIGHT wall */
 inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid) {
@@ -2216,9 +2216,9 @@ inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY
         }
       break;
     case 1:                    // boundary condition on Y-DIRECTION RIGHT
-      susxy = newArr(double, nxn, nzn);
-      susyy = newArr(double, nxn, nzn);
-      suszy = newArr(double, nxn, nzn);
+      susxy = newArr2(double, nxn, nzn);
+      susyy = newArr2(double, nxn, nzn);
+      suszy = newArr2(double, nxn, nzn);
       sustensorRightY(susxy, susyy, suszy);
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nzn - 1; j++) {
@@ -2237,9 +2237,9 @@ inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY
         }
       break;
   }
-  delArr(susxy, nxn);
-  delArr(susyy, nxn);
-  delArr(suszy, nxn);
+  delArr2(susxy, nxn);
+  delArr2(susyy, nxn);
+  delArr2(suszy, nxn);
 }
 /*! Perfect conductor boundary conditions for source: LEFT WALL*/
 inline void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
