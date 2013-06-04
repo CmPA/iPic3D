@@ -18,6 +18,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "../fields/Field.h"
 
 #include "Particles3D.h"
+#include "../utility/TimeTasks.h"
 
 
 #include "hdf5.h"
@@ -506,6 +507,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // ********************//
   // COMMUNICATION 
   // *******************//
+  timeTasks.start_communicate();
   avail = communicate(vct);
   if (avail < 0)
     return (-1);
@@ -518,6 +520,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       return (-1);
     MPI_Barrier(MPI_COMM_WORLD);
   }
+  timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
 }
 
