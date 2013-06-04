@@ -39,6 +39,9 @@
 #include <string>
 #include <sstream>
 
+// implementation (should be compiled separately)
+#include "utility/diagnostics.cpp"
+
 using namespace std;
 using std::cerr;
 using std::endl;
