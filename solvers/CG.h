@@ -13,6 +13,8 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "../mathlib/Basic.h"
 #include "../utility/TransArraySpace3D.h"
 
+class EMfields3D;
+typedef EMfields3D Field;
 typedef void (Field::*FIELD_IMAGE) (double *, double *, Grid *, VirtualTopology3D *);
 typedef void (*GENERIC_IMAGE) (double *, double *, Grid *, VirtualTopology3D *);
 using std::cout;

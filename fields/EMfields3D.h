@@ -39,7 +39,8 @@ using std::endl;
  * @version 3.0
  */
 
-class EMfields3D:public Field {
+class EMfields3D //:public Field
+{
 public:
   /*! constructor */
   EMfields3D(CollectiveIO * col, Grid * grid);
@@ -448,6 +449,8 @@ private:
   double GMREStol;
 
 };
+// already in CG.h
+//typedef EMfields3D Field;
 
 /*! constructor */
 inline EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {

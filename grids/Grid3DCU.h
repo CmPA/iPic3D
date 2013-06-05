@@ -26,7 +26,8 @@ using std::endl;
  * @version 3.0
  *
  */
-class Grid3DCU:public Grid {
+class Grid3DCU //:public Grid
+{
 public:
   /** constructor */
   Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct);
@@ -165,6 +166,7 @@ private:
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
 
 };
+typedef Grid3DCU Grid;
 /** constructor */
 inline Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {
   int get_rank();
