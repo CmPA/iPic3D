@@ -103,6 +103,8 @@ public:
   double &getYN(int indexX, int indexY, int indexZ);
   /** get zn(X,Y,Z) */
   double &getZN(int indexX, int indexY, int indexZ);
+  /** get the whole vector of nodes*/
+  double ****getN();
   /** get xc(X,Y,Z) */
   double &getXC(int indexX, int indexY, int indexZ);
   /** get yc(X,Y,Z) */
@@ -110,11 +112,11 @@ public:
   /** get zc(X,Y,Z) */
   double &getZC(int indexX, int indexY, int indexZ);
   /** get the whole vector xc*/
-  double ***getXC();
+  //double ***getXC(); // not used
   /** get the whole vector yc*/
-  double ***getYC();
+  //double ***getYC(); // not used
   /** get the whole vector zc*/
-  double ***getZC();
+  //double ***getZC(); // not used
   /** get Xstart */
   double getXstart();
   /** get Xend */
@@ -628,18 +630,24 @@ inline double &Grid3DCU::getZC(int indexX, int indexY, int indexZ) {
   return (center_coordinate[indexX][indexY][indexZ][2]);
 }
 
-/** get the whole vector xc*/
-inline double ***Grid3DCU::getXC() {
-  return (center_coordinate[0]);
+/** get the whole vector of nodes*/
+inline double ****Grid3DCU::getN() {
+  return node_coordinate;
 }
-/** get the whole vector yc*/
-inline double ***Grid3DCU::getYC() {
-  return (center_coordinate[1]);
-}
-/** get the whole vector zc*/
-inline double ***Grid3DCU::getZC() {
-  return (center_coordinate[2]);
-}
+// This code is not used and does not make sense, so I commented it out. -eaj
+//
+///** get the whole vector xc*/
+//inline double ***Grid3DCU::getXC() {
+//  return (center_coordinate[0]);
+//}
+///** get the whole vector yc*/
+//inline double ***Grid3DCU::getYC() {
+//  return (center_coordinate[1]);
+//}
+///** get the whole vector zc*/
+//inline double ***Grid3DCU::getZC() {
+//  return (center_coordinate[2]);
+//}
 /** get Xstart */
 inline double Grid3DCU::getXstart() {
   return (xStart);
