@@ -26,31 +26,38 @@
 #include "PSKOutput3D/PSKOutput.h"
 #include "PSKOutput3D/PSKhdf5adaptor.h"
 #include "inputoutput/Restart3D.h"
-// performance
+// diagnostics
 #include "performances/Timing.h"
+#include "utility/TimeTasks.h"
+#include "utility/debug.h"
 // wave
 // #include "perturbation/Planewave.h"
 // serial ASCII output
 // #include "inputoutput/SerialIO.h"
-
 
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <sstream>
 
+// implementation (should be compiled separately)
+#include "utility/diagnostics.cpp"
+
 using namespace std;
 using std::cerr;
 using std::endl;
 using std::ofstream;
 
+/* global variables */
+MPIdata *mpi;
+TimeTasks timeTasks;
 
 int main(int argc, char **argv) {
   // initialize MPI environment
   // nprocs = number of processors
   // myrank = rank of tha process*/
   int nprocs, myrank, mem_avail;
-  MPIdata *mpi = new MPIdata(&argc, &argv);
+  mpi = new MPIdata(&argc, &argv);
   nprocs = mpi->nprocs;
   myrank = mpi->rank;
 
@@ -91,7 +98,8 @@ int main(int argc, char **argv) {
   EMfields3D *EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
   // EMf->initGEMnoPert(vct,grid);
   // EMf->initForceFree(vct,grid);
-  EMf->initGEM(vct, grid);
+  // EMf->initGEM(vct, grid);
+  EMf->initRandomField(vct, grid);
   // Allocation of particles
   Particles3D *part = new Particles3D[ns];
   for (int i = 0; i < ns; i++)
@@ -175,7 +183,9 @@ int main(int argc, char **argv) {
       cout << "*   cycle = " << cycle + 1 << "        *" << endl;
       cout << "***********************" << endl;
     }
+    timeTasks.resetCycle();
     // interpolation
+    timeTasks.start(TimeTasks::MOMENTS);
     EMf->setZeroDensities();    // set to zero the densities
     for (int i = 0; i < ns; i++)
       part[i].interpP2G(EMf, grid, vct);  // interpolate Particles to Grid(Nodes)
@@ -184,6 +194,7 @@ int main(int argc, char **argv) {
     EMf->interpDensitiesN2C(vct, grid); // calculate densities on centers from nodes
     EMf->calculateHatFunctions(grid, vct);  // calculate the hat quantities for the implicit method
     MPI_Barrier(MPI_COMM_WORLD);
+    timeTasks.end(TimeTasks::MOMENTS);
 
     // OUTPUT to large file, called proc**
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
@@ -221,11 +232,18 @@ int main(int argc, char **argv) {
 
 
     // MAXWELL'S SOLVER
+    timeTasks.start(TimeTasks::FIELDS);
     EMf->calculateE(grid, vct); // calculate the E field
+    timeTasks.end(TimeTasks::FIELDS);
 
     // PARTICLE MOVER
+    timeTasks.start(TimeTasks::PARTICLES);
     for (int i = 0; i < ns; i++)  // move each species
+    {
+      //#pragma omp task inout(part[i]) in(grid) target_device(booster)
       mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
+    }
+    timeTasks.end(TimeTasks::PARTICLES);
     if (mem_avail < 0) {        // not enough memory space allocated for particles: stop the simulation
       if (myrank == 0) {
         cout << "*************************************************************" << endl;
@@ -234,7 +252,12 @@ int main(int argc, char **argv) {
       }
       cycle = col->getNcycles() + first_cycle;  // exit from the time loop
     }
+    timeTasks.start(TimeTasks::BFIELD);
     EMf->calculateB(grid, vct); // calculate the B field
+    timeTasks.end(TimeTasks::BFIELD);
+
+    // print out total time for all tasks
+    timeTasks.print_cycle_times();
 
     // write the conserved quantities
     if (cycle % col->getDiagnosticsOutputCycle() == 0) {
@@ -286,3 +309,4 @@ int main(int argc, char **argv) {
   return (0);
 
 }
+

@@ -1,0 +1,60 @@
+#DYLD_LIBRARY_PATH = /users/cpa/volshevs/local/hdf5/lib
+
+#CPP = mpicxx
+CPP = mpiicpc -mmic #-no-vec #-vec-report6 #
+OPTFLAGS=  -O3 -openmp #-DMPICH_IGNORE_CXX_SEEK
+#HDF5DIR = /opt/hdf5/1.8.10-patch1
+HDF5DIR = /opt/hdf5/1.8.10-patch1-mic
+# include files
+INC_HDF5 = -I${HDF5DIR}/include
+# libs
+LIB_HDF5 = -L${HDF5DIR}/lib
+
+# Alex advises to do it in this order
+#HDF5LIBS = ${LIB_HDF5} -lhdf5_hl  -lhdf5
+HDF5LIBS = ${LIB_HDF5} -lhdf5 -lhdf5_hl 
+#MPELIB = -L/opt/intel/impi/4.0.3.014/mic/lib
+#INC_MPI = -I/opt/intel/impi/4.0.3.014/mic/include
+EXTRA_LIBS = -limf -lsvml -lirng -lintlc ${MPELIB}
+
+all: iPIC3D
+	mkdir -p data
+
+iPIC3D: iPIC3D.cpp Particles3Dcomm.o Particles3D.o ConfigFile.o
+	${CPP} ${OPTFLAGS} -o iPIC3D ${INC_HDF5} ${INC_MPI} \
+	iPIC3D.cpp Particles3Dcomm.o Particles3D.o ConfigFile.o \
+	${HDF5LIBS} \
+	${EXTRA_LIBS}
+
+iPIC3D.o: iPIC3D.cpp
+	${CPP} ${OPTFLAGS} ${INC_HDF5} ${INC_MPI} -c iPIC3D.cpp 
+
+ConfigFile.o: ./ConfigFile/src/ConfigFile.cpp
+	${CPP} ${OPTFLAGS} -c ./ConfigFile/src/ConfigFile.cpp
+
+Particles3Dcomm.o: ./particles/Particles3Dcomm.cpp
+	${CPP} ${OPTFLAGS} ${INC_MPI} ${INC_HDF5} -c ./particles/Particles3Dcomm.cpp
+
+Particles3D.o: ./particles/Particles3D.cpp 
+	${CPP} ${OPTFLAGS} ${INC_MPI} ${INC_HDF5} -c ./particles/Particles3D.cpp
+
+clean:
+	rm -rf *.o iPIC3D
+
+dummytargetforcomment:
+	mpiexec.hydra -host knc2-mic0 -n 16 -env OMP_NUM_THREADS=15 -wdir /home/eajohnson /home/eajohnson/iPIC3D /home/eajohnson/DOUBLE.inp
+	KMP_AFFINITY="balance" mpiexec.hydra -host knc2-mic0 -n 16 -env OMP_NUM_THREADS=15 iPIC3D inputfiles/DOUBLE.inp
+	mpiexec.hydra -host knc2-mic0 -n 16 -env OMP_NUM_THREADS=15 -env KMP_AFFINITY=balance ./iPIC3D inputfiles/DOUBLE.inp
+
+run:
+	mpiexec.hydra -host `hostname`-mic1 -n 60 -env OMP_NUM_THREADS=4 ./iPIC3D inputfiles/Small.inp
+
+monitor:
+	less +F data/ConservedQuantities.txt
+
+tags: retags
+
+retags:
+	find . -name '*.cpp' -or -name '*.h' | xargs ctags --extra=+q
+	find . -name '*.cpp' -or -name '*.h' | xargs makefiletags >> tags
+	LC_ALL=C sort -u tags -o tags

@@ -43,12 +43,12 @@ inline void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, do
 
 
   // allocate H for storing the results from decomposition
-  double **H = newArr(double, m + 1, m);
+  double **H = newArr2(double, m + 1, m);
   for (int ii = 0; ii < m + 1; ii++)
     for (int jj = 0; jj < m; jj++)
       H[ii][jj] = 0;
   // allocate V
-  double **V = newArr(double, xkrylovlen, m + 1);
+  double **V = newArr2(double, xkrylovlen, m + 1);
   for (int ii = 0; ii < xkrylovlen; ii++)
     for (int jj = 0; jj < m + 1; jj++)
       V[ii][jj] = 0;
@@ -88,8 +88,8 @@ inline void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, do
         delete[]sn;
         delete[]w;
         delete[]y;
-        delArr(H, m + 1);
-        delArr(V, xkrylovlen);
+        delArr2(H, m + 1);
+        delArr2(V, xkrylovlen);
 
         return;
       }
@@ -182,8 +182,8 @@ inline void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, do
       delete[]sn;
       delete[]w;
       delete[]y;
-      delArr(H, m + 1);
-      delArr(V, xkrylovlen);
+      delArr2(H, m + 1);
+      delArr2(V, xkrylovlen);
       return;
     }
     if (vct->getCartesian_rank() == 0 && GMRESVERBOSE)
@@ -203,8 +203,8 @@ inline void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, do
   delete[]sn;
   delete[]w;
   delete[]y;
-  delArr(H, m + 1);
-  delArr(V, xkrylovlen);
+  delArr2(H, m + 1);
+  delArr2(V, xkrylovlen);
   return;
 }
 
