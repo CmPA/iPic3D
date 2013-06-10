@@ -247,13 +247,13 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
   }
   double start_mover_PC = MPI_Wtime();
-  doubleArr3 Ex(EMf->getEx());
-  doubleArr3 Ey(EMf->getEy());
-  doubleArr3 Ez(EMf->getEz());
-  doubleArr3 Bx(EMf->getBx());
-  doubleArr3 By(EMf->getBy());
-  doubleArr3 Bz(EMf->getBz());
-  doubleArr4 node_coordinate(grid->getN());
+  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+  double **** node_coordinate = asgArr4(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), 3, grid->getN());
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   // don't bother trying to push any particles simultaneously;
@@ -300,12 +300,12 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       double xi[2];
       double eta[2];
       double zeta[2];
-      xi[0]   = xp - node_coordinate.get(ix - 1, iy, iz, 0);
-      eta[0]  = yp - node_coordinate.get(ix, iy - 1, iz, 1);
-      zeta[0] = zp - node_coordinate.get(ix, iy, iz - 1, 2);
-      xi[1]   = node_coordinate.get(ix,iy,iz,0) - xp;
-      eta[1]  = node_coordinate.get(ix,iy,iz,1) - yp;
-      zeta[1] = node_coordinate.get(ix,iy,iz,2) - zp;
+      xi[0]   = xp - node_coordinate[ix-1][iy  ][iz  ][0];
+      eta[0]  = yp - node_coordinate[ix  ][iy-1][iz  ][1];
+      zeta[0] = zp - node_coordinate[ix  ][iy  ][iz-1][2];
+      xi[1]   = node_coordinate[ix][iy][iz][0] - xp;
+      eta[1]  = node_coordinate[ix][iy][iz][1] - yp;
+      zeta[1] = node_coordinate[ix][iy][iz][2] - zp;
 
       double Exl = 0.0; double Eyl = 0.0; double Ezl = 0.0; double Bxl = 0.0; double Byl = 0.0; double Bzl = 0.0;
 
@@ -344,59 +344,59 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
       const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
       //
-      Bxl += weight000 * Bx.get(ix  , iy  , iz  );
-      Bxl += weight001 * Bx.get(ix  , iy  , iz-1);
-      Bxl += weight010 * Bx.get(ix  , iy-1, iz  );
-      Bxl += weight011 * Bx.get(ix  , iy-1, iz-1);
-      Bxl += weight100 * Bx.get(ix-1, iy  , iz  );
-      Bxl += weight101 * Bx.get(ix-1, iy  , iz-1);
-      Bxl += weight110 * Bx.get(ix-1, iy-1, iz  );
-      Bxl += weight111 * Bx.get(ix-1, iy-1, iz-1);
+      Bxl += weight000 * Bx[ix  ][iy  ][iz  ];
+      Bxl += weight001 * Bx[ix  ][iy  ][iz-1];
+      Bxl += weight010 * Bx[ix  ][iy-1][iz  ];
+      Bxl += weight011 * Bx[ix  ][iy-1][iz-1];
+      Bxl += weight100 * Bx[ix-1][iy  ][iz  ];
+      Bxl += weight101 * Bx[ix-1][iy  ][iz-1];
+      Bxl += weight110 * Bx[ix-1][iy-1][iz  ];
+      Bxl += weight111 * Bx[ix-1][iy-1][iz-1];
       //
-      Byl += weight000 * By.get(ix  , iy  , iz  );
-      Byl += weight001 * By.get(ix  , iy  , iz-1);
-      Byl += weight010 * By.get(ix  , iy-1, iz  );
-      Byl += weight011 * By.get(ix  , iy-1, iz-1);
-      Byl += weight100 * By.get(ix-1, iy  , iz  );
-      Byl += weight101 * By.get(ix-1, iy  , iz-1);
-      Byl += weight110 * By.get(ix-1, iy-1, iz  );
-      Byl += weight111 * By.get(ix-1, iy-1, iz-1);
+      Byl += weight000 * By[ix  ][iy  ][iz  ];
+      Byl += weight001 * By[ix  ][iy  ][iz-1];
+      Byl += weight010 * By[ix  ][iy-1][iz  ];
+      Byl += weight011 * By[ix  ][iy-1][iz-1];
+      Byl += weight100 * By[ix-1][iy  ][iz  ];
+      Byl += weight101 * By[ix-1][iy  ][iz-1];
+      Byl += weight110 * By[ix-1][iy-1][iz  ];
+      Byl += weight111 * By[ix-1][iy-1][iz-1];
       //
-      Bzl += weight000 * Bz.get(ix  , iy  , iz  );
-      Bzl += weight001 * Bz.get(ix  , iy  , iz-1);
-      Bzl += weight010 * Bz.get(ix  , iy-1, iz  );
-      Bzl += weight011 * Bz.get(ix  , iy-1, iz-1);
-      Bzl += weight100 * Bz.get(ix-1, iy  , iz  );
-      Bzl += weight101 * Bz.get(ix-1, iy  , iz-1);
-      Bzl += weight110 * Bz.get(ix-1, iy-1, iz  );
-      Bzl += weight111 * Bz.get(ix-1, iy-1, iz-1);
+      Bzl += weight000 * Bz[ix  ][iy  ][iz  ];
+      Bzl += weight001 * Bz[ix  ][iy  ][iz-1];
+      Bzl += weight010 * Bz[ix  ][iy-1][iz  ];
+      Bzl += weight011 * Bz[ix  ][iy-1][iz-1];
+      Bzl += weight100 * Bz[ix-1][iy  ][iz  ];
+      Bzl += weight101 * Bz[ix-1][iy  ][iz-1];
+      Bzl += weight110 * Bz[ix-1][iy-1][iz  ];
+      Bzl += weight111 * Bz[ix-1][iy-1][iz-1];
       //
-      Exl += weight000 * Ex.get(ix  , iy  , iz  );
-      Exl += weight001 * Ex.get(ix  , iy  , iz-1);
-      Exl += weight010 * Ex.get(ix  , iy-1, iz  );
-      Exl += weight011 * Ex.get(ix  , iy-1, iz-1);
-      Exl += weight100 * Ex.get(ix-1, iy  , iz  );
-      Exl += weight101 * Ex.get(ix-1, iy  , iz-1);
-      Exl += weight110 * Ex.get(ix-1, iy-1, iz  );
-      Exl += weight111 * Ex.get(ix-1, iy-1, iz-1);
+      Exl += weight000 * Ex[ix  ][iy  ][iz  ];
+      Exl += weight001 * Ex[ix  ][iy  ][iz-1];
+      Exl += weight010 * Ex[ix  ][iy-1][iz  ];
+      Exl += weight011 * Ex[ix  ][iy-1][iz-1];
+      Exl += weight100 * Ex[ix-1][iy  ][iz  ];
+      Exl += weight101 * Ex[ix-1][iy  ][iz-1];
+      Exl += weight110 * Ex[ix-1][iy-1][iz  ];
+      Exl += weight111 * Ex[ix-1][iy-1][iz-1];
       //
-      Eyl += weight000 * Ey.get(ix  , iy  , iz  );
-      Eyl += weight001 * Ey.get(ix  , iy  , iz-1);
-      Eyl += weight010 * Ey.get(ix  , iy-1, iz  );
-      Eyl += weight011 * Ey.get(ix  , iy-1, iz-1);
-      Eyl += weight100 * Ey.get(ix-1, iy  , iz  );
-      Eyl += weight101 * Ey.get(ix-1, iy  , iz-1);
-      Eyl += weight110 * Ey.get(ix-1, iy-1, iz  );
-      Eyl += weight111 * Ey.get(ix-1, iy-1, iz-1);
+      Eyl += weight000 * Ey[ix  ][iy  ][iz  ];
+      Eyl += weight001 * Ey[ix  ][iy  ][iz-1];
+      Eyl += weight010 * Ey[ix  ][iy-1][iz  ];
+      Eyl += weight011 * Ey[ix  ][iy-1][iz-1];
+      Eyl += weight100 * Ey[ix-1][iy  ][iz  ];
+      Eyl += weight101 * Ey[ix-1][iy  ][iz-1];
+      Eyl += weight110 * Ey[ix-1][iy-1][iz  ];
+      Eyl += weight111 * Ey[ix-1][iy-1][iz-1];
       //
-      Ezl += weight000 * Ez.get(ix  , iy  , iz  );
-      Ezl += weight001 * Ez.get(ix  , iy  , iz-1);
-      Ezl += weight010 * Ez.get(ix  , iy-1, iz  );
-      Ezl += weight011 * Ez.get(ix  , iy-1, iz-1);
-      Ezl += weight100 * Ez.get(ix-1, iy  , iz  );
-      Ezl += weight101 * Ez.get(ix-1, iy  , iz-1);
-      Ezl += weight110 * Ez.get(ix-1, iy-1, iz  );
-      Ezl += weight111 * Ez.get(ix-1, iy-1, iz-1);
+      Ezl += weight000 * Ez[ix  ][iy  ][iz  ];
+      Ezl += weight001 * Ez[ix  ][iy  ][iz-1];
+      Ezl += weight010 * Ez[ix  ][iy-1][iz  ];
+      Ezl += weight011 * Ez[ix  ][iy-1][iz-1];
+      Ezl += weight100 * Ez[ix-1][iy  ][iz  ];
+      Ezl += weight101 * Ez[ix-1][iy  ][iz-1];
+      Ezl += weight110 * Ez[ix-1][iy-1][iz  ];
+      Ezl += weight111 * Ez[ix-1][iy-1][iz-1];
 
       // end interpolation
       const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);

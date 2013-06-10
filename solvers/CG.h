@@ -13,10 +13,18 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "../mathlib/Basic.h"
 #include "../utility/TransArraySpace3D.h"
 
+// These declarations are currently needed because Field is not anymore a class
+// CG needs a pointer to the function that solves the fields.
+// 
+// To avoid changing all the code we typedef Field as of type EMfields3D (which is
+// not derived anymore from Field). This will be improved in future releases.
+
 class EMfields3D;
 typedef EMfields3D Field;
 typedef void (Field::*FIELD_IMAGE) (double *, double *, Grid *, VirtualTopology3D *);
 typedef void (*GENERIC_IMAGE) (double *, double *, Grid *, VirtualTopology3D *);
+
+
 using std::cout;
 using std::cerr;
 using std::endl;

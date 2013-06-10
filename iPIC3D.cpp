@@ -41,7 +41,7 @@
 #include <sstream>
 
 // implementation (should be compiled separately)
-#include "utility/diagnostics.cpp"
+#include "utility/diagnostics.h"
 
 using namespace std;
 using std::cerr;
@@ -98,8 +98,8 @@ int main(int argc, char **argv) {
   EMfields3D *EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
   // EMf->initGEMnoPert(vct,grid);
   // EMf->initForceFree(vct,grid);
-  // EMf->initGEM(vct, grid);
-  EMf->initRandomField(vct, grid);
+  EMf->initGEM(vct, grid);
+  // EMf->initRandomField(vct, grid);
   // Allocation of particles
   Particles3D *part = new Particles3D[ns];
   for (int i = 0; i < ns; i++)

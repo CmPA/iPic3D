@@ -17,7 +17,7 @@ set(LIBRARY_OUTPUT_PATH lib)
 # Find third class libraries
 #
 
-find_package(HDF5 COMPONENTS C HL REQUIRED)
+find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
 
 #
@@ -42,7 +42,7 @@ link_directories(
 file(
         GLOB
         inc_files
-	ConfigFile/src/*.h
+        ConfigFile/src/*.h
         PSKOutput3D/*.h
         bc/*.h
         communication/*.h

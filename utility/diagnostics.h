@@ -1,4 +1,7 @@
 
+#ifndef __DIAGNOSTICS_H__
+#define __DIAGNOSTICS_H__
+
 #include <stdarg.h>
 #include "asserts.h"
 #include "debug.h"
@@ -33,7 +36,6 @@ void assert_error(const char* file, int line, const char* func,
 
 implement_assert_errmsg(int,int);
 implement_assert_errmsg(const char*,const char*);
-implement_assert_errmsg(const string&,const string&);
 
 /** implementation of declarations in utility/debug.h **/
 
@@ -181,3 +183,5 @@ void TimeTasks::print_cycle_times()
     fflush(stdout);
   }
 }
+
+#endif

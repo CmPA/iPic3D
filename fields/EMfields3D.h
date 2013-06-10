@@ -17,6 +17,7 @@ developers        : Stefano Markidis, Giovanni Lapenta
 
 
 #include "../utility/Alloc.h"
+#include "../utility/asserts.h"
 #include "../mathlib/Basic.h"
 #include "../utility/TransArraySpace3D.h"
 #include "../solvers/CG.h"
@@ -1520,9 +1521,9 @@ inline void Moments::addPzz(double weight[][2][2], int X, int Y, int Z) {
 
 inline void EMfields3D::addToSpeciesMoments(const Moments& in, int is)
 {
-  assert(in.get_nx()==nxn);
-  assert(in.get_ny()==nyn);
-  assert(in.get_nz()==nzn);
+  assert_eq(in.get_nx(), nxn);
+  assert_eq(in.get_ny(), nyn);
+  assert_eq(in.get_nz(), nzn);
   for (register int i = 0; i < nxn; i++)
   {
     for (register int j = 0; j < nyn; j++)

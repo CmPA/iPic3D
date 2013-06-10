@@ -112,7 +112,6 @@ declare_assert_errmsg(const char*,const char*);
 // put in assert_string.h:
 //#include "assert.h"
 //#include<string>
-//declare_assert_errmsg(const string&,const string&);
 
 extern "C" {
 int fcmp(double x1, double x2, double epsilon);
