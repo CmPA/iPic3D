@@ -298,11 +298,11 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
-  #pragma omp parallel
+  //#pragma omp parallel
   {
-    Moments speciesMoments(nxn,nyn,nzn,invVOL);
-    speciesMoments.set_to_zero();
-    #pragma omp for
+    //Moments speciesMoments(nxn,nyn,nzn,invVOL);
+    //speciesMoments.set_to_zero();
+    //#pragma omp for
     for (register long long i = 0; i < nop; i++)
     {
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
@@ -331,65 +331,65 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       //weight[1][1][0] = q[i] * xi[1] * eta[1] * zeta[0] * invVOL;
       //weight[1][1][1] = q[i] * xi[1] * eta[1] * zeta[1] * invVOL;
       // add charge density
-      speciesMoments.addRho(weight, ix, iy, iz);
+      EMf->addRho(weight, ix, iy, iz, ns);
       // add current density - X
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
-      speciesMoments.addJx(temp, ix, iy, iz);
+      EMf->addJx(temp, ix, iy, iz, ns);
       // add current density - Y
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
-      speciesMoments.addJy(temp, ix, iy, iz);
+      EMf->addJy(temp, ix, iy, iz, ns);
       // add current density - Z
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
-      speciesMoments.addJz(temp, ix, iy, iz);
+      EMf->addJz(temp, ix, iy, iz, ns);
       // Pxx - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
-      speciesMoments.addPxx(temp, ix, iy, iz);
+      EMf->addPxx(temp, ix, iy, iz, ns);
       // Pxy - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
-      speciesMoments.addPxy(temp, ix, iy, iz);
+      EMf->addPxy(temp, ix, iy, iz, ns);
       // Pxz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
-      speciesMoments.addPxz(temp, ix, iy, iz);
+      EMf->addPxz(temp, ix, iy, iz, ns);
       // Pyy - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
-      speciesMoments.addPyy(temp, ix, iy, iz);
+      EMf->addPyy(temp, ix, iy, iz, ns);
       // Pyz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
-      speciesMoments.addPyz(temp, ix, iy, iz);
+      EMf->addPyz(temp, ix, iy, iz, ns);
       // Pzz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
-      speciesMoments.addPzz(temp, ix, iy, iz);
+      EMf->addPzz(temp, ix, iy, iz, ns);
     }
     // change this to allow more parallelization after implementing array class
-    #pragma omp critical
-    EMf->addToSpeciesMoments(speciesMoments,ns);
+    //#pragma omp critical
+    //EMf->addToSpeciesMoments(speciesMoments,ns);
   }
   // communicate contribution from ghost cells 
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
