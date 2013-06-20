@@ -18,6 +18,7 @@ developers        : Stefano Markidis, Giovanni Lapenta
 
 #include "../utility/Alloc.h"
 #include "../utility/asserts.h"
+#include "../utility/ompdefs.h"
 #include "../mathlib/Basic.h"
 #include "../utility/TransArraySpace3D.h"
 #include "../solvers/CG.h"
@@ -80,7 +81,10 @@ public:
   double get_pZZ(int i,int j,int k)const{return pZZ[i][j][k];}
 public:
   Moments(){};
-  Moments(int nx_, int ny_, int nz_, double invVOL_);
+  Moments(int nx_, int ny_, int nz_, double invVOL_){
+    init(nx_,ny_,nz_,invVOL_);
+  }
+  void init(int nx_, int ny_, int nz_, double invVOL_);
   ~Moments();
   void set_to_zero();
   void addRho(double weight[][2][2], int X, int Y, int Z);
@@ -97,7 +101,7 @@ public:
 };
 
 // construct empty instance (not zeroed)
-inline Moments::Moments(int nx_, int ny_, int nz_,double invVOL_)
+inline void Moments::init(int nx_, int ny_, int nz_,double invVOL_)
 {
   nx = nx_;
   ny = ny_;
@@ -346,6 +350,12 @@ public:
   /*! get the magnetic field energy */
   double getBenergy();
 
+  /*! fetch array for summing moments of thread i */
+  Moments& fetch_momentsArray(int i){
+    assert_le(0,i);
+    assert_le(i,sizeMomentsArray);
+    return momentsArray[i];
+  }
 
   /*! print electromagnetic fields info */
   void print(void) const;
@@ -455,6 +465,9 @@ private:
   double ***vectY;
   double ***vectZ;
   double ***divC;
+  /* temporary arrays for summing moments */
+  int sizeMomentsArray;
+  Moments *momentsArray;
 
 
   // *******************************************************************************
@@ -691,6 +704,12 @@ inline EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
   vectY = newArr3(double, nxn, nyn, nzn);
   vectZ = newArr3(double, nxn, nyn, nzn);
   divC = newArr3(double, nxc, nyc, nzc);
+  sizeMomentsArray = omp_thread_count();
+  momentsArray = new Moments[sizeMomentsArray];
+  for(int i=0;i<sizeMomentsArray;i++)
+  {
+    momentsArray[i].init(nxn,nyn,nzn,invVOL);
+  }
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -2888,5 +2907,6 @@ inline EMfields3D::~EMfields3D() {
   delArr3(vectY, nxn, nyn);
   delArr3(vectZ, nxn, nyn);
   delArr3(divC, nxc, nyc);
+  delete [] momentsArray;
 }
 #endif
