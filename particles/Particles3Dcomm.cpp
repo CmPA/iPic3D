@@ -810,55 +810,71 @@ int Particles3Dcomm::maxNpExiting() {
 double *Particles3Dcomm::getXall()  const {
   return (x);
 }
-/** return Y-coordinate  of particle array */ double *Particles3Dcomm::getYall()  const {
+/** return Y-coordinate  of particle array */
+double *Particles3Dcomm::getYall()  const {
   return (y);
 }
-/** return Z-coordinate  of particle array*/ double *Particles3Dcomm::getZall()  const {
+/** return Z-coordinate  of particle array*/
+double *Particles3Dcomm::getZall()  const {
   return (z);
 }
-/** get X-velocity of particle with label indexPart */ double *Particles3Dcomm::getUall()  const {
+/** get X-velocity of particle with label indexPart */
+double *Particles3Dcomm::getUall()  const {
   return (u);
 }
-/** get Y-velocity of particle with label indexPart */ double *Particles3Dcomm::getVall()  const {
+/** get Y-velocity of particle with label indexPart */
+double *Particles3Dcomm::getVall()  const {
   return (v);
 }
-/**get Z-velocity of particle with label indexPart */ double *Particles3Dcomm::getWall()  const {
+/**get Z-velocity of particle with label indexPart */
+double *Particles3Dcomm::getWall()  const {
   return (w);
 }
-/**get ID of particle with label indexPart */ unsigned long *Particles3Dcomm::getParticleIDall()  const {
+/**get ID of particle with label indexPart */
+unsigned long *Particles3Dcomm::getParticleIDall()  const {
   return (ParticleID);
 }
-/**get charge of particle with label indexPart */ double *Particles3Dcomm::getQall()  const {
+/**get charge of particle with label indexPart */
+double *Particles3Dcomm::getQall()  const {
   return (q);
 }
-/** return X-coordinate of particle with index indexPart */ double Particles3Dcomm::getX(long long indexPart)  const {
+/** return X-coordinate of particle with index indexPart */
+double Particles3Dcomm::getX(long long indexPart)  const {
   return (x[indexPart]);
 }
-/** return Y-coordinate  of particle with index indexPart */ double Particles3Dcomm::getY(long long indexPart)  const {
+/** return Y-coordinate  of particle with index indexPart */
+double Particles3Dcomm::getY(long long indexPart)  const {
   return (y[indexPart]);
 }
-/** return Y-coordinate  of particle with index indexPart */ double Particles3Dcomm::getZ(long long indexPart)  const {
+/** return Y-coordinate  of particle with index indexPart */
+double Particles3Dcomm::getZ(long long indexPart)  const {
   return (z[indexPart]);
 }
-/** get u (X-velocity) of particle with label indexPart */ double Particles3Dcomm::getU(long long indexPart)  const {
+/** get u (X-velocity) of particle with label indexPart */
+double Particles3Dcomm::getU(long long indexPart)  const {
   return (u[indexPart]);
 }
-/** get v (Y-velocity) of particle with label indexPart */ double Particles3Dcomm::getV(long long indexPart)  const {
+/** get v (Y-velocity) of particle with label indexPart */
+double Particles3Dcomm::getV(long long indexPart)  const {
   return (v[indexPart]);
 }
-/**get w (Z-velocity) of particle with label indexPart */ double Particles3Dcomm::getW(long long indexPart)  const {
+/**get w (Z-velocity) of particle with label indexPart */
+double Particles3Dcomm::getW(long long indexPart)  const {
   return (w[indexPart]);
 }
-/**get ID of particle with label indexPart */ unsigned long Particles3Dcomm::getParticleID(long long indexPart)  const {
+/**get ID of particle with label indexPart */
+unsigned long Particles3Dcomm::getParticleID(long long indexPart)  const {
   return (ParticleID[indexPart]);
 }
-/**get charge of particle with label indexPart */ double Particles3Dcomm::getQ(long long indexPart)  const {
+/**get charge of particle with label indexPart */
+double Particles3Dcomm::getQ(long long indexPart)  const {
   return (q[indexPart]);
 }
 /** return the number of particles */ long long Particles3Dcomm::getNOP()  const {
   return (nop);
 }
-/** return the Kinetic energy */ double Particles3Dcomm::getKe() {
+/** return the Kinetic energy */
+double Particles3Dcomm::getKe() {
   double localKe = 0.0;
   double totalKe = 0.0;
   for (register long long i = 0; i < nop; i++)
@@ -927,7 +943,8 @@ void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
     cout << "Particles #" << i << " x=" << x[i] << " y=" << y[i] << " z=" << z[i] << " u=" << u[i] << " v=" << v[i] << " w=" << w[i] << endl;
   cout << endl;
 }
-/** print just the number of particles */ void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
+/** print just the number of particles */
+void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
   cout << endl;
   cout << "Number of Particles of species " << ns << ": " << nop << endl;
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
