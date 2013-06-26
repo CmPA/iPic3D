@@ -4,21 +4,23 @@
 developers: Stefano Markidis, Giovanni Lapenta
  ********************************************************************************************/
 
-#include <mpi.h>
+
 #include <iostream>
 #include <math.h>
-#include "../processtopology/VirtualTopology3D.h"
-#include "../processtopology/VCtopology3D.h"
-#include "../inputoutput/CollectiveIO.h"
-#include "../inputoutput/Collective.h"
-#include "../mathlib/Basic.h"
-#include "../bc/BcParticles.h"
-#include "../grids/Grid.h"
-#include "../grids/Grid3DCU.h"
-#include "../fields/Field.h"
+
+#include "VirtualTopology3D.h"
+#include "VCtopology3D.h"
+#include "CollectiveIO.h"
+#include "Collective.h"
+#include "Basic.h"
+#include "BcParticles.h"
+#include "Grid.h"
+#include "Grid3DCU.h"
+#include "Field.h"
+#include "MPIdata.h"
+#include "TimeTasks.h"
 
 #include "Particles3D.h"
-#include "../utility/TimeTasks.h"
 
 
 #include "hdf5.h"
@@ -124,7 +126,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
   double harvest;
   double prob, theta, sign;
-	long long counter=0;
+  long long counter = 0;
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++)
@@ -220,7 +222,7 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 }
 
 /**Add a periodic perturbation in J exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
-inline void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double jx_mod, double jx_phase, double jy_mod, double jy_phase, double jz_mod, double jz_phase, double B0, Grid * grid) {
+void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double jx_mod, double jx_phase, double jy_mod, double jy_phase, double jz_mod, double jz_phase, double B0, Grid * grid) {
 
   // rescaling of amplitudes according to deltaBoB //
   double alpha;
@@ -253,14 +255,14 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
   double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
   double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
-  double **** node_coordinate = asgArr4(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), 3, grid->getN());
+  double ****node_coordinate = asgArr4(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), 3, grid->getN());
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.
-  #pragma omp parallel for
-  #pragma simd // this just slows things down (why?)
+#pragma omp parallel for
+#pragma simd                    // this just slows things down (why?)
   for (long long rest = 0; rest < nop; rest++) {
     // copy the particle
     double xp = x[rest];
@@ -300,41 +302,46 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       double xi[2];
       double eta[2];
       double zeta[2];
-      xi[0]   = xp - node_coordinate[ix-1][iy  ][iz  ][0];
-      eta[0]  = yp - node_coordinate[ix  ][iy-1][iz  ][1];
-      zeta[0] = zp - node_coordinate[ix  ][iy  ][iz-1][2];
-      xi[1]   = node_coordinate[ix][iy][iz][0] - xp;
-      eta[1]  = node_coordinate[ix][iy][iz][1] - yp;
+      xi[0] = xp - node_coordinate[ix - 1][iy][iz][0];
+      eta[0] = yp - node_coordinate[ix][iy - 1][iz][1];
+      zeta[0] = zp - node_coordinate[ix][iy][iz - 1][2];
+      xi[1] = node_coordinate[ix][iy][iz][0] - xp;
+      eta[1] = node_coordinate[ix][iy][iz][1] - yp;
       zeta[1] = node_coordinate[ix][iy][iz][2] - zp;
 
-      double Exl = 0.0; double Eyl = 0.0; double Ezl = 0.0; double Bxl = 0.0; double Byl = 0.0; double Bzl = 0.0;
+      double Exl = 0.0;
+      double Eyl = 0.0;
+      double Ezl = 0.0;
+      double Bxl = 0.0;
+      double Byl = 0.0;
+      double Bzl = 0.0;
 
       // MIC refuses to vectorize this ...
-      //
-      //double weight[2][2][2];
-      //for (int ii = 0; ii < 2; ii++)
-      //  for (int jj = 0; jj < 2; jj++)
-      //    for (int kk = 0; kk < 2; kk++)
-      //      weight[ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
-      //for (int ii = 0; ii < 2; ii++)
-      //  for (int jj = 0; jj < 2; jj++)
-      //    for (int kk = 0; kk < 2; kk++) {
-      //      const double Exlp = weight[ii][jj][kk] * Ex.get(ix - ii, iy - jj, iz - kk);
-      //      const double Eylp = weight[ii][jj][kk] * Ey.get(ix - ii, iy - jj, iz - kk);
-      //      const double Ezlp = weight[ii][jj][kk] * Ez.get(ix - ii, iy - jj, iz - kk);
-      //      const double Bxlp = weight[ii][jj][kk] * Bx.get(ix - ii, iy - jj, iz - kk);
-      //      const double Bylp = weight[ii][jj][kk] * By.get(ix - ii, iy - jj, iz - kk);
-      //      const double Bzlp = weight[ii][jj][kk] * Bz.get(ix - ii, iy - jj, iz - kk);
-      //      Exl += Exlp;
-      //      Eyl += Eylp;
-      //      Ezl += Ezlp;
-      //      Bxl += Bxlp;
-      //      Byl += Bylp;
-      //      Bzl += Bzlp;
-      //    }
+      // 
+      // double weight[2][2][2];
+      // for (int ii = 0; ii < 2; ii++)
+      // for (int jj = 0; jj < 2; jj++)
+      // for (int kk = 0; kk < 2; kk++)
+      // weight[ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
+      // for (int ii = 0; ii < 2; ii++)
+      // for (int jj = 0; jj < 2; jj++)
+      // for (int kk = 0; kk < 2; kk++) {
+      // const double Exlp = weight[ii][jj][kk] * Ex.get(ix - ii, iy - jj, iz - kk);
+      // const double Eylp = weight[ii][jj][kk] * Ey.get(ix - ii, iy - jj, iz - kk);
+      // const double Ezlp = weight[ii][jj][kk] * Ez.get(ix - ii, iy - jj, iz - kk);
+      // const double Bxlp = weight[ii][jj][kk] * Bx.get(ix - ii, iy - jj, iz - kk);
+      // const double Bylp = weight[ii][jj][kk] * By.get(ix - ii, iy - jj, iz - kk);
+      // const double Bzlp = weight[ii][jj][kk] * Bz.get(ix - ii, iy - jj, iz - kk);
+      // Exl += Exlp;
+      // Eyl += Eylp;
+      // Ezl += Ezlp;
+      // Bxl += Bxlp;
+      // Byl += Bylp;
+      // Bzl += Bzlp;
+      // }
 
       // ... so we expand things out instead
-      //
+      // 
       const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
       const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
       const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
@@ -343,60 +350,60 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
       const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
       const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
-      //
-      Bxl += weight000 * Bx[ix  ][iy  ][iz  ];
-      Bxl += weight001 * Bx[ix  ][iy  ][iz-1];
-      Bxl += weight010 * Bx[ix  ][iy-1][iz  ];
-      Bxl += weight011 * Bx[ix  ][iy-1][iz-1];
-      Bxl += weight100 * Bx[ix-1][iy  ][iz  ];
-      Bxl += weight101 * Bx[ix-1][iy  ][iz-1];
-      Bxl += weight110 * Bx[ix-1][iy-1][iz  ];
-      Bxl += weight111 * Bx[ix-1][iy-1][iz-1];
-      //
-      Byl += weight000 * By[ix  ][iy  ][iz  ];
-      Byl += weight001 * By[ix  ][iy  ][iz-1];
-      Byl += weight010 * By[ix  ][iy-1][iz  ];
-      Byl += weight011 * By[ix  ][iy-1][iz-1];
-      Byl += weight100 * By[ix-1][iy  ][iz  ];
-      Byl += weight101 * By[ix-1][iy  ][iz-1];
-      Byl += weight110 * By[ix-1][iy-1][iz  ];
-      Byl += weight111 * By[ix-1][iy-1][iz-1];
-      //
-      Bzl += weight000 * Bz[ix  ][iy  ][iz  ];
-      Bzl += weight001 * Bz[ix  ][iy  ][iz-1];
-      Bzl += weight010 * Bz[ix  ][iy-1][iz  ];
-      Bzl += weight011 * Bz[ix  ][iy-1][iz-1];
-      Bzl += weight100 * Bz[ix-1][iy  ][iz  ];
-      Bzl += weight101 * Bz[ix-1][iy  ][iz-1];
-      Bzl += weight110 * Bz[ix-1][iy-1][iz  ];
-      Bzl += weight111 * Bz[ix-1][iy-1][iz-1];
-      //
-      Exl += weight000 * Ex[ix  ][iy  ][iz  ];
-      Exl += weight001 * Ex[ix  ][iy  ][iz-1];
-      Exl += weight010 * Ex[ix  ][iy-1][iz  ];
-      Exl += weight011 * Ex[ix  ][iy-1][iz-1];
-      Exl += weight100 * Ex[ix-1][iy  ][iz  ];
-      Exl += weight101 * Ex[ix-1][iy  ][iz-1];
-      Exl += weight110 * Ex[ix-1][iy-1][iz  ];
-      Exl += weight111 * Ex[ix-1][iy-1][iz-1];
-      //
-      Eyl += weight000 * Ey[ix  ][iy  ][iz  ];
-      Eyl += weight001 * Ey[ix  ][iy  ][iz-1];
-      Eyl += weight010 * Ey[ix  ][iy-1][iz  ];
-      Eyl += weight011 * Ey[ix  ][iy-1][iz-1];
-      Eyl += weight100 * Ey[ix-1][iy  ][iz  ];
-      Eyl += weight101 * Ey[ix-1][iy  ][iz-1];
-      Eyl += weight110 * Ey[ix-1][iy-1][iz  ];
-      Eyl += weight111 * Ey[ix-1][iy-1][iz-1];
-      //
-      Ezl += weight000 * Ez[ix  ][iy  ][iz  ];
-      Ezl += weight001 * Ez[ix  ][iy  ][iz-1];
-      Ezl += weight010 * Ez[ix  ][iy-1][iz  ];
-      Ezl += weight011 * Ez[ix  ][iy-1][iz-1];
-      Ezl += weight100 * Ez[ix-1][iy  ][iz  ];
-      Ezl += weight101 * Ez[ix-1][iy  ][iz-1];
-      Ezl += weight110 * Ez[ix-1][iy-1][iz  ];
-      Ezl += weight111 * Ez[ix-1][iy-1][iz-1];
+      // 
+      Bxl += weight000 * Bx[ix][iy][iz];
+      Bxl += weight001 * Bx[ix][iy][iz - 1];
+      Bxl += weight010 * Bx[ix][iy - 1][iz];
+      Bxl += weight011 * Bx[ix][iy - 1][iz - 1];
+      Bxl += weight100 * Bx[ix - 1][iy][iz];
+      Bxl += weight101 * Bx[ix - 1][iy][iz - 1];
+      Bxl += weight110 * Bx[ix - 1][iy - 1][iz];
+      Bxl += weight111 * Bx[ix - 1][iy - 1][iz - 1];
+      // 
+      Byl += weight000 * By[ix][iy][iz];
+      Byl += weight001 * By[ix][iy][iz - 1];
+      Byl += weight010 * By[ix][iy - 1][iz];
+      Byl += weight011 * By[ix][iy - 1][iz - 1];
+      Byl += weight100 * By[ix - 1][iy][iz];
+      Byl += weight101 * By[ix - 1][iy][iz - 1];
+      Byl += weight110 * By[ix - 1][iy - 1][iz];
+      Byl += weight111 * By[ix - 1][iy - 1][iz - 1];
+      // 
+      Bzl += weight000 * Bz[ix][iy][iz];
+      Bzl += weight001 * Bz[ix][iy][iz - 1];
+      Bzl += weight010 * Bz[ix][iy - 1][iz];
+      Bzl += weight011 * Bz[ix][iy - 1][iz - 1];
+      Bzl += weight100 * Bz[ix - 1][iy][iz];
+      Bzl += weight101 * Bz[ix - 1][iy][iz - 1];
+      Bzl += weight110 * Bz[ix - 1][iy - 1][iz];
+      Bzl += weight111 * Bz[ix - 1][iy - 1][iz - 1];
+      // 
+      Exl += weight000 * Ex[ix][iy][iz];
+      Exl += weight001 * Ex[ix][iy][iz - 1];
+      Exl += weight010 * Ex[ix][iy - 1][iz];
+      Exl += weight011 * Ex[ix][iy - 1][iz - 1];
+      Exl += weight100 * Ex[ix - 1][iy][iz];
+      Exl += weight101 * Ex[ix - 1][iy][iz - 1];
+      Exl += weight110 * Ex[ix - 1][iy - 1][iz];
+      Exl += weight111 * Ex[ix - 1][iy - 1][iz - 1];
+      // 
+      Eyl += weight000 * Ey[ix][iy][iz];
+      Eyl += weight001 * Ey[ix][iy][iz - 1];
+      Eyl += weight010 * Ey[ix][iy - 1][iz];
+      Eyl += weight011 * Ey[ix][iy - 1][iz - 1];
+      Eyl += weight100 * Ey[ix - 1][iy][iz];
+      Eyl += weight101 * Ey[ix - 1][iy][iz - 1];
+      Eyl += weight110 * Ey[ix - 1][iy - 1][iz];
+      Eyl += weight111 * Ey[ix - 1][iy - 1][iz - 1];
+      // 
+      Ezl += weight000 * Ez[ix][iy][iz];
+      Ezl += weight001 * Ez[ix][iy][iz - 1];
+      Ezl += weight010 * Ez[ix][iy - 1][iz];
+      Ezl += weight011 * Ez[ix][iy - 1][iz - 1];
+      Ezl += weight100 * Ez[ix - 1][iy][iz];
+      Ezl += weight101 * Ez[ix - 1][iy][iz - 1];
+      Ezl += weight110 * Ez[ix - 1][iy - 1][iz];
+      Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
 
       // end interpolation
       const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
@@ -433,7 +440,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // ********************//
   // COMMUNICATION 
   // *******************//
-  timeTasks.start_communicate();
+  // timeTasks.start_communicate();
   const int avail = communicate(vct);
   if (avail < 0)
     return (-1);
@@ -446,10 +453,9 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       return (-1);
     MPI_Barrier(MPI_COMM_WORLD);
   }
-  timeTasks.addto_communicate();
+  // timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
 }
-
 
 /** relativistic mover with a Predictor-Corrector scheme */
 int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf) {

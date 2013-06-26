@@ -4,21 +4,20 @@
 developers: Stefano Markidis, Giovanni Lapenta.
  ********************************************************************************************/
 
-#include <mpi.h>
 #include <iostream>
 #include <math.h>
-#include "../processtopology/VirtualTopology3D.h"
-#include "../processtopology/VCtopology3D.h"
-#include "../inputoutput/CollectiveIO.h"
-#include "../inputoutput/Collective.h"
-#include "../communication/ComParticles3D.h"
-#include "../utility/Alloc.h"
-#include "../mathlib/Basic.h"
-#include "../mathlib/Bessel.h"
-#include "../bc/BcParticles.h"
-#include "../grids/Grid.h"
-#include "../grids/Grid3DCU.h"
-#include "../fields/Field.h"
+#include "VirtualTopology3D.h"
+#include "VCtopology3D.h"
+#include "CollectiveIO.h"
+#include "Collective.h"
+#include "ComParticles3D.h"
+#include "Alloc.h"
+#include "Basic.h"
+#include "BcParticles.h"
+#include "Grid.h"
+#include "Grid3DCU.h"
+#include "Field.h"
+#include "MPIdata.h"
 
 #include "Particles3Dcomm.h"
 
@@ -290,6 +289,7 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
         weight[i][j][k] = xi[i] * eta[j] * zeta[k] * invVOL;
 }
 
+
 /** Interpolation Particle --> Grid */
 void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
   const double inv_dx = 1.0 / dx;
@@ -298,11 +298,11 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
-  #pragma omp parallel
+  //#pragma omp parallel
   {
-    Moments speciesMoments(nxn,nyn,nzn,invVOL);
-    speciesMoments.set_to_zero();
-    #pragma omp for
+    //Moments speciesMoments(nxn,nyn,nzn,invVOL);
+    //speciesMoments.set_to_zero();
+    //#pragma omp for
     for (register long long i = 0; i < nop; i++)
     {
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
@@ -331,70 +331,69 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       //weight[1][1][0] = q[i] * xi[1] * eta[1] * zeta[0] * invVOL;
       //weight[1][1][1] = q[i] * xi[1] * eta[1] * zeta[1] * invVOL;
       // add charge density
-      speciesMoments.addRho(weight, ix, iy, iz);
+      EMf->addRho(weight, ix, iy, iz, ns);
       // add current density - X
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
-      speciesMoments.addJx(temp, ix, iy, iz);
+      EMf->addJx(temp, ix, iy, iz, ns);
       // add current density - Y
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
-      speciesMoments.addJy(temp, ix, iy, iz);
+      EMf->addJy(temp, ix, iy, iz, ns);
       // add current density - Z
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
-      speciesMoments.addJz(temp, ix, iy, iz);
+      EMf->addJz(temp, ix, iy, iz, ns);
       // Pxx - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
-      speciesMoments.addPxx(temp, ix, iy, iz);
+      EMf->addPxx(temp, ix, iy, iz, ns);
       // Pxy - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
-      speciesMoments.addPxy(temp, ix, iy, iz);
+      EMf->addPxy(temp, ix, iy, iz, ns);
       // Pxz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
-      speciesMoments.addPxz(temp, ix, iy, iz);
+      EMf->addPxz(temp, ix, iy, iz, ns);
       // Pyy - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
-      speciesMoments.addPyy(temp, ix, iy, iz);
+      EMf->addPyy(temp, ix, iy, iz, ns);
       // Pyz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
-      speciesMoments.addPyz(temp, ix, iy, iz);
+      EMf->addPyz(temp, ix, iy, iz, ns);
       // Pzz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
-      speciesMoments.addPzz(temp, ix, iy, iz);
+      EMf->addPzz(temp, ix, iy, iz, ns);
     }
     // change this to allow more parallelization after implementing array class
-    #pragma omp critical
-    EMf->addToSpeciesMoments(speciesMoments,ns);
+    //#pragma omp critical
+    //EMf->addToSpeciesMoments(speciesMoments,ns);
   }
   // communicate contribution from ghost cells 
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
 }
-
 
 /** communicate buffers */
 int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
@@ -529,9 +528,9 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // broadcast the maximum number of particles exiting for sizing the buffer and to check if communication is really needed
   npExitingMax = reduceMaxNpExiting(npExitingMax);
 
-/*****************************************************/
+  /*****************************************************/
   /* SEND AND RECEIVE MESSAGES */
-/*****************************************************/
+  /*****************************************************/
 
   new_buffer_size = npExitingMax * nVar + 1;
 
@@ -808,75 +807,58 @@ int Particles3Dcomm::maxNpExiting() {
   return (maxNp);
 }
 /** return X-coordinate of particle array */
-double *Particles3Dcomm::getXall() const {
+double *Particles3Dcomm::getXall()  const {
   return (x);
 }
-/** return Y-coordinate  of particle array */
-double *Particles3Dcomm::getYall() const {
+/** return Y-coordinate  of particle array */ double *Particles3Dcomm::getYall()  const {
   return (y);
 }
-/** return Z-coordinate  of particle array*/
-double *Particles3Dcomm::getZall() const {
+/** return Z-coordinate  of particle array*/ double *Particles3Dcomm::getZall()  const {
   return (z);
 }
-/** get X-velocity of particle with label indexPart */
-double *Particles3Dcomm::getUall() const {
+/** get X-velocity of particle with label indexPart */ double *Particles3Dcomm::getUall()  const {
   return (u);
 }
-/** get Y-velocity of particle with label indexPart */
-double *Particles3Dcomm::getVall() const {
+/** get Y-velocity of particle with label indexPart */ double *Particles3Dcomm::getVall()  const {
   return (v);
 }
-/**get Z-velocity of particle with label indexPart */
-double *Particles3Dcomm::getWall() const {
+/**get Z-velocity of particle with label indexPart */ double *Particles3Dcomm::getWall()  const {
   return (w);
 }
-/**get ID of particle with label indexPart */
-unsigned long *Particles3Dcomm::getParticleIDall() const {
+/**get ID of particle with label indexPart */ unsigned long *Particles3Dcomm::getParticleIDall()  const {
   return (ParticleID);
 }
-/**get charge of particle with label indexPart */
-double *Particles3Dcomm::getQall() const {
+/**get charge of particle with label indexPart */ double *Particles3Dcomm::getQall()  const {
   return (q);
 }
-/** return X-coordinate of particle with index indexPart */
-double Particles3Dcomm::getX(long long indexPart) const {
+/** return X-coordinate of particle with index indexPart */ double Particles3Dcomm::getX(long long indexPart)  const {
   return (x[indexPart]);
 }
-/** return Y-coordinate  of particle with index indexPart */
-double Particles3Dcomm::getY(long long indexPart) const {
+/** return Y-coordinate  of particle with index indexPart */ double Particles3Dcomm::getY(long long indexPart)  const {
   return (y[indexPart]);
 }
-/** return Y-coordinate  of particle with index indexPart */
-double Particles3Dcomm::getZ(long long indexPart) const {
+/** return Y-coordinate  of particle with index indexPart */ double Particles3Dcomm::getZ(long long indexPart)  const {
   return (z[indexPart]);
 }
-/** get u (X-velocity) of particle with label indexPart */
-double Particles3Dcomm::getU(long long indexPart) const {
+/** get u (X-velocity) of particle with label indexPart */ double Particles3Dcomm::getU(long long indexPart)  const {
   return (u[indexPart]);
 }
-/** get v (Y-velocity) of particle with label indexPart */
-double Particles3Dcomm::getV(long long indexPart) const {
+/** get v (Y-velocity) of particle with label indexPart */ double Particles3Dcomm::getV(long long indexPart)  const {
   return (v[indexPart]);
 }
-/**get w (Z-velocity) of particle with label indexPart */
-double Particles3Dcomm::getW(long long indexPart) const {
+/**get w (Z-velocity) of particle with label indexPart */ double Particles3Dcomm::getW(long long indexPart)  const {
   return (w[indexPart]);
 }
-/**get ID of particle with label indexPart */
-unsigned long Particles3Dcomm::getParticleID(long long indexPart) const {
+/**get ID of particle with label indexPart */ unsigned long Particles3Dcomm::getParticleID(long long indexPart)  const {
   return (ParticleID[indexPart]);
 }
-/**get charge of particle with label indexPart */
-double Particles3Dcomm::getQ(long long indexPart) const {
+/**get charge of particle with label indexPart */ double Particles3Dcomm::getQ(long long indexPart)  const {
   return (q[indexPart]);
 }
-/** return the number of particles */
-long long Particles3Dcomm::getNOP() const {
+/** return the number of particles */ long long Particles3Dcomm::getNOP()  const {
   return (nop);
 }
-/** return the Kinetic energy */
-double Particles3Dcomm::getKe() {
+/** return the Kinetic energy */ double Particles3Dcomm::getKe() {
   double localKe = 0.0;
   double totalKe = 0.0;
   for (register long long i = 0; i < nop; i++)
@@ -895,35 +877,35 @@ double Particles3Dcomm::getP() {
 }
 
 /** return the highest kinetic energy */
-double Particles3Dcomm::getMaxVelocity(){  
+double Particles3Dcomm::getMaxVelocity() {
   double localVel = 0.0;
   double maxVel = 0.0;
-  for (long long i=0; i < nop; i++)
-    localVel = max(localVel, sqrt(u[i]*u[i] + v[i]*v[i] + w[i]*w[i]));
+  for (long long i = 0; i < nop; i++)
+    localVel = max(localVel, sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]));
   MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  return(maxVel);
+  return (maxVel);
 }
 
 
 /** get energy spectrum */
-unsigned long* Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel){  
-  unsigned long* f = new unsigned long [nBins];
-  for (int i=0; i < nBins; i++)
-      f[i] = 0;
+unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel) {
+  unsigned long *f = new unsigned long[nBins];
+  for (int i = 0; i < nBins; i++)
+    f[i] = 0;
   double Vel = 0.0;
   double dv = maxVel / nBins;
   int bin = 0;
-  for (long long i=0; i < nop; i++) {
-    Vel = sqrt(u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
-    bin = int(floor(Vel/dv));
-    if (bin >= nBins) 
-      f[nBins-1] += 1;
+  for (long long i = 0; i < nop; i++) {
+    Vel = sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    bin = int (floor(Vel / dv));
+    if (bin >= nBins)
+      f[nBins - 1] += 1;
     else
       f[bin] += 1;
   }
   unsigned long localN = 0;
   unsigned long totalN = 0;
-  for (int i=0; i < nBins; i++) {
+  for (int i = 0; i < nBins; i++) {
     localN = f[i];
     MPI_Allreduce(&localN, &totalN, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
     f[i] = totalN;
@@ -945,8 +927,7 @@ void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
     cout << "Particles #" << i << " x=" << x[i] << " y=" << y[i] << " z=" << z[i] << " u=" << u[i] << " v=" << v[i] << " w=" << w[i] << endl;
   cout << endl;
 }
-/** print just the number of particles */
-void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT) const {
+/** print just the number of particles */ void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
   cout << endl;
   cout << "Number of Particles of species " << ns << ": " << nop << endl;
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;

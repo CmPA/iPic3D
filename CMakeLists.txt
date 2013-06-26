@@ -42,21 +42,7 @@ link_directories(
 file(
         GLOB
         inc_files
-        ConfigFile/src/*.h
-        PSKOutput3D/*.h
-        bc/*.h
-        communication/*.h
-        fields/*.h
-        grids/*.h
-        iPIC3D.h/*.h
-        inputoutput/*.h
-        mathlib/*.h
-        mpidata/*.h
-        particles/*.h
-        performances/*.h
-        processtopology/*.h
-        solvers/*.h
-        utility/*.h
+        include/*.h
 )
 
 #
@@ -81,7 +67,7 @@ file(
         processtopology/*.cpp
         solvers/*.cpp
         utility/*.cpp
-        iPIC3D.cpp
+        main/iPic3Dlib.cpp
 )
 
 #
@@ -89,7 +75,13 @@ file(
 #
 
 add_executable(
-        iPIC3D
+        iPic3D
+        iPic3D.cpp
+)
+
+add_library(
+        iPic3Dlib
+        SHARED
         ${inc_files}
         ${src_files}
 )
@@ -99,8 +91,13 @@ add_executable(
 #
 
 target_link_libraries(
-         iPIC3D
+         iPic3Dlib
          ${HDF5_LIBRARIES}
          ${HDF5_HL_LIBRARIES}
          ${MPI_LIBRARIES}
+)
+
+target_link_libraries(
+         iPic3D
+         iPic3Dlib
 )
