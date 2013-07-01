@@ -413,106 +413,126 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   }
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   long long np_current = 0, nplast = nop - 1;
-  while (np_current < nplast + 1) {
+
+  while (np_current < nplast+1){
+
     // BC on particles
     if (x[np_current] < 0 && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&x[np_current], &u[np_current], &v[np_current], &w[np_current], Lx, uth, vth, wth, bcPfaceXright, bcPfaceXleft);
+      BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft);
     else if (x[np_current] > Lx && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&x[np_current], &u[np_current], &v[np_current], &w[np_current], Lx, uth, vth, wth, bcPfaceXright, bcPfaceXleft);
-    if (y[np_current] < 0 && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL) // check it here
-      BCpart(&y[np_current], &v[np_current], &u[np_current], &w[np_current], Ly, vth, uth, wth, bcPfaceYright, bcPfaceYleft);
-    else if (y[np_current] > Ly && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL)  // check it here
-      BCpart(&y[np_current], &v[np_current], &u[np_current], &w[np_current], Ly, vth, uth, wth, bcPfaceYright, bcPfaceYleft);
-    if (z[np_current] < 0 && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL) // check it here
-      BCpart(&z[np_current], &v[np_current], &u[np_current], &w[np_current], Lz, vth, uth, wth, bcPfaceZright, bcPfaceZleft);
-    else if (z[np_current] > Lz && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL)  // check it here
-      BCpart(&z[np_current], &v[np_current], &u[np_current], &w[np_current], Lz, vth, uth, wth, bcPfaceZright, bcPfaceZleft);
+      BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft); 
+    if (y[np_current] < 0 && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL)  // check it here
+      BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft);
+    else if (y[np_current] > Ly && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL) //check it here
+      BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft); 
+    if (z[np_current] < 0 && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL)  // check it here
+      BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
+    else if (z[np_current] > Lz && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) //check it here
+      BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
+
     // if the particle exits, apply the boundary conditions add the particle to communication buffer
-    if (x[np_current] < xstart || x[np_current] > xend) {
+    if (x[np_current] < xstart || x[np_current] >xend){
       // communicate if they don't belong to the domain
-      if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL) {
+      if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitXleft + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer to " << (int) (buffer_size * 2) << " buffer size" << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitXleft+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferXleft(b_X_LEFT, np_current, ptVCT);
+        bufferXleft(b_X_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
         npExitXleft++;
-      }
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL) {
+      } 
+      else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL){
+        del_pack(np_current,&nplast);
+        npExitXleft++;
+      } 
+      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitXright + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitXright+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferXright(b_X_RIGHT, np_current, ptVCT);
+        bufferXright(b_X_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
+        npExitXright++;
+      }
+      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL){
+        del_pack(np_current,&nplast);
         npExitXright++;
       }
 
-    }
-    else if (y[np_current] < ystart || y[np_current] > yend) {
+    } else  if (y[np_current] < ystart || y[np_current] >yend){
       // communicate if they don't belong to the domain
-      if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL) {
+      if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitYleft + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitYleft+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferYleft(b_Y_LEFT, np_current, ptVCT);
+        bufferYleft(b_Y_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
         npExitYleft++;
       }
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL) {
+      else if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL){
+        // delete the particle and pack the particle array, the value of nplast changes
+        del_pack(np_current,&nplast);
+        npExitYleft++;
+      }
+      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitYright + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitYright+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferYright(b_Y_RIGHT, np_current, ptVCT);
+        bufferYright(b_Y_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
         npExitYright++;
       }
-    }
-    else if (z[np_current] < zstart || z[np_current] > zend) {
+      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL){
+        // delete the particle and pack the particle array, the value of nplast changes
+        del_pack(np_current,&nplast);
+        npExitYright++;
+      }
+    } else  if (z[np_current] < zstart || z[np_current] >zend){
       // communicate if they don't belong to the domain
-      if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL) {
+      if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitZleft + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitZleft+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferZleft(b_Z_LEFT, np_current, ptVCT);
+        bufferZleft(b_Z_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
 
         npExitZleft++;
+      } 
+      else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL){
+        del_pack(np_current,&nplast);
+        npExitZleft++;
       }
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL) {
+      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitZright + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitZright+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferZright(b_Z_RIGHT, np_current, ptVCT);
+        bufferZright(b_Z_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
 
         npExitZright++;
       }
-    }
-    else {
+      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL){
+        del_pack(np_current,&nplast);
+        npExitZright++;
+      }
+    }  else {
       // particle is still in the domain, procede with the next particle
       np_current++;
     }

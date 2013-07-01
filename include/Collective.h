@@ -122,6 +122,9 @@ class Collective:public CollectiveIO {
     /*! get RestartDirName */
     string getRestartDirName();
 
+    /*! get Case type */
+    string getCase();
+
     /*! get Boundary Condition Particles: FaceXright */
     int getBcPfaceXright();
     /*! get Boundary Condition Particles: FaceXleft */
@@ -269,6 +272,9 @@ class Collective:public CollectiveIO {
     double *v0;
     /*! Drift velocity - Direction Z */
     double *w0;
+
+    /*! Case type */
+    string Case;
 
     /*! TrackParticleID */
     bool *TrackParticleID;

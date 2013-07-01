@@ -27,7 +27,7 @@ EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
   dt = col->getDt();
   th = col->getTh();
   delt = c * th * dt;
-  PoissonCorrection = true;
+  PoissonCorrection = false;
   CGtol = col->getCGtol();
   GMREStol = col->getGMREStol();
   qom = new double[ns];
@@ -1111,6 +1111,7 @@ void EMfields3D::sumOverSpeciesJ() {
 
 /*! initialize Magnetic and Electric Field with initial configuration */
 void EMfields3D::init(VirtualTopology3D * vct, Grid * grid) {
+
   if (restart1 == 0) {
     for (int i = 0; i < nxn; i++) {
       for (int j = 0; j < nyn; j++) {

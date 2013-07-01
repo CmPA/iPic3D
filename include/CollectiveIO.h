@@ -112,6 +112,9 @@ public:
   /** get RestartDirName  */
   virtual string getRestartDirName() = 0;
 
+  /** get Case type */
+  virtual string getCase() = 0;
+
   /** get Boundary Condition Particles: FaceXright */
   virtual int getBcPfaceXright() = 0;
   /** get Boundary Condition Particles: FaceXleft */

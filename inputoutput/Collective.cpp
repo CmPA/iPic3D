@@ -23,6 +23,8 @@ void Collective::ReadInput(string inputfile) {
     B0z = config.read < double >("B0z");
     delta = config.read < double >("delta");
 
+    Case = config.read<string>("Case");
+
     rhoINIT = new double[ns];
     array_double rhoINIT0 = config.read < array_double > ("rhoINIT");
     rhoINIT[0] = rhoINIT0.a;
@@ -543,6 +545,7 @@ void Collective::Print() {
   cout << "Time step                = " << dt << endl;
   cout << "Number of cycles         = " << ncycles << endl;
   cout << "Results saved in: " << SaveDirName << endl;
+  cout << "Case type       : " << Case << endl;
   cout << "---------------------" << endl;
   cout << "Check Simulation Constraints" << endl;
   cout << "---------------------" << endl;
@@ -572,7 +575,7 @@ void Collective::Print() {
     if (vth[is] * dt / dy > .1)
       cout << "OK v_th*dt/dy (species " << is << ") = " << vth[is] * dt / dy << " > .1" << endl;
     else
-      cout << "WARNING. v_th*dt/dy (species " << is << ") = " << vth[is] * dt / dy << " < .1" << endl;
+      cout << "WARNING. v_th*dt/dy (species " << is << ") = " << vth[is] * dt / dy << " < .1"  << endl;
 
   }
 
@@ -867,6 +870,10 @@ string Collective::getRestartDirName() {
 /*! get inputfile */
 string Collective::getinputfile() {
   return (inputfile);
+}
+/*! get Case type */
+string Collective::getCase() {
+  return (Case);
 }
 /*! get last_cycle */
 int Collective::getLast_cycle() {

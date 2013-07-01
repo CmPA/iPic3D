@@ -46,13 +46,18 @@ int c_Solver::Init(int argc, char **argv) {
   MPI_Barrier(MPI_COMM_WORLD);
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
-  // EMf->initGEMnoPert(vct,grid);
-  // EMf->initForceFree(vct,grid);
-  EMf->initGEM(vct, grid);
+
+  if      (col->getCase().c_str()=="GEMnoPert") EMf->initGEMnoPert(vct,grid);
+  else if (col->getCase().c_str()=="ForceFree") EMf->initForceFree(vct,grid);
+  else if (col->getCase().c_str()=="GEM")       EMf->initGEM(vct, grid);
+  else if (col->getCase().c_str()=="Dipole")    ; //EMf->initDipole(vct,grid);
+  else                                          EMf->init(vct,grid);
+
   // Allocation of particles
   part = new Particles3D[ns];
   for (int i = 0; i < ns; i++)
     part[i].allocate(i, col, vct, grid);
+
   // Initial Condition for PARTICLES if you are not starting from RESTART
   if (restart == 0) {
     // wave = new Planewave(col, EMf, grid, vct);
