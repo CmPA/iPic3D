@@ -9,6 +9,12 @@ RestartDirName = data
 # set the maximum number of particles allocated  
 NpMaxNpRatio = 3.0
 
+# Select the case
+Case = GEM
+
+# Poisson correction
+PoissonCorrection = yes
+
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
 B0x = 0.0097
 B0y = 0.00

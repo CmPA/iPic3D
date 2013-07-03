@@ -28,6 +28,7 @@ EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
   th = col->getTh();
   delt = c * th * dt;
   PoissonCorrection = false;
+  if (col->getPoissonCorrection()=="yes") PoissonCorrection = true;
   CGtol = col->getCGtol();
   GMREStol = col->getGMREStol();
   qom = new double[ns];
@@ -578,9 +579,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
     for (int i = 1; i < nyn - 1; i++)
       for (int k = 1; k < nzn - 1; k++) {
         rhons[is][1][i][k] += rhons[is][1][i][k];
-        Jxs[is][1][i][k] += Jxs[is][1][i][k];
-        Jys[is][1][i][k] += Jys[is][1][i][k];
-        Jzs[is][1][i][k] += Jzs[is][1][i][k];
+        Jxs  [is][1][i][k] += Jxs  [is][1][i][k];
+        Jys  [is][1][i][k] += Jys  [is][1][i][k];
+        Jzs  [is][1][i][k] += Jzs  [is][1][i][k];
         pXXsn[is][1][i][k] += pXXsn[is][1][i][k];
         pXYsn[is][1][i][k] += pXYsn[is][1][i][k];
         pXZsn[is][1][i][k] += pXZsn[is][1][i][k];
@@ -593,9 +594,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
     for (int i = 1; i < nxn - 1; i++)
       for (int k = 1; k < nzn - 1; k++) {
         rhons[is][i][1][k] += rhons[is][i][1][k];
-        Jxs[is][i][1][k] += Jxs[is][i][1][k];
-        Jys[is][i][1][k] += Jys[is][i][1][k];
-        Jzs[is][i][1][k] += Jzs[is][i][1][k];
+        Jxs  [is][i][1][k] += Jxs  [is][i][1][k];
+        Jys  [is][i][1][k] += Jys  [is][i][1][k];
+        Jzs  [is][i][1][k] += Jzs  [is][i][1][k];
         pXXsn[is][i][1][k] += pXXsn[is][i][1][k];
         pXYsn[is][i][1][k] += pXYsn[is][i][1][k];
         pXZsn[is][i][1][k] += pXZsn[is][i][1][k];
@@ -608,9 +609,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
     for (int i = 1; i < nxn - 1; i++)
       for (int j = 1; j < nyn - 1; j++) {
         rhons[is][i][j][1] += rhons[is][i][j][1];
-        Jxs[is][i][j][1] += Jxs[is][i][j][1];
-        Jys[is][i][j][1] += Jys[is][i][j][1];
-        Jzs[is][i][j][1] += Jzs[is][i][j][1];
+        Jxs  [is][i][j][1] += Jxs  [is][i][j][1];
+        Jys  [is][i][j][1] += Jys  [is][i][j][1];
+        Jzs  [is][i][j][1] += Jzs  [is][i][j][1];
         pXXsn[is][i][j][1] += pXXsn[is][i][j][1];
         pXYsn[is][i][j][1] += pXYsn[is][i][j][1];
         pXZsn[is][i][j][1] += pXZsn[is][i][j][1];
@@ -623,9 +624,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
     for (int i = 1; i < nyn - 1; i++)
       for (int k = 1; k < nzn - 1; k++) {
         rhons[is][nxn - 2][i][k] += rhons[is][nxn - 2][i][k];
-        Jxs[is][nxn - 2][i][k] += Jxs[is][nxn - 2][i][k];
-        Jys[is][nxn - 2][i][k] += Jys[is][nxn - 2][i][k];
-        Jzs[is][nxn - 2][i][k] += Jzs[is][nxn - 2][i][k];
+        Jxs  [is][nxn - 2][i][k] += Jxs  [is][nxn - 2][i][k];
+        Jys  [is][nxn - 2][i][k] += Jys  [is][nxn - 2][i][k];
+        Jzs  [is][nxn - 2][i][k] += Jzs  [is][nxn - 2][i][k];
         pXXsn[is][nxn - 2][i][k] += pXXsn[is][nxn - 2][i][k];
         pXYsn[is][nxn - 2][i][k] += pXYsn[is][nxn - 2][i][k];
         pXZsn[is][nxn - 2][i][k] += pXZsn[is][nxn - 2][i][k];
@@ -638,9 +639,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
     for (int i = 1; i < nxn - 1; i++)
       for (int k = 1; k < nzn - 1; k++) {
         rhons[is][i][nyn - 2][k] += rhons[is][i][nyn - 2][k];
-        Jxs[is][i][nyn - 2][k] += Jxs[is][i][nyn - 2][k];
-        Jys[is][i][nyn - 2][k] += Jys[is][i][nyn - 2][k];
-        Jzs[is][i][nyn - 2][k] += Jzs[is][i][nyn - 2][k];
+        Jxs  [is][i][nyn - 2][k] += Jxs  [is][i][nyn - 2][k];
+        Jys  [is][i][nyn - 2][k] += Jys  [is][i][nyn - 2][k];
+        Jzs  [is][i][nyn - 2][k] += Jzs  [is][i][nyn - 2][k];
         pXXsn[is][i][nyn - 2][k] += pXXsn[is][i][nyn - 2][k];
         pXYsn[is][i][nyn - 2][k] += pXYsn[is][i][nyn - 2][k];
         pXZsn[is][i][nyn - 2][k] += pXZsn[is][i][nyn - 2][k];
@@ -653,9 +654,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
     for (int i = 1; i < nxn - 1; i++)
       for (int j = 1; j < nyn - 1; j++) {
         rhons[is][i][j][nzn - 2] += rhons[is][i][j][nzn - 2];
-        Jxs[is][i][j][nzn - 2] += Jxs[is][i][j][nzn - 2];
-        Jys[is][i][j][nzn - 2] += Jys[is][i][j][nzn - 2];
-        Jzs[is][i][j][nzn - 2] += Jzs[is][i][j][nzn - 2];
+        Jxs  [is][i][j][nzn - 2] += Jxs  [is][i][j][nzn - 2];
+        Jys  [is][i][j][nzn - 2] += Jys  [is][i][j][nzn - 2];
+        Jzs  [is][i][j][nzn - 2] += Jzs  [is][i][j][nzn - 2];
         pXXsn[is][i][j][nzn - 2] += pXXsn[is][i][j][nzn - 2];
         pXYsn[is][i][j][nzn - 2] += pXYsn[is][i][j][nzn - 2];
         pXZsn[is][i][j][nzn - 2] += pXZsn[is][i][j][nzn - 2];
@@ -665,10 +666,41 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
       }
   }
 }
+
+void EMfields3D::ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, double R, double x_center, double y_center, double z_center) {
+
+  double xd;
+  double yd;
+  double zd;
+  double ff;
+
+  for (int is = 0; is < ns; is++) {
+    ff = 1.0;
+    if (is == 0) ff = -1.0;
+    for (int i = 1; i < nxn; i++) {
+      for (int j = 1; j < nyn; j++) {
+        for (int k = 1; k < nzn; k++) {
+
+          xd = grid->getXN(i,j,k) - x_center;
+          yd = grid->getYN(i,j,k) - y_center;
+          zd = grid->getZN(i,j,k) - z_center;
+
+          if ((xd*xd+yd*yd+zd*zd) <= R*R) {
+            rhons[is][i][j][k] = ff * rhoINIT[is] / FourPI;
+          }
+
+        }
+      }
+    }
+  }
+
+}
+
 /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
 void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getCartesian_rank() == 0)
     cout << "*** B CALCULATION ***" << endl;
+
   // calculate the curl of Eth
   grid->curlN2C(tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
   // update the magnetic field
@@ -1055,12 +1087,12 @@ void EMfields3D::setZeroDensities() {
   for (register int i = 0; i < nxn; i++)
     for (register int j = 0; j < nyn; j++)
       for (register int k = 0; k < nzn; k++) {
-        Jx[i][j][k] = 0.0;
-        Jxh[i][j][k] = 0.0;
-        Jy[i][j][k] = 0.0;
-        Jyh[i][j][k] = 0.0;
-        Jz[i][j][k] = 0.0;
-        Jzh[i][j][k] = 0.0;
+        Jx  [i][j][k] = 0.0;
+        Jxh [i][j][k] = 0.0;
+        Jy  [i][j][k] = 0.0;
+        Jyh [i][j][k] = 0.0;
+        Jz  [i][j][k] = 0.0;
+        Jzh [i][j][k] = 0.0;
         rhon[i][j][k] = 0.0;
       }
   for (register int i = 0; i < nxc; i++)
@@ -1074,9 +1106,9 @@ void EMfields3D::setZeroDensities() {
       for (register int j = 0; j < nyn; j++)
         for (register int k = 0; k < nzn; k++) {
           rhons[kk][i][j][k] = 0.0;
-          Jxs[kk][i][j][k] = 0.0;
-          Jys[kk][i][j][k] = 0.0;
-          Jzs[kk][i][j][k] = 0.0;
+          Jxs  [kk][i][j][k] = 0.0;
+          Jys  [kk][i][j][k] = 0.0;
+          Jzs  [kk][i][j][k] = 0.0;
           pXXsn[kk][i][j][k] = 0.0;
           pXYsn[kk][i][j][k] = 0.0;
           pXZsn[kk][i][j][k] = 0.0;
@@ -1128,10 +1160,12 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid) {
         }
       }
     }
+
     // initialize B on centers
     grid->interpN2C(Bxc, Bxn);
     grid->interpN2C(Byc, Byn);
     grid->interpN2C(Bzc, Bzn);
+
     for (int is = 0; is < ns; is++)
       grid->interpN2C(rhocs, is, rhons);
   }

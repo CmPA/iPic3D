@@ -114,6 +114,8 @@ public:
 
   /** get Case type */
   virtual string getCase() = 0;
+  /** get Poisson correction flag */
+  virtual string getPoissonCorrection() = 0;
 
   /** get Boundary Condition Particles: FaceXright */
   virtual int getBcPfaceXright() = 0;

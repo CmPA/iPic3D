@@ -252,6 +252,8 @@ protected:
   int NiterMover;
   /** velocity of the injection of the particles */
   double Vinj;
+  /** removed charge from species */
+  double Q_removed;
 };
 
 

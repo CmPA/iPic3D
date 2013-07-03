@@ -1,4 +1,5 @@
 
+#include <iomanip>
 #include "iPic3D.h"
 
 using namespace iPic3D;
@@ -14,16 +15,16 @@ int main(int argc, char **argv) {
 
     if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
 
-    KCode.WriteOutput(i);
-
     if (!b_err) {
       KCode.CalculateField();
       b_err = KCode.ParticlesMover();
     }
-    else {
+
+    if (b_err) {
       i = KCode.LastCycle() + 1;
     }
 
+    KCode.WriteOutput(i);
     KCode.WriteConserved(i);
     KCode.WriteRestart(i);
 

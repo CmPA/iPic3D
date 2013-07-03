@@ -23,7 +23,8 @@ void Collective::ReadInput(string inputfile) {
     B0z = config.read < double >("B0z");
     delta = config.read < double >("delta");
 
-    Case = config.read<string>("Case");
+    Case              = config.read<string>("Case");
+    PoissonCorrection = config.read<string>("PoissonCorrection");
 
     rhoINIT = new double[ns];
     array_double rhoINIT0 = config.read < array_double > ("rhoINIT");
@@ -544,8 +545,9 @@ void Collective::Print() {
   cout << "Number of cells (z)      = " << nzc << endl;
   cout << "Time step                = " << dt << endl;
   cout << "Number of cycles         = " << ncycles << endl;
-  cout << "Results saved in: " << SaveDirName << endl;
-  cout << "Case type       : " << Case << endl;
+  cout << "Results saved in  : " << SaveDirName << endl;
+  cout << "Case type         : " << Case << endl;
+  cout << "Poisson correction: " << PoissonCorrection << endl;
   cout << "---------------------" << endl;
   cout << "Check Simulation Constraints" << endl;
   cout << "---------------------" << endl;
@@ -874,6 +876,10 @@ string Collective::getinputfile() {
 /*! get Case type */
 string Collective::getCase() {
   return (Case);
+}
+/*! get Poisson correction flag */
+string Collective::getPoissonCorrection() {
+  return (PoissonCorrection);
 }
 /*! get last_cycle */
 int Collective::getLast_cycle() {

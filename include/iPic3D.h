@@ -45,16 +45,17 @@ namespace iPic3D {
     inline int get_myrank();
 
   private:
-    MPIdata * mpi;
-    Collective *col;
-    VCtopology3D *vct;
-    Grid3DCU *grid;
-    EMfields3D *EMf;
-    Particles3D *part;
-    double *Ke;
-    double *momentum;
+    MPIdata       * mpi;
+    Collective    *col;
+    VCtopology3D  *vct;
+    Grid3DCU      *grid;
+    EMfields3D    *EMf;
+    Particles3D   *part;
+    double        *Ke;
+    double        *momentum;
+    double        *Qremoved;
     unsigned long *VelocityDist;
-    Timing *my_clock;
+    Timing        *my_clock;
 
     PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
     myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent;  // Create an Output Agent for HDF5 output

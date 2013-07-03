@@ -64,6 +64,8 @@ public:
   void interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * vct);
   /** interpolation Particle->Grid only for pressure tensor */
   void interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * vct);
+  /*! Delete the particles inside the sphere with radius R and center x_center y_center and return the total charge removed */
+  double deleteParticlesInsideSphere(double R, double x_center, double y_center, double z_center);
 
 };
 

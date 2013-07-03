@@ -204,6 +204,8 @@ class EMfields3D                // :public Field
     void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct);
     /*! Maxwell source term (for SOLVER) */
     void MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct);
+    /*! Impose a constant charge inside a spherical zone of the domain */
+    void ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, double R, double x_center, double y_center, double z_center);
     /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
     void calculateB(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for gem challange */

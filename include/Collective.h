@@ -124,6 +124,8 @@ class Collective:public CollectiveIO {
 
     /*! get Case type */
     string getCase();
+    /*! get Poisson correction flag */
+    string getPoissonCorrection();
 
     /*! get Boundary Condition Particles: FaceXright */
     int getBcPfaceXright();
@@ -275,6 +277,8 @@ class Collective:public CollectiveIO {
 
     /*! Case type */
     string Case;
+    /*! Poisson correction flag */
+    string PoissonCorrection;
 
     /*! TrackParticleID */
     bool *TrackParticleID;

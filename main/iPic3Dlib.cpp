@@ -47,11 +47,19 @@ int c_Solver::Init(int argc, char **argv) {
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
 
-  if      (col->getCase().c_str()=="GEMnoPert") EMf->initGEMnoPert(vct,grid);
-  else if (col->getCase().c_str()=="ForceFree") EMf->initForceFree(vct,grid);
-  else if (col->getCase().c_str()=="GEM")       EMf->initGEM(vct, grid);
-  else if (col->getCase().c_str()=="Dipole")    ; //EMf->initDipole(vct,grid);
-  else                                          EMf->init(vct,grid);
+  if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid);
+  else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid);
+  else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid);
+  else if (col->getCase()=="Dipole")    EMf->init(vct,grid);
+  else {
+    if (myrank==0) {
+      cout << " =========================================================== " << endl;
+      cout << " WARNING: The case '" << col->getCase() << "' was not recognized. " << endl;
+      cout << "          Runing simulation with the default initialization. " << endl;
+      cout << " =========================================================== " << endl;
+    }
+   EMf->init(vct,grid);
+  }
 
   // Allocation of particles
   part = new Particles3D[ns];
@@ -125,6 +133,8 @@ int c_Solver::Init(int argc, char **argv) {
   }}}
   my_file.close();
 
+  Qremoved = new double[ns];
+
   my_clock = new Timing(myrank);
 
   return 0;
@@ -136,10 +146,19 @@ void c_Solver::CalculateField() {
   // interpolation
   // timeTasks.start(TimeTasks::MOMENTS);
   EMf->setZeroDensities();      // set to zero the densities
+
   for (int i = 0; i < ns; i++)
     part[i].interpP2G(EMf, grid, vct);  // interpolate Particles to Grid(Nodes)
+
   EMf->sumOverSpecies(vct);     // sum all over the species
+
+  // Fill with constant charge the planet
+  if (col->getCase()=="Dipole") {
+    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+  }
+
   MPI_Barrier(MPI_COMM_WORLD);
+
   EMf->interpDensitiesN2C(vct, grid); // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);  // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
@@ -155,6 +174,7 @@ void c_Solver::CalculateField() {
 bool c_Solver::ParticlesMover() {
 
   // PARTICLE MOVER
+
   // timeTasks.start(TimeTasks::PARTICLES);
   for (int i = 0; i < ns; i++)  // move each species
   {
@@ -162,6 +182,7 @@ bool c_Solver::ParticlesMover() {
     mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
   // timeTasks.end(TimeTasks::PARTICLES);
+
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
       cout << "*************************************************************" << endl;
@@ -170,12 +191,20 @@ bool c_Solver::ParticlesMover() {
     }
     return (true);              // exit from the time loop
   }
+
+  // Remove particles from depopulation area
+  if (col->getCase()=="Dipole") {
+    for (int i=0; i < ns; i++)
+      Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+  }
+
   // timeTasks.start(TimeTasks::BFIELD);
   EMf->calculateB(grid, vct);   // calculate the B field
   // timeTasks.end(TimeTasks::BFIELD);
 
   // print out total time for all tasks
   // timeTasks.print_cycle_times();
+  return (false);
 
 }
 
