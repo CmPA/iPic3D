@@ -23,6 +23,7 @@
 #include "ComInterpNodes3D.h"
 #include "TimeTasks.h"
 #include "asserts.h"
+#include "BCStructure.h"
 
 using std::cout;
 using std::cerr;
@@ -368,6 +369,9 @@ class EMfields3D                // :public Field
     /*! print electromagnetic fields info */
     void print(void) const;
 
+    // OpenBC
+    void updateInfoFields(Grid *grid,VirtualTopology3D *vct,CollectiveIO *col);
+
     /* ********************************* // VARIABLES ********************************* */
   private:
     /*! light speed */
@@ -561,11 +565,28 @@ class EMfields3D                // :public Field
     int restart1;
     /*! String with the directory for the restart file */
     string RestartDirName;
+    /*! Case */
+    string Case;
 
     /*! CG tolerance criterium for stopping iterations */
     double CGtol;
     /*! GMRES tolerance criterium for stopping iterations */
     double GMREStol;
+
+    // OpenBC implementation
+
+    injInfoFields *injFieldsLeft, *injFieldsRight, *injFieldsTop, *injFieldsBottom, *injFieldsFront, *injFieldsRear;
+
+    injInfoFields* get_InfoFieldsLeft();
+    injInfoFields* get_InfoFieldsTop();
+    injInfoFields* get_InfoFieldsBottom();
+    injInfoFields* get_InfoFieldsFront();
+    injInfoFields* get_InfoFieldsRear();
+    injInfoFields* get_InfoFieldsRight();
+
+    void BoundaryConditionsB(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
+    void BoundaryConditionsE(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
+    void BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
 
 };
 

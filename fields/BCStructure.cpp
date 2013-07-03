@@ -1,6 +1,4 @@
-#define NULL 0
 
-#include "Alloc.h"
 #include "BCStructure.h"
 
 injInfoFields::injInfoFields(int Nxsize, int Nysize, int Nzsize) {

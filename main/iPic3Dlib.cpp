@@ -61,6 +61,9 @@ int c_Solver::Init(int argc, char **argv) {
     EMf->init(vct,grid);
   }
 
+  // OpenBC
+  EMf->updateInfoFields(grid,vct,col);
+
   // Allocation of particles
   part = new Particles3D[ns];
   for (int i = 0; i < ns; i++)
@@ -145,6 +148,8 @@ void c_Solver::CalculateField() {
   // timeTasks.resetCycle();
   // interpolation
   // timeTasks.start(TimeTasks::MOMENTS);
+
+  EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();      // set to zero the densities
 
   for (int i = 0; i < ns; i++)

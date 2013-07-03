@@ -179,16 +179,16 @@ inline VCtopology3D::VCtopology3D() {
   // *******************************************
   // *******************************************
   // change these values to change the topology
-  XLEN = 1;
-  YLEN = 1;
+  XLEN = 2;
+  YLEN = 2;
   ZLEN = 1;
   nprocs = XLEN * YLEN * ZLEN;
   // here you have to set the topology for the fields
-  PERIODICX = false;
+  PERIODICX = true;
   PERIODICY = false;
   PERIODICZ = true;
   // here you have to set the topology for the Particles
-  PERIODICX_P = false;
+  PERIODICX_P = true;
   PERIODICY_P = false;
   PERIODICZ_P = true;
   // *******************************************
