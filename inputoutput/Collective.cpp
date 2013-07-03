@@ -39,6 +39,21 @@ void Collective::ReadInput(string inputfile) {
       rhoINIT[4] = rhoINIT0.e;
     if (ns > 5)
       rhoINIT[5] = rhoINIT0.f;
+
+    rhoINJECT = new double[ns];
+    array_double rhoINJECT0 = config.read<array_double>( "rhoINJECT" );
+    rhoINJECT[0]=rhoINJECT0.a;
+    if (ns > 1)
+      rhoINJECT[1]=rhoINJECT0.b;
+    if (ns > 2)
+      rhoINJECT[2]=rhoINJECT0.c;
+    if (ns > 3)
+      rhoINJECT[3]=rhoINJECT0.d;
+    if (ns > 4)
+      rhoINJECT[4]=rhoINJECT0.e;
+    if (ns > 5)
+      rhoINJECT[5]=rhoINJECT0.f;
+
     // take the tolerance of the solvers
     CGtol = config.read < double >("CGtol");
     GMREStol = config.read < double >("GMREStol");
@@ -527,6 +542,7 @@ Collective::~Collective() {
   delete[]TrackParticleID;
 
   delete[]rhoINIT;
+  delete[]rhoINJECT;
 
 }
 /*! Print Simulation Parameters */
@@ -606,8 +622,10 @@ void Collective::save() {
   my_file << "Time step                = " << dt << endl;
   my_file << "Number of cycles         = " << ncycles << endl;
   my_file << "---------------------------" << endl;
-  for (int is = 0; is < ns; is++)
-    my_file << "rho init species " << is << " = " << rhoINIT[is] << endl;
+  for (int is = 0; is < ns; is++){
+    my_file << "rho init species   " << is << " = " << rhoINIT[is] << endl;
+    my_file << "rho inject species " << is << " = " << rhoINJECT[is]  << endl;
+  }
   my_file << "current sheet thickness  = " << delta << endl;
   my_file << "B0x                      = " << B0x << endl;
   my_file << "BOy                      = " << B0y << endl;
@@ -740,6 +758,10 @@ double Collective::getQOM(int nspecies) {
 /*! get the background density for GEM challenge */
 double Collective::getRHOinit(int nspecies) {
   return (rhoINIT[nspecies]);
+}
+/*! get the background density for GEM challenge */
+inline double Collective::getRHOinject(int nspecies){
+  return(rhoINJECT[nspecies]);
 }
 /*! get thermal velocity - Direction X */
 double Collective::getUth(int nspecies) {

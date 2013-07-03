@@ -188,11 +188,13 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct) {
   MaxwellSource(bkrylov, grid, vct);
   phys2solver(xkrylov, Ex, Ey, Ez, nxn, nyn, nzn);
   // solver
+  cout << " >> GMRES..." << endl;
   GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this);
   // move from krylov space to physical space
+  cout << " >> solver to phys... " << endl;
   solver2phys(Exth, Eyth, Ezth, xkrylov, nxn, nyn, nzn);
 
-
+  cout << " >> Add scale..." << endl;
 
   addscale(1 / th, -(1.0 - th) / th, Ex, Exth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ey, Eyth, nxn, nyn, nzn);
@@ -203,7 +205,7 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct) {
   smoothE(Smooth, vct);
   smoothE(Smooth, vct);
 
-
+  cout << " >> Comm node..." << endl;
   // communicate so the interpolation can have good values
   communicateNodeBC(nxn, nyn, nzn, Exth, 1, 1, 1, 1, 1, 1, vct);
   communicateNodeBC(nxn, nyn, nzn, Eyth, 1, 1, 2, 2, 1, 1, vct);
@@ -309,7 +311,9 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   eqValue(0.0, Dy, nxn, nyn, nzn);
   eqValue(0.0, Dz, nxn, nyn, nzn);
   // move from krylov space to physical space
+  cout << " >>-- solver 2 phys... " << endl;
   solver2phys(vectX, vectY, vectZ, vector, nxn, nyn, nzn);
+  cout << " >>-- Laplacian..." << endl;
   grid->lapN2N(imageX, vectX, vct);
   grid->lapN2N(imageY, vectY, vct);
   grid->lapN2N(imageZ, vectZ, vct);
@@ -324,7 +328,7 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   // communicateCenterBC(nxc,nyc,nzc,divC,1,1,1,1,1,1,vct);
   communicateCenterBC(nxc, nyc, nzc, divC, 2, 2, 2, 2, 2, 2, vct);  // GO with Neumann, now then go with rho
 
-
+  cout << " >>-- Grad C2N..." << endl;
   grid->gradC2N(tempX, tempY, tempZ, divC);
 
   // -lap(E(n +theta)) - grad(div(mu dot E(n + theta))
@@ -345,6 +349,7 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sum(imageY, vectY, nxn, nyn, nzn);
   sum(imageZ, vectZ, nxn, nyn, nzn);
 
+  cout << " >>-- Boundary conditions IMAGE..." << endl;
   // boundary condition: Xleft
   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
@@ -363,6 +368,8 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   // boundary condition: Zright
   if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid);
+
+  cout << " >>-- Physics to solver..." << endl;
   // move from physical space to krylov space
   phys2solver(im, imageX, imageY, imageZ, nxn, nyn, nzn);
 

@@ -462,6 +462,377 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
   return (0);
 }
 
+int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf){
+
+  if (vct->getCartesian_rank()==0){
+    cout << "*** Repopulator species " << ns << " ***" << endl;
+  }
+  double  FourPI =16*atan(1.0);
+  int avail;
+  long long store_nop=nop;
+
+  ////////////////////////
+  // INJECTION FROM XLEFT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcPfaceXleft == 2){ // use Field topology in this case
+    long long particles_index=0;
+    long long nplast = nop-1;
+
+    while (particles_index < nplast+1) {
+      if (x[particles_index] < 3.0*dx ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< 4;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=1; k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  store_nop = nop;
+
+  ////////////////////////
+  // INJECTION FROM YLEFT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL  && bcPfaceYleft == 2)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (y[particles_index] < 3.0*dy ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=1; j< 4;j++)
+        for (int k=1; k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  ////////////////////////
+  // INJECTION FROM ZLEFT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL  && bcPfaceZleft == 2)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (z[particles_index] < 3.0*dz ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=1; k< 4;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  ////////////////////////
+  // INJECTION FROM XRIGHT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getXright_neighbor() == MPI_PROC_NULL  && bcPfaceXright == 2){
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (x[particles_index] > (Lx-3.0*dx) ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=(grid->getNXC()-4); i< grid->getNXC()-1;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=1; k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  ////////////////////////
+  // INJECTION FROM YRIGHT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getYright_neighbor() == MPI_PROC_NULL  && bcPfaceYright == 2)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (y[particles_index] > (Ly-3.0*dy) ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=(grid->getNYC()-4); j< grid->getNYC()-1;j++)
+        for (int k=1; k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  ////////////////////////
+  // INJECTION FROM ZRIGHT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getZright_neighbor() == MPI_PROC_NULL  && bcPfaceZright == 2)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (z[particles_index] > (Lz-3.0*dz) ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=(grid->getNZC()-4); k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  if (vct->getCartesian_rank()==0){
+    cout << "*** number of particles " << nop << " ***" << endl;
+  }
+
+  //********************//
+  // COMMUNICATION
+  // *******************//
+  avail = communicate(vct);
+  if (avail < 0) return(-1);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  // communicate again if particles are not in the correct domain
+  while(isMessagingDone(vct) >0){
+    // COMMUNICATION
+    avail = communicate(vct);
+    if (avail < 0)
+      return(-1);
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+
+  return(0); // exit succcesfully (hopefully)
+}
 
 /** interpolation Particle->Grid only for pressure tensor */
 void Particles3D::interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
@@ -657,7 +1028,7 @@ double Particles3D::delta_f(double u, double v, double w, double x, double y, do
   y = temp * sin(theta) + y * cos(theta);
 
 
-/** for compilation issues comment this part: PUT in the math stuff */
+  /** for compilation issues comment this part: PUT in the math stuff */
   // calc_bessel_Jn_seq(lambda, lmax, bessel_Jn_array, bessel_Jn_prime_array);
   factor = (kpar * vperp / omega * df0_dvpar(vpar, vperp) + (1.0 - (kpar * vpar / omega)) * df0_dvperp(vpar, vperp));
   for (register int l = -lmax; l < 0; l++) {  // negative index
@@ -720,7 +1091,7 @@ void Particles3D::RotatePlaneXY(double theta) {
 
 /*! Delete the particles inside the sphere with radius R and center x_center y_center and return the total charge removed */
 double Particles3D::deleteParticlesInsideSphere(double R, double x_center, double y_center, double z_center){
-  
+
   long long np_current = 0;
   long long nplast     = nop-1;
 

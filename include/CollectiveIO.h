@@ -91,6 +91,8 @@ public:
   virtual double getQOM(int nspecies) = 0;
   /** get background charge for GEM challenge */
   virtual double getRHOinit(int nspecies) = 0;
+  /** get rho for injection */
+  virtual double getRHOinject(int nspecies)=0;
   /** get thermal velocity  - X direction    */
   virtual double getUth(int nspecies) = 0;
   /** get thermal velocity  - Y direction    */

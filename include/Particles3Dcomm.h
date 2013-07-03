@@ -254,6 +254,8 @@ protected:
   double Vinj;
   /** removed charge from species */
   double Q_removed;
+  /** density of the injection of the particles */
+  double Ninj;
 };
 
 

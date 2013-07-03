@@ -95,6 +95,7 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   NiterMover = col->getNiterMover();
   // velocity of the injection from the wall
   Vinj = col->getVinj();
+  Ninj = col->getRHOinject(species);
   // info from Grid
   xstart = grid->getXstart();
   xend = grid->getXend();

@@ -58,7 +58,7 @@ int c_Solver::Init(int argc, char **argv) {
       cout << "          Runing simulation with the default initialization. " << endl;
       cout << " =========================================================== " << endl;
     }
-   EMf->init(vct,grid);
+    EMf->init(vct,grid);
   }
 
   // Allocation of particles
@@ -130,7 +130,7 @@ int c_Solver::Init(int argc, char **argv) {
         int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
         int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
         my_file << grid->getXC(index1, index2, index3) << "\t" << grid->getYC(index1, index2, index3) << "\t" << grid->getZC(index1, index2, index3) << endl;
-  }}}
+      }}}
   my_file.close();
 
   Qremoved = new double[ns];
@@ -173,7 +173,9 @@ void c_Solver::CalculateField() {
 
 bool c_Solver::ParticlesMover() {
 
-  // PARTICLE MOVER
+  /*  -------------- */
+  /*  Particle mover */
+  /*  -------------- */
 
   // timeTasks.start(TimeTasks::PARTICLES);
   for (int i = 0; i < ns; i++)  // move each species
@@ -192,11 +194,37 @@ bool c_Solver::ParticlesMover() {
     return (true);              // exit from the time loop
   }
 
-  // Remove particles from depopulation area
+  /* -------------------------------------- */
+  /* Repopulate the buffer zone at the edge */
+  /* -------------------------------------- */
+
+  for (int i=0; i < ns; i++) {
+    if (col->getRHOinject(i)>0.0)
+      mem_avail = part[i].particle_repopulator(grid,vct,EMf);
+  }
+
+  if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
+    if (myrank == 0) {
+      cout << "*************************************************************" << endl;
+      cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
+      cout << "*************************************************************" << endl;
+    }
+    return (true);              // exit from the time loop
+  }
+
+  /* --------------------------------------- */
+  /* Remove particles from depopulation area */
+  /* --------------------------------------- */
+
   if (col->getCase()=="Dipole") {
     for (int i=0; i < ns; i++)
       Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
   }
+
+  /* --------------------- */
+  /* Calculate the B field */
+  /* This step must be taken out of here! */
+  /* --------------------- */
 
   // timeTasks.start(TimeTasks::BFIELD);
   EMf->calculateB(grid, vct);   // calculate the B field
@@ -277,7 +305,7 @@ void c_Solver::WriteOutput(int cycle) {
           my_file << EMf->getJxs(index1, index2, index3, 1) + EMf->getJxs(index1, index2, index3, 3) << "\t" << EMf->getJys(index1, index2, index3, 1) + EMf->getJys(index1, index2, index3, 3) << "\t" << EMf->getJzs(index1, index2, index3, 1) + EMf->getJzs(index1, index2, index3, 3) << "\t";
           my_file << EMf->getRHOns(index1, index2, index3, 0) + EMf->getRHOns(index1, index2, index3, 2) << "\t";
           my_file << EMf->getRHOns(index1, index2, index3, 1) + EMf->getRHOns(index1, index2, index3, 3) << "\t";
-    }}}
+        }}}
     my_file << endl;
     my_file.close();
   }

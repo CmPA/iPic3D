@@ -101,6 +101,8 @@ class Collective:public CollectiveIO {
     double getQOM(int nspecies);
     /*! get background charge for GEM challenge */
     double getRHOinit(int nspecies);
+    /*! get rho injection */
+    double getRHOinject(int nspecies);
     /*! get thermal velocity - X direction */
     double getUth(int nspecies);
     /*! get thermal velocity - Y direction */
@@ -262,6 +264,8 @@ class Collective:public CollectiveIO {
     double *qom;
     /*! charge to mass ratio array for different species */
     double *rhoINIT;
+    /*! density of injection */
+    double *rhoINJECT;
     /*! thermal velocity - Direction X */
     double *uth;
     /*! thermal velocity - Direction Y */
