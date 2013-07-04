@@ -685,6 +685,83 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
   }
 }
 
+void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
+
+  double ff;
+
+  int nx = grid->getNXN();
+  int ny = grid->getNYN();
+  int nz = grid->getNZN();
+
+  for (int is = 0; is < ns; is++) {
+
+    ff = 1.0;
+    if (is == 0) ff = -1.0;
+
+    if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
+      for (int j=0; j < ny;j++)
+        for (int k=0; k < nz;k++){
+          rhons[is][0][j][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][1][j][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][2][j][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][3][j][k] = ff * rhoINIT[is] / FourPI;
+        }
+    }
+
+    if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
+      for (int j=0; j < ny;j++)
+        for (int k=0; k < nz;k++){
+          rhons[is][nx-4][j][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][nx-3][j][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][nx-2][j][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][nx-1][j][k] = ff * rhoINIT[is] / FourPI;
+        }
+    }
+
+    if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==2)  {
+      for (int i=0; i < nx;i++)
+        for (int k=0; k < nz;k++){
+          rhons[is][i][0][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][1][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][2][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][3][k] = ff * rhoINIT[is] / FourPI;
+        }
+    }
+
+    if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==2)  {
+      for (int i=0; i < nx;i++)
+        for (int k=0; k < nz;k++){
+          rhons[is][i][ny-4][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][ny-3][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][ny-2][k] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][ny-1][k] = ff * rhoINIT[is] / FourPI;
+        }
+    }
+
+    if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2)  {
+      for (int i=0; i < nx;i++)
+        for (int j=0; j < ny;j++){
+          rhons[is][i][j][0] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][j][1] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][j][2] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][j][3] = ff * rhoINIT[is] / FourPI;
+        }
+    }
+
+
+    if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2)  {
+      for (int i=0; i < nx;i++)
+        for (int j=0; j < ny;j++){
+          rhons[is][i][j][nz-4] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][j][nz-3] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][j][nz-2] = ff * rhoINIT[is] / FourPI;
+          rhons[is][i][j][nz-1] = ff * rhoINIT[is] / FourPI;
+        }
+    }
+  }
+
+}
+
 void EMfields3D::ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, double R, double x_center, double y_center, double z_center) {
 
   double xd;

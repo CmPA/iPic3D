@@ -150,28 +150,30 @@ void c_Solver::CalculateField() {
   // timeTasks.start(TimeTasks::MOMENTS);
 
   EMf->updateInfoFields(grid,vct,col);
-  EMf->setZeroDensities();      // set to zero the densities
+  EMf->setZeroDensities();                  // set to zero the densities
 
   for (int i = 0; i < ns; i++)
-    part[i].interpP2G(EMf, grid, vct);  // interpolate Particles to Grid(Nodes)
+    part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
 
-  EMf->sumOverSpecies(vct);     // sum all over the species
+  EMf->sumOverSpecies(vct);                 // sum all over the species
 
   // Fill with constant charge the planet
   if (col->getCase()=="Dipole") {
     EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
   }
 
+  EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
+
   MPI_Barrier(MPI_COMM_WORLD);
 
-  EMf->interpDensitiesN2C(vct, grid); // calculate densities on centers from nodes
-  EMf->calculateHatFunctions(grid, vct);  // calculate the hat quantities for the implicit method
+  EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
+  EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
   // timeTasks.end(TimeTasks::MOMENTS);
 
   // MAXWELL'S SOLVER
   // timeTasks.start(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct);   // calculate the E field
+  EMf->calculateE(grid, vct);               // calculate the E field
   // timeTasks.end(TimeTasks::FIELDS);
 
 }
