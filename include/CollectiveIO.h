@@ -116,6 +116,8 @@ public:
 
   /** get Case type */
   virtual string getCase() = 0;
+  /** get simulation name */
+  virtual string getSimName() = 0;
   /** get Poisson correction flag */
   virtual string getPoissonCorrection() = 0;
 

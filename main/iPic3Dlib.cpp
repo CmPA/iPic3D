@@ -105,6 +105,7 @@ int c_Solver::Init(int argc, char **argv) {
     output_mgr.output("proc_topology ", 0);
     hdf5_agent.close();
   }
+
   MPI_Barrier(MPI_COMM_WORLD);
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
@@ -285,36 +286,43 @@ void c_Solver::WriteConserved(int cycle) {
 
 void c_Solver::WriteOutput(int cycle) {
   // OUTPUT to large file, called proc**
-  if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
-    hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-    output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
-    // Pressure tensor is available
-    hdf5_agent.close();
-  }
-  if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
-    hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-    output_mgr.output("position + velocity + q ", cycle, 1);
-    hdf5_agent.close();
-  }
-  // write the virtual satellite traces
 
-  if (ns > 2) {
-    ofstream my_file(cqsat.c_str(), fstream::app);
-    for (int isat = 0; isat < nsat; isat++) {
-      for (int jsat = 0; jsat < nsat; jsat++) {
-        for (int ksat = 0; ksat < nsat; ksat++) {
-          int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
-          int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
-          int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
-          my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
-          my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
-          my_file << EMf->getJxs(index1, index2, index3, 0) + EMf->getJxs(index1, index2, index3, 2) << "\t" << EMf->getJys(index1, index2, index3, 0) + EMf->getJys(index1, index2, index3, 2) << "\t" << EMf->getJzs(index1, index2, index3, 0) + EMf->getJzs(index1, index2, index3, 2) << "\t";
-          my_file << EMf->getJxs(index1, index2, index3, 1) + EMf->getJxs(index1, index2, index3, 3) << "\t" << EMf->getJys(index1, index2, index3, 1) + EMf->getJys(index1, index2, index3, 3) << "\t" << EMf->getJzs(index1, index2, index3, 1) + EMf->getJzs(index1, index2, index3, 3) << "\t";
-          my_file << EMf->getRHOns(index1, index2, index3, 0) + EMf->getRHOns(index1, index2, index3, 2) << "\t";
-          my_file << EMf->getRHOns(index1, index2, index3, 1) + EMf->getRHOns(index1, index2, index3, 3) << "\t";
-        }}}
-    my_file << endl;
-    my_file.close();
+  if (col->getWriteMethod() == "Parallel") {
+    WriteOutputParallel(grid, EMf, col, vct, cycle);
+  }
+  else
+  {
+    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+      output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
+      // Pressure tensor is available
+      hdf5_agent.close();
+    }
+    if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
+      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+      output_mgr.output("position + velocity + q ", cycle, 1);
+      hdf5_agent.close();
+    }
+    // write the virtual satellite traces
+
+    if (ns > 2) {
+      ofstream my_file(cqsat.c_str(), fstream::app);
+      for (int isat = 0; isat < nsat; isat++) {
+        for (int jsat = 0; jsat < nsat; jsat++) {
+          for (int ksat = 0; ksat < nsat; ksat++) {
+            int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
+            int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
+            int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
+            my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
+            my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
+            my_file << EMf->getJxs(index1, index2, index3, 0) + EMf->getJxs(index1, index2, index3, 2) << "\t" << EMf->getJys(index1, index2, index3, 0) + EMf->getJys(index1, index2, index3, 2) << "\t" << EMf->getJzs(index1, index2, index3, 0) + EMf->getJzs(index1, index2, index3, 2) << "\t";
+            my_file << EMf->getJxs(index1, index2, index3, 1) + EMf->getJxs(index1, index2, index3, 3) << "\t" << EMf->getJys(index1, index2, index3, 1) + EMf->getJys(index1, index2, index3, 3) << "\t" << EMf->getJzs(index1, index2, index3, 1) + EMf->getJzs(index1, index2, index3, 3) << "\t";
+            my_file << EMf->getRHOns(index1, index2, index3, 0) + EMf->getRHOns(index1, index2, index3, 2) << "\t";
+            my_file << EMf->getRHOns(index1, index2, index3, 1) + EMf->getRHOns(index1, index2, index3, 3) << "\t";
+          }}}
+      my_file << endl;
+      my_file.close();
+    }
   }
 }
 

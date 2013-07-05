@@ -24,6 +24,8 @@ void Collective::ReadInput(string inputfile) {
     delta = config.read < double >("delta");
 
     Case              = config.read<string>("Case");
+    wmethod           = config.read<string>("WriteMethod");
+    SimName           = config.read<string>("SimulationName");
     PoissonCorrection = config.read<string>("PoissonCorrection");
 
     rhoINIT = new double[ns];
@@ -563,6 +565,7 @@ void Collective::Print() {
   cout << "Number of cycles         = " << ncycles << endl;
   cout << "Results saved in  : " << SaveDirName << endl;
   cout << "Case type         : " << Case << endl;
+  cout << "Simulation name   : " << SimName << endl;
   cout << "Poisson correction: " << PoissonCorrection << endl;
   cout << "---------------------" << endl;
   cout << "Check Simulation Constraints" << endl;
@@ -898,6 +901,14 @@ string Collective::getinputfile() {
 /*! get Case type */
 string Collective::getCase() {
   return (Case);
+}
+/*! get simulation name */
+string Collective::getSimName() {
+  return (SimName);
+}
+/*! get output writing method */
+string Collective::getWriteMethod() {
+  return (wmethod);
 }
 /*! get Poisson correction flag */
 string Collective::getPoissonCorrection() {

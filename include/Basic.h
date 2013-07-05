@@ -466,5 +466,11 @@ inline void getRidGhost(double **out, double **in, int nx, int ny) {
     for (register int j = 1; j < ny - 1; j++)
       out[i - 1][j - 1] = in[i][j];
 }
+/** method to calculate cross product of two vectors C= A x B */
+inline void cross_product(double a1, double a2, double a3, double b1, double b2, double b3, double *c){
+  c[0] = a2 * b3 - a3 * b2;
+  c[1] = a3 * b1 - a1 * b3;
+  c[2] = a1 * b2 - a2 * b1;
+}
 
 #endif

@@ -279,8 +279,12 @@ class EMfields3D                // :public Field
     void perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
 
     /*! Calculate the sysceptibility tensor on the boundary */
+    void sustensorRightX(double **susxy, double **susyy, double **suszy);
+    void sustensorLeftX (double **susxy, double **susyy, double **suszy);
     void sustensorRightY(double **susxy, double **susyy, double **suszy);
-    void sustensorLeftY(double **susxy, double **susyy, double **suszy);
+    void sustensorLeftY (double **susxy, double **susyy, double **suszy);
+    void sustensorRightZ(double **susxy, double **susyy, double **suszy);
+    void sustensorLeftZ (double **susxy, double **susyy, double **suszy);
 
     /*! get Potential array */
     double ***getPHI();
@@ -288,26 +292,38 @@ class EMfields3D                // :public Field
     double &getEx(int indexX, int indexY, int indexZ) const;
     /*! get Electric field X component array */
     double ***getEx();
+    /*! get Electric field X component cell array without the ghost cells */
+    double ***getExc(Grid3DCU *grid);
     /*! get Electric Field component Y defined on node(indexX,indexY,indexZ) */
     double &getEy(int indexX, int indexY, int indexZ) const;
     /*! get Electric field Y component array */
     double ***getEy();
+    /*! get Electric field Y component cell array without the ghost cells */
+    double ***getEyc(Grid3DCU *grid);
     /*! get Electric Field component Z defined on node(indexX,indexY,indexZ) */
     double &getEz(int indexX, int indexY, int indexZ) const;
     /*! get Electric field Z component array */
     double ***getEz();
+    /*! get Electric field Z component cell array without the ghost cells */
+    double ***getEzc(Grid3DCU *grid);
     /*! get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
     double &getBx(int indexX, int indexY, int indexZ) const;
     /*! get Magnetic field X component array */
     double ***getBx();
+    /*! get Magnetic field X component cell array without the ghost cells */
+    double ***getBxc();
     /*! get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
     double &getBy(int indexX, int indexY, int indexZ) const;
     /*! get Magnetic field Y component array */
     double ***getBy();
+    /*! get Magnetic field Y component cell array without the ghost cells */
+    double ***getByc();
     /*! get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
     double &getBz(int indexX, int indexY, int indexZ) const;
     /*! get Magnetic field Z component array */
     double ***getBz();
+    /*! get Magnetic field Z component cell array without the ghost cells */
+    double ***getBzc();
     /*! get density on cell(indexX,indexY,indexZ) */
     double &getRHOc(int indexX, int indexY, int indexZ) const;
     /*! get density array on center cell */
@@ -322,6 +338,8 @@ class EMfields3D                // :public Field
     double &getRHOcs(int indexX, int indexY, int indexZ, int is) const;
     /*! SPECIES: get density array on nodes */
     double ****getRHOns();
+    /*! SPECIES: get density array on cells without the ghost cells */
+    double ***getRHOcs(int is);
 
 
 
@@ -346,6 +364,8 @@ class EMfields3D                // :public Field
     double &getJxs(int indexX, int indexY, int indexZ, int is) const;
     /*! SPECIES: get current -Direction X */
     double ****getJxs();
+    /*! SPECIES: get current X component for species is in all cells except ghost */
+    double ***getJxsc(Grid3DCU *grid, int is);
     /*! get Jy(X,Y,Z) */
     double &getJy(int indexX, int indexY, int indexZ) const;
     /*! get current -Direction Y */
@@ -354,6 +374,8 @@ class EMfields3D                // :public Field
     double &getJys(int indexX, int indexY, int indexZ, int is) const;
     /*! SPECIES: get current -Direction Y */
     double ****getJys();
+    /*! SPECIES: get current Y component for species is in all cells except ghost */
+    double ***getJysc(Grid3DCU *grid, int is);
     /*! get Jz(X,Y,Z) */
     double &getJz(int indexX, int indexY, int indexZ) const;
     /*! get current -Direction Z */
@@ -362,6 +384,8 @@ class EMfields3D                // :public Field
     double &getJzs(int indexX, int indexY, int indexZ, int is) const;
     /*! SPECIES: get current -Direction Z */
     double ****getJzs();
+    /*! SPECIES: get current Z component for species is in all cells except ghost */
+    double ***getJzsc(Grid3DCU *grid, int is);
     /*! get the electric field energy */
     double getEenergy();
     /*! get the magnetic field energy */
@@ -394,6 +418,8 @@ class EMfields3D                // :public Field
     double B0x, B0y, B0z, delta;
     /*! charge to mass ratio array for different species */
     double *qom;
+    /*! Boundary electron speed */
+    double ue0, ve0, we0;
 
 
     // KEEP IN MEMORY GUARD CELLS ARE INCLUDED

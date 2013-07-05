@@ -126,6 +126,10 @@ class Collective:public CollectiveIO {
 
     /*! get Case type */
     string getCase();
+    /*! get output writing method */
+    string getWriteMethod();
+    /*! get simulation name */
+    string getSimName();
     /*! get Poisson correction flag */
     string getPoissonCorrection();
 
@@ -281,6 +285,10 @@ class Collective:public CollectiveIO {
 
     /*! Case type */
     string Case;
+    /*! Output writing method */
+    string wmethod;
+    /*! Simulation name */
+    string SimName;
     /*! Poisson correction flag */
     string PoissonCorrection;
 

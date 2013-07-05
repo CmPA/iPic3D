@@ -9,11 +9,11 @@ RestartDirName = data
 # set the maximum number of particles allocated  
 NpMaxNpRatio = 3.0
 
-# Select the case
-Case = GEM
-
-# Poisson correction
-PoissonCorrection = yes
+# New flags:
+Case              = GEM       # Select the case
+PoissonCorrection = yes       # Poisson correction
+WriteMethod       = default   # Output method [ default | Parallel ]
+SimulationName    = GEMchllg  # Simulation name for the output
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
 B0x = 0.0097
@@ -53,6 +53,8 @@ nzc =  1                   # nzc = number of cells - z direction
 ns = 2 
 # Initial density (make sure you are neutral)
 rhoINIT =  1.0	1.0
+# Injection density (make sure you are neutral)
+rhoINJECT =  1.0   1.0
 # TrackParticleID[species] = 1=true, 0=false --> Assign ID to particles 
 TrackParticleID = 0	0
 # npcelx = number of particles per cell - Direction X 

@@ -90,10 +90,14 @@ public:
   int getZright_neighbor_P();
   /** get the coordinates in dir direction of process*/
   int getCoordinates(int dir);
+  /** get the coordinates of process*/
+  int *getCoordinates();
   /** get Periodicity condition in dir direction */
   int getPeriods(int dir);
   /** if cVERBOSE == true, print to the screen all the comunication */
   bool getcVERBOSE();
+  /** get the MPI communicator */
+  MPI_Comm getComm();
 
 private:
   /** New communicator with virtual cartesian topology */
@@ -179,16 +183,16 @@ inline VCtopology3D::VCtopology3D() {
   // *******************************************
   // *******************************************
   // change these values to change the topology
-  XLEN = 2;
-  YLEN = 2;
+  XLEN = 4;
+  YLEN = 1;
   ZLEN = 1;
   nprocs = XLEN * YLEN * ZLEN;
   // here you have to set the topology for the fields
-  PERIODICX = true;
+  PERIODICX = false;
   PERIODICY = false;
   PERIODICZ = true;
   // here you have to set the topology for the Particles
-  PERIODICX_P = true;
+  PERIODICX_P = false;
   PERIODICY_P = false;
   PERIODICZ_P = true;
   // *******************************************
@@ -372,9 +376,17 @@ inline bool VCtopology3D::getcVERBOSE() {
 inline int VCtopology3D::getCoordinates(int dir) {
   return (coordinates[dir]);
 }
+/** get the coordinates in dir direction of process*/
+inline int *VCtopology3D::getCoordinates() {
+  return (coordinates);
+}
 /** get Periodicity condition in dir direction */
 inline int VCtopology3D::getPeriods(int dir) {
   return (periods[dir]);
+}
+/** Get the MPI communicator */
+inline MPI_Comm VCtopology3D::getComm(){
+  return (CART_COMM);
 }
 
 #endif
