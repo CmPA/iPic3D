@@ -288,7 +288,9 @@ void c_Solver::WriteOutput(int cycle) {
   // OUTPUT to large file, called proc**
 
   if (col->getWriteMethod() == "Parallel") {
-    WriteOutputParallel(grid, EMf, col, vct, cycle);
+    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+      WriteOutputParallel(grid, EMf, col, vct, cycle);
+    }
   }
   else
   {

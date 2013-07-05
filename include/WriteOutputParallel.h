@@ -3,6 +3,7 @@
 #define __WOPARALLEL_H__
 
 #include <iomanip>
+#include <string>
 
 #include "phdf5.h"
 #include "Alloc.h"

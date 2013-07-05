@@ -689,6 +689,83 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
   }
 }
 
+void EMfields3D::ConstantChargeOpenBCv2(Grid * grid, VirtualTopology3D * vct) {
+
+  double ff;
+
+  int nx = grid->getNXN();
+  int ny = grid->getNYN();
+  int nz = grid->getNZN();
+
+  for (int is = 0; is < ns; is++) {
+
+    ff = 1.0;
+    if (is == 0) ff = -1.0;
+
+    if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
+      for (int j=0; j < ny;j++)
+        for (int k=0; k < nz;k++){
+          rhons[is][0][j][k] = rhons[is][4][j][k];
+          rhons[is][1][j][k] = rhons[is][4][j][k];
+          rhons[is][2][j][k] = rhons[is][4][j][k];
+          rhons[is][3][j][k] = rhons[is][4][j][k];
+        }
+    }
+
+    if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
+      for (int j=0; j < ny;j++)
+        for (int k=0; k < nz;k++){
+          rhons[is][nx-4][j][k] = rhons[is][nx-5][j][k];
+          rhons[is][nx-3][j][k] = rhons[is][nx-5][j][k];
+          rhons[is][nx-2][j][k] = rhons[is][nx-5][j][k];
+          rhons[is][nx-1][j][k] = rhons[is][nx-5][j][k];
+        }
+    }
+
+    if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==2)  {
+      for (int i=0; i < nx;i++)
+        for (int k=0; k < nz;k++){
+          rhons[is][i][0][k] = rhons[is][i][4][k];
+          rhons[is][i][1][k] = rhons[is][i][4][k];
+          rhons[is][i][2][k] = rhons[is][i][4][k];
+          rhons[is][i][3][k] = rhons[is][i][4][k];
+        }
+    }
+
+    if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==2)  {
+      for (int i=0; i < nx;i++)
+        for (int k=0; k < nz;k++){
+          rhons[is][i][ny-4][k] = rhons[is][i][ny-5][k];
+          rhons[is][i][ny-3][k] = rhons[is][i][ny-5][k];
+          rhons[is][i][ny-2][k] = rhons[is][i][ny-5][k];
+          rhons[is][i][ny-1][k] = rhons[is][i][ny-5][k];
+        }
+    }
+
+    if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2)  {
+      for (int i=0; i < nx;i++)
+        for (int j=0; j < ny;j++){
+          rhons[is][i][j][0] = rhons[is][i][j][4];
+          rhons[is][i][j][1] = rhons[is][i][j][4];
+          rhons[is][i][j][2] = rhons[is][i][j][4];
+          rhons[is][i][j][3] = rhons[is][i][j][4];
+        }
+    }
+
+
+    if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2)  {
+      for (int i=0; i < nx;i++)
+        for (int j=0; j < ny;j++){
+          rhons[is][i][j][nz-4] = rhons[is][i][j][nz-5];
+          rhons[is][i][j][nz-3] = rhons[is][i][j][nz-5];
+          rhons[is][i][j][nz-2] = rhons[is][i][j][nz-5];
+          rhons[is][i][j][nz-1] = rhons[is][i][j][nz-5];
+        }
+    }
+  }
+
+}
+
 void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
 
   double ff;
@@ -2870,13 +2947,21 @@ double ****EMfields3D::getRHOns() {
   return (rhons);
 }
 /*! get species density component X array cell without the ghost cells */
-double ***EMfields3D::getRHOcs(int is) {
+double ***EMfields3D::getRHOcs(Grid3DCU *grid, int is) {
   double ***arr;
+  double ****tmp;
+
   arr = newArr3(double,nxc-2,nyc-2,nzc-2);
+  tmp = newArr4(double,ns,nxc,nyc,nzc);
+
+  grid->interpN2C(tmp, is, rhons);
+
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=rhocs[is][i][j][k];
+        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
+
+  delArr4(tmp,nxc,nyc,nzc);
   return arr;
 }
 /*! SPECIES: get pressure tensor component XX defined on nodes */
