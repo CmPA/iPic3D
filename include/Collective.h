@@ -202,6 +202,12 @@ class Collective:public CollectiveIO {
     int getRestartOutputCycle();
     /*! output of diagnostics */
     int getDiagnosticsOutputCycle();
+
+    /*! Boundary condition selection for BCFace for the electric field components */
+    int bcEx[6], bcEy[6], bcEz[6];
+    /*! Boundary condition selection for BCFace for the magnetic field components */
+    int bcBx[6], bcBy[6], bcBz[6];
+
   private:
     /*! inputfile */
     string inputfile;

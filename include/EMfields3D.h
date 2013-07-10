@@ -18,7 +18,7 @@
 #include "TransArraySpace3D.h"
 #include "CG.h"
 #include "GMRES.h"
-#include "CollectiveIO.h"
+#include "Collective.h"
 #include "ComNodes3D.h"
 #include "ComInterpNodes3D.h"
 #include "TimeTasks.h"
@@ -169,32 +169,32 @@ class EMfields3D                // :public Field
 {
   public:
     /*! constructor */
-    EMfields3D(CollectiveIO * col, Grid * grid);
+    EMfields3D(Collective * col, Grid * grid);
     /*! destructor */
     ~EMfields3D();
 
     /*! initialize the electromagnetic fields with constant values */
-    void init(VirtualTopology3D * vct, Grid * grid);
+    void init(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! init beam */
-    void initBEAM(VirtualTopology3D * vct, Grid * grid, double x_center, double y_center, double z_center, double radius);
+    void initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col, double x_center, double y_center, double z_center, double radius);
     /*! initialize GEM challenge */
-    void initGEM(VirtualTopology3D * vct, Grid * grid);
-    void initOriginalGEM(VirtualTopology3D * vct, Grid * grid);
-    void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid);
+    void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with dipole-like tail without perturbation */
-    void initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid);
+    void initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with no Perturbation */
-    void initGEMnoPert(VirtualTopology3D * vct, Grid * grid);
+    void initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
 #ifdef BATSRUS
     /*! initialize from BATSRUS */
-    void initBATSRUS(VirtualTopology3D * vct, Grid * grid, CollectiveIO * col);
+    void initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective * col);
 #endif
     /*! Random initial field */
-    void initRandomField(VirtualTopology3D * vct, Grid * grid);
+    void initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! Init Force Free (JxB=0) */
-    void initForceFree(VirtualTopology3D * vct, Grid * grid);
+    void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialized with rotated magnetic field */
-    void initEM_rotate(VirtualTopology3D * vct, Grid * grid, double B, double theta);
+    void initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta);
     /*! add a perturbattion to charge density */
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */
@@ -202,13 +202,13 @@ class EMfields3D                // :public Field
 
 
     /*! Calculate Electric field using the implicit Maxwell solver */
-    void calculateE(Grid * grid, VirtualTopology3D * vct);
+    void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! Image of Poisson Solver (for SOLVER) */
     void PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);
     /*! Image of Maxwell Solver (for Solver) */
     void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct);
     /*! Maxwell source term (for SOLVER) */
-    void MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct);
+    void MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! Impose a constant charge inside a spherical zone of the domain */
     void ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, double R, double x_center, double y_center, double z_center);
     /*! Impose a constant charge in the OpenBC boundaries */
@@ -216,7 +216,7 @@ class EMfields3D                // :public Field
     /*! Impose a constant charge in the OpenBC boundaries */
     void ConstantChargeOpenBCv2(Grid * grid, VirtualTopology3D * vct);
     /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
-    void calculateB(Grid * grid, VirtualTopology3D * vct);
+    void calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! fix B on the boundary for gem challange */
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for gem challange */
@@ -243,7 +243,7 @@ class EMfields3D                // :public Field
     /*! SPECIES: Smoothing after the interpolation for species fields* */
     void smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
     /*! smooth the electric field */
-    void smoothE(double value, VirtualTopology3D * vct);
+    void smoothE(double value, VirtualTopology3D * vct, Collective *col);
 
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
@@ -402,7 +402,7 @@ class EMfields3D                // :public Field
     void print(void) const;
 
     // OpenBC
-    void updateInfoFields(Grid *grid,VirtualTopology3D *vct,CollectiveIO *col);
+    void updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col);
 
     /* ********************************* // VARIABLES ********************************* */
   private:

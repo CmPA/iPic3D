@@ -53,13 +53,13 @@ int c_Solver::Init(int argc, char **argv) {
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
 
-  if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid);
-  else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid);
-  else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid);
+  if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
+  else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
+  else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
 #ifdef BATSRUS
   else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
 #endif
-  else if (col->getCase()=="Dipole")    EMf->init(vct,grid);
+  else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
   else {
     if (myrank==0) {
       cout << " =========================================================== " << endl;
@@ -67,7 +67,7 @@ int c_Solver::Init(int argc, char **argv) {
       cout << "          Runing simulation with the default initialization. " << endl;
       cout << " =========================================================== " << endl;
     }
-    EMf->init(vct,grid);
+    EMf->init(vct,grid,col);
   }
 
   // OpenBC
@@ -186,7 +186,7 @@ void c_Solver::CalculateField() {
 
   // MAXWELL'S SOLVER
   // timeTasks.start(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct);               // calculate the E field
+  EMf->calculateE(grid, vct, col);               // calculate the E field
   // timeTasks.end(TimeTasks::FIELDS);
 
 }
@@ -247,7 +247,7 @@ bool c_Solver::ParticlesMover() {
   /* --------------------- */
 
   // timeTasks.start(TimeTasks::BFIELD);
-  EMf->calculateB(grid, vct);   // calculate the B field
+  EMf->calculateB(grid, vct, col);   // calculate the B field
   // timeTasks.end(TimeTasks::BFIELD);
 
   // print out total time for all tasks

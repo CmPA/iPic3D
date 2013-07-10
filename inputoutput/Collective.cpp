@@ -89,13 +89,13 @@ void Collective::ReadInput(string inputfile) {
     c = config.read < double >("c");
 
 #ifdef BATSRUS
-      // set grid size and resolution based on the initial file from fluid code
-      Lx =  getFluidLx();
-      Ly =  getFluidLy();
-      Lz =  getFluidLz();
-      nxc = getFluidNxc();
-      nyc = getFluidNyc();
-      nzc = getFluidNzc();
+    // set grid size and resolution based on the initial file from fluid code
+    Lx =  getFluidLx();
+    Ly =  getFluidLy();
+    Lz =  getFluidLz();
+    nxc = getFluidNxc();
+    nyc = getFluidNyc();
+    nzc = getFluidNzc();
 #else
     Lx = config.read < double >("Lx");
     Ly = config.read < double >("Ly");
@@ -209,27 +209,57 @@ void Collective::ReadInput(string inputfile) {
 
     // PHI Electrostatic Potential 
     bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
-    bcPHIfaceXleft = config.read < int >("bcPHIfaceXleft");
+    bcPHIfaceXleft  = config.read < int >("bcPHIfaceXleft");
     bcPHIfaceYright = config.read < int >("bcPHIfaceYright");
-    bcPHIfaceYleft = config.read < int >("bcPHIfaceYleft");
+    bcPHIfaceYleft  = config.read < int >("bcPHIfaceYleft");
     bcPHIfaceZright = config.read < int >("bcPHIfaceZright");
-    bcPHIfaceZleft = config.read < int >("bcPHIfaceZleft");
+    bcPHIfaceZleft  = config.read < int >("bcPHIfaceZleft");
 
     // EM field boundary condition
     bcEMfaceXright = config.read < int >("bcEMfaceXright");
-    bcEMfaceXleft = config.read < int >("bcEMfaceXleft");
+    bcEMfaceXleft  = config.read < int >("bcEMfaceXleft");
     bcEMfaceYright = config.read < int >("bcEMfaceYright");
-    bcEMfaceYleft = config.read < int >("bcEMfaceYleft");
+    bcEMfaceYleft  = config.read < int >("bcEMfaceYleft");
     bcEMfaceZright = config.read < int >("bcEMfaceZright");
-    bcEMfaceZleft = config.read < int >("bcEMfaceZleft");
+    bcEMfaceZleft  = config.read < int >("bcEMfaceZleft");
+
+    /*  ---------------------------------------------------------- */
+    /*  Electric and Magnetic field boundary conditions for BCface */
+    /*  ---------------------------------------------------------- */
+    // if bcEM* is 0: perfect conductor, if bcEM* is not 0: perfect mirror
+    // perfect conductor: normal = free, perpendicular = 0   
+    // perfect mirror   : normal = 0,    perpendicular = free
+    /*  ---------------------------------------------------------- */
+
+    /* X component in faces Xright, Xleft, Yright, Yleft, Zright and Zleft (0, 1, 2, 3, 4, 5) */
+    bcEx[0] = bcEMfaceXright == 0 ? 2 : 1;   bcBx[0] = bcEMfaceXright == 0 ? 1 : 2;
+    bcEx[1] = bcEMfaceXleft  == 0 ? 2 : 1;   bcBx[1] = bcEMfaceXleft  == 0 ? 1 : 2;
+    bcEx[2] = bcEMfaceYright == 0 ? 1 : 2;   bcBx[2] = bcEMfaceYright == 0 ? 2 : 1;
+    bcEx[3] = bcEMfaceYleft  == 0 ? 1 : 2;   bcBx[3] = bcEMfaceYleft  == 0 ? 2 : 1;
+    bcEx[4] = bcEMfaceZright == 0 ? 1 : 2;   bcBx[4] = bcEMfaceZright == 0 ? 2 : 1;
+    bcEx[5] = bcEMfaceZleft  == 0 ? 1 : 2;   bcBx[5] = bcEMfaceZleft  == 0 ? 2 : 1;
+    /* Y component */
+    bcEy[0] = bcEMfaceXright == 0 ? 1 : 2;   bcBy[0] = bcEMfaceXright == 0 ? 2 : 1;
+    bcEy[1] = bcEMfaceXleft  == 0 ? 1 : 2;   bcBy[1] = bcEMfaceXleft  == 0 ? 2 : 1;
+    bcEy[2] = bcEMfaceYright == 0 ? 2 : 1;   bcBy[2] = bcEMfaceYright == 0 ? 1 : 2;
+    bcEy[3] = bcEMfaceYleft  == 0 ? 2 : 1;   bcBy[3] = bcEMfaceYleft  == 0 ? 1 : 2;
+    bcEy[4] = bcEMfaceZright == 0 ? 1 : 2;   bcBy[4] = bcEMfaceZright == 0 ? 2 : 1;
+    bcEy[5] = bcEMfaceZleft  == 0 ? 1 : 2;   bcBy[5] = bcEMfaceZleft  == 0 ? 2 : 1;
+    /* Z component */
+    bcEz[0] = bcEMfaceXright == 0 ? 1 : 2;   bcBz[0] = bcEMfaceXright == 0 ? 2 : 1;
+    bcEz[1] = bcEMfaceXleft  == 0 ? 1 : 2;   bcBz[1] = bcEMfaceXleft  == 0 ? 2 : 1;
+    bcEz[2] = bcEMfaceYright == 0 ? 1 : 1;   bcBz[2] = bcEMfaceYright == 0 ? 2 : 1;
+    bcEz[3] = bcEMfaceYleft  == 0 ? 1 : 1;   bcBz[3] = bcEMfaceYleft  == 0 ? 2 : 1;
+    bcEz[4] = bcEMfaceZright == 0 ? 2 : 1;   bcBz[4] = bcEMfaceZright == 0 ? 1 : 2;
+    bcEz[5] = bcEMfaceZleft  == 0 ? 2 : 1;   bcBz[5] = bcEMfaceZleft  == 0 ? 1 : 2;
 
     // Particles Boundary condition
     bcPfaceXright = config.read < int >("bcPfaceXright");
-    bcPfaceXleft = config.read < int >("bcPfaceXleft");
+    bcPfaceXleft  = config.read < int >("bcPfaceXleft");
     bcPfaceYright = config.read < int >("bcPfaceYright");
-    bcPfaceYleft = config.read < int >("bcPfaceYleft");
+    bcPfaceYleft  = config.read < int >("bcPfaceYleft");
     bcPfaceZright = config.read < int >("bcPfaceZright");
-    bcPfaceZleft = config.read < int >("bcPfaceZleft");
+    bcPfaceZleft  = config.read < int >("bcPfaceZleft");
 
 
 

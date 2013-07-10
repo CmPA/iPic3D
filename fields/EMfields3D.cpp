@@ -2,7 +2,7 @@
 #include "EMfields3D.h"
 
 /*! constructor */
-EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
+EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   nxc = grid->getNXC();
   nxn = grid->getNXN();
   nyc = grid->getNYC();
@@ -148,7 +148,7 @@ EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
-void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col) {
   if (vct->getCartesian_rank() == 0)
     cout << "*** E CALCULATION ***" << endl;
   double ***divE = newArr3(double, nxc, nyc, nzc);
@@ -199,7 +199,7 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getCartesian_rank() == 0)
     cout << "*** MAXWELL SOLVER ***" << endl;
   // prepare the source 
-  MaxwellSource(bkrylov, grid, vct);
+  MaxwellSource(bkrylov, grid, vct, col);
   phys2solver(xkrylov, Ex, Ey, Ez, nxn, nyn, nzn);
   // solver
   GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this);
@@ -211,17 +211,17 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct) {
   addscale(1 / th, -(1.0 - th) / th, Ez, Ezth, nxn, nyn, nzn);
 
   // apply to smooth to electric field 3 times
-  smoothE(Smooth, vct);
-  smoothE(Smooth, vct);
-  smoothE(Smooth, vct);
+  smoothE(Smooth, vct, col);
+  smoothE(Smooth, vct, col);
+  smoothE(Smooth, vct, col);
 
   // communicate so the interpolation can have good values
-  communicateNodeBC(nxn, nyn, nzn, Exth, 1, 1, 1, 1, 1, 1, vct);
-  communicateNodeBC(nxn, nyn, nzn, Eyth, 1, 1, 2, 2, 1, 1, vct);
-  communicateNodeBC(nxn, nyn, nzn, Ezth, 1, 1, 1, 1, 1, 1, vct);
-  communicateNodeBC(nxn, nyn, nzn, Ex, 1, 1, 1, 1, 1, 1, vct);
-  communicateNodeBC(nxn, nyn, nzn, Ey, 1, 1, 2, 2, 1, 1, vct);
-  communicateNodeBC(nxn, nyn, nzn, Ez, 1, 1, 1, 1, 1, 1, vct);
+  communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Eyth, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Ezth, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Ex,   col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
   // OpenBC
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
@@ -240,7 +240,7 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct) {
 }
 
 /*! Calculate sorgent for Maxwell solver */
-void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col) {
   eqValue(0.0, tempC, nxc, nyc, nzc);
   eqValue(0.0, tempX, nxn, nyn, nzn);
   eqValue(0.0, tempY, nxn, nyn, nzn);
@@ -252,9 +252,9 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   eqValue(0.0, temp2Y, nxn, nyn, nzn);
   eqValue(0.0, temp2Z, nxn, nyn, nzn);
   // communicate
-  communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
-  communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
-  communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
@@ -483,15 +483,15 @@ void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, V
   }
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smoothE(double value, VirtualTopology3D * vct) {
+void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col) {
 
   int nvolte = 6;
   for (int icount = 1; icount < nvolte + 1; icount++) {
     if (value != 1.0) {
       double alpha;
-      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ex, 1, 1, 1, 1, 1, 1, vct);
-      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ey, 1, 1, 2, 2, 1, 1, vct);
-      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ez, 1, 1, 1, 1, 1, 1, vct);
+      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ex, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
       double ***temp = newArr3(double, nxn, nyn, nzn);
       if (icount % 2 == 1) {
@@ -873,7 +873,7 @@ void EMfields3D::ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, doub
 }
 
 /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
-void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col) {
   if (vct->getCartesian_rank() == 0)
     cout << "*** B CALCULATION ***" << endl;
 
@@ -884,9 +884,9 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct) {
   addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
   addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
   // communicate ghost 
-  communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
-  communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
-  communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
@@ -900,14 +900,14 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct) {
   grid->interpC2N(Byn, Byc);
   grid->interpC2N(Bzn, Bzc);
 
-  communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
-  communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
-  communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
+  communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
 
 }
 /*! initialize EM field with transverse electric waves 1D and rotate anticlockwise (theta degrees) */
-void EMfields3D::initEM_rotate(VirtualTopology3D * vct, Grid * grid, double B, double theta) {
+void EMfields3D::initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta) {
   // initialize E and rhos on nodes
   for (int i = 0; i < nxn; i++)
     for (int j = 0; j < nyn; j++) {
@@ -1323,7 +1323,7 @@ void EMfields3D::sumOverSpeciesJ() {
 
 
 /*! initialize Magnetic and Electric Field with initial configuration */
-void EMfields3D::init(VirtualTopology3D * vct, Grid * grid) {
+void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 
   if (restart1 == 0) {
     for (int i = 0; i < nxn; i++) {
@@ -1467,21 +1467,21 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid) {
 
     }
     // communicate ghost
-    communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
-    communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
-    communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
     // initialize B on centers
     grid->interpN2C(Bxc, Bxn);
     grid->interpN2C(Byc, Byn);
     grid->interpN2C(Bzc, Bzn);
     // communicate ghost
-    communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
-    communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
-    communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
     // communicate E
-    communicateNodeBC(nxn, nyn, nzn, Ex, 1, 1, 1, 1, 1, 1, vct);
-    communicateNodeBC(nxn, nyn, nzn, Ey, 1, 1, 2, 2, 1, 1, vct);
-    communicateNodeBC(nxn, nyn, nzn, Ez, 1, 1, 1, 1, 1, 1, vct);
+    communicateNodeBC(nxn, nyn, nzn, Ex, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
     for (int is = 0; is < ns; is++)
       grid->interpN2C(rhocs, is, rhons);
     // close the hdf file
@@ -1493,7 +1493,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid) {
 
 #ifdef BATSRUS
 /*! initiliaze EM for GEM challange */
-void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, CollectiveIO *col) {
+void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   cout << "------------------------------------------" << endl;
   cout << "         Initialize from BATSRUS          " << endl;
   cout << "------------------------------------------" << endl;
@@ -1528,7 +1528,7 @@ void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, CollectiveIO 
 #endif
 
 /*! initiliaze EM for GEM challange */
-void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid) {
+void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
   double pertX = 0.4;
   double xpert, ypert, exp_pert;
@@ -1602,11 +1602,11 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid) {
       grid->interpN2C(rhocs, is, rhons);
   }
   else {
-    init(vct, grid);            // use the fields from restart file
+    init(vct, grid, col);            // use the fields from restart file
   }
 }
 
-void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid) {
+void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
   if (restart1 == 0) {
     // initialize
@@ -1667,11 +1667,11 @@ void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid) {
       grid->interpN2C(rhocs, is, rhons);
   }
   else {
-    init(vct, grid);            // use the fields from restart file
+    init(vct, grid, col);            // use the fields from restart file
   }
 }
 
-void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid) {
+void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
   const double pertX = 0.4;
   const double deltax = 8. * delta;
@@ -1739,9 +1739,9 @@ void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTop
           Bzn[i][j][k] = B0z;
         }
     // communicate ghost
-    communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
-    communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
-    communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
     // initialize B on centers
     for (int i = 0; i < nxc; i++)
       for (int j = 0; j < nyc; j++)
@@ -1770,20 +1770,20 @@ void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTop
           Bzc[i][j][k] = B0z;
         }
     // communicate ghost
-    communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
-    communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
-    communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
     for (int is = 0; is < ns; is++)
       grid->interpN2C(rhocs, is, rhons);
   }
   else {
-    init(vct, grid);            // use the fields from restart file
+    init(vct, grid, col);            // use the fields from restart file
   }
 }
 
 
 /*! initialize GEM challenge with no Perturbation with dipole-like tail topology */
-void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid) {
+void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 
   // parameters controling the field topology
   // e.g., x1=Lx/5,x2=Lx/4 give 'separated' fields, x1=Lx/4,x2=Lx/3 give 'reconnected' topology
@@ -1868,13 +1868,13 @@ void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * gri
       grid->interpN2C(rhocs, is, rhons);
   }
   else {
-    init(vct, grid);            // use the fields from restart file
+    init(vct, grid, col);            // use the fields from restart file
   }
 
 }
 
 /*! initialize GEM challenge with no Perturbation */
-void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid) {
+void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   if (restart1 == 0) {
 
     // initialize
@@ -1930,11 +1930,11 @@ void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid) {
       grid->interpN2C(rhocs, is, rhons);
   }
   else {
-    init(vct, grid);            // use the fields from restart file
+    init(vct, grid, col);            // use the fields from restart file
   }
 }
 
-void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid) {
+void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   double **modes_seed = newArr2(double, 7, 7);
   if (restart1 == 0) {
     // initialize
@@ -1997,28 +1997,28 @@ void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid) {
           /* for (int m=1; m < 4; m++) for (int n=1; n < 4; n++){ kx=2.0*M_PI*m/Lx; ky=2.0*M_PI*n/Ly; Bxn[i][j][k] += B0x/kx*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phixy); Byn[i][j][k] += B0x/ky*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phixy); Bzn[i][j][k] += B0x/(kx+ky)*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phiz); } for(int n=1; n < 4; n++){ ky=2.0*M_PI*n/Ly; Bxn[i][j][k] += B0x/(2.0*M_PI/Lx)*cos(grid->getYN(i,j,k)*ky+2.0*M_PI*phix); } for(int m=1; m < 4; m++){ kx=2.0*M_PI*m/Lx; Byn[i][j][k] += B0x/(2.0*M_PI/Ly)*cos(grid->getXN(i,j,k)*kx+2.0*M_PI*phiy); } */
         }
     // communicate ghost
-    communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
-    communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
-    communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
     // initialize B on centers
     grid->interpN2C(Bxc, Bxn);
     grid->interpN2C(Byc, Byn);
     grid->interpN2C(Bzc, Bzn);
     // communicate ghost
-    communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
-    communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
-    communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
     for (int is = 0; is < ns; is++)
       grid->interpN2C(rhocs, is, rhons);
   }
   else {
-    init(vct, grid);            // use the fields from restart file
+    init(vct, grid, col);            // use the fields from restart file
   }
   delArr2(modes_seed, 7);
 }
 
 /*! Init Force Free (JxB=0) */
-void EMfields3D::initForceFree(VirtualTopology3D * vct, Grid * grid) {
+void EMfields3D::initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   if (restart1 == 0) {
 
     // initialize
@@ -2070,11 +2070,11 @@ void EMfields3D::initForceFree(VirtualTopology3D * vct, Grid * grid) {
       grid->interpN2C(rhocs, is, rhons);
   }
   else {
-    init(vct, grid);            // use the fields from restart file
+    init(vct, grid, col);            // use the fields from restart file
   }
 }
 /*! Initialize the EM field with constants values or from restart */
-void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, double x_center, double y_center, double z_center, double radius) {
+void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col, double x_center, double y_center, double z_center, double radius) {
   double distance;
   // initialize E and rhos on nodes
   if (restart1 == 0) {
@@ -2113,7 +2113,7 @@ void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, double x_center,
       grid->interpN2C(rhocs, is, rhons);
   }
   else {                        // EM initialization from RESTART
-    init(vct, grid);            // use the fields from restart file
+    init(vct, grid, col);            // use the fields from restart file
   }
 
 }
@@ -2487,7 +2487,7 @@ injInfoFields* EMfields3D::get_InfoFieldsRear() {return injFieldsRear;}
 
 // Open Boundary conditions implementation
 
-void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,CollectiveIO *col){
+void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col){
 
   double u_0, v_0, w_0;
   u_0=col->getU0(0);
