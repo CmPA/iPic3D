@@ -2243,8 +2243,8 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
       susyx = newArr2(double,nyn,nzn);
       suszx = newArr2(double,nyn,nzn);
       sustensorLeftX(susxx, susyx, suszx);
-      for (int i=0; i <  nyn-1;i++)
-        for (int j=0; j <  nzn-1;j++){
+      for (int i=1; i <  nyn-1;i++)
+        for (int j=1; j <  nzn-1;j++){
           imageX[1][i][j] = vectorX[1][i][j] - (Ex[1][i][j] - susyx[i][j]*vectorY[1][i][j] - suszx[i][j]*vectorZ[1][i][j] - Jxh[1][i][j]*dt*th*FourPI)/susxx[i][j];
           imageY[1][i][j] = vectorY[1][i][j] - 0.0*vectorY[2][i][j];
           imageZ[1][i][j] = vectorZ[1][i][j] - 0.0*vectorZ[2][i][j];
@@ -2258,8 +2258,8 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
       susyy = newArr2(double,nxn,nzn);
       suszy = newArr2(double,nxn,nzn);
       sustensorLeftY(susxy, susyy, suszy);
-      for (int i=0; i < nxn-1;i++)
-        for (int j=0; j <  nzn-1;j++){
+      for (int i=1; i < nxn-1;i++)
+        for (int j=1; j <  nzn-1;j++){
           imageX[i][1][j] = vectorX[i][1][j] - 0.0*vectorX[i][2][j];
           imageY[i][1][j] = vectorY[i][1][j] - (Ey[i][1][j] - susxy[i][j]*vectorX[i][1][j] - suszy[i][j]*vectorZ[i][1][j] - Jyh[i][1][j]*dt*th*FourPI)/susyy[i][j];
           imageZ[i][1][j] = vectorZ[i][1][j] - 0.0*vectorZ[i][2][j];
@@ -2304,8 +2304,8 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
       susyx = newArr2(double,nyn,nzn);
       suszx = newArr2(double,nyn,nzn);
       sustensorRightX(susxx, susyx, suszx);
-      for (int i=0; i < nyn-1;i++)
-        for (int j=0; j <  nzn-1;j++){
+      for (int i=1; i < nyn-1;i++)
+        for (int j=1; j <  nzn-1;j++){
           imageX[nxn-2][i][j] = vectorX[nxn-2][i][j] - (Ex[nxn-2][i][j] - susyx[i][j]*vectorY[nxn-2][i][j] - suszx[i][j]*vectorZ[nxn-2][i][j] - Jxh[nxn-2][i][j]*dt*th*FourPI)/susxx[i][j];
           imageY[nxn-2][i][j] = vectorY[nxn-2][i][j] - 0.0 * vectorY[nxn-3][i][j];
           imageZ[nxn-2][i][j] = vectorZ[nxn-2][i][j] - 0.0 * vectorZ[nxn-3][i][j];
@@ -2319,8 +2319,8 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
       susyy = newArr2(double,nxn,nzn);
       suszy = newArr2(double,nxn,nzn);
       sustensorRightY(susxy, susyy, suszy);
-      for (int i=0; i < nxn-1;i++)
-        for (int j=0; j < nzn-1;j++){
+      for (int i=1; i < nxn-1;i++)
+        for (int j=1; j < nzn-1;j++){
           imageX[i][nyn-2][j] = vectorX[i][nyn-2][j] - 0.0*vectorX[i][nyn-3][j];
           imageY[i][nyn-2][j] = vectorY[i][nyn-2][j] - (Ey[i][nyn-2][j] - susxy[i][j]*vectorX[i][nyn-2][j] - suszy[i][j]*vectorZ[i][nyn-2][j] - Jyh[i][nyn-2][j]*dt*th*FourPI)/susyy[i][j];
           imageZ[i][nyn-2][j] = vectorZ[i][nyn-2][j] - 0.0*vectorZ[i][nyn-3][j];
@@ -2358,8 +2358,8 @@ void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, dou
 
   switch(dir){
     case 0: // boundary condition on X-DIRECTION LEFT
-      for (int i=0; i < nyn-1;i++)
-        for (int j=0; j < nzn-1;j++){
+      for (int i=1; i < nyn-1;i++)
+        for (int j=1; j < nzn-1;j++){
            vectorX[1][i][j] = 0.0;
            vectorY[1][i][j] = ebc[1];
            vectorZ[1][i][j] = ebc[2];
@@ -2369,8 +2369,8 @@ void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, dou
         }
       break;
     case 1: // boundary condition on Y-DIRECTION LEFT
-      for (int i=0; i < nxn-1;i++)
-        for (int j=0; j < nzn-1;j++){
+      for (int i=1; i < nxn-1;i++)
+        for (int j=1; j < nzn-1;j++){
           vectorX[i][1][j] = ebc[0];
           vectorY[i][1][j] = 0.0;
           vectorZ[i][1][j] = ebc[2];
@@ -2404,8 +2404,8 @@ void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, do
 
   switch(dir){
     case 0: // boundary condition on X-DIRECTION RIGHT
-      for (int i=0; i < nyn-1;i++)
-        for (int j=0; j < nzn-1;j++){
+      for (int i=1; i < nyn-1;i++)
+        for (int j=1; j < nzn-1;j++){
           vectorX[nxn-2][i][j] = 0.0;
           vectorY[nxn-2][i][j] = ebc[1];
           vectorZ[nxn-2][i][j] = ebc[2];
@@ -2415,8 +2415,8 @@ void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, do
         }
       break;
     case 1: // boundary condition on Y-DIRECTION RIGHT
-      for (int i=0; i < nxn-1;i++)
-        for (int j=0; j < nzn-1;j++){
+      for (int i=1; i < nxn-1;i++)
+        for (int j=1; j < nzn-1;j++){
           vectorX[i][nyn-2][j] = ebc[0];
           vectorY[i][nyn-2][j] = 0.0;
           vectorZ[i][nyn-2][j] = ebc[2];
