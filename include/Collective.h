@@ -18,10 +18,7 @@
 #include <stdlib.h>
 #include "ConfigFile.h"
 #include "input_array.h"
-
-// use hdf5 for the restart file
 #include "hdf5.h"
-
 #include "CollectiveIO.h"
 
 using std::cout;

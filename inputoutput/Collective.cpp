@@ -9,6 +9,15 @@ void Collective::ReadInput(string inputfile) {
   ConfigFile config(inputfile);
   // the following variables are ALWAYS taken from inputfile, even if restarting 
   {
+
+#ifdef BATSRUS
+    if(RESTART1)
+    {
+      cout<<" The fluid interface can not handle RESTART yet, aborting!\n"<<flush;
+      abort();
+    }
+#endif
+
     dt = config.read < double >("dt");
     ncycles = config.read < int >("ncycles");
     th = config.read < double >("th");
@@ -78,12 +87,23 @@ void Collective::ReadInput(string inputfile) {
     restart_status = 0;
     last_cycle = -1;
     c = config.read < double >("c");
+
+#ifdef BATSRUS
+      // set grid size and resolution based on the initial file from fluid code
+      Lx =  getFluidLx();
+      Ly =  getFluidLy();
+      Lz =  getFluidLz();
+      nxc = getFluidNxc();
+      nyc = getFluidNyc();
+      nzc = getFluidNzc();
+#else
     Lx = config.read < double >("Lx");
     Ly = config.read < double >("Ly");
     Lz = config.read < double >("Lz");
     nxc = config.read < int >("nxc");
     nyc = config.read < int >("nyc");
     nzc = config.read < int >("nzc");
+#endif
 
     x_center = config.read < double >("x_center");
     y_center = config.read < double >("y_center");

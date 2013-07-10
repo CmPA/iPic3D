@@ -71,6 +71,18 @@ file(
 )
 
 #
+# Macro definitions
+#
+
+set(TEST_B $ENV{BATSRUS})
+if(DEFINED TEST_B)
+  add_definitions( -DBATSRUS )
+  message(" WARNING: BATSRUS flag is active.")
+else(DEFINED TEST_B)
+  message(" INFO: BATSRUS is not active.")
+endif(DEFINED TEST_B)
+
+#
 # Executable declaration
 #
 

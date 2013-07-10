@@ -13,6 +13,10 @@ developers           : Stefano Markidis, Giovanni Lapenta
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef BATSRUS
+#include "InterfaceFluid.h"
+#endif
+
 using namespace std;
 /**
  *  Abstract base class for inputing physical parameters for simulation.
@@ -23,7 +27,12 @@ using namespace std;
  * @author Stefano Markidis, Giovanni Lapenta
  * @version 1.0
  */
+
+#ifdef BATSRUS
+class CollectiveIO : public InterfaceFluid{
+#else
 class CollectiveIO {
+#endif
 public:
   /** read input file */
   virtual void ReadInput(string inputfile) = 0;

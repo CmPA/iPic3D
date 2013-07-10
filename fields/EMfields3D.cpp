@@ -1491,6 +1491,42 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid) {
   }
 }
 
+#ifdef BATSRUS
+/*! initiliaze EM for GEM challange */
+void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, CollectiveIO *col) {
+  cout << "------------------------------------------" << endl;
+  cout << "         Initialize from BATSRUS          " << endl;
+  cout << "------------------------------------------" << endl;
+
+  // loop over species and cell centers: fill in charge density
+  for (int is=0; is < ns; is++)
+    for (int i=0; i < nxc; i++)
+      for (int j=0; j < nyc; j++)
+        for (int k=0; k < nzc; k++)
+        {
+          // WARNING getFluidRhoCenter contains "case" statment
+          rhocs[is][i][j][k] = col->getFluidRhoCenter(i,j,k,is);
+        }
+
+  // loop over cell centers and fill in magnetic and electric fields
+  for (int i=0; i < nxc; i++)
+    for (int j=0; j < nyc; j++)
+      for (int k=0; k < nzc; k++)
+      {
+        // WARNING getFluidRhoCenter contains "case" statment
+        col->setFluidFieldsCenter(&Ex[i][j][k],&Ey[i][j][k],&Ez[i][j][k],
+            &Bxc[i][j][k],&Byc[i][j][k],&Bzc[i][j][k],i,j,k);
+      }
+
+  // interpolate from cell centers to nodes (corners of cells)
+  for (int is=0 ; is<ns; is++)
+    grid->interpC2N(rhons[is],rhocs[is]);
+  grid->interpC2N(Bxn,Bxc);
+  grid->interpC2N(Byn,Byc);
+  grid->interpC2N(Bzn,Bzc);
+}
+#endif
+
 /*! initiliaze EM for GEM challange */
 void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid) {
   // perturbation localized in X
@@ -2360,12 +2396,12 @@ void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, dou
     case 0: // boundary condition on X-DIRECTION LEFT
       for (int i=1; i < nyn-1;i++)
         for (int j=1; j < nzn-1;j++){
-           vectorX[1][i][j] = 0.0;
-           vectorY[1][i][j] = ebc[1];
-           vectorZ[1][i][j] = ebc[2];
-//+//          vectorX[1][i][j] = 0.0;
-//+//          vectorY[1][i][j] = 0.0;
-//+//          vectorZ[1][i][j] = 0.0;
+          vectorX[1][i][j] = 0.0;
+          vectorY[1][i][j] = ebc[1];
+          vectorZ[1][i][j] = ebc[2];
+          //+//          vectorX[1][i][j] = 0.0;
+          //+//          vectorY[1][i][j] = 0.0;
+          //+//          vectorZ[1][i][j] = 0.0;
         }
       break;
     case 1: // boundary condition on Y-DIRECTION LEFT
@@ -2374,9 +2410,9 @@ void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, dou
           vectorX[i][1][j] = ebc[0];
           vectorY[i][1][j] = 0.0;
           vectorZ[i][1][j] = ebc[2];
-//+//          vectorX[i][1][j] = 0.0;
-//+//          vectorY[i][1][j] = 0.0;
-//+//          vectorZ[i][1][j] = 0.0;
+          //+//          vectorX[i][1][j] = 0.0;
+          //+//          vectorY[i][1][j] = 0.0;
+          //+//          vectorZ[i][1][j] = 0.0;
         }
       break;
     case 2: // boundary condition on Z-DIRECTION LEFT
@@ -2385,9 +2421,9 @@ void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, dou
           vectorX[i][j][1] = ebc[0];
           vectorY[i][j][1] = ebc[1];
           vectorZ[i][j][1] = 0.0;
-//+//          vectorX[i][j][1] = 0.0;
-//+//          vectorY[i][j][1] = 0.0;
-//+//          vectorZ[i][j][1] = 0.0;
+          //+//          vectorX[i][j][1] = 0.0;
+          //+//          vectorY[i][j][1] = 0.0;
+          //+//          vectorZ[i][j][1] = 0.0;
         }
       break;
   }
@@ -2409,9 +2445,9 @@ void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, do
           vectorX[nxn-2][i][j] = 0.0;
           vectorY[nxn-2][i][j] = ebc[1];
           vectorZ[nxn-2][i][j] = ebc[2];
-//+//          vectorX[nxn-2][i][j] = 0.0;
-//+//          vectorY[nxn-2][i][j] = 0.0;
-//+//          vectorZ[nxn-2][i][j] = 0.0;
+          //+//          vectorX[nxn-2][i][j] = 0.0;
+          //+//          vectorY[nxn-2][i][j] = 0.0;
+          //+//          vectorZ[nxn-2][i][j] = 0.0;
         }
       break;
     case 1: // boundary condition on Y-DIRECTION RIGHT
@@ -2420,9 +2456,9 @@ void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, do
           vectorX[i][nyn-2][j] = ebc[0];
           vectorY[i][nyn-2][j] = 0.0;
           vectorZ[i][nyn-2][j] = ebc[2];
-//+//          vectorX[i][nyn-2][j] = 0.0;
-//+//          vectorY[i][nyn-2][j] = 0.0;
-//+//          vectorZ[i][nyn-2][j] = 0.0;
+          //+//          vectorX[i][nyn-2][j] = 0.0;
+          //+//          vectorY[i][nyn-2][j] = 0.0;
+          //+//          vectorZ[i][nyn-2][j] = 0.0;
         }
       break;
     case 2:
@@ -2431,9 +2467,9 @@ void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, do
           vectorX[i][j][nzn-2] = ebc[0];
           vectorY[i][j][nzn-2] = ebc[1];
           vectorZ[i][j][nzn-2] = 0.0;
-//+//          vectorX[i][j][nzn-2] = 0.0;
-//+//          vectorY[i][j][nzn-2] = 0.0;
-//+//          vectorZ[i][j][nzn-2] = 0.0;
+          //+//          vectorX[i][j][nzn-2] = 0.0;
+          //+//          vectorY[i][j][nzn-2] = 0.0;
+          //+//          vectorZ[i][j][nzn-2] = 0.0;
         }
       break;
   }
@@ -2855,7 +2891,7 @@ double ***EMfields3D::getEzc(Grid3DCU *grid) {
 
   arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   tmp = newArr3(double,nxc,nyc,nzc);
-  
+
   grid->interpN2C(tmp, Ez);
 
   for (int i = 1; i < nxc-1; i++)
@@ -3079,7 +3115,7 @@ double ***EMfields3D::getJzsc(Grid3DCU *grid, int is) {
 
   arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   tmp = newArr4(double,ns,nxc,nyc,nzc);
-  
+
   grid->interpN2C(tmp, is, Jzs);
 
   for (int i = 1; i < nxc-1; i++)

@@ -185,7 +185,11 @@ class EMfields3D                // :public Field
     void initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid);
     /*! initialize GEM challenge with no Perturbation */
     void initGEMnoPert(VirtualTopology3D * vct, Grid * grid);
-    /** Random initial field */
+#ifdef BATSRUS
+    /*! initialize from BATSRUS */
+    void initBATSRUS(VirtualTopology3D * vct, Grid * grid, CollectiveIO * col);
+#endif
+    /*! Random initial field */
     void initRandomField(VirtualTopology3D * vct, Grid * grid);
     /*! Init Force Free (JxB=0) */
     void initForceFree(VirtualTopology3D * vct, Grid * grid);

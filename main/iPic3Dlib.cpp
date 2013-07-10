@@ -32,6 +32,12 @@ int c_Solver::Init(int argc, char **argv) {
   // We create a new communicator with a 3D virtual Cartesian topology
   vct->setup_vctopology(MPI_COMM_WORLD);
   // initialize the central cell index
+
+#ifdef BATSRUS
+  // set index offset for each processor
+  col->setGlobalStartIndex(vct);
+#endif
+
   nx0 = col->getNxc() / vct->getXLEN(); // get the number of cells in x for each processor
   ny0 = col->getNyc() / vct->getYLEN(); // get the number of cells in y for each processor
   nz0 = col->getNzc() / vct->getZLEN(); // get the number of cells in z for each processor
@@ -50,6 +56,9 @@ int c_Solver::Init(int argc, char **argv) {
   if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid);
   else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid);
   else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid);
+#ifdef BATSRUS
+  else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
+#endif
   else if (col->getCase()=="Dipole")    EMf->init(vct,grid);
   else {
     if (myrank==0) {
@@ -74,8 +83,11 @@ int c_Solver::Init(int argc, char **argv) {
     // wave = new Planewave(col, EMf, grid, vct);
     // wave->Wave_Rotated(part); // Single Plane Wave
     for (int i = 0; i < ns; i++)
-      part[i].maxwellian(grid, EMf, vct); // all the species have Maxwellian distribution in the velocity
-    // part[i].force_free(grid,EMf,vct); // force free
+      if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
+#ifdef BATSRUS
+      else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+#endif
+      else                                  part[i].maxwellian(grid, EMf, vct);
   }
 
   // Initialize the output (simulation results and restart file)

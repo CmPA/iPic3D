@@ -114,9 +114,72 @@ void Particles3D::constantVelocity(double vel, int dim, Grid * grid, Field * EMf
 
 /** alternative routine maxellian random velocity and uniform spatial distribution */
 void Particles3D::alt_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
-
-
 }
+
+#ifdef BATSRUS
+/** Maxellian random velocity and uniform spatial distribution */
+void Particles3D::MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* vct,Collective *col, int is){
+
+  /*
+   * Constuctiong the distrebution function from a Fluid model
+   */
+
+  // loop over grid cells and set position, velociy and charge of all particles indexed by counter
+  // there are multiple (27 or so) particles per grid cell.
+  int i,j,k,counter=0;
+  for (i=1; i< grid->getNXC()-1;i++)
+    for (j=1; j< grid->getNYC()-1;j++)
+      for (k=1; k< grid->getNZC()-1;k++)
+        MaxwellianFromFluidCell(grid,col,is, i,j,k,counter,x,y,z,q,u,v,w,ParticleID);
+}
+
+void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long* ParticleID)
+{
+  /*
+   * grid           : local grid object (in)
+   * col            : collective (global) object (in)
+   * is             : species index (in)
+   * i,j,k          : grid cell index on proc (in)
+   * ip             : particle number counter (inout)
+   * x,y,z          : particle position (out)
+   * q              : particle charge (out)
+   * vx,vy,vz       : particle velocity (out)
+   * ParticleID     : particle tracking ID (out)
+   */
+
+  double harvest;
+  double prob, theta;
+
+  // loop over particles inside grid cell i,j,k
+  for (int ii=0; ii < npcelx; ii++)
+    for (int jj=0; jj < npcely; jj++)
+      for (int kk=0; kk < npcelz; kk++){
+        // Assign particle positions: uniformly spaced. x_cellnode + dx_particle*(0.5+index_particle)
+        x[ip] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);
+        y[ip] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+        z[ip] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+        // q = charge
+        q[ip] =  (qom/fabs(qom))*(col->getFluidRhoCenter(i,j,k,is)/npcel)*(1.0/grid->getInvVOL());
+        // u = X velocity
+        harvest =   rand()/(double)RAND_MAX;
+        prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+        harvest =   rand()/(double)RAND_MAX;
+        theta = 2.0*M_PI*harvest;
+        u[ip] = col->getFluidUx(i,j,k,is) + col->getFluidUthx(i,j,k,is)*prob*cos(theta);
+        // v = Y velocity
+        v[ip] = col->getFluidUy(i,j,k,is) + col->getFluidUthy(i,j,k,is)*prob*sin(theta);
+        // w = Z velocity
+        harvest =   rand()/(double)RAND_MAX;
+        prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+        harvest =   rand()/(double)RAND_MAX;
+        theta = 2.0*M_PI*harvest;
+        w[ip] = col->getFluidUz(i,j,k,is) + col->getFluidUthz(i,j,k,is)*prob*cos(theta);
+        if (TrackParticleID)
+          ParticleID[ip]= ip*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+        ip++ ;
+      }
+}
+#endif
 
 /** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
