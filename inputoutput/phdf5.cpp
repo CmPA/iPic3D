@@ -81,7 +81,7 @@ void PHDF5fileClass::CreatePHDF5file(double *L, int *dglob, int *dlocl, bool bp)
   for (int i=0; i<ngrp; i++){
     if (!(grpnames[i].c_str()=="Particles"&&!bparticles)){
       hid_t grp;
-      grp = H5Gcreate(file_id, grpnames[i].c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+      grp = H5Gcreate2(file_id, grpnames[i].c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       H5Gclose(grp);
     }
   }
@@ -188,7 +188,7 @@ int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, double
   H5Pset_chunk(dataset_prop, ndim, chdim);
 
   dname   = "/"+grpname+"/"+datasetname;
-  dataset = H5Dcreate(file_id, dname.c_str(), h5type, glob_dspace, H5P_DEFAULT, dataset_prop, H5P_DEFAULT);
+  dataset = H5Dcreate2(file_id, dname.c_str(), h5type, glob_dspace, H5P_DEFAULT, dataset_prop, H5P_DEFAULT);
 
   H5Pclose(dataset_prop);
 

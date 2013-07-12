@@ -1392,7 +1392,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
       cout << "RESTART NOT POSSIBLE" << endl;
     }
 
-    dataset_id = H5Dopen(file_id, "/fields/Bx/cycle_0", H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, "/fields/Bx/cycle_0", H5P_DEFAULT); // HDF 1.8.8
     datatype = H5Dget_type(dataset_id);
     size = H5Tget_size(datatype);
     dataspace = H5Dget_space(dataset_id);
@@ -1413,7 +1413,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
     status = H5Dclose(dataset_id);
 
     // Byn
-    dataset_id = H5Dopen(file_id, "/fields/By/cycle_0", H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, "/fields/By/cycle_0", H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, temp_storage);
     k = 0;
     for (int i = 1; i < nxn - 1; i++)
@@ -1425,7 +1425,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 
 
     // Bzn
-    dataset_id = H5Dopen(file_id, "/fields/Bz/cycle_0", H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, "/fields/Bz/cycle_0", H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, temp_storage);
     k = 0;
     for (int i = 1; i < nxn - 1; i++)
@@ -1437,7 +1437,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 
 
     // Ex
-    dataset_id = H5Dopen(file_id, "/fields/Ex/cycle_0", H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, "/fields/Ex/cycle_0", H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, temp_storage);
     k = 0;
     for (int i = 1; i < nxn - 1; i++)
@@ -1449,7 +1449,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 
 
     // Ey 
-    dataset_id = H5Dopen(file_id, "/fields/Ey/cycle_0", H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, "/fields/Ey/cycle_0", H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, temp_storage);
     k = 0;
     for (int i = 1; i < nxn - 1; i++)
@@ -1460,7 +1460,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
     status = H5Dclose(dataset_id);
 
     // Ez 
-    dataset_id = H5Dopen(file_id, "/fields/Ez/cycle_0", H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, "/fields/Ez/cycle_0", H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, temp_storage);
     k = 0;
     for (int i = 1; i < nxn - 1; i++)
@@ -1476,7 +1476,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
     for (int is = 0; is < ns; is++) {
       species_name[is] << is;
       string name_dataset = "/moments/species_" + species_name[is].str() + "/rho/cycle_0";
-      dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+      dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
       status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, temp_storage);
       k = 0;
       for (int i = 1; i < nxn - 1; i++)

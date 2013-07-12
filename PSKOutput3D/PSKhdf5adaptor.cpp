@@ -29,9 +29,9 @@ void HDF5OutputAdaptor::get_dataset_context(const std::string & name, std::vecto
     /* HDF5 error handling code from http://hdf.ncsa.uiuc.edu/HDF5/doc/Errors.html */
     /* Save old error handler */
     // herr_t (*old_func)(void*); // HDF 1.6
-    H5E_auto_t old_func;        // HDF 1.8.8
+    H5E_auto2_t old_func;        // HDF 1.8.8
     void *old_client_data;
-    H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8
+    H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8
 
     hid_array[0] = _hdf5_file_id;
 
@@ -42,17 +42,17 @@ void HDF5OutputAdaptor::get_dataset_context(const std::string & name, std::vecto
       dataset_name = name_components[ncompx - 1];
 
       /* Turn off error handling */
-      // H5Eset_auto(NULL, NULL); // HDF 1.6
-      H5Eset_auto(H5E_DEFAULT, 0, 0); // HDF 1.8
-      hid_array[i + 1] = H5Gopen(hid_array[i], name_components[i].c_str(), H5P_DEFAULT);
+      // H5Eset_auto2(NULL, NULL); // HDF 1.6
+      H5Eset_auto2(H5E_DEFAULT, 0, 0); // HDF 1.8
+      hid_array[i + 1] = H5Gopen2(hid_array[i], name_components[i].c_str(), H5P_DEFAULT);
       /* Restore previous error handler */
-      H5Eset_auto(H5E_DEFAULT, old_func, old_client_data);  // HDF 1.8
+      H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data);  // HDF 1.8
 
       if (hid_array[i + 1] < 0) {
 
         // std::cout << "group open failed \n" ;
 
-        hid_array[i + 1] = H5Gcreate(hid_array[i], name_components[i].c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);  // HDF 1.8
+        hid_array[i + 1] = H5Gcreate2(hid_array[i], name_components[i].c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);  // HDF 1.8
 
         if (hid_array[i + 1] < 0) {
 
@@ -117,7 +117,7 @@ void HDF5OutputAdaptor::open(const std::string & name) {
   _hdf5_file_id = H5Fcreate(name.c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
   if (_hdf5_file_id <= 0) {
-    PSK::OutputException e("H5FCreate fails", "HDF5OutputAdaptor::open()");
+    PSK::OutputException e("H5FCreate fails", "HDF5OutputAdaptor::open2()");
 
     // if using H5F_ACC_EXCL
     // e.push( "Using H5F_ACC_EXCL: Check if file " +name + " already exists" );
@@ -135,18 +135,18 @@ void HDF5OutputAdaptor::open_append(const std::string & name) {
   /* HDF5 error handling code from http://hdf.ncsa.uiuc.edu/HDF5/doc/Errors.html */
   /* Save old error handler */
   // herr_t (*old_func)(void*); //HDF 1.6
-  H5E_auto_t old_func;          // HDF 1.8.8
+  H5E_auto2_t old_func;          // HDF 1.8.8
   void *old_client_data;
-  H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8
+  H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8
 
 
   /* Turn off error handling */
-  // H5Eset_auto(NULL, NULL); // HDF 1.6
-  H5Eset_auto(H5E_DEFAULT, 0, 0);
+  // H5Eset_auto2(NULL, NULL); // HDF 1.6
+  H5Eset_auto2(H5E_DEFAULT, 0, 0);
   _hdf5_file_id = H5Fcreate(name.c_str(), H5F_ACC_EXCL, H5P_DEFAULT, H5P_DEFAULT);
 
   /* Restore previous error handler */
-  H5Eset_auto(H5E_DEFAULT, old_func, old_client_data);  // HDF 1.8
+  H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data);  // HDF 1.8
 
   if (_hdf5_file_id <= 0) {
 
@@ -206,7 +206,7 @@ void HDF5OutputAdaptor::write(const std::string & tag, int i_value) {
                                             1, hdf5dims, &i_value);
     }
     else {
-      hid_t dataset_id = H5Dopen(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+      hid_t dataset_id = H5Dopen2(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
       herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &i_value);
       hdf5err = H5Dclose(dataset_id);
     }
@@ -248,7 +248,7 @@ void HDF5OutputAdaptor::write(const std::string & tag, long i_value) {
                                              1, hdf5dims, &i_value);
     }
     else {
-      hid_t dataset_id = H5Dopen(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+      hid_t dataset_id = H5Dopen2(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
       herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &i_value);
       hdf5err = H5Dclose(dataset_id);
     }
@@ -297,7 +297,7 @@ void HDF5OutputAdaptor::write(const std::string & tag, const Dimens dimens, cons
                                             dimens.size(), hdf5dims, i_array);
     }
     else {
-      hid_t dataset_id = H5Dopen(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+      hid_t dataset_id = H5Dopen2(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
       herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, i_array);
       hdf5err = H5Dclose(dataset_id);
     }
@@ -554,7 +554,7 @@ void HDF5OutputAdaptor::write(const std::string & tag, double d_value) {
                                                1, hdf5dims, &d_value);
     }
     else {
-      hid_t dataset_id = H5Dopen(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+      hid_t dataset_id = H5Dopen2(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
       herr_t hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &d_value);
       hdf5err = H5Dclose(dataset_id);
     }
@@ -602,7 +602,7 @@ void HDF5OutputAdaptor::write(const std::string & tag, const Dimens dimens, cons
                                                dimens.size(), hdf5dims, d_array);
     }
     else {
-      hid_t dataset_id = H5Dopen(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
+      hid_t dataset_id = H5Dopen2(hid_array[hid_array.size() - 1], dataset_name.c_str(), H5P_DEFAULT); // HDF 1.8
       hdf5err = H5Dwrite(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, d_array);
       hdf5err = H5Dclose(dataset_id);
     }
