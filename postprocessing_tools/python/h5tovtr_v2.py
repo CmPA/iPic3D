@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from evtk.hl import gridToVTK
+from evtk.vtk import VtkFile, VtkRectilinearGrid
 
 import numpy as np
 import h5py
@@ -62,18 +62,37 @@ for i in np.arange(istart, iend+istep, istep):
   
   # Write the VTK file
 
-  gridToVTK(vtkfilename+"_"+cycle, xc, yc, zc, cellData = {"Bx"    : data1,  \
-                                                           "By"    : data2,  \
-                                                           "Bz"    : data3,  \
-                                                           "Ex"    : data4,  \
-                                                           "Ey"    : data5,  \
-                                                           "Ez"    : data6,  \
-                                                           "Rho_0" : data7,  \
-                                                           "Rho_1" : data8,  \
-                                                           "Jx_0"  : data9,  \
-                                                           "Jy_0"  : data10, \
-                                                           "Jz_0"  : data11, \
-                                                           "Jx_1"  : data12, \
-                                                           "Jy_1"  : data13, \
-                                                           "Jz_1"  : data14 })
-  
+  start, end  = (0, 0, 0), (nx, ny, nz)
+  w = VtkFile(vtkfilename+"_"+cycle, VtkRectilinearGrid)
+  w.openGrid (start = start, end = end)
+  w.openPiece(start = start, end = end)
+
+  # Cell data
+  w.openData("Cell", scalars = "Rho_0, Rho_1", vectors = "B, E, J_0, J_1")
+  w.addData ("Rho_0", data7)
+  w.addData ("Rho_1", data8)
+  w.addData ("B",   (data1,  data2,  data3 ))
+  w.addData ("E",   (data4,  data5,  data6 ))
+  w.addData ("J_0", (data9,  data10, data11))
+  w.addData ("J_1", (data12, data13, data14))
+  w.closeData("Cell")
+
+  # Coordinates of cell vertices
+  w.openElement("Coordinates")
+  w.addData("x_coordinates", xc)
+  w.addData("y_coordinates", yc)
+  w.addData("z_coordinates", zc)
+  w.closeElement("Coordinates")
+
+  w.closePiece()
+  w.closeGrid()
+
+  # Apped the data to the file
+  w.appendData(data = data7)
+  w.appendData(data = data8)
+  w.appendData(data = (data1,  data2,  data3 ))
+  w.appendData(data = (data4,  data5,  data6 ))
+  w.appendData(data = (data9,  data10, data11))
+  w.appendData(data = (data12, data13, data14))
+  w.appendData(xc).appendData(yc).appendData(zc)
+  w.save()

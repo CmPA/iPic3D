@@ -59,7 +59,7 @@ int c_Solver::Init(int argc, char **argv) {
 #ifdef BATSRUS
   else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
 #endif
-  else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+  else if (col->getCase()=="Dipole")    EMf->initDipole(vct,grid,col);
   else {
     if (myrank==0) {
       cout << " =========================================================== " << endl;

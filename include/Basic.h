@@ -10,6 +10,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include <math.h>
 
 #include "MPIdata.h"
+#include "EllipticF.h"
 
 using std::cout;
 using std::endl;
@@ -471,6 +472,131 @@ inline void cross_product(double a1, double a2, double a3, double b1, double b2,
   c[0] = a2 * b3 - a3 * b2;
   c[1] = a3 * b1 - a1 * b3;
   c[2] = a1 * b2 - a2 * b1;
+}
+
+inline void loopX(double *b, double z, double x, double y, double a, double zc, double xc, double yc, double m){
+
+  double r = sqrt((x-xc)*(x-xc)+(y-yc)*(y-yc)+(z-zc)*(z-zc));
+  double theta = acos((z-zc+1e-10)/(r+1e-10));
+  double phi = atan2(y-yc,x-xc);
+  //double Rho = r * sin(theta);
+  double Rho = sqrt((x-xc)*(x-xc)+(y-yc)*(y-yc));
+
+  double Alpha = Rho/a;
+  double Beta = (z-zc)/a;
+  double Gamma = (z-zc+1e-10)/(Rho+1e-10);
+
+  double Q = ((1 + Alpha)*(1 + Alpha) + Beta*Beta);
+  double k = sqrt(4*Alpha/Q);
+  double B0 = m / (2*a); //m * (C_LIGHT * MU0)/(2*a*a*a*M_PI);
+
+  int err = 0;
+
+  double Bz = B0*(EllipticE(k,err)*(1-Alpha*Alpha-Beta*Beta)/(Q-4*Alpha)+EllipticF(k,err))/(M_PI*sqrt(Q));
+  double BRho = B0*Gamma*(EllipticE(k,err)*(1+Alpha*Alpha+Beta*Beta)/(Q-4*Alpha)-EllipticF(k,err))/(M_PI*sqrt(Q));
+
+  if (err)
+    cout << "Err came back :" << err << endl;
+
+  if ( isnan(BRho) )
+    BRho = 0;
+  if ( isnan(Bz) )
+    Bz = 0;
+
+  double Bx = BRho * cos(phi);
+  double By = BRho * sin(phi);
+
+  //for debugging
+  /*cout << "\n\nAt (" << x << "," << y << "," << z << "), the field is :" << endl;
+    cout << "Bx: " << Bx << " T" << endl;
+    cout << "By: " << By << " T" << endl;
+    cout << "Bz: " << Bz << " T" << endl;
+    cout << "BRho: " << BRho << " T" << endl;*/
+
+  b[1] = Bx;
+  b[2] = By;
+  b[0] = Bz;
+}
+
+inline void loopY(double *b, double y, double z, double x, double a, double yc, double zc, double xc, double m){
+
+  double r = sqrt((x-xc)*(x-xc)+(y-yc)*(y-yc)+(z-zc)*(z-zc));
+  double theta = acos((z-zc+1e-10)/(r+1e-10));
+  double phi = atan2(y-yc,x-xc);
+  //double Rho = r * sin(theta);
+  double Rho = sqrt((x-xc)*(x-xc)+(y-yc)*(y-yc));
+
+  double Alpha = Rho/a;
+  double Beta = (z-zc)/a;
+  double Gamma = (z-zc+1e-10)/(Rho+1e-10);
+
+  double Q = ((1 + Alpha)*(1 + Alpha) + Beta*Beta);
+  double k = sqrt(4*Alpha/Q);
+  double B0 = m / (2*a); //m * (C_LIGHT * MU0)/(2*a*a*a*M_PI);
+
+  int err = 0;
+
+  double Bz = B0*(EllipticE(k,err)*(1-Alpha*Alpha-Beta*Beta)/(Q-4*Alpha)+EllipticF(k,err))/(M_PI*sqrt(Q));
+  double BRho = B0*Gamma*(EllipticE(k,err)*(1+Alpha*Alpha+Beta*Beta)/(Q-4*Alpha)-EllipticF(k,err))/(M_PI*sqrt(Q));
+
+  if (err)
+    cout << "Err came back :" << err << endl;
+
+  if ( isnan(BRho) )
+    BRho = 0;
+  if ( isnan(Bz) )
+    Bz = 0;
+
+  double Bx = BRho * cos(phi);
+  double By = BRho * sin(phi);
+
+  //for debugging
+  /*cout << "\n\nAt (" << x << "," << y << "," << z << "), the field is :" << endl;
+    cout << "Bx: " << Bx << " T" << endl;
+    cout << "By: " << By << " T" << endl;
+    cout << "Bz: " << Bz << " T" << endl;
+    cout << "BRho: " << BRho << " T" << endl;*/
+
+  b[2] = Bx;
+  b[0] = By;
+  b[1] = Bz;
+}
+
+inline void loopZ(double *b, double x, double y, double z, double a, double xc, double yc, double zc, double m){
+
+  double r = sqrt((x-xc)*(x-xc)+(y-yc)*(y-yc)+(z-zc)*(z-zc));
+  double theta = acos((z-zc+1e-10)/(r+1e-10));
+  double phi = atan2(y-yc,x-xc);
+
+  double Rho = sqrt((x-xc)*(x-xc)+(y-yc)*(y-yc));
+
+  double Alpha = Rho/a;
+  double Beta = (z-zc)/a;
+  double Gamma = (z-zc+1e-10)/(Rho+1e-10);
+
+  double Q = ((1 + Alpha)*(1 + Alpha) + Beta*Beta);
+  double k = sqrt(4*Alpha/Q);
+  double B0 = m / (2*a); //m * (C_LIGHT * MU0)/(2*a*a*a*M_PI);
+
+  int err = 0;
+
+  double Bz = B0*(EllipticE(k,err)*(1-Alpha*Alpha-Beta*Beta)/(Q-4*Alpha)+EllipticF(k,err))/(M_PI*sqrt(Q));
+  double BRho = B0*Gamma*(EllipticE(k,err)*(1+Alpha*Alpha+Beta*Beta)/(Q-4*Alpha)-EllipticF(k,err))/(M_PI*sqrt(Q));
+
+  if (err)
+    cout << "Err came back :" << err << endl;
+
+  if ( isnan(BRho) )
+    BRho = 0;
+  if ( isnan(Bz) )
+    Bz = 0;
+
+  double Bx = BRho * cos(phi);
+  double By = BRho * sin(phi);
+
+  b[0] = Bx;
+  b[1] = By;
+  b[2] = Bz;
 }
 
 #endif

@@ -199,7 +199,8 @@ class EMfields3D                // :public Field
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */
     void AddPerturbation(double deltaBoB, double kx, double ky, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, double B0, Grid * grid);
-
+    /*! Initialise a combination of magnetic dipoles */
+    void initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
     void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);
@@ -347,7 +348,19 @@ class EMfields3D                // :public Field
     /*! SPECIES: get density array on cells without the ghost cells */
     double ***getRHOcs(Grid3DCU *grid, int is);
 
+    /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
+    double &getBx_ext(int indexX, int indexY, int indexZ) const;
+    /** get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
+    double &getBy_ext(int indexX, int indexY, int indexZ) const;
+    /** get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
+    double &getBz_ext(int indexX, int indexY, int indexZ) const;
 
+    /** get Magnetic Field component X */
+    double ***getBx_ext();
+    /** get Magnetic Field component Y */
+    double ***getBy_ext();
+    /** get Magnetic Field component Z */
+    double ***getBz_ext();
 
     /*! get pressure tensor XX for species */
     double ****getpXXsn();
@@ -422,6 +435,8 @@ class EMfields3D                // :public Field
     int ns;
     /*! GEM challenge parameters */
     double B0x, B0y, B0z, delta;
+    /** Earth Model parameters */
+    double B1x, B1y, B1z;
     /*! charge to mass ratio array for different species */
     double *qom;
     /*! Boundary electron speed */
@@ -451,7 +466,14 @@ class EMfields3D                // :public Field
     double Ly;
     /*! simulation box length - Z direction */
     double Lz;
-
+    /** source center - X direction   */
+    double x_center;
+    /** source center - Y direction   */
+    double y_center;
+    /** source center - Z direction   */
+    double z_center;
+    /** Characteristic length */
+    double L_square;
 
     /*! PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes */
     double ***PHI;
@@ -543,6 +565,18 @@ class EMfields3D                // :public Field
     double ****Jys;
     /*! SPECIES: current density component-Z for species, defined on nodes */
     double ****Jzs;
+    /*! External magnetic field component-X, defined on nodes */
+    double***  Bx_ext;
+    /*! External magnetic field component-Y, defined on nodes */
+    double***  By_ext;
+    /*! External magnetic field component-Z, defined on nodes */
+    double***  Bz_ext;
+    /*! External current field component-X, defined on nodes */
+    double***  Jx_ext;
+    /*! External current field component-Y, defined on nodes */
+    double***  Jy_ext;
+    /*! External current field component-Z, defined on nodes */
+    double***  Jz_ext;
 
     /*! SPECIES: pressure tensor component-XX, defined on nodes */
     double ****pXXsn;

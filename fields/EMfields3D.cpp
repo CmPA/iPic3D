@@ -29,6 +29,10 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   ue0 = col->getU0(0);
   ve0 = col->getV0(0);
   we0 = col->getW0(0);
+  x_center = col->getx_center();
+  y_center = col->gety_center();
+  z_center = col->getz_center();
+  L_square = col->getL_square();
 
   delt = c * th * dt;
   PoissonCorrection = false;
@@ -56,6 +60,10 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   B0x = col->getB0x();
   B0y = col->getB0y();
   B0z = col->getB0z();
+  // Earth Simulation
+  B1x = col->getB1x();
+  B1y = col->getB1y();
+  B1z = col->getB1z();
   delta = col->getDelta();
   Smooth = col->getSmooth();
   // get the density background for the gem Challange
@@ -100,6 +108,13 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Jxh = newArr3(double, nxn, nyn, nzn);
   Jyh = newArr3(double, nxn, nyn, nzn);
   Jzh = newArr3(double, nxn, nyn, nzn);
+  // External imposed fields
+  Bx_ext = newArr3(double,nxn,nyn,nzn);
+  By_ext = newArr3(double,nxn,nyn,nzn);
+  Bz_ext = newArr3(double,nxn,nyn,nzn);
+  Jx_ext = newArr3(double,nxn,nyn,nzn);
+  Jy_ext = newArr3(double,nxn,nyn,nzn);
+  Jz_ext = newArr3(double,nxn,nyn,nzn);
   // involving species
   rhons = newArr4(double, ns, nxn, nyn, nzn);
   rhocs = newArr4(double, ns, nxc, nyc, nzn);
@@ -269,6 +284,12 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   scale(temp2Y, Jyh, -FourPI / c, nxn, nyn, nzn);
   scale(temp2Z, Jzh, -FourPI / c, nxn, nyn, nzn);
 
+  // -- dipole SOURCE version using J_ext
+  addscale(-FourPI/c,temp2X,Jx_ext,nxn,nyn,nzn);
+  addscale(-FourPI/c,temp2Y,Jy_ext,nxn,nyn,nzn);
+  addscale(-FourPI/c,temp2Z,Jz_ext,nxn,nyn,nzn);
+  // -- end of dipole SOURCE version using J_ext
+
   sum(temp2X, tempXN, nxn, nyn, nzn);
   sum(temp2Y, tempYN, nxn, nyn, nzn);
   sum(temp2Z, tempZN, nxn, nyn, nzn);
@@ -398,9 +419,9 @@ void EMfields3D::PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, dou
   for (int i = 1; i < nxn - 1; i++)
     for (int j = 1; j < nyn - 1; j++)
       for (int k = 1; k < nzn - 1; k++) {
-        omcx = beta * Bxn[i][j][k];
-        omcy = beta * Byn[i][j][k];
-        omcz = beta * Bzn[i][j][k];
+        omcx = beta * (Bxn[i][j][k] + Bx_ext[i][j][k]);
+        omcy = beta * (Byn[i][j][k] + By_ext[i][j][k]);
+        omcz = beta * (Bzn[i][j][k] + Bz_ext[i][j][k]);
         edotb = vectX[i][j][k] * omcx + vectY[i][j][k] * omcy + vectZ[i][j][k] * omcz;
         denom = 1 / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         PIdotX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
@@ -425,9 +446,9 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
     for (int i = 1; i < nxn - 1; i++)
       for (int j = 1; j < nyn - 1; j++)
         for (int k = 1; k < nzn - 1; k++) {
-          omcx = beta * Bxn[i][j][k];
-          omcy = beta * Byn[i][j][k];
-          omcz = beta * Bzn[i][j][k];
+          omcx = beta * (Bxn[i][j][k] + Bx_ext[i][j][k]);
+          omcy = beta * (Byn[i][j][k] + By_ext[i][j][k]);
+          omcz = beta * (Bzn[i][j][k] + Bz_ext[i][j][k]);
           edotb = vectX[i][j][k] * omcx + vectY[i][j][k] * omcy + vectZ[i][j][k] * omcz;
           denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
           MUdotX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
@@ -2118,6 +2139,91 @@ void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col,
 
 }
 
+/*! Initialise a combination of magnetic dipoles */
+void EMfields3D::initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col){
+
+  double distance;
+
+  if (restart1 == 0){
+
+    double ebc[3];
+    cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
+    scale(ebc,-1.0,3);
+
+    for (int i=0; i < nxn; i++){
+      for (int j=0; j < nyn; j++){
+        for (int k=0; k < nzn; k++){
+          for (int is=0; is < ns; is++){
+            rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+          }
+          Ex[i][j][k] = ebc[0];
+          Ey[i][j][k] = ebc[1];
+          Ez[i][j][k] = ebc[2];
+
+          double blp[3];
+          // Set coil diameter
+          double a=delta;
+
+          double xc=x_center;
+          double yc=y_center;
+          double zc=z_center;
+
+          double x = grid->getXN(i,j,k);
+          double y = grid->getYN(i,j,k);
+          double z = grid->getZN(i,j,k);
+
+          // Compute dipolar field B_ext
+          loopZ(blp, x, y, z, a, xc, yc, zc, B1z);
+          Bx_ext[i][j][k]  = blp[0];
+          By_ext[i][j][k]  = blp[1];
+          Bz_ext[i][j][k]  = blp[2];
+          loopX(blp, x, y, z, a, xc, yc, zc, B1x);
+          Bx_ext[i][j][k] += blp[0];
+          By_ext[i][j][k] += blp[1];
+          Bz_ext[i][j][k] += blp[2];
+          loopY(blp, x, y, z, a, xc, yc, zc, B1y);
+          Bx_ext[i][j][k] += blp[0];
+          By_ext[i][j][k] += blp[1];
+          Bz_ext[i][j][k] += blp[2];
+
+          Bxn[i][j][k] = B0x + Bx_ext[i][j][k];
+          Byn[i][j][k] = B0y + By_ext[i][j][k];
+          Bzn[i][j][k] = B0z + Bz_ext[i][j][k];
+
+          // -- Uncomment if using the J_ext method:
+          Bx_ext[i][j][k]  = 0.0;
+          By_ext[i][j][k]  = 0.0;
+          Bz_ext[i][j][k]  = 0.0;
+          // -- end Uncomment
+        }
+      }
+    }
+
+    grid->interpN2C(Bxc,Bxn);
+    grid->interpN2C(Byc,Byn);
+    grid->interpN2C(Bzc,Bzn);
+
+    communicateCenterBC_P(nxc,nyc,nzc,Bxc,col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5],vct);
+    communicateCenterBC_P(nxc,nyc,nzc,Byc,col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5],vct);
+    communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct);
+
+    // initialize J_ext =c/4*pi curl(B) on nodes (current due to the dipole)
+    grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc);
+    scale(Jx_ext,tempXN,c/FourPI,nxn,nyn,nzn);
+    scale(Jy_ext,tempYN,c/FourPI,nxn,nyn,nzn);
+    scale(Jz_ext,tempZN,c/FourPI,nxn,nyn,nzn);
+
+    for (int is=0 ; is<ns; is++)
+      grid->interpN2C(rhocs,is,rhons);
+
+  }
+  else { // EM initialization from RESTART
+    init(vct,grid,col);  // use the fields from restart file
+  }
+
+}
+
+
 /*! Calculate the susceptibility on the boundary leftX */
 void EMfields3D::sustensorLeftX(double **susxx, double **susyx, double **suszx) {
   double beta, omcx, omcy, omcz, denom;
@@ -2600,18 +2706,18 @@ void EMfields3D::BoundaryConditionsEImage(double ***imageX, double ***imageY, do
   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft == 2) {
     for (int j=1; j < ny-1;j++)
       for (int k=1; k < nz-1;k++){
-        imageX[1][j][k] = vectorX[1][j][k] - injFieldsLeft->ExITemp[1][j][k];
-        imageY[1][j][k] = vectorY[1][j][k] - injFieldsLeft->EyITemp[1][j][k];
-        imageZ[1][j][k] = vectorZ[1][j][k] - injFieldsLeft->EzITemp[1][j][k];
+        imageX[0][j][k] = vectorX[0][j][k] - injFieldsLeft->ExITemp[0][j][k];
+        imageY[0][j][k] = vectorY[0][j][k] - injFieldsLeft->EyITemp[0][j][k];
+        imageZ[0][j][k] = vectorZ[0][j][k] - injFieldsLeft->EzITemp[0][j][k];
       }
   }
 
   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright == 2) {
     for (int j=1; j < ny-1;j++)
       for (int k=1; k < nz-1;k++){
-        imageX[nx-2][j][k] = vectorX[nx-2][j][k]- injFieldsRight->ExITemp[nx-2][j][k];
-        imageY[nx-2][j][k] = vectorY[nx-2][j][k]- injFieldsRight->EyITemp[nx-2][j][k];
-        imageZ[nx-2][j][k] = vectorZ[nx-2][j][k]- injFieldsRight->EyITemp[nx-2][j][k];
+        imageX[nx-1][j][k] = vectorX[nx-1][j][k]- injFieldsRight->ExITemp[nx-1][j][k];
+        imageY[nx-1][j][k] = vectorY[nx-1][j][k]- injFieldsRight->EyITemp[nx-1][j][k];
+        imageZ[nx-1][j][k] = vectorZ[nx-1][j][k]- injFieldsRight->EyITemp[nx-1][j][k];
 
       }
   }
@@ -2619,9 +2725,9 @@ void EMfields3D::BoundaryConditionsEImage(double ***imageX, double ***imageY, do
   if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==2) {
     for (int i=1; i < nx-1;i++)
       for (int k=1; k < nz-1;k++){
-        imageX[i][1][k] = vectorX[i][1][k]-injFieldsBottom->ExITemp[i][1][k];
-        imageY[i][1][k] = vectorY[i][1][k]-injFieldsBottom->EyITemp[i][1][k];
-        imageZ[i][1][k] = vectorZ[i][1][k]-injFieldsBottom->EzITemp[i][1][k];
+        imageX[i][0][k] = vectorX[i][0][k]-injFieldsBottom->ExITemp[i][0][k];
+        imageY[i][0][k] = vectorY[i][0][k]-injFieldsBottom->EyITemp[i][0][k];
+        imageZ[i][0][k] = vectorZ[i][0][k]-injFieldsBottom->EzITemp[i][0][k];
       }
 
   }
@@ -2629,27 +2735,27 @@ void EMfields3D::BoundaryConditionsEImage(double ***imageX, double ***imageY, do
   if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==2) {
     for (int i=1; i < nx-1;i++)
       for (int k=1; k < nz-1;k++){
-        imageX[i][ny-2][k] = vectorX[i][ny-2][k]-injFieldsTop->ExITemp[i][nx-2][k];
-        imageY[i][ny-2][k] = vectorY[i][ny-2][k]-injFieldsTop->EyITemp[i][nx-2][k];
-        imageZ[i][ny-2][k] = vectorZ[i][ny-2][k]-injFieldsTop->EzITemp[i][nx-2][k];
+        imageX[i][ny-1][k] = vectorX[i][ny-1][k]-injFieldsTop->ExITemp[i][nx-1][k];
+        imageY[i][ny-1][k] = vectorY[i][ny-1][k]-injFieldsTop->EyITemp[i][nx-1][k];
+        imageZ[i][ny-1][k] = vectorZ[i][ny-1][k]-injFieldsTop->EzITemp[i][nx-1][k];
       }
   }
 
   if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2) {
     for (int i=1; i < nx-1;i++)
       for (int j=1; j < ny-1;j++){
-        imageX[i][j][1] = vectorX[i][j][1]-injFieldsFront->ExITemp[i][j][1];
-        imageY[i][j][1] = vectorY[i][j][1]-injFieldsFront->EyITemp[i][j][1];
-        imageZ[i][j][1] = vectorZ[i][j][1]-injFieldsFront->EzITemp[i][j][1];
+        imageX[i][j][0] = vectorX[i][j][0]-injFieldsFront->ExITemp[i][j][0];
+        imageY[i][j][0] = vectorY[i][j][0]-injFieldsFront->EyITemp[i][j][0];
+        imageZ[i][j][0] = vectorZ[i][j][0]-injFieldsFront->EzITemp[i][j][0];
       }
   }
 
   if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2) {
     for (int i=1; i < nx-1;i++)
       for (int j=1; j < ny-1;j++){
-        imageX[i][j][nz-2] = vectorX[i][j][nz-2]-injFieldsRear->ExITemp[i][j][nz-2];
-        imageY[i][j][nz-2] = vectorY[i][j][nz-2]-injFieldsRear->EyITemp[i][j][nz-2];
-        imageZ[i][j][nz-2] = vectorZ[i][j][nz-2]-injFieldsRear->EzITemp[i][j][nz-2];
+        imageX[i][j][nz-1] = vectorX[i][j][nz-1]-injFieldsRear->ExITemp[i][j][nz-1];
+        imageY[i][j][nz-1] = vectorY[i][j][nz-1]-injFieldsRear->EyITemp[i][j][nz-1];
+        imageZ[i][j][nz-1] = vectorZ[i][j][nz-1]-injFieldsRear->EzITemp[i][j][nz-1];
       }
   }
 
@@ -2664,18 +2770,18 @@ void EMfields3D::BoundaryConditionsB(double ***vectorX, double ***vectorY, doubl
         vectorY[0][j][k] = injFieldsLeft->ByITemp[0][j][k];
         vectorZ[0][j][k] = injFieldsLeft->BzITemp[0][j][k];
 
-        vectorX[1][j][k] = injFieldsLeft->BxITemp[1][j][k];
-        vectorY[1][j][k] = injFieldsLeft->ByITemp[1][j][k];
-        vectorZ[1][j][k] = injFieldsLeft->BzITemp[1][j][k];
+//      vectorX[1][j][k] = injFieldsLeft->BxITemp[1][j][k];
+//      vectorY[1][j][k] = injFieldsLeft->ByITemp[1][j][k];
+//      vectorZ[1][j][k] = injFieldsLeft->BzITemp[1][j][k];
       }
   }
 
   if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
-        vectorX[nx-2][j][k] = injFieldsRight->BxITemp[nx-2][j][k];
-        vectorY[nx-2][j][k] = injFieldsRight->ByITemp[nx-2][j][k];
-        vectorZ[nx-2][j][k] = injFieldsRight->BzITemp[nx-2][j][k];
+//      vectorX[nx-2][j][k] = injFieldsRight->BxITemp[nx-2][j][k];
+//      vectorY[nx-2][j][k] = injFieldsRight->ByITemp[nx-2][j][k];
+//      vectorZ[nx-2][j][k] = injFieldsRight->BzITemp[nx-2][j][k];
 
         vectorX[nx-1][j][k] = injFieldsRight->BxITemp[nx-1][j][k];
         vectorY[nx-1][j][k] = injFieldsRight->ByITemp[nx-1][j][k];
@@ -2686,9 +2792,9 @@ void EMfields3D::BoundaryConditionsB(double ***vectorX, double ***vectorY, doubl
   if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==2)  {
     for (int i=0; i < nx;i++)
       for (int k=0; k < nz;k++){
-        vectorX[i][1][k] = injFieldsBottom->BxITemp[i][1][k];
-        vectorY[i][1][k] = injFieldsBottom->ByITemp[i][1][k];
-        vectorZ[i][1][k] = injFieldsBottom->BzITemp[i][1][k];
+//      vectorX[i][1][k] = injFieldsBottom->BxITemp[i][1][k];
+//      vectorY[i][1][k] = injFieldsBottom->ByITemp[i][1][k];
+//      vectorZ[i][1][k] = injFieldsBottom->BzITemp[i][1][k];
 
         vectorX[i][0][k] = injFieldsBottom->BxITemp[i][0][k];
         vectorY[i][0][k] = injFieldsBottom->ByITemp[i][0][k];
@@ -2699,9 +2805,9 @@ void EMfields3D::BoundaryConditionsB(double ***vectorX, double ***vectorY, doubl
   if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==2)  {
     for (int i=0; i < nx;i++)
       for (int k=0; k < nz;k++){
-        vectorX[i][ny-2][k] = injFieldsTop->BxITemp[i][ny-2][k];
-        vectorY[i][ny-2][k] = injFieldsTop->ByITemp[i][ny-2][k];
-        vectorZ[i][ny-2][k] = injFieldsTop->BzITemp[i][ny-2][k];
+//      vectorX[i][ny-2][k] = injFieldsTop->BxITemp[i][ny-2][k];
+//      vectorY[i][ny-2][k] = injFieldsTop->ByITemp[i][ny-2][k];
+//      vectorZ[i][ny-2][k] = injFieldsTop->BzITemp[i][ny-2][k];
 
         vectorX[i][ny-1][k] = injFieldsTop->BxITemp[i][ny-1][k];
         vectorY[i][ny-1][k] = injFieldsTop->ByITemp[i][ny-1][k];
@@ -2712,9 +2818,9 @@ void EMfields3D::BoundaryConditionsB(double ***vectorX, double ***vectorY, doubl
   if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2)  {
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
-        vectorX[i][j][1] = injFieldsRear->BxITemp[i][j][1];
-        vectorY[i][j][1] = injFieldsRear->ByITemp[i][j][1];
-        vectorZ[i][j][1] = injFieldsRear->BzITemp[i][j][1];
+//      vectorX[i][j][1] = injFieldsRear->BxITemp[i][j][1];
+//      vectorY[i][j][1] = injFieldsRear->ByITemp[i][j][1];
+//      vectorZ[i][j][1] = injFieldsRear->BzITemp[i][j][1];
 
         vectorX[i][j][0] = injFieldsRear->BxITemp[i][j][0];
         vectorY[i][j][0] = injFieldsRear->ByITemp[i][j][0];
@@ -2726,9 +2832,9 @@ void EMfields3D::BoundaryConditionsB(double ***vectorX, double ***vectorY, doubl
   if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2)  {
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
-        vectorX[i][j][nz-2] = injFieldsFront->BxITemp[i][j][nz-2];
-        vectorY[i][j][nz-2] = injFieldsFront->ByITemp[i][j][nz-2];
-        vectorZ[i][j][nz-2] = injFieldsFront->BzITemp[i][j][nz-2];
+//      vectorX[i][j][nz-2] = injFieldsFront->BxITemp[i][j][nz-2];
+//      vectorY[i][j][nz-2] = injFieldsFront->ByITemp[i][j][nz-2];
+//      vectorZ[i][j][nz-2] = injFieldsFront->BzITemp[i][j][nz-2];
 
         vectorX[i][j][nz-1] = injFieldsFront->BxITemp[i][j][nz-1];
         vectorY[i][j][nz-1] = injFieldsFront->ByITemp[i][j][nz-1];
@@ -2747,9 +2853,9 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
         vectorY[1][j][k] = injFieldsLeft->EyITemp[1][j][k];
         vectorZ[1][j][k] = injFieldsLeft->EzITemp[1][j][k];
 
-        vectorX[0][j][k] = injFieldsLeft->ExITemp[0][j][k];
-        vectorY[0][j][k] = injFieldsLeft->EyITemp[0][j][k];
-        vectorZ[0][j][k] = injFieldsLeft->EzITemp[0][j][k];
+//      vectorX[0][j][k] = injFieldsLeft->ExITemp[0][j][k];
+//      vectorY[0][j][k] = injFieldsLeft->EyITemp[0][j][k];
+//      vectorZ[0][j][k] = injFieldsLeft->EzITemp[0][j][k];
       } 
   }
 
@@ -2757,9 +2863,9 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
 
-        vectorX[nx-2][j][k] = injFieldsRight->ExITemp[1][j][k];
-        vectorY[nx-2][j][k] = injFieldsRight->EyITemp[1][j][k];
-        vectorZ[nx-2][j][k] = injFieldsRight->EzITemp[1][j][k];
+//      vectorX[nx-2][j][k] = injFieldsRight->ExITemp[1][j][k];
+//      vectorY[nx-2][j][k] = injFieldsRight->EyITemp[1][j][k];
+//      vectorZ[nx-2][j][k] = injFieldsRight->EzITemp[1][j][k];
 
         vectorX[nx-1][j][k] = injFieldsRight->ExITemp[0][j][k];
         vectorY[nx-1][j][k] = injFieldsRight->EyITemp[0][j][k];
@@ -2770,9 +2876,9 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
   if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==2) {
     for (int i=0; i < nx;i++)
       for (int k=0; k < nz;k++){
-        vectorX[i][1][k] = injFieldsBottom->ExITemp[i][1][k];
-        vectorY[i][1][k] = injFieldsBottom->EyITemp[i][1][k];
-        vectorZ[i][1][k] = injFieldsBottom->EzITemp[i][1][k];
+//      vectorX[i][1][k] = injFieldsBottom->ExITemp[i][1][k];
+//      vectorY[i][1][k] = injFieldsBottom->EyITemp[i][1][k];
+//      vectorZ[i][1][k] = injFieldsBottom->EzITemp[i][1][k];
 
         vectorX[i][0][k] = injFieldsBottom->ExITemp[i][0][k];
         vectorY[i][0][k] = injFieldsBottom->EyITemp[i][0][k];
@@ -2783,9 +2889,9 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
   if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==2) {
     for (int i=0; i < nx;i++)
       for (int k=0; k < nz;k++){
-        vectorX[i][ny-2][k] = injFieldsTop->ExITemp[i][1][k];
-        vectorY[i][ny-2][k] = injFieldsTop->EyITemp[i][1][k];
-        vectorZ[i][ny-2][k] = injFieldsTop->EzITemp[i][1][k];
+//      vectorX[i][ny-2][k] = injFieldsTop->ExITemp[i][1][k];
+//      vectorY[i][ny-2][k] = injFieldsTop->EyITemp[i][1][k];
+//      vectorZ[i][ny-2][k] = injFieldsTop->EzITemp[i][1][k];
 
         vectorX[i][ny-1][k] = injFieldsTop->ExITemp[i][0][k];
         vectorY[i][ny-1][k] = injFieldsTop->EyITemp[i][0][k];
@@ -2796,9 +2902,9 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
   if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2) {
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
-        vectorX[i][j][1] = injFieldsRear->ExITemp[i][j][1];
-        vectorY[i][j][1] = injFieldsRear->EyITemp[i][j][1];
-        vectorZ[i][j][1] = injFieldsRear->EzITemp[i][j][1];
+//      vectorX[i][j][1] = injFieldsRear->ExITemp[i][j][1];
+//      vectorY[i][j][1] = injFieldsRear->EyITemp[i][j][1];
+//      vectorZ[i][j][1] = injFieldsRear->EzITemp[i][j][1];
 
         vectorX[i][j][0] = injFieldsRear->ExITemp[i][j][0];
         vectorY[i][j][0] = injFieldsRear->EyITemp[i][j][0];
@@ -2809,9 +2915,9 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
   if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2) {
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
-        vectorX[i][j][nz-2] = injFieldsFront->ExITemp[i][j][1];
-        vectorY[i][j][nz-2] = injFieldsFront->EyITemp[i][j][1];
-        vectorZ[i][j][nz-2] = injFieldsFront->EzITemp[i][j][1];
+//      vectorX[i][j][nz-2] = injFieldsFront->ExITemp[i][j][1];
+//      vectorY[i][j][nz-2] = injFieldsFront->EyITemp[i][j][1];
+//      vectorZ[i][j][nz-2] = injFieldsFront->EzITemp[i][j][1];
 
         vectorX[i][j][nz-1] = injFieldsFront->ExITemp[i][j][0];
         vectorY[i][j][nz-1] = injFieldsFront->EyITemp[i][j][0];
@@ -3000,6 +3106,33 @@ double ***EMfields3D::getRHOcs(Grid3DCU *grid, int is) {
   delArr4(tmp,nxc,nyc,nzc);
   return arr;
 }
+
+/*! get Bx_ext(X,Y,Z)  */
+double &EMfields3D::getBx_ext(int indexX, int indexY, int indexZ) const{
+  return(Bx_ext[indexX][indexY][indexZ]);
+}
+/*!  get By_ext(X,Y,Z) */
+double &EMfields3D::getBy_ext(int indexX, int indexY, int indexZ) const{
+  return(By_ext[indexX][indexY][indexZ]);
+}
+/*!  get Bz_ext(X,Y,Z) */
+double &EMfields3D::getBz_ext(int indexX, int indexY, int indexZ) const{
+  return(Bz_ext[indexX][indexY][indexZ]);
+}
+
+/*! get Bx_ext  */
+double ***EMfields3D::getBx_ext() {
+  return(Bx_ext);
+}
+/*!  get By_ext */
+double ***EMfields3D::getBy_ext() {
+  return(By_ext);
+}
+/*!  get Bz_ext */
+double ***EMfields3D::getBz_ext() {
+  return(Bz_ext);
+}
+
 /*! SPECIES: get pressure tensor component XX defined on nodes */
 double ****EMfields3D::getpXXsn() {
   return (pXXsn);
@@ -3143,10 +3276,17 @@ double EMfields3D::getEenergy(void) {
 double EMfields3D::getBenergy(void) {
   double localBenergy = 0.0;
   double totalBenergy = 0.0;
+  double Bxt = 0.0;
+  double Byt = 0.0;
+  double Bzt = 0.0;
   for (int i = 1; i < nxn - 2; i++)
     for (int j = 1; j < nyn - 2; j++)
-      for (int k = 1; k < nzn - 2; k++)
-        localBenergy += .5 * dx * dy * dz * (Bxn[i][j][k] * Bxn[i][j][k] + Byn[i][j][k] * Byn[i][j][k] + Bzn[i][j][k] * Bzn[i][j][k]) / (FourPI);
+      for (int k = 1; k < nzn - 2; k++){
+        Bxt = Bxn[i][j][k]+Bx_ext[i][j][k];
+        Byt = Byn[i][j][k]+By_ext[i][j][k];
+        Bzt = Bzn[i][j][k]+Bz_ext[i][j][k];
+        localBenergy += .5*dx*dy*dz*(Bxt*Bxt + Byt*Byt + Bzt*Bzt)/(FourPI);
+      }
 
   MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalBenergy);

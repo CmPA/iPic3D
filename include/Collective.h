@@ -180,6 +180,12 @@ class Collective:public CollectiveIO {
     double getB0y();
     /*! get the amplitude of the magnetic field along z */
     double getB0z();
+    /*! get the amplitude of the magnetic field 1 along x */
+    double getB1x();
+    /*! get the amplitude of the magnetic field 1 along y */
+    double getB1y();
+    /*! get the amplitude of the magnetic field 1 along z */
+    double getB1z();
 
     /*! get the boolean value for verbose results */
     bool getVerbose();
@@ -358,6 +364,9 @@ class Collective:public CollectiveIO {
     double B0x;
     double B0y;
     double B0z;
+    double B1x;
+    double B1y;
+    double B1z;
 
 
     /*! boolean value for verbose results */

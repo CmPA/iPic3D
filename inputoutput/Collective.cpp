@@ -27,9 +27,18 @@ void Collective::ReadInput(string inputfile) {
     ns = config.read < int >("ns");
     NpMaxNpRatio = config.read < double >("NpMaxNpRatio");
     // GEM Challenge 
-    B0x = config.read < double >("B0x");
-    B0y = config.read < double >("B0y");
-    B0z = config.read < double >("B0z");
+    B0x = config.read <double>("B0x");
+    B0y = config.read <double>("B0y");
+    B0z = config.read <double>("B0z");
+
+    // Earth parameters
+    B1x = 0.0;
+    B1y = 0.0;
+    B1z = 0.0;
+    B1x = config.read <double>("B1x");
+    B1y = config.read <double>("B1y");
+    B1z = config.read <double>("B1z");
+
     delta = config.read < double >("delta");
 
     Case              = config.read<string>("Case");
@@ -924,6 +933,15 @@ double Collective::getB0y() {
 }
 double Collective::getB0z() {
   return (B0z);
+}
+double Collective::getB1x(){
+  return (B1x);
+}
+double Collective::getB1y(){
+  return (B1y);
+}
+double Collective::getB1z(){
+  return (B1z);
 }
 /*! get the boolean value for verbose results */
 bool Collective::getVerbose() {
