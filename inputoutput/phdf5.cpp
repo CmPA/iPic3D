@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include "phdf5.h"
 
 PHDF5fileClass::PHDF5fileClass(string filestr, int nd, int *coord, MPI_Comm mpicomm){

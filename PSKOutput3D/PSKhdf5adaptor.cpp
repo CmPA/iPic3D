@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include "PSKhdf5adaptor.h"
 
 using namespace PSK;

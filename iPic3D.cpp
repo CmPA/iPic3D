@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include <iomanip>
 #include "iPic3D.h"
 
