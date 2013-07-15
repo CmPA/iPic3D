@@ -1,6 +1,8 @@
 
 #include <mpi.h>
 #include "phdf5.h"
+#include "ipicdefs.h"
+#include "errors.h"
 
 PHDF5fileClass::PHDF5fileClass(string filestr, int nd, int *coord, MPI_Comm mpicomm){
 
@@ -66,7 +68,12 @@ void PHDF5fileClass::CreatePHDF5file(double *L, int *dglob, int *dlocl, bool bp)
   /* 2- Tell HDF5 that we want to use MPI-IO */
   /* --------------------------------------- */
 
+  #ifdef USING_PARALLEL_HDF5
   H5Pset_fapl_mpio(acc_t, comm, MPI_INFO_NULL);
+  #else
+  eprintf("WriteMethod==Parallel in input file "
+          "requires setting USING_PARALLEL_HDF5 in ipicdefs.h");
+  #endif
 
   /* ------------------------------------------------------- */
   /* 3- Load file identifier and release the access template */
@@ -201,7 +208,12 @@ int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, double
   /* --------------------------------- */
 
   dataset_xfer = H5Pcreate(H5P_DATASET_XFER);
+  #ifdef USING_PARALLEL_HDF5
   H5Pset_dxpl_mpio(dataset_xfer, H5FD_MPIO_COLLECTIVE);
+  #else
+  eprintf("WriteMethod==Parallel in input file "
+          "requires setting USING_PARALLEL_HDF5 in ipicdefs.h");
+  #endif
 
   /* ---------------------------- */
   /* 9- Write data to the dataset */
