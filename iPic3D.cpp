@@ -2,6 +2,7 @@
 #include <mpi.h>
 #include <iomanip>
 #include "iPic3D.h"
+#include "debug.h"
 
 using namespace iPic3D;
 
@@ -10,6 +11,8 @@ int main(int argc, char **argv) {
   iPic3D::c_Solver KCode;
   bool b_err = false;
 
+  MPIdata::init(&argc, &argv);
+  //dprintf("MPI has been initialized.");
   KCode.Init(argc, argv);
 
   for (int i = KCode.FirstCycle(); i < KCode.LastCycle(); i++) {

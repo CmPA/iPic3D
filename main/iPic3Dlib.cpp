@@ -2,14 +2,20 @@
 #include "iPic3D.h"
 
 using namespace iPic3D;
+MPIdata* iPic3D::c_Solver::mpi=0;
 
 int c_Solver::Init(int argc, char **argv) {
-  // initialize MPI environment
+  // get MPI data
+  //
+  // c_Solver is not a singleton, so the following line was pulled out.
+  //MPIdata::init(&argc, &argv);
+  //
+  // initialized MPI environment
   // nprocs = number of processors
   // myrank = rank of tha process*/
-  mpi = new MPIdata(&argc, &argv);
-  nprocs = mpi->nprocs;
-  myrank = mpi->rank;
+  mpi = &MPIdata::instance();
+  nprocs = MPIdata::get_nprocs();
+  myrank = MPIdata::get_rank();
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
   verbose = col->getVerbose();
@@ -353,3 +359,4 @@ void c_Solver::Finalize() {
   // close MPI
   mpi->finalize_mpi();
 }
+
