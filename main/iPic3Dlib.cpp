@@ -1,6 +1,7 @@
 
 #include "iPic3D.h"
 #include "TimeTasks.h"
+#include "ipicdefs.h"
 
 using namespace iPic3D;
 MPIdata* iPic3D::c_Solver::mpi=0;

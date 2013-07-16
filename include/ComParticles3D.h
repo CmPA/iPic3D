@@ -10,6 +10,7 @@ developers           : Stefano Markidis, Giovanni Lapenta
 #define ComParticles3D_H
 
 #include "MPIdata.h"
+#include "ipicdefs.h"
 #include "ComBasic3D.h"
 
 /** comunicate particles and receive particles to and from 6 processors */
