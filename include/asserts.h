@@ -1,7 +1,6 @@
 #ifndef __ASSERTS_H__
 #define __ASSERTS_H__
 
-#include <iostream>
 #include <cstdlib>
 #include <cstdio>
 

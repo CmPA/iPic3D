@@ -1,4 +1,5 @@
 
+#include <iostream>
 #include "asserts.h"
 
 void assert_error(const char *file, int line, const char *func, const char *op, const char *lhs_str, const char *rhs_str, double lhs, double rhs) {
