@@ -59,7 +59,7 @@ void TimeTasks::print_cycle_times()
   if(!MPIdata::get_rank())
   {
     fflush(stdout);
-    fprintf(stdout,"=== times for cycle for rank %d) === \n",
+    fprintf(stdout,"=== times for cycle for rank %d === \n",
       MPIdata::get_rank());
     fprintf(stdout, TIMING_PREFIX
       "moms flds pcls Bfld cycl\n");
