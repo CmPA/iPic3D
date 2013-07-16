@@ -8,6 +8,8 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include <mpi.h>
 #include <iostream>
 #include <math.h>
+#include <limits.h>
+#include "asserts.h"
 
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
@@ -329,12 +331,13 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+  assert_le(nop,INT_MAX); // else would need to use long long
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.
 #pragma omp parallel for
 #pragma simd                    // this just slows things down (why?)
-  for (long long rest = 0; rest < nop; rest++) {
+  for (int rest = 0; rest < nop; rest++) {
     // copy the particle
     double xp = x[rest];
     double yp = y[rest];
