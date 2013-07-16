@@ -81,53 +81,6 @@ public:
   /** interpolate on central points from nodes */
   void interpN2C(double ****vecFieldC, int ns, double ****vecFieldN);
 
-  /** return nxc */
-  int getNXC();
-  /** return nxn */
-  int getNXN();
-  /** return nyc */
-  int getNYC();
-  /** return nyn */
-  int getNYN();
-  /** return nzc */
-  int getNZC();
-  /** return nzn */
-  int getNZN();
-  /** return dx */
-  double getDX();
-  /** return dy */
-  double getDY();
-  /** return dz */
-  double getDZ();
-  /** get xn(X,Y,Z) */
-  double &getXN(int indexX, int indexY, int indexZ);
-  /** get yn(X,Y,Z) */
-  double &getYN(int indexX, int indexY, int indexZ);
-  /** get zn(X,Y,Z) */
-  double &getZN(int indexX, int indexY, int indexZ);
-  /** get the whole vector of nodes*/
-  double ****getN();
-  /** get xc(X,Y,Z) */
-  double &getXC(int indexX, int indexY, int indexZ);
-  /** get yc(X,Y,Z) */
-  double &getYC(int indexX, int indexY, int indexZ);
-  /** get zc(X,Y,Z) */
-  double &getZC(int indexX, int indexY, int indexZ);
-  /** get Xstart */
-  double getXstart();
-  /** get Xend */
-  double getXend();
-  /** get Ystart */
-  double getYstart();
-  /** get Yend */
-  double getYend();
-  /** get Zstart */
-  double getZstart();
-  /** get Zend */
-  double getZend();
-  /** get the inverse of volume */
-  double getInvVOL();
-
   // /////////// PRIVATE VARIABLES //////////////
 private:
   /** number of cells - X direction, including + 2 (guard cells) */
@@ -163,6 +116,30 @@ private:
   /** local grid boundaries coordinate  */
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
 
+public: // accessors (inline)
+  int getNXC() { return (nxc); }
+  int getNXN() { return (nxn); }
+  int getNYC() { return (nyc); }
+  int getNYN() { return (nyn); }
+  int getNZC() { return (nzc); }
+  int getNZN() { return (nzn); }
+  double getDX() { return (dx); }
+  double getDY() { return (dy); }
+  double getDZ() { return (dz); }
+  double &getXN(int X, int Y, int Z) { return (node_coordinate[X][Y][Z][0]); }
+  double &getYN(int X, int Y, int Z) { return (node_coordinate[X][Y][Z][1]); }
+  double &getZN(int X, int Y, int Z) { return (node_coordinate[X][Y][Z][2]); }
+  double &getXC(int X, int Y, int Z) { return (center_coordinate[X][Y][Z][0]); }
+  double &getYC(int X, int Y, int Z) { return (center_coordinate[X][Y][Z][1]); }
+  double &getZC(int X, int Y, int Z) { return (center_coordinate[X][Y][Z][2]); }
+  double ****getN() { return node_coordinate; }
+  double getXstart() { return (xStart); }
+  double getXend() { return (xEnd); }
+  double getYstart() { return (yStart); }
+  double getYend() { return (yEnd); } 
+  double getZstart() { return (zStart); }
+  double getZend() { return (zEnd); }
+  double getInvVOL() { return (invVOL); }
 };
 
 typedef Grid3DCU Grid;
