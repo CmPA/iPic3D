@@ -305,15 +305,19 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
+  assert_le(nop,INT_MAX); // else would need to use long long
+  // to make memory use scale to a large number of threads we
+  // could first apply an efficient parallel sorting algorithm
+  // to the particles and then accumulate moments in smaller
+  // subarrays.
+  //#ifdef _OPENMP
   #pragma omp parallel
   {
-    dprint(omp_get_thread_num());
-    Moments& speciesMoments = EMf->fetch_momentsArray(omp_get_thread_num());
+    int thread_num = omp_get_thread_num();
+    Moments& speciesMoments = EMf->fetch_momentsArray(thread_num);
     //Moments speciesMoments(nxn,nyn,nzn,invVOL);
-    //Field& speciesMoments = *EMf;
     speciesMoments.set_to_zero();
     #pragma omp for
-    assert_le(nop,INT_MAX); // else would need to use long long
     for (int i = 0; i < nop; i++)
     {
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
@@ -402,6 +406,87 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
     #pragma omp critical
     EMf->addToSpeciesMoments(speciesMoments,ns);
   }
+  //#else
+  //{
+  //  assert_le(nop,INT_MAX); // else would need to use long long
+  //  for (int i = 0; i < nop; i++)
+  //  {
+  //    const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
+  //    const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
+  //    const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
+  //    double temp[2][2][2];
+  //    double xi[2], eta[2], zeta[2];
+  //    xi[0] = x[i] - grid->getXN(ix - 1, iy, iz);
+  //    eta[0] = y[i] - grid->getYN(ix, iy - 1, iz);
+  //    zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
+  //    xi[1] = grid->getXN(ix, iy, iz) - x[i];
+  //    eta[1] = grid->getYN(ix, iy, iz) - y[i];
+  //    zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+  //    double weight[2][2][2];
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++) {
+  //          weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+  //        }
+  //    // add charge density
+  //    EMf->addRho(weight, ix, iy, iz, ns);
+  //    // add current density - X
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++)
+  //          temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
+  //    EMf->addJx(temp, ix, iy, iz, ns);
+  //    // add current density - Y
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++)
+  //          temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
+  //    EMf->addJy(temp, ix, iy, iz, ns);
+  //    // add current density - Z
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++)
+  //          temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
+  //    EMf->addJz(temp, ix, iy, iz, ns);
+  //    // Pxx - add pressure tensor
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++)
+  //          temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
+  //    EMf->addPxx(temp, ix, iy, iz, ns);
+  //    // Pxy - add pressure tensor
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++)
+  //          temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
+  //    EMf->addPxy(temp, ix, iy, iz, ns);
+  //    // Pxz - add pressure tensor
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++)
+  //          temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
+  //    EMf->addPxz(temp, ix, iy, iz, ns);
+  //    // Pyy - add pressure tensor
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++)
+  //          temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
+  //    EMf->addPyy(temp, ix, iy, iz, ns);
+  //    // Pyz - add pressure tensor
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++)
+  //          temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
+  //    EMf->addPyz(temp, ix, iy, iz, ns);
+  //    // Pzz - add pressure tensor
+  //    for (int ii = 0; ii < 2; ii++)
+  //      for (int jj = 0; jj < 2; jj++)
+  //        for (int kk = 0; kk < 2; kk++)
+  //          temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
+  //    EMf->addPzz(temp, ix, iy, iz, ns);
+  //  }
+  //}
+  //#endif
   // communicate contribution from ghost cells 
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
 }
