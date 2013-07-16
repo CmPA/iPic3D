@@ -648,7 +648,7 @@ inline EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
   Jzh = newArr3(double, nxn, nyn, nzn);
   // involving species
   rhons = newArr4(double, ns, nxn, nyn, nzn);
-  rhocs = newArr4(double, ns, nxc, nyc, nzn);
+  rhocs = newArr4(double, ns, nxc, nyc, nzc);
   Jxs = newArr4(double, ns, nxn, nyn, nzn);
   Jys = newArr4(double, ns, nxn, nyn, nzn);
   Jzs = newArr4(double, ns, nxn, nyn, nzn);
