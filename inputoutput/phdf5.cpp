@@ -63,7 +63,8 @@ void PHDF5fileClass::CreatePHDF5file(double *L, int *dglob, int *dlocl, bool bp)
   /* 1- Set the access template for the parallel HDF5 file */
   /* ----------------------------------------------------- */
 
-  acc_t = H5Pcreate(H5P_FILE_ACCESS);
+  //acc_t = H5Pcreate(H5P_FILE_ACCESS);
+  eprintf("removed. not using HDF5 output.");
 
   /* --------------------------------------- */
   /* 2- Tell HDF5 that we want to use MPI-IO */
@@ -101,8 +102,9 @@ void PHDF5fileClass::CreatePHDF5file(double *L, int *dglob, int *dlocl, bool bp)
 
   d[0] = 3;
 
-  status = H5LTmake_dataset(file_id, "/Parameters/LxLyLz", 1, d, H5T_NATIVE_DOUBLE, LxLyLz);
-  status = H5LTmake_dataset(file_id, "/Parameters/ncell" , 1, d, H5T_NATIVE_INT   , dglob);
+  //status = H5LTmake_dataset(file_id, "/Parameters/LxLyLz", 1, d, H5T_NATIVE_DOUBLE, LxLyLz);
+  //status = H5LTmake_dataset(file_id, "/Parameters/ncell" , 1, d, H5T_NATIVE_INT   , dglob);
+  eprintf("removed");
 
 }
 
