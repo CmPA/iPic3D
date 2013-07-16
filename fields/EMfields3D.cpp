@@ -1,6 +1,7 @@
 
 #include <mpi.h>
 #include "EMfields3D.h"
+#include "TimeTasks.h"
 
 /*! constructor */
 EMfields3D::EMfields3D(Collective * col, Grid * grid) {
@@ -1072,6 +1073,8 @@ void EMfields3D::interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid) {
 /*! communicate ghost for grid -> Particles interpolation */
 void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct) {
   // interpolate adding common nodes among processors
+  timeTasks.start_communicate();
+
   communicateInterp(nxn, nyn, nzn, ns, rhons, 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, Jxs, 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, Jys, 0, 0, 0, 0, 0, 0, vct);
@@ -1085,6 +1088,7 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   // calculate the correct densities on the boundaries
   adjustNonPeriodicDensities(ns, vct);
   // put the correct values on ghost cells
+  timeTasks.addto_communicate();
 
   communicateNode_P(nxn, nyn, nzn, rhons, ns, vct);
   communicateNode_P(nxn, nyn, nzn, Jxs, ns, vct);
@@ -1096,7 +1100,6 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   communicateNode_P(nxn, nyn, nzn, pYYsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pYZsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pZZsn, ns, vct);
-
 }
 
 
