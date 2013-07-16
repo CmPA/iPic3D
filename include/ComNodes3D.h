@@ -11,9 +11,9 @@ developers           : Stefano Markidis, Giovanni Lapenta
 #define ComNodes_H
 
 #include "ComBasic3D.h"
-#include "TimeTasks.h"
+//#include "TimeTasks.h"
 
-extern TimeTasks timeTasks;
+//extern TimeTasks timeTasks;
 
 // boundary condition for fields
 #include "BcFields3D.h"

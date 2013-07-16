@@ -510,7 +510,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // ********************//
   // COMMUNICATION 
   // *******************//
-  // timeTasks.start_communicate();
+  timeTasks.start_communicate();
   const int avail = communicate(vct);
   if (avail < 0)
     return (-1);
@@ -523,7 +523,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       return (-1);
     MPI_Barrier(MPI_COMM_WORLD);
   }
-  // timeTasks.addto_communicate();
+  timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
 }
 

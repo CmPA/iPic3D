@@ -1,5 +1,6 @@
 
 #include "iPic3D.h"
+#include "TimeTasks.h"
 
 using namespace iPic3D;
 MPIdata* iPic3D::c_Solver::mpi=0;
@@ -164,15 +165,17 @@ int c_Solver::Init(int argc, char **argv) {
 
 void c_Solver::CalculateField() {
 
-  // timeTasks.resetCycle();
+  timeTasks.resetCycle();
   // interpolation
-  // timeTasks.start(TimeTasks::MOMENTS);
+  timeTasks.start(TimeTasks::MOMENTS);
 
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
 
   for (int i = 0; i < ns; i++)
+  {
     part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
+  }
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
 
@@ -188,12 +191,12 @@ void c_Solver::CalculateField() {
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
-  // timeTasks.end(TimeTasks::MOMENTS);
+  timeTasks.end(TimeTasks::MOMENTS);
 
   // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
+  timeTasks.start(TimeTasks::FIELDS);
   EMf->calculateE(grid, vct, col);               // calculate the E field
-  // timeTasks.end(TimeTasks::FIELDS);
+  timeTasks.end(TimeTasks::FIELDS);
 
 }
 
@@ -203,13 +206,13 @@ bool c_Solver::ParticlesMover() {
   /*  Particle mover */
   /*  -------------- */
 
-  // timeTasks.start(TimeTasks::PARTICLES);
+  timeTasks.start(TimeTasks::PARTICLES);
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
     mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
-  // timeTasks.end(TimeTasks::PARTICLES);
+  timeTasks.end(TimeTasks::PARTICLES);
 
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -252,12 +255,12 @@ bool c_Solver::ParticlesMover() {
   /* This step must be taken out of here! */
   /* --------------------- */
 
-  // timeTasks.start(TimeTasks::BFIELD);
+  timeTasks.start(TimeTasks::BFIELD);
   EMf->calculateB(grid, vct, col);   // calculate the B field
-  // timeTasks.end(TimeTasks::BFIELD);
+  timeTasks.end(TimeTasks::BFIELD);
 
   // print out total time for all tasks
-  // timeTasks.print_cycle_times();
+  timeTasks.print_cycle_times();
   return (false);
 
 }
