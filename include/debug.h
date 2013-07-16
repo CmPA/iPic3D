@@ -4,7 +4,7 @@
 #ifndef __DEBUG_H__
 #define __DEBUG_H__
 
-#include <stdarg.h>
+#include <cstdarg>
 #include <cstdio>
 
 #include "debug.h"

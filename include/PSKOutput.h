@@ -335,7 +335,7 @@ public:
     stringstream ss;
     stringstream cc;
     stringstream ii;
-    ss << _mpi->rank;
+    ss << _mpi->get_rank();
     cc << cycle;
     const int ns = _col->getNs();
     if (tag.find("last_cycle", 0) != string::npos)
@@ -608,7 +608,7 @@ public:
   void output(const string & tag, int cycle, int sample) {
     stringstream ss;
     stringstream cc;
-    ss << _mpi->rank;
+    ss << _mpi->get_rank();
     cc << cycle;
     const int ns = _col->getNs();
 

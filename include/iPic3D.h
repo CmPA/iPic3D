@@ -46,7 +46,7 @@ namespace iPic3D {
     inline int get_myrank();
 
   private:
-    MPIdata       * mpi;
+    static MPIdata * mpi;
     Collective    *col;
     VCtopology3D  *vct;
     Grid3DCU      *grid;

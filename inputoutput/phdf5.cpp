@@ -2,6 +2,8 @@
 #include <mpi.h>
 #include <stdlib.h>
 #include "phdf5.h"
+#include "ipicdefs.h"
+#include "errors.h"
 
 PHDF5fileClass::PHDF5fileClass(string filestr, int nd, int *coord, MPI_Comm mpicomm){
 
@@ -70,9 +72,8 @@ void PHDF5fileClass::CreatePHDF5file(double *L, int *dglob, int *dlocl, bool bp)
   #ifdef USING_PARALLEL_HDF5
   H5Pset_fapl_mpio(acc_t, comm, MPI_INFO_NULL);
   #else
-  cout << __FILE__ << ":" << __LINE__ <<
-    ": USING_PARALLEL_HDF5 must be set in defs.h" << endl;
-  exit(1);
+  eprintf("WriteMethod==Parallel in input file "
+          "requires setting USING_PARALLEL_HDF5 in ipicdefs.h");
   #endif
 
   /* ------------------------------------------------------- */
@@ -211,9 +212,8 @@ int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, double
   #ifdef USING_PARALLEL_HDF5
   H5Pset_dxpl_mpio(dataset_xfer, H5FD_MPIO_COLLECTIVE);
   #else
-  cout << __FILE__ << ":" << __LINE__ <<
-    ": USING_PARALLEL_HDF5 must be set in defs.h" << endl;
-  exit(1);
+  eprintf("WriteMethod==Parallel in input file "
+          "requires setting USING_PARALLEL_HDF5 in ipicdefs.h");
   #endif
 
   /* ---------------------------- */
