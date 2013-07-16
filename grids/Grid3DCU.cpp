@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include "Grid3DCU.h"
 
 /*! constructor */

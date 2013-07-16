@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include "WriteOutputParallel.h"
 
 void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, int cycle){

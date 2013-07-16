@@ -1,5 +1,9 @@
 
+#include <mpi.h>
+#include <stdlib.h>
 #include "phdf5.h"
+#include "ipicdefs.h"
+#include "errors.h"
 
 PHDF5fileClass::PHDF5fileClass(string filestr, int nd, int *coord, MPI_Comm mpicomm){
 
@@ -59,13 +63,19 @@ void PHDF5fileClass::CreatePHDF5file(double *L, int *dglob, int *dlocl, bool bp)
   /* 1- Set the access template for the parallel HDF5 file */
   /* ----------------------------------------------------- */
 
-  acc_t = H5Pcreate(H5P_FILE_ACCESS);
+  //acc_t = H5Pcreate(H5P_FILE_ACCESS);
+  eprintf("removed. not using HDF5 output.");
 
   /* --------------------------------------- */
   /* 2- Tell HDF5 that we want to use MPI-IO */
   /* --------------------------------------- */
 
+  #ifdef USING_PARALLEL_HDF5
   H5Pset_fapl_mpio(acc_t, comm, MPI_INFO_NULL);
+  #else
+  eprintf("WriteMethod==Parallel in input file "
+          "requires setting USING_PARALLEL_HDF5 in ipicdefs.h");
+  #endif
 
   /* ------------------------------------------------------- */
   /* 3- Load file identifier and release the access template */
@@ -92,8 +102,9 @@ void PHDF5fileClass::CreatePHDF5file(double *L, int *dglob, int *dlocl, bool bp)
 
   d[0] = 3;
 
-  status = H5LTmake_dataset(file_id, "/Parameters/LxLyLz", 1, d, H5T_NATIVE_DOUBLE, LxLyLz);
-  status = H5LTmake_dataset(file_id, "/Parameters/ncell" , 1, d, H5T_NATIVE_INT   , dglob);
+  //status = H5LTmake_dataset(file_id, "/Parameters/LxLyLz", 1, d, H5T_NATIVE_DOUBLE, LxLyLz);
+  //status = H5LTmake_dataset(file_id, "/Parameters/ncell" , 1, d, H5T_NATIVE_INT   , dglob);
+  eprintf("removed");
 
 }
 
@@ -200,7 +211,12 @@ int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, double
   /* --------------------------------- */
 
   dataset_xfer = H5Pcreate(H5P_DATASET_XFER);
+  #ifdef USING_PARALLEL_HDF5
   H5Pset_dxpl_mpio(dataset_xfer, H5FD_MPIO_COLLECTIVE);
+  #else
+  eprintf("WriteMethod==Parallel in input file "
+          "requires setting USING_PARALLEL_HDF5 in ipicdefs.h");
+  #endif
 
   /* ---------------------------- */
   /* 9- Write data to the dataset */
@@ -231,41 +247,41 @@ int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, double
 
 void PHDF5fileClass::ReadPHDF5param(){
 
-  herr_t  status;
-  string  dname;
-  int     datadims[3];
-  double  L[3];
-
-  dname   = "/Parameters/ncell";
-  status = H5LTread_dataset_int(file_id, dname.c_str(), datadims);
-
-  dname   = "/Parameters/LxLyLz";
-  status = H5LTread_dataset_double(file_id, dname.c_str(), L);
-
-  ndim = 3;
-  if (datadims[0]<=1 || datadims[1]<=1 || datadims[2]<=1) ndim = 2;
-
-  for (int i=0; i<ndim; i++){
-    dim[i]    = datadims[i];
-    LxLyLz[i] = L[i];
-  }
-
+//  herr_t  status;
+//  string  dname;
+//  int     datadims[3];
+//  double  L[3];
+//
+//  dname   = "/Parameters/ncell";
+//  status = H5LTread_dataset_int(file_id, dname.c_str(), datadims);
+//
+//  dname   = "/Parameters/LxLyLz";
+//  status = H5LTread_dataset_double(file_id, dname.c_str(), L);
+//
+//  ndim = 3;
+//  if (datadims[0]<=1 || datadims[1]<=1 || datadims[2]<=1) ndim = 2;
+//
+//  for (int i=0; i<ndim; i++){
+//    dim[i]    = datadims[i];
+//    LxLyLz[i] = L[i];
+//  }
+//
 }
 
 void PHDF5fileClass::ReadPHDF5dataset_double(string datasetname, double ***data){
 
-  herr_t  status;
-  double *filedata;
-
-  filedata = new double[dim[0]*dim[1]*dim[2]];
-
-  status = H5LTread_dataset_double(file_id, datasetname.c_str(), filedata);
-
-  for (int i=0; i<dim[0]; i++)
-    for (int j=0; j<dim[1]; j++)
-      for (int k=0; k<dim[2]; k++)
-        data[i][j][k]=filedata[i+j*dim[2]+k*dim[1]*dim[0]];
-
+//  herr_t  status;
+//  double *filedata;
+//
+//  filedata = new double[dim[0]*dim[1]*dim[2]];
+//
+//  status = H5LTread_dataset_double(file_id, datasetname.c_str(), filedata);
+//
+//  for (int i=0; i<dim[0]; i++)
+//    for (int j=0; j<dim[1]; j++)
+//      for (int k=0; k<dim[2]; k++)
+//        data[i][j][k]=filedata[i+j*dim[2]+k*dim[1]*dim[0]];
+//
 }
 
 int PHDF5fileClass::getPHDF5ncx(){

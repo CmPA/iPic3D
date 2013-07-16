@@ -3,7 +3,6 @@
 #ifndef EMfields3D_H
 #define EMfields3D_H
 
-
 #include <iostream>
 #include <sstream>
 
@@ -21,7 +20,7 @@
 #include "Collective.h"
 #include "ComNodes3D.h"
 #include "ComInterpNodes3D.h"
-#include "TimeTasks.h"
+//#include "TimeTasks.h"
 #include "asserts.h"
 #include "BCStructure.h"
 
@@ -31,140 +30,7 @@ using std::endl;
 
 /*! Electromagnetic fields and sources defined for each local grid, and for an implicit maxwell's solver @date May 2008 @par Copyright: (C) 2008 KUL @author Stefano Markidis, Giovanni Lapenta. @version 3.0 */
 
-// class to accumulate node-centered species moments
-// 
-class Moments {
-  private:
-    double invVOL;
-    double ***rho;
-
-    /** current density, defined on nodes */
-    double ***Jx;
-    double ***Jy;
-    double ***Jz;
-
-    /** pressure tensor components, defined on nodes */
-    double ***pXX;
-    double ***pXY;
-    double ***pXZ;
-    double ***pYY;
-    double ***pYZ;
-    double ***pZZ;
-    int nx;
-    int ny;
-    int nz;
-  public:
-    int get_nx() const {
-      return nx;
-    }
-    int get_ny() const {
-      return ny;
-    }
-    int get_nz() const {
-      return nz;
-    }
-    double get_invVOL() const {
-      return invVOL;
-    }
-    double get_rho(int i, int j, int k) const {
-      return rho[i][j][k];
-    }
-    double get_Jx(int i, int j, int k) const {
-      return Jx[i][j][k];
-    }
-    double get_Jy(int i, int j, int k) const {
-      return Jy[i][j][k];
-    }
-    double get_Jz(int i, int j, int k) const {
-      return Jz[i][j][k];
-    }
-    double get_pXX(int i, int j, int k) const {
-      return pXX[i][j][k];
-    }
-    double get_pXY(int i, int j, int k) const {
-      return pXY[i][j][k];
-    }
-    double get_pXZ(int i, int j, int k) const {
-      return pXZ[i][j][k];
-    }
-    double get_pYY(int i, int j, int k) const {
-      return pYY[i][j][k];
-    }
-    double get_pYZ(int i, int j, int k) const {
-      return pYZ[i][j][k];
-    }
-    double get_pZZ(int i, int j, int k) const {
-      return pZZ[i][j][k];
-    }
-  public:
-    Moments() {
-    };
-    Moments(int nx_, int ny_, int nz_, double invVOL_);
-    ~Moments();
-    void set_to_zero();
-    void addRho(double weight[][2][2], int X, int Y, int Z);
-    void addJx(double weight[][2][2], int X, int Y, int Z);
-    void addJy(double weight[][2][2], int X, int Y, int Z);
-    void addJz(double weight[][2][2], int X, int Y, int Z);
-
-    void addPxx(double weight[][2][2], int X, int Y, int Z);
-    void addPxy(double weight[][2][2], int X, int Y, int Z);
-    void addPxz(double weight[][2][2], int X, int Y, int Z);
-    void addPyy(double weight[][2][2], int X, int Y, int Z);
-    void addPyz(double weight[][2][2], int X, int Y, int Z);
-    void addPzz(double weight[][2][2], int X, int Y, int Z);
-};
-
-// construct empty instance (not zeroed)
-inline Moments::Moments(int nx_, int ny_, int nz_, double invVOL_) {
-  nx = nx_;
-  ny = ny_;
-  nz = nz_;
-  invVOL = invVOL_;
-  rho = newArr3(double, nx, ny, nz);
-  Jx = newArr3(double, nx, ny, nz);
-  Jy = newArr3(double, nx, ny, nz);
-  Jz = newArr3(double, nx, ny, nz);
-  pXX = newArr3(double, nx, ny, nz);
-  pXY = newArr3(double, nx, ny, nz);
-  pXZ = newArr3(double, nx, ny, nz);
-  pYY = newArr3(double, nx, ny, nz);
-  pYZ = newArr3(double, nx, ny, nz);
-  pZZ = newArr3(double, nx, ny, nz);
-}
-
-inline Moments::~Moments() {
-  // nodes and species
-  delArr3(rho, nx, ny);
-  delArr3(Jx, nx, ny);
-  delArr3(Jy, nx, ny);
-  delArr3(Jz, nx, ny);
-  delArr3(pXX, nx, ny);
-  delArr3(pXY, nx, ny);
-  delArr3(pXZ, nx, ny);
-  delArr3(pYY, nx, ny);
-  delArr3(pYZ, nx, ny);
-  delArr3(pZZ, nx, ny);
-}
-
-inline void Moments::set_to_zero() {
-  // #pragma omp parallel for collapse(1)
-  for (register int i = 0; i < nx; i++)
-    for (register int j = 0; j < ny; j++)
-      for (register int k = 0; k < nz; k++) {
-        rho[i][j][k] = 0.0;
-        Jx[i][j][k] = 0.0;
-        Jy[i][j][k] = 0.0;
-        Jz[i][j][k] = 0.0;
-        pXX[i][j][k] = 0.0;
-        pXY[i][j][k] = 0.0;
-        pXZ[i][j][k] = 0.0;
-        pYY[i][j][k] = 0.0;
-        pYZ[i][j][k] = 0.0;
-        pZZ[i][j][k] = 0.0;
-      }
-}
-
+class Moments;
 class EMfields3D                // :public Field
 {
   public:
@@ -410,6 +276,12 @@ class EMfields3D                // :public Field
     /*! get the magnetic field energy */
     double getBenergy();
 
+  /*! fetch array for summing moments of thread i */
+  Moments& fetch_momentsArray(int i){
+    assert_le(0,i);
+    assert_le(i,sizeMomentsArray);
+    return *momentsArray[i];
+  }
 
     /*! print electromagnetic fields info */
     void print(void) const;
@@ -531,6 +403,9 @@ class EMfields3D                // :public Field
     double ***vectY;
     double ***vectZ;
     double ***divC;
+    /* temporary arrays for summing moments */
+    int sizeMomentsArray;
+    Moments **momentsArray;
 
 
     // *******************************************************************************
@@ -657,6 +532,77 @@ class EMfields3D                // :public Field
     void BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
 
 };
+
+inline void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        rhons[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of charge density to current density - direction X to current density field on the node */
+inline void EMfields3D::addJx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        Jxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of current density - direction Y to current density field on the node */
+inline void EMfields3D::addJy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        Jys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of current density - direction Z to current density field on the node */
+inline void EMfields3D::addJz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        Jzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction XX to current density field on the node */
+inline void EMfields3D::addPxx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        pXXsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction XY to current density field on the node */
+inline void EMfields3D::addPxy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        pXYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction XZ to current density field on the node */
+inline void EMfields3D::addPxz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        pXZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction YY to current density field on the node */
+inline void EMfields3D::addPyy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        pYYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction YZ to current density field on the node */
+inline void EMfields3D::addPyz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        pYZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction ZZ to current density field on the node */
+inline void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        pZZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
 
 typedef EMfields3D Field;
 

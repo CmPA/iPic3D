@@ -1,15 +1,23 @@
 
 #include "iPic3D.h"
+#include "TimeTasks.h"
+#include "ipicdefs.h"
 
 using namespace iPic3D;
+MPIdata* iPic3D::c_Solver::mpi=0;
 
 int c_Solver::Init(int argc, char **argv) {
-  // initialize MPI environment
+  // get MPI data
+  //
+  // c_Solver is not a singleton, so the following line was pulled out.
+  //MPIdata::init(&argc, &argv);
+  //
+  // initialized MPI environment
   // nprocs = number of processors
   // myrank = rank of tha process*/
-  mpi = new MPIdata(&argc, &argv);
-  nprocs = mpi->nprocs;
-  myrank = mpi->rank;
+  mpi = &MPIdata::instance();
+  nprocs = MPIdata::get_nprocs();
+  myrank = MPIdata::get_rank();
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
   verbose = col->getVerbose();
@@ -158,15 +166,17 @@ int c_Solver::Init(int argc, char **argv) {
 
 void c_Solver::CalculateField() {
 
-  // timeTasks.resetCycle();
+  timeTasks.resetCycle();
   // interpolation
-  // timeTasks.start(TimeTasks::MOMENTS);
+  timeTasks.start(TimeTasks::MOMENTS);
 
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
 
   for (int i = 0; i < ns; i++)
+  {
     part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
+  }
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
 
@@ -182,12 +192,12 @@ void c_Solver::CalculateField() {
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
-  // timeTasks.end(TimeTasks::MOMENTS);
+  timeTasks.end(TimeTasks::MOMENTS);
 
   // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
+  timeTasks.start(TimeTasks::FIELDS);
   EMf->calculateE(grid, vct, col);               // calculate the E field
-  // timeTasks.end(TimeTasks::FIELDS);
+  timeTasks.end(TimeTasks::FIELDS);
 
 }
 
@@ -197,13 +207,13 @@ bool c_Solver::ParticlesMover() {
   /*  Particle mover */
   /*  -------------- */
 
-  // timeTasks.start(TimeTasks::PARTICLES);
+  timeTasks.start(TimeTasks::PARTICLES);
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
     mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
-  // timeTasks.end(TimeTasks::PARTICLES);
+  timeTasks.end(TimeTasks::PARTICLES);
 
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -246,12 +256,12 @@ bool c_Solver::ParticlesMover() {
   /* This step must be taken out of here! */
   /* --------------------- */
 
-  // timeTasks.start(TimeTasks::BFIELD);
+  timeTasks.start(TimeTasks::BFIELD);
   EMf->calculateB(grid, vct, col);   // calculate the B field
-  // timeTasks.end(TimeTasks::BFIELD);
+  timeTasks.end(TimeTasks::BFIELD);
 
   // print out total time for all tasks
-  // timeTasks.print_cycle_times();
+  timeTasks.print_cycle_times();
   return (false);
 
 }
@@ -297,49 +307,49 @@ void c_Solver::WriteConserved(int cycle) {
 }
 
 void c_Solver::WriteOutput(int cycle) {
-  // OUTPUT to large file, called proc**
-
-  if (col->getWriteMethod() == "Parallel") {
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
-      WriteOutputParallel(grid, EMf, col, vct, cycle);
-    }
-  }
-  else
-  {
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
-      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
-      // Pressure tensor is available
-      hdf5_agent.close();
-    }
-    if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
-      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("position + velocity + q ", cycle, 1);
-      hdf5_agent.close();
-    }
-    // write the virtual satellite traces
-
-    if (ns > 2) {
-      ofstream my_file(cqsat.c_str(), fstream::app);
-      for (int isat = 0; isat < nsat; isat++) {
-        for (int jsat = 0; jsat < nsat; jsat++) {
-          for (int ksat = 0; ksat < nsat; ksat++) {
-            int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
-            int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
-            int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
-            my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
-            my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
-            my_file << EMf->getJxs(index1, index2, index3, 0) + EMf->getJxs(index1, index2, index3, 2) << "\t" << EMf->getJys(index1, index2, index3, 0) + EMf->getJys(index1, index2, index3, 2) << "\t" << EMf->getJzs(index1, index2, index3, 0) + EMf->getJzs(index1, index2, index3, 2) << "\t";
-            my_file << EMf->getJxs(index1, index2, index3, 1) + EMf->getJxs(index1, index2, index3, 3) << "\t" << EMf->getJys(index1, index2, index3, 1) + EMf->getJys(index1, index2, index3, 3) << "\t" << EMf->getJzs(index1, index2, index3, 1) + EMf->getJzs(index1, index2, index3, 3) << "\t";
-            my_file << EMf->getRHOns(index1, index2, index3, 0) + EMf->getRHOns(index1, index2, index3, 2) << "\t";
-            my_file << EMf->getRHOns(index1, index2, index3, 1) + EMf->getRHOns(index1, index2, index3, 3) << "\t";
-          }}}
-      my_file << endl;
-      my_file.close();
-    }
-  }
+//  // OUTPUT to large file, called proc**
+//
+//  if (col->getWriteMethod() == "Parallel") {
+//    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+//      WriteOutputParallel(grid, EMf, col, vct, cycle);
+//    }
+//  }
+//  else
+//  {
+//    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+//      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+//      output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
+//      // Pressure tensor is available
+//      hdf5_agent.close();
+//    }
+//    if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
+//      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+//      output_mgr.output("position + velocity + q ", cycle, 1);
+//      hdf5_agent.close();
+//    }
+//    // write the virtual satellite traces
+//
+//    if (ns > 2) {
+//      ofstream my_file(cqsat.c_str(), fstream::app);
+//      for (int isat = 0; isat < nsat; isat++) {
+//        for (int jsat = 0; jsat < nsat; jsat++) {
+//          for (int ksat = 0; ksat < nsat; ksat++) {
+//            int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
+//            int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
+//            int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
+//            my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
+//            my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
+//            my_file << EMf->getJxs(index1, index2, index3, 0) + EMf->getJxs(index1, index2, index3, 2) << "\t" << EMf->getJys(index1, index2, index3, 0) + EMf->getJys(index1, index2, index3, 2) << "\t" << EMf->getJzs(index1, index2, index3, 0) + EMf->getJzs(index1, index2, index3, 2) << "\t";
+//            my_file << EMf->getJxs(index1, index2, index3, 1) + EMf->getJxs(index1, index2, index3, 3) << "\t" << EMf->getJys(index1, index2, index3, 1) + EMf->getJys(index1, index2, index3, 3) << "\t" << EMf->getJzs(index1, index2, index3, 1) + EMf->getJzs(index1, index2, index3, 3) << "\t";
+//            my_file << EMf->getRHOns(index1, index2, index3, 0) + EMf->getRHOns(index1, index2, index3, 2) << "\t";
+//            my_file << EMf->getRHOns(index1, index2, index3, 1) + EMf->getRHOns(index1, index2, index3, 3) << "\t";
+//          }}}
+//      my_file << endl;
+//      my_file.close();
+//    }
+//  }
 }
-
+//
 void c_Solver::Finalize() {
   if (mem_avail == 0)           // write the restart only if the simulation finished succesfully
     writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
@@ -353,3 +363,4 @@ void c_Solver::Finalize() {
   // close MPI
   mpi->finalize_mpi();
 }
+
