@@ -1,6 +1,7 @@
 
 #include "ComNodes3D.h"
 #include "TimeTasks.h"
+#include "ipicdefs.h"
 
 /** communicate ghost cells (FOR NODES) */
 void communicateNode(int nx, int ny, int nz, double ***vector, VirtualTopology3D * vct) {

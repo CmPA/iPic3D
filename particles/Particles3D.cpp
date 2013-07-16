@@ -19,6 +19,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "Grid3DCU.h"
 #include "Field.h"
 #include "MPIdata.h"
+#include "ipicdefs.h"
 #include "TimeTasks.h"
 
 #include "Particles3D.h"
