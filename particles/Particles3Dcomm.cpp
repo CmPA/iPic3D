@@ -7,6 +7,8 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include <mpi.h>
 #include <iostream>
 #include <math.h>
+#include <limits.h>
+#include "asserts.h"
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
 #include "CollectiveIO.h"
@@ -305,7 +307,8 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
     //Moments speciesMoments(nxn,nyn,nzn,invVOL);
     //speciesMoments.set_to_zero();
     //#pragma omp for
-    for (register long long i = 0; i < nop; i++)
+    assert_le(nop,INT_MAX); // else would need to use long long
+    for (int i = 0; i < nop; i++)
     {
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
       const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
