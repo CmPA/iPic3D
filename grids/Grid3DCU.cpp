@@ -51,33 +51,29 @@ Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {
   zEnd = zStart + (col->getLz() / (double) vct->getZLEN());
 
   // arrays allocation: nodes ---> the first node has index 1, the last has index nxn-2!
-  node_coordinate = newArr4(double, nxn, nyn, nzn, 3);  // 0 -> X, 1 -> Y, 2-> Z
-  for (int i = 0; i < nxn; i++) {
-    for (int j = 0; j < nyn; j++) {
-      for (int k = 0; k < nzn; k++) {
-        node_coordinate[i][j][k][0] = xStart + (i - 1) * dx;
-        node_coordinate[i][j][k][1] = yStart + (j - 1) * dy;
-        node_coordinate[i][j][k][2] = zStart + (k - 1) * dz;
-      }
-    }
-  }
+  node_xcoord = new double[nxn];
+  node_ycoord = new double[nyn];
+  node_zcoord = new double[nzn];
+  for (int i=0; i<nxn; i++) node_xcoord[i] = xStart + (i - 1) * dx;
+  for (int j=0; j<nyn; j++) node_ycoord[j] = yStart + (j - 1) * dy;
+  for (int k=0; k<nzn; k++) node_zcoord[k] = zStart + (k - 1) * dz;
   // arrays allocation: cells ---> the first cell has index 1, the last has index ncn-2!
-  center_coordinate = newArr4(double, nxc, nyc, nzc, 3);
-  for (int i = 0; i < nxc; i++) {
-    for (int j = 0; j < nyc; j++) {
-      for (int k = 0; k < nzc; k++) {
-        center_coordinate[i][j][k][0] = .5 * (node_coordinate[i][j][k][0] + node_coordinate[i + 1][j][k][0]);
-        center_coordinate[i][j][k][1] = .5 * (node_coordinate[i][j][k][1] + node_coordinate[i][j + 1][k][1]);
-        center_coordinate[i][j][k][2] = .5 * (node_coordinate[i][j][k][2] + node_coordinate[i][j][k + 1][2]);
-      }
-    }
-  }
+  center_xcoord = new double[nxc];
+  center_ycoord = new double[nyc];
+  center_zcoord = new double[nzc];
+  for(int i=0; i<nxc; i++) center_xcoord[i] = .5*(node_xcoord[i]+node_xcoord[i+1]);
+  for(int j=0; j<nyc; j++) center_ycoord[j] = .5*(node_ycoord[j]+node_ycoord[j+1]);
+  for(int k=0; k<nzc; k++) center_zcoord[k] = .5*(node_zcoord[k]+node_zcoord[k+1]);
 }
 
 /** deallocate the local grid */
 Grid3DCU::~Grid3DCU() {
-  delArr4(node_coordinate, nxn, nyn, nzn);
-  delArr4(center_coordinate, nxc, nyc, nzc);
+  delete [] node_xcoord;
+  delete [] node_ycoord;
+  delete [] node_zcoord;
+  delete [] center_xcoord;
+  delete [] center_ycoord;
+  delete [] center_zcoord;
 }
 
 /** print the local grid info */
@@ -85,9 +81,9 @@ void Grid3DCU::print(VirtualTopology3D * ptVCT) {
   cout << endl;
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
   cout << "Number of cell: -X=" << nxc - 2 << " -Y=" << nyc - 2 << " -Z=" << nzc - 2 << endl;
-  cout << "Xin = " << node_coordinate[1][1][1][0] << "; Xfin = " << node_coordinate[nxn - 2][1][1][0] << endl;
-  cout << "Yin = " << node_coordinate[1][1][1][1] << "; Yfin = " << node_coordinate[1][nyn - 2][1][1] << endl;
-  cout << "Zin = " << node_coordinate[1][1][1][2] << "; Zfin = " << node_coordinate[1][1][nzn - 2][2] << endl;
+  cout << "Xin = " << node_xcoord[1] << "; Xfin = " << node_xcoord[nxn - 2] << endl;
+  cout << "Yin = " << node_ycoord[1] << "; Yfin = " << node_ycoord[nyn - 2] << endl;
+  cout << "Zin = " << node_zcoord[1] << "; Zfin = " << node_zcoord[nzn - 2] << endl;
   cout << endl;
 }
 

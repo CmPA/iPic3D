@@ -110,9 +110,13 @@ private:
   /** invol = inverse of volume*/
   double invVOL;
   /** node coordinate */
-  double ****node_coordinate;
+  double *node_xcoord;
+  double *node_ycoord;
+  double *node_zcoord;
   /** center coordinate */
-  double ****center_coordinate;
+  double *center_xcoord;
+  double *center_ycoord;
+  double *center_zcoord;
   /** local grid boundaries coordinate  */
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
 
@@ -126,13 +130,31 @@ public: // accessors (inline)
   double getDX() { return (dx); }
   double getDY() { return (dy); }
   double getDZ() { return (dz); }
-  double &getXN(int X, int Y, int Z) { return (node_coordinate[X][Y][Z][0]); }
-  double &getYN(int X, int Y, int Z) { return (node_coordinate[X][Y][Z][1]); }
-  double &getZN(int X, int Y, int Z) { return (node_coordinate[X][Y][Z][2]); }
-  double &getXC(int X, int Y, int Z) { return (center_coordinate[X][Y][Z][0]); }
-  double &getYC(int X, int Y, int Z) { return (center_coordinate[X][Y][Z][1]); }
-  double &getZC(int X, int Y, int Z) { return (center_coordinate[X][Y][Z][2]); }
-  double ****getN() { return node_coordinate; }
+  //
+  // coordinate accessors
+  //
+  // calculated equivalents (preferred for accelerator?):
+  //const double &calcXN(int X) { return xStart+(X-1)*dx;}
+  //const double &calcYN(int Y) { return yStart+(Y-1)*dy;}
+  //const double &calcZN(int Z) { return zStart+(Z-1)*dz;}
+  const double &getXN(int X) { return node_xcoord[X];}
+  const double &getYN(int Y) { return node_ycoord[Y];}
+  const double &getZN(int Z) { return node_zcoord[Z];}
+  const double &getXC(int X) { return center_xcoord[X];}
+  const double &getYC(int Y) { return center_ycoord[Y];}
+  const double &getZC(int Z) { return center_zcoord[Z];}
+  //
+  // The following could be eliminated in favor of the previous
+  // unless we truly anticipate generalizing to a deformed
+  // logically cartesian mesh.  See issue #40.
+  //
+  const double &getXN(int X, int Y, int Z) { return node_xcoord[X];}
+  const double &getYN(int X, int Y, int Z) { return node_ycoord[Y];}
+  const double &getZN(int X, int Y, int Z) { return node_zcoord[Z];}
+  const double &getXC(int X, int Y, int Z) { return center_xcoord[X];}
+  const double &getYC(int X, int Y, int Z) { return center_ycoord[Y];}
+  const double &getZC(int X, int Y, int Z) { return center_zcoord[Z];}
+  //
   double getXstart() { return (xStart); }
   double getXend() { return (xEnd); }
   double getYstart() { return (yStart); }

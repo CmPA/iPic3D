@@ -327,8 +327,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   double ***By_ext = EMf->getBy_ext();
   double ***Bz_ext = EMf->getBz_ext();
 
-  double ****node_coordinate = grid->getN();
-
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   assert_le(nop,INT_MAX); // else would need to use long long
@@ -376,12 +374,12 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       double xi[2];
       double eta[2];
       double zeta[2];
-      xi[0] = xp - node_coordinate[ix - 1][iy][iz][0];
-      eta[0] = yp - node_coordinate[ix][iy - 1][iz][1];
-      zeta[0] = zp - node_coordinate[ix][iy][iz - 1][2];
-      xi[1] = node_coordinate[ix][iy][iz][0] - xp;
-      eta[1] = node_coordinate[ix][iy][iz][1] - yp;
-      zeta[1] = node_coordinate[ix][iy][iz][2] - zp;
+      xi[0]   = xp - grid->getXN(ix-1);
+      eta[0]  = yp - grid->getYN(iy-1);
+      zeta[0] = zp - grid->getZN(iz-1);
+      xi[1]   = grid->getXN(ix) - xp;
+      eta[1]  = grid->getYN(iy) - yp;
+      zeta[1] = grid->getZN(iz) - zp;
 
       double Exl = 0.0;
       double Eyl = 0.0;
