@@ -2,11 +2,11 @@
 #include "Alloc.h"
 
 // construct empty instance (not zeroed)
-void Moments::init(int nx_, int ny_, int nz_, double invVOL_) {
+void Moments::init(int nx_, int ny_, int nz_)
+{
   nx = nx_;
   ny = ny_;
   nz = nz_;
-  invVOL = invVOL_;
   rho = newArr3(double, nx, ny, nz);
   Jx = newArr3(double, nx, ny, nz);
   Jy = newArr3(double, nx, ny, nz);

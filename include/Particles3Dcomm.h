@@ -10,7 +10,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "Particles.h"
 /**
  * 
- * Abstract class for particles of the same species, in a 2D space and 3component velocity with communications methods
+ * class for particles of the same species with communications methods
  * @date Fri Jun 4 2007
  * @author Stefano Markidis, Giovanni Lapenta
  * @version 2.0
@@ -26,7 +26,7 @@ public:
   void allocate(int species, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid);
 
   /** calculate the weights given the position of particles */
-  void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);
+  //void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);
   /** interpolation method GRID->PARTICLE order 1: CIC */
   void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct);
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
@@ -104,8 +104,12 @@ public:
   /** Print the number of particles of this subdomain */
   void PrintNp(VirtualTopology3D * ptVCT) const;
 
+public:
+  // accessors
+  int get_ns()const{return ns;}
+
 protected:
-  /** number of species */
+  /** number of this species */
   int ns;
   /** maximum number of particles of this species on this domain. used for memory allocation */
   long long npmax;
