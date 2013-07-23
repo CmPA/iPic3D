@@ -177,7 +177,7 @@ void c_Solver::CalculateField() {
   {
     // interpolate particles to grid nodes
     EMf->sumMoments(part[i], grid, vct);
-    //part[i].interpP2G(EMf, grid, vct);
+    //part[i].interpP2G(EMf, grid, vct); // the old, slow way.
   }
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
