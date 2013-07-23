@@ -281,20 +281,6 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   }
 
 }
-/** calculate the weights given the position of particles 0,0,0 is the left,left, left node */
-//void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid) {
-//  double xi[2], eta[2], zeta[2];
-//  xi[0] = xp - grid->getXN(ix - 1, iy, iz);
-//  eta[0] = yp - grid->getYN(ix, iy - 1, iz);
-//  zeta[0] = zp - grid->getZN(ix, iy, iz - 1);
-//  xi[1] = grid->getXN(ix, iy, iz) - xp;
-//  eta[1] = grid->getYN(ix, iy, iz) - yp;
-//  zeta[1] = grid->getZN(ix, iy, iz) - zp;
-//  for (int i = 0; i < 2; i++)
-//    for (int j = 0; j < 2; j++)
-//      for (int k = 0; k < 2; k++)
-//        weight[i][j][k] = xi[i] * eta[j] * zeta[k] * invVOL;
-//}
 
 
 // move this to EMfields3D class
@@ -338,14 +324,6 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
           for (int kk = 0; kk < 2; kk++) {
             weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
           }
-      //weight[0][0][0] = q[i] * xi[0] * eta[0] * zeta[0] * invVOL;
-      //weight[0][0][1] = q[i] * xi[0] * eta[0] * zeta[1] * invVOL;
-      //weight[0][1][0] = q[i] * xi[0] * eta[1] * zeta[0] * invVOL;
-      //weight[0][1][1] = q[i] * xi[0] * eta[1] * zeta[1] * invVOL;
-      //weight[1][0][0] = q[i] * xi[1] * eta[0] * zeta[0] * invVOL;
-      //weight[1][0][1] = q[i] * xi[1] * eta[0] * zeta[1] * invVOL;
-      //weight[1][1][0] = q[i] * xi[1] * eta[1] * zeta[0] * invVOL;
-      //weight[1][1][1] = q[i] * xi[1] * eta[1] * zeta[1] * invVOL;
       // add charge density
       speciesMoments.addRho(weight, ix, iy, iz);
       // add current density - X
