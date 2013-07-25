@@ -107,8 +107,11 @@
   void assert_error(const char* file, int line, const char* func, \
       const char* op, const char* lhs_str, const char* rhs_str, \
       t1 lhs, t2 rhs);
-declare_assert_errmsg(double, double);  // this seems enough for all numbers
-declare_assert_errmsg(int, int);  // but maybe this is more efficient
+declare_assert_errmsg(double, double);
+declare_assert_errmsg(size_t, size_t);
+declare_assert_errmsg(int, size_t);
+declare_assert_errmsg(size_t, int);
+declare_assert_errmsg(int, int);
 declare_assert_errmsg(const char *, const char *);
 // put in assert_string.h:
 // #include "assert.h"

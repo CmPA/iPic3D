@@ -1,5 +1,7 @@
 
-#include "MPIdata.h" // for get_rank
+#ifndef NO_MPI
+  #include "MPIdata.h" // for get_rank
+#endif
 #include "debug.h"
 
 #define implement_dprintvar_fileLine(code,type) \
@@ -17,8 +19,13 @@ void dfprintf_fileLine(FILE * fptr, const char *func, const char *file, int line
   fflush(fptr);
   va_list args;
   va_start(args, format);
-  fprintf(fptr, "(%d) DEBUG %s(), %s:%d: ",
+  fprintf(fptr,
+#ifndef NO_MPI
+    "(%d) DEBUG %s(), %s:%d: ",
     MPIdata::get_rank(),
+#else
+    "DEBUG %s(), %s:%d: ",
+#endif
     func, file, // my_basename(file),
     line_number);
   /* print out remainder of message */

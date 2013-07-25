@@ -19,5 +19,8 @@ void assert_error(const char *file, int line, const char *func, const char *op, 
       abort(); \
   }
 
+implement_assert_errmsg(size_t, size_t);
+implement_assert_errmsg(int, size_t);
+implement_assert_errmsg(size_t, int);
 implement_assert_errmsg(int, int);
 implement_assert_errmsg(const char *, const char *);
