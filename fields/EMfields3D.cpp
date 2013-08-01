@@ -800,7 +800,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
     ff = 1.0;
     if (is == 0) ff = -1.0;
 
-    if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
+    if(vct->getXleft_neighbor()==MPI_PROC_NULL && (bcEMfaceXleft ==2 || bcEMfaceXleft ==0)) {
       for (int j=0; j < ny;j++)
         for (int k=0; k < nz;k++){
           rhons[is][0][j][k] = ff * rhoINIT[is] / FourPI;
@@ -810,7 +810,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
         }
     }
 
-    if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==2) {
+    if(vct->getXright_neighbor()==MPI_PROC_NULL && (bcEMfaceXright ==2 || bcEMfaceXleft ==0)) {
       for (int j=0; j < ny;j++)
         for (int k=0; k < nz;k++){
           rhons[is][nx-4][j][k] = ff * rhoINIT[is] / FourPI;
@@ -820,7 +820,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
         }
     }
 
-    if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==2)  {
+    if(vct->getYleft_neighbor()==MPI_PROC_NULL && (bcEMfaceYleft ==2 || bcEMfaceXleft ==0))  {
       for (int i=0; i < nx;i++)
         for (int k=0; k < nz;k++){
           rhons[is][i][0][k] = ff * rhoINIT[is] / FourPI;
@@ -830,7 +830,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
         }
     }
 
-    if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==2)  {
+    if(vct->getYright_neighbor()==MPI_PROC_NULL && (bcEMfaceYright ==2 || bcEMfaceXleft ==0))  {
       for (int i=0; i < nx;i++)
         for (int k=0; k < nz;k++){
           rhons[is][i][ny-4][k] = ff * rhoINIT[is] / FourPI;
@@ -840,7 +840,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
         }
     }
 
-    if(vct->getZleft_neighbor()==MPI_PROC_NULL && bcEMfaceZleft ==2)  {
+    if(vct->getZleft_neighbor()==MPI_PROC_NULL && (bcEMfaceZleft ==2 || bcEMfaceXleft ==0))  {
       for (int i=0; i < nx;i++)
         for (int j=0; j < ny;j++){
           rhons[is][i][j][0] = ff * rhoINIT[is] / FourPI;
@@ -851,7 +851,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
     }
 
 
-    if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2)  {
+    if(vct->getZright_neighbor()==MPI_PROC_NULL && (bcEMfaceZright ==2 || bcEMfaceXleft ==0))  {
       for (int i=0; i < nx;i++)
         for (int j=0; j < ny;j++){
           rhons[is][i][j][nz-4] = ff * rhoINIT[is] / FourPI;
@@ -1483,10 +1483,18 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
         for (int j = 1; j < nyn - 1; j++)
           for (int jj = 1; jj < nzn - 1; jj++)
             rhons[is][i][j][jj] = temp_storage[k++];
+
       communicateNode_P(nxn, nyn, nzn, rhons, is, vct);
       status = H5Dclose(dataset_id);
 
     }
+
+    if (col->getCase()=="Dipole") {
+      ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+    }
+
+    ConstantChargeOpenBC(grid, vct);
+
     // communicate ghost
     communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
     communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
@@ -2144,80 +2152,77 @@ void EMfields3D::initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col)
 
   double distance;
 
-  if (restart1 == 0){
+  double ebc[3];
+  cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
+  scale(ebc,-1.0,3);
 
-    double ebc[3];
-    cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
-    scale(ebc,-1.0,3);
-
-    for (int i=0; i < nxn; i++){
-      for (int j=0; j < nyn; j++){
-        for (int k=0; k < nzn; k++){
-          for (int is=0; is < ns; is++){
-            rhons[is][i][j][k] = rhoINIT[is]/FourPI;
-          }
-          Ex[i][j][k] = ebc[0];
-          Ey[i][j][k] = ebc[1];
-          Ez[i][j][k] = ebc[2];
-
-          double blp[3];
-          // Set coil diameter
-          double a=delta;
-
-          double xc=x_center;
-          double yc=y_center;
-          double zc=z_center;
-
-          double x = grid->getXN(i,j,k);
-          double y = grid->getYN(i,j,k);
-          double z = grid->getZN(i,j,k);
-
-          // Compute dipolar field B_ext
-          loopZ(blp, x, y, z, a, xc, yc, zc, B1z);
-          Bx_ext[i][j][k]  = blp[0];
-          By_ext[i][j][k]  = blp[1];
-          Bz_ext[i][j][k]  = blp[2];
-          loopX(blp, x, y, z, a, xc, yc, zc, B1x);
-          Bx_ext[i][j][k] += blp[0];
-          By_ext[i][j][k] += blp[1];
-          Bz_ext[i][j][k] += blp[2];
-          loopY(blp, x, y, z, a, xc, yc, zc, B1y);
-          Bx_ext[i][j][k] += blp[0];
-          By_ext[i][j][k] += blp[1];
-          Bz_ext[i][j][k] += blp[2];
-
-          Bxn[i][j][k] = B0x + Bx_ext[i][j][k];
-          Byn[i][j][k] = B0y + By_ext[i][j][k];
-          Bzn[i][j][k] = B0z + Bz_ext[i][j][k];
-
-          // -- Uncomment if using the J_ext method:
-          Bx_ext[i][j][k]  = 0.0;
-          By_ext[i][j][k]  = 0.0;
-          Bz_ext[i][j][k]  = 0.0;
-          // -- end Uncomment
+  for (int i=0; i < nxn; i++){
+    for (int j=0; j < nyn; j++){
+      for (int k=0; k < nzn; k++){
+        for (int is=0; is < ns; is++){
+          rhons[is][i][j][k] = rhoINIT[is]/FourPI;
         }
+        Ex[i][j][k] = ebc[0];
+        Ey[i][j][k] = ebc[1];
+        Ez[i][j][k] = ebc[2];
+
+        double blp[3];
+        // Set coil diameter
+        double a=delta;
+
+        double xc=x_center;
+        double yc=y_center;
+        double zc=z_center;
+
+        double x = grid->getXN(i,j,k);
+        double y = grid->getYN(i,j,k);
+        double z = grid->getZN(i,j,k);
+
+        // Compute dipolar field B_ext
+        loopZ(blp, x, y, z, a, xc, yc, zc, B1z);
+        Bx_ext[i][j][k]  = blp[0];
+        By_ext[i][j][k]  = blp[1];
+        Bz_ext[i][j][k]  = blp[2];
+        loopX(blp, x, y, z, a, xc, yc, zc, B1x);
+        Bx_ext[i][j][k] += blp[0];
+        By_ext[i][j][k] += blp[1];
+        Bz_ext[i][j][k] += blp[2];
+        loopY(blp, x, y, z, a, xc, yc, zc, B1y);
+        Bx_ext[i][j][k] += blp[0];
+        By_ext[i][j][k] += blp[1];
+        Bz_ext[i][j][k] += blp[2];
+
+        Bxn[i][j][k] = B0x + Bx_ext[i][j][k];
+        Byn[i][j][k] = B0y + By_ext[i][j][k];
+        Bzn[i][j][k] = B0z + Bz_ext[i][j][k];
+
+        // -- Uncomment if using the J_ext method:
+        Bx_ext[i][j][k]  = 0.0;
+        By_ext[i][j][k]  = 0.0;
+        Bz_ext[i][j][k]  = 0.0;
+        // -- end Uncomment
       }
     }
-
-    grid->interpN2C(Bxc,Bxn);
-    grid->interpN2C(Byc,Byn);
-    grid->interpN2C(Bzc,Bzn);
-
-    communicateCenterBC_P(nxc,nyc,nzc,Bxc,col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5],vct);
-    communicateCenterBC_P(nxc,nyc,nzc,Byc,col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5],vct);
-    communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct);
-
-    // initialize J_ext =c/4*pi curl(B) on nodes (current due to the dipole)
-    grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc);
-    scale(Jx_ext,tempXN,c/FourPI,nxn,nyn,nzn);
-    scale(Jy_ext,tempYN,c/FourPI,nxn,nyn,nzn);
-    scale(Jz_ext,tempZN,c/FourPI,nxn,nyn,nzn);
-
-    for (int is=0 ; is<ns; is++)
-      grid->interpN2C(rhocs,is,rhons);
-
   }
-  else { // EM initialization from RESTART
+
+  grid->interpN2C(Bxc,Bxn);
+  grid->interpN2C(Byc,Byn);
+  grid->interpN2C(Bzc,Bzn);
+
+  communicateCenterBC_P(nxc,nyc,nzc,Bxc,col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5],vct);
+  communicateCenterBC_P(nxc,nyc,nzc,Byc,col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5],vct);
+  communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct);
+
+  // initialize J_ext =c/4*pi curl(B) on nodes (current due to the dipole)
+  grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc);
+  scale(Jx_ext,tempXN,c/FourPI,nxn,nyn,nzn);
+  scale(Jy_ext,tempYN,c/FourPI,nxn,nyn,nzn);
+  scale(Jz_ext,tempZN,c/FourPI,nxn,nyn,nzn);
+
+  for (int is=0 ; is<ns; is++)
+    grid->interpN2C(rhocs,is,rhons);
+
+  if (restart1 != 0) { // EM initialization from RESTART
     init(vct,grid,col);  // use the fields from restart file
   }
 
