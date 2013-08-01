@@ -13,6 +13,7 @@ developers: D. Burgess, June/July 2006
 #include <vector>
 #include <list>
 
+#include "errors.h"
 #include "PSKException.h"
 #include "Particles.h"
 #include "Field.h"
@@ -103,49 +104,63 @@ namespace PSK {
   public:
     OutputAdaptor(void) {;
     } virtual void open(const std::string & outf) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::open");
+      eprintf("Function not implemented");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::open");
     }
     virtual void close(void) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::close");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::close");
     }
 
     // write int functions
     virtual void write(const std::string & objname, int i) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(int)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(int)");
     }
     virtual void write(const std::string & objname, const Dimens dimens, const int *i_array) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(int* array)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(int* array)");
     }
     virtual void write(const std::string & objname, const Dimens dimens, const long *i_array) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(long* array)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(long* array)");
     }
     virtual void write(const std::string & objname, const Dimens dimens, const std::vector < int >&i_array) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(vector<int> array)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(vector<int> array)");
     }
 
     virtual void write(const std::string & objname, const Dimens dimens, const std::vector < long >&i_array) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(vector<long> array)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(vector<long> array)");
     }
     // write float functions
     virtual void write(const std::string & objname, float f) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(float)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(float)");
     }
     virtual void write(const std::string & objname, const Dimens dimens, const float *f_array) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(float* array)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(float* array)");
     }
     virtual void write(const std::string & objname, const Dimens dimens, const std::vector < float >&f_array) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(vector<float> array)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(vector<float> array)");
     }
 
     // write double functions
     virtual void write(const std::string & objname, double d) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(double)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(double)");
     }
     virtual void write(const std::string & objname, const Dimens dimens, const double *d_array) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(double* array)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(double* array)");
     }
     virtual void write(const std::string & objname, const Dimens dimens, const std::vector < double >&d_array) {
-      throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(vector<double> array)");
+      eprintf("Function not implemented");
+      //throw OutputException("Function not implemented", "PSK::OutputAdaptor::write(vector<double> array)");
     }
 
   };

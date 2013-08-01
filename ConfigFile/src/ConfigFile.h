@@ -48,6 +48,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "errors.h" // for eprintf
 
 using std::string;
 
@@ -175,7 +176,8 @@ template < class T > T ConfigFile::read(const string & key) const {
   // Read the value corresponding to key
   mapci p = myContents.find(key);
   if (p == myContents.end())
-    throw key_not_found(key);
+    eprintf("key not found: %s", key.c_str());
+    //throw key_not_found(key);
   return string_as_T < T > (p->second);
 }
 
