@@ -74,6 +74,14 @@ file(
 # Macro definitions
 #
 
+set(TEST_PH5 $ENV{USE_PHDF5})
+if(DEFINED TEST_PH5)
+  add_definitions( -DPHDF5 )
+  message(" WARNING: Compiling the code using the Parallel HDF5 functions.")
+else(DEFINED TEST_PH5)
+  message(" INFO: Compiling using the sequantial HDF5 functions.")
+endif(DEFINED TEST_PH5)
+
 set(TEST_B $ENV{BATSRUS})
 if(DEFINED TEST_B)
   add_definitions( -DBATSRUS )
