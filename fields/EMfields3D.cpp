@@ -208,7 +208,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
   //
   const long long nop_ll = pcls.getNOP();
   const int nop = pcls.getNOP();
-  assert_le(nop_ll,INT_MAX); // else would need to use long long
+  assert_le(nop_ll, (long long) INT_MAX); // else would need to use long long
   // To make memory use scale to a large number of threads, we
   // could first apply an efficient parallel sorting algorithm
   // to the particles and then accumulate moments in smaller

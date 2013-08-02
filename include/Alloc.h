@@ -1,7 +1,6 @@
 #ifndef IPIC_ALLOC_H
 #define IPIC_ALLOC_H
 #include <cstddef> // for alignment stuff
-#include "ipicdefs.h" // for CHECK_BOUNDS
 #include "asserts.h" // for assert_le, assert_lt
 //#include "arrays.h" // fixed-dimension arrays
 

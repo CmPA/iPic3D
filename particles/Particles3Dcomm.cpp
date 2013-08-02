@@ -292,13 +292,12 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
-  assert_le(nop,INT_MAX); // else would need to use long long
+  assert_le(nop,(long long)INT_MAX); // else would need to use long long
   // to make memory use scale to a large number of threads we
   // could first apply an efficient parallel sorting algorithm
   // to the particles and then accumulate moments in smaller
   // subarrays.
   {
-    assert_le(nop,INT_MAX); // else would need to use long long
     for (int i = 0; i < nop; i++)
     {
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));

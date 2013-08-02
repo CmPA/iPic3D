@@ -23,4 +23,5 @@ implement_assert_errmsg(size_t, size_t);
 implement_assert_errmsg(int, size_t);
 implement_assert_errmsg(size_t, int);
 implement_assert_errmsg(int, int);
+implement_assert_errmsg(long long, long long);
 implement_assert_errmsg(const char *, const char *);

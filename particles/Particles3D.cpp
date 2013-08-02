@@ -329,7 +329,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
-  assert_le(nop,INT_MAX); // else would need to use long long
+  assert_le(nop,(long long) INT_MAX); // else would need to use long long
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.

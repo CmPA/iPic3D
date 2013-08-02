@@ -112,6 +112,7 @@ declare_assert_errmsg(size_t, size_t);
 declare_assert_errmsg(int, size_t);
 declare_assert_errmsg(size_t, int);
 declare_assert_errmsg(int, int);
+declare_assert_errmsg(long long, long long);
 declare_assert_errmsg(const char *, const char *);
 // put in assert_string.h:
 // #include "assert.h"
