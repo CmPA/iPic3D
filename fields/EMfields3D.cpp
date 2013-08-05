@@ -169,8 +169,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   momentsArray = new Moments*[sizeMomentsArray];
   for(int i=0;i<sizeMomentsArray;i++)
   {
-    momentsArray[i] = new Moments;
-    momentsArray[i]->init(nxn,nyn,nzn);
+    momentsArray[i] = new Moments(nxn,nyn,nzn);
+    //momentsArray[i]->init(nxn,nyn,nzn);
   }
 }
 
@@ -220,16 +220,16 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
     Moments& speciesMoments = fetch_momentsArray(thread_num);
     speciesMoments.set_to_zero();
     //
-    double*** rho = speciesMoments.fetch_rho();
-    double*** Jx  = speciesMoments.fetch_Jx();
-    double*** Jy  = speciesMoments.fetch_Jy();
-    double*** Jz  = speciesMoments.fetch_Jz();
-    double*** Pxx = speciesMoments.fetch_Pxx();
-    double*** Pxy = speciesMoments.fetch_Pxy();
-    double*** Pxz = speciesMoments.fetch_Pxz();
-    double*** Pyy = speciesMoments.fetch_Pyy();
-    double*** Pyz = speciesMoments.fetch_Pyz();
-    double*** Pzz = speciesMoments.fetch_Pzz();
+    doubleArr3& rho = speciesMoments.fetch_rho();
+    doubleArr3& Jx  = speciesMoments.fetch_Jx();
+    doubleArr3& Jy  = speciesMoments.fetch_Jy();
+    doubleArr3& Jz  = speciesMoments.fetch_Jz();
+    doubleArr3& Pxx = speciesMoments.fetch_Pxx();
+    doubleArr3& Pxy = speciesMoments.fetch_Pxy();
+    doubleArr3& Pxz = speciesMoments.fetch_Pxz();
+    doubleArr3& Pyy = speciesMoments.fetch_Pyy();
+    doubleArr3& Pyz = speciesMoments.fetch_Pyz();
+    doubleArr3& Pzz = speciesMoments.fetch_Pzz();
     // The following loop is expensive, so it is wise to assume that the
     // compiler is stupid.  Therefore we should on the one hand
     // expand things out and on the other hand avoid repeating computations.
@@ -389,16 +389,16 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
     // One-dimensional array access is presumably
     // more efficient on poor compilers.
     //
-    const double*const rho1d = rho[0][0];
-    const double*const Jx1d  = Jx [0][0];
-    const double*const Jy1d  = Jy [0][0];
-    const double*const Jz1d  = Jz [0][0];
-    const double*const Pxx1d = Pxx[0][0];
-    const double*const Pxy1d = Pxy[0][0];
-    const double*const Pxz1d = Pxz[0][0];
-    const double*const Pyy1d = Pyy[0][0];
-    const double*const Pyz1d = Pyz[0][0];
-    const double*const Pzz1d = Pzz[0][0];
+    doubleArr1 rho1d = rho.fetch_Arr1();
+    doubleArr1 Jx1d  = Jx .fetch_Arr1();
+    doubleArr1 Jy1d  = Jy .fetch_Arr1();
+    doubleArr1 Jz1d  = Jz .fetch_Arr1();
+    doubleArr1 Pxx1d = Pxx.fetch_Arr1();
+    doubleArr1 Pxy1d = Pxy.fetch_Arr1();
+    doubleArr1 Pxz1d = Pxz.fetch_Arr1();
+    doubleArr1 Pyy1d = Pyy.fetch_Arr1();
+    doubleArr1 Pyz1d = Pyz.fetch_Arr1();
+    doubleArr1 Pzz1d = Pzz.fetch_Arr1();
     //
     assert_eq(speciesMoments.get_nx(), nxn);
     assert_eq(speciesMoments.get_ny(), nyn);

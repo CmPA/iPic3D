@@ -14,6 +14,8 @@
 
     For examples of use of this class,
     see test_arrays.cpp
+
+    An alternative would be to use boost arrays.
 */
 #define ALIGNMENT (64)
 #ifdef __INTEL_COMPILER
@@ -199,14 +201,21 @@ class ArrayRef3
 // }
 //
 // proposed improvements:
+// - allow shifting of the base:
+//   - need "double shift" in each class
+//   - need to implement "arr3.set_bases(b1,b2,b3);"
+//     which calculates "shift".
+//   - need "const size_t b1, b2, b3;" for beginning indices
+//     to allow bounds checking.  Should not incur run-time
+//     penalty, but it so then condition on CHECK_BOUNDS.
 // - methods that use parallel arithmetic for omp and vectorized code
 
 template <class type>
 class Arr1
 {
   private: // data
-    type* const __restrict__ arr;
     const size_t S1;
+    type* const __restrict__ arr;
   public:
     ~Arr1() { }
     void free() { AlignedFree(arr); }
@@ -277,15 +286,19 @@ class Arr2
       { ALIGNED(arr); return arr[getidx(n2,n1)]; }
     void set(size_t n2,size_t n1, type value)
       { ALIGNED(arr); arr[getidx(n2,n1)] = value; }
+    inline Arr1<type>fetch_Arr1(){ return Arr1<type>(arr, S1*S2); }
 };
 
 template <class type>
 class Arr3
 {
   private: // data
-    type* const __restrict__ arr;
     const size_t S3,S2,S1;
+    type* const __restrict__ arr;
   public:
+    size_t dim1()const{return S1;}
+    size_t dim2()const{return S2;}
+    size_t dim3()const{return S3;}
     ~Arr3(){}
     void free() { AlignedFree(arr); }
     Arr3(size_t s3, size_t s2, size_t s1) :
@@ -301,7 +314,6 @@ class Arr3
       check_bounds(n3, S3);
       return ArrayRef2<type>(arr, n3*S2, S2, S1);
     }
-    type* get_arr(){return arr;}
     inline size_t getidx(size_t n3, size_t n2, size_t n1) const
     {
       check_bounds(n3, S3);
@@ -317,6 +329,7 @@ class Arr3
       { ALIGNED(arr); return arr[getidx(n3,n2,n1)]; }
     void set(size_t n3,size_t n2,size_t n1, type value)
       { ALIGNED(arr); arr[getidx(n3,n2,n1)] = value; }
+    inline Arr1<type>fetch_Arr1(){ return Arr1<type>(arr, S1*S2*S3); }
 };
 
 template <class type>
@@ -380,7 +393,6 @@ template <class type>
 struct Array3 : public Arr3<type>
 {
     ~Array3(){Arr3<type>::free();}
-    Arr3<type>& fast_accessor() { return *(Arr3<type>*)this; }
     Array3(size_t s3, size_t s2, size_t s1) : Arr3<type>(s3,s2,s1) { }
 };
 
@@ -406,6 +418,7 @@ typedef Arr1<double> doubleArr1;
 typedef Arr2<double> doubleArr2;
 typedef Arr3<double> doubleArr3;
 typedef Arr4<double> doubleArr4;
+typedef ArrayRef1<double> doubleArrRef1;
 //
 #define newArr4(type,sz1,sz2,sz3,sz4) newArray4<type>((sz1),(sz2),(sz3),(sz4))
 #define newArr3(type,sz1,sz2,sz3) newArray3<type>((sz1),(sz2),(sz3))
