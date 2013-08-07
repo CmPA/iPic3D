@@ -658,10 +658,10 @@ void HDF5OutputAdaptor::write(const std::string & tag, const Dimens dimens, cons
   //}
 }
 
-void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, double ***d_array) {
+void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, const_arr3_double d_array) {
   if (dimens.size() != 3) {
     eprintf("Dimens size not 3 for object %s", objname.c_str());
-    //PSK::OutputException e("Dimens size not 3 for object " + objname, "HDF5OutputAdaptor::write(double*** array)");
+    //PSK::OutputException e("Dimens size not 3 for object " + objname, "HDF5OutputAdaptor::write(const_arr3_double array)");
     //throw e;
   }
 
@@ -689,15 +689,15 @@ void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, 
     delete[]d_array_p;
   //}
   //catch(PSK::Exception & e) {
-  //  e.push("In HDF5OutputAdaptor::write(double*** array)");
+  //  e.push("In HDF5OutputAdaptor::write(const_arr3_double array)");
   //  throw e;
   //}
 }
 
-void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, const int ns, double ****d_array) {
+void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, const int ns, const_arr4_double d_array) {
   if (dimens.size() != 3) {
     eprintf("Dimens size not 3 for object %s", objname.c_str());
-    //PSK::OutputException e("Dimens size not 3 for object " + objname, "HDF5OutputAdaptor::write(double**** array)");
+    //PSK::OutputException e("Dimens size not 3 for object " + objname, "HDF5OutputAdaptor::write(const_arr4_double array)");
     //throw e;
   }
 
@@ -724,7 +724,7 @@ void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, 
     delete[]d_array_p;
   //}
   //catch(PSK::Exception & e) {
-  //  e.push("In HDF5OutputAdaptor::write(double**** array)");
+  //  e.push("In HDF5OutputAdaptor::write(const_arr4_double array)");
   //  throw e;
   //}
 }
@@ -752,10 +752,10 @@ void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, 
   //}
 }
 
-void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, const int ns, double ***d_array) {
+void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, const int ns, const_arr3_double d_array) {
   if (dimens.size() != 2) {
     eprintf("Dimens size not 2 for object %s", objname.c_str());
-    //PSK::OutputException e("Dimens size not 2 for object " + objname, "HDF5OutputAdaptor::write(double*** array)");
+    //PSK::OutputException e("Dimens size not 2 for object " + objname, "HDF5OutputAdaptor::write(const_arr3_double array)");
     //throw e;
   }
 
@@ -770,7 +770,7 @@ void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, 
     write(objname, dimens, d_array_p);
     delete[]d_array_p;
   //} catch(PSK::Exception & e) {
-  //  e.push("In HDF5OutputAdaptor::write(double*** array)");
+  //  e.push("In HDF5OutputAdaptor::write(const_arr3_double array)");
   //  throw e;
   //}
 }

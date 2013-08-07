@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include "ComParser3D.h"
 
 /** swap the buffer */

@@ -7,39 +7,137 @@
 #include "ompdefs.h"
 
 /*! constructor */
-EMfields3D::EMfields3D(Collective * col, Grid * grid) {
-  nxc = grid->getNXC();
-  nxn = grid->getNXN();
-  nyc = grid->getNYC();
-  nyn = grid->getNYN();
-  nzc = grid->getNZC();
-  nzn = grid->getNZN();
-  dx = grid->getDX();
-  dy = grid->getDY();
-  dz = grid->getDZ();
-  invVOL = grid->getInvVOL();
-  xStart = grid->getXstart();
-  xEnd = grid->getXend();
-  yStart = grid->getYstart();
-  yEnd = grid->getYend();
-  zStart = grid->getZstart();
-  zEnd = grid->getZend();
-  Lx = col->getLx();
-  Ly = col->getLy();
-  Lz = col->getLz();
-  ns = col->getNs();
-  c = col->getC();
-  dt = col->getDt();
-  th = col->getTh();
-  ue0 = col->getU0(0);
-  ve0 = col->getV0(0);
-  we0 = col->getW0(0);
-  x_center = col->getx_center();
-  y_center = col->gety_center();
-  z_center = col->getz_center();
-  L_square = col->getL_square();
+//
+// We rely on the following rule from the C++ standard, section 12.6.2.5:
+//
+//   nonstatic data members shall be initialized in the order
+//   they were declared in the class definition
+//
+// in particular, nxc, nyc, nzc and nxn, nyn, nzn are assumed
+// initialized when subsequently used.
+//
+EMfields3D::EMfields3D(Collective * col, Grid * grid) : 
+  nxc(grid->getNXC()),
+  nxn(grid->getNXN()),
+  nyc(grid->getNYC()),
+  nyn(grid->getNYN()),
+  nzc(grid->getNZC()),
+  nzn(grid->getNZN()),
+  dx(grid->getDX()),
+  dy(grid->getDY()),
+  dz(grid->getDZ()),
+  invVOL(grid->getInvVOL()),
+  xStart(grid->getXstart()),
+  xEnd(grid->getXend()),
+  yStart(grid->getYstart()),
+  yEnd(grid->getYend()),
+  zStart(grid->getZstart()),
+  zEnd(grid->getZend()),
+  Lx(col->getLx()),
+  Ly(col->getLy()),
+  Lz(col->getLz()),
+  ns(col->getNs()),
+  c(col->getC()),
+  dt(col->getDt()),
+  th(col->getTh()),
+  ue0(col->getU0(0)),
+  ve0(col->getV0(0)),
+  we0(col->getW0(0)),
+  x_center(col->getx_center()),
+  y_center(col->gety_center()),
+  z_center(col->getz_center()),
+  L_square(col->getL_square()),
+  delt (c*th*dt), // declared after these
+  //
+  // array allocation: nodes
+  //
+  Ex   (nxn, nyn, nzn),
+  Ey   (nxn, nyn, nzn),
+  Ez   (nxn, nyn, nzn),
+  Exth (nxn, nyn, nzn),
+  Eyth (nxn, nyn, nzn),
+  Ezth (nxn, nyn, nzn),
+  Bxn  (nxn, nyn, nzn),
+  Byn  (nxn, nyn, nzn),
+  Bzn  (nxn, nyn, nzn),
+  rhon (nxn, nyn, nzn),
+  Jx   (nxn, nyn, nzn),
+  Jy   (nxn, nyn, nzn),
+  Jz   (nxn, nyn, nzn),
+  Jxh  (nxn, nyn, nzn),
+  Jyh  (nxn, nyn, nzn),
+  Jzh  (nxn, nyn, nzn),
+  //
+  // species-specific quantities
+  //
+  rhons (ns, nxn, nyn, nzn),
+  rhocs (ns, nxc, nyc, nzc),
+  Jxs   (ns, nxn, nyn, nzn),
+  Jys   (ns, nxn, nyn, nzn),
+  Jzs   (ns, nxn, nyn, nzn),
+  pXXsn (ns, nxn, nyn, nzn),
+  pXYsn (ns, nxn, nyn, nzn),
+  pXZsn (ns, nxn, nyn, nzn),
+  pYYsn (ns, nxn, nyn, nzn),
+  pYZsn (ns, nxn, nyn, nzn),
+  pZZsn (ns, nxn, nyn, nzn),
 
-  delt = c * th * dt;
+  // array allocation: central points 
+  //
+  PHI  (nxc, nyc, nzc),
+  Bxc  (nxc, nyc, nzc),
+  Byc  (nxc, nyc, nzc),
+  Bzc  (nxc, nyc, nzc),
+  rhoc (nxc, nyc, nzc),
+  rhoh (nxc, nyc, nzc),
+
+  // temporary arrays
+  //
+  tempXC (nxc, nyc, nzc),
+  tempYC (nxc, nyc, nzc),
+  tempZC (nxc, nyc, nzc),
+  //
+  tempXN (nxn, nyn, nzn),
+  tempYN (nxn, nyn, nzn),
+  tempZN (nxn, nyn, nzn),
+  tempC  (nxc, nyc, nzc),
+  tempX  (nxn, nyn, nzn),
+  tempY  (nxn, nyn, nzn),
+  tempZ  (nxn, nyn, nzn),
+  temp2X (nxn, nyn, nzn),
+  temp2Y (nxn, nyn, nzn),
+  temp2Z (nxn, nyn, nzn),
+  imageX (nxn, nyn, nzn),
+  imageY (nxn, nyn, nzn),
+  imageZ (nxn, nyn, nzn),
+  Dx (nxn, nyn, nzn),
+  Dy (nxn, nyn, nzn),
+  Dz (nxn, nyn, nzn),
+  vectX (nxn, nyn, nzn),
+  vectY (nxn, nyn, nzn),
+  vectZ (nxn, nyn, nzn),
+  divC  (nxc, nyc, nzc),
+  // B_ext and J_ext should not be allocated unless used.
+  Bx_ext(nxn,nyn,nzn),
+  By_ext(nxn,nyn,nzn),
+  Bz_ext(nxn,nyn,nzn),
+  Jx_ext(nxn,nyn,nzn),
+  Jy_ext(nxn,nyn,nzn),
+  Jz_ext(nxn,nyn,nzn) 
+{
+  // External imposed fields
+  //
+  B1x = col->getB1x();
+  B1y = col->getB1y();
+  B1z = col->getB1z();
+  if(B1x!=0. || B1y !=0. || B1z!=0.)
+  {
+    eprintf("This functionality has not yet been implemented");
+  }
+  Bx_ext.setall(0.);
+  By_ext.setall(0.);
+  Bz_ext.setall(0.);
+  //
   PoissonCorrection = false;
   if (col->getPoissonCorrection()=="yes") PoissonCorrection = true;
   CGtol = col->getCGtol();
@@ -49,11 +147,11 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
     qom[i] = col->getQOM(i);
   // boundary conditions: PHI and EM fields
   bcPHIfaceXright = col->getBcPHIfaceXright();
-  bcPHIfaceXleft = col->getBcPHIfaceXleft();
+  bcPHIfaceXleft  = col->getBcPHIfaceXleft();
   bcPHIfaceYright = col->getBcPHIfaceYright();
-  bcPHIfaceYleft = col->getBcPHIfaceYleft();
+  bcPHIfaceYleft  = col->getBcPHIfaceYleft();
   bcPHIfaceZright = col->getBcPHIfaceZright();
-  bcPHIfaceZleft = col->getBcPHIfaceZleft();
+  bcPHIfaceZleft  = col->getBcPHIfaceZleft();
 
   bcEMfaceXright = col->getBcEMfaceXright();
   bcEMfaceXleft = col->getBcEMfaceXleft();
@@ -65,10 +163,6 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   B0x = col->getB0x();
   B0y = col->getB0y();
   B0z = col->getB0z();
-  // Earth Simulation
-  B1x = col->getB1x();
-  B1y = col->getB1y();
-  B1z = col->getB1z();
   delta = col->getDelta();
   Smooth = col->getSmooth();
   // get the density background for the gem Challange
@@ -96,75 +190,6 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   injFieldsFront  = new injInfoFields(nxn, nyn, nzn);
   injFieldsRear   = new injInfoFields(nxn, nyn, nzn);
 
-  // arrays allocation: nodes
-  Ex = newArr3(double, nxn, nyn, nzn);
-  Ey = newArr3(double, nxn, nyn, nzn);
-  Ez = newArr3(double, nxn, nyn, nzn);
-  Exth = newArr3(double, nxn, nyn, nzn);
-  Eyth = newArr3(double, nxn, nyn, nzn);
-  Ezth = newArr3(double, nxn, nyn, nzn);
-  Bxn = newArr3(double, nxn, nyn, nzn);
-  Byn = newArr3(double, nxn, nyn, nzn);
-  Bzn = newArr3(double, nxn, nyn, nzn);
-  rhon = newArr3(double, nxn, nyn, nzn);
-  Jx = newArr3(double, nxn, nyn, nzn);
-  Jy = newArr3(double, nxn, nyn, nzn);
-  Jz = newArr3(double, nxn, nyn, nzn);
-  Jxh = newArr3(double, nxn, nyn, nzn);
-  Jyh = newArr3(double, nxn, nyn, nzn);
-  Jzh = newArr3(double, nxn, nyn, nzn);
-  // External imposed fields
-  Bx_ext = newArr3(double,nxn,nyn,nzn);
-  By_ext = newArr3(double,nxn,nyn,nzn);
-  Bz_ext = newArr3(double,nxn,nyn,nzn);
-  Jx_ext = newArr3(double,nxn,nyn,nzn);
-  Jy_ext = newArr3(double,nxn,nyn,nzn);
-  Jz_ext = newArr3(double,nxn,nyn,nzn);
-  // involving species
-  rhons = newArr4(double, ns, nxn, nyn, nzn);
-  rhocs = newArr4(double, ns, nxc, nyc, nzc);
-  Jxs = newArr4(double, ns, nxn, nyn, nzn);
-  Jys = newArr4(double, ns, nxn, nyn, nzn);
-  Jzs = newArr4(double, ns, nxn, nyn, nzn);
-  pXXsn = newArr4(double, ns, nxn, nyn, nzn);
-  pXYsn = newArr4(double, ns, nxn, nyn, nzn);
-  pXZsn = newArr4(double, ns, nxn, nyn, nzn);
-  pYYsn = newArr4(double, ns, nxn, nyn, nzn);
-  pYZsn = newArr4(double, ns, nxn, nyn, nzn);
-  pZZsn = newArr4(double, ns, nxn, nyn, nzn);
-  // arrays allocation: central points 
-  PHI = newArr3(double, nxc, nyc, nzc);
-  Bxc = newArr3(double, nxc, nyc, nzc);
-  Byc = newArr3(double, nxc, nyc, nzc);
-  Bzc = newArr3(double, nxc, nyc, nzc);
-  rhoc = newArr3(double, nxc, nyc, nzc);
-  rhoh = newArr3(double, nxc, nyc, nzc);
-
-  // temporary arrays
-  tempXC = newArr3(double, nxc, nyc, nzc);
-  tempYC = newArr3(double, nxc, nyc, nzc);
-  tempZC = newArr3(double, nxc, nyc, nzc);
-
-  tempXN = newArr3(double, nxn, nyn, nzn);
-  tempYN = newArr3(double, nxn, nyn, nzn);
-  tempZN = newArr3(double, nxn, nyn, nzn);
-  tempC = newArr3(double, nxc, nyc, nzc);
-  tempX = newArr3(double, nxn, nyn, nzn);
-  tempY = newArr3(double, nxn, nyn, nzn);
-  tempZ = newArr3(double, nxn, nyn, nzn);
-  temp2X = newArr3(double, nxn, nyn, nzn);
-  temp2Y = newArr3(double, nxn, nyn, nzn);
-  temp2Z = newArr3(double, nxn, nyn, nzn);
-  imageX = newArr3(double, nxn, nyn, nzn);
-  imageY = newArr3(double, nxn, nyn, nzn);
-  imageZ = newArr3(double, nxn, nyn, nzn);
-  Dx = newArr3(double, nxn, nyn, nzn);
-  Dy = newArr3(double, nxn, nyn, nzn);
-  Dz = newArr3(double, nxn, nyn, nzn);
-  vectX = newArr3(double, nxn, nyn, nzn);
-  vectY = newArr3(double, nxn, nyn, nzn);
-  vectZ = newArr3(double, nxn, nyn, nzn);
-  divC = newArr3(double, nxc, nyc, nzc);
   sizeMomentsArray = omp_thread_count();
   momentsArray = new Moments*[sizeMomentsArray];
   for(int i=0;i<sizeMomentsArray;i++)
@@ -195,16 +220,16 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
   double const*const q = pcls.getQall();
   //
   const int is = pcls.get_ns();
-  double* rhons1d = rhons[is][0][0];
-  double* Jxs1d   = Jxs  [is][0][0];
-  double* Jys1d   = Jys  [is][0][0];
-  double* Jzs1d   = Jzs  [is][0][0];
-  double* pXXsn1d = pXXsn[is][0][0];
-  double* pXYsn1d = pXYsn[is][0][0];
-  double* pXZsn1d = pXZsn[is][0][0];
-  double* pYYsn1d = pYYsn[is][0][0];
-  double* pYZsn1d = pYZsn[is][0][0];
-  double* pZZsn1d = pZZsn[is][0][0];
+  double* rhons1d = &rhons[is][0][0][0];
+  double* Jxs1d   = &Jxs  [is][0][0][0];
+  double* Jys1d   = &Jys  [is][0][0][0];
+  double* Jzs1d   = &Jzs  [is][0][0][0];
+  double* pXXsn1d = &pXXsn[is][0][0][0];
+  double* pXYsn1d = &pXYsn[is][0][0][0];
+  double* pXZsn1d = &pXZsn[is][0][0][0];
+  double* pYYsn1d = &pYYsn[is][0][0][0];
+  double* pYZsn1d = &pYZsn[is][0][0][0];
+  double* pZZsn1d = &pZZsn[is][0][0][0];
   //
   const long long nop_ll = pcls.getNOP();
   const int nop = pcls.getNOP();
@@ -220,16 +245,16 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
     Moments& speciesMoments = fetch_momentsArray(thread_num);
     speciesMoments.set_to_zero();
     //
-    doubleArr3& rho = speciesMoments.fetch_rho();
-    doubleArr3& Jx  = speciesMoments.fetch_Jx();
-    doubleArr3& Jy  = speciesMoments.fetch_Jy();
-    doubleArr3& Jz  = speciesMoments.fetch_Jz();
-    doubleArr3& Pxx = speciesMoments.fetch_Pxx();
-    doubleArr3& Pxy = speciesMoments.fetch_Pxy();
-    doubleArr3& Pxz = speciesMoments.fetch_Pxz();
-    doubleArr3& Pyy = speciesMoments.fetch_Pyy();
-    doubleArr3& Pyz = speciesMoments.fetch_Pyz();
-    doubleArr3& Pzz = speciesMoments.fetch_Pzz();
+    arr3_double rho = speciesMoments.fetch_rho();
+    arr3_double Jx  = speciesMoments.fetch_Jx();
+    arr3_double Jy  = speciesMoments.fetch_Jy();
+    arr3_double Jz  = speciesMoments.fetch_Jz();
+    arr3_double Pxx = speciesMoments.fetch_Pxx();
+    arr3_double Pxy = speciesMoments.fetch_Pxy();
+    arr3_double Pxz = speciesMoments.fetch_Pxz();
+    arr3_double Pyy = speciesMoments.fetch_Pyy();
+    arr3_double Pyz = speciesMoments.fetch_Pyz();
+    arr3_double Pzz = speciesMoments.fetch_Pzz();
     // The following loop is expensive, so it is wise to assume that the
     // compiler is stupid.  Therefore we should on the one hand
     // expand things out and on the other hand avoid repeating computations.
@@ -389,16 +414,16 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
     // One-dimensional array access is presumably
     // more efficient on poor compilers.
     //
-    doubleArr1 rho1d = rho.fetch_Arr1();
-    doubleArr1 Jx1d  = Jx .fetch_Arr1();
-    doubleArr1 Jy1d  = Jy .fetch_Arr1();
-    doubleArr1 Jz1d  = Jz .fetch_Arr1();
-    doubleArr1 Pxx1d = Pxx.fetch_Arr1();
-    doubleArr1 Pxy1d = Pxy.fetch_Arr1();
-    doubleArr1 Pxz1d = Pxz.fetch_Arr1();
-    doubleArr1 Pyy1d = Pyy.fetch_Arr1();
-    doubleArr1 Pyz1d = Pyz.fetch_Arr1();
-    doubleArr1 Pzz1d = Pzz.fetch_Arr1();
+    double* rho1d = &rho[0][0][0];
+    double* Jx1d  = &Jx [0][0][0];
+    double* Jy1d  = &Jy [0][0][0];
+    double* Jz1d  = &Jz [0][0][0];
+    double* Pxx1d = &Pxx[0][0][0];
+    double* Pxy1d = &Pxy[0][0][0];
+    double* Pxz1d = &Pxz[0][0][0];
+    double* Pyy1d = &Pyy[0][0][0];
+    double* Pyz1d = &Pyz[0][0][0];
+    double* Pzz1d = &Pzz[0][0][0];
     //
     assert_eq(speciesMoments.get_nx(), nxn);
     assert_eq(speciesMoments.get_ny(), nyn);
@@ -432,10 +457,10 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
 void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col) {
   if (vct->getCartesian_rank() == 0)
     cout << "*** E CALCULATION ***" << endl;
-  double ***divE = newArr3(double, nxc, nyc, nzc);
-  double ***gradPHIX = newArr3(double, nxn, nyn, nzn);
-  double ***gradPHIY = newArr3(double, nxn, nyn, nzn);
-  double ***gradPHIZ = newArr3(double, nxn, nyn, nzn);
+  array3_double divE     (nxc, nyc, nzc);
+  array3_double gradPHIX (nxn, nyn, nzn);
+  array3_double gradPHIY (nxn, nyn, nzn);
+  array3_double gradPHIZ (nxn, nyn, nzn);
 
   double *xkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 E components
   double *bkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
@@ -513,11 +538,6 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   delete[]bkrylov;
   delete[]xkrylovPoisson;
   delete[]bkrylovPoisson;
-  delArr3(divE, nxc, nyc);
-  delArr3(gradPHIX, nxn, nyn);
-  delArr3(gradPHIY, nxn, nyn);
-  delArr3(gradPHIZ, nxn, nyn);
-
 }
 
 /*! Calculate sorgent for Maxwell solver */
@@ -679,7 +699,7 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 }
 
 /*! Calculate PI dot (vectX, vectY, vectZ) */
-void EMfields3D::PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid) {
+void EMfields3D::PIdot(arr3_double& PIdotX, arr3_double& PIdotY, arr3_double& PIdotZ, const_arr3_double& vectX, const_arr3_double& vectY, const_arr3_double& vectZ, int ns, Grid * grid) {
   double beta, edotb, omcx, omcy, omcz, denom;
   beta = .5 * qom[ns] * dt / c;
   for (int i = 1; i < nxn - 1; i++)
@@ -688,17 +708,17 @@ void EMfields3D::PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, dou
         omcx = beta * (Bxn[i][j][k] + Bx_ext[i][j][k]);
         omcy = beta * (Byn[i][j][k] + By_ext[i][j][k]);
         omcz = beta * (Bzn[i][j][k] + Bz_ext[i][j][k]);
-        edotb = vectX[i][j][k] * omcx + vectY[i][j][k] * omcy + vectZ[i][j][k] * omcz;
+        edotb = vectX.get(i,j,k) * omcx + vectY.get(i,j,k) * omcy + vectZ.get(i,j,k) * omcz;
         denom = 1 / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
-        PIdotX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
-        PIdotY[i][j][k] += (vectY[i][j][k] + (vectZ[i][j][k] * omcx - vectX[i][j][k] * omcz + edotb * omcy)) * denom;
-        PIdotZ[i][j][k] += (vectZ[i][j][k] + (vectX[i][j][k] * omcy - vectY[i][j][k] * omcx + edotb * omcz)) * denom;
+        PIdotX.fetch(i,j,k) += (vectX.get(i,j,k) + (vectY.get(i,j,k) * omcz - vectZ.get(i,j,k) * omcy + edotb * omcx)) * denom;
+        PIdotY.fetch(i,j,k) += (vectY.get(i,j,k) + (vectZ.get(i,j,k) * omcx - vectX.get(i,j,k) * omcz + edotb * omcy)) * denom;
+        PIdotZ.fetch(i,j,k) += (vectZ.get(i,j,k) + (vectX.get(i,j,k) * omcy - vectY.get(i,j,k) * omcx + edotb * omcz)) * denom;
       }
-
-
 }
 /*! Calculate MU dot (vectX, vectY, vectZ) */
-void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid) {
+void EMfields3D::MUdot(arr3_double& MUdotX, arr3_double& MUdotY, arr3_double& MUdotZ,
+  const_arr3_double& vectX, const_arr3_double& vectY, const_arr3_double& vectZ, Grid * grid)
+{
   double beta, edotb, omcx, omcy, omcz, denom;
   for (int i = 1; i < nxn - 1; i++)
     for (int j = 1; j < nyn - 1; j++)
@@ -715,18 +735,16 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
           omcx = beta * (Bxn[i][j][k] + Bx_ext[i][j][k]);
           omcy = beta * (Byn[i][j][k] + By_ext[i][j][k]);
           omcz = beta * (Bzn[i][j][k] + Bz_ext[i][j][k]);
-          edotb = vectX[i][j][k] * omcx + vectY[i][j][k] * omcy + vectZ[i][j][k] * omcz;
+          edotb = vectX.get(i,j,k) * omcx + vectY.get(i,j,k) * omcy + vectZ.get(i,j,k) * omcz;
           denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
-          MUdotX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
-          MUdotY[i][j][k] += (vectY[i][j][k] + (vectZ[i][j][k] * omcx - vectX[i][j][k] * omcz + edotb * omcy)) * denom;
-          MUdotZ[i][j][k] += (vectZ[i][j][k] + (vectX[i][j][k] * omcy - vectY[i][j][k] * omcx + edotb * omcz)) * denom;
+          MUdotX.fetch(i,j,k) += (vectX.get(i,j,k) + (vectY.get(i,j,k) * omcz - vectZ.get(i,j,k) * omcy + edotb * omcx)) * denom;
+          MUdotY.fetch(i,j,k) += (vectY.get(i,j,k) + (vectZ.get(i,j,k) * omcx - vectX.get(i,j,k) * omcz + edotb * omcy)) * denom;
+          MUdotZ.fetch(i,j,k) += (vectZ.get(i,j,k) + (vectX.get(i,j,k) * omcy - vectY.get(i,j,k) * omcx + edotb * omcz)) * denom;
         }
-
   }
-
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::smooth(double value, arr3_double& vector, int type, Grid * grid, VirtualTopology3D * vct) {
 
   int nvolte = 6;
   for (int icount = 1; icount < nvolte + 1; icount++) {
@@ -823,7 +841,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 }
 
 /* SPECIES: Interpolation smoothing TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector type = 1 --> node based vector */
-void EMfields3D::smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::smooth(double value, arr4_double& vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
   cout << "Smoothing for Species not implemented in 3D" << endl;
 }
 
@@ -1314,8 +1332,8 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
 /*! Image of Poisson Solver */
 void EMfields3D::PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct) {
   // allocate 2 three dimensional service vectors
-  double ***temp = newArr3(double, nxc, nyc, nzc);
-  double ***im = newArr3(double, nxc, nyc, nzc);
+  array3_double temp(nxc, nyc, nzc);
+  array3_double im(nxc, nyc, nzc);
   eqValue(0.0, image, (nxc - 2) * (nyc - 2) * (nzc - 2));
   eqValue(0.0, temp, nxc, nyc, nzc);
   eqValue(0.0, im, nxc, nyc, nzc);
@@ -1325,9 +1343,6 @@ void EMfields3D::PoissonImage(double *image, double *vector, Grid * grid, Virtua
   grid->lapC2Cpoisson(im, temp, vct);
   // move from physical space to krylov space
   phys2solver(image, im, nxc, nyc, nzc);
-  // deallocate temporary array and objects
-  delArr3(temp, nxc, nyc);
-  delArr3(im, nxc, nyc);
 }
 /*! interpolate charge density and pressure density from node to center */
 void EMfields3D::interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid) {
@@ -1339,25 +1354,25 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   // interpolate adding common nodes among processors
   timeTasks.start_communicate();
 
-  communicateInterp(nxn, nyn, nzn, ns, rhons, 0, 0, 0, 0, 0, 0, vct);
-  communicateInterp(nxn, nyn, nzn, ns, Jxs, 0, 0, 0, 0, 0, 0, vct);
-  communicateInterp(nxn, nyn, nzn, ns, Jys, 0, 0, 0, 0, 0, 0, vct);
-  communicateInterp(nxn, nyn, nzn, ns, Jzs, 0, 0, 0, 0, 0, 0, vct);
-  communicateInterp(nxn, nyn, nzn, ns, pXXsn, 0, 0, 0, 0, 0, 0, vct);
-  communicateInterp(nxn, nyn, nzn, ns, pXYsn, 0, 0, 0, 0, 0, 0, vct);
-  communicateInterp(nxn, nyn, nzn, ns, pXZsn, 0, 0, 0, 0, 0, 0, vct);
-  communicateInterp(nxn, nyn, nzn, ns, pYYsn, 0, 0, 0, 0, 0, 0, vct);
-  communicateInterp(nxn, nyn, nzn, ns, pYZsn, 0, 0, 0, 0, 0, 0, vct);
-  communicateInterp(nxn, nyn, nzn, ns, pZZsn, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, rhons.fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, Jxs  .fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, Jys  .fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, Jzs  .fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, pXXsn.fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, pXYsn.fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, pXZsn.fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, pYYsn.fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, pYZsn.fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, pZZsn.fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
   // calculate the correct densities on the boundaries
   adjustNonPeriodicDensities(ns, vct);
   // put the correct values on ghost cells
   timeTasks.addto_communicate();
 
   communicateNode_P(nxn, nyn, nzn, rhons, ns, vct);
-  communicateNode_P(nxn, nyn, nzn, Jxs, ns, vct);
-  communicateNode_P(nxn, nyn, nzn, Jys, ns, vct);
-  communicateNode_P(nxn, nyn, nzn, Jzs, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, Jxs  , ns, vct);
+  communicateNode_P(nxn, nyn, nzn, Jys  , ns, vct);
+  communicateNode_P(nxn, nyn, nzn, Jzs  , ns, vct);
   communicateNode_P(nxn, nyn, nzn, pXXsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pXYsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pXZsn, ns, vct);
@@ -2473,7 +2488,10 @@ void EMfields3D::sustensorRightZ(double **susxz, double **susyz, double **suszz)
 }
 
 /*! Perfect conductor boundary conditions: LEFT wall */
-void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid) {
+void EMfields3D::perfectConductorLeft(arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
+  const_arr3_double& vectorX, const_arr3_double& vectorY, const_arr3_double& vectorZ,
+  int dir, Grid * grid)
+{
   double** susxy;
   double** susyy;
   double** suszy;
@@ -2491,9 +2509,9 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
       sustensorLeftX(susxx, susyx, suszx);
       for (int i=1; i <  nyn-1;i++)
         for (int j=1; j <  nzn-1;j++){
-          imageX[1][i][j] = vectorX[1][i][j] - (Ex[1][i][j] - susyx[i][j]*vectorY[1][i][j] - suszx[i][j]*vectorZ[1][i][j] - Jxh[1][i][j]*dt*th*FourPI)/susxx[i][j];
-          imageY[1][i][j] = vectorY[1][i][j] - 0.0*vectorY[2][i][j];
-          imageZ[1][i][j] = vectorZ[1][i][j] - 0.0*vectorZ[2][i][j];
+          imageX[1][i][j] = vectorX.get(1,i,j) - (Ex[1][i][j] - susyx[i][j]*vectorY.get(1,i,j) - suszx[i][j]*vectorZ.get(1,i,j) - Jxh[1][i][j]*dt*th*FourPI)/susxx[i][j];
+          imageY[1][i][j] = vectorY.get(1,i,j) - 0.0*vectorY.get(2,i,j);
+          imageZ[1][i][j] = vectorZ.get(1,i,j) - 0.0*vectorZ.get(2,i,j);
         }
       delArr2(susxx,nxn);
       delArr2(susyx,nxn);
@@ -2506,9 +2524,9 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
       sustensorLeftY(susxy, susyy, suszy);
       for (int i=1; i < nxn-1;i++)
         for (int j=1; j <  nzn-1;j++){
-          imageX[i][1][j] = vectorX[i][1][j] - 0.0*vectorX[i][2][j];
-          imageY[i][1][j] = vectorY[i][1][j] - (Ey[i][1][j] - susxy[i][j]*vectorX[i][1][j] - suszy[i][j]*vectorZ[i][1][j] - Jyh[i][1][j]*dt*th*FourPI)/susyy[i][j];
-          imageZ[i][1][j] = vectorZ[i][1][j] - 0.0*vectorZ[i][2][j];
+          imageX[i][1][j] = vectorX.get(i,1,j) - 0.0*vectorX.get(i,2,j);
+          imageY[i][1][j] = vectorY.get(i,1,j) - (Ey[i][1][j] - susxy[i][j]*vectorX.get(i,1,j) - suszy[i][j]*vectorZ.get(i,1,j) - Jyh[i][1][j]*dt*th*FourPI)/susyy[i][j];
+          imageZ[i][1][j] = vectorZ.get(i,1,j) - 0.0*vectorZ.get(i,2,j);
         }
       delArr2(susxy,nxn);
       delArr2(susyy,nxn);
@@ -2521,9 +2539,9 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
       sustensorLeftZ(susxy, susyy, suszy);
       for (int i=1; i <  nxn-1;i++)
         for (int j=1; j <  nyn-1;j++){
-          imageX[i][j][1] = vectorX[i][j][1];
-          imageY[i][j][1] = vectorX[i][j][1];
-          imageZ[i][j][1] = vectorZ[i][j][1] - (Ez[i][j][1] - susxz[i][j]*vectorX[i][j][1] - susyz[i][j]*vectorY[i][j][1] - Jzh[i][j][1]*dt*th*FourPI)/suszz[i][j];
+          imageX[i][j][1] = vectorX.get(i,j,1);
+          imageY[i][j][1] = vectorX.get(i,j,1);
+          imageZ[i][j][1] = vectorZ.get(i,j,1) - (Ez[i][j][1] - susxz[i][j]*vectorX.get(i,j,1) - susyz[i][j]*vectorY.get(i,j,1) - Jzh[i][j][1]*dt*th*FourPI)/suszz[i][j];
         }
       delArr2(susxz,nxn);
       delArr2(susyz,nxn);
@@ -2533,7 +2551,13 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
 }
 
 /*! Perfect conductor boundary conditions: RIGHT wall */
-void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid) {
+void EMfields3D::perfectConductorRight(
+  arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
+  const_arr3_double& vectorX,
+  const_arr3_double& vectorY,
+  const_arr3_double& vectorZ,
+  int dir, Grid * grid)
+{
   double beta, omcx, omcy, omcz, denom;
   double** susxy;
   double** susyy;
@@ -2552,9 +2576,9 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
       sustensorRightX(susxx, susyx, suszx);
       for (int i=1; i < nyn-1;i++)
         for (int j=1; j <  nzn-1;j++){
-          imageX[nxn-2][i][j] = vectorX[nxn-2][i][j] - (Ex[nxn-2][i][j] - susyx[i][j]*vectorY[nxn-2][i][j] - suszx[i][j]*vectorZ[nxn-2][i][j] - Jxh[nxn-2][i][j]*dt*th*FourPI)/susxx[i][j];
-          imageY[nxn-2][i][j] = vectorY[nxn-2][i][j] - 0.0 * vectorY[nxn-3][i][j];
-          imageZ[nxn-2][i][j] = vectorZ[nxn-2][i][j] - 0.0 * vectorZ[nxn-3][i][j];
+          imageX[nxn-2][i][j] = vectorX.get(nxn-2,i,j) - (Ex[nxn-2][i][j] - susyx[i][j]*vectorY.get(nxn-2,i,j) - suszx[i][j]*vectorZ.get(nxn-2,i,j) - Jxh[nxn-2][i][j]*dt*th*FourPI)/susxx[i][j];
+          imageY[nxn-2][i][j] = vectorY.get(nxn-2,i,j) - 0.0 * vectorY.get(nxn-3,i,j);
+          imageZ[nxn-2][i][j] = vectorZ.get(nxn-2,i,j) - 0.0 * vectorZ.get(nxn-3,i,j);
         }
       delArr2(susxx,nxn);
       delArr2(susyx,nxn);       
@@ -2567,9 +2591,9 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
       sustensorRightY(susxy, susyy, suszy);
       for (int i=1; i < nxn-1;i++)
         for (int j=1; j < nzn-1;j++){
-          imageX[i][nyn-2][j] = vectorX[i][nyn-2][j] - 0.0*vectorX[i][nyn-3][j];
-          imageY[i][nyn-2][j] = vectorY[i][nyn-2][j] - (Ey[i][nyn-2][j] - susxy[i][j]*vectorX[i][nyn-2][j] - suszy[i][j]*vectorZ[i][nyn-2][j] - Jyh[i][nyn-2][j]*dt*th*FourPI)/susyy[i][j];
-          imageZ[i][nyn-2][j] = vectorZ[i][nyn-2][j] - 0.0*vectorZ[i][nyn-3][j];
+          imageX[i][nyn-2][j] = vectorX.get(i,nyn-2,j) - 0.0*vectorX.get(i,nyn-3,j);
+          imageY[i][nyn-2][j] = vectorY.get(i,nyn-2,j) - (Ey[i][nyn-2][j] - susxy[i][j]*vectorX.get(i,nyn-2,j) - suszy[i][j]*vectorZ.get(i,nyn-2,j) - Jyh[i][nyn-2][j]*dt*th*FourPI)/susyy[i][j];
+          imageZ[i][nyn-2][j] = vectorZ.get(i,nyn-2,j) - 0.0*vectorZ.get(i,nyn-3,j);
         }
       delArr2(susxy,nxn);
       delArr2(susyy,nxn);
@@ -2582,9 +2606,9 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
       sustensorRightZ(susxz, susyz, suszz);
       for (int i=1; i < nxn-1;i++)
         for (int j=1; j < nyn-1;j++){
-          imageX[i][j][nzn-2] = vectorX[i][j][nzn-2];
-          imageY[i][j][nzn-2] = vectorY[i][j][nzn-2];
-          imageZ[i][j][nzn-2] = vectorZ[i][j][nzn-2] - (Ez[i][j][nzn-2] - susxz[i][j]*vectorX[i][j][nzn-2] - susyz[i][j]*vectorY[i][j][nzn-2] - Jzh[i][j][nzn-2]*dt*th*FourPI)/suszz[i][j];
+          imageX[i][j][nzn-2] = vectorX.get(i,j,nzn-2);
+          imageY[i][j][nzn-2] = vectorY.get(i,j,nzn-2);
+          imageZ[i][j][nzn-2] = vectorZ.get(i,j,nzn-2) - (Ez[i][j][nzn-2] - susxz[i][j]*vectorX.get(i,j,nzn-2) - susyz[i][j]*vectorY.get(i,j,nzn-2) - Jzh[i][j][nzn-2]*dt*th*FourPI)/suszz[i][j];
         }
       delArr2(susxz,nxn);
       delArr2(susyz,nxn);       
@@ -2594,7 +2618,7 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
 }
 
 /*! Perfect conductor boundary conditions for source: LEFT WALL */
-void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
+void EMfields3D::perfectConductorLeftS(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ, int dir) {
 
   double ebc[3];
 
@@ -2640,7 +2664,7 @@ void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, dou
 }
 
 /*! Perfect conductor boundary conditions for source: RIGHT WALL */
-void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
+void EMfields3D::perfectConductorRightS(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ, int dir) {
 
   double ebc[3];
 
@@ -2805,7 +2829,10 @@ void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *
 
 }
 
-void EMfields3D::BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid){
+void EMfields3D::BoundaryConditionsEImage(arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
+  const_arr3_double& vectorX, const_arr3_double& vectorY, const_arr3_double& vectorZ,
+  int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid)
+{
 
   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft == 2) {
     for (int j=1; j < ny-1;j++)
@@ -2865,7 +2892,7 @@ void EMfields3D::BoundaryConditionsEImage(double ***imageX, double ***imageY, do
 
 }
 
-void EMfields3D::BoundaryConditionsB(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct){
+void EMfields3D::BoundaryConditionsB(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct){
 
   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
     for (int j=0; j < ny;j++)
@@ -2948,7 +2975,7 @@ void EMfields3D::BoundaryConditionsB(double ***vectorX, double ***vectorY, doubl
 
 }
 
-void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct){
+void EMfields3D::BoundaryConditionsE(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct){
 
   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
     for (int j=0; j < ny;j++)
@@ -3030,338 +3057,105 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
   }
 }
 
-/*! get Potential array ** */
-double ***EMfields3D::getPHI() {
-  return (PHI);
-}
-/*! get Ex(X,Y,Z) */
-double &EMfields3D::getEx(int indexX, int indexY, int indexZ) const {
-  return (Ex[indexX][indexY][indexZ]);
-}
-/*! get Electric field component X array */
-double ***EMfields3D::getEx() {
-  return (Ex);
-}
 /*! get Electric Field component X array cell without the ghost cells */
-double ***EMfields3D::getExc(Grid3DCU *grid) {
-  double ***arr;
-  double ***tmp;
+void EMfields3D::getExc(arr3_double& arr, Grid3DCU *grid) {
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
-  tmp = newArr3(double,nxc,nyc,nzc);
-
+  array3_double tmp(nxc,nyc,nzc);
   grid->interpN2C(tmp, Ex);
 
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=tmp[i][j][k];
-
-  delArr3(tmp,nxc,nyc);
-  return arr;
-}
-/*! get Ey(X,Y,Z) */
-double &EMfields3D::getEy(int indexX, int indexY, int indexZ) const {
-  return (Ey[indexX][indexY][indexZ]);
-}
-/*! get Electric field component Y array */
-double ***EMfields3D::getEy() {
-  return (Ey);
 }
 /*! get Electric Field component Y array cell without the ghost cells */
-double ***EMfields3D::getEyc(Grid3DCU *grid) {
-  double ***arr;
-  double ***tmp;
+void EMfields3D::getEyc(arr3_double& arr, Grid3DCU *grid) {
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
-  tmp = newArr3(double,nxc,nyc,nzc);
-
+  array3_double tmp(nxc,nyc,nzc);
   grid->interpN2C(tmp, Ey);
 
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=tmp[i][j][k];
-
-  delArr3(tmp,nxc,nyc);
-  return arr;
-}
-/*! get Ez(X,Y,Z) */
-double &EMfields3D::getEz(int indexX, int indexY, int indexZ) const {
-  return (Ez[indexX][indexY][indexZ]);
-}
-/*! get Electric field component Z array */
-double ***EMfields3D::getEz() {
-  return (Ez);
 }
 /*! get Electric Field component Z array cell without the ghost cells */
-double ***EMfields3D::getEzc(Grid3DCU *grid) {
-  double ***arr;
-  double ***tmp;
+void EMfields3D::getEzc(arr3_double& arr, Grid3DCU *grid) {
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
-  tmp = newArr3(double,nxc,nyc,nzc);
-
+  array3_double tmp(nxc,nyc,nzc);
   grid->interpN2C(tmp, Ez);
 
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=tmp[i][j][k];
-
-  delArr3(tmp,nxc,nyc);
-  return arr;
-}
-/*! get Bx(X,Y,Z) */
-double &EMfields3D::getBx(int indexX, int indexY, int indexZ) const {
-  return (Bxn[indexX][indexY][indexZ]);
-}
-/*! get Magnetic Field component X array */
-double ***EMfields3D::getBx() {
-  return (Bxn);
 }
 /*! get Magnetic Field component X array cell without the ghost cells */
-double ***EMfields3D::getBxc() {
-  double ***arr;
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
+void EMfields3D::getBxc(arr3_double& arr) {
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=Bxc[i][j][k];
-  return arr;
-}
-/*! get By(X,Y,Z) */
-double &EMfields3D::getBy(int indexX, int indexY, int indexZ) const {
-  return (Byn[indexX][indexY][indexZ]);
-}
-/*! get Magnetic Field component Y array */
-double ***EMfields3D::getBy() {
-  return (Byn);
 }
 /*! get Magnetic Field component Y array cell without the ghost cells */
-double ***EMfields3D::getByc() {
-  double ***arr;
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
+void EMfields3D::getByc(arr3_double& arr) {
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=Byc[i][j][k];
-  return arr;
-}
-/*! get Bz(X,Y,Z) */
-double &EMfields3D::getBz(int indexX, int indexY, int indexZ) const {
-  return (Bzn[indexX][indexY][indexZ]);
-}
-/*! get Magnetic Field component Z array */
-double ***EMfields3D::getBz() {
-  return (Bzn);
 }
 /*! get Magnetic Field component Z array cell without the ghost cells */
-double ***EMfields3D::getBzc() {
-  double ***arr;
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
+void EMfields3D::getBzc(arr3_double& arr) {
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=Bzc[i][j][k];
-  return arr;
-}
-/*! get rhoc(X,Y,Z) */
-double &EMfields3D::getRHOc(int indexX, int indexY, int indexZ) const {
-  return (rhoc[indexX][indexY][indexZ]);
-} double ***EMfields3D::getRHOc() {
-  return (rhoc);
-}
-/*! get density on node(indexX,indexY,indexZ) */
-double &EMfields3D::getRHOn(int indexX, int indexY, int indexZ) const {
-  return (rhon[indexX][indexY][indexZ]);
-}
-/*! get density array defined on nodes */
-double ***EMfields3D::getRHOn() {
-  return (rhon);
-}
-/*! get rhos(X,Y,Z) : density for species */
-double &EMfields3D::getRHOns(int indexX, int indexY, int indexZ, int is) const {
-  return (rhons[is][indexX][indexY][indexZ]);
-}
-/*! SPECIES: get density array defined on center cells */
-double &EMfields3D::getRHOcs(int indexX, int indexY, int indexZ, int is) const {
-  return (rhocs[is][indexX][indexY][indexZ]);
-}
-/*! get density array defined on nodes */
-double ****EMfields3D::getRHOns() {
-  return (rhons);
 }
 /*! get species density component X array cell without the ghost cells */
-double ***EMfields3D::getRHOcs(Grid3DCU *grid, int is) {
-  double ***arr;
-  double ****tmp;
+void EMfields3D::getRHOcs(arr3_double& arr, Grid3DCU *grid, int is) {
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
-  tmp = newArr4(double,ns,nxc,nyc,nzc);
-
+  array4_double tmp(ns,nxc,nyc,nzc);
   grid->interpN2C(tmp, is, rhons);
 
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-
-  delArr4(tmp,nxc,nyc,nzc);
-  return arr;
 }
 
-/*! get Bx_ext(X,Y,Z)  */
-double &EMfields3D::getBx_ext(int indexX, int indexY, int indexZ) const{
-  return(Bx_ext[indexX][indexY][indexZ]);
-}
-/*!  get By_ext(X,Y,Z) */
-double &EMfields3D::getBy_ext(int indexX, int indexY, int indexZ) const{
-  return(By_ext[indexX][indexY][indexZ]);
-}
-/*!  get Bz_ext(X,Y,Z) */
-double &EMfields3D::getBz_ext(int indexX, int indexY, int indexZ) const{
-  return(Bz_ext[indexX][indexY][indexZ]);
-}
-
-/*! get Bx_ext  */
-double ***EMfields3D::getBx_ext() {
-  return(Bx_ext);
-}
-/*!  get By_ext */
-double ***EMfields3D::getBy_ext() {
-  return(By_ext);
-}
-/*!  get Bz_ext */
-double ***EMfields3D::getBz_ext() {
-  return(Bz_ext);
-}
-
-/*! SPECIES: get pressure tensor component XX defined on nodes */
-double ****EMfields3D::getpXXsn() {
-  return (pXXsn);
-}
-/*! SPECIES: get pressure tensor component XY defined on nodes */
-double ****EMfields3D::getpXYsn() {
-  return (pXYsn);
-}
-/*! SPECIES: get pressure tensor component XZ defined on nodes */
-double ****EMfields3D::getpXZsn() {
-  return (pXZsn);
-}
-/*! SPECIES: get pressure tensor component YY defined on nodes */
-double ****EMfields3D::getpYYsn() {
-  return (pYYsn);
-}
-/*! SPECIES: get pressure tensor component YZ defined on nodes */
-double ****EMfields3D::getpYZsn() {
-  return (pYZsn);
-}
-/*! SPECIES: get pressure tensor component ZZ defined on nodes */
-double ****EMfields3D::getpZZsn() {
-  return (pZZsn);
-}
-/*! get current -Direction X */
-double &EMfields3D::getJx(int indexX, int indexY, int indexZ) const {
-  return (Jx[indexX][indexY][indexZ]);
-}
-/*! get current array X component * */
-double ***EMfields3D::getJx() {
-  return (Jx);
-}
-/*! get current -Direction Y */
-double &EMfields3D::getJy(int indexX, int indexY, int indexZ) const {
-  return (Jy[indexX][indexY][indexZ]);
-}
-/*! get current array Y component * */
-double ***EMfields3D::getJy() {
-  return (Jy);
-}
-/*! get current -Direction Z */
-double &EMfields3D::getJz(int indexX, int indexY, int indexZ) const {
-  return (Jz[indexX][indexY][indexZ]);
-}
-/*! get current array Z component * */
-double ***EMfields3D::getJz() {
-  return (Jz);
-}
-/*!SPECIES: get current array X component */
-double ****EMfields3D::getJxs() {
-  return (Jxs);
-}
-/*! get Jxs(X,Y,Z,is) : density for species */
-double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const {
-  return (Jxs[is][indexX][indexY][indexZ]);
-}
 /*! get Magnetic Field component X array species is cell without the ghost cells */
-double ***EMfields3D::getJxsc(Grid3DCU *grid, int is) {
-  double ***arr;
-  double ****tmp;
+void EMfields3D::getJxsc(arr3_double& arr, Grid3DCU *grid, int is) {
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
-  tmp = newArr4(double,ns,nxc,nyc,nzc);
-
+  array4_double tmp(ns,nxc,nyc,nzc);
   grid->interpN2C(tmp, is, Jxs);
 
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=tmp[is][i][j][k];
+}
 
-  delArr4(tmp,nxc,nyc,nzc);
-  return arr;
-}
-/*! SPECIES: get current array Y component */
-double ****EMfields3D::getJys() {
-  return (Jys);
-}
-/*! get Jxs(X,Y,Z,is) : density for species */
-double &EMfields3D::getJys(int indexX, int indexY, int indexZ, int is) const {
-  return (Jys[is][indexX][indexY][indexZ]);
-}
 /*! get current component Y array species is cell without the ghost cells */
-double ***EMfields3D::getJysc(Grid3DCU *grid, int is) {
-  double ***arr;
-  double ****tmp;
+void EMfields3D::getJysc(arr3_double& arr, Grid3DCU *grid, int is) {
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
-  tmp = newArr4(double,ns,nxc,nyc,nzc);
-
+  array4_double tmp(ns,nxc,nyc,nzc);
   grid->interpN2C(tmp, is, Jys);
 
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-
-  delArr4(tmp,nxc,nyc,nzc);
-  return arr;
-}
-/*!SPECIES: get current array Z component */
-double ****EMfields3D::getJzs() {
-  return (Jzs);
-}
-/*! get Jxs(X,Y,Z,is) : density for species */
-double &EMfields3D::getJzs(int indexX, int indexY, int indexZ, int is) const {
-  return (Jzs[is][indexX][indexY][indexZ]);
 }
 /*! get current component Z array species is cell without the ghost cells */
-double ***EMfields3D::getJzsc(Grid3DCU *grid, int is) {
-  double ***arr;
-  double ****tmp;
+void EMfields3D::getJzsc(arr3_double& arr, Grid3DCU *grid, int is) {
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
-  tmp = newArr4(double,ns,nxc,nyc,nzc);
-
+  array4_double tmp(ns,nxc,nyc,nzc);
   grid->interpN2C(tmp, is, Jzs);
 
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-
-  delArr4(tmp,nxc,nyc,nzc);
-  return arr;
 }
 /*! get the electric field energy */
 double EMfields3D::getEenergy(void) {
@@ -3401,67 +3195,16 @@ double EMfields3D::getBenergy(void) {
 void EMfields3D::print(void) const {
 }
 
-/*! destructor: deallocate arrays */
+/*! destructor*/
 EMfields3D::~EMfields3D() {
-  // nodes
-  delArr3(Ex, nxn, nyn);
-  delArr3(Ey, nxn, nyn);
-  delArr3(Ez, nxn, nyn);
-  delArr3(Exth, nxn, nyn);
-  delArr3(Eyth, nxn, nyn);
-  delArr3(Ezth, nxn, nyn);
-  delArr3(Bxn, nxn, nyn);
-  delArr3(Byn, nxn, nyn);
-  delArr3(Bzn, nxn, nyn);
-  delArr3(rhon, nxn, nyn);
-  delArr3(Jx, nxn, nyn);
-  delArr3(Jy, nxn, nyn);
-  delArr3(Jz, nxn, nyn);
-  delArr3(Jxh, nxn, nyn);
-  delArr3(Jyh, nxn, nyn);
-  delArr3(Jzh, nxn, nyn);
-  // nodes and species
-  delArr4(rhons, ns, nxn, nyn);
-  delArr4(Jxs, ns, nxn, nyn);
-  delArr4(Jys, ns, nxn, nyn);
-  delArr4(Jzs, ns, nxn, nyn);
-  delArr4(pXXsn, ns, nxn, nyn);
-  delArr4(pXYsn, ns, nxn, nyn);
-  delArr4(pXZsn, ns, nxn, nyn);
-  delArr4(pYYsn, ns, nxn, nyn);
-  delArr4(pYZsn, ns, nxn, nyn);
-  delArr4(pZZsn, ns, nxn, nyn);
-  // central points
-  delArr3(PHI, nxc, nyc);
-  delArr3(Bxc, nxc, nyc);
-  delArr3(Byc, nxc, nyc);
-  delArr3(Bzc, nxc, nyc);
-  delArr3(rhoc, nxc, nyc);
-  delArr3(rhoh, nxc, nyc);
-  // various stuff needs to be deallocated too
-  delArr3(tempXC, nxc, nyc);
-  delArr3(tempYC, nxc, nyc);
-  delArr3(tempZC, nxc, nyc);
-  delArr3(tempXN, nxn, nyn);
-  delArr3(tempYN, nxn, nyn);
-  delArr3(tempZN, nxn, nyn);
-  delArr3(tempC, nxc, nyc);
-  delArr3(tempX, nxn, nyn);
-  delArr3(tempY, nxn, nyn);
-  delArr3(tempZ, nxn, nyn);
-  delArr3(temp2X, nxn, nyn);
-  delArr3(temp2Y, nxn, nyn);
-  delArr3(temp2Z, nxn, nyn);
-  delArr3(imageX, nxn, nyn);
-  delArr3(imageY, nxn, nyn);
-  delArr3(imageZ, nxn, nyn);
-  delArr3(Dx, nxn, nyn);
-  delArr3(Dy, nxn, nyn);
-  delArr3(Dz, nxn, nyn);
-  delArr3(vectX, nxn, nyn);
-  delArr3(vectY, nxn, nyn);
-  delArr3(vectZ, nxn, nyn);
-  delArr3(divC, nxc, nyc);
+  delete [] qom;
+  delete [] rhoINIT;
+  delete injFieldsLeft;
+  delete injFieldsRight;
+  delete injFieldsTop;
+  delete injFieldsBottom;
+  delete injFieldsFront;
+  delete injFieldsRear;
   for(int i=0;i<sizeMomentsArray;i++)
   {
     delete momentsArray[i];

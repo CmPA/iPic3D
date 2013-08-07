@@ -2,6 +2,7 @@
 
 #include "ConfigFile.h"
 #include "errors.h"
+#include "debug.h"
 
 using std::string;
 

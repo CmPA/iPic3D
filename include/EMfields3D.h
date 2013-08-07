@@ -91,9 +91,11 @@ class EMfields3D                // :public Field
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
 
     /*! Calculate the three components of Pi(implicit pressure) cross image vector */
-    void PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid);
+    void PIdot(arr3_double& PIdotX, arr3_double& PIdotY, arr3_double& PIdotZ,
+      const_arr3_double& vectX, const_arr3_double& vectY, const_arr3_double& vectZ, int ns, Grid * grid);
     /*! Calculate the three components of mu (implicit permeattivity) cross image vector */
-    void MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid);
+    void MUdot(arr3_double& MUdotX, arr3_double& MUdotY, arr3_double& MUdotZ,
+      const_arr3_double& vectX, const_arr3_double& vectY, const_arr3_double& vectZ, Grid * grid);
     /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
     void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
@@ -107,9 +109,9 @@ class EMfields3D                // :public Field
     /*! Sum current over different species */
     void sumOverSpeciesJ();
     /*! Smoothing after the interpolation* */
-    void smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct);
+    void smooth(double value, arr3_double& vector, int type, Grid * grid, VirtualTopology3D * vct);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
-    void smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
+    void smooth(double value, arr4_double& vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
     /*! smooth the electric field */
     void smoothE(double value, VirtualTopology3D * vct, Collective *col);
 
@@ -145,13 +147,20 @@ class EMfields3D                // :public Field
 
 
     /*! Perfect conductor boundary conditions LEFT wall */
-    void perfectConductorLeft(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid);
+    void perfectConductorLeft(arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
+      const_arr3_double& vectorX, const_arr3_double& vectorY, const_arr3_double& vectorZ,
+      int dir, Grid * grid);
     /*! Perfect conductor boundary conditions RIGHT wall */
-    void perfectConductorRight(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid);
+    void perfectConductorRight(
+      arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
+      const_arr3_double& vectorX,
+      const_arr3_double& vectorY,
+      const_arr3_double& vectorZ,
+      int dir, Grid * grid);
     /*! Perfect conductor boundary conditions for source LEFT wall */
-    void perfectConductorLeftS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
+    void perfectConductorLeftS(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ, int dir);
     /*! Perfect conductor boundary conditions for source RIGHT wall */
-    void perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
+    void perfectConductorRightS(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ, int dir);
 
     /*! Calculate the sysceptibility tensor on the boundary */
     void sustensorRightX(double **susxx, double **susyx, double **suszx);
@@ -161,129 +170,97 @@ class EMfields3D                // :public Field
     void sustensorRightZ(double **susxz, double **susyz, double **suszz);
     void sustensorLeftZ (double **susxz, double **susyz, double **suszz);
 
+    /*** accessor methods ***/
+
     /*! get Potential array */
-    double ***getPHI();
-    /*! get Electric Field component X defined on node(indexX,indexY,indexZ) */
-    double &getEx(int indexX, int indexY, int indexZ) const;
-    /*! get Electric field X component array */
-    double ***getEx();
-    /*! get Electric field X component cell array without the ghost cells */
-    double ***getExc(Grid3DCU *grid);
-    /*! get Electric Field component Y defined on node(indexX,indexY,indexZ) */
-    double &getEy(int indexX, int indexY, int indexZ) const;
-    /*! get Electric field Y component array */
-    double ***getEy();
-    /*! get Electric field Y component cell array without the ghost cells */
-    double ***getEyc(Grid3DCU *grid);
-    /*! get Electric Field component Z defined on node(indexX,indexY,indexZ) */
-    double &getEz(int indexX, int indexY, int indexZ) const;
-    /*! get Electric field Z component array */
-    double ***getEz();
-    /*! get Electric field Z component cell array without the ghost cells */
-    double ***getEzc(Grid3DCU *grid);
-    /*! get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
-    double &getBx(int indexX, int indexY, int indexZ) const;
-    /*! get Magnetic field X component array */
-    double ***getBx();
-    /*! get Magnetic field X component cell array without the ghost cells */
-    double ***getBxc();
-    /*! get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
-    double &getBy(int indexX, int indexY, int indexZ) const;
-    /*! get Magnetic field Y component array */
-    double ***getBy();
-    /*! get Magnetic field Y component cell array without the ghost cells */
-    double ***getByc();
-    /*! get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
-    double &getBz(int indexX, int indexY, int indexZ) const;
-    /*! get Magnetic field Z component array */
-    double ***getBz();
-    /*! get Magnetic field Z component cell array without the ghost cells */
-    double ***getBzc();
-    /*! get density on cell(indexX,indexY,indexZ) */
-    double &getRHOc(int indexX, int indexY, int indexZ) const;
-    /*! get density array on center cell */
-    double ***getRHOc();
-    /*! get density on nodes(indexX,indexY,indexZ) */
-    double &getRHOn(int indexX, int indexY, int indexZ) const;
-    /*! get density array on nodes */
-    double ***getRHOn();
-    /*! SPECIES: get density on nodes(indexX,indexY,indexZ) */
-    double &getRHOns(int indexX, int indexY, int indexZ, int is) const;
-    /*! SPECIES: get density on center cell(indexX,indexY,indexZ) */
-    double &getRHOcs(int indexX, int indexY, int indexZ, int is) const;
-    /*! SPECIES: get density array on nodes */
-    double ****getRHOns();
-    /*! SPECIES: get density array on cells without the ghost cells */
-    double ***getRHOcs(Grid3DCU *grid, int is);
+    arr3_double getPHI() {return PHI;}
 
-    /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
-    double &getBx_ext(int indexX, int indexY, int indexZ) const;
-    /** get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
-    double &getBy_ext(int indexX, int indexY, int indexZ) const;
-    /** get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
-    double &getBz_ext(int indexX, int indexY, int indexZ) const;
+    // field components defined on nodes
+    //
+    double getEx(int X, int Y, int Z) const { return Ex.get(X,Y,Z);}
+    double getEy(int X, int Y, int Z) const { return Ey.get(X,Y,Z);}
+    double getEz(int X, int Y, int Z) const { return Ez.get(X,Y,Z);}
+    double getBx(int X, int Y, int Z) const { return Bxn.get(X,Y,Z);}
+    double getBy(int X, int Y, int Z) const { return Byn.get(X,Y,Z);}
+    double getBz(int X, int Y, int Z) const { return Bzn.get(X,Y,Z);}
+    //
+    arr3_double getEx() { return Ex; }
+    arr3_double getEy() { return Ey; }
+    arr3_double getEz() { return Ez; }
+    arr3_double getBx() { return Bxn; }
+    arr3_double getBy() { return Byn; }
+    arr3_double getBz() { return Bzn; }
 
-    /** get Magnetic Field component X */
-    double ***getBx_ext();
-    /** get Magnetic Field component Y */
-    double ***getBy_ext();
-    /** get Magnetic Field component Z */
-    double ***getBz_ext();
+    // field components without ghost cells
+    //
+    void getExc(arr3_double& arr, Grid3DCU *grid);
+    void getEyc(arr3_double& arr, Grid3DCU *grid);
+    void getEzc(arr3_double& arr, Grid3DCU *grid);
+    void getBxc(arr3_double& arr);
+    void getByc(arr3_double& arr);
+    void getBzc(arr3_double& arr);
 
-    /*! get pressure tensor XX for species */
-    double ****getpXXsn();
-    /*! get pressure tensor XY for species */
-    double ****getpXYsn();
-    /*! get pressure tensor XZ for species */
-    double ****getpXZsn();
-    /*! get pressure tensor YY for species */
-    double ****getpYYsn();
-    /*! get pressure tensor YZ for species */
-    double ****getpYZsn();
-    /*! get pressure tensor ZZ for species */
-    double ****getpZZsn();
+    arr3_double getRHOc() { return rhoc; }
+    arr3_double getRHOn() { return rhon; }
+    double getRHOc(int X, int Y, int Z) const { return rhoc.get(X,Y,Z);}
+    double getRHOn(int X, int Y, int Z) const { return rhon.get(X,Y,Z);}
 
-    /*! get Jx(X,Y,Z) */
-    double &getJx(int indexX, int indexY, int indexZ) const;
-    /*! get current -Direction X */
-    double ***getJx();
-    /*! get Jxs(X,Y,Z,is) */
-    double &getJxs(int indexX, int indexY, int indexZ, int is) const;
-    /*! SPECIES: get current -Direction X */
-    double ****getJxs();
-    /*! SPECIES: get current X component for species is in all cells except ghost */
-    double ***getJxsc(Grid3DCU *grid, int is);
-    /*! get Jy(X,Y,Z) */
-    double &getJy(int indexX, int indexY, int indexZ) const;
-    /*! get current -Direction Y */
-    double ***getJy();
-    /*! get Jys(X,Y,Z,is) */
-    double &getJys(int indexX, int indexY, int indexZ, int is) const;
-    /*! SPECIES: get current -Direction Y */
-    double ****getJys();
-    /*! SPECIES: get current Y component for species is in all cells except ghost */
-    double ***getJysc(Grid3DCU *grid, int is);
-    /*! get Jz(X,Y,Z) */
-    double &getJz(int indexX, int indexY, int indexZ) const;
-    /*! get current -Direction Z */
-    double ***getJz();
-    /*! get Jzs(X,Y,Z,is) */
-    double &getJzs(int indexX, int indexY, int indexZ, int is) const;
-    /*! SPECIES: get current -Direction Z */
-    double ****getJzs();
-    /*! SPECIES: get current Z component for species is in all cells except ghost */
-    double ***getJzsc(Grid3DCU *grid, int is);
+    // densities per species:
+    //
+    double getRHOcs(int X,int Y,int Z,int is)const{return rhocs.get(is,X,Y,Z);}
+    double getRHOns(int X,int Y,int Z,int is)const{return rhons.get(is,X,Y,Z);}
+    arr4_double getRHOns(){return rhons;}
+    /* density on cells without ghost cells */
+    void getRHOcs(arr3_double& arr, Grid3DCU *grid, int is);
+
+    double getBx_ext(int X, int Y, int Z) const{return Bx_ext.get(X,Y,Z);}
+    double getBy_ext(int X, int Y, int Z) const{return By_ext.get(X,Y,Z);}
+    double getBz_ext(int X, int Y, int Z) const{return Bz_ext.get(X,Y,Z);}
+    
+    arr3_double getBx_ext() { return Bx_ext; }
+    arr3_double getBy_ext() { return By_ext; }
+    arr3_double getBz_ext() { return Bz_ext; }
+
+    arr4_double getpXXsn() { return pXXsn; }
+    arr4_double getpXYsn() { return pXYsn; }
+    arr4_double getpXZsn() { return pXZsn; }
+    arr4_double getpYYsn() { return pYYsn; }
+    arr4_double getpYZsn() { return pYZsn; }
+    arr4_double getpZZsn() { return pZZsn; }
+
+    double getJx(int X, int Y, int Z) const { return Jx.get(X,Y,Z);}
+    double getJy(int X, int Y, int Z) const { return Jy.get(X,Y,Z);}
+    double getJz(int X, int Y, int Z) const { return Jz.get(X,Y,Z);}
+    arr3_double getJx() { return Jx; }
+    arr3_double getJy() { return Jy; }
+    arr3_double getJz() { return Jz; }
+    arr4_double getJxs() { return Jxs; }
+    arr4_double getJys() { return Jys; }
+    arr4_double getJzs() { return Jzs; }
+
+    double getJxs(int X,int Y,int Z,int is)const{return Jxs.get(is,X,Y,Z);}
+    double getJys(int X,int Y,int Z,int is)const{return Jys.get(is,X,Y,Z);}
+    double getJzs(int X,int Y,int Z,int is)const{return Jzs.get(is,X,Y,Z);}
+
+    /*** accessor that require computing ***/
+
+    // get current for species in all cells except ghost
+    //
+    void getJxsc(arr3_double& arr, Grid3DCU *grid, int is);
+    void getJysc(arr3_double& arr, Grid3DCU *grid, int is);
+    void getJzsc(arr3_double& arr, Grid3DCU *grid, int is);
+
     /*! get the electric field energy */
     double getEenergy();
     /*! get the magnetic field energy */
     double getBenergy();
 
-  /*! fetch array for summing moments of thread i */
-  Moments& fetch_momentsArray(int i){
-    assert_le(0,i);
-    assert_le(i,sizeMomentsArray);
-    return *momentsArray[i];
-  }
+    /*! fetch array for summing moments of thread i */
+    Moments& fetch_momentsArray(int i){
+      assert_le(0,i);
+      assert_le(i,sizeMomentsArray);
+      return *momentsArray[i];
+    }
 
     /*! print electromagnetic fields info */
     void print(void) const;
@@ -350,61 +327,61 @@ class EMfields3D                // :public Field
     double L_square;
 
     /*! PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes */
-    double ***PHI;
-    /*! Ex: electric field X-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Ex;
-    /*! Exth: implicit electric field X-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Exth;
-    /*! Ey: electric field Y-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Ey;
-    /*! Eyth: implicit electric field Y-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Eyth;
-    /*! Ez: electric field Z-component (indexX, indexY, indexZ, #species), defined on nodes */
-    double ***Ez;
-    /*! Ezth: implicit electric field Z-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Ezth;
-    /*! Bxc: magnetic field X-component (indexX, indexY, indexZ), defined on central points between nodes */
-    double ***Bxc;
-    /*! Byc: magnetic field Y-component (indexX, indexY, indexZ), defined on central points between nodes */
-    double ***Byc;
-    /*! Bzc: magnetic field Z-component (indexX, indexY, indexZ), defined on central points between nodes */
-    double ***Bzc;
-    /*! Bxn: magnetic field X-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Bxn;
-    /*! Byn: magnetic field Y-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Byn;
-    /*! Bzn: magnetic field Z-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Bzn;
+    array3_double PHI;
+
+    // Electric field components defined on nodes
+    //
+    array3_double Ex;
+    array3_double Ey;
+    array3_double Ez;
+
+    // implicit electric field components defined on nodes
+    //
+    array3_double Exth;
+    array3_double Eyth;
+    array3_double Ezth;
+
+    // magnetic field components defined on central points between nodes
+    //
+    array3_double Bxc;
+    array3_double Byc;
+    array3_double Bzc;
+
+    // magnetic field components defined on nodes
+    //
+    array3_double Bxn;
+    array3_double Byn;
+    array3_double Bzn;
 
     // *************************************
     // TEMPORARY ARRAY
     // ************************************
     /*!some temporary arrays (for calculate hat functions) */
-    double ***tempXC;
-    double ***tempYC;
-    double ***tempZC;
-    double ***tempXN;
-    double ***tempYN;
-    double ***tempZN;
+    array3_double tempXC;
+    array3_double tempYC;
+    array3_double tempZC;
+    array3_double tempXN;
+    array3_double tempYN;
+    array3_double tempZN;
     /*! other temporary arrays (in MaxwellSource) */
-    double ***tempC;
-    double ***tempX;
-    double ***tempY;
-    double ***tempZ;
-    double ***temp2X;
-    double ***temp2Y;
-    double ***temp2Z;
+    array3_double tempC;
+    array3_double tempX;
+    array3_double tempY;
+    array3_double tempZ;
+    array3_double temp2X;
+    array3_double temp2Y;
+    array3_double temp2Z;
     /*! and some for MaxwellImage */
-    double ***imageX;
-    double ***imageY;
-    double ***imageZ;
-    double ***Dx;
-    double ***Dy;
-    double ***Dz;
-    double ***vectX;
-    double ***vectY;
-    double ***vectZ;
-    double ***divC;
+    array3_double imageX;
+    array3_double imageY;
+    array3_double imageZ;
+    array3_double Dx;
+    array3_double Dy;
+    array3_double Dz;
+    array3_double vectX;
+    array3_double vectY;
+    array3_double vectZ;
+    array3_double divC;
     /* temporary arrays for summing moments */
     int sizeMomentsArray;
     Moments **momentsArray;
@@ -415,87 +392,78 @@ class EMfields3D                // :public Field
     // *******************************************************************************
 
     /*! Charge density, defined on central points of the cell */
-    double ***rhoc;
+    array3_double rhoc;
     /*! Charge density, defined on nodes */
-    double ***rhon;
+    array3_double rhon;
     /*! Implicit charge density, defined on central points of the cell */
-    double ***rhoh;
+    array3_double rhoh;
     /*! SPECIES: charge density for each species, defined on nodes */
-    double ****rhons;
+    array4_double rhons;
     /*! SPECIES: charge density for each species, defined on central points of the cell */
-    double ****rhocs;
-    /*! Current density component-X, defined on nodes */
-    double ***Jx;
-    /*! Current density component-Y, defined on nodes */
-    double ***Jy;
-    /*! Current density component-Z, defined on nodes */
-    double ***Jz;
-    /*! Implicit current density X-component, defined on nodes */
-    double ***Jxh;
-    /*! Implicit current density Y-component, defined on nodes */
-    double ***Jyh;
-    /*! Implicit current density Z-component, defined on nodes */
-    double ***Jzh;
-    /*! SPECIES: current density component-X for species, defined on nodes */
-    double ****Jxs;
-    /*! SPECIES: current density component-Y for species, defined on nodes */
-    double ****Jys;
-    /*! SPECIES: current density component-Z for species, defined on nodes */
-    double ****Jzs;
-    /*! External magnetic field component-X, defined on nodes */
-    double***  Bx_ext;
-    /*! External magnetic field component-Y, defined on nodes */
-    double***  By_ext;
-    /*! External magnetic field component-Z, defined on nodes */
-    double***  Bz_ext;
-    /*! External current field component-X, defined on nodes */
-    double***  Jx_ext;
-    /*! External current field component-Y, defined on nodes */
-    double***  Jy_ext;
-    /*! External current field component-Z, defined on nodes */
-    double***  Jz_ext;
+    array4_double rhocs;
 
-    /*! SPECIES: pressure tensor component-XX, defined on nodes */
-    double ****pXXsn;
-    /*! SPECIES: pressure tensor component-XY, defined on nodes */
-    double ****pXYsn;
-    /*! SPECIES: pressure tensor component-XZ, defined on nodes */
-    double ****pXZsn;
-    /*! SPECIES: pressure tensor component-XZ, defined on nodes */
-    double ****pYYsn;
-    /*! SPECIES: pressure tensor component-YZ, defined on nodes */
-    double ****pYZsn;
-    /*! SPECIES: pressure tensor component-ZZ, defined on nodes */
-    double ****pZZsn;
+    // current density defined on nodes
+    //
+    array3_double Jx;
+    array3_double Jy;
+    array3_double Jz;
 
+    // implicit current density defined on nodes
+    //
+    array3_double Jxh;
+    array3_double Jyh;
+    array3_double Jzh;
 
-    /*! Field Boundary Condition 0 = Dirichlet Boundary Condition: specifies the value to take on the boundary of the domain 1 = Neumann Boundary Condition: specifies the value of derivative to take on the boundary of the domain 2 = Periodic condition */
+    // species-specific current densities defined on nodes
+    //
+    array4_double Jxs;
+    array4_double Jys;
+    array4_double Jzs;
 
-    /*! Boundary Condition Electrostatic Potential: FaceXright */
+    // magnetic field components defined on nodes
+    //
+    array3_double   Bx_ext;
+    array3_double   By_ext;
+    array3_double   Bz_ext;
+
+    // external current, defined on nodes
+    array3_double   Jx_ext;
+    array3_double   Jy_ext;
+    array3_double   Jz_ext;
+
+    // pressure tensor components, defined on nodes
+    array4_double pXXsn;
+    array4_double pXYsn;
+    array4_double pXZsn;
+    array4_double pYYsn;
+    array4_double pYZsn;
+    array4_double pZZsn;
+
+    /*! Field Boundary Condition
+      0 = Dirichlet Boundary Condition: specifies the
+          value on the boundary of the domain
+      1 = Neumann Boundary Condition: specifies the value of
+          derivative on the boundary of the domain
+      2 = Periodic boundary condition */
+
+    // boundary conditions for electrostatic potential
+    //
     int bcPHIfaceXright;
-    /*! Boundary Condition Electrostatic Potential:FaceXleft */
     int bcPHIfaceXleft;
-    /*! Boundary Condition Electrostatic Potential:FaceYright */
     int bcPHIfaceYright;
-    /*! Boundary Condition Electrostatic Potential:FaceYleft */
     int bcPHIfaceYleft;
-    /*! Boundary Condition Electrostatic Potential:FaceZright */
     int bcPHIfaceZright;
-    /*! Boundary Condition Electrostatic Potential:FaceZleft */
     int bcPHIfaceZleft;
 
     /*! Boundary condition for electric field 0 = perfect conductor 1 = magnetic mirror */
-    /*! Boundary Condition EM Field: FaceXright */
+    //
+    // boundary conditions for EM field
+    //
     int bcEMfaceXright;
-    /*! Boundary Condition EM Field: FaceXleft */
     int bcEMfaceXleft;
-    /*! Boundary Condition EM Field: FaceYright */
     int bcEMfaceYright;
-    /*! Boundary Condition EM Field: FaceYleft */
     int bcEMfaceYleft;
-    /*! Boundary Condition EM Field: FaceZright */
     int bcEMfaceZright;
-    /*! Boundary Condition EM Field: FaceZleft */
     int bcEMfaceZleft;
 
 
@@ -529,10 +497,13 @@ class EMfields3D                // :public Field
     injInfoFields* get_InfoFieldsRear();
     injInfoFields* get_InfoFieldsRight();
 
-    void BoundaryConditionsB(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
-    void BoundaryConditionsE(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
-    void BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
-
+    void BoundaryConditionsB(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ,
+      int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
+    void BoundaryConditionsE(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ,
+      int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
+    void BoundaryConditionsEImage(arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
+      const_arr3_double& vectorX, const_arr3_double& vectorY, const_arr3_double& vectorZ,
+      int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
 };
 
 inline void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is) {

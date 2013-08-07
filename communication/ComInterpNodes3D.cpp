@@ -1,9 +1,10 @@
 
 #include "ComInterpNodes3D.h"
 #include "ipicdefs.h"
+#include "Alloc.h"
 
 /** communicate ghost cells and sum the contribution with a index indicating the number of species*/
-void communicateInterp(int nx, int ny, int nz, int ns, double ****vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+void communicateInterp(int nx, int ny, int nz, int ns, double**** vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
   double *ghostXleftFace = new double[(ny - 2) * (nz - 2)];
