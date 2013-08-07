@@ -41,17 +41,22 @@ void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCt
   /* Write the Electric field */
   /* ------------------------ */
 
+  array3_double arr3(nxc-2,nyc-2,nzc-2);
+
   grpname = "Fields";
   dtaname = "Ex";
-  outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getExc(grid), nxc-2, nyc-2, nzc-2);
+  EMf->getExc(arr3,grid);
+  outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
 
   grpname = "Fields";
   dtaname = "Ey";
-  outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getEyc(grid), nxc-2, nyc-2, nzc-2);
+  EMf->getEyc(arr3,grid);
+  outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
 
   grpname = "Fields";
   dtaname = "Ez";
-  outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getEzc(grid), nxc-2, nyc-2, nzc-2);
+  EMf->getEzc(arr3,grid);
+  outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
 
   /* ------------------------ */
   /* Write the Magnetic field */
@@ -59,15 +64,18 @@ void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCt
 
   grpname = "Fields";
   dtaname = "Bx";
-  outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getBxc(), nxc-2, nyc-2, nzc-2);
+  EMf->getBxc(arr3);
+  outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
 
   grpname = "Fields";
   dtaname = "By";
-  outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getByc(), nxc-2, nyc-2, nzc-2);
+  EMf->getByc(arr3);
+  outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
 
   grpname = "Fields";
   dtaname = "Bz";
-  outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getBzc(), nxc-2, nyc-2, nzc-2);
+  EMf->getBzc(arr3);
+  outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
 
   /* ----------------------------------------------- */
   /* Write the Charge Density field for each species */
@@ -80,7 +88,9 @@ void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCt
 
     grpname = "Fields";
     dtaname = "Rho_" + snmbr.str();
-    outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getRHOcs(grid, is), nxc-2, nyc-2, nzc-2);
+    EMf->getRHOcs(arr3,grid, is);
+    EMf->getRHOcs(arr3, grid, is);
+    outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
   }
 
   /* ---------------------------------------- */
@@ -94,15 +104,18 @@ void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCt
 
     grpname = "Fields";
     dtaname = "Jx_" + snmbr.str();
-    outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getJxsc(grid, is), nxc-2, nyc-2, nzc-2);
+    EMf->getJxsc(arr3, grid, is);
+    outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
 
     grpname = "Fields";
     dtaname = "Jy_" + snmbr.str();
-    outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getJysc(grid, is), nxc-2, nyc-2, nzc-2);
+    EMf->getJysc(arr3, grid, is);
+    outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
 
     grpname = "Fields";
     dtaname = "Jz_" + snmbr.str();
-    outputfile.WritePHDF5dataset(grpname, dtaname, EMf->getJzsc(grid, is), nxc-2, nyc-2, nzc-2);
+    EMf->getJzsc(arr3, grid, is);
+    outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
   }
 
   outputfile.ClosePHDF5file();

@@ -336,9 +336,9 @@ void testArr2_diagonal()
    type** Bold = newArr2(type, dim1, dim2);
    type** Cold = newArr2(type, dim1, dim2);
 
-   Arr2<type> Aarr(dim1, dim2);
-   Arr2<type> Barr(dim1, dim2);
-   Arr2<type> Carr(dim1, dim2);
+   array_ref2<type> Aarr(dim1, dim2);
+   array_ref2<type> Barr(dim1, dim2);
+   array_ref2<type> Carr(dim1, dim2);
 
    printf("Initializing data ...\n");
    for(size_t i=0; i<dim1; i++)
@@ -397,7 +397,7 @@ void testArr2_diagonal()
    {
       Aarr[i][j] = Barr[i][j] * Carr[i][j];
    }
-   printf("%d ms = Total time [i][j] access of Arr2\n", tv_to_ms(stopwatch(LAP)));
+   printf("%d ms = Total time [i][j] access of array_ref2\n", tv_to_ms(stopwatch(LAP)));
 
    for(int t=0; t<ITERS; t++)
    for(size_t i=0; i<dim1; i++)
@@ -406,7 +406,7 @@ void testArr2_diagonal()
       //Aarr(i,j) = Barr(i,j) * Carr(i,j);
       Aarr.fetch(i,j) = Barr.fetch(i,j) * Carr.fetch(i,j);
    }
-   printf("%d ms = Total time (i,j) access of Arr2\n", tv_to_ms(stopwatch(LAP)));
+   printf("%d ms = Total time (i,j) access of array_ref2\n", tv_to_ms(stopwatch(LAP)));
 
    for(size_t i=0; i<dim1; i++)
    for(size_t j=i; j<dim2; j++)
@@ -447,9 +447,9 @@ void testArr2()
    type** Bold = newArr2(type, dim1, dim2);
    type** Cold = newArr2(type, dim1, dim2);
 
-   Arr2<type> Aarr(dim1, dim2);
-   Arr2<type> Barr(dim1, dim2);
-   Arr2<type> Carr(dim1, dim2);
+   array_ref2<type> Aarr(dim1, dim2);
+   array_ref2<type> Barr(dim1, dim2);
+   array_ref2<type> Carr(dim1, dim2);
 
    printf("Initializing data ...\n");
    for(size_t i=0; i<dim1; i++)
@@ -506,7 +506,7 @@ void testArr2()
    {
       Aarr[i][j] = Barr[i][j] * Carr[i][j];
    }
-   printf("%d ms = Total time [i][j] access of Arr2\n", tv_to_ms(stopwatch(LAP)));
+   printf("%d ms = Total time [i][j] access of array_ref2\n", tv_to_ms(stopwatch(LAP)));
 
    for(int t=0; t<ITERS; t++)
    for(size_t i=0; i<dim1; i++)
@@ -514,7 +514,7 @@ void testArr2()
    {
       Aarr.fetch(i,j) = Barr.get(i,j) * Carr.get(i,j);
    }
-   printf("%d ms = Total time (i,j) access of Arr2\n", tv_to_ms(stopwatch(LAP)));
+   printf("%d ms = Total time (i,j) access of array_ref2\n", tv_to_ms(stopwatch(LAP)));
 
    for(size_t i=0; i<dim1; i++)
    for(size_t j=0; j<dim2; j++)
@@ -543,6 +543,20 @@ for(size_t k=0; k<dim3; k++) \
 printf("%d ms = Total time " #arg2 "\n", tv_to_ms(stopwatch(LAP)));
 
 template <class type>
+void set_prod3(array_ref3<type> Aarr,const_arr3<type> Barr,array_ref3<type> Carr,int ITERS, size_t dim1,size_t dim2,size_t dim3)
+{
+   for(int t=0; t<ITERS; t++)
+   for(size_t i=0; i<dim1; i++)
+   for(size_t j=0; j<dim2; j++)
+   for(size_t k=0; k<dim3; k++)
+   {
+      //Aarr[i][j][k] = Barr[i][j][k] * Carr[i][j][k];
+      Aarr.fetch(i,j,k) = Barr.get(i,j,k) * Carr.get(i,j,k);
+   }
+   printf("%d ms = Total time [i][j][k] access of array_ref3\n", tv_to_ms(stopwatch(LAP)));
+}
+
+template <class type>
 void testArr3()
 {
    const int ITERS = 100;
@@ -562,12 +576,12 @@ void testArr3()
    type*** Bold = newArr3(type, dim1, dim2, dim3);
    type*** Cold = newArr3(type, dim1, dim2, dim3);
 
-   //Array3<type> Aarr(dim1, dim2, dim3);
-   //Array3<type> Barr(dim1, dim2, dim3);
-   //Array3<type> Carr(dim1, dim2, dim3);
-   Arr3<type> Aarr(dim1, dim2, dim3);
-   Arr3<type> Barr(dim1, dim2, dim3);
-   Arr3<type> Carr(dim1, dim2, dim3);
+   //array3<type> Aarr(dim1, dim2, dim3);
+   //array3<type> Barr(dim1, dim2, dim3);
+   //array3<type> Carr(dim1, dim2, dim3);
+   array_ref3<type> Aarr(dim1, dim2, dim3);
+   array_ref3<type> Barr(dim1, dim2, dim3);
+   array_ref3<type> Carr(dim1, dim2, dim3);
 
    printf("Initializing data ...\n");
    for(size_t i=0; i<dim1; i++)
@@ -615,14 +629,7 @@ void testArr3()
    }
    printf("%d ms = Total time (i,j,k) Vicenc array\n", tv_to_ms(stopwatch(LAP)));
 
-   for(int t=0; t<ITERS; t++)
-   for(size_t i=0; i<dim1; i++)
-   for(size_t j=0; j<dim2; j++)
-   for(size_t k=0; k<dim3; k++)
-   {
-      Aarr[i][j][k] = Barr[i][j][k] * Carr[i][j][k];
-   }
-   printf("%d ms = Total time [i][j][k] access of Arr3\n", tv_to_ms(stopwatch(LAP)));
+   set_prod3(Aarr,Barr,Carr,ITERS,dim1,dim2,dim3);
 
    for(int t=0; t<ITERS; t++)
    for(size_t i=0; i<dim1; i++)
@@ -631,7 +638,7 @@ void testArr3()
    {
       Aarr.fetch(i,j,k) = Barr.get(i,j,k) * Carr.get(i,j,k);
    }
-   printf("%d ms = Total time (i,j,k) access of Arr3\n", tv_to_ms(stopwatch(LAP)));
+   printf("%d ms = Total time (i,j,k) access of array_ref3\n", tv_to_ms(stopwatch(LAP)));
 
    for(size_t i=0; i<dim1; i++)
    for(size_t j=0; j<dim2; j++)
@@ -662,7 +669,7 @@ void testArr4()
    // For some bizarre reason, if I comment out the code for the
    // "fbr" and "fpa" arrays below then icpc on knc2 is somehow
    // able to figure out that each iteration does the same thing
-   // in the case of Arr4, but not in the case of the chained
+   // in the case of array_ref4, but not in the case of the chained
    // pointer or fixed-dimension arrays.  Why not?  And why
    // does this optimization occur for four-dimensional arrays
    // and not for 3- or 2-dimensional arrays?  And why is this
@@ -682,21 +689,21 @@ void testArr4()
    type**** Bold = newArr4(type, dim1, dim2, dim3, dim4);
    type**** Cold = newArr4(type, dim1, dim2, dim3, dim4);
 
-   //Array4<type> Afbr(dim1, dim2, dim3, dim4);
-   //Array4<type> Bfbr(dim1, dim2, dim3, dim4);
-   //Array4<type> Cfbr(dim1, dim2, dim3, dim4);
+   //array4<type> Afbr(dim1, dim2, dim3, dim4);
+   //array4<type> Bfbr(dim1, dim2, dim3, dim4);
+   //array4<type> Cfbr(dim1, dim2, dim3, dim4);
 
-   //Array4<type> Afpa(dim1, dim2, dim3, dim4);
-   //Array4<type> Bfpa(dim1, dim2, dim3, dim4);
-   //Array4<type> Cfpa(dim1, dim2, dim3, dim4);
+   //array4<type> Afpa(dim1, dim2, dim3, dim4);
+   //array4<type> Bfpa(dim1, dim2, dim3, dim4);
+   //array4<type> Cfpa(dim1, dim2, dim3, dim4);
 
-   Arr4<type> Abra(dim1, dim2, dim3, dim4);
-   Arr4<type> Bbra(dim1, dim2, dim3, dim4);
-   Arr4<type> Cbra(dim1, dim2, dim3, dim4);
+   array_ref4<type> Abra(dim1, dim2, dim3, dim4);
+   array_ref4<type> Bbra(dim1, dim2, dim3, dim4);
+   array_ref4<type> Cbra(dim1, dim2, dim3, dim4);
 
-   Arr4<type> Apar(dim1, dim2, dim3, dim4);
-   Arr4<type> Bpar(dim1, dim2, dim3, dim4);
-   Arr4<type> Cpar(dim1, dim2, dim3, dim4);
+   array_ref4<type> Apar(dim1, dim2, dim3, dim4);
+   array_ref4<type> Bpar(dim1, dim2, dim3, dim4);
+   array_ref4<type> Cpar(dim1, dim2, dim3, dim4);
 
    printf("Initializing data ...\n");
    for(size_t i=0; i<dim1; i++)
@@ -750,7 +757,7 @@ void testArr4()
    //{
    //   Afbr.fetch(i,j,k,l) = Bfbr.get(i,j,k,l) * Cfbr.get(i,j,k,l);
    //}
-   //printf("%d us = Total time (i,j,k,l) access of Array4\n", tv_to_us(stopwatch(LAP)));
+   //printf("%d us = Total time (i,j,k,l) access of array4\n", tv_to_us(stopwatch(LAP)));
 
    //for(int t=0; t<ITERS; t++)
    //for(size_t i=0; i<dim1; i++)
@@ -760,7 +767,7 @@ void testArr4()
    //{
    //   Afpa.fetch(i,j,k,l) = Bfpa.get(i,j,k,l) * Cfpa.get(i,j,k,l);
    //}
-   //printf("%d us = Total time (i,j,k,l) access of Array4\n", tv_to_us(stopwatch(LAP)));
+   //printf("%d us = Total time (i,j,k,l) access of array4\n", tv_to_us(stopwatch(LAP)));
 
    for(int t=0; t<ITERS; t++)
    for(size_t i=0; i<dim1; i++)
@@ -770,7 +777,7 @@ void testArr4()
    {
       Abra[i][j][k][l] = Bbra[i][j][k][l] * Cbra[i][j][k][l];
    }
-   printf("%d us = Total time [i][j][k][l] access of Arr4\n", tv_to_us(stopwatch(LAP)));
+   printf("%d us = Total time [i][j][k][l] access of array_ref4\n", tv_to_us(stopwatch(LAP)));
 
    for(int t=0; t<ITERS; t++)
    for(size_t i=0; i<dim1; i++)
@@ -780,7 +787,7 @@ void testArr4()
    {
       Apar.fetch(i,j,k,l) = Bpar.get(i,j,k,l) * Cpar.get(i,j,k,l);
    }
-   printf("%d us = Total time (i,j,k,l) access of Arr4\n", tv_to_us(stopwatch(LAP)));
+   printf("%d us = Total time (i,j,k,l) access of array_ref4\n", tv_to_us(stopwatch(LAP)));
 
    for(int t=0; t<ITERS; t++)
    for(size_t i=0; i<dim1; i++)
@@ -808,20 +815,20 @@ void testArr4()
 
 int main()
 {
-  //printf("=== testing Arr2<int> (diagonal) ===\n");
+  //printf("=== testing array_ref2<int> (diagonal) ===\n");
   //testArr2_diagonal<int>();
-  //printf("=== testing Arr2<double> (diagonal) ===\n");
+  //printf("=== testing array_ref2<double> (diagonal) ===\n");
   //testArr2_diagonal<double>();
-  printf("=== testing Arr2<int> ===\n");
+  printf("=== testing array_ref2<int> ===\n");
   testArr2<int>();
-  printf("=== testing Arr2<double> ===\n");
+  printf("=== testing array_ref2<double> ===\n");
   testArr2<double>();
-  printf("=== testing Arr3<int> ===\n");
+  printf("=== testing array_ref3<int> ===\n");
   testArr3<int>();
-  printf("=== testing Arr3<double> ===\n");
+  printf("=== testing array_ref3<double> ===\n");
   testArr3<double>();
-  printf("=== testing Arr4<int> ===\n");
+  printf("=== testing array_ref4<int> ===\n");
   testArr4<int>();
-  printf("=== testing Arr4<double> ===\n");
+  printf("=== testing array_ref4<double> ===\n");
   testArr4<double>();
 }

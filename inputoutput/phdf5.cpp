@@ -3,6 +3,7 @@
 #include "phdf5.h"
 #include "ipicdefs.h"
 #include "errors.h"
+#include "Alloc.h"
 
 PHDF5fileClass::PHDF5fileClass(string filestr, int nd, int *coord, MPI_Comm mpicomm){
 
@@ -111,7 +112,7 @@ void PHDF5fileClass::ClosePHDF5file(){
 
 }
 
-int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, double ***data, int nx, int ny, int nz){
+int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, const_arr3_double& data, int nx, int ny, int nz){
 
   /* -------------------------- */
   /* Local variables and arrays */
@@ -265,7 +266,7 @@ void PHDF5fileClass::ReadPHDF5param(){
 
 }
 
-void PHDF5fileClass::ReadPHDF5dataset_double(string datasetname, double ***data){
+void PHDF5fileClass::ReadPHDF5dataset_double(string datasetname, array_ref3_double& data){
 
   herr_t  status;
   double *filedata;

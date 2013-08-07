@@ -2,6 +2,7 @@
 #include <mpi.h>
 #include <iomanip>
 #include "iPic3D.h"
+#include "debug.h"
 
 using namespace iPic3D;
 

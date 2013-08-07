@@ -6,20 +6,20 @@
 // 
 class Moments {
   private:
-    doubleArr3 rho;
+    array_ref3_double rho;
 
     /** current density, defined on nodes */
-    doubleArr3 Jx;
-    doubleArr3 Jy;
-    doubleArr3 Jz;
+    array_ref3_double Jx;
+    array_ref3_double Jy;
+    array_ref3_double Jz;
 
     /** pressure tensor components, defined on nodes */
-    doubleArr3 pXX;
-    doubleArr3 pXY;
-    doubleArr3 pXZ;
-    doubleArr3 pYY;
-    doubleArr3 pYZ;
-    doubleArr3 pZZ;
+    array_ref3_double pXX;
+    array_ref3_double pXY;
+    array_ref3_double pXZ;
+    array_ref3_double pYY;
+    array_ref3_double pYZ;
+    array_ref3_double pZZ;
     int nx;
     int ny;
     int nz;
@@ -39,16 +39,16 @@ class Moments {
     double get_pYZ(int i, int j, int k) const { return pYZ.get(i,j,k); }
     double get_pZZ(int i, int j, int k) const { return pZZ.get(i,j,k); }
     // fetch accessors (write access)
-    doubleArr3& fetch_rho() { return rho; }
-    doubleArr3& fetch_Jx () { return Jx ; }
-    doubleArr3& fetch_Jy () { return Jy ; }
-    doubleArr3& fetch_Jz () { return Jz ; }
-    doubleArr3& fetch_Pxx() { return pXX; }
-    doubleArr3& fetch_Pxy() { return pXY; }
-    doubleArr3& fetch_Pxz() { return pXZ; }
-    doubleArr3& fetch_Pyy() { return pYY; }
-    doubleArr3& fetch_Pyz() { return pYZ; }
-    doubleArr3& fetch_Pzz() { return pZZ; }
+    array_ref3_double& fetch_rho() { return rho; }
+    array_ref3_double& fetch_Jx () { return Jx ; }
+    array_ref3_double& fetch_Jy () { return Jy ; }
+    array_ref3_double& fetch_Jz () { return Jz ; }
+    array_ref3_double& fetch_Pxx() { return pXX; }
+    array_ref3_double& fetch_Pxy() { return pXY; }
+    array_ref3_double& fetch_Pxz() { return pXZ; }
+    array_ref3_double& fetch_Pyy() { return pYY; }
+    array_ref3_double& fetch_Pyz() { return pYZ; }
+    array_ref3_double& fetch_Pzz() { return pZZ; }
   public:
     Moments(int nxn, int nyn, int nzn) :
       nx(nxn),
