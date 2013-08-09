@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include "Grid3DCU.h"
 
 /*! constructor */
@@ -50,33 +51,29 @@ Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {
   zEnd = zStart + (col->getLz() / (double) vct->getZLEN());
 
   // arrays allocation: nodes ---> the first node has index 1, the last has index nxn-2!
-  node_coordinate = newArr4(double, nxn, nyn, nzn, 3);  // 0 -> X, 1 -> Y, 2-> Z
-  for (int i = 0; i < nxn; i++) {
-    for (int j = 0; j < nyn; j++) {
-      for (int k = 0; k < nzn; k++) {
-        node_coordinate[i][j][k][0] = xStart + (i - 1) * dx;
-        node_coordinate[i][j][k][1] = yStart + (j - 1) * dy;
-        node_coordinate[i][j][k][2] = zStart + (k - 1) * dz;
-      }
-    }
-  }
+  node_xcoord = new double[nxn];
+  node_ycoord = new double[nyn];
+  node_zcoord = new double[nzn];
+  for (int i=0; i<nxn; i++) node_xcoord[i] = xStart + (i - 1) * dx;
+  for (int j=0; j<nyn; j++) node_ycoord[j] = yStart + (j - 1) * dy;
+  for (int k=0; k<nzn; k++) node_zcoord[k] = zStart + (k - 1) * dz;
   // arrays allocation: cells ---> the first cell has index 1, the last has index ncn-2!
-  center_coordinate = newArr4(double, nxc, nyc, nzc, 3);
-  for (int i = 0; i < nxc; i++) {
-    for (int j = 0; j < nyc; j++) {
-      for (int k = 0; k < nzc; k++) {
-        center_coordinate[i][j][k][0] = .5 * (node_coordinate[i][j][k][0] + node_coordinate[i + 1][j][k][0]);
-        center_coordinate[i][j][k][1] = .5 * (node_coordinate[i][j][k][1] + node_coordinate[i][j + 1][k][1]);
-        center_coordinate[i][j][k][2] = .5 * (node_coordinate[i][j][k][2] + node_coordinate[i][j][k + 1][2]);
-      }
-    }
-  }
+  center_xcoord = new double[nxc];
+  center_ycoord = new double[nyc];
+  center_zcoord = new double[nzc];
+  for(int i=0; i<nxc; i++) center_xcoord[i] = .5*(node_xcoord[i]+node_xcoord[i+1]);
+  for(int j=0; j<nyc; j++) center_ycoord[j] = .5*(node_ycoord[j]+node_ycoord[j+1]);
+  for(int k=0; k<nzc; k++) center_zcoord[k] = .5*(node_zcoord[k]+node_zcoord[k+1]);
 }
 
 /** deallocate the local grid */
 Grid3DCU::~Grid3DCU() {
-  delArr4(node_coordinate, nxn, nyn, nzn);
-  delArr4(center_coordinate, nxc, nyc, nzc);
+  delete [] node_xcoord;
+  delete [] node_ycoord;
+  delete [] node_zcoord;
+  delete [] center_xcoord;
+  delete [] center_ycoord;
+  delete [] center_zcoord;
 }
 
 /** print the local grid info */
@@ -84,14 +81,14 @@ void Grid3DCU::print(VirtualTopology3D * ptVCT) {
   cout << endl;
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
   cout << "Number of cell: -X=" << nxc - 2 << " -Y=" << nyc - 2 << " -Z=" << nzc - 2 << endl;
-  cout << "Xin = " << node_coordinate[1][1][1][0] << "; Xfin = " << node_coordinate[nxn - 2][1][1][0] << endl;
-  cout << "Yin = " << node_coordinate[1][1][1][1] << "; Yfin = " << node_coordinate[1][nyn - 2][1][1] << endl;
-  cout << "Zin = " << node_coordinate[1][1][1][2] << "; Zfin = " << node_coordinate[1][1][nzn - 2][2] << endl;
+  cout << "Xin = " << node_xcoord[1] << "; Xfin = " << node_xcoord[nxn - 2] << endl;
+  cout << "Yin = " << node_ycoord[1] << "; Yfin = " << node_ycoord[nyn - 2] << endl;
+  cout << "Zin = " << node_zcoord[1] << "; Zfin = " << node_zcoord[nzn - 2] << endl;
   cout << endl;
 }
 
 /** calculate gradient on nodes, given a scalar field defined on central points  */
-void Grid3DCU::gradC2N(double ***gradXN, double ***gradYN, double ***gradZN, double ***scFieldC) {
+void Grid3DCU::gradC2N(arr3_double gradXN, arr3_double gradYN, arr3_double gradZN, const_arr3_double scFieldC) {
   for (register int i = 1; i < nxn - 1; i++)
     for (register int j = 1; j < nyn - 1; j++)
       for (register int k = 1; k < nzn - 1; k++) {
@@ -102,7 +99,7 @@ void Grid3DCU::gradC2N(double ***gradXN, double ***gradYN, double ***gradZN, dou
 }
 
 /** calculate gradient on nodes, given a scalar field defined on central points  */
-void Grid3DCU::gradN2C(double ***gradXC, double ***gradYC, double ***gradZC, double ***scFieldN) {
+void Grid3DCU::gradN2C(arr3_double gradXC, arr3_double gradYC, arr3_double gradZC, const_arr3_double scFieldN) {
   for (register int i = 1; i < nxc - 1; i++)
     for (register int j = 1; j < nyc - 1; j++)
       for (register int k = 1; k < nzc - 1; k++) {
@@ -113,7 +110,7 @@ void Grid3DCU::gradN2C(double ***gradXC, double ***gradYC, double ***gradZC, dou
 }
 
 /** calculate divergence on central points, given a vector field defined on nodes  */
-void Grid3DCU::divN2C(double ***divC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN) {
+void Grid3DCU::divN2C(arr3_double divC, const_arr3_double vecFieldXN, const_arr3_double vecFieldYN, const_arr3_double vecFieldZN) {
   double compX;
   double compY;
   double compZ;
@@ -128,7 +125,7 @@ void Grid3DCU::divN2C(double ***divC, double ***vecFieldXN, double ***vecFieldYN
 }
 
 /** calculate divergence on central points, given a Tensor field defined on nodes  */
-void Grid3DCU::divSymmTensorN2C(double ***divCX, double ***divCY, double ***divCZ, double ****pXX, double ****pXY, double ****pXZ, double ****pYY, double ****pYZ, double ****pZZ, int ns) {
+void Grid3DCU::divSymmTensorN2C(arr3_double divCX, arr3_double divCY, arr3_double divCZ, const_arr4_double pXX, const_arr4_double pXY, const_arr4_double pXZ, const_arr4_double pYY, const_arr4_double pYZ, const_arr4_double pZZ, int ns) {
   double comp1X, comp2X, comp3X;
   double comp1Y, comp2Y, comp3Y;
   double comp1Z, comp2Z, comp3Z;
@@ -151,7 +148,7 @@ void Grid3DCU::divSymmTensorN2C(double ***divCX, double ***divCY, double ***divC
 }
 
 /** calculate divergence on nodes, given a vector field defined on central points  */
-void Grid3DCU::divC2N(double ***divN, double ***vecFieldXC, double ***vecFieldYC, double ***vecFieldZC) {
+void Grid3DCU::divC2N(arr3_double divN, const_arr3_double vecFieldXC, const_arr3_double vecFieldYC, const_arr3_double vecFieldZC) {
   double compX;
   double compY;
   double compZ;
@@ -166,7 +163,7 @@ void Grid3DCU::divC2N(double ***divN, double ***vecFieldXC, double ***vecFieldYC
 }
 
 /** calculate curl on nodes, given a vector field defined on central points  */
-void Grid3DCU::curlC2N(double ***curlXN, double ***curlYN, double ***curlZN, double ***vecFieldXC, double ***vecFieldYC, double ***vecFieldZC) {
+void Grid3DCU::curlC2N(arr3_double curlXN, arr3_double curlYN, arr3_double curlZN, const_arr3_double vecFieldXC, const_arr3_double vecFieldYC, const_arr3_double vecFieldZC) {
   double compZDY, compYDZ;
   double compXDZ, compZDX;
   double compYDX, compXDY;
@@ -190,7 +187,9 @@ void Grid3DCU::curlC2N(double ***curlXN, double ***curlYN, double ***curlZN, dou
 }
 
 /** calculate curl on central points, given a vector field defined on nodes  */
-void Grid3DCU::curlN2C(double ***curlXC, double ***curlYC, double ***curlZC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN) {
+void Grid3DCU::curlN2C(arr3_double curlXC, arr3_double curlYC, arr3_double curlZC,
+  const_arr3_double vecFieldXN, const_arr3_double vecFieldYN, const_arr3_double vecFieldZN)
+{
   double compZDY, compYDZ;
   double compXDZ, compZDX;
   double compYDX, compXDY;
@@ -218,12 +217,12 @@ void Grid3DCU::curlN2C(double ***curlXC, double ***curlYC, double ***curlZC, dou
 }
 
 /** calculate laplacian on nodes, given a scalar field defined on nodes */
-void Grid3DCU::lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vct) {
+void Grid3DCU::lapN2N(arr3_double lapN, const_arr3_double scFieldN, VirtualTopology3D * vct) {
   // calculate laplacian as divercence of gradient
   // allocate 3 gradients: defined on central points
-  double ***gradXC = newArr3(double, nxc, nyc, nzc);
-  double ***gradYC = newArr3(double, nxc, nyc, nzc);
-  double ***gradZC = newArr3(double, nxc, nyc, nzc);
+  array3_double gradXC(nxc, nyc, nzc);
+  array3_double gradYC(nxc, nyc, nzc);
+  array3_double gradZC(nxc, nyc, nzc);
 
   gradN2C(gradXC, gradYC, gradZC, scFieldN);
   // communicate with BC
@@ -231,19 +230,15 @@ void Grid3DCU::lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vc
   communicateCenterBC(nxc, nyc, nzc, gradYC, 1, 1, 1, 1, 1, 1, vct);
   communicateCenterBC(nxc, nyc, nzc, gradZC, 1, 1, 1, 1, 1, 1, vct);
   divC2N(lapN, gradXC, gradYC, gradZC);
-  // deallocate
-  delArr3(gradXC, nxc, nyc);
-  delArr3(gradYC, nxc, nyc);
-  delArr3(gradZC, nxc, nyc);
 }
 
 /** calculate laplacian on central points, given a scalar field defined on central points */
-void Grid3DCU::lapC2C(double ***lapC, double ***scFieldC, VirtualTopology3D * vct) {
+void Grid3DCU::lapC2C(arr3_double lapC, const_arr3_double scFieldC, VirtualTopology3D * vct) {
   // calculate laplacian as divercence of gradient
   // allocate 3 gradients: defined on nodes
-  double ***gradXN = newArr3(double, nxn, nyn, nzn);
-  double ***gradYN = newArr3(double, nxn, nyn, nzn);
-  double ***gradZN = newArr3(double, nxn, nyn, nzn);
+  array3_double gradXN(nxn, nyn, nzn);
+  array3_double gradYN(nxn, nyn, nzn);
+  array3_double gradZN(nxn, nyn, nzn);
 
   gradC2N(gradXN, gradYN, gradZN, scFieldC);
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
@@ -271,15 +266,10 @@ void Grid3DCU::lapC2C(double ***lapC, double ***scFieldC, VirtualTopology3D * vc
       }
   }
   divN2C(lapC, gradXN, gradYN, gradZN);
-
-  delArr3(gradXN, nxn, nyn);
-  delArr3(gradYN, nxn, nyn);
-  delArr3(gradZN, nxn, nyn);
-
 }
 
 /** calculate laplacian on central points, given a scalar field defined on central points for Poisson */
-void Grid3DCU::lapC2Cpoisson(double ***lapC, double ***scFieldC, VirtualTopology3D * vct) {
+void Grid3DCU::lapC2Cpoisson(arr3_double lapC, arr3_double scFieldC, VirtualTopology3D * vct) {
   // communicate first the scFieldC
   communicateCenterBoxStencilBC(nxc, nyc, nzc, scFieldC, 1, 1, 1, 1, 1, 1, vct);
   for (register int i = 1; i < nxc - 1; i++)
@@ -289,7 +279,7 @@ void Grid3DCU::lapC2Cpoisson(double ***lapC, double ***scFieldC, VirtualTopology
 }
 
 /** calculate divergence on  boundaries */
-void Grid3DCU::divBCleft(double ***divBC, double ***vectorX, double ***vectorY, double ***vectorZ, int leftActiveNode, int dirDER) {
+void Grid3DCU::divBCleft(arr3_double divBC, const_arr3_double vectorX, const_arr3_double vectorY, const_arr3_double vectorZ, int leftActiveNode, int dirDER) {
   double compX, compY, compZ;
   switch (dirDER) {
     case 0:                    // DIVERGENCE DIRECTION X
@@ -326,7 +316,7 @@ void Grid3DCU::divBCleft(double ***divBC, double ***vectorX, double ***vectorY, 
 }
 
 /** calculate divergence on  boundaries */
-void Grid3DCU::divBCright(double ***divBC, double ***vectorX, double ***vectorY, double ***vectorZ, int rightActiveNode, int dirDER) {
+void Grid3DCU::divBCright(arr3_double divBC, const_arr3_double vectorX, const_arr3_double vectorY, const_arr3_double vectorZ, int rightActiveNode, int dirDER) {
   double compX, compY, compZ;
 
 
@@ -365,7 +355,7 @@ void Grid3DCU::divBCright(double ***divBC, double ***vectorX, double ***vectorY,
 }
 
 /** calculate derivative on left boundary */
-void Grid3DCU::derBC(double ***derBC, double ***vector, int leftActiveNode, int dirDER) {
+void Grid3DCU::derBC(arr3_double derBC, const_arr3_double vector, int leftActiveNode, int dirDER) {
   switch (dirDER) {
     case 0:                    // DERIVATIVE DIRECTION X
       for (register int j = 1; j < nyc - 1; j++)
@@ -388,7 +378,7 @@ void Grid3DCU::derBC(double ***derBC, double ***vector, int leftActiveNode, int 
 }
 
 /** interpolate on nodes from central points: do this for the magnetic field*/
-void Grid3DCU::interpC2N(double ***vecFieldN, double ***vecFieldC) {
+void Grid3DCU::interpC2N(arr3_double vecFieldN, const_arr3_double vecFieldC) {
   for (register int i = 1; i < nxn - 1; i++)
     for (register int j = 1; j < nyn - 1; j++)
       for (register int k = 1; k < nzn - 1; k++)
@@ -396,7 +386,7 @@ void Grid3DCU::interpC2N(double ***vecFieldN, double ***vecFieldC) {
 }
 
 /** interpolate on central points from nodes */
-void Grid3DCU::interpN2C(double ***vecFieldC, double ***vecFieldN) {
+void Grid3DCU::interpN2C(arr3_double vecFieldC, const_arr3_double vecFieldN) {
   for (register int i = 1; i < nxc - 1; i++)
     for (register int j = 1; j < nyc - 1; j++)
       for (register int k = 1; k < nzc - 1; k++)
@@ -404,7 +394,7 @@ void Grid3DCU::interpN2C(double ***vecFieldC, double ***vecFieldN) {
 }
 
 /** interpolate on central points from nodes */
-void Grid3DCU::interpN2C(double ****vecFieldC, int ns, double ****vecFieldN) {
+void Grid3DCU::interpN2C(arr4_double vecFieldC, int ns, const_arr4_double vecFieldN) {
   for (register int i = 1; i < nxc - 1; i++)
     for (register int j = 1; j < nyc - 1; j++)
       for (register int k = 1; k < nzc - 1; k++)
@@ -412,117 +402,3 @@ void Grid3DCU::interpN2C(double ****vecFieldC, int ns, double ****vecFieldN) {
 }
 
 
-/** get nxc */
-int Grid3DCU::getNXC() {
-  return (nxc);
-}
-
-/** get nxn */
-int Grid3DCU::getNXN() {
-  return (nxn);
-}
-
-/** get nyc */
-int Grid3DCU::getNYC() {
-  return (nyc);
-}
-
-/** get nyn */
-int Grid3DCU::getNYN() {
-  return (nyn);
-}
-
-/** get nzc */
-int Grid3DCU::getNZC() {
-  return (nzc);
-}
-
-/** get nzn */
-int Grid3DCU::getNZN() {
-  return (nzn);
-}
-
-/** get dx */
-double Grid3DCU::getDX() {
-  return (dx);
-}
-
-/** get dy */
-double Grid3DCU::getDY() {
-  return (dy);
-}
-
-/** get dz */
-double Grid3DCU::getDZ() {
-  return (dz);
-}
-
-/** get xn[][][] */
-double &Grid3DCU::getXN(int indexX, int indexY, int indexZ) {
-  return (node_coordinate[indexX][indexY][indexZ][0]);
-}
-
-/** get yn[][][] */
-double &Grid3DCU::getYN(int indexX, int indexY, int indexZ) {
-  return (node_coordinate[indexX][indexY][indexZ][1]);
-}
-
-/** get zn[][][] */
-double &Grid3DCU::getZN(int indexX, int indexY, int indexZ) {
-  return (node_coordinate[indexX][indexY][indexZ][2]);
-}
-
-/** get xc[][][] */
-double &Grid3DCU::getXC(int indexX, int indexY, int indexZ) {
-  return (center_coordinate[indexX][indexY][indexZ][0]);
-}
-
-/** get yc[][][] */
-double &Grid3DCU::getYC(int indexX, int indexY, int indexZ) {
-  return (center_coordinate[indexX][indexY][indexZ][1]);
-}
-
-/** get zc[][][] */
-double &Grid3DCU::getZC(int indexX, int indexY, int indexZ) {
-  return (center_coordinate[indexX][indexY][indexZ][2]);
-}
-
-/** get the whole vector of nodes*/
-double ****Grid3DCU::getN() {
-  return node_coordinate;
-}
-
-/** get Xstart */
-double Grid3DCU::getXstart() {
-  return (xStart);
-}
-
-/** get Xend */
-double Grid3DCU::getXend() {
-  return (xEnd);
-}
-
-/** get Ystart */
-double Grid3DCU::getYstart() {
-  return (yStart);
-}
-
-/** get Yend */
-double Grid3DCU::getYend() {
-  return (yEnd);
-}
-
-/** get Zstart */
-double Grid3DCU::getZstart() {
-  return (zStart);
-}
-
-/** get Zend */
-double Grid3DCU::getZend() {
-  return (zEnd);
-}
-
-/** get the inverse of volume */
-double Grid3DCU::getInvVOL() {
-  return (invVOL);
-}

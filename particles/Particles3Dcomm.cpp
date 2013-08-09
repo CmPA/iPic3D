@@ -4,8 +4,11 @@
 developers: Stefano Markidis, Giovanni Lapenta.
  ********************************************************************************************/
 
+#include <mpi.h>
 #include <iostream>
 #include <math.h>
+#include <limits.h>
+#include "asserts.h"
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
 #include "CollectiveIO.h"
@@ -17,13 +20,16 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "Grid.h"
 #include "Grid3DCU.h"
 #include "Field.h"
+#include "Moments.h"
 #include "MPIdata.h"
+#include "ompdefs.h"
 
 #include "Particles3Dcomm.h"
 
 #include "hdf5.h"
 #include <vector>
 #include <complex>
+#include "debug.h"
 
 using std::cout;
 using std::cerr;
@@ -275,23 +281,10 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   }
 
 }
-/** calculate the weights given the position of particles 0,0,0 is the left,left, left node */
-void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid) {
-  double xi[2], eta[2], zeta[2];
-  xi[0] = xp - grid->getXN(ix - 1, iy, iz);
-  eta[0] = yp - grid->getYN(ix, iy - 1, iz);
-  zeta[0] = zp - grid->getZN(ix, iy, iz - 1);
-  xi[1] = grid->getXN(ix, iy, iz) - xp;
-  eta[1] = grid->getYN(ix, iy, iz) - yp;
-  zeta[1] = grid->getZN(ix, iy, iz) - zp;
-  for (int i = 0; i < 2; i++)
-    for (int j = 0; j < 2; j++)
-      for (int k = 0; k < 2; k++)
-        weight[i][j][k] = xi[i] * eta[j] * zeta[k] * invVOL;
-}
 
 
-/** Interpolation Particle --> Grid */
+// A much faster version of this is at EMfields3D::sumMoments
+//
 void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
   const double inv_dx = 1.0 / dx;
   const double inv_dy = 1.0 / dy;
@@ -299,12 +292,13 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
-  //#pragma omp parallel
+  assert_le(nop,(long long)INT_MAX); // else would need to use long long
+  // to make memory use scale to a large number of threads we
+  // could first apply an efficient parallel sorting algorithm
+  // to the particles and then accumulate moments in smaller
+  // subarrays.
   {
-    //Moments speciesMoments(nxn,nyn,nzn,invVOL);
-    //speciesMoments.set_to_zero();
-    //#pragma omp for
-    for (register long long i = 0; i < nop; i++)
+    for (int i = 0; i < nop; i++)
     {
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
       const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
@@ -323,14 +317,6 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
           for (int kk = 0; kk < 2; kk++) {
             weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
           }
-      //weight[0][0][0] = q[i] * xi[0] * eta[0] * zeta[0] * invVOL;
-      //weight[0][0][1] = q[i] * xi[0] * eta[0] * zeta[1] * invVOL;
-      //weight[0][1][0] = q[i] * xi[0] * eta[1] * zeta[0] * invVOL;
-      //weight[0][1][1] = q[i] * xi[0] * eta[1] * zeta[1] * invVOL;
-      //weight[1][0][0] = q[i] * xi[1] * eta[0] * zeta[0] * invVOL;
-      //weight[1][0][1] = q[i] * xi[1] * eta[0] * zeta[1] * invVOL;
-      //weight[1][1][0] = q[i] * xi[1] * eta[1] * zeta[0] * invVOL;
-      //weight[1][1][1] = q[i] * xi[1] * eta[1] * zeta[1] * invVOL;
       // add charge density
       EMf->addRho(weight, ix, iy, iz, ns);
       // add current density - X
@@ -388,9 +374,6 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
             temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
       EMf->addPzz(temp, ix, iy, iz, ns);
     }
-    // change this to allow more parallelization after implementing array class
-    //#pragma omp critical
-    //EMf->addToSpeciesMoments(speciesMoments,ns);
   }
   // communicate contribution from ghost cells 
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
