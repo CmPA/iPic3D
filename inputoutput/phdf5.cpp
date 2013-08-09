@@ -112,7 +112,7 @@ void PHDF5fileClass::ClosePHDF5file(){
 
 }
 
-int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, const_arr3_double& data, int nx, int ny, int nz){
+int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, const_arr3_double data, int nx, int ny, int nz){
 
   /* -------------------------- */
   /* Local variables and arrays */
@@ -266,7 +266,7 @@ void PHDF5fileClass::ReadPHDF5param(){
 
 }
 
-void PHDF5fileClass::ReadPHDF5dataset_double(string datasetname, arr3_double& data){
+void PHDF5fileClass::ReadPHDF5dataset_double(string datasetname, arr3_double data){
 
   herr_t  status;
   double *filedata;

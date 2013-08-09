@@ -39,16 +39,16 @@ class Moments {
     double get_pYZ(int i, int j, int k) const { return pYZ.get(i,j,k); }
     double get_pZZ(int i, int j, int k) const { return pZZ.get(i,j,k); }
     // fetch accessors (write access)
-    arr3_double& fetch_rho() { return rho; }
-    arr3_double& fetch_Jx () { return Jx ; }
-    arr3_double& fetch_Jy () { return Jy ; }
-    arr3_double& fetch_Jz () { return Jz ; }
-    arr3_double& fetch_Pxx() { return pXX; }
-    arr3_double& fetch_Pxy() { return pXY; }
-    arr3_double& fetch_Pxz() { return pXZ; }
-    arr3_double& fetch_Pyy() { return pYY; }
-    arr3_double& fetch_Pyz() { return pYZ; }
-    arr3_double& fetch_Pzz() { return pZZ; }
+    arr3_double fetch_rho() { return rho; }
+    arr3_double fetch_Jx () { return Jx ; }
+    arr3_double fetch_Jy () { return Jy ; }
+    arr3_double fetch_Jz () { return Jz ; }
+    arr3_double fetch_Pxx() { return pXX; }
+    arr3_double fetch_Pxy() { return pXY; }
+    arr3_double fetch_Pxz() { return pXZ; }
+    arr3_double fetch_Pyy() { return pYY; }
+    arr3_double fetch_Pyz() { return pYZ; }
+    arr3_double fetch_Pzz() { return pZZ; }
   public:
     Moments(int nxn, int nyn, int nzn) :
       nx(nxn),

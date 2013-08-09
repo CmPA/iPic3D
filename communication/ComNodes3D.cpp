@@ -5,7 +5,7 @@
 #include "Alloc.h"
 
 /** communicate ghost cells (FOR NODES) */
-void communicateNode(int nx, int ny, int nz, arr3_double& _vector, VirtualTopology3D * vct) {
+void communicateNode(int nx, int ny, int nz, arr3_double _vector, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector=_vector.fetch_arr3();
 
@@ -109,7 +109,7 @@ void communicateNode(int nx, int ny, int nz, arr3_double& _vector, VirtualTopolo
   timeTasks.addto_communicate();
 }
 /** communicate ghost cells (FOR NODES) */
-void communicateNodeBC(int nx, int ny, int nz, arr3_double& _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+void communicateNodeBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector = _vector.fetch_arr3();
   // allocate 6 ghost cell Faces
@@ -215,7 +215,7 @@ void communicateNodeBC(int nx, int ny, int nz, arr3_double& _vector, int bcFaceX
   timeTasks.addto_communicate();
 }
 /** communicate ghost cells (FOR NODES) with particles BC*/
-void communicateNodeBC_P(int nx, int ny, int nz, arr3_double& _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+void communicateNodeBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
@@ -322,7 +322,7 @@ void communicateNodeBC_P(int nx, int ny, int nz, arr3_double& _vector, int bcFac
 }
 
 /** SPECIES: communicate ghost cells */
-void communicateNode(int nx, int ny, int nz, arr4_double& _vector, int ns, VirtualTopology3D * vct) {
+void communicateNode(int nx, int ny, int nz, arr4_double _vector, int ns, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ****vector = _vector.fetch_arr4();
 
@@ -427,7 +427,7 @@ void communicateNode(int nx, int ny, int nz, arr4_double& _vector, int ns, Virtu
 
 // PARTICLES
 /** SPECIES: communicate ghost cells */
-void communicateNode_P(int nx, int ny, int nz, arr4_double& _vector, int ns, VirtualTopology3D * vct) {
+void communicateNode_P(int nx, int ny, int nz, arr4_double _vector, int ns, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ****vector = _vector.fetch_arr4();
 
@@ -532,7 +532,7 @@ void communicateNode_P(int nx, int ny, int nz, arr4_double& _vector, int ns, Vir
 
 // 
 /** communicate ghost cells (FOR CENTERS) */
-void communicateCenter(int nx, int ny, int nz, arr3_double& _vector, VirtualTopology3D * vct) {
+void communicateCenter(int nx, int ny, int nz, arr3_double _vector, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector = _vector.fetch_arr3();
 
@@ -634,7 +634,7 @@ void communicateCenter(int nx, int ny, int nz, arr3_double& _vector, VirtualTopo
   timeTasks.addto_communicate();
 }
 /** communicate ghost cells (FOR CENTERS) with BOX stencil*/
-void communicateCenterBoxStencilBC(int nx, int ny, int nz, arr3_double& _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+void communicateCenterBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
@@ -667,7 +667,7 @@ void communicateCenterBoxStencilBC(int nx, int ny, int nz, arr3_double& _vector,
 }
 // particles
 /** communicate ghost cells (FOR CENTERS) with BOX stencil*/
-void communicateCenterBoxStencilBC_P(int nx, int ny, int nz, arr3_double& _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+void communicateCenterBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
@@ -702,7 +702,7 @@ void communicateCenterBoxStencilBC_P(int nx, int ny, int nz, arr3_double& _vecto
 // 
 
 
-void communicateNodeBoxStencilBC(int nx, int ny, int nz, arr3_double& _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+void communicateNodeBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
@@ -734,7 +734,7 @@ void communicateNodeBoxStencilBC(int nx, int ny, int nz, arr3_double& _vector, i
   timeTasks.addto_communicate();
 }
 
-void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double& _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
@@ -769,7 +769,7 @@ void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double& _vector,
 
 
 /** SPECIES: communicate ghost cells */
-void communicateCenter(int nx, int ny, int nz, arr4_double& _vector, int ns, VirtualTopology3D * vct) {
+void communicateCenter(int nx, int ny, int nz, arr4_double _vector, int ns, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ****vector=_vector.fetch_arr4();
 
@@ -870,7 +870,7 @@ void communicateCenter(int nx, int ny, int nz, arr4_double& _vector, int ns, Vir
   timeTasks.addto_communicate();
 }
 // /////////// communication + BC ////////////////////////////
-void communicateCenterBC(int nx, int ny, int nz, arr3_double& _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+void communicateCenterBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector=_vector.fetch_arr3();
 
@@ -974,7 +974,7 @@ void communicateCenterBC(int nx, int ny, int nz, arr3_double& _vector, int bcFac
   timeTasks.addto_communicate();
 }
 // /////////// communication + BC ////////////////////////////
-void communicateCenterBC_P(int nx, int ny, int nz, arr3_double& _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+void communicateCenterBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks.start_communicate();
   double ***vector=_vector.fetch_arr3();
 

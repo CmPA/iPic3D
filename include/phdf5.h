@@ -22,9 +22,9 @@ class PHDF5fileClass{
     void CreatePHDF5file(double *L, int *dglob, int *dlocl, bool bp);
     void ClosePHDF5file();
     void OpenPHDF5file();
-    void ReadPHDF5dataset_double(string dataset, arr3_double& data);
+    void ReadPHDF5dataset_double(string dataset, arr3_double data);
     void ReadPHDF5param();
-    int  WritePHDF5dataset(string grpname, string datasetname, const_arr3_double& data, int nx, int ny, int nz);
+    int  WritePHDF5dataset(string grpname, string datasetname, const_arr3_double data, int nx, int ny, int nz);
 
     int  getPHDF5ndim();
     int  getPHDF5ncx();

@@ -91,11 +91,11 @@ class EMfields3D                // :public Field
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
 
     /*! Calculate the three components of Pi(implicit pressure) cross image vector */
-    void PIdot(arr3_double& PIdotX, arr3_double& PIdotY, arr3_double& PIdotZ,
-      const_arr3_double& vectX, const_arr3_double& vectY, const_arr3_double& vectZ, int ns, Grid * grid);
+    void PIdot(arr3_double PIdotX, arr3_double PIdotY, arr3_double PIdotZ,
+      const_arr3_double vectX, const_arr3_double vectY, const_arr3_double vectZ, int ns, Grid * grid);
     /*! Calculate the three components of mu (implicit permeattivity) cross image vector */
-    void MUdot(arr3_double& MUdotX, arr3_double& MUdotY, arr3_double& MUdotZ,
-      const_arr3_double& vectX, const_arr3_double& vectY, const_arr3_double& vectZ, Grid * grid);
+    void MUdot(arr3_double MUdotX, arr3_double MUdotY, arr3_double MUdotZ,
+      const_arr3_double vectX, const_arr3_double vectY, const_arr3_double vectZ, Grid * grid);
     /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
     void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
@@ -109,9 +109,9 @@ class EMfields3D                // :public Field
     /*! Sum current over different species */
     void sumOverSpeciesJ();
     /*! Smoothing after the interpolation* */
-    void smooth(double value, arr3_double& vector, int type, Grid * grid, VirtualTopology3D * vct);
+    void smooth(double value, arr3_double vector, int type, Grid * grid, VirtualTopology3D * vct);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
-    void smooth(double value, arr4_double& vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
+    void smooth(double value, arr4_double vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
     /*! smooth the electric field */
     void smoothE(double value, VirtualTopology3D * vct, Collective *col);
 
@@ -147,20 +147,20 @@ class EMfields3D                // :public Field
 
 
     /*! Perfect conductor boundary conditions LEFT wall */
-    void perfectConductorLeft(arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
-      const_arr3_double& vectorX, const_arr3_double& vectorY, const_arr3_double& vectorZ,
+    void perfectConductorLeft(arr3_double imageX, arr3_double imageY, arr3_double imageZ,
+      const_arr3_double vectorX, const_arr3_double vectorY, const_arr3_double vectorZ,
       int dir, Grid * grid);
     /*! Perfect conductor boundary conditions RIGHT wall */
     void perfectConductorRight(
-      arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
-      const_arr3_double& vectorX,
-      const_arr3_double& vectorY,
-      const_arr3_double& vectorZ,
+      arr3_double imageX, arr3_double imageY, arr3_double imageZ,
+      const_arr3_double vectorX,
+      const_arr3_double vectorY,
+      const_arr3_double vectorZ,
       int dir, Grid * grid);
     /*! Perfect conductor boundary conditions for source LEFT wall */
-    void perfectConductorLeftS(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ, int dir);
+    void perfectConductorLeftS(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ, int dir);
     /*! Perfect conductor boundary conditions for source RIGHT wall */
-    void perfectConductorRightS(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ, int dir);
+    void perfectConductorRightS(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ, int dir);
 
     /*! Calculate the sysceptibility tensor on the boundary */
     void sustensorRightX(double **susxx, double **susyx, double **suszx);
@@ -193,12 +193,12 @@ class EMfields3D                // :public Field
 
     // field components without ghost cells
     //
-    void getExc(arr3_double& arr, Grid3DCU *grid);
-    void getEyc(arr3_double& arr, Grid3DCU *grid);
-    void getEzc(arr3_double& arr, Grid3DCU *grid);
-    void getBxc(arr3_double& arr);
-    void getByc(arr3_double& arr);
-    void getBzc(arr3_double& arr);
+    void getExc(arr3_double arr, Grid3DCU *grid);
+    void getEyc(arr3_double arr, Grid3DCU *grid);
+    void getEzc(arr3_double arr, Grid3DCU *grid);
+    void getBxc(arr3_double arr);
+    void getByc(arr3_double arr);
+    void getBzc(arr3_double arr);
 
     arr3_double getRHOc() { return rhoc; }
     arr3_double getRHOn() { return rhon; }
@@ -211,7 +211,7 @@ class EMfields3D                // :public Field
     double getRHOns(int X,int Y,int Z,int is)const{return rhons.get(is,X,Y,Z);}
     arr4_double getRHOns(){return rhons;}
     /* density on cells without ghost cells */
-    void getRHOcs(arr3_double& arr, Grid3DCU *grid, int is);
+    void getRHOcs(arr3_double arr, Grid3DCU *grid, int is);
 
     double getBx_ext(int X, int Y, int Z) const{return Bx_ext.get(X,Y,Z);}
     double getBy_ext(int X, int Y, int Z) const{return By_ext.get(X,Y,Z);}
@@ -246,9 +246,9 @@ class EMfields3D                // :public Field
 
     // get current for species in all cells except ghost
     //
-    void getJxsc(arr3_double& arr, Grid3DCU *grid, int is);
-    void getJysc(arr3_double& arr, Grid3DCU *grid, int is);
-    void getJzsc(arr3_double& arr, Grid3DCU *grid, int is);
+    void getJxsc(arr3_double arr, Grid3DCU *grid, int is);
+    void getJysc(arr3_double arr, Grid3DCU *grid, int is);
+    void getJzsc(arr3_double arr, Grid3DCU *grid, int is);
 
     /*! get the electric field energy */
     double getEenergy();
@@ -497,12 +497,12 @@ class EMfields3D                // :public Field
     injInfoFields* get_InfoFieldsRear();
     injInfoFields* get_InfoFieldsRight();
 
-    void BoundaryConditionsB(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ,
+    void BoundaryConditionsB(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
       int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
-    void BoundaryConditionsE(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ,
+    void BoundaryConditionsE(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,
       int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
-    void BoundaryConditionsEImage(arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
-      const_arr3_double& vectorX, const_arr3_double& vectorY, const_arr3_double& vectorZ,
+    void BoundaryConditionsEImage(arr3_double imageX, arr3_double imageY, arr3_double imageZ,
+      const_arr3_double vectorX, const_arr3_double vectorY, const_arr3_double vectorZ,
       int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
 };
 

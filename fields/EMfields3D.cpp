@@ -699,7 +699,7 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 }
 
 /*! Calculate PI dot (vectX, vectY, vectZ) */
-void EMfields3D::PIdot(arr3_double& PIdotX, arr3_double& PIdotY, arr3_double& PIdotZ, const_arr3_double& vectX, const_arr3_double& vectY, const_arr3_double& vectZ, int ns, Grid * grid) {
+void EMfields3D::PIdot(arr3_double PIdotX, arr3_double PIdotY, arr3_double PIdotZ, const_arr3_double vectX, const_arr3_double vectY, const_arr3_double vectZ, int ns, Grid * grid) {
   double beta, edotb, omcx, omcy, omcz, denom;
   beta = .5 * qom[ns] * dt / c;
   for (int i = 1; i < nxn - 1; i++)
@@ -716,8 +716,8 @@ void EMfields3D::PIdot(arr3_double& PIdotX, arr3_double& PIdotY, arr3_double& PI
       }
 }
 /*! Calculate MU dot (vectX, vectY, vectZ) */
-void EMfields3D::MUdot(arr3_double& MUdotX, arr3_double& MUdotY, arr3_double& MUdotZ,
-  const_arr3_double& vectX, const_arr3_double& vectY, const_arr3_double& vectZ, Grid * grid)
+void EMfields3D::MUdot(arr3_double MUdotX, arr3_double MUdotY, arr3_double MUdotZ,
+  const_arr3_double vectX, const_arr3_double vectY, const_arr3_double vectZ, Grid * grid)
 {
   double beta, edotb, omcx, omcy, omcz, denom;
   for (int i = 1; i < nxn - 1; i++)
@@ -744,7 +744,7 @@ void EMfields3D::MUdot(arr3_double& MUdotX, arr3_double& MUdotY, arr3_double& MU
   }
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smooth(double value, arr3_double& vector, int type, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::smooth(double value, arr3_double vector, int type, Grid * grid, VirtualTopology3D * vct) {
 
   int nvolte = 6;
   for (int icount = 1; icount < nvolte + 1; icount++) {
@@ -841,7 +841,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 }
 
 /* SPECIES: Interpolation smoothing TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector type = 1 --> node based vector */
-void EMfields3D::smooth(double value, arr4_double& vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::smooth(double value, arr4_double vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
   cout << "Smoothing for Species not implemented in 3D" << endl;
 }
 
@@ -2488,8 +2488,8 @@ void EMfields3D::sustensorRightZ(double **susxz, double **susyz, double **suszz)
 }
 
 /*! Perfect conductor boundary conditions: LEFT wall */
-void EMfields3D::perfectConductorLeft(arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
-  const_arr3_double& vectorX, const_arr3_double& vectorY, const_arr3_double& vectorZ,
+void EMfields3D::perfectConductorLeft(arr3_double imageX, arr3_double imageY, arr3_double imageZ,
+  const_arr3_double vectorX, const_arr3_double vectorY, const_arr3_double vectorZ,
   int dir, Grid * grid)
 {
   double** susxy;
@@ -2552,10 +2552,10 @@ void EMfields3D::perfectConductorLeft(arr3_double& imageX, arr3_double& imageY, 
 
 /*! Perfect conductor boundary conditions: RIGHT wall */
 void EMfields3D::perfectConductorRight(
-  arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
-  const_arr3_double& vectorX,
-  const_arr3_double& vectorY,
-  const_arr3_double& vectorZ,
+  arr3_double imageX, arr3_double imageY, arr3_double imageZ,
+  const_arr3_double vectorX,
+  const_arr3_double vectorY,
+  const_arr3_double vectorZ,
   int dir, Grid * grid)
 {
   double beta, omcx, omcy, omcz, denom;
@@ -2618,7 +2618,7 @@ void EMfields3D::perfectConductorRight(
 }
 
 /*! Perfect conductor boundary conditions for source: LEFT WALL */
-void EMfields3D::perfectConductorLeftS(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ, int dir) {
+void EMfields3D::perfectConductorLeftS(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ, int dir) {
 
   double ebc[3];
 
@@ -2664,7 +2664,7 @@ void EMfields3D::perfectConductorLeftS(arr3_double& vectorX, arr3_double& vector
 }
 
 /*! Perfect conductor boundary conditions for source: RIGHT WALL */
-void EMfields3D::perfectConductorRightS(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ, int dir) {
+void EMfields3D::perfectConductorRightS(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ, int dir) {
 
   double ebc[3];
 
@@ -2829,8 +2829,8 @@ void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *
 
 }
 
-void EMfields3D::BoundaryConditionsEImage(arr3_double& imageX, arr3_double& imageY, arr3_double& imageZ,
-  const_arr3_double& vectorX, const_arr3_double& vectorY, const_arr3_double& vectorZ,
+void EMfields3D::BoundaryConditionsEImage(arr3_double imageX, arr3_double imageY, arr3_double imageZ,
+  const_arr3_double vectorX, const_arr3_double vectorY, const_arr3_double vectorZ,
   int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid)
 {
 
@@ -2892,7 +2892,7 @@ void EMfields3D::BoundaryConditionsEImage(arr3_double& imageX, arr3_double& imag
 
 }
 
-void EMfields3D::BoundaryConditionsB(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct){
+void EMfields3D::BoundaryConditionsB(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct){
 
   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
     for (int j=0; j < ny;j++)
@@ -2975,7 +2975,7 @@ void EMfields3D::BoundaryConditionsB(arr3_double& vectorX, arr3_double& vectorY,
 
 }
 
-void EMfields3D::BoundaryConditionsE(arr3_double& vectorX, arr3_double& vectorY, arr3_double& vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct){
+void EMfields3D::BoundaryConditionsE(arr3_double vectorX, arr3_double vectorY, arr3_double vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct){
 
   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
     for (int j=0; j < ny;j++)
@@ -3058,7 +3058,7 @@ void EMfields3D::BoundaryConditionsE(arr3_double& vectorX, arr3_double& vectorY,
 }
 
 /*! get Electric Field component X array cell without the ghost cells */
-void EMfields3D::getExc(arr3_double& arr, Grid3DCU *grid) {
+void EMfields3D::getExc(arr3_double arr, Grid3DCU *grid) {
 
   array3_double tmp(nxc,nyc,nzc);
   grid->interpN2C(tmp, Ex);
@@ -3069,7 +3069,7 @@ void EMfields3D::getExc(arr3_double& arr, Grid3DCU *grid) {
         arr[i-1][j-1][k-1]=tmp[i][j][k];
 }
 /*! get Electric Field component Y array cell without the ghost cells */
-void EMfields3D::getEyc(arr3_double& arr, Grid3DCU *grid) {
+void EMfields3D::getEyc(arr3_double arr, Grid3DCU *grid) {
 
   array3_double tmp(nxc,nyc,nzc);
   grid->interpN2C(tmp, Ey);
@@ -3080,7 +3080,7 @@ void EMfields3D::getEyc(arr3_double& arr, Grid3DCU *grid) {
         arr[i-1][j-1][k-1]=tmp[i][j][k];
 }
 /*! get Electric Field component Z array cell without the ghost cells */
-void EMfields3D::getEzc(arr3_double& arr, Grid3DCU *grid) {
+void EMfields3D::getEzc(arr3_double arr, Grid3DCU *grid) {
 
   array3_double tmp(nxc,nyc,nzc);
   grid->interpN2C(tmp, Ez);
@@ -3091,28 +3091,28 @@ void EMfields3D::getEzc(arr3_double& arr, Grid3DCU *grid) {
         arr[i-1][j-1][k-1]=tmp[i][j][k];
 }
 /*! get Magnetic Field component X array cell without the ghost cells */
-void EMfields3D::getBxc(arr3_double& arr) {
+void EMfields3D::getBxc(arr3_double arr) {
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=Bxc[i][j][k];
 }
 /*! get Magnetic Field component Y array cell without the ghost cells */
-void EMfields3D::getByc(arr3_double& arr) {
+void EMfields3D::getByc(arr3_double arr) {
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=Byc[i][j][k];
 }
 /*! get Magnetic Field component Z array cell without the ghost cells */
-void EMfields3D::getBzc(arr3_double& arr) {
+void EMfields3D::getBzc(arr3_double arr) {
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
         arr[i-1][j-1][k-1]=Bzc[i][j][k];
 }
 /*! get species density component X array cell without the ghost cells */
-void EMfields3D::getRHOcs(arr3_double& arr, Grid3DCU *grid, int is) {
+void EMfields3D::getRHOcs(arr3_double arr, Grid3DCU *grid, int is) {
 
   array4_double tmp(ns,nxc,nyc,nzc);
   grid->interpN2C(tmp, is, rhons);
@@ -3124,7 +3124,7 @@ void EMfields3D::getRHOcs(arr3_double& arr, Grid3DCU *grid, int is) {
 }
 
 /*! get Magnetic Field component X array species is cell without the ghost cells */
-void EMfields3D::getJxsc(arr3_double& arr, Grid3DCU *grid, int is) {
+void EMfields3D::getJxsc(arr3_double arr, Grid3DCU *grid, int is) {
 
   array4_double tmp(ns,nxc,nyc,nzc);
   grid->interpN2C(tmp, is, Jxs);
@@ -3136,7 +3136,7 @@ void EMfields3D::getJxsc(arr3_double& arr, Grid3DCU *grid, int is) {
 }
 
 /*! get current component Y array species is cell without the ghost cells */
-void EMfields3D::getJysc(arr3_double& arr, Grid3DCU *grid, int is) {
+void EMfields3D::getJysc(arr3_double arr, Grid3DCU *grid, int is) {
 
   array4_double tmp(ns,nxc,nyc,nzc);
   grid->interpN2C(tmp, is, Jys);
@@ -3147,7 +3147,7 @@ void EMfields3D::getJysc(arr3_double& arr, Grid3DCU *grid, int is) {
         arr[i-1][j-1][k-1]=tmp[is][i][j][k];
 }
 /*! get current component Z array species is cell without the ghost cells */
-void EMfields3D::getJzsc(arr3_double& arr, Grid3DCU *grid, int is) {
+void EMfields3D::getJzsc(arr3_double arr, Grid3DCU *grid, int is) {
 
   array4_double tmp(ns,nxc,nyc,nzc);
   grid->interpN2C(tmp, is, Jzs);
