@@ -47,8 +47,8 @@ y_center =   1.                  # Ly = simulation box length - y direction in m
 z_center =   1.                  # Lz = simulation box length - z direction in m  
 L_square =   .1
 
-nxc =  64                   # nxc = number of cells - x direction        
-nyc =  64                   # nyc = number of cells - y direction
+nxc = 128                   # nxc = number of cells - x direction        
+nyc = 128                   # nyc = number of cells - y direction
 nzc =  1                   # nzc = number of cells - z direction        
 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
@@ -64,11 +64,11 @@ rhoINJECT =  1.0   1.0
 # TrackParticleID[species] = 1=true, 0=false --> Assign ID to particles 
 TrackParticleID = 0	0
 # npcelx = number of particles per cell - Direction X 
-npcelx =   3	3
+npcelx =   8	8
 # npcely = number of particles per cell - Direction Y 
-npcely =   3	3
+npcely =   8	8
 # npcelz = number of particles per cell - Direction Z 
-npcelz =   3	3
+npcelz =   8	8
 # qom = charge to mass ratio for different species 
 qom =  -256.0	1.0
 # uth = thermal velocity for different species - Direction X  
