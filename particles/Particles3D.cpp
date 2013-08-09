@@ -5,8 +5,11 @@ developers: Stefano Markidis, Giovanni Lapenta
  ********************************************************************************************/
 
 
+#include <mpi.h>
 #include <iostream>
 #include <math.h>
+#include <limits.h>
+#include "asserts.h"
 
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
@@ -18,6 +21,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "Grid3DCU.h"
 #include "Field.h"
 #include "MPIdata.h"
+#include "ipicdefs.h"
 #include "TimeTasks.h"
 
 #include "Particles3D.h"
@@ -312,27 +316,22 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
   }
   double start_mover_PC = MPI_Wtime();
-  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
-  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
-  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
-  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
-  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
-  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
-
-  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
-  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
-  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
-
-  double ****node_coordinate = asgArr4(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), 3, grid->getN());
+  const_arr3_double Ex = EMf->getEx();
+  const_arr3_double Ey = EMf->getEy();
+  const_arr3_double Ez = EMf->getEz();
+  const_arr3_double Bx = EMf->getBx();
+  const_arr3_double By = EMf->getBy();
+  const_arr3_double Bz = EMf->getBz();
 
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+  assert_le(nop,(long long) INT_MAX); // else would need to use long long
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.
 #pragma omp parallel for
 #pragma simd                    // this just slows things down (why?)
-  for (long long rest = 0; rest < nop; rest++) {
+  for (int rest = 0; rest < nop; rest++) {
     // copy the particle
     double xp = x[rest];
     double yp = y[rest];
@@ -371,12 +370,12 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       double xi[2];
       double eta[2];
       double zeta[2];
-      xi[0] = xp - node_coordinate[ix - 1][iy][iz][0];
-      eta[0] = yp - node_coordinate[ix][iy - 1][iz][1];
-      zeta[0] = zp - node_coordinate[ix][iy][iz - 1][2];
-      xi[1] = node_coordinate[ix][iy][iz][0] - xp;
-      eta[1] = node_coordinate[ix][iy][iz][1] - yp;
-      zeta[1] = node_coordinate[ix][iy][iz][2] - zp;
+      xi[0]   = xp - grid->getXN(ix-1);
+      eta[0]  = yp - grid->getYN(iy-1);
+      zeta[0] = zp - grid->getZN(iz-1);
+      xi[1]   = grid->getXN(ix) - xp;
+      eta[1]  = grid->getYN(iy) - yp;
+      zeta[1] = grid->getZN(iz) - zp;
 
       double Exl = 0.0;
       double Eyl = 0.0;
@@ -420,32 +419,32 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
       const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
       // 
-      Bxl += weight000 * Bx[ix][iy][iz]             + Bx_ext[ix][iy][iz];
-      Bxl += weight001 * Bx[ix][iy][iz - 1]         + Bx_ext[ix][iy][iz-1];
-      Bxl += weight010 * Bx[ix][iy - 1][iz]         + Bx_ext[ix][iy-1][iz];
-      Bxl += weight011 * Bx[ix][iy - 1][iz - 1]     + Bx_ext[ix][iy-1][iz-1];
-      Bxl += weight100 * Bx[ix - 1][iy][iz]         + Bx_ext[ix-1][iy][iz];
-      Bxl += weight101 * Bx[ix - 1][iy][iz - 1]     + Bx_ext[ix-1][iy][iz-1];
-      Bxl += weight110 * Bx[ix - 1][iy - 1][iz]     + Bx_ext[ix-1][iy-1][iz];
-      Bxl += weight111 * Bx[ix - 1][iy - 1][iz - 1] + Bx_ext[ix-1][iy-1][iz-1];
+      Bxl += weight000 * Bx[ix][iy][iz];
+      Bxl += weight001 * Bx[ix][iy][iz - 1];
+      Bxl += weight010 * Bx[ix][iy - 1][iz];
+      Bxl += weight011 * Bx[ix][iy - 1][iz - 1];
+      Bxl += weight100 * Bx[ix - 1][iy][iz];
+      Bxl += weight101 * Bx[ix - 1][iy][iz - 1];
+      Bxl += weight110 * Bx[ix - 1][iy - 1][iz];
+      Bxl += weight111 * Bx[ix - 1][iy - 1][iz - 1];
       // 
-      Byl += weight000 * By[ix][iy][iz]             + By_ext[ix][iy][iz];
-      Byl += weight001 * By[ix][iy][iz - 1]         + By_ext[ix][iy][iz-1];
-      Byl += weight010 * By[ix][iy - 1][iz]         + By_ext[ix][iy-1][iz];
-      Byl += weight011 * By[ix][iy - 1][iz - 1]     + By_ext[ix][iy-1][iz-1];
-      Byl += weight100 * By[ix - 1][iy][iz]         + By_ext[ix-1][iy][iz];
-      Byl += weight101 * By[ix - 1][iy][iz - 1]     + By_ext[ix-1][iy][iz-1];
-      Byl += weight110 * By[ix - 1][iy - 1][iz]     + By_ext[ix-1][iy-1][iz];
-      Byl += weight111 * By[ix - 1][iy - 1][iz - 1] + By_ext[ix-1][iy-1][iz-1];
+      Byl += weight000 * By[ix][iy][iz];
+      Byl += weight001 * By[ix][iy][iz - 1];
+      Byl += weight010 * By[ix][iy - 1][iz];
+      Byl += weight011 * By[ix][iy - 1][iz - 1];
+      Byl += weight100 * By[ix - 1][iy][iz];
+      Byl += weight101 * By[ix - 1][iy][iz - 1];
+      Byl += weight110 * By[ix - 1][iy - 1][iz];
+      Byl += weight111 * By[ix - 1][iy - 1][iz - 1];
       // 
-      Bzl += weight000 * Bz[ix][iy][iz]             + Bz_ext[ix][iy][iz];
-      Bzl += weight001 * Bz[ix][iy][iz - 1]         + Bz_ext[ix][iy][iz-1];
-      Bzl += weight010 * Bz[ix][iy - 1][iz]         + Bz_ext[ix][iy-1][iz];
-      Bzl += weight011 * Bz[ix][iy - 1][iz - 1]     + Bz_ext[ix][iy-1][iz-1];
-      Bzl += weight100 * Bz[ix - 1][iy][iz]         + Bz_ext[ix-1][iy][iz];
-      Bzl += weight101 * Bz[ix - 1][iy][iz - 1]     + Bz_ext[ix-1][iy][iz-1];
-      Bzl += weight110 * Bz[ix - 1][iy - 1][iz]     + Bz_ext[ix-1][iy-1][iz];
-      Bzl += weight111 * Bz[ix - 1][iy - 1][iz - 1] + Bz_ext[ix-1][iy-1][iz-1];
+      Bzl += weight000 * Bz[ix][iy][iz];
+      Bzl += weight001 * Bz[ix][iy][iz - 1];
+      Bzl += weight010 * Bz[ix][iy - 1][iz];
+      Bzl += weight011 * Bz[ix][iy - 1][iz - 1];
+      Bzl += weight100 * Bz[ix - 1][iy][iz];
+      Bzl += weight101 * Bz[ix - 1][iy][iz - 1];
+      Bzl += weight110 * Bz[ix - 1][iy - 1][iz];
+      Bzl += weight111 * Bz[ix - 1][iy - 1][iz - 1];
       // 
       Exl += weight000 * Ex[ix][iy][iz];
       Exl += weight001 * Ex[ix][iy][iz - 1];
@@ -509,7 +508,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // ********************//
   // COMMUNICATION 
   // *******************//
-  // timeTasks.start_communicate();
+  timeTasks.start_communicate();
   const int avail = communicate(vct);
   if (avail < 0)
     return (-1);
@@ -522,7 +521,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       return (-1);
     MPI_Barrier(MPI_COMM_WORLD);
   }
-  // timeTasks.addto_communicate();
+  timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
 }
 
@@ -903,79 +902,6 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   return(0); // exit succcesfully (hopefully)
 }
 
-/** interpolation Particle->Grid only for pressure tensor */
-void Particles3D::interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
-  double weight[2][2][2];
-  double temp[2][2][2];
-  int ix, iy, iz, temp1, temp2, temp3;
-  for (register long long i = 0; i < nop; i++) {
-    ix = 2 + int (floor((x[i] - grid->getXstart()) / grid->getDX()));
-    iy = 2 + int (floor((y[i] - grid->getYstart()) / grid->getDY()));
-    iz = 2 + int (floor((z[i] - grid->getZstart()) / grid->getDZ()));
-    calculateWeights(weight, x[i], y[i], z[i], ix, iy, iz, grid);
-    scale(weight, q[i], 2, 2, 2);
-    // Pxx
-    eqValue(0.0, temp, 2, 2, 2);
-    addscale(u[i] * u[i], temp, weight, 2, 2, 2);
-    EMf->addPxx(temp, ix, iy, iz, ns);
-    // Pxy
-    eqValue(0.0, temp, 2, 2, 2);
-    addscale(u[i] * v[i], temp, weight, 2, 2, 2);
-    EMf->addPxy(temp, ix, iy, iz, ns);
-    // Pxz
-    eqValue(0.0, temp, 2, 2, 2);
-    addscale(u[i] * w[i], temp, weight, 2, 2, 2);
-    EMf->addPxz(temp, ix, iy, iz, ns);
-    // Pyy
-    eqValue(0.0, temp, 2, 2, 2);
-    addscale(v[i] * v[i], temp, weight, 2, 2, 2);
-    EMf->addPyy(temp, ix, iy, iz, ns);
-    // Pyz
-    eqValue(0.0, temp, 2, 2, 2);
-    addscale(v[i] * w[i], temp, weight, 2, 2, 2);
-    EMf->addPyz(temp, ix, iy, iz, ns);
-    // Pzz
-    eqValue(0.0, temp, 2, 2, 2);
-    addscale(w[i] * w[i], temp, weight, 2, 2, 2);
-    EMf->addPzz(temp, ix, iy, iz, ns);
-  }
-}
-/** interpolation Particle->Grid only charge density, current */
-void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
-  double weight[2][2][2];
-  double temp[2][2][2];
-  int ix, iy, iz, temp2, temp1, temp3;
-  for (register long long i = 0; i < nop; i++) {
-    ix = 2 + int (floor((x[i] - grid->getXstart()) / grid->getDX()));
-    iy = 2 + int (floor((y[i] - grid->getYstart()) / grid->getDY()));
-    iz = 2 + int (floor((z[i] - grid->getZstart()) / grid->getDZ()));
-    temp1 = (int) min(ix, nxn - 2);
-    temp2 = (int) min(iy, nyn - 2);
-    temp3 = (int) min(iz, nzn - 2);
-    ix = (int) max(temp1, 2);
-    iy = (int) max(temp2, 2);
-    iz = (int) max(temp3, 2);
-    calculateWeights(weight, x[i], y[i], z[i], ix, iy, iz, grid);
-    scale(weight, q[i], 2, 2, 2);
-    // rho
-    EMf->addRho(weight, ix, iy, iz, ns);
-    // Jx
-    eqValue(0.0, temp, 2, 2, 2);
-    addscale(u[i], temp, weight, 2, 2, 2);
-    EMf->addJx(temp, ix, iy, iz, ns);
-    // Jy
-    eqValue(0.0, temp, 2, 2, 2);
-    addscale(v[i], temp, weight, 2, 2, 2);
-    EMf->addJy(temp, ix, iy, iz, ns);
-    // Jz
-    eqValue(0.0, temp, 2, 2, 2);
-    addscale(w[i], temp, weight, 2, 2, 2);
-    EMf->addJz(temp, ix, iy, iz, ns);
-
-  }
-  // communicate contribution from ghost cells 
-  EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
-}
 /** apply a linear perturbation to particle distribution */
 void Particles3D::linear_perturbation(double deltaBoB, double kx, double ky, double angle, double omega_r, double omega_i, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 

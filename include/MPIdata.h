@@ -11,11 +11,6 @@ email                : markidis@lanl.gov, lapenta@lanl.gov
 #define MPIDATA_H
 
 #include <mpi.h>
-#include <iostream>
-
-using std::cout;
-using std::endl;
-
 /**
  * MPI Data Structure. This class contains:
  *
@@ -29,55 +24,38 @@ using std::endl;
  * (C) 2004 Los Alamos National Laboratory
  * @author Stefano Markidis, Giovanni Lapenta
  * @version 1.0
+ *
+ * I made this class a singleton.  It should only be created once,
+ * since MPI_Init should be called only once. -Alec
  */
 class MPIdata {
 public:
-  /** constructor: setup MPI environment */
-  MPIdata(int *, char ***);
-  /** destructor */
-   ~MPIdata();
-  /** initialize MPIdata */
-  void init(int *, char ***);
+  static MPIdata& instance();
+private:
+  // disable constructor and destructor of this singleton
+  // by making them private.
+  ~MPIdata(){}
+  MPIdata(){}
+public:
+  /** initialize MPI environment */
+  static void init(int *, char ***);
   /** close MPI environment */
   void finalize_mpi();
   /** print MPI data structure */
   void Print(void);
   /** MPI status during the communication */
   MPI_Status status;
+public:
+  static int get_rank(){return instance().rank;}
+  static int get_nprocs(){return instance().nprocs;}
+private:
   /** rank of the process */
-  int rank;
+  static int rank;
   /** number of processes */
-  int nprocs;
+  static int nprocs;
 
+  // evidently unused...
   char *buffer;
   int buffer_size;
 };
-inline MPIdata::MPIdata(int *argc, char ***argv) {
-  /* Initialize the MPI API */
-  MPI_Init(argc, argv);
-
-  /* Set rank */
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  /* Set total number of processors */
-  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-
-}
-
-inline MPIdata::~MPIdata() {
-}
-
-inline void MPIdata::finalize_mpi() {
-  MPI_Finalize();
-}
-
-inline void MPIdata::Print(void) {
-  cout << endl;
-  cout << "Number of processes = " << nprocs << endl;
-  cout << "-------------------------" << endl;
-  cout << endl;
-}
-
-// extern MPIdata *mpi; // instantiated in iPIC3D.cpp
-
 #endif
