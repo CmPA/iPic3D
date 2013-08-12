@@ -119,7 +119,7 @@ class EMfields3D                // :public Field
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
     void sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
-    void addToSpeciesMoments(const Moments & in, int is);
+    //void addToSpeciesMoments(const Moments & in, int is);
     /*! add an amount of charge density to charge density field at node X,Y,Z */
     void addRho(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction X to current density field at node X,Y,Z */
@@ -256,10 +256,15 @@ class EMfields3D                // :public Field
     double getBenergy();
 
     /*! fetch array for summing moments of thread i */
-    arr4_double fetch_momentsArray(int i){
+    Moments& fetch_momentsArray(int i){
       assert_le(0,i);
       assert_le(i,sizeMomentsArray);
       return *momentsArray[i];
+    }
+    arr4_double fetch_moments10(int i){
+      assert_le(0,i);
+      assert_le(i,sizeMomentsArray);
+      return *moments10[i];
     }
 
     /*! print electromagnetic fields info */
@@ -384,8 +389,8 @@ class EMfields3D                // :public Field
     array3_double divC;
     /* temporary arrays for summing moments */
     int sizeMomentsArray;
-    //Moments **momentsArray;
-    arr4_double** momentsArray;
+    Moments **momentsArray;
+    arr4_double** moments10;
 
 
     // *******************************************************************************

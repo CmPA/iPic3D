@@ -609,7 +609,7 @@ namespace iPic3D
         { check_idx_bounds(n4,n3,n2,n1); arr4[n4][n3][n2][n1] = value; }
     #endif
     protected:
-      void setall(double val)
+      void setall(type val)
       {
         #pragma omp for
         for(int i=0;i<size;i++)
@@ -651,7 +651,7 @@ namespace iPic3D
         { const_array_ref4<type>::set(n4,n3,n2,n1, value); }
       void free(){ delArray4<type>((type****)arr4); }
       type**** fetch_arr4(){ return (type****) arr4; }
-      void setall(double val) { const_array_ref4<type>::setall(val); }
+      void setall(type val) { const_array_ref4<type>::setall(val); }
       //bool verify_dims(size_t s4, size_t s3, size_t s2, size_t s1){
       //  if(s4==S4 && s3==S3 && s2==S2 && s1==S1) return true;
       //  Wprintf("%d==%d && %d==%d && %d==%d && %d==%d failed",
