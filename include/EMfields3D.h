@@ -256,7 +256,7 @@ class EMfields3D                // :public Field
     double getBenergy();
 
     /*! fetch array for summing moments of thread i */
-    Moments& fetch_momentsArray(int i){
+    arr4_double fetch_momentsArray(int i){
       assert_le(0,i);
       assert_le(i,sizeMomentsArray);
       return *momentsArray[i];
@@ -384,7 +384,8 @@ class EMfields3D                // :public Field
     array3_double divC;
     /* temporary arrays for summing moments */
     int sizeMomentsArray;
-    Moments **momentsArray;
+    //Moments **momentsArray;
+    arr4_double** momentsArray;
 
 
     // *******************************************************************************
