@@ -223,8 +223,8 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
   double const*const q = pcls.getQall();
   //
   const int is = pcls.get_ns();
-  bool bmoments10 = true;
-  bool b10moments = false;
+  bool bmoments10 = false;
+  bool b10moments = true; // turn on doing it the old way
 
   // if b10moments
   double* rhons1d = &rhons[is][0][0][0];
@@ -536,6 +536,16 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
         Pzz[ix-1][iy-1][iz-1] += wwi*weight111;
       }
 
+      // why on earth do I observe the following:
+      // * without openmp, b10moments and bmoments10 gives same results,
+      // * b10moments gives same results with and without openmp, and
+      // * bmoments10 gives wrong results when I use openmp.
+      // I'm using Moments class and moments array exactly the same way
+      // as far as openmp is concerned...  To isolate the problem,
+      // gradually morph Moments class until implemented via arr4_double...
+      // Problem in constructor?
+      // 
+      // 
       if(b10moments && bmoments10)
       {
         // check work
