@@ -69,6 +69,13 @@ int c_Solver::Init(int argc, char **argv) {
   else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
 #endif
   else if (col->getCase()=="Dipole")    EMf->initDipole(vct,grid,col);
+  else if (col->getCase()=="RandomCase") {
+    EMf->initRandomField(vct,grid,col);
+    if (myrank==0) {
+      cout << "Case is " << col->getCase() <<"\n";
+      cout <<"total # of particle per cell is " << col->getNpcel(0) << "\n";
+    }
+  }
   else {
     if (myrank==0) {
       cout << " =========================================================== " << endl;
