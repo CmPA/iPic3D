@@ -14,7 +14,7 @@ project(iPic3D)
 # Set exec path
 #
 
-set(EXECUTABLE_OUTPUT_PATH work/${CMAKE_BUILD_TYPE})
+set(EXECUTABLE_OUTPUT_PATH exec/${CMAKE_BUILD_TYPE})
 set(LIBRARY_OUTPUT_PATH lib)
 
 #
@@ -147,7 +147,7 @@ target_link_libraries(
 
 
 ## to save the executable in the folder where the CMakeLists.txt file is, i.e. CMAKE_CURRENT_SOURCE_DIR
-set_target_properties(iPic3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+#set_target_properties(iPic3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 
 ## debug releases have a _d appended to the executable
 set_target_properties(iPic3D PROPERTIES DEBUG_POSTFIX "_d")
