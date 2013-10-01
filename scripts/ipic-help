@@ -18,6 +18,8 @@ then
   where 4 = XLEN times YLEN times ZLEN (defined in GEM.inp).
   
   Available subcommands:
+
+    ipic help ctags
     ipic help mic
 '
   exit
