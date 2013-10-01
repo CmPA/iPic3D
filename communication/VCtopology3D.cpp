@@ -1,5 +1,6 @@
 #include "mpi.h"
 #include "Alloc.h"
+#include "Collective.h"
 #include "VCtopology3D.h"
 #include <iostream>
 
@@ -7,22 +8,22 @@ using std::cout;
 using std::endl;
 
 /** DEFINE THE Topology HERE, setting XLEN,YLEN,ZLEN */
-VCtopology3D::VCtopology3D() {
+VCtopology3D::VCtopology3D(const Collective& col) {
   // *******************************************
   // *******************************************
   // change these values to change the topology
-  XLEN = 2;
-  YLEN = 2;
-  ZLEN = 1;
+  XLEN = col.getXLEN();
+  YLEN = col.getYLEN();
+  ZLEN = col.getZLEN();
   nprocs = XLEN * YLEN * ZLEN;
   // here you have to set the topology for the fields
-  PERIODICX = true;
-  PERIODICY = false;
-  PERIODICZ = true;
+  PERIODICX = col.getPERIODICX();
+  PERIODICY = col.getPERIODICY();
+  PERIODICZ = col.getPERIODICZ();
   // here you have to set the topology for the Particles
-  PERIODICX_P = true;
-  PERIODICY_P = false;
-  PERIODICZ_P = true;
+  PERIODICX_P = col.getPERIODICX();
+  PERIODICY_P = col.getPERIODICY();
+  PERIODICZ_P = col.getPERIODICZ();
   // *******************************************
   // *******************************************
   XDIR = 0;

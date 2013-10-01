@@ -49,7 +49,15 @@ L_square =   .1
 nxc =  120                  # nxc = number of cells - x direction        
 nyc =  120                  # nyc = number of cells - y direction
 nzc =  1                   # nzc = number of cells - z direction        
-
+# %%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%
+# number of MPI subdomains in each direction
+XLEN = 2
+YLEN = 2
+ZLEN = 1
+# topology of subdomains in each dimension (1=true, 0=false)
+PERIODICX = 1
+PERIODICY = 1
+PERIODICZ = 1
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
 #    ns = number of species
 #    0 = electrons

@@ -27,11 +27,12 @@ developers           : Stefano Markidis, Giovanni Lapenta
  * @version 2.0
  */
 
+class Collective;
 
 class VCtopology3D:public VirtualTopology3D {
 public:
   /** constructor: Define topology parameters: dimension, domain decomposition,... */
-  VCtopology3D();
+  VCtopology3D(const Collective& col);
   /** destructor */
   ~VCtopology3D();
   /** Find the neighbors in the new communicator  */
