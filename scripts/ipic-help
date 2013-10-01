@@ -10,21 +10,12 @@ then
     cmake ..
     make # or "make -j" to compile in parallel
   
-  Before you build, you should first configure the number of MPI
-  processes you will use.  To do so, you currently have to edit
-  "communication/VCtopology3D.cpp" (and then recompile in the build
-  directory).  The lines you need to change are:
-  
-    XLEN = 2;
-    YLEN = 2;
-    ZLEN = 1;
-  
   To run the code you can use
   
     mkdir data
     mpiexec.hydra -n 4 -env OMP_NUM_THREADS=1 exec/iPic3D ../inputfiles/GEM.inp
   
-  where 4 = XLEN times YLEN times ZLEN.
+  where 4 = XLEN times YLEN times ZLEN (defined in GEM.inp).
   
   Available subcommands:
     ipic help mic

@@ -2,21 +2,10 @@
 #if test $# -lt 1
 #then
   echo '
-  For the Xeon, you might want to change this to:
+  See "ipic help".  Modifications are as follows.
+
+  To run on the Xeon host processor, use something like:
   
-    XLEN = 4;
-    YLEN = 2;
-    ZLEN = 1;
-  
-  For the Xeon Phi, you might want:
-  
-    XLEN = 10;
-    YLEN = 5;
-    ZLEN = 1;
-  
-  Then to run the code you would use something like:
-  
-    mkdir data
     mpiexec.hydra -n 8 -env OMP_NUM_THREADS=4 exec/iPic3D ../inputfiles/GEM.inp
   
   where 8 = XLEN times YLEN times ZLEN.
