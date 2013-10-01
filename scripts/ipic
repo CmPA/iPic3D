@@ -1,0 +1,16 @@
+#!/bin/sh
+if test $# -lt 1
+then 
+  echo '
+  usage: ipic <command>
+
+  Available ipic commands:
+    ipic ctags
+    ipic help
+'
+  exit
+fi
+DIRNAME=`dirname $0`
+APPENDIX="$1"
+shift
+exec "${DIRNAME}/ipic-${APPENDIX}" "$@"

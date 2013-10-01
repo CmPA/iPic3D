@@ -1,0 +1,39 @@
+#!/bin/sh
+#if test $# -lt 1
+#then
+  echo '
+  For the Xeon, you might want to change this to:
+  
+    XLEN = 4;
+    YLEN = 2;
+    ZLEN = 1;
+  
+  For the Xeon Phi, you might want:
+  
+    XLEN = 10;
+    YLEN = 5;
+    ZLEN = 1;
+  
+  Then to run the code you would use something like:
+  
+    mkdir data
+    mpiexec.hydra -n 8 -env OMP_NUM_THREADS=4 exec/iPic3D ../inputfiles/GEM.inp
+  
+  where 8 = XLEN times YLEN times ZLEN.
+  
+  If you want to cross-compile for the MIC, then the instructions are
+  different:
+  
+      mkdir build.phi
+      cd build.phi
+      cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/cmake_template.cmake.XeonPhi
+      make -j
+  
+  And to run you use, e.g.:
+  
+    mkdir data
+    mpiexec.hydra -host knc2-mic0 -n 50 -env OMP_NUM_THREADS=4 exec/iPic3D ../inputfiles/GEM.inp
+  
+  where 50 = XLEN times YLEN times ZLEN.
+'
+

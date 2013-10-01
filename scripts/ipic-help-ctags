@@ -1,0 +1,22 @@
+#!/bin/sh
+DIRNAME=`dirname $0`
+SCRIPTSDIRNAME=`cd "${DIRNAME}"; pwd`
+PARENTOFSCRIPTSDIRNAME=`dirname "${SCRIPTSDIRNAME}"`
+#if test $# -lt 1
+#then
+  echo '
+  Make sure that you are in the source code directory via e.g.
+
+    cd '"${PARENTOFSCRIPTSDIRNAME}"'
+
+  and then run the script, e.g. via
+
+    '"${SCRIPTSDIRNAME}"'/ipic ctags
+
+  or
+
+    ipic ctags
+
+  if you have '"${DIRNAME}"' in your path.
+'
+

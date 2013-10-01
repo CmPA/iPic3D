@@ -1,0 +1,14 @@
+#!/bin/sh
+# generate a tag for each file name argument
+ls $* 2>&1| sed 's/ /\
+/g' \
+| perl -ne '
+    if(m@/@) {
+      m@(.*?)/([^/\n]+)$@;
+      print "$2\t$1/$2\t1\n";
+    } else {
+      m@(.*)@;
+      print "$1\t$1\t1\n";
+    }
+  '
+echo "tags	tags	1" >> tags
