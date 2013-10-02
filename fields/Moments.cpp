@@ -13,7 +13,8 @@ void Moments10::set_to_zero()
   }
 }
 
-void Moments::set_to_zero() {
+#ifdef TENMOMENTS
+void TenMoments::set_to_zero() {
   #pragma omp parallel for collapse(3)
   for (register int i = 0; i < nx; i++)
     for (register int j = 0; j < ny; j++)
@@ -30,4 +31,5 @@ void Moments::set_to_zero() {
         pZZ[i][j][k] = 0.0;
       }
 }
+#endif // TENMOMENTS
 

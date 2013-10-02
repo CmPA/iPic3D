@@ -192,15 +192,16 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) :
   injFieldsRear   = new injInfoFields(nxn, nyn, nzn);
 
   sizeMomentsArray = omp_thread_count();
-  momentsArray = new Moments*[sizeMomentsArray];
+  #ifdef TENMOMENTS
+  tenMomentsArray = new TenMoments*[sizeMomentsArray];
+  #endif // TENMOMENTS
   moments10Array = new Moments10*[sizeMomentsArray];
-  //moments10 = (arr4_double**) malloc(sizeof(void*)*sizeMomentsArray);
   for(int i=0;i<sizeMomentsArray;i++)
   {
-    momentsArray[i] = new Moments(nxn,nyn,nzn);
+    #ifdef TENMOMENTS
+    tenMomentsArray[i] = new TenMoments(nxn,nyn,nzn);
+    #endif // TENMOMENTS
     moments10Array[i] = new Moments10(nxn,nyn,nzn);
-    //momentsArray[i]->init(nxn,nyn,nzn);
-    //moments10[i] = new arr4_double(nxn,nyn,nzn,10);
   }
 }
 
@@ -226,7 +227,6 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
   //
   const int is = pcls.get_ns();
   bool bmoments10 = true;
-  bool b10moments = false; // turn on doing it the old way
 
   // if b10moments
   double* rhons1d = &rhons[is][0][0][0];
@@ -251,14 +251,9 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
   #pragma omp parallel
   {
     int thread_num = omp_get_thread_num();
-    Moments& speciesMoments = fetch_momentsArray(thread_num);
+    #ifdef TENMOMENTS
+    TenMoments& speciesMoments = fetch_momentsArray(thread_num);
     speciesMoments.set_to_zero();
-    Moments10& speciesMoments10 = fetch_moments10Array(thread_num);
-    speciesMoments10.set_to_zero();
-    arr4_double moments = speciesMoments10.fetch_arr();
-    //arr4_double moments = fetch_moments10(thread_num);
-    //moments.setall(0.);
-    //
     arr3_double rho = speciesMoments.fetch_rho();
     arr3_double Jx  = speciesMoments.fetch_Jx();
     arr3_double Jy  = speciesMoments.fetch_Jy();
@@ -269,6 +264,10 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
     arr3_double Pyy = speciesMoments.fetch_Pyy();
     arr3_double Pyz = speciesMoments.fetch_Pyz();
     arr3_double Pzz = speciesMoments.fetch_Pzz();
+    #endif // TENMOMENTS
+    Moments10& speciesMoments10 = fetch_moments10Array(thread_num);
+    speciesMoments10.set_to_zero();
+    arr4_double moments = speciesMoments10.fetch_arr();
     // The following loop is expensive, so it is wise to assume that the
     // compiler is stupid.  Therefore we should on the one hand
     // expand things out and on the other hand avoid repeating computations.
@@ -444,7 +443,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
         //}
       }
 
-      if(b10moments)
+      #ifdef TENMOMENTS
       {
         // use the weight to distribute the moments
         //
@@ -549,29 +548,16 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
         Pzz[ix-1][iy-1][iz  ] += wwi*weight110;
         Pzz[ix-1][iy-1][iz-1] += wwi*weight111;
       }
+      #endif // TENMOMENTS
 
-      // why on earth do I observe the following:
-      // * without openmp, b10moments and bmoments10 gives same results,
-      // * b10moments gives same results with and without openmp, and
-      // * bmoments10 gives wrong results when I use openmp.
-      // I'm using Moments class and moments array exactly the same way
-      // as far as openmp is concerned...  To isolate the problem,
-      // gradually morph Moments class until implemented via arr4_double...
-      // Problem in constructor?
-      // 
-      // 
-      if(b10moments && bmoments10)
+      #ifdef TENMOMENTS
       {
         // check work
         for(int jx=0;jx<2;jx++)
         for(int jy=0;jy<2;jy++)
         for(int jz=0;jz<2;jz++)
         {
-          //dprintf("gothere");
-          //dprintf("%24.16f == rho[ix-jx][iy-jy][iz-jz]", rho[ix-jx][iy-jy][iz-jz]);
-          //dprintf("%24.16f == moments[ix-jx][iy-jy][iz-jz][0]", moments[ix-jx][iy-jy][iz-jz][0]);
           assert_eq(rho[ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][0]);
-          //dprintf("gothere");
           assert_eq(Jx [ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][1]);
           assert_eq(Jy [ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][2]);
           assert_eq(Jz [ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][3]);
@@ -583,53 +569,53 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
           assert_eq(Pzz[ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][9]);
         }
       }
+      #endif // TENMOMENTS
     }
     // split up the reduction tasks.
     //
-    if(b10moments)
+    //{
+    //  //
+    //  // One-dimensional array access is presumably
+    //  // more efficient on poor compilers.
+    //  double* rho1d = &rho[0][0][0];
+    //  double* Jx1d  = &Jx [0][0][0];
+    //  double* Jy1d  = &Jy [0][0][0];
+    //  double* Jz1d  = &Jz [0][0][0];
+    //  double* Pxx1d = &Pxx[0][0][0];
+    //  double* Pxy1d = &Pxy[0][0][0];
+    //  double* Pxz1d = &Pxz[0][0][0];
+    //  double* Pyy1d = &Pyy[0][0][0];
+    //  double* Pyz1d = &Pyz[0][0][0];
+    //  double* Pzz1d = &Pzz[0][0][0];
+    //  ////
+    //  assert_eq(speciesMoments.get_nx(), nxn);
+    //  assert_eq(speciesMoments.get_ny(), nyn);
+    //  assert_eq(speciesMoments.get_nz(), nzn);
+    //  const int numel = nxn*nyn*nzn;
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) rhons1d[i] += invVOL*rho1d[i];
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) Jxs1d  [i] += invVOL*Jx1d [i];
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) Jys1d  [i] += invVOL*Jy1d [i];
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) Jzs1d  [i] += invVOL*Jz1d [i];
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) pXXsn1d[i] += invVOL*Pxx1d[i];
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) pXYsn1d[i] += invVOL*Pxy1d[i];
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) pXZsn1d[i] += invVOL*Pxz1d[i];
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) pYYsn1d[i] += invVOL*Pyy1d[i];
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) pYZsn1d[i] += invVOL*Pyz1d[i];
+    //  #pragma omp critical
+    //  for(int i=0;i<numel;i++) pZZsn1d[i] += invVOL*Pzz1d[i];
+    //}
+
+    // reduce arrays
     {
-      //
-      // One-dimensional array access is presumably
-      // more efficient on poor compilers.
-      double* rho1d = &rho[0][0][0];
-      double* Jx1d  = &Jx [0][0][0];
-      double* Jy1d  = &Jy [0][0][0];
-      double* Jz1d  = &Jz [0][0][0];
-      double* Pxx1d = &Pxx[0][0][0];
-      double* Pxy1d = &Pxy[0][0][0];
-      double* Pxz1d = &Pxz[0][0][0];
-      double* Pyy1d = &Pyy[0][0][0];
-      double* Pyz1d = &Pyz[0][0][0];
-      double* Pzz1d = &Pzz[0][0][0];
-      ////
-      assert_eq(speciesMoments.get_nx(), nxn);
-      assert_eq(speciesMoments.get_ny(), nyn);
-      assert_eq(speciesMoments.get_nz(), nzn);
-      const int numel = nxn*nyn*nzn;
-      #pragma omp critical
-      for(int i=0;i<numel;i++) rhons1d[i] += invVOL*rho1d[i];
-      #pragma omp critical
-      for(int i=0;i<numel;i++) Jxs1d  [i] += invVOL*Jx1d [i];
-      #pragma omp critical
-      for(int i=0;i<numel;i++) Jys1d  [i] += invVOL*Jy1d [i];
-      #pragma omp critical
-      for(int i=0;i<numel;i++) Jzs1d  [i] += invVOL*Jz1d [i];
-      #pragma omp critical
-      for(int i=0;i<numel;i++) pXXsn1d[i] += invVOL*Pxx1d[i];
-      #pragma omp critical
-      for(int i=0;i<numel;i++) pXYsn1d[i] += invVOL*Pxy1d[i];
-      #pragma omp critical
-      for(int i=0;i<numel;i++) pXZsn1d[i] += invVOL*Pxz1d[i];
-      #pragma omp critical
-      for(int i=0;i<numel;i++) pYYsn1d[i] += invVOL*Pyy1d[i];
-      #pragma omp critical
-      for(int i=0;i<numel;i++) pYZsn1d[i] += invVOL*Pyz1d[i];
-      #pragma omp critical
-      for(int i=0;i<numel;i++) pZZsn1d[i] += invVOL*Pzz1d[i];
-    }
-    else if(bmoments10)
-    {
-      //
       #pragma omp critical
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { rhons[is][i][j][k] += invVOL*moments[i][j][k][0]; }}
@@ -660,10 +646,6 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
       #pragma omp critical
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
-    }
-    else
-    {
-      eprintf("reduction impossible without data!");
     }
   }
   communicateGhostP2G(is, 0, 0, 0, 0, vct);
@@ -1598,7 +1580,7 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
 }
 
 /* add moments (e.g. from an OpenMP thread) to the accumulated moments */
-//void EMfields3D::addToSpeciesMoments(const Moments & in, int is) {
+//void EMfields3D::addToSpeciesMoments(const TenMoments & in, int is) {
 //  assert_eq(in.get_nx(), nxn);
 //  assert_eq(in.get_ny(), nyn);
 //  assert_eq(in.get_nz(), nzn);
@@ -3556,14 +3538,10 @@ EMfields3D::~EMfields3D() {
   delete injFieldsBottom;
   delete injFieldsFront;
   delete injFieldsRear;
-  for(int i=0;i<sizeMomentsArray;i++)
-  {
-    delete momentsArray[i];
-    delete moments10Array[i];
-    //moments10[i]->free();
-  }
-  delete [] momentsArray;
+  #ifdef TENMOMENTS
+  for(int i=0;i<sizeMomentsArray;i++) { delete tenMomentsArray[i]; }
+  delete [] tenMomentsArray;
+  #endif // TENMOMENTS
+  for(int i=0;i<sizeMomentsArray;i++) { delete moments10Array[i]; }
   delete [] moments10Array;
-  //delete [] moments10;
-  //free(moments10);
 }

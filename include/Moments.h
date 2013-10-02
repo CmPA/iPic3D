@@ -27,7 +27,8 @@ class Moments10
 
 // class to accumulate node-centered species moments
 // 
-class Moments {
+#ifdef TENMOMENTS
+class TenMoments {
   private:
     arr3_double rho;
 
@@ -73,7 +74,7 @@ class Moments {
     arr3_double fetch_Pyz() { return pYZ; }
     arr3_double fetch_Pzz() { return pZZ; }
   public:
-    Moments(int nxn, int nyn, int nzn) :
+    TenMoments(int nxn, int nyn, int nzn) :
       nx(nxn),
       ny(nyn),
       nz(nzn),
@@ -89,8 +90,9 @@ class Moments {
       pZZ (nxn, nyn, nzn)
     {
     };
-    ~Moments(){};
+    ~TenMoments(){};
     void set_to_zero();
 };
+#endif // TENMOMENTS
 
 #endif

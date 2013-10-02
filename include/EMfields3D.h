@@ -31,7 +31,9 @@ using std::endl;
 /*! Electromagnetic fields and sources defined for each local grid, and for an implicit maxwell's solver @date May 2008 @par Copyright: (C) 2008 KUL @author Stefano Markidis, Giovanni Lapenta. @version 3.0 */
 
 class Particles3Dcomm;
-class Moments;
+#ifdef TENMOMENTS
+class TenMoments;
+#endif // TENMOMENTS
 class Moments10;
 class EMfields3D                // :public Field
 {
@@ -120,7 +122,7 @@ class EMfields3D                // :public Field
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
     void sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
-    //void addToSpeciesMoments(const Moments & in, int is);
+    //void addToSpeciesMoments(const TenMoments & in, int is);
     /*! add an amount of charge density to charge density field at node X,Y,Z */
     void addRho(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction X to current density field at node X,Y,Z */
@@ -257,16 +259,13 @@ class EMfields3D                // :public Field
     double getBenergy();
 
     /*! fetch array for summing moments of thread i */
-    Moments& fetch_momentsArray(int i){
+    #ifdef TENMOMENTS
+    TenMoments& fetch_momentsArray(int i){
       assert_le(0,i);
       assert_le(i,sizeMomentsArray);
-      return *(momentsArray[i]);
+      return *(tenMomentsArray[i]);
     }
-    //arr4_double fetch_moments10(int i){
-    //  assert_le(0,i);
-    //  assert_le(i,sizeMomentsArray);
-    //  return *(moments10[i]);
-    //}
+    #endif // TENMOMENTS
     Moments10& fetch_moments10Array(int i){
       assert_le(0,i);
       assert_le(i,sizeMomentsArray);
@@ -395,10 +394,10 @@ class EMfields3D                // :public Field
     array3_double divC;
     /* temporary arrays for summing moments */
     int sizeMomentsArray;
-    Moments **momentsArray;
+    #ifdef TENMOMENTS
+    TenMoments **tenMomentsArray;
+    #endif // TENMOMENTS
     Moments10 **moments10Array;
-    //arr4_double** moments10;
-
 
     // *******************************************************************************
     // *********** SOURCES **

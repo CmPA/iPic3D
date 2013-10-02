@@ -20,7 +20,6 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "Grid.h"
 #include "Grid3DCU.h"
 #include "Field.h"
-#include "Moments.h"
 #include "MPIdata.h"
 #include "ompdefs.h"
 
