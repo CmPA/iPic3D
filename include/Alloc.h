@@ -58,6 +58,10 @@
     code to compile on the latest intel compiler (2013) and on
     g++ 4.0 (2005); g++ 4.2 (2007) compiled (but unfortunately,
     for my g++ 4.2, iPic3D suffered from stack frame corruption.)
+    //
+    Note that the directive
+      #if defined(FLAT_ARRAYS) || defined(CHECK_BOUNDS)
+    appears not only here but also in arraysfwd.h
 */
 #define ALIGNMENT (64)
 #ifdef __INTEL_COMPILER
@@ -217,26 +221,26 @@ namespace iPic3D
   
   // classes to dereference arrays.
   //
-  // ArrayGetN is essentially a dumbed-down version of ArrN with
+  // array_fetchN is essentially a dumbed-down version of ArrN with
   // an index shift applied to the underlying array.  The purpose
-  // of ArrayGetN is to allow elements of multidimensional arrays
+  // of array_fetchN is to allow elements of multidimensional arrays
   // to be accessed with a calculated one-dimensional index while
   // using chained operator[] syntax (e.g. myarr[i][j]), i.e. the
   // same syntax as is used for native or nested arrays.  This
   // implementation is likely to be slow unless optimization is
   // turned on, allowing the compiler to figure out that the whole
-  // chain of calls to the operator[] methods and to the ArrayGetN
+  // chain of calls to the operator[] methods and to the array_fetchN
   // constructors reduces to computing a one-dimensional subscript
   // used to access a one-dimensional array.
   //
   template <class type>
-  class ArrayGet1
+  class array_fetch1
   {
     type* const __restrict__ arr;
     const size_t S1;
     const size_t shift;
    public:
-    inline ArrayGet1(type*const arr_, size_t k, size_t s1) :
+    inline array_fetch1(type*const arr_, size_t k, size_t s1) :
       arr(arr_), shift(k), S1(s1)
     {}
     inline type& operator[](size_t n1){
@@ -247,34 +251,34 @@ namespace iPic3D
   };
   
   template <class type>
-  class ArrayGet2
+  class array_fetch2
   {
     type* const __restrict__ arr;
     const size_t shift;
     const size_t S2, S1;
    public:
-    inline ArrayGet2(type*const arr_, size_t k, size_t s2, size_t s1) :
+    inline array_fetch2(type*const arr_, size_t k, size_t s2, size_t s1) :
       arr(arr_), shift(k), S2(s2), S1(s1)
     {}
-    inline ArrayGet1<type> operator[](size_t n2){
+    inline array_fetch1<type> operator[](size_t n2){
       check_bounds(n2,S2);
-      return ArrayGet1<type>(arr, (shift+n2)*S1, S1);
+      return array_fetch1<type>(arr, (shift+n2)*S1, S1);
     }
   };
   
   template <class type>
-  class ArrayGet3
+  class array_fetch3
   {
     type* const __restrict__ arr;
     const size_t shift;
     const size_t S3, S2, S1;
    public:
-    inline ArrayGet3(type*const arr_, size_t k, size_t s3, size_t s2, size_t s1) :
+    inline array_fetch3(type*const arr_, size_t k, size_t s3, size_t s2, size_t s1) :
       arr(arr_), shift(k), S3(s3), S2(s2), S1(s1)
     {}
-    inline ArrayGet2<type> operator[](size_t n3){
+    inline array_fetch2<type> operator[](size_t n3){
       check_bounds(n3, S3);
-      return ArrayGet2<type>(arr, (shift+n3)*S2, S2, S1);
+      return array_fetch2<type>(arr, (shift+n3)*S2, S2, S1);
     }
   };
   
@@ -426,9 +430,9 @@ namespace iPic3D
         arr(*in)
       { }
       // dereference via calculated index
-      inline ArrayGet1<type> operator[](size_t n2){
+      inline array_fetch1<type> operator[](size_t n2){
         check_bounds(n2, S2);
-        return ArrayGet1<type>(arr, n2*S1, S1);
+        return array_fetch1<type>(arr, n2*S1, S1);
       }
       inline size_t getidx(size_t n2, size_t n1) const
       {
@@ -530,9 +534,9 @@ namespace iPic3D
       { }
       void free(){ delArray3<type>((type***)arr3); }
     #if defined(FLAT_ARRAYS) || defined(CHECK_BOUNDS)
-      inline ArrayGet2<type> operator[](size_t n3){
+      inline array_fetch2<type> operator[](size_t n3){
         check_bounds(n3, S3);
-        return ArrayGet2<type>(arr, n3*S2, S2, S1);
+        return array_fetch2<type>(arr, n3*S2, S2, S1);
       }
     #else
       // this causes operator[] to dereference via chained pointer
@@ -638,9 +642,9 @@ namespace iPic3D
         const_array_ref4<type>(in,s4,s3,s2,s1)
       { }
     #if defined(FLAT_ARRAYS) || defined(CHECK_BOUNDS)
-      inline ArrayGet3<type> operator[](size_t n4){
+      inline array_fetch3<type> operator[](size_t n4){
         check_bounds(n4, S4);
-        return ArrayGet3<type>(arr, n4*S3, S3, S2, S1);
+        return array_fetch3<type>(arr, n4*S3, S3, S2, S1);
       }
     #else
       operator type****(){ return (type****) arr4; }

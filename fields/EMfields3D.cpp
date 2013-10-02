@@ -193,12 +193,14 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) :
 
   sizeMomentsArray = omp_thread_count();
   momentsArray = new Moments*[sizeMomentsArray];
-  moments10 = (arr4_double**) malloc(sizeof(void*)*sizeMomentsArray);
+  moments10Array = new Moments10*[sizeMomentsArray];
+  //moments10 = (arr4_double**) malloc(sizeof(void*)*sizeMomentsArray);
   for(int i=0;i<sizeMomentsArray;i++)
   {
     momentsArray[i] = new Moments(nxn,nyn,nzn);
+    moments10Array[i] = new Moments10(nxn,nyn,nzn);
     //momentsArray[i]->init(nxn,nyn,nzn);
-    moments10[i] = new arr4_double(nxn,nyn,nzn,10);
+    //moments10[i] = new arr4_double(nxn,nyn,nzn,10);
   }
 }
 
@@ -223,8 +225,8 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
   double const*const q = pcls.getQall();
   //
   const int is = pcls.get_ns();
-  bool bmoments10 = false;
-  bool b10moments = true; // turn on doing it the old way
+  bool bmoments10 = true;
+  bool b10moments = false; // turn on doing it the old way
 
   // if b10moments
   double* rhons1d = &rhons[is][0][0][0];
@@ -251,8 +253,11 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
     int thread_num = omp_get_thread_num();
     Moments& speciesMoments = fetch_momentsArray(thread_num);
     speciesMoments.set_to_zero();
-    arr4_double moments = fetch_moments10(thread_num);
-    moments.setall(0.);
+    Moments10& speciesMoments10 = fetch_moments10Array(thread_num);
+    speciesMoments10.set_to_zero();
+    arr4_double moments = speciesMoments10.fetch_arr();
+    //arr4_double moments = fetch_moments10(thread_num);
+    //moments.setall(0.);
     //
     arr3_double rho = speciesMoments.fetch_rho();
     arr3_double Jx  = speciesMoments.fetch_Jx();
@@ -323,93 +328,102 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
 
       if(bmoments10)
       {
-        moments[ix  ][iy  ][iz  ][0] += velmoments[0]*weight000;
-        moments[ix  ][iy  ][iz  ][1] += velmoments[1]*weight000;
-        moments[ix  ][iy  ][iz  ][2] += velmoments[2]*weight000;
-        moments[ix  ][iy  ][iz  ][3] += velmoments[3]*weight000;
-        moments[ix  ][iy  ][iz  ][4] += velmoments[4]*weight000;
-        moments[ix  ][iy  ][iz  ][5] += velmoments[5]*weight000;
-        moments[ix  ][iy  ][iz  ][6] += velmoments[6]*weight000;
-        moments[ix  ][iy  ][iz  ][7] += velmoments[7]*weight000;
-        moments[ix  ][iy  ][iz  ][8] += velmoments[8]*weight000;
-        moments[ix  ][iy  ][iz  ][9] += velmoments[9]*weight000;
+        arr1_double_fetch moments000 = moments[ix  ][iy  ][iz  ];
+        arr1_double_fetch moments001 = moments[ix  ][iy  ][iz-1];
+        arr1_double_fetch moments010 = moments[ix  ][iy-1][iz  ];
+        arr1_double_fetch moments011 = moments[ix  ][iy-1][iz-1];
+        arr1_double_fetch moments100 = moments[ix-1][iy  ][iz  ];
+        arr1_double_fetch moments101 = moments[ix-1][iy  ][iz-1];
+        arr1_double_fetch moments110 = moments[ix-1][iy-1][iz  ];
+        arr1_double_fetch moments111 = moments[ix-1][iy-1][iz-1];
 
-        moments[ix  ][iy  ][iz-1][0] += velmoments[0]*weight001;
-        moments[ix  ][iy  ][iz-1][1] += velmoments[1]*weight001;
-        moments[ix  ][iy  ][iz-1][2] += velmoments[2]*weight001;
-        moments[ix  ][iy  ][iz-1][3] += velmoments[3]*weight001;
-        moments[ix  ][iy  ][iz-1][4] += velmoments[4]*weight001;
-        moments[ix  ][iy  ][iz-1][5] += velmoments[5]*weight001;
-        moments[ix  ][iy  ][iz-1][6] += velmoments[6]*weight001;
-        moments[ix  ][iy  ][iz-1][7] += velmoments[7]*weight001;
-        moments[ix  ][iy  ][iz-1][8] += velmoments[8]*weight001;
-        moments[ix  ][iy  ][iz-1][9] += velmoments[9]*weight001;
+        moments000[0] += velmoments[0]*weight000;
+        moments000[1] += velmoments[1]*weight000;
+        moments000[2] += velmoments[2]*weight000;
+        moments000[3] += velmoments[3]*weight000;
+        moments000[4] += velmoments[4]*weight000;
+        moments000[5] += velmoments[5]*weight000;
+        moments000[6] += velmoments[6]*weight000;
+        moments000[7] += velmoments[7]*weight000;
+        moments000[8] += velmoments[8]*weight000;
+        moments000[9] += velmoments[9]*weight000;
 
-        moments[ix  ][iy-1][iz  ][0] += velmoments[0]*weight010;
-        moments[ix  ][iy-1][iz  ][1] += velmoments[1]*weight010;
-        moments[ix  ][iy-1][iz  ][2] += velmoments[2]*weight010;
-        moments[ix  ][iy-1][iz  ][3] += velmoments[3]*weight010;
-        moments[ix  ][iy-1][iz  ][4] += velmoments[4]*weight010;
-        moments[ix  ][iy-1][iz  ][5] += velmoments[5]*weight010;
-        moments[ix  ][iy-1][iz  ][6] += velmoments[6]*weight010;
-        moments[ix  ][iy-1][iz  ][7] += velmoments[7]*weight010;
-        moments[ix  ][iy-1][iz  ][8] += velmoments[8]*weight010;
-        moments[ix  ][iy-1][iz  ][9] += velmoments[9]*weight010;
+        moments001[0] += velmoments[0]*weight001;
+        moments001[1] += velmoments[1]*weight001;
+        moments001[2] += velmoments[2]*weight001;
+        moments001[3] += velmoments[3]*weight001;
+        moments001[4] += velmoments[4]*weight001;
+        moments001[5] += velmoments[5]*weight001;
+        moments001[6] += velmoments[6]*weight001;
+        moments001[7] += velmoments[7]*weight001;
+        moments001[8] += velmoments[8]*weight001;
+        moments001[9] += velmoments[9]*weight001;
 
-        moments[ix  ][iy-1][iz-1][0] += velmoments[0]*weight011;
-        moments[ix  ][iy-1][iz-1][1] += velmoments[1]*weight011;
-        moments[ix  ][iy-1][iz-1][2] += velmoments[2]*weight011;
-        moments[ix  ][iy-1][iz-1][3] += velmoments[3]*weight011;
-        moments[ix  ][iy-1][iz-1][4] += velmoments[4]*weight011;
-        moments[ix  ][iy-1][iz-1][5] += velmoments[5]*weight011;
-        moments[ix  ][iy-1][iz-1][6] += velmoments[6]*weight011;
-        moments[ix  ][iy-1][iz-1][7] += velmoments[7]*weight011;
-        moments[ix  ][iy-1][iz-1][8] += velmoments[8]*weight011;
-        moments[ix  ][iy-1][iz-1][9] += velmoments[9]*weight011;
+        moments010[0] += velmoments[0]*weight010;
+        moments010[1] += velmoments[1]*weight010;
+        moments010[2] += velmoments[2]*weight010;
+        moments010[3] += velmoments[3]*weight010;
+        moments010[4] += velmoments[4]*weight010;
+        moments010[5] += velmoments[5]*weight010;
+        moments010[6] += velmoments[6]*weight010;
+        moments010[7] += velmoments[7]*weight010;
+        moments010[8] += velmoments[8]*weight010;
+        moments010[9] += velmoments[9]*weight010;
 
-        moments[ix-1][iy  ][iz  ][0] += velmoments[0]*weight100;
-        moments[ix-1][iy  ][iz  ][1] += velmoments[1]*weight100;
-        moments[ix-1][iy  ][iz  ][2] += velmoments[2]*weight100;
-        moments[ix-1][iy  ][iz  ][3] += velmoments[3]*weight100;
-        moments[ix-1][iy  ][iz  ][4] += velmoments[4]*weight100;
-        moments[ix-1][iy  ][iz  ][5] += velmoments[5]*weight100;
-        moments[ix-1][iy  ][iz  ][6] += velmoments[6]*weight100;
-        moments[ix-1][iy  ][iz  ][7] += velmoments[7]*weight100;
-        moments[ix-1][iy  ][iz  ][8] += velmoments[8]*weight100;
-        moments[ix-1][iy  ][iz  ][9] += velmoments[9]*weight100;
+        moments011[0] += velmoments[0]*weight011;
+        moments011[1] += velmoments[1]*weight011;
+        moments011[2] += velmoments[2]*weight011;
+        moments011[3] += velmoments[3]*weight011;
+        moments011[4] += velmoments[4]*weight011;
+        moments011[5] += velmoments[5]*weight011;
+        moments011[6] += velmoments[6]*weight011;
+        moments011[7] += velmoments[7]*weight011;
+        moments011[8] += velmoments[8]*weight011;
+        moments011[9] += velmoments[9]*weight011;
 
-        moments[ix-1][iy  ][iz-1][0] += velmoments[0]*weight101;
-        moments[ix-1][iy  ][iz-1][1] += velmoments[1]*weight101;
-        moments[ix-1][iy  ][iz-1][2] += velmoments[2]*weight101;
-        moments[ix-1][iy  ][iz-1][3] += velmoments[3]*weight101;
-        moments[ix-1][iy  ][iz-1][4] += velmoments[4]*weight101;
-        moments[ix-1][iy  ][iz-1][5] += velmoments[5]*weight101;
-        moments[ix-1][iy  ][iz-1][6] += velmoments[6]*weight101;
-        moments[ix-1][iy  ][iz-1][7] += velmoments[7]*weight101;
-        moments[ix-1][iy  ][iz-1][8] += velmoments[8]*weight101;
-        moments[ix-1][iy  ][iz-1][9] += velmoments[9]*weight101;
+        moments100[0] += velmoments[0]*weight100;
+        moments100[1] += velmoments[1]*weight100;
+        moments100[2] += velmoments[2]*weight100;
+        moments100[3] += velmoments[3]*weight100;
+        moments100[4] += velmoments[4]*weight100;
+        moments100[5] += velmoments[5]*weight100;
+        moments100[6] += velmoments[6]*weight100;
+        moments100[7] += velmoments[7]*weight100;
+        moments100[8] += velmoments[8]*weight100;
+        moments100[9] += velmoments[9]*weight100;
 
-        moments[ix-1][iy-1][iz  ][0] += velmoments[0]*weight110;
-        moments[ix-1][iy-1][iz  ][1] += velmoments[1]*weight110;
-        moments[ix-1][iy-1][iz  ][2] += velmoments[2]*weight110;
-        moments[ix-1][iy-1][iz  ][3] += velmoments[3]*weight110;
-        moments[ix-1][iy-1][iz  ][4] += velmoments[4]*weight110;
-        moments[ix-1][iy-1][iz  ][5] += velmoments[5]*weight110;
-        moments[ix-1][iy-1][iz  ][6] += velmoments[6]*weight110;
-        moments[ix-1][iy-1][iz  ][7] += velmoments[7]*weight110;
-        moments[ix-1][iy-1][iz  ][8] += velmoments[8]*weight110;
-        moments[ix-1][iy-1][iz  ][9] += velmoments[9]*weight110;
+        moments101[0] += velmoments[0]*weight101;
+        moments101[1] += velmoments[1]*weight101;
+        moments101[2] += velmoments[2]*weight101;
+        moments101[3] += velmoments[3]*weight101;
+        moments101[4] += velmoments[4]*weight101;
+        moments101[5] += velmoments[5]*weight101;
+        moments101[6] += velmoments[6]*weight101;
+        moments101[7] += velmoments[7]*weight101;
+        moments101[8] += velmoments[8]*weight101;
+        moments101[9] += velmoments[9]*weight101;
 
-        moments[ix-1][iy-1][iz-1][0] += velmoments[0]*weight111;
-        moments[ix-1][iy-1][iz-1][1] += velmoments[1]*weight111;
-        moments[ix-1][iy-1][iz-1][2] += velmoments[2]*weight111;
-        moments[ix-1][iy-1][iz-1][3] += velmoments[3]*weight111;
-        moments[ix-1][iy-1][iz-1][4] += velmoments[4]*weight111;
-        moments[ix-1][iy-1][iz-1][5] += velmoments[5]*weight111;
-        moments[ix-1][iy-1][iz-1][6] += velmoments[6]*weight111;
-        moments[ix-1][iy-1][iz-1][7] += velmoments[7]*weight111;
-        moments[ix-1][iy-1][iz-1][8] += velmoments[8]*weight111;
-        moments[ix-1][iy-1][iz-1][9] += velmoments[9]*weight111;
+        moments110[0] += velmoments[0]*weight110;
+        moments110[1] += velmoments[1]*weight110;
+        moments110[2] += velmoments[2]*weight110;
+        moments110[3] += velmoments[3]*weight110;
+        moments110[4] += velmoments[4]*weight110;
+        moments110[5] += velmoments[5]*weight110;
+        moments110[6] += velmoments[6]*weight110;
+        moments110[7] += velmoments[7]*weight110;
+        moments110[8] += velmoments[8]*weight110;
+        moments110[9] += velmoments[9]*weight110;
+
+        moments111[0] += velmoments[0]*weight111;
+        moments111[1] += velmoments[1]*weight111;
+        moments111[2] += velmoments[2]*weight111;
+        moments111[3] += velmoments[3]*weight111;
+        moments111[4] += velmoments[4]*weight111;
+        moments111[5] += velmoments[5]*weight111;
+        moments111[6] += velmoments[6]*weight111;
+        moments111[7] += velmoments[7]*weight111;
+        moments111[8] += velmoments[8]*weight111;
+        moments111[9] += velmoments[9]*weight111;
 
         //double weight[2][2][2];
         //weight[0][0][0]=weight000;
@@ -617,35 +631,35 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
     {
       //
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { rhons[is][i][j][k] += invVOL*moments[i][j][k][0]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { rhons[is][i][j][k] += invVOL*moments[i][j][k][0]; }}
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { Jxs  [is][i][j][k] += invVOL*moments[i][j][k][1]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { Jxs  [is][i][j][k] += invVOL*moments[i][j][k][1]; }}
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { Jys  [is][i][j][k] += invVOL*moments[i][j][k][2]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { Jys  [is][i][j][k] += invVOL*moments[i][j][k][2]; }}
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { Jzs  [is][i][j][k] += invVOL*moments[i][j][k][3]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { Jzs  [is][i][j][k] += invVOL*moments[i][j][k][3]; }}
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pXXsn[is][i][j][k] += invVOL*moments[i][j][k][4]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pXXsn[is][i][j][k] += invVOL*moments[i][j][k][4]; }}
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pXYsn[is][i][j][k] += invVOL*moments[i][j][k][5]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pXYsn[is][i][j][k] += invVOL*moments[i][j][k][5]; }}
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pXZsn[is][i][j][k] += invVOL*moments[i][j][k][6]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pXZsn[is][i][j][k] += invVOL*moments[i][j][k][6]; }}
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pYYsn[is][i][j][k] += invVOL*moments[i][j][k][7]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pYYsn[is][i][j][k] += invVOL*moments[i][j][k][7]; }}
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pYZsn[is][i][j][k] += invVOL*moments[i][j][k][8]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pYZsn[is][i][j][k] += invVOL*moments[i][j][k][8]; }}
       #pragma omp critical
-      for(int i=0;i<nxn;i++) for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
     }
     else
     {
@@ -3545,8 +3559,11 @@ EMfields3D::~EMfields3D() {
   for(int i=0;i<sizeMomentsArray;i++)
   {
     delete momentsArray[i];
-    moments10[i]->free();
+    delete moments10Array[i];
+    //moments10[i]->free();
   }
   delete [] momentsArray;
-  free(moments10);
+  delete [] moments10Array;
+  //delete [] moments10;
+  //free(moments10);
 }

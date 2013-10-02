@@ -49,4 +49,13 @@ typedef iPic3D::array1<double> array1_double;
 typedef iPic3D::array2<double> array2_double;
 typedef iPic3D::array3<double> array3_double;
 typedef iPic3D::array4<double> array4_double;
+// This directive should be consistent with the directives in Alloc.h
+#if defined(FLAT_ARRAYS) || defined(CHECK_BOUNDS)
+typedef iPic3D::array_fetch1<double> arr1_double_fetch;
+typedef iPic3D::array_get1<double> arr1_double_get;
+#else
+typedef double* arr1_double_fetch;
+typedef double* arr1_double_get;
+#endif
+
 #endif

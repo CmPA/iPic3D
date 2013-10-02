@@ -32,6 +32,7 @@ using std::endl;
 
 class Particles3Dcomm;
 class Moments;
+class Moments10;
 class EMfields3D                // :public Field
 {
   public:
@@ -259,12 +260,17 @@ class EMfields3D                // :public Field
     Moments& fetch_momentsArray(int i){
       assert_le(0,i);
       assert_le(i,sizeMomentsArray);
-      return *momentsArray[i];
+      return *(momentsArray[i]);
     }
-    arr4_double fetch_moments10(int i){
+    //arr4_double fetch_moments10(int i){
+    //  assert_le(0,i);
+    //  assert_le(i,sizeMomentsArray);
+    //  return *(moments10[i]);
+    //}
+    Moments10& fetch_moments10Array(int i){
       assert_le(0,i);
       assert_le(i,sizeMomentsArray);
-      return *moments10[i];
+      return *(moments10Array[i]);
     }
 
     /*! print electromagnetic fields info */
@@ -390,7 +396,8 @@ class EMfields3D                // :public Field
     /* temporary arrays for summing moments */
     int sizeMomentsArray;
     Moments **momentsArray;
-    arr4_double** moments10;
+    Moments10 **moments10Array;
+    //arr4_double** moments10;
 
 
     // *******************************************************************************

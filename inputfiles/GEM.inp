@@ -53,8 +53,8 @@ nzc =  1                   # nzc = number of cells - z direction
 
 # %%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%
 # number of MPI subdomains in each direction
-XLEN = 4
-YLEN = 4
+XLEN = 2
+YLEN = 2
 ZLEN = 1
 # topology of subdomains in each dimension (1=true, 0=false)
 PERIODICX = 1
