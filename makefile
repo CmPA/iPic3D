@@ -6,7 +6,7 @@ help:
 tags: retags
 
 retags:
-	scripts/ipic-ctags
+	scripts/ipic ctags
 
 #monitor:
 #	less +F data/ConservedQuantities.txt
