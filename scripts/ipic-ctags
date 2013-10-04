@@ -1,8 +1,0 @@
-#!/bin/sh
-DIRNAME=`dirname $0`
-echo creating tags file using ctags
-find . -name '*.cpp' -or -name '*.h' | xargs ctags --extra=+q
-echo creating tag for each C++ file
-find . -name '*.cpp' -or -name '*.h' | xargs $DIRNAME/makefiletags >> tags
-echo sorting tags file
-LC_ALL=C sort -u tags -o tags
