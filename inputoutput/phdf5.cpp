@@ -152,9 +152,9 @@ int PHDF5fileClass::WritePHDF5dataset(string grpname, string datasetname, double
 
   buffer = new double[nx*ny*nz];
   int l = 0;
-  for (int i = 0; i < nx; i++)
+  for (int k = 0; k < nz; k++)
     for (int j = 0; j < ny; j++)
-      for (int k = 0; k < nz; k++)
+      for (int i = 0; i < nx; i++)
         buffer[l++] = data[i][j][k];
 
   /* -------------------------------------------------------- */
