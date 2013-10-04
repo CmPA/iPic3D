@@ -160,6 +160,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   vectY = newArr3(double, nxn, nyn, nzn);
   vectZ = newArr3(double, nxn, nyn, nzn);
   divC = newArr3(double, nxc, nyc, nzc);
+  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -810,7 +811,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
         }
     }
 
-    if(vct->getXright_neighbor()==MPI_PROC_NULL && (bcEMfaceXright ==2 || bcEMfaceXleft ==0)) {
+    if(vct->getXright_neighbor()==MPI_PROC_NULL && (bcEMfaceXright ==2 || bcEMfaceXright ==0)) {
       for (int j=0; j < ny;j++)
         for (int k=0; k < nz;k++){
           rhons[is][nx-4][j][k] = ff * rhoINIT[is] / FourPI;
@@ -820,7 +821,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
         }
     }
 
-    if(vct->getYleft_neighbor()==MPI_PROC_NULL && (bcEMfaceYleft ==2 || bcEMfaceXleft ==0))  {
+    if(vct->getYleft_neighbor()==MPI_PROC_NULL && (bcEMfaceYleft ==2 || bcEMfaceYleft ==0))  {
       for (int i=0; i < nx;i++)
         for (int k=0; k < nz;k++){
           rhons[is][i][0][k] = ff * rhoINIT[is] / FourPI;
@@ -830,7 +831,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
         }
     }
 
-    if(vct->getYright_neighbor()==MPI_PROC_NULL && (bcEMfaceYright ==2 || bcEMfaceXleft ==0))  {
+    if(vct->getYright_neighbor()==MPI_PROC_NULL && (bcEMfaceYright ==2 || bcEMfaceYright ==0))  {
       for (int i=0; i < nx;i++)
         for (int k=0; k < nz;k++){
           rhons[is][i][ny-4][k] = ff * rhoINIT[is] / FourPI;
@@ -840,7 +841,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
         }
     }
 
-    if(vct->getZleft_neighbor()==MPI_PROC_NULL && (bcEMfaceZleft ==2 || bcEMfaceXleft ==0))  {
+    if(vct->getZleft_neighbor()==MPI_PROC_NULL && (bcEMfaceZleft ==2 || bcEMfaceZleft ==0))  {
       for (int i=0; i < nx;i++)
         for (int j=0; j < ny;j++){
           rhons[is][i][j][0] = ff * rhoINIT[is] / FourPI;
@@ -851,7 +852,7 @@ void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
     }
 
 
-    if(vct->getZright_neighbor()==MPI_PROC_NULL && (bcEMfaceZright ==2 || bcEMfaceXleft ==0))  {
+    if(vct->getZright_neighbor()==MPI_PROC_NULL && (bcEMfaceZright ==2 || bcEMfaceZright ==0))  {
       for (int i=0; i < nx;i++)
         for (int j=0; j < ny;j++){
           rhons[is][i][j][nz-4] = ff * rhoINIT[is] / FourPI;
@@ -2945,10 +2946,8 @@ double ***EMfields3D::getEx() {
 }
 /*! get Electric Field component X array cell without the ghost cells */
 double ***EMfields3D::getExc(Grid3DCU *grid) {
-  double ***arr;
   double ***tmp;
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   tmp = newArr3(double,nxc,nyc,nzc);
 
   grid->interpN2C(tmp, Ex);
@@ -2971,10 +2970,8 @@ double ***EMfields3D::getEy() {
 }
 /*! get Electric Field component Y array cell without the ghost cells */
 double ***EMfields3D::getEyc(Grid3DCU *grid) {
-  double ***arr;
   double ***tmp;
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   tmp = newArr3(double,nxc,nyc,nzc);
 
   grid->interpN2C(tmp, Ey);
@@ -2997,10 +2994,8 @@ double ***EMfields3D::getEz() {
 }
 /*! get Electric Field component Z array cell without the ghost cells */
 double ***EMfields3D::getEzc(Grid3DCU *grid) {
-  double ***arr;
   double ***tmp;
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   tmp = newArr3(double,nxc,nyc,nzc);
 
   grid->interpN2C(tmp, Ez);
@@ -3023,8 +3018,6 @@ double ***EMfields3D::getBx() {
 }
 /*! get Magnetic Field component X array cell without the ghost cells */
 double ***EMfields3D::getBxc() {
-  double ***arr;
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
@@ -3041,8 +3034,6 @@ double ***EMfields3D::getBy() {
 }
 /*! get Magnetic Field component Y array cell without the ghost cells */
 double ***EMfields3D::getByc() {
-  double ***arr;
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
@@ -3059,8 +3050,6 @@ double ***EMfields3D::getBz() {
 }
 /*! get Magnetic Field component Z array cell without the ghost cells */
 double ***EMfields3D::getBzc() {
-  double ***arr;
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   for (int i = 1; i < nxc-1; i++)
     for (int j = 1; j < nyc-1; j++)
       for (int k = 1; k < nzc-1; k++)
@@ -3095,10 +3084,8 @@ double ****EMfields3D::getRHOns() {
 }
 /*! get species density component X array cell without the ghost cells */
 double ***EMfields3D::getRHOcs(Grid3DCU *grid, int is) {
-  double ***arr;
   double ****tmp;
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   tmp = newArr4(double,ns,nxc,nyc,nzc);
 
   grid->interpN2C(tmp, is, rhons);
@@ -3196,10 +3183,8 @@ double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const {
 }
 /*! get Magnetic Field component X array species is cell without the ghost cells */
 double ***EMfields3D::getJxsc(Grid3DCU *grid, int is) {
-  double ***arr;
   double ****tmp;
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   tmp = newArr4(double,ns,nxc,nyc,nzc);
 
   grid->interpN2C(tmp, is, Jxs);
@@ -3222,10 +3207,8 @@ double &EMfields3D::getJys(int indexX, int indexY, int indexZ, int is) const {
 }
 /*! get current component Y array species is cell without the ghost cells */
 double ***EMfields3D::getJysc(Grid3DCU *grid, int is) {
-  double ***arr;
   double ****tmp;
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   tmp = newArr4(double,ns,nxc,nyc,nzc);
 
   grid->interpN2C(tmp, is, Jys);
@@ -3248,10 +3231,8 @@ double &EMfields3D::getJzs(int indexX, int indexY, int indexZ, int is) const {
 }
 /*! get current component Z array species is cell without the ghost cells */
 double ***EMfields3D::getJzsc(Grid3DCU *grid, int is) {
-  double ***arr;
   double ****tmp;
 
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
   tmp = newArr4(double,ns,nxc,nyc,nzc);
 
   grid->interpN2C(tmp, is, Jzs);

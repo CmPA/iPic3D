@@ -531,6 +531,7 @@ class EMfields3D                // :public Field
     double ***vectY;
     double ***vectZ;
     double ***divC;
+    double ***arr;
 
 
     // *******************************************************************************
