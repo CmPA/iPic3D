@@ -45,6 +45,7 @@ def ipic_help():
 
     ''', progname, '''help ctags
     ''', progname, '''help mic
+    ''', progname, '''help deep
   '''
 
 def ipic_help_mic(args):
@@ -71,6 +72,21 @@ def ipic_help_mic(args):
     mpiexec.hydra -host knc2-mic0 -n 50 -env OMP_NUM_THREADS=4 exec/iPic3D ../inputfiles/GEM.inp
   
   where 50 = XLEN times YLEN times ZLEN.
+
+  See also:
+    ''', progname, '''help deep
+    '''
+
+def ipic_help_deep(args):
+    print '''
+  DEEP needs the following modules:
+
+    module load hdf5/1.8.10-patch1
+    module load knc/intel_mpi/4.1.0.030
+    module load knc/mic
+
+  For instructions on how to build and run, see
+    ''', progname, '''help mic
     '''
 
 def ipic_help_ctags(args):
@@ -156,6 +172,8 @@ def help(args):
     command = deque.popleft(args)
     if command == "mic":
       ipic_help_mic(args)
+    elif command == "deep":
+      ipic_help_deep(args)
     elif command == "ctags":
       ipic_help_ctags(args)
     elif command == "git":
