@@ -71,24 +71,18 @@ file(
 )
 
 #
-# Macro definitions
+# Compilation options
 #
 
-set(TEST_PH5 $ENV{USE_PHDF5})
-if(DEFINED TEST_PH5)
-  add_definitions( -DPHDF5 )
-  message(" WARNING: Compiling the code using the Parallel HDF5 functions.")
-else(DEFINED TEST_PH5)
-  message(" INFO: Compiling using the sequantial HDF5 functions.")
-endif(DEFINED TEST_PH5)
+option(IPIC_PARALLEL_HDF5 "Output is done using the parallel HDF5 library" OFF)
+if(IPIC_PARALLEL_HDF5)
+  add_definitions(-DUSE_PHDF5)
+endif()
 
-set(TEST_B $ENV{BATSRUS})
-if(DEFINED TEST_B)
+option(IPIC_BATSRUS "Compile library with coupling code for BATS-R-US" OFF)
+if(IPIC_BATSRUS)
   add_definitions( -DBATSRUS )
-  message(" WARNING: BATSRUS flag is active.")
-else(DEFINED TEST_B)
-  message(" INFO: BATSRUS is not active.")
-endif(DEFINED TEST_B)
+endif()
 
 #
 # Executable declaration
