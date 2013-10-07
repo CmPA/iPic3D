@@ -333,24 +333,24 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 #pragma simd                    // this just slows things down (why?)
   for (int rest = 0; rest < nop; rest++) {
     // copy the particle
-    double xp = x[rest];
-    double yp = y[rest];
-    double zp = z[rest];
-    double up = u[rest];
-    double vp = v[rest];
-    double wp = w[rest];
-    const double xptilde = x[rest];
-    const double yptilde = y[rest];
-    const double zptilde = z[rest];
-    double uptilde;
-    double vptilde;
-    double wptilde;
+    pfloat xp = x[rest];
+    pfloat yp = y[rest];
+    pfloat zp = z[rest];
+    pfloat up = u[rest];
+    pfloat vp = v[rest];
+    pfloat wp = w[rest];
+    const pfloat xptilde = x[rest];
+    const pfloat yptilde = y[rest];
+    const pfloat zptilde = z[rest];
+    pfloat uptilde;
+    pfloat vptilde;
+    pfloat wptilde;
     // calculate the average velocity iteratively
     for (int innter = 0; innter < 1; innter++) {
       // interpolation G-->P
-      const double ixd = floor((xp - xstart) * inv_dx);
-      const double iyd = floor((yp - ystart) * inv_dy);
-      const double izd = floor((zp - zstart) * inv_dz);
+      const pfloat ixd = floor((xp - xstart) * inv_dx);
+      const pfloat iyd = floor((yp - ystart) * inv_dy);
+      const pfloat izd = floor((zp - zstart) * inv_dz);
       int ix = 2 + int (ixd);
       int iy = 2 + int (iyd);
       int iz = 2 + int (izd);
@@ -367,9 +367,9 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       if (iz > nzn - 1)
         iz = nzn - 1;
 
-      double xi[2];
-      double eta[2];
-      double zeta[2];
+      pfloat xi[2];
+      pfloat eta[2];
+      pfloat zeta[2];
       xi[0]   = xp - grid->getXN(ix-1);
       eta[0]  = yp - grid->getYN(iy-1);
       zeta[0] = zp - grid->getZN(iz-1);
@@ -377,16 +377,16 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       eta[1]  = grid->getYN(iy) - yp;
       zeta[1] = grid->getZN(iz) - zp;
 
-      double Exl = 0.0;
-      double Eyl = 0.0;
-      double Ezl = 0.0;
-      double Bxl = 0.0;
-      double Byl = 0.0;
-      double Bzl = 0.0;
+      pfloat Exl = 0.0;
+      pfloat Eyl = 0.0;
+      pfloat Ezl = 0.0;
+      pfloat Bxl = 0.0;
+      pfloat Byl = 0.0;
+      pfloat Bzl = 0.0;
 
       // MIC refuses to vectorize this ...
       // 
-      // double weight[2][2][2];
+      // pfloat weight[2][2][2];
       // for (int ii = 0; ii < 2; ii++)
       // for (int jj = 0; jj < 2; jj++)
       // for (int kk = 0; kk < 2; kk++)
@@ -394,12 +394,12 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       // for (int ii = 0; ii < 2; ii++)
       // for (int jj = 0; jj < 2; jj++)
       // for (int kk = 0; kk < 2; kk++) {
-      // const double Exlp = weight[ii][jj][kk] * Ex.get(ix - ii, iy - jj, iz - kk);
-      // const double Eylp = weight[ii][jj][kk] * Ey.get(ix - ii, iy - jj, iz - kk);
-      // const double Ezlp = weight[ii][jj][kk] * Ez.get(ix - ii, iy - jj, iz - kk);
-      // const double Bxlp = weight[ii][jj][kk] * Bx.get(ix - ii, iy - jj, iz - kk);
-      // const double Bylp = weight[ii][jj][kk] * By.get(ix - ii, iy - jj, iz - kk);
-      // const double Bzlp = weight[ii][jj][kk] * Bz.get(ix - ii, iy - jj, iz - kk);
+      // const pfloat Exlp = weight[ii][jj][kk] * Ex.get(ix - ii, iy - jj, iz - kk);
+      // const pfloat Eylp = weight[ii][jj][kk] * Ey.get(ix - ii, iy - jj, iz - kk);
+      // const pfloat Ezlp = weight[ii][jj][kk] * Ez.get(ix - ii, iy - jj, iz - kk);
+      // const pfloat Bxlp = weight[ii][jj][kk] * Bx.get(ix - ii, iy - jj, iz - kk);
+      // const pfloat Bylp = weight[ii][jj][kk] * By.get(ix - ii, iy - jj, iz - kk);
+      // const pfloat Bzlp = weight[ii][jj][kk] * Bz.get(ix - ii, iy - jj, iz - kk);
       // Exl += Exlp;
       // Eyl += Eylp;
       // Ezl += Ezlp;
@@ -410,14 +410,14 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
       // ... so we expand things out instead
       // 
-      const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
-      const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
-      const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
-      const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
-      const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
-      const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
-      const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
-      const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+      const pfloat weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+      const pfloat weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+      const pfloat weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+      const pfloat weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+      const pfloat weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+      const pfloat weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+      const pfloat weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+      const pfloat weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
       // 
       Bxl += weight000 * Bx[ix][iy][iz];
       Bxl += weight001 * Bx[ix][iy][iz - 1];
@@ -474,13 +474,13 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
 
       // end interpolation
-      const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
-      const double denom = 1.0 / (1.0 + omdtsq);
+      const pfloat omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
+      const pfloat denom = 1.0 / (1.0 + omdtsq);
       // solve the position equation
-      const double ut = up + qomdt2 * Exl;
-      const double vt = vp + qomdt2 * Eyl;
-      const double wt = wp + qomdt2 * Ezl;
-      const double udotb = ut * Bxl + vt * Byl + wt * Bzl;
+      const pfloat ut = up + qomdt2 * Exl;
+      const pfloat vt = vp + qomdt2 * Eyl;
+      const pfloat wt = wp + qomdt2 * Ezl;
+      const pfloat udotb = ut * Bxl + vt * Byl + wt * Bzl;
       // solve the velocity equation 
       uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
       vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
