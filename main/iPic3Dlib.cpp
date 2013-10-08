@@ -316,6 +316,7 @@ void c_Solver::WriteConserved(int cycle) {
         my_file << endl;
         my_file.close();
       }
+      delete [] VelocityDist;
     }
   }
 }
