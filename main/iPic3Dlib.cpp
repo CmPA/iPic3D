@@ -145,7 +145,6 @@ int c_Solver::Init(int argc, char **argv) {
   }
   // Distribution functions
   nDistributionBins = 1000;
-  long long *VelocityDist = new long long[nDistributionBins];
   ds = SaveDirName + "/DistributionFunctions.txt";
   if (myrank == 0) {
     ofstream my_file(ds.c_str());
@@ -307,7 +306,7 @@ void c_Solver::WriteConserved(int cycle) {
     // Velocity distribution
     for (int is = 0; is < ns; is++) {
       double maxVel = part[is].getMaxVelocity();
-      VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
+      long long *VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
       if (myrank == 0) {
         ofstream my_file(ds.c_str(), fstream::app);
         my_file << cycle << "\t" << is << "\t" << maxVel;
