@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include "CG.h"
 
 /**

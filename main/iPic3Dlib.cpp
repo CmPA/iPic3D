@@ -1,15 +1,24 @@
 
 #include "iPic3D.h"
+#include "TimeTasks.h"
+#include "ipicdefs.h"
+#include "debug.h"
 
 using namespace iPic3D;
+MPIdata* iPic3D::c_Solver::mpi=0;
 
 int c_Solver::Init(int argc, char **argv) {
-  // initialize MPI environment
+  // get MPI data
+  //
+  // c_Solver is not a singleton, so the following line was pulled out.
+  //MPIdata::init(&argc, &argv);
+  //
+  // initialized MPI environment
   // nprocs = number of processors
   // myrank = rank of tha process*/
-  mpi = new MPIdata(&argc, &argv);
-  nprocs = mpi->nprocs;
-  myrank = mpi->rank;
+  mpi = &MPIdata::instance();
+  nprocs = MPIdata::get_nprocs();
+  myrank = MPIdata::get_rank();
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
   verbose = col->getVerbose();
@@ -20,7 +29,7 @@ int c_Solver::Init(int argc, char **argv) {
   ns = col->getNs();            // get the number of particle species involved in simulation
   first_cycle = col->getLast_cycle() + 1; // get the last cycle from the restart
   // initialize the virtual cartesian topology 
-  vct = new VCtopology3D();
+  vct = new VCtopology3D(*col);
   // Check if we can map the processes into a matrix ordering defined in Collective.cpp
   if (nprocs != vct->getNprocs()) {
     if (myrank == 0) {
@@ -60,6 +69,13 @@ int c_Solver::Init(int argc, char **argv) {
   else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
 #endif
   else if (col->getCase()=="Dipole")    EMf->initDipole(vct,grid,col);
+  else if (col->getCase()=="RandomCase") {
+    EMf->initRandomField(vct,grid,col);
+    if (myrank==0) {
+      cout << "Case is " << col->getCase() <<"\n";
+      cout <<"total # of particle per cell is " << col->getNpcel(0) << "\n";
+    }
+  }
   else {
     if (myrank==0) {
       cout << " =========================================================== " << endl;
@@ -158,15 +174,19 @@ int c_Solver::Init(int argc, char **argv) {
 
 void c_Solver::CalculateField() {
 
-  // timeTasks.resetCycle();
+  timeTasks.resetCycle();
   // interpolation
-  // timeTasks.start(TimeTasks::MOMENTS);
+  timeTasks.start(TimeTasks::MOMENTS);
 
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
 
   for (int i = 0; i < ns; i++)
-    part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
+  {
+    // interpolate particles to grid nodes
+    EMf->sumMoments(part[i], grid, vct);
+    //part[i].interpP2G(EMf, grid, vct); // the old, slow way.
+  }
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
 
@@ -182,12 +202,12 @@ void c_Solver::CalculateField() {
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
-  // timeTasks.end(TimeTasks::MOMENTS);
+  timeTasks.end(TimeTasks::MOMENTS);
 
   // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
+  timeTasks.start(TimeTasks::FIELDS);
   EMf->calculateE(grid, vct, col);               // calculate the E field
-  // timeTasks.end(TimeTasks::FIELDS);
+  timeTasks.end(TimeTasks::FIELDS);
 
 }
 
@@ -197,13 +217,17 @@ bool c_Solver::ParticlesMover() {
   /*  Particle mover */
   /*  -------------- */
 
-  // timeTasks.start(TimeTasks::PARTICLES);
+  timeTasks.start(TimeTasks::PARTICLES);
+  // Should change this to add background guide field
+  EMf->set_fieldForPcls();
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+    //
+    // should merely pass EMf->get_fieldForPcls() rather than EMf.
     mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
-  // timeTasks.end(TimeTasks::PARTICLES);
+  timeTasks.end(TimeTasks::PARTICLES);
 
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -246,12 +270,12 @@ bool c_Solver::ParticlesMover() {
   /* This step must be taken out of here! */
   /* --------------------- */
 
-  // timeTasks.start(TimeTasks::BFIELD);
+  timeTasks.start(TimeTasks::BFIELD);
   EMf->calculateB(grid, vct, col);   // calculate the B field
-  // timeTasks.end(TimeTasks::BFIELD);
+  timeTasks.end(TimeTasks::BFIELD);
 
   // print out total time for all tasks
-  // timeTasks.print_cycle_times();
+  timeTasks.print_cycle_times();
   return (false);
 
 }
@@ -353,3 +377,4 @@ void c_Solver::Finalize() {
   // close MPI
   mpi->finalize_mpi();
 }
+

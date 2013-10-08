@@ -21,7 +21,6 @@ developers: Stefano Markidis, Giovanni Lapenta
  *
  */
 
-
 class Particles {
 public:
   /** allocate particles */
