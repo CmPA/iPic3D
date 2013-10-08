@@ -32,19 +32,19 @@ public:
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   int communicate(VirtualTopology3D * ptVCT);
   /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXleft(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferXleft(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXright(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferXright(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYleft(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferYleft(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYright(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferYright(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZleft(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferZleft(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZright(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferZright(double *b_, int np, VirtualTopology3D * vct);
   /** Delete the a particle from a list(array) and pack the list(array) */
-  void del_pack(long long np, long long *nplast);
+  void del_pack(int np, int *nplast);
 
   /** method to debuild the buffer received */
   int unbuffer(double *b_);
@@ -70,33 +70,33 @@ public:
   /** get w (Z-velocity) array for all the particles */
   double *getWall() const;
   /** get the ID array   */
-  unsigned long *getParticleIDall() const;
+  long long *getParticleIDall() const;
   /** get X-position of particle with label indexPart */
-  double getX(long long indexPart) const;
+  double getX(int indexPart) const;
   /** get Y-position of particle with label indexPart */
-  double getY(long long indexPart) const;
+  double getY(int indexPart) const;
   /** get Z-position of particle with label indexPart */
-  double getZ(long long indexPart) const;
+  double getZ(int indexPart) const;
   /** get u (X-velocity) of particle with label indexPart */
-  double getU(long long indexPart) const;
+  double getU(int indexPart) const;
   /** get v (Y-velocity) of particle with label indexPart */
-  double getV(long long indexPart) const;
+  double getV(int indexPart) const;
   /** get w (Z-velocity) of particle with label indexPart */
-  double getW(long long indexPart) const;
+  double getW(int indexPart) const;
   /** get ID of particle with label indexPart */
-  unsigned long getParticleID(long long indexPart) const;
+  long long getParticleID(int indexPart) const;
   /**get charge of particle with label indexPart */
-  double getQ(long long indexPart) const;
+  double getQ(int indexPart) const;
   /** get charge of array for ID particles */
   double *getQall() const;
   /** get the number of particles of this subdomain */
-  long long getNOP() const;
+  int getNOP() const;
   /** return the Kinetic energy */
   double getKe();
   /** return the maximum kinetic energy */
   double getMaxVelocity();
   /** return energy distribution */
-  unsigned long *getVelocityDistribution(int nBins, double maxVel);
+  long long *getVelocityDistribution(int nBins, double maxVel);
   /** return the momentum */
   double getP();
   /** Print particles info: positions, velocities */
@@ -112,9 +112,9 @@ protected:
   /** number of this species */
   int ns;
   /** maximum number of particles of this species on this domain. used for memory allocation */
-  long long npmax;
+  int npmax;
   /** number of particles of this species on this domain */
-  long long nop;
+  int nop;
   /** total number of particles */
   long long np_tot;
   /** number of particles per cell */
@@ -156,7 +156,7 @@ protected:
   /** TrackParticleID */
   bool TrackParticleID;
   /** ParticleID */
-  unsigned long *ParticleID;
+  long long *ParticleID;
   /** rank of processor in which particle is created (for ID) */
   int BirthRank[2];
   /** number of variables to be stored in buffer for communication for each particle  */

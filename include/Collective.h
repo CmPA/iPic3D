@@ -81,8 +81,8 @@ class Collective
     int getNpcelx(int nspecies)const{ return (npcelx[nspecies]); }
     int getNpcely(int nspecies)const{ return (npcely[nspecies]); }
     int getNpcelz(int nspecies)const{ return (npcelz[nspecies]); }
-    long getNp(int nspecies)const{ return (np[nspecies]); }
-    long getNpMax(int nspecies)const{ return (npMax[nspecies]); }
+    int getNp(int nspecies)const{ return (np[nspecies]); }
+    int getNpMax(int nspecies)const{ return (npMax[nspecies]); }
     double getNpMaxNpRatio()const{ return (NpMaxNpRatio); }
     double getQOM(int nspecies)const{ return (qom[nspecies]); }
     double getRHOinit(int nspecies)const{ return (rhoINIT[nspecies]); }
@@ -206,9 +206,9 @@ class Collective
     /*! number of particles per cell - Z direction */
     int *npcelz;
     /*! number of particles array for different species */
-    long *np;
+    int *np;
     /*! maximum number of particles array for different species */
-    long *npMax;
+    int *npMax;
     /*! max number of particles */
     double NpMaxNpRatio;
     /*! charge to mass ratio array for different species */

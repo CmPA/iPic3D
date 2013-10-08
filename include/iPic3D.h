@@ -55,7 +55,7 @@ namespace iPic3D {
     double        *Ke;
     double        *momentum;
     double        *Qremoved;
-    unsigned long *VelocityDist;
+    long long     *VelocityDist;
     Timing        *my_clock;
 
     PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager

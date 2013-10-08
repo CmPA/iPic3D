@@ -67,7 +67,7 @@ Particles3D::~Particles3D() {
 
 /** particles are uniformly distributed with zero velocity   */
 void Particles3D::uniform_background(Grid * grid, Field * EMf) {
-  long long counter = 0;
+  int counter = 0;
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++)
@@ -82,7 +82,7 @@ void Particles3D::uniform_background(Grid * grid, Field * EMf) {
               w[counter] = 0.0;
               q[counter] = (qom / fabs(qom)) * (EMf->getRHOcs(i, j, k, ns) / npcel) * (1.0 / grid->getInvVOL());
               if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                ParticleID[counter] = counter * (long long) pow(10.0, BirthRank[1]) + BirthRank[0];
               counter++;
             }
 
@@ -100,15 +100,15 @@ void Particles3D::uniform_background(Grid * grid, Field * EMf) {
 void Particles3D::constantVelocity(double vel, int dim, Grid * grid, Field * EMf) {
   switch (dim) {
     case 0:
-      for (long long i = 0; i < nop; i++)
+      for (int i = 0; i < nop; i++)
         u[i] = vel, v[i] = 0.0, w[i] = 0.0;
       break;
     case 1:
-      for (register long long i = 0; i < nop; i++)
+      for (int i = 0; i < nop; i++)
         u[i] = 0.0, v[i] = vel, w[i] = 0.0;
       break;
     case 2:
-      for (register long long i = 0; i < nop; i++)
+      for (int i = 0; i < nop; i++)
         u[i] = 0.0, v[i] = 0.0, w[i] = vel;
       break;
 
@@ -137,7 +137,7 @@ void Particles3D::MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* v
         MaxwellianFromFluidCell(grid,col,is, i,j,k,counter,x,y,z,q,u,v,w,ParticleID);
 }
 
-void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long* ParticleID)
+void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, long long* ParticleID)
 {
   /*
    * grid           : local grid object (in)
@@ -179,7 +179,7 @@ void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, i
         theta = 2.0*M_PI*harvest;
         w[ip] = col->getFluidUz(i,j,k,is) + col->getFluidUthz(i,j,k,is)*prob*cos(theta);
         if (TrackParticleID)
-          ParticleID[ip]= ip*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+          ParticleID[ip]= ip*(long long)pow(10.0,BirthRank[1])+BirthRank[0];
         ip++ ;
       }
 }
@@ -193,7 +193,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
   double harvest;
   double prob, theta, sign;
-  long long counter = 0;
+  int counter = 0;
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++)
@@ -220,7 +220,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               theta = 2.0 * M_PI * harvest;
               w[counter] = w0 + wth * prob * cos(theta);
               if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                ParticleID[counter] = counter * (long long) pow(10.0, BirthRank[1]) + BirthRank[0];
 
 
               counter++;
@@ -234,7 +234,7 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
 
   double harvest, prob, theta;
-  long long counter = 0;
+  int counter = 0;
   double shaperx, shapery, shaperz;
   double flvx = 1.0, flvy = 1.0, flvz = 1.0;
 
@@ -281,7 +281,7 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
                 w[counter] = flvz + wth * prob * cos(theta);
               }
               if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                ParticleID[counter] = counter * (long long) pow(10.0, BirthRank[1]) + BirthRank[0];
 
               counter++;
             }
@@ -297,7 +297,7 @@ void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky, double
   jx_mod *= alpha;
   jy_mod *= alpha;
   jz_mod *= alpha;
-  for (register long long i = 0; i < nop; i++) {
+  for (int i = 0; i < nop; i++) {
     u[i] += jx_mod / q[i] / npcel / invVOL * cos(kx * x[i] + ky * y[i] + jx_phase);
     v[i] += jy_mod / q[i] / npcel / invVOL * cos(kx * x[i] + ky * y[i] + jy_phase);
     w[i] += jz_mod / q[i] / npcel / invVOL * cos(kx * x[i] + ky * y[i] + jz_phase);
@@ -342,7 +342,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
   const pfloat dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const pfloat inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
-  assert_le(nop,(long long) INT_MAX); // else would need to use long long
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.
@@ -677,15 +676,15 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   }
   double  FourPI =16*atan(1.0);
   int avail;
-  long long store_nop=nop;
+  int store_nop=nop;
 
   ////////////////////////
   // INJECTION FROM XLEFT
   ////////////////////////
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcPfaceXleft == 2){ // use Field topology in this case
-    long long particles_index=0;
-    long long nplast = nop-1;
+    int particles_index=0;
+    int nplast = nop-1;
 
     while (particles_index < nplast+1) {
       if (x[particles_index] < 3.0*dx ) {
@@ -729,7 +728,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(long long)pow(10.0,BirthRank[1])+BirthRank[0];
 
 
                 particles_index++ ;
@@ -745,8 +744,8 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
   if (vct->getYleft_neighbor() == MPI_PROC_NULL  && bcPfaceYleft == 2)
   {
-    long long particles_index=0;
-    long long nplast = nop-1;
+    int particles_index=0;
+    int nplast = nop-1;
     while (particles_index < nplast+1) {
       if (y[particles_index] < 3.0*dy ) {
         del_pack(particles_index,&nplast);
@@ -788,7 +787,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(long long)pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -801,8 +800,8 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
   if (vct->getZleft_neighbor() == MPI_PROC_NULL  && bcPfaceZleft == 2)
   {
-    long long particles_index=0;
-    long long nplast = nop-1;
+    int particles_index=0;
+    int nplast = nop-1;
     while (particles_index < nplast+1) {
       if (z[particles_index] < 3.0*dz ) {
         del_pack(particles_index,&nplast);
@@ -844,7 +843,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(long long)pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -856,8 +855,8 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   ////////////////////////
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
   if (vct->getXright_neighbor() == MPI_PROC_NULL  && bcPfaceXright == 2){
-    long long particles_index=0;
-    long long nplast = nop-1;
+    int particles_index=0;
+    int nplast = nop-1;
     while (particles_index < nplast+1) {
       if (x[particles_index] > (Lx-3.0*dx) ) {
         del_pack(particles_index,&nplast);
@@ -899,7 +898,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(long long)pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -912,8 +911,8 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
   if (vct->getYright_neighbor() == MPI_PROC_NULL  && bcPfaceYright == 2)
   {
-    long long particles_index=0;
-    long long nplast = nop-1;
+    int particles_index=0;
+    int nplast = nop-1;
     while (particles_index < nplast+1) {
       if (y[particles_index] > (Ly-3.0*dy) ) {
         del_pack(particles_index,&nplast);
@@ -955,7 +954,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(long long)pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -968,8 +967,8 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
   if (vct->getZright_neighbor() == MPI_PROC_NULL  && bcPfaceZright == 2)
   {
-    long long particles_index=0;
-    long long nplast = nop-1;
+    int particles_index=0;
+    int nplast = nop-1;
     while (particles_index < nplast+1) {
       if (z[particles_index] > (Lz-3.0*dz) ) {
         del_pack(particles_index,&nplast);
@@ -1011,7 +1010,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(long long)pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -1046,7 +1045,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
 void Particles3D::linear_perturbation(double deltaBoB, double kx, double ky, double angle, double omega_r, double omega_i, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
   double value1 = 0.0, value2 = 0.0, max_value = 0.0, min_value = 0.0, phi, n;
-  long long counter = 0, total_generated = 0;
+  int counter = 0, total_generated = 0;
   bool rejected;
   double harvest, prob, theta;
   // rescaling of amplitudes according to deltaBoB //
@@ -1125,7 +1124,7 @@ void Particles3D::linear_perturbation(double deltaBoB, double kx, double ky, dou
 
           }
           if (TrackParticleID)
-            ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+            ParticleID[counter] = counter * (long long) pow(10.0, BirthRank[1]) + BirthRank[0];
           counter++;
         }
   nop = counter + 1;
@@ -1216,7 +1215,7 @@ double Particles3D::f0(double vpar, double vperp) {
 
 void Particles3D::RotatePlaneXY(double theta) {
   double temp, temp2;
-  for (register long long s = 0; s < nop; s++) {
+  for (register int s = 0; s < nop; s++) {
     temp = u[s];
     temp2 = v[s];
     u[s] = temp * cos(theta) + v[s] * sin(theta);
@@ -1227,8 +1226,8 @@ void Particles3D::RotatePlaneXY(double theta) {
 /*! Delete the particles inside the sphere with radius R and center x_center y_center and return the total charge removed */
 double Particles3D::deleteParticlesInsideSphere(double R, double x_center, double y_center, double z_center){
 
-  long long np_current = 0;
-  long long nplast     = nop-1;
+  int np_current = 0;
+  int nplast     = nop-1;
 
   while (np_current < nplast+1){
 

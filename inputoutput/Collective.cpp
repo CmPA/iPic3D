@@ -2,6 +2,8 @@
 #include <mpi.h>
 #include "Collective.h"
 #include "debug.h"
+#include "limits.h" // for INT_MAX
+#include "asserts.h" // for assert_ge
 
 /*! Read the input file from text file and put the data in a collective wrapper: if it's a restart read from input file basic sim data and load particles and EM field from restart file */
 void Collective::ReadInput(string inputfile) {
@@ -28,6 +30,7 @@ void Collective::ReadInput(string inputfile) {
     RestartDirName = config.read < string > ("RestartDirName");
     ns = config.read < int >("ns");
     NpMaxNpRatio = config.read < double >("NpMaxNpRatio");
+    assert_ge(NpMaxNpRatio, 1.);
     // GEM Challenge 
     B0x = config.read <double>("B0x");
     B0y = config.read <double>("B0y");
@@ -576,17 +579,19 @@ Collective::Collective(int argc, char **argv) {
   /*! npcel = number of particles per cell */
   npcel = new int[ns];
   /*! np = number of particles of different species */
-  np = new long[ns];
+  np = new int[ns];
   /*! npMax = maximum number of particles of different species */
-  npMax = new long[ns];
+  npMax = new int[ns];
 
   for (int i = 0; i < ns; i++) {
     npcel[i] = npcelx[i] * npcely[i] * npcelz[i];
     np[i] = npcel[i] * nxc * nyc * nzc;
-    npMax[i] = (long) (NpMaxNpRatio * np[i]);
+    double npMaxi = (NpMaxNpRatio * np[i]);
+    // INT_MAX is about 2 billions, surely enough
+    // to index the particles in a single MPI process
+    assert_le(npMaxi, double(INT_MAX));
+    npMax[i] = (int) npMaxi;
   }
-
-
 
 }
 

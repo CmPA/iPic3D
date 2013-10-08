@@ -145,7 +145,7 @@ int c_Solver::Init(int argc, char **argv) {
   }
   // Distribution functions
   nDistributionBins = 1000;
-  VelocityDist = new unsigned long[nDistributionBins];
+  long long *VelocityDist = new long long[nDistributionBins];
   ds = SaveDirName + "/DistributionFunctions.txt";
   if (myrank == 0) {
     ofstream my_file(ds.c_str());
