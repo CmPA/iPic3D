@@ -21,10 +21,6 @@ developers: Stefano Markidis, Giovanni Lapenta
  *
  */
 
-// precision to use for particles
-//typedef float pfloat;
-typedef double pfloat;
-
 class Particles {
 public:
   /** allocate particles */

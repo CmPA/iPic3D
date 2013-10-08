@@ -1,4 +1,5 @@
 
+#include "mpi.h"
 #include "ComNodes3D.h"
 #include "TimeTasks.h"
 #include "ipicdefs.h"

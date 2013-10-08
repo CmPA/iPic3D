@@ -316,32 +316,50 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
   }
   double start_mover_PC = MPI_Wtime();
+  #if 0
   const_arr3_double Ex = EMf->getEx();
   const_arr3_double Ey = EMf->getEy();
   const_arr3_double Ez = EMf->getEz();
   const_arr3_double Bx = EMf->getBx();
   const_arr3_double By = EMf->getBy();
   const_arr3_double Bz = EMf->getBz();
+  #endif
+  const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
 
-  const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
-  const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+  #if 0
+  for(int i=0;i<nxn;i++)
+  for(int j=0;j<nyn;j++)
+  for(int k=0;k<nzn;k++)
+  {
+    assert_eq(fieldForPcls[i][j][k][0], (pfloat) Bx[i][j][k]);
+    assert_eq(fieldForPcls[i][j][k][1], (pfloat) By[i][j][k]);
+    assert_eq(fieldForPcls[i][j][k][2], (pfloat) Bz[i][j][k]);
+    assert_eq(fieldForPcls[i][j][k][3], (pfloat) Ex[i][j][k]);
+    assert_eq(fieldForPcls[i][j][k][4], (pfloat) Ey[i][j][k]);
+    assert_eq(fieldForPcls[i][j][k][5], (pfloat) Ez[i][j][k]);
+  }
+  #endif
+
+  const pfloat dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+  const pfloat inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   assert_le(nop,(long long) INT_MAX); // else would need to use long long
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.
-#pragma omp parallel for
-#pragma simd                    // this just slows things down (why?)
+  #pragma omp parallel for
+  // why does single precision make no difference in execution speed?
+  #pragma simd vectorlength(VECTOR_WIDTH)
   for (int rest = 0; rest < nop; rest++) {
     // copy the particle
-    pfloat xp = x[rest];
-    pfloat yp = y[rest];
-    pfloat zp = z[rest];
-    pfloat up = u[rest];
-    pfloat vp = v[rest];
-    pfloat wp = w[rest];
     const pfloat xptilde = x[rest];
     const pfloat yptilde = y[rest];
     const pfloat zptilde = z[rest];
+    pfloat xp = xptilde;
+    pfloat yp = yptilde;
+    pfloat zp = zptilde;
+    pfloat up = u[rest];
+    pfloat vp = v[rest];
+    pfloat wp = w[rest];
     pfloat uptilde;
     pfloat vptilde;
     pfloat wptilde;
@@ -370,12 +388,12 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       pfloat xi[2];
       pfloat eta[2];
       pfloat zeta[2];
-      xi[0]   = xp - grid->getXN(ix-1);
-      eta[0]  = yp - grid->getYN(iy-1);
-      zeta[0] = zp - grid->getZN(iz-1);
-      xi[1]   = grid->getXN(ix) - xp;
-      eta[1]  = grid->getYN(iy) - yp;
-      zeta[1] = grid->getZN(iz) - zp;
+      xi[0]   = xp - grid->get_pfloat_XN(ix-1);
+      eta[0]  = yp - grid->get_pfloat_YN(iy-1);
+      zeta[0] = zp - grid->get_pfloat_ZN(iz-1);
+      xi[1]   = grid->get_pfloat_XN(ix) - xp;
+      eta[1]  = grid->get_pfloat_YN(iy) - yp;
+      zeta[1] = grid->get_pfloat_ZN(iz) - zp;
 
       pfloat Exl = 0.0;
       pfloat Eyl = 0.0;
@@ -418,7 +436,128 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       const pfloat weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
       const pfloat weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
       const pfloat weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+
+      // creating these aliases seems to accelerate this method by about 30%
+      // on the Xeon host, processor, suggesting deficiency in the optimizer.
+      //
+      arr1_pfloat_get field000 = fieldForPcls[ix  ][iy  ][iz  ];
+      arr1_pfloat_get field001 = fieldForPcls[ix  ][iy  ][iz-1];
+      arr1_pfloat_get field010 = fieldForPcls[ix  ][iy-1][iz  ];
+      arr1_pfloat_get field011 = fieldForPcls[ix  ][iy-1][iz-1];
+      arr1_pfloat_get field100 = fieldForPcls[ix-1][iy  ][iz  ];
+      arr1_pfloat_get field101 = fieldForPcls[ix-1][iy  ][iz-1];
+      arr1_pfloat_get field110 = fieldForPcls[ix-1][iy-1][iz  ];
+      arr1_pfloat_get field111 = fieldForPcls[ix-1][iy-1][iz-1];
       // 
+      #if 0 // (takes same time as other order)
+      Bxl += weight000 * field000[0];
+      Bxl += weight001 * field001[0];
+      Bxl += weight010 * field010[0];
+      Bxl += weight011 * field011[0];
+      Bxl += weight100 * field100[0];
+      Bxl += weight101 * field101[0];
+      Bxl += weight110 * field110[0];
+      Bxl += weight111 * field111[0];
+      Byl += weight000 * field000[1];
+      Byl += weight001 * field001[1];
+      Byl += weight010 * field010[1];
+      Byl += weight011 * field011[1];
+      Byl += weight100 * field100[1];
+      Byl += weight101 * field101[1];
+      Byl += weight110 * field110[1];
+      Byl += weight111 * field111[1];
+      Bzl += weight000 * field000[2];
+      Bzl += weight001 * field001[2];
+      Bzl += weight010 * field010[2];
+      Bzl += weight011 * field011[2];
+      Bzl += weight100 * field100[2];
+      Bzl += weight101 * field101[2];
+      Bzl += weight110 * field110[2];
+      Bzl += weight111 * field111[2];
+      Exl += weight000 * field000[3];
+      Exl += weight001 * field001[3];
+      Exl += weight010 * field010[3];
+      Exl += weight011 * field011[3];
+      Exl += weight100 * field100[3];
+      Exl += weight101 * field101[3];
+      Exl += weight110 * field110[3];
+      Exl += weight111 * field111[3];
+      Eyl += weight000 * field000[4];
+      Eyl += weight001 * field001[4];
+      Eyl += weight010 * field010[4];
+      Eyl += weight011 * field011[4];
+      Eyl += weight100 * field100[4];
+      Eyl += weight101 * field101[4];
+      Eyl += weight110 * field110[4];
+      Eyl += weight111 * field111[4];
+      Ezl += weight000 * field000[5];
+      Ezl += weight001 * field001[5];
+      Ezl += weight010 * field010[5];
+      Ezl += weight011 * field011[5];
+      Ezl += weight100 * field100[5];
+      Ezl += weight101 * field101[5];
+      Ezl += weight110 * field110[5];
+      Ezl += weight111 * field111[5];
+      #endif
+
+      Bxl += weight000 * field000[0];
+      Byl += weight000 * field000[1];
+      Bzl += weight000 * field000[2];
+      Exl += weight000 * field000[3];
+      Eyl += weight000 * field000[4];
+      Ezl += weight000 * field000[5];
+
+      Bxl += weight001 * field001[0];
+      Byl += weight001 * field001[1];
+      Bzl += weight001 * field001[2];
+      Exl += weight001 * field001[3];
+      Eyl += weight001 * field001[4];
+      Ezl += weight001 * field001[5];
+
+      Bxl += weight010 * field010[0];
+      Byl += weight010 * field010[1];
+      Bzl += weight010 * field010[2];
+      Exl += weight010 * field010[3];
+      Eyl += weight010 * field010[4];
+      Ezl += weight010 * field010[5];
+
+      Bxl += weight011 * field011[0];
+      Byl += weight011 * field011[1];
+      Bzl += weight011 * field011[2];
+      Exl += weight011 * field011[3];
+      Eyl += weight011 * field011[4];
+      Ezl += weight011 * field011[5];
+
+      Bxl += weight100 * field100[0];
+      Byl += weight100 * field100[1];
+      Bzl += weight100 * field100[2];
+      Exl += weight100 * field100[3];
+      Eyl += weight100 * field100[4];
+      Ezl += weight100 * field100[5];
+
+      Bxl += weight101 * field101[0];
+      Byl += weight101 * field101[1];
+      Bzl += weight101 * field101[2];
+      Exl += weight101 * field101[3];
+      Eyl += weight101 * field101[4];
+      Ezl += weight101 * field101[5];
+
+      Bxl += weight110 * field110[0];
+      Byl += weight110 * field110[1];
+      Bzl += weight110 * field110[2];
+      Exl += weight110 * field110[3];
+      Eyl += weight110 * field110[4];
+      Ezl += weight110 * field110[5];
+
+      Bxl += weight111 * field111[0];
+      Byl += weight111 * field111[1];
+      Bzl += weight111 * field111[2];
+      Exl += weight111 * field111[3];
+      Eyl += weight111 * field111[4];
+      Ezl += weight111 * field111[5];
+
+      #if 0
+      Bxl += weight000 * Bx[ix][iy][iz];
       Bxl += weight000 * Bx[ix][iy][iz];
       Bxl += weight001 * Bx[ix][iy][iz - 1];
       Bxl += weight010 * Bx[ix][iy - 1][iz];
@@ -472,6 +611,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       Ezl += weight101 * Ez[ix - 1][iy][iz - 1];
       Ezl += weight110 * Ez[ix - 1][iy - 1][iz];
       Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
+      #endif
 
       // end interpolation
       const pfloat omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);

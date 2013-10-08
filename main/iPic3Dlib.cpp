@@ -218,9 +218,13 @@ bool c_Solver::ParticlesMover() {
   /*  -------------- */
 
   timeTasks.start(TimeTasks::PARTICLES);
+  // Should change this to add background guide field
+  EMf->set_fieldForPcls();
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+    //
+    // should merely pass EMf->get_fieldForPcls() rather than EMf.
     mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
   timeTasks.end(TimeTasks::PARTICLES);

@@ -7,8 +7,6 @@
 #ifndef GRID3DCU_H
 #define GRID3DCU_H
 
-#include <iostream>
-
 #include "Grid.h"
 #include "CollectiveIO.h"
 #include "ComInterpNodes3D.h"
@@ -142,6 +140,9 @@ private:
   /** invol = inverse of volume*/
   double invVOL;
   /** node coordinate */
+  pfloat *pfloat_node_xcoord;
+  pfloat *pfloat_node_ycoord;
+  pfloat *pfloat_node_zcoord;
   double *node_xcoord;
   double *node_ycoord;
   double *node_zcoord;
@@ -169,6 +170,9 @@ public: // accessors (inline)
   //const double &calcXN(int X) { return xStart+(X-1)*dx;}
   //const double &calcYN(int Y) { return yStart+(Y-1)*dy;}
   //const double &calcZN(int Z) { return zStart+(Z-1)*dz;}
+  const pfloat &get_pfloat_XN(int X) { return pfloat_node_xcoord[X];}
+  const pfloat &get_pfloat_YN(int Y) { return pfloat_node_ycoord[Y];}
+  const pfloat &get_pfloat_ZN(int Z) { return pfloat_node_zcoord[Z];}
   const double &getXN(int X) { return node_xcoord[X];}
   const double &getYN(int Y) { return node_ycoord[Y];}
   const double &getZN(int Z) { return node_zcoord[Z];}

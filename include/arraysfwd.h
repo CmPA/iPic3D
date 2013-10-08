@@ -1,6 +1,7 @@
 /* forward declaration for array classes */
 #ifndef arraysfwd_h
 #define arraysfwd_h
+#include "ipicdefs.h" // for pfloat
 
 namespace iPic3D
 {
@@ -41,6 +42,7 @@ namespace iPic3D
 //
 typedef iPic3D::const_array_ref3<double> const_arr3_double;
 typedef iPic3D::const_array_ref4<double> const_arr4_double;
+typedef iPic3D::const_array_ref4<pfloat> const_arr4_pfloat;
 typedef iPic3D::array_ref1<double> arr1_double;
 typedef iPic3D::array_ref2<double> arr2_double;
 typedef iPic3D::array_ref3<double> arr3_double;
@@ -49,13 +51,16 @@ typedef iPic3D::array1<double> array1_double;
 typedef iPic3D::array2<double> array2_double;
 typedef iPic3D::array3<double> array3_double;
 typedef iPic3D::array4<double> array4_double;
+typedef iPic3D::array4<pfloat> array4_pfloat;
 // This directive should be consistent with the directives in Alloc.h
 #if defined(FLAT_ARRAYS) || defined(CHECK_BOUNDS)
 typedef iPic3D::array_fetch1<double> arr1_double_fetch;
 typedef iPic3D::array_get1<double> arr1_double_get;
+typedef iPic3D::array_get1<pfloat> arr1_pfloat_get;
 #else
 typedef double* arr1_double_fetch;
 typedef double* arr1_double_get;
+typedef pfloat* arr1_pfloat_get;
 #endif
 
 #endif

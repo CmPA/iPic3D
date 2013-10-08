@@ -118,6 +118,8 @@ class EMfields3D                // :public Field
     /*! smooth the electric field */
     void smoothE(double value, VirtualTopology3D * vct, Collective *col);
 
+    /*! copy the field data to the array used to move the particles */
+    void set_fieldForPcls();
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
     void sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTopology3D * vct);
@@ -187,6 +189,7 @@ class EMfields3D                // :public Field
     double getBy(int X, int Y, int Z) const { return Byn.get(X,Y,Z);}
     double getBz(int X, int Y, int Z) const { return Bzn.get(X,Y,Z);}
     //
+    const_arr4_pfloat get_fieldForPcls() { return fieldForPcls; }
     arr3_double getEx() { return Ex; }
     arr3_double getEy() { return Ey; }
     arr3_double getEz() { return Ez; }
@@ -338,6 +341,11 @@ class EMfields3D                // :public Field
 
     /*! PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes */
     array3_double PHI;
+
+    // Electric field component used to move particles
+    // organized for rapid access in mover_PC()
+    // [This is the information transferred from cluster to booster].
+    array4_pfloat fieldForPcls;
 
     // Electric field components defined on nodes
     //

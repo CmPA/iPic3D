@@ -52,6 +52,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) :
   //
   // array allocation: nodes
   //
+  fieldForPcls  (nxn, nyn, nzn, 6),
   Ex   (nxn, nyn, nzn),
   Ey   (nxn, nyn, nzn),
   Ez   (nxn, nyn, nzn),
@@ -226,9 +227,8 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
   double const*const q = pcls.getQall();
   //
   const int is = pcls.get_ns();
-  bool bmoments10 = true;
 
-  // if b10moments
+  #ifdef TENMOMENTS
   double* rhons1d = &rhons[is][0][0][0];
   double* Jxs1d   = &Jxs  [is][0][0][0];
   double* Jys1d   = &Jys  [is][0][0][0];
@@ -239,6 +239,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
   double* pYYsn1d = &pYYsn[is][0][0][0];
   double* pYZsn1d = &pYZsn[is][0][0][0];
   double* pZZsn1d = &pZZsn[is][0][0][0];
+  #endif
   //
   const long long nop_ll = pcls.getNOP();
   const int nop = pcls.getNOP();
@@ -325,7 +326,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
       const double weight110 = qi * xi1 * eta1 * zeta0 * invVOL;
       const double weight111 = qi * xi1 * eta1 * zeta1 * invVOL;
 
-      if(bmoments10)
+      // add particle to moments
       {
         arr1_double_fetch moments000 = moments[ix  ][iy  ][iz  ];
         arr1_double_fetch moments001 = moments[ix  ][iy  ][iz-1];
@@ -1373,6 +1374,27 @@ void EMfields3D::ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, doub
     }
   }
 
+}
+
+/*! Populate the field data used to push particles */
+// 
+// One could add a background magnetic field B_ext at this point,
+// which was incompletely implemented in commit 05082fc8ad688
+//
+void EMfields3D::set_fieldForPcls()
+{
+  #pragma omp parallel for collapse(3)
+  for(int i=0;i<nxn;i++)
+  for(int j=0;j<nyn;j++)
+  for(int k=0;k<nzn;k++)
+  {
+    fieldForPcls[i][j][k][0] = (pfloat) Bxn[i][j][k];
+    fieldForPcls[i][j][k][1] = (pfloat) Byn[i][j][k];
+    fieldForPcls[i][j][k][2] = (pfloat) Bzn[i][j][k];
+    fieldForPcls[i][j][k][3] = (pfloat) Ex[i][j][k];
+    fieldForPcls[i][j][k][4] = (pfloat) Ey[i][j][k];
+    fieldForPcls[i][j][k][5] = (pfloat) Ez[i][j][k];
+  }
 }
 
 /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */

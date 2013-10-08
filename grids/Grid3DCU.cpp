@@ -50,12 +50,18 @@ Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {
   zEnd = zStart + (col->getLz() / (double) vct->getZLEN());
 
   // arrays allocation: nodes ---> the first node has index 1, the last has index nxn-2!
+  pfloat_node_xcoord = new pfloat[nxn];
+  pfloat_node_ycoord = new pfloat[nyn];
+  pfloat_node_zcoord = new pfloat[nzn];
   node_xcoord = new double[nxn];
   node_ycoord = new double[nyn];
   node_zcoord = new double[nzn];
   for (int i=0; i<nxn; i++) node_xcoord[i] = xStart + (i - 1) * dx;
   for (int j=0; j<nyn; j++) node_ycoord[j] = yStart + (j - 1) * dy;
   for (int k=0; k<nzn; k++) node_zcoord[k] = zStart + (k - 1) * dz;
+  for (int i=0; i<nxn; i++) pfloat_node_xcoord[i] = node_xcoord[i];
+  for (int j=0; j<nyn; j++) pfloat_node_ycoord[j] = node_ycoord[j];
+  for (int k=0; k<nzn; k++) pfloat_node_zcoord[k] = node_zcoord[k];
   // arrays allocation: cells ---> the first cell has index 1, the last has index ncn-2!
   center_xcoord = new double[nxc];
   center_ycoord = new double[nyc];
