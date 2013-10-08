@@ -348,7 +348,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // to do it by hand only hurts performance.
   #pragma omp parallel for
   // why does single precision make no difference in execution speed?
-  #pragma simd vectorlength(VECTOR_WIDTH)
+  //#pragma simd vectorlength(VECTOR_WIDTH)
   for (int rest = 0; rest < nop; rest++) {
     // copy the particle
     const pfloat xptilde = x[rest];
