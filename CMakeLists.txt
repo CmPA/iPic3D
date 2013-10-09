@@ -10,7 +10,7 @@ project(iPic3D)
 # Set exec path
 #
 
-set(EXECUTABLE_OUTPUT_PATH work/${CMAKE_BUILD_TYPE})
+set(EXECUTABLE_OUTPUT_PATH exec/${CMAKE_BUILD_TYPE})
 set(LIBRARY_OUTPUT_PATH lib)
 
 #
@@ -84,6 +84,18 @@ if(IPIC_BATSRUS)
   add_definitions( -DBATSRUS )
 endif()
 
+option(IPIC_XEONPHI "Compile options for Xeon Phi" OFF)
+if(IPIC_XEONPHI)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+
+option(IPIC_BUILD_SHARED "Compile shared library" OFF)
+if(IPIC_BUILD_SHARED)
+  set(IPIC_BUILD_TYPE SHARED)
+else()
+  set(IPIC_BUILD_TYPE STATIC)
+endif()
+
 #
 # Executable declaration
 #
@@ -95,7 +107,7 @@ add_executable(
 
 add_library(
         iPic3Dlib
-        SHARED
+        ${IPIC_BUILD_TYPE}
         ${inc_files}
         ${src_files}
 )
