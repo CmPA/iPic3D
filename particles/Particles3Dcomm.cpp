@@ -944,7 +944,7 @@ unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel
   unsigned long totalN = 0;
   for (int i = 0; i < nBins; i++) {
     localN = f[i];
-    MPI_Allreduce(&localN, &totalN, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&localN, &totalN, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     f[i] = totalN;
   }
   return f;
