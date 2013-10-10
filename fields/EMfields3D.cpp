@@ -250,6 +250,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
   #pragma omp parallel
   {
     int thread_num = omp_get_thread_num();
+    if(!thread_num) { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
     #ifdef TENMOMENTS
     TenMoments& speciesMoments = fetch_momentsArray(thread_num);
     speciesMoments.set_to_zero();
@@ -570,6 +571,11 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
       }
       #endif // TENMOMENTS
     }
+    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
+
+    // reduction
+    if(!thread_num) timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
+
     // split up the reduction tasks.
     //
     //{
@@ -646,6 +652,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
     }
+    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
   }
   communicateGhostP2G(is, 0, 0, 0, 0, vct);
 }
@@ -1570,7 +1577,7 @@ void EMfields3D::interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid) {
 /*! communicate ghost for grid -> Particles interpolation */
 void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct) {
   // interpolate adding common nodes among processors
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
 
   communicateInterp(nxn, nyn, nzn, ns, rhons.fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, Jxs  .fetch_arr4(), 0, 0, 0, 0, 0, 0, vct);
@@ -1585,7 +1592,6 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   // calculate the correct densities on the boundaries
   adjustNonPeriodicDensities(ns, vct);
   // put the correct values on ghost cells
-  timeTasks.addto_communicate();
 
   communicateNode_P(nxn, nyn, nzn, rhons, ns, vct);
   communicateNode_P(nxn, nyn, nzn, Jxs  , ns, vct);

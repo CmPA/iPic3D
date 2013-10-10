@@ -7,7 +7,7 @@
 
 /** communicate ghost cells (FOR NODES) */
 void communicateNode(int nx, int ny, int nz, arr3_double _vector, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector=_vector.fetch_arr3();
 
   // allocate 6 ghost cell Faces
@@ -106,12 +106,10 @@ void communicateNode(int nx, int ny, int nz, arr3_double _vector, VirtualTopolog
   delete[]ghostXrightYrightZsameEdge;
   delete[]ghostXleftYleftZsameEdge;
   delete[]ghostXleftYrightZsameEdge;
-
-  timeTasks.addto_communicate();
 }
 /** communicate ghost cells (FOR NODES) */
 void communicateNodeBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector = _vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -212,12 +210,10 @@ void communicateNodeBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXr
   delete[]ghostXrightYrightZsameEdge;
   delete[]ghostXleftYleftZsameEdge;
   delete[]ghostXleftYrightZsameEdge;
-
-  timeTasks.addto_communicate();
 }
 /** communicate ghost cells (FOR NODES) with particles BC*/
 void communicateNodeBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -318,13 +314,11 @@ void communicateNodeBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFace
   delete[]ghostXrightYrightZsameEdge;
   delete[]ghostXleftYleftZsameEdge;
   delete[]ghostXleftYrightZsameEdge;
-
-  timeTasks.addto_communicate();
 }
 
 /** SPECIES: communicate ghost cells */
 void communicateNode(int nx, int ny, int nz, arr4_double _vector, int ns, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ****vector = _vector.fetch_arr4();
 
   // allocate 6 ghost cell Faces
@@ -422,14 +416,12 @@ void communicateNode(int nx, int ny, int nz, arr4_double _vector, int ns, Virtua
   delete[]ghostXrightYrightZsameEdge;
   delete[]ghostXleftYleftZsameEdge;
   delete[]ghostXleftYrightZsameEdge;
-
-  timeTasks.addto_communicate();
-}                               // 
+}
 
 // PARTICLES
 /** SPECIES: communicate ghost cells */
 void communicateNode_P(int nx, int ny, int nz, arr4_double _vector, int ns, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ****vector = _vector.fetch_arr4();
 
   // allocate 6 ghost cell Faces
@@ -527,14 +519,12 @@ void communicateNode_P(int nx, int ny, int nz, arr4_double _vector, int ns, Virt
   delete[]ghostXrightYrightZsameEdge;
   delete[]ghostXleftYleftZsameEdge;
   delete[]ghostXleftYrightZsameEdge;
-
-  timeTasks.addto_communicate();
 }
 
 // 
 /** communicate ghost cells (FOR CENTERS) */
 void communicateCenter(int nx, int ny, int nz, arr3_double _vector, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector = _vector.fetch_arr3();
 
   // allocate 6 ghost cell Faces
@@ -631,12 +621,10 @@ void communicateCenter(int nx, int ny, int nz, arr3_double _vector, VirtualTopol
   delete[]ghostXrightYrightZsameEdge;
   delete[]ghostXleftYleftZsameEdge;
   delete[]ghostXleftYrightZsameEdge;
-
-  timeTasks.addto_communicate();
 }
 /** communicate ghost cells (FOR CENTERS) with BOX stencil*/
 void communicateCenterBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -664,12 +652,11 @@ void communicateCenterBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, 
   delete[]ghostYleftFace;
   delete[]ghostZrightFace;
   delete[]ghostZleftFace;
-  timeTasks.addto_communicate();
 }
 // particles
 /** communicate ghost cells (FOR CENTERS) with BOX stencil*/
 void communicateCenterBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -697,14 +684,13 @@ void communicateCenterBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector
   delete[]ghostYleftFace;
   delete[]ghostZrightFace;
   delete[]ghostZleftFace;
-  timeTasks.addto_communicate();
 }
 
 // 
 
 
 void communicateNodeBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -732,11 +718,10 @@ void communicateNodeBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, in
   delete[]ghostYleftFace;
   delete[]ghostZrightFace;
   delete[]ghostZleftFace;
-  timeTasks.addto_communicate();
 }
 
 void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -764,14 +749,13 @@ void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector, 
   delete[]ghostYleftFace;
   delete[]ghostZrightFace;
   delete[]ghostZleftFace;
-  timeTasks.addto_communicate();
 }
 
 
 
 /** SPECIES: communicate ghost cells */
 void communicateCenter(int nx, int ny, int nz, arr4_double _vector, int ns, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ****vector=_vector.fetch_arr4();
 
   // allocate 6 ghost cell Faces
@@ -867,12 +851,10 @@ void communicateCenter(int nx, int ny, int nz, arr4_double _vector, int ns, Virt
   delete[]ghostXrightYrightZsameEdge;
   delete[]ghostXleftYleftZsameEdge;
   delete[]ghostXleftYrightZsameEdge;
-
-  timeTasks.addto_communicate();
 }
 // /////////// communication + BC ////////////////////////////
 void communicateCenterBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector=_vector.fetch_arr3();
 
   // allocate 6 ghost cell Faces
@@ -971,12 +953,10 @@ void communicateCenterBC(int nx, int ny, int nz, arr3_double _vector, int bcFace
   delete[]ghostXrightYrightZsameEdge;
   delete[]ghostXleftYleftZsameEdge;
   delete[]ghostXleftYrightZsameEdge;
-
-  timeTasks.addto_communicate();
 }
 // /////////// communication + BC ////////////////////////////
 void communicateCenterBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
-  timeTasks.start_communicate();
+  timeTasks_set_communicating();
   double ***vector=_vector.fetch_arr3();
 
   // allocate 6 ghost cell Faces
@@ -1075,6 +1055,4 @@ void communicateCenterBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFa
   delete[]ghostXrightYrightZsameEdge;
   delete[]ghostXleftYleftZsameEdge;
   delete[]ghostXleftYrightZsameEdge;
-
-  timeTasks.addto_communicate();
 }

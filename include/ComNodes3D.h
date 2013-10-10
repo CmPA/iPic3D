@@ -12,9 +12,6 @@ developers           : Stefano Markidis, Giovanni Lapenta
 
 #include "arraysfwd.h"
 #include "ComBasic3D.h"
-//#include "TimeTasks.h"
-
-//extern TimeTasks timeTasks;
 
 // boundary condition for fields
 #include "BcFields3D.h"
