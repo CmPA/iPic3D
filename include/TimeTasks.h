@@ -1,5 +1,6 @@
 #ifndef __TimeTasks_H__
 #define __TimeTasks_H__
+#include "assert.h"
 
 /* Avoid direct use of this class.
    Instead, use and add to the macros at the bottom
