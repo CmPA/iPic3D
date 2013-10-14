@@ -178,11 +178,11 @@ void c_Solver::CalculateMoments() {
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
 
-  //EMf->sumMoments(part, grid, vct);
-  for (int i = 0; i < ns; i++)
-  {
-    EMf->sumMomentsOld(part[i], grid, vct);
-  }
+  EMf->sumMoments(part, grid, vct);
+  //for (int i = 0; i < ns; i++)
+  //{
+  //  EMf->sumMomentsOld(part[i], grid, vct);
+  //}
   EMf->sumOverSpecies(vct);                 // sum all over the species
 
   // Fill with constant charge the planet

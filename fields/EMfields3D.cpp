@@ -285,125 +285,34 @@ void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, Virtual
       const double weight101 = qi * xi1 * eta0 * zeta1 * invVOL;
       const double weight110 = qi * xi1 * eta1 * zeta0 * invVOL;
       const double weight111 = qi * xi1 * eta1 * zeta1 * invVOL;
+      double weights[8];
+      weights[0] = weight000;
+      weights[1] = weight001;
+      weights[2] = weight010;
+      weights[3] = weight011;
+      weights[4] = weight100;
+      weights[5] = weight101;
+      weights[6] = weight110;
+      weights[7] = weight111;
 
       // add particle to moments
       {
-        arr1_double_fetch moments000 = moments[ix  ][iy  ][iz  ];
-        arr1_double_fetch moments001 = moments[ix  ][iy  ][iz-1];
-        arr1_double_fetch moments010 = moments[ix  ][iy-1][iz  ];
-        arr1_double_fetch moments011 = moments[ix  ][iy-1][iz-1];
-        arr1_double_fetch moments100 = moments[ix-1][iy  ][iz  ];
-        arr1_double_fetch moments101 = moments[ix-1][iy  ][iz-1];
-        arr1_double_fetch moments110 = moments[ix-1][iy-1][iz  ];
-        arr1_double_fetch moments111 = moments[ix-1][iy-1][iz-1];
+        arr1_double_fetch momentsArray[8];
+        momentsArray[0] = moments[ix  ][iy  ][iz  ]; // moments000 
+        momentsArray[1] = moments[ix  ][iy  ][iz-1]; // moments001 
+        momentsArray[2] = moments[ix  ][iy-1][iz  ]; // moments010 
+        momentsArray[3] = moments[ix  ][iy-1][iz-1]; // moments011 
+        momentsArray[4] = moments[ix-1][iy  ][iz  ]; // moments100 
+        momentsArray[5] = moments[ix-1][iy  ][iz-1]; // moments101 
+        momentsArray[6] = moments[ix-1][iy-1][iz  ]; // moments110 
+        momentsArray[7] = moments[ix-1][iy-1][iz-1]; // moments111 
 
-        moments000[0] += velmoments[0]*weight000;
-        moments000[1] += velmoments[1]*weight000;
-        moments000[2] += velmoments[2]*weight000;
-        moments000[3] += velmoments[3]*weight000;
-        moments000[4] += velmoments[4]*weight000;
-        moments000[5] += velmoments[5]*weight000;
-        moments000[6] += velmoments[6]*weight000;
-        moments000[7] += velmoments[7]*weight000;
-        moments000[8] += velmoments[8]*weight000;
-        moments000[9] += velmoments[9]*weight000;
-
-        moments001[0] += velmoments[0]*weight001;
-        moments001[1] += velmoments[1]*weight001;
-        moments001[2] += velmoments[2]*weight001;
-        moments001[3] += velmoments[3]*weight001;
-        moments001[4] += velmoments[4]*weight001;
-        moments001[5] += velmoments[5]*weight001;
-        moments001[6] += velmoments[6]*weight001;
-        moments001[7] += velmoments[7]*weight001;
-        moments001[8] += velmoments[8]*weight001;
-        moments001[9] += velmoments[9]*weight001;
-
-        moments010[0] += velmoments[0]*weight010;
-        moments010[1] += velmoments[1]*weight010;
-        moments010[2] += velmoments[2]*weight010;
-        moments010[3] += velmoments[3]*weight010;
-        moments010[4] += velmoments[4]*weight010;
-        moments010[5] += velmoments[5]*weight010;
-        moments010[6] += velmoments[6]*weight010;
-        moments010[7] += velmoments[7]*weight010;
-        moments010[8] += velmoments[8]*weight010;
-        moments010[9] += velmoments[9]*weight010;
-
-        moments011[0] += velmoments[0]*weight011;
-        moments011[1] += velmoments[1]*weight011;
-        moments011[2] += velmoments[2]*weight011;
-        moments011[3] += velmoments[3]*weight011;
-        moments011[4] += velmoments[4]*weight011;
-        moments011[5] += velmoments[5]*weight011;
-        moments011[6] += velmoments[6]*weight011;
-        moments011[7] += velmoments[7]*weight011;
-        moments011[8] += velmoments[8]*weight011;
-        moments011[9] += velmoments[9]*weight011;
-
-        moments100[0] += velmoments[0]*weight100;
-        moments100[1] += velmoments[1]*weight100;
-        moments100[2] += velmoments[2]*weight100;
-        moments100[3] += velmoments[3]*weight100;
-        moments100[4] += velmoments[4]*weight100;
-        moments100[5] += velmoments[5]*weight100;
-        moments100[6] += velmoments[6]*weight100;
-        moments100[7] += velmoments[7]*weight100;
-        moments100[8] += velmoments[8]*weight100;
-        moments100[9] += velmoments[9]*weight100;
-
-        moments101[0] += velmoments[0]*weight101;
-        moments101[1] += velmoments[1]*weight101;
-        moments101[2] += velmoments[2]*weight101;
-        moments101[3] += velmoments[3]*weight101;
-        moments101[4] += velmoments[4]*weight101;
-        moments101[5] += velmoments[5]*weight101;
-        moments101[6] += velmoments[6]*weight101;
-        moments101[7] += velmoments[7]*weight101;
-        moments101[8] += velmoments[8]*weight101;
-        moments101[9] += velmoments[9]*weight101;
-
-        moments110[0] += velmoments[0]*weight110;
-        moments110[1] += velmoments[1]*weight110;
-        moments110[2] += velmoments[2]*weight110;
-        moments110[3] += velmoments[3]*weight110;
-        moments110[4] += velmoments[4]*weight110;
-        moments110[5] += velmoments[5]*weight110;
-        moments110[6] += velmoments[6]*weight110;
-        moments110[7] += velmoments[7]*weight110;
-        moments110[8] += velmoments[8]*weight110;
-        moments110[9] += velmoments[9]*weight110;
-
-        moments111[0] += velmoments[0]*weight111;
-        moments111[1] += velmoments[1]*weight111;
-        moments111[2] += velmoments[2]*weight111;
-        moments111[3] += velmoments[3]*weight111;
-        moments111[4] += velmoments[4]*weight111;
-        moments111[5] += velmoments[5]*weight111;
-        moments111[6] += velmoments[6]*weight111;
-        moments111[7] += velmoments[7]*weight111;
-        moments111[8] += velmoments[8]*weight111;
-        moments111[9] += velmoments[9]*weight111;
-
-        //double weight[2][2][2];
-        //weight[0][0][0]=weight000;
-        //weight[0][0][1]=weight001;
-        //weight[0][1][0]=weight010;
-        //weight[0][1][1]=weight011;
-        //weight[1][0][0]=weight100;
-        //weight[1][0][1]=weight101;
-        //weight[1][1][0]=weight110;
-        //weight[1][1][1]=weight111;
-        ////
-        //for(int jx=0;jx<2;jx++)
-        //for(int jy=0;jy<2;jy++)
-        //for(int jz=0;jz<2;jz++)
-        //for(int m=0;m<10;m++)
-        //{
-        //  moments[ix-jx][iy-jy][iz-jz][m] += velmoments[m]*weight[jx][jy][jz];
-        //}
+        for(int m=0; m<10; m++)
+        for(int c=0; c<8; c++)
+        {
+          momentsArray[c][m] += velmoments[m]*weights[c];
+        }
       }
-
     }
     if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
 
@@ -548,38 +457,24 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
 
       // add particle to moments
       {
-        arr1_double_fetch moments000 = moments[ix  ][iy  ][iz  ];
-        arr1_double_fetch moments001 = moments[ix  ][iy  ][iz-1];
-        arr1_double_fetch moments010 = moments[ix  ][iy-1][iz  ];
-        arr1_double_fetch moments011 = moments[ix  ][iy-1][iz-1];
-        arr1_double_fetch moments100 = moments[ix-1][iy  ][iz  ];
-        arr1_double_fetch moments101 = moments[ix-1][iy  ][iz-1];
-        arr1_double_fetch moments110 = moments[ix-1][iy-1][iz  ];
-        arr1_double_fetch moments111 = moments[ix-1][iy-1][iz-1];
-
         arr1_double_fetch momentsArray[8];
-        momentsArray[0] = moments000;
-        momentsArray[1] = moments001;
-        momentsArray[2] = moments010;
-        momentsArray[3] = moments011;
-        momentsArray[4] = moments100;
-        momentsArray[5] = moments101;
-        momentsArray[6] = moments110;
-        momentsArray[7] = moments111;
+        arr2_double_fetch moments00 = moments[ix  ][iy  ];
+        arr2_double_fetch moments01 = moments[ix  ][iy-1];
+        arr2_double_fetch moments10 = moments[ix-1][iy  ];
+        arr2_double_fetch moments11 = moments[ix-1][iy-1];
+        momentsArray[0] = moments00[iz  ]; // moments000 
+        momentsArray[1] = moments00[iz-1]; // moments001 
+        momentsArray[2] = moments01[iz  ]; // moments010 
+        momentsArray[3] = moments01[iz-1]; // moments011 
+        momentsArray[4] = moments10[iz  ]; // moments100 
+        momentsArray[5] = moments10[iz-1]; // moments101 
+        momentsArray[6] = moments11[iz  ]; // moments110 
+        momentsArray[7] = moments11[iz-1]; // moments111 
 
-        double buffer[10][8];
-        //#pragma simd
-        for(int m=0;m<10;m++)
+        for(int m=0; m<10; m++)
+        for(int c=0; c<8; c++)
         {
-          for(int c=0;c<8;c++)
-          {
-            buffer[m][c] = velmoments[m]*weights[c];
-          }
-        }
-        for(int c=0;c<8;c++)
-        for(int m=0;m<10;m++)
-        {
-          momentsArray[c][m] = buffer[m][c];
+          momentsArray[c][m] += velmoments[m]*weights[c];
         }
       }
     }
