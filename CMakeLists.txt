@@ -74,6 +74,8 @@ file(
 # Compilation options
 #
 
+set(IPIC_TESTS_DIR "${CMAKE_BINARY_DIR}/tests" CACHE STRING "Location of the source files for iPic3D")
+
 option(IPIC_PARALLEL_HDF5 "Output is done using the parallel HDF5 library" OFF)
 if(IPIC_PARALLEL_HDF5)
   add_definitions(-DUSE_PHDF5)
@@ -88,6 +90,8 @@ option(IPIC_XEONPHI "Compile options for Xeon Phi" OFF)
 if(IPIC_XEONPHI)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
+
+option(IPIC_TESTS "Set up the code tests" OFF)
 
 option(IPIC_BUILD_SHARED "Compile shared library" OFF)
 if(IPIC_BUILD_SHARED)
@@ -127,3 +131,27 @@ target_link_libraries(
          iPic3D
          iPic3Dlib
 )
+
+#
+# Code testing
+#
+
+if(IPIC_TESTS)
+  enable_testing()
+
+  add_test(NAME GEM-test
+           COMMAND ${CMAKE_COMMAND}
+           -DIPIC_TESTS_DIR=${IPIC_TESTS_DIR}
+           -DIPIC_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+           -DIPICEXEC=$<TARGET_FILE:iPic3D>
+           -DMPIEXEC=${MPIEXEC}
+           -DMPIEXEC_NUMPROC_FLAG=${MPIEXEC_NUMPROC_FLAG}
+           -DMPIEXEC_POSTFLAGS=${MPIEXEC_POSTFLAGS}
+           -DIPIC_TESTS_DIR=${IPIC_TESTS_DIR}
+           -P ${CMAKE_SOURCE_DIR}/testfiles/CMakeRunTest-GEM.txt)
+
+  add_test(NAME uname-test
+           COMMAND ${CMAKE_COMMAND}
+           -P ${CMAKE_SOURCE_DIR}/testfiles/CMakeRunTest-uname.txt)
+
+endif(IPIC_TESTS)
