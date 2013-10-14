@@ -311,41 +311,19 @@ void Particles3D::mover_explicit(Grid * grid, VirtualTopology3D * vct, Field * E
 
 }
 /** mover with a Predictor-Corrector scheme */
-int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+  #pragma omp master
   if (vct->getCartesian_rank() == 0) {
     cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
   }
-  double start_mover_PC = MPI_Wtime();
-  #if 0
-  const_arr3_double Ex = EMf->getEx();
-  const_arr3_double Ey = EMf->getEy();
-  const_arr3_double Ez = EMf->getEz();
-  const_arr3_double Bx = EMf->getBx();
-  const_arr3_double By = EMf->getBy();
-  const_arr3_double Bz = EMf->getBz();
-  #endif
   const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
-
-  #if 0
-  for(int i=0;i<nxn;i++)
-  for(int j=0;j<nyn;j++)
-  for(int k=0;k<nzn;k++)
-  {
-    assert_eq(fieldForPcls[i][j][k][0], (pfloat) Bx[i][j][k]);
-    assert_eq(fieldForPcls[i][j][k][1], (pfloat) By[i][j][k]);
-    assert_eq(fieldForPcls[i][j][k][2], (pfloat) Bz[i][j][k]);
-    assert_eq(fieldForPcls[i][j][k][3], (pfloat) Ex[i][j][k]);
-    assert_eq(fieldForPcls[i][j][k][4], (pfloat) Ey[i][j][k]);
-    assert_eq(fieldForPcls[i][j][k][5], (pfloat) Ez[i][j][k]);
-  }
-  #endif
 
   const pfloat dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const pfloat inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.
-  #pragma omp parallel for
+  #pragma omp for
   // why does single precision make no difference in execution speed?
   //#pragma simd vectorlength(VECTOR_WIDTH)
   for (int rest = 0; rest < nop; rest++) {
@@ -643,10 +621,11 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     v[rest] = vp;
     w[rest] = wp;
   }                             // END OF ALL THE PARTICLES
+}
 
-  // ********************//
-  // COMMUNICATION 
-  // *******************//
+/** communicate particle after moving them */
+int Particles3D::communicate_particles(VirtualTopology3D * vct)
+{
   timeTasks_set_communicating(); // communicating until end of scope
   const int avail = communicate(vct);
   if (avail < 0)
@@ -660,7 +639,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       return (-1);
     MPI_Barrier(MPI_COMM_WORLD);
   }
-  return (0);                   // exit succcesfully (hopefully) 
+  return 0; // exit successfully
 }
 
 /** relativistic mover with a Predictor-Corrector scheme */

@@ -57,7 +57,9 @@ class Particles3D:public Particles3Dcomm {
     /** mover with the esplicit non relativistic scheme */
     void mover_explicit(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** mover with a Predictor-Corrector Scheme */
-    int mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    void mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /** communicate particle after moving them */
+    int communicate_particles(VirtualTopology3D * vct);
     /** relativistic mover with a Predictor-Corrector scheme */
     int mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** particle repopulator */

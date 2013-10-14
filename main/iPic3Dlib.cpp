@@ -222,12 +222,17 @@ bool c_Solver::ParticlesMover() {
     timeTasks_set_main_task(TimeTasks::PARTICLES);
     // Should change this to add background field
     EMf->set_fieldForPcls();
+    #pragma omp parallel
     for (int i = 0; i < ns; i++)  // move each species
     {
       // #pragma omp task inout(part[i]) in(grid) target_device(booster)
       //
       // should merely pass EMf->get_fieldForPcls() rather than EMf.
-      mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
+      part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
+    }
+    for (int i = 0; i < ns; i++)  // move each species
+    {
+      mem_avail = part[i].communicate_particles(vct);
     }
   }
 
