@@ -193,21 +193,15 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) :
   injFieldsRear   = new injInfoFields(nxn, nyn, nzn);
 
   sizeMomentsArray = omp_thread_count();
-  #ifdef TENMOMENTS
-  tenMomentsArray = new TenMoments*[sizeMomentsArray];
-  #endif // TENMOMENTS
   moments10Array = new Moments10*[sizeMomentsArray];
   for(int i=0;i<sizeMomentsArray;i++)
   {
-    #ifdef TENMOMENTS
-    tenMomentsArray[i] = new TenMoments(nxn,nyn,nzn);
-    #endif // TENMOMENTS
     moments10Array[i] = new Moments10(nxn,nyn,nzn);
   }
 }
 
 // This was Particles3Dcomm::interpP2G()
-void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTopology3D * vct)
+void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, VirtualTopology3D * vct)
 {
   const double inv_dx = 1.0 / dx;
   const double inv_dy = 1.0 / dy;
@@ -655,6 +649,183 @@ void EMfields3D::sumMoments(const Particles3Dcomm& pcls, Grid * grid, VirtualTop
     if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
   }
   communicateGhostP2G(is, 0, 0, 0, 0, vct);
+}
+// This was Particles3Dcomm::interpP2G()
+void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct)
+{
+  const double inv_dx = 1.0 / dx;
+  const double inv_dy = 1.0 / dy;
+  const double inv_dz = 1.0 / dz;
+  const int nxn = grid->getNXN();
+  const int nyn = grid->getNYN();
+  const int nzn = grid->getNZN();
+  const double xstart = grid->getXstart();
+  const double ystart = grid->getYstart();
+  const double zstart = grid->getZstart();
+  // To make memory use scale to a large number of threads, we
+  // could first apply an efficient parallel sorting algorithm
+  // to the particles and then accumulate moments in smaller
+  // subarrays.
+  //#ifdef _OPENMP
+  #pragma omp parallel
+  for (int i = 0; i < ns; i++)
+  {
+    const Particles3Dcomm& pcls = part[i];
+    const int is = pcls.get_ns();
+
+    double const*const x = pcls.getXall();
+    double const*const y = pcls.getYall();
+    double const*const z = pcls.getZall();
+    double const*const u = pcls.getUall();
+    double const*const v = pcls.getVall();
+    double const*const w = pcls.getWall();
+    double const*const q = pcls.getQall();
+
+    const int nop = pcls.getNOP();
+
+    int thread_num = omp_get_thread_num();
+    if(!thread_num) { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
+    Moments10& speciesMoments10 = fetch_moments10Array(thread_num);
+    speciesMoments10.set_to_zero();
+    arr4_double moments = speciesMoments10.fetch_arr();
+    // The following loop is expensive, so it is wise to assume that the
+    // compiler is stupid.  Therefore we should on the one hand
+    // expand things out and on the other hand avoid repeating computations.
+    #pragma omp for nowait
+    for (int i = 0; i < nop; i++)
+    {
+      // compute the quadratic moments of velocity
+      //
+      const double ui=u[i];
+      const double vi=v[i];
+      const double wi=w[i];
+      const double uui=ui*ui;
+      const double uvi=ui*vi;
+      const double uwi=ui*wi;
+      const double vvi=vi*vi;
+      const double vwi=vi*wi;
+      const double wwi=wi*wi;
+      double velmoments[10];
+      velmoments[0] = 1.;
+      velmoments[1] = ui;
+      velmoments[2] = vi;
+      velmoments[3] = wi;
+      velmoments[4] = uui;
+      velmoments[5] = uvi;
+      velmoments[6] = uwi;
+      velmoments[7] = vvi;
+      velmoments[8] = vwi;
+      velmoments[9] = wwi;
+
+      //
+      // compute the weights to distribute the moments
+      //
+      const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
+      const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
+      const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
+      const double xi0   = x[i] - grid->getXN(ix-1);
+      const double eta0  = y[i] - grid->getYN(iy-1);
+      const double zeta0 = z[i] - grid->getZN(iz-1);
+      const double xi1   = grid->getXN(ix) - x[i];
+      const double eta1  = grid->getYN(iy) - y[i];
+      const double zeta1 = grid->getZN(iz) - z[i];
+      const double qi = q[i];
+      const double weight000 = qi * xi0 * eta0 * zeta0 * invVOL;
+      const double weight001 = qi * xi0 * eta0 * zeta1 * invVOL;
+      const double weight010 = qi * xi0 * eta1 * zeta0 * invVOL;
+      const double weight011 = qi * xi0 * eta1 * zeta1 * invVOL;
+      const double weight100 = qi * xi1 * eta0 * zeta0 * invVOL;
+      const double weight101 = qi * xi1 * eta0 * zeta1 * invVOL;
+      const double weight110 = qi * xi1 * eta1 * zeta0 * invVOL;
+      const double weight111 = qi * xi1 * eta1 * zeta1 * invVOL;
+      double weights[8];
+      weights[0] = weight000;
+      weights[1] = weight001;
+      weights[2] = weight010;
+      weights[3] = weight011;
+      weights[4] = weight100;
+      weights[5] = weight101;
+      weights[6] = weight110;
+      weights[0] = weight111;
+
+      // add particle to moments
+      {
+        arr1_double_fetch moments000 = moments[ix  ][iy  ][iz  ];
+        arr1_double_fetch moments001 = moments[ix  ][iy  ][iz-1];
+        arr1_double_fetch moments010 = moments[ix  ][iy-1][iz  ];
+        arr1_double_fetch moments011 = moments[ix  ][iy-1][iz-1];
+        arr1_double_fetch moments100 = moments[ix-1][iy  ][iz  ];
+        arr1_double_fetch moments101 = moments[ix-1][iy  ][iz-1];
+        arr1_double_fetch moments110 = moments[ix-1][iy-1][iz  ];
+        arr1_double_fetch moments111 = moments[ix-1][iy-1][iz-1];
+
+        arr1_double_fetch momentsArray[8];
+        momentsArray[0] = moments000;
+        momentsArray[1] = moments001;
+        momentsArray[2] = moments010;
+        momentsArray[3] = moments011;
+        momentsArray[4] = moments100;
+        momentsArray[5] = moments101;
+        momentsArray[6] = moments110;
+        momentsArray[7] = moments111;
+
+        double buffer[10][8];
+        // #pragma simd
+        for(int m=0;m<10;m++)
+        for(int c=0;c<8;c++)
+        {
+          buffer[m][c] = velmoments[c]*weights[m];
+        }
+        for(int c=0;c<8;c++)
+        for(int m=0;m<10;m++)
+        {
+          momentsArray[c][m] = buffer[m][c];
+        }
+      }
+    }
+    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
+
+    // reduction
+    if(!thread_num) timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
+
+    // reduce arrays
+    {
+      #pragma omp critical (0)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { rhons[is][i][j][k] += invVOL*moments[i][j][k][0]; }}
+      #pragma omp critical (1)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { Jxs  [is][i][j][k] += invVOL*moments[i][j][k][1]; }}
+      #pragma omp critical (2)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { Jys  [is][i][j][k] += invVOL*moments[i][j][k][2]; }}
+      #pragma omp critical (3)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { Jzs  [is][i][j][k] += invVOL*moments[i][j][k][3]; }}
+      #pragma omp critical (4)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pXXsn[is][i][j][k] += invVOL*moments[i][j][k][4]; }}
+      #pragma omp critical (5)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pXYsn[is][i][j][k] += invVOL*moments[i][j][k][5]; }}
+      #pragma omp critical (6)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pXZsn[is][i][j][k] += invVOL*moments[i][j][k][6]; }}
+      #pragma omp critical (7)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pYYsn[is][i][j][k] += invVOL*moments[i][j][k][7]; }}
+      #pragma omp critical (8)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pYZsn[is][i][j][k] += invVOL*moments[i][j][k][8]; }}
+      #pragma omp critical (9)
+      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+        { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
+    }
+    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
+    // uncomment this and remove the loop below
+    // when we change to use asynchronous communication.
+    // communicateGhostP2G(is, 0, 0, 0, 0, vct);
+  }
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -3564,10 +3735,6 @@ EMfields3D::~EMfields3D() {
   delete injFieldsBottom;
   delete injFieldsFront;
   delete injFieldsRear;
-  #ifdef TENMOMENTS
-  for(int i=0;i<sizeMomentsArray;i++) { delete tenMomentsArray[i]; }
-  delete [] tenMomentsArray;
-  #endif // TENMOMENTS
   for(int i=0;i<sizeMomentsArray;i++) { delete moments10Array[i]; }
   delete [] moments10Array;
 }

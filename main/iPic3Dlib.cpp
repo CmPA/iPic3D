@@ -177,15 +177,9 @@ void c_Solver::CalculateMoments() {
 
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
-
-  for (int i = 0; i < ns; i++)
-  {
-    // interpolate particles to grid nodes
-    EMf->sumMoments(part[i], grid, vct);
-    //part[i].interpP2G(EMf, grid, vct); // the old, slow way.
-  }
-
-  EMf->sumOverSpecies(vct);                 // sum all over the species
+  EMf->sumMoments(part, grid, vct);
+  //EMf->sumMomentsOld(part, grid, vct);
+  //EMf->sumOverSpecies(vct);                 // sum all over the species
 
   // Fill with constant charge the planet
   if (col->getCase()=="Dipole") {
