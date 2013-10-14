@@ -222,19 +222,6 @@ void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, Virtual
   //
   const int is = pcls.get_ns();
 
-  #ifdef TENMOMENTS
-  double* rhons1d = &rhons[is][0][0][0];
-  double* Jxs1d   = &Jxs  [is][0][0][0];
-  double* Jys1d   = &Jys  [is][0][0][0];
-  double* Jzs1d   = &Jzs  [is][0][0][0];
-  double* pXXsn1d = &pXXsn[is][0][0][0];
-  double* pXYsn1d = &pXYsn[is][0][0][0];
-  double* pXZsn1d = &pXZsn[is][0][0][0];
-  double* pYYsn1d = &pYYsn[is][0][0][0];
-  double* pYZsn1d = &pYZsn[is][0][0][0];
-  double* pZZsn1d = &pZZsn[is][0][0][0];
-  #endif
-  //
   const int nop = pcls.getNOP();
   // To make memory use scale to a large number of threads, we
   // could first apply an efficient parallel sorting algorithm
@@ -245,20 +232,6 @@ void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, Virtual
   {
     int thread_num = omp_get_thread_num();
     if(!thread_num) { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
-    #ifdef TENMOMENTS
-    TenMoments& speciesMoments = fetch_momentsArray(thread_num);
-    speciesMoments.set_to_zero();
-    arr3_double rho = speciesMoments.fetch_rho();
-    arr3_double Jx  = speciesMoments.fetch_Jx();
-    arr3_double Jy  = speciesMoments.fetch_Jy();
-    arr3_double Jz  = speciesMoments.fetch_Jz();
-    arr3_double Pxx = speciesMoments.fetch_Pxx();
-    arr3_double Pxy = speciesMoments.fetch_Pxy();
-    arr3_double Pxz = speciesMoments.fetch_Pxz();
-    arr3_double Pyy = speciesMoments.fetch_Pyy();
-    arr3_double Pyz = speciesMoments.fetch_Pyz();
-    arr3_double Pzz = speciesMoments.fetch_Pzz();
-    #endif // TENMOMENTS
     Moments10& speciesMoments10 = fetch_moments10Array(thread_num);
     speciesMoments10.set_to_zero();
     arr4_double moments = speciesMoments10.fetch_arr();
@@ -297,12 +270,6 @@ void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, Virtual
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
       const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
       const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
-      //const double xi0   = x[i] - grid->getXN(ix - 1, iy, iz);
-      //const double eta0  = y[i] - grid->getYN(ix, iy - 1, iz);
-      //const double zeta0 = z[i] - grid->getZN(ix, iy, iz - 1);
-      //const double xi1   = grid->getXN(ix, iy, iz) - x[i];
-      //const double eta1  = grid->getYN(ix, iy, iz) - y[i];
-      //const double zeta1 = grid->getZN(ix, iy, iz) - z[i];
       const double xi0   = x[i] - grid->getXN(ix-1);
       const double eta0  = y[i] - grid->getYN(iy-1);
       const double zeta0 = z[i] - grid->getZN(iz-1);
@@ -437,212 +404,42 @@ void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, Virtual
         //}
       }
 
-      #ifdef TENMOMENTS
-      {
-        // use the weight to distribute the moments
-        //
-        // add charge density
-        //speciesMoments.addRho(weight, ix, iy, iz);
-        rho[ix  ][iy  ][iz  ] += weight000;
-        rho[ix  ][iy  ][iz-1] += weight001;
-        rho[ix  ][iy-1][iz  ] += weight010;
-        rho[ix  ][iy-1][iz-1] += weight011;
-        rho[ix-1][iy  ][iz  ] += weight100;
-        rho[ix-1][iy  ][iz-1] += weight101;
-        rho[ix-1][iy-1][iz  ] += weight110;
-        rho[ix-1][iy-1][iz-1] += weight111;
-        // add current density - X
-        //speciesMoments.addJx(temp, ix, iy, iz);
-        Jx[ix  ][iy  ][iz  ] += ui*weight000;
-        Jx[ix  ][iy  ][iz-1] += ui*weight001;
-        Jx[ix  ][iy-1][iz  ] += ui*weight010;
-        Jx[ix  ][iy-1][iz-1] += ui*weight011;
-        Jx[ix-1][iy  ][iz  ] += ui*weight100;
-        Jx[ix-1][iy  ][iz-1] += ui*weight101;
-        Jx[ix-1][iy-1][iz  ] += ui*weight110;
-        Jx[ix-1][iy-1][iz-1] += ui*weight111;
-        // add current density - Y
-        //speciesMoments.addJy(temp, ix, iy, iz);
-        Jy[ix  ][iy  ][iz  ] += vi*weight000;
-        Jy[ix  ][iy  ][iz-1] += vi*weight001;
-        Jy[ix  ][iy-1][iz  ] += vi*weight010;
-        Jy[ix  ][iy-1][iz-1] += vi*weight011;
-        Jy[ix-1][iy  ][iz  ] += vi*weight100;
-        Jy[ix-1][iy  ][iz-1] += vi*weight101;
-        Jy[ix-1][iy-1][iz  ] += vi*weight110;
-        Jy[ix-1][iy-1][iz-1] += vi*weight111;
-        // add current density - Z
-        //speciesMoments.addJz(temp, ix, iy, iz);
-        Jz[ix  ][iy  ][iz  ] += wi*weight000;
-        Jz[ix  ][iy  ][iz-1] += wi*weight001;
-        Jz[ix  ][iy-1][iz  ] += wi*weight010;
-        Jz[ix  ][iy-1][iz-1] += wi*weight011;
-        Jz[ix-1][iy  ][iz  ] += wi*weight100;
-        Jz[ix-1][iy  ][iz-1] += wi*weight101;
-        Jz[ix-1][iy-1][iz  ] += wi*weight110;
-        Jz[ix-1][iy-1][iz-1] += wi*weight111;
-        // Pxx - add pressure tensor
-        //speciesMoments.addPxx(temp, ix, iy, iz);
-        Pxx[ix  ][iy  ][iz  ] += uui*weight000;
-        Pxx[ix  ][iy  ][iz-1] += uui*weight001;
-        Pxx[ix  ][iy-1][iz  ] += uui*weight010;
-        Pxx[ix  ][iy-1][iz-1] += uui*weight011;
-        Pxx[ix-1][iy  ][iz  ] += uui*weight100;
-        Pxx[ix-1][iy  ][iz-1] += uui*weight101;
-        Pxx[ix-1][iy-1][iz  ] += uui*weight110;
-        Pxx[ix-1][iy-1][iz-1] += uui*weight111;
-        // Pxy - add pressure tensor
-        //speciesMoments.addPxy(temp, ix, iy, iz);
-        Pxy[ix  ][iy  ][iz  ] += uvi*weight000;
-        Pxy[ix  ][iy  ][iz-1] += uvi*weight001;
-        Pxy[ix  ][iy-1][iz  ] += uvi*weight010;
-        Pxy[ix  ][iy-1][iz-1] += uvi*weight011;
-        Pxy[ix-1][iy  ][iz  ] += uvi*weight100;
-        Pxy[ix-1][iy  ][iz-1] += uvi*weight101;
-        Pxy[ix-1][iy-1][iz  ] += uvi*weight110;
-        Pxy[ix-1][iy-1][iz-1] += uvi*weight111;
-        // Pxz - add pressure tensor
-        //speciesMoments.addPxz(temp, ix, iy, iz);
-        Pxz[ix  ][iy  ][iz  ] += uwi*weight000;
-        Pxz[ix  ][iy  ][iz-1] += uwi*weight001;
-        Pxz[ix  ][iy-1][iz  ] += uwi*weight010;
-        Pxz[ix  ][iy-1][iz-1] += uwi*weight011;
-        Pxz[ix-1][iy  ][iz  ] += uwi*weight100;
-        Pxz[ix-1][iy  ][iz-1] += uwi*weight101;
-        Pxz[ix-1][iy-1][iz  ] += uwi*weight110;
-        Pxz[ix-1][iy-1][iz-1] += uwi*weight111;
-        // Pyy - add pressure tensor
-        //speciesMoments.addPyy(temp, ix, iy, iz);
-        Pyy[ix  ][iy  ][iz  ] += vvi*weight000;
-        Pyy[ix  ][iy  ][iz-1] += vvi*weight001;
-        Pyy[ix  ][iy-1][iz  ] += vvi*weight010;
-        Pyy[ix  ][iy-1][iz-1] += vvi*weight011;
-        Pyy[ix-1][iy  ][iz  ] += vvi*weight100;
-        Pyy[ix-1][iy  ][iz-1] += vvi*weight101;
-        Pyy[ix-1][iy-1][iz  ] += vvi*weight110;
-        Pyy[ix-1][iy-1][iz-1] += vvi*weight111;
-        // Pyz - add pressure tensor
-        //speciesMoments.addPyz(temp, ix, iy, iz);
-        Pyz[ix  ][iy  ][iz  ] += vwi*weight000;
-        Pyz[ix  ][iy  ][iz-1] += vwi*weight001;
-        Pyz[ix  ][iy-1][iz  ] += vwi*weight010;
-        Pyz[ix  ][iy-1][iz-1] += vwi*weight011;
-        Pyz[ix-1][iy  ][iz  ] += vwi*weight100;
-        Pyz[ix-1][iy  ][iz-1] += vwi*weight101;
-        Pyz[ix-1][iy-1][iz  ] += vwi*weight110;
-        Pyz[ix-1][iy-1][iz-1] += vwi*weight111;
-        // Pzz - add pressure tensor
-        //speciesMoments.addPzz(temp, ix, iy, iz);
-        Pzz[ix  ][iy  ][iz  ] += wwi*weight000;
-        Pzz[ix  ][iy  ][iz-1] += wwi*weight001;
-        Pzz[ix  ][iy-1][iz  ] += wwi*weight010;
-        Pzz[ix  ][iy-1][iz-1] += wwi*weight011;
-        Pzz[ix-1][iy  ][iz  ] += wwi*weight100;
-        Pzz[ix-1][iy  ][iz-1] += wwi*weight101;
-        Pzz[ix-1][iy-1][iz  ] += wwi*weight110;
-        Pzz[ix-1][iy-1][iz-1] += wwi*weight111;
-      }
-      #endif // TENMOMENTS
-
-      #ifdef TENMOMENTS
-      {
-        // check work
-        for(int jx=0;jx<2;jx++)
-        for(int jy=0;jy<2;jy++)
-        for(int jz=0;jz<2;jz++)
-        {
-          assert_eq(rho[ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][0]);
-          assert_eq(Jx [ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][1]);
-          assert_eq(Jy [ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][2]);
-          assert_eq(Jz [ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][3]);
-          assert_eq(Pxx[ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][4]);
-          assert_eq(Pxy[ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][5]);
-          assert_eq(Pxz[ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][6]);
-          assert_eq(Pyy[ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][7]);
-          assert_eq(Pyz[ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][8]);
-          assert_eq(Pzz[ix-jx][iy-jy][iz-jz], moments[ix-jx][iy-jy][iz-jz][9]);
-        }
-      }
-      #endif // TENMOMENTS
     }
     if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
 
     // reduction
     if(!thread_num) timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
 
-    // split up the reduction tasks.
-    //
-    //{
-    //  //
-    //  // One-dimensional array access is presumably
-    //  // more efficient on poor compilers.
-    //  double* rho1d = &rho[0][0][0];
-    //  double* Jx1d  = &Jx [0][0][0];
-    //  double* Jy1d  = &Jy [0][0][0];
-    //  double* Jz1d  = &Jz [0][0][0];
-    //  double* Pxx1d = &Pxx[0][0][0];
-    //  double* Pxy1d = &Pxy[0][0][0];
-    //  double* Pxz1d = &Pxz[0][0][0];
-    //  double* Pyy1d = &Pyy[0][0][0];
-    //  double* Pyz1d = &Pyz[0][0][0];
-    //  double* Pzz1d = &Pzz[0][0][0];
-    //  ////
-    //  assert_eq(speciesMoments.get_nx(), nxn);
-    //  assert_eq(speciesMoments.get_ny(), nyn);
-    //  assert_eq(speciesMoments.get_nz(), nzn);
-    //  const int numel = nxn*nyn*nzn;
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) rhons1d[i] += invVOL*rho1d[i];
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) Jxs1d  [i] += invVOL*Jx1d [i];
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) Jys1d  [i] += invVOL*Jy1d [i];
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) Jzs1d  [i] += invVOL*Jz1d [i];
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) pXXsn1d[i] += invVOL*Pxx1d[i];
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) pXYsn1d[i] += invVOL*Pxy1d[i];
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) pXZsn1d[i] += invVOL*Pxz1d[i];
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) pYYsn1d[i] += invVOL*Pyy1d[i];
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) pYZsn1d[i] += invVOL*Pyz1d[i];
-    //  #pragma omp critical
-    //  for(int i=0;i<numel;i++) pZZsn1d[i] += invVOL*Pzz1d[i];
-    //}
-
     // reduce arrays
     {
-      #pragma omp critical
+      #pragma omp critical (reduceMoment0)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { rhons[is][i][j][k] += invVOL*moments[i][j][k][0]; }}
-      #pragma omp critical
+      #pragma omp critical (reduceMoment1)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { Jxs  [is][i][j][k] += invVOL*moments[i][j][k][1]; }}
-      #pragma omp critical
+      #pragma omp critical (reduceMoment2)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { Jys  [is][i][j][k] += invVOL*moments[i][j][k][2]; }}
-      #pragma omp critical
+      #pragma omp critical (reduceMoment3)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { Jzs  [is][i][j][k] += invVOL*moments[i][j][k][3]; }}
-      #pragma omp critical
+      #pragma omp critical (reduceMoment4)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pXXsn[is][i][j][k] += invVOL*moments[i][j][k][4]; }}
-      #pragma omp critical
+      #pragma omp critical (reduceMoment5)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pXYsn[is][i][j][k] += invVOL*moments[i][j][k][5]; }}
-      #pragma omp critical
+      #pragma omp critical (reduceMoment6)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pXZsn[is][i][j][k] += invVOL*moments[i][j][k][6]; }}
-      #pragma omp critical
+      #pragma omp critical (reduceMoment7)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pYYsn[is][i][j][k] += invVOL*moments[i][j][k][7]; }}
-      #pragma omp critical
+      #pragma omp critical (reduceMoment8)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pYZsn[is][i][j][k] += invVOL*moments[i][j][k][8]; }}
-      #pragma omp critical
+      #pragma omp critical (reduceMoment9)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
     }
@@ -672,6 +469,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
   {
     const Particles3Dcomm& pcls = part[i];
     const int is = pcls.get_ns();
+    assert_eq(i,is);
 
     double const*const x = pcls.getXall();
     double const*const y = pcls.getYall();
@@ -746,7 +544,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
       weights[4] = weight100;
       weights[5] = weight101;
       weights[6] = weight110;
-      weights[0] = weight111;
+      weights[7] = weight111;
 
       // add particle to moments
       {
@@ -770,11 +568,13 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
         momentsArray[7] = moments111;
 
         double buffer[10][8];
-        // #pragma simd
+        //#pragma simd
         for(int m=0;m<10;m++)
-        for(int c=0;c<8;c++)
         {
-          buffer[m][c] = velmoments[c]*weights[m];
+          for(int c=0;c<8;c++)
+          {
+            buffer[m][c] = velmoments[m]*weights[c];
+          }
         }
         for(int c=0;c<8;c++)
         for(int m=0;m<10;m++)
@@ -790,34 +590,34 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
 
     // reduce arrays
     {
-      #pragma omp critical (0)
+      #pragma omp critical (reduceMoment0)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { rhons[is][i][j][k] += invVOL*moments[i][j][k][0]; }}
-      #pragma omp critical (1)
+      #pragma omp critical (reduceMoment1)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { Jxs  [is][i][j][k] += invVOL*moments[i][j][k][1]; }}
-      #pragma omp critical (2)
+      #pragma omp critical (reduceMoment2)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { Jys  [is][i][j][k] += invVOL*moments[i][j][k][2]; }}
-      #pragma omp critical (3)
+      #pragma omp critical (reduceMoment3)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { Jzs  [is][i][j][k] += invVOL*moments[i][j][k][3]; }}
-      #pragma omp critical (4)
+      #pragma omp critical (reduceMoment4)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pXXsn[is][i][j][k] += invVOL*moments[i][j][k][4]; }}
-      #pragma omp critical (5)
+      #pragma omp critical (reduceMoment5)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pXYsn[is][i][j][k] += invVOL*moments[i][j][k][5]; }}
-      #pragma omp critical (6)
+      #pragma omp critical (reduceMoment6)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pXZsn[is][i][j][k] += invVOL*moments[i][j][k][6]; }}
-      #pragma omp critical (7)
+      #pragma omp critical (reduceMoment7)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pYYsn[is][i][j][k] += invVOL*moments[i][j][k][7]; }}
-      #pragma omp critical (8)
+      #pragma omp critical (reduceMoment8)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pYZsn[is][i][j][k] += invVOL*moments[i][j][k][8]; }}
-      #pragma omp critical (9)
+      #pragma omp critical (reduceMoment9)
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
     }
@@ -825,6 +625,10 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
     // uncomment this and remove the loop below
     // when we change to use asynchronous communication.
     // communicateGhostP2G(is, 0, 0, 0, 0, vct);
+  }
+  for (int i = 0; i < ns; i++)
+  {
+    communicateGhostP2G(i, 0, 0, 0, 0, vct);
   }
 }
 
