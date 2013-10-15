@@ -443,23 +443,30 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
       const double eta1  = grid->getYN(iy) - y[i];
       const double zeta1 = grid->getZN(iz) - z[i];
       const double qi = q[i];
-      const double weight000 = qi * xi0 * eta0 * zeta0 * invVOL;
-      const double weight001 = qi * xi0 * eta0 * zeta1 * invVOL;
-      const double weight010 = qi * xi0 * eta1 * zeta0 * invVOL;
-      const double weight011 = qi * xi0 * eta1 * zeta1 * invVOL;
-      const double weight100 = qi * xi1 * eta0 * zeta0 * invVOL;
-      const double weight101 = qi * xi1 * eta0 * zeta1 * invVOL;
-      const double weight110 = qi * xi1 * eta1 * zeta0 * invVOL;
-      const double weight111 = qi * xi1 * eta1 * zeta1 * invVOL;
+      const double invVOLqi = invVOL*qi;
+      const double weight0 = invVOLqi * xi0;
+      const double weight1 = invVOLqi * xi1;
+      const double weight00 = weight0*eta0;
+      const double weight01 = weight0*eta1;
+      const double weight10 = weight1*eta0;
+      const double weight11 = weight1*eta1;
       double weights[8];
-      weights[0] = weight000;
-      weights[1] = weight001;
-      weights[2] = weight010;
-      weights[3] = weight011;
-      weights[4] = weight100;
-      weights[5] = weight101;
-      weights[6] = weight110;
-      weights[7] = weight111;
+      weights[0] = weight00*zeta0; // weight000
+      weights[1] = weight00*zeta1; // weight001
+      weights[2] = weight01*zeta0; // weight010
+      weights[3] = weight01*zeta1; // weight011
+      weights[4] = weight10*zeta0; // weight100
+      weights[5] = weight10*zeta1; // weight101
+      weights[6] = weight11*zeta0; // weight110
+      weights[7] = weight11*zeta1; // weight111
+      //weights[0] = xi0 * eta0 * zeta0 * qi * invVOL; // weight000
+      //weights[1] = xi0 * eta0 * zeta1 * qi * invVOL; // weight001
+      //weights[2] = xi0 * eta1 * zeta0 * qi * invVOL; // weight010
+      //weights[3] = xi0 * eta1 * zeta1 * qi * invVOL; // weight011
+      //weights[4] = xi1 * eta0 * zeta0 * qi * invVOL; // weight100
+      //weights[5] = xi1 * eta0 * zeta1 * qi * invVOL; // weight101
+      //weights[6] = xi1 * eta1 * zeta0 * qi * invVOL; // weight110
+      //weights[7] = xi1 * eta1 * zeta1 * qi * invVOL; // weight111
 
       // add particle to moments
       {

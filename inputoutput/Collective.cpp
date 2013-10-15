@@ -91,6 +91,7 @@ void Collective::ReadInput(string inputfile) {
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle");
     RestartOutputCycle = config.read < int >("RestartOutputCycle");
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
+    CallFinalize = config.read < bool >("CallFinalize", true);
   }
 
   if (RESTART1) {               // you are restarting
