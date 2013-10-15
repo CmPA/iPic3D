@@ -7,19 +7,8 @@
 #ifdef _OPENMP
 #include <omp.h>
 #else
-inline int omp_get_thread_num() {
-    return 0;
-}
+inline int omp_get_thread_num() { return 0;}
+inline int omp_get_max_threads(){ return 1;}
 #endif
-
-inline int omp_thread_count() {
-    int n = 0;
-    #pragma omp parallel reduction(+:n)
-    n += 1;
-    #ifndef _OPENMP // USING_OMP
-    assert_eq(n,1);
-    #endif
-    return n;
-}
 
 #endif

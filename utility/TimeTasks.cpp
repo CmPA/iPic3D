@@ -34,7 +34,6 @@ void TimeTasks::resetCycle()
   for(int e=0;e<NUMBER_OF_TASKS;e++)
   {
     task_duration[e]=0.;
-    compute[e]=0.;
     communicate[e]=0.;
     active[e]=false;
     stack_depth[e]=0;
@@ -50,15 +49,12 @@ void TimeTasks::start_main_task(TimeTasks::Tasks taskid)
   active_task = taskid;
   assert(!active[taskid]);
   active[taskid]=true;
-  //if(!MPIdata::get_rank())
-  //dprintf("starting task %s at time %24.16e\n", get_taskname(taskid), MPI_Wtime());
 }
 void TimeTasks::start_task(TimeTasks::Tasks taskid)
 {
   assert(!is_exclusive(taskid));
   assert(!active[taskid]);
   active[taskid]=true;
-  //dprintf("starting task %s at time %24.16e\n", get_taskname(taskid), MPI_Wtime());
 }
 // have to manage the task stack explicitly
 void TimeTasks::start_task(TimeTasks::Tasks taskid, double start_time)
@@ -69,7 +65,6 @@ void TimeTasks::start_task(TimeTasks::Tasks taskid, double start_time)
     start_task(taskid);
   }
   stack_depth[taskid]++;
-  //dprintf("starting task %s at time %24.16e\n", get_taskname(taskid), start_time);
 }
 void TimeTasks::end_main_task(TimeTasks::Tasks taskid, double start_time)
 {
@@ -96,24 +91,15 @@ void TimeTasks::end_task(TimeTasks::Tasks taskid)
 }
 void TimeTasks::end_communicating(double start_time)
 {
-  //if(!active_task) return;
   assert(active_task);
   assert(communicating);
   double additional_communication_time = MPI_Wtime()-start_time;
-  //dprint(additional_communication_time);
   communicate[active_task] += additional_communication_time;
   communicating=false;
 }
 #define TIMING_PREFIX "| "
 void TimeTasks::print_cycle_times(int cycle)
 {
-  // calculate portion of time spent computing
-  //
-  for(int e=NONE+1; e<NUMBER_OF_TASKS; e++)
-  {
-    compute[e] = task_duration[e]-communicate[e];
-  }
-
   FILE* file = stdout;
   // we could report average for all processes
   if(!MPIdata::get_rank())
@@ -128,25 +114,80 @@ void TimeTasks::print_cycle_times(int cycle)
       fprintf(file, TIMING_PREFIX "%6.3f %6.3f %6.3f %s\n",
       get_time(e),
       get_compute(e),
-      get_communicate(e),
+      communicate[e],
       get_taskname(e));
     }
+
+    // report total times
+    //
+    // get total time spent on exclusive tasks
+    //
+    double total_task_duration = 0.;
+    for (int i = NONE + 1; i < LAST; i++) {
+      total_task_duration += task_duration[i];
+    }
+    // get total time spent in exclusive tasks spent communicating
+    //
+    double total_communicate = 0.;
+    for (int i = NONE + 1; i < LAST; i++) {
+      total_communicate += communicate[i];
+    }
+    const double total_computing_time = total_task_duration - total_communicate;
     fprintf(file, TIMING_PREFIX "%6.3f %6.3f %6.3f %s\n",
-      get_time(),
-      get_compute(),
-      get_communicate(),
+      total_task_duration,
+      total_computing_time,
+      total_communicate,
       "[total times]");
 
-    fprintf(file, TIMING_PREFIX "time  subtask\n");
+    fprintf(file, TIMING_PREFIX "time   subtask\n");
     for(int e=LAST+1; e<NUMBER_OF_TASKS; e++)
     {
       assert_eq(stack_depth[e],0);
-      fprintf(file, TIMING_PREFIX "%5.3f %s\n",
+      fprintf(file, TIMING_PREFIX "%6.3f %s\n",
       get_time(e),
       get_taskname(e));
     }
     
     fflush(file);
+  }
+}
+
+// The following three methods provide for a hack by which
+// the timeTasks copies of all threads are averaged.
+// 
+void TimeTasks::operator/=(int num)
+{
+  for(int e=NONE+1;e<NUMBER_OF_TASKS;e++)
+  {
+    task_duration[e]/=num;
+    start_times[e]/=num;
+    communicate[e]/=num;
+  }
+}
+void TimeTasks::operator+=(const TimeTasks& arg)
+{
+  active_task = arg.active_task;
+  communicating = arg.communicating;
+  for(int e=NONE+1;e<NUMBER_OF_TASKS;e++)
+  {
+    active[e] = arg.active[e];
+    task_duration[e]+=arg.task_duration[e];
+    stack_depth[e] = arg.stack_depth[e];
+    start_times[e]+=arg.start_times[e];
+    communicate[e]+=arg.communicate[e];
+  }
+}
+void TimeTasks::operator=(const TimeTasks& arg)
+{
+  active_task = arg.active_task;
+  communicating = arg.communicating;
+  for(int e=NONE+1;e<NUMBER_OF_TASKS;e++)
+  {
+    active[e] = arg.active[e];
+    task_duration[e]=arg.task_duration[e];
+    stack_depth[e] = arg.stack_depth[e];
+    start_times[e]=arg.start_times[e];
+    communicate[e]=arg.communicate[e];
   }
 }
 

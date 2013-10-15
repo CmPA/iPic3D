@@ -192,7 +192,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) :
   injFieldsFront  = new injInfoFields(nxn, nyn, nzn);
   injFieldsRear   = new injInfoFields(nxn, nyn, nzn);
 
-  sizeMomentsArray = omp_thread_count();
+  sizeMomentsArray = omp_get_max_threads();
   moments10Array = new Moments10*[sizeMomentsArray];
   for(int i=0;i<sizeMomentsArray;i++)
   {
@@ -228,10 +228,11 @@ void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, Virtual
   // to the particles and then accumulate moments in smaller
   // subarrays.
   //#ifdef _OPENMP
-  #pragma omp parallel
+  TimeTasks timeTasksAcc;
+  #pragma omp parallel private(timeTasks)
   {
     int thread_num = omp_get_thread_num();
-    if(!thread_num) { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
+    timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION);
     Moments10& speciesMoments10 = fetch_moments10Array(thread_num);
     speciesMoments10.set_to_zero();
     arr4_double moments = speciesMoments10.fetch_arr();
@@ -314,10 +315,10 @@ void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, Virtual
         }
       }
     }
-    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
+    timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
 
     // reduction
-    if(!thread_num) timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
+    timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
 
     // reduce arrays
     {
@@ -352,8 +353,13 @@ void EMfields3D::sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, Virtual
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
     }
-    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
+    timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
+    #pragma omp critical
+    timeTasksAcc += timeTasks;
   }
+  // reset timeTasks to be its average value for all threads
+  timeTasksAcc /= omp_get_max_threads();
+  timeTasks = timeTasksAcc;
   communicateGhostP2G(is, 0, 0, 0, 0, vct);
 }
 // This was Particles3Dcomm::interpP2G()

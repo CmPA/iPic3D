@@ -49,6 +49,12 @@ class TimeTasks
   //
   void resetCycle();
   //
+  // hack to support averaging timeTasks copies of all threads.
+  //
+  void operator+=(const TimeTasks& arg);
+  void operator/=(int num);
+  void operator=(const TimeTasks& arg);
+  //
   // provide start_time on ending call
   //
   void end_communicating(double start_time);
@@ -86,25 +92,8 @@ class TimeTasks
   double get_communicate(int arg) {
     return communicate[arg];
   }
-  double get_communicate() {
-    double total = 0.;
-    for (int i = NONE + 1; i < LAST; i++) {
-      total += communicate[i];
-    }
-    return total;
-  }
-  double get_time() {
-    double total = 0.;
-    for (int i = NONE + 1; i < LAST; i++) {
-      total += task_duration[i];
-    }
-    return total;
-  }
   double get_compute(int arg) {
     return get_time(arg) - get_communicate(arg);
-  }
-  double get_compute() {
-    return get_time() - get_communicate();
   }
   const char* get_taskname(int arg);
 
@@ -114,7 +103,6 @@ class TimeTasks
   bool communicating;
   double task_duration[NUMBER_OF_TASKS];
   double communicate[NUMBER_OF_TASKS];
-  double compute[NUMBER_OF_TASKS];
   int stack_depth[NUMBER_OF_TASKS];
   double start_times[NUMBER_OF_TASKS];
 };
