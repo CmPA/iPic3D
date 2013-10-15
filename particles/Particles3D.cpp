@@ -341,7 +341,7 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     pfloat vptilde;
     pfloat wptilde;
     // calculate the average velocity iteratively
-    for (int innter = 0; innter < 1; innter++) {
+    for (int innter = 0; innter < NiterMover; innter++) {
       // interpolation G-->P
       const pfloat ixd = floor((xp - xstart) * inv_dx);
       const pfloat iyd = floor((yp - ystart) * inv_dy);
