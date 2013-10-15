@@ -149,3 +149,5 @@ w0 = 0.00325	-0.01624
    RestartOutputCycle = 4000
 # Diagnostics cycle
    DiagnosticsOutputCycle = 1
+# 1 (true) by default
+#CallFinalize = 0

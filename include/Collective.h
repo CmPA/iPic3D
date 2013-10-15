@@ -138,6 +138,7 @@ class Collective
     int getParticlesOutputCycle()const{ return (ParticlesOutputCycle); }
     int getRestartOutputCycle()const{ return (RestartOutputCycle); }
     int getDiagnosticsOutputCycle()const{ return (DiagnosticsOutputCycle); }
+    bool getCallFinalize()const{ return (CallFinalize); }
 
     /*! Boundary condition selection for BCFace for the electric field components */
     int bcEx[6], bcEy[6], bcEz[6];
@@ -328,6 +329,8 @@ class Collective
     int RestartOutputCycle;
     /*! Output for diagnostics */
     int DiagnosticsOutputCycle;
+    /*! Call Finalize() at end of program execution (true by default) */
+    bool CallFinalize;
 };
 typedef Collective CollectiveIO;
 

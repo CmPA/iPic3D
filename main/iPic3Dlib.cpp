@@ -360,8 +360,11 @@ void c_Solver::WriteOutput(int cycle) {
 }
 
 void c_Solver::Finalize() {
-  if (mem_avail == 0)           // write the restart only if the simulation finished succesfully
+  if (mem_avail == 0 // write the restart only if the simulation finished successfully
+   && col->getCallFinalize())
+  {
     writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
+  }
 
   // stop profiling
   my_clock->stopTiming();
