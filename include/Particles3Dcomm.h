@@ -16,7 +16,8 @@ developers: Stefano Markidis, Giovanni Lapenta
  * @version 2.0
  *
  */
-class Particles3Dcomm:public Particles {
+class Particles3Dcomm // :public Particles
+{
 public:
   /** constructor */
   Particles3Dcomm();
@@ -57,40 +58,31 @@ public:
   int maxNpExiting();
   /** calculate the weights given the position of particles */
   // void calculateWeights(double*** weight, double xp, double yp, double zp,int ix, int iy, int iz, Grid* grid);
-  /** get X-position array for all the particles */
-  double *getXall() const;
-  /** get Y-position array for all the particles */
-  double *getYall() const;
-  /** get Z-position array for all the particles */
-  double *getZall() const;
-  /** get u (X-velocity) array for all the particles */
-  double *getUall() const;
-  /** get v (Y-velocity) array for all the particles */
-  double *getVall() const;
-  /** get w (Z-velocity) array for all the particles */
-  double *getWall() const;
-  /** get the ID array   */
-  long long *getParticleIDall() const;
-  /** get X-position of particle with label indexPart */
-  double getX(int indexPart) const;
-  /** get Y-position of particle with label indexPart */
-  double getY(int indexPart) const;
-  /** get Z-position of particle with label indexPart */
-  double getZ(int indexPart) const;
-  /** get u (X-velocity) of particle with label indexPart */
-  double getU(int indexPart) const;
-  /** get v (Y-velocity) of particle with label indexPart */
-  double getV(int indexPart) const;
-  /** get w (Z-velocity) of particle with label indexPart */
-  double getW(int indexPart) const;
-  /** get ID of particle with label indexPart */
-  long long getParticleID(int indexPart) const;
-  /**get charge of particle with label indexPart */
-  double getQ(int indexPart) const;
-  /** get charge of array for ID particles */
-  double *getQall() const;
-  /** get the number of particles of this subdomain */
-  int getNOP() const;
+
+  // inline get accessors
+  //
+  double *getXall()  const { return (x); }
+  double *getYall()  const { return (y); }
+  double *getZall()  const { return (z); }
+  double *getUall()  const { return (u); }
+  double *getVall()  const { return (v); }
+  double *getWall()  const { return (w); }
+  long long *getParticleIDall()  const { return (ParticleID); }
+  double *getQall()  const { return (q); }
+  // accessors for particle with index indexPart
+  double getX(int indexPart)  const { return (x[indexPart]); }
+  double getY(int indexPart)  const { return (y[indexPart]); }
+  double getZ(int indexPart)  const { return (z[indexPart]); }
+  double getU(int indexPart)  const { return (u[indexPart]); }
+  double getV(int indexPart)  const { return (v[indexPart]); }
+  double getW(int indexPart)  const { return (w[indexPart]); }
+  long long getParticleID(int indexPart)  const
+    { return (ParticleID[indexPart]); }
+  double getQ(int indexPart)  const { return (q[indexPart]); }
+  int getNOP()  const { return (nop); }
+
+  // computed get access
+  //
   /** return the Kinetic energy */
   double getKe();
   /** return the maximum kinetic energy */
@@ -262,5 +254,6 @@ protected:
   double Ninj;
 };
 
+typedef Particles3Dcomm Particles;
 
 #endif
