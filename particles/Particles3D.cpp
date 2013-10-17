@@ -318,34 +318,31 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   }
   const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
 
-  const pfloat dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+  const pfloat dto2 = .5 * dt, qdto2mc = qom * dto2 / c;
   const pfloat inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   #pragma omp for
   // why does single precision make no difference in execution speed?
   //#pragma simd vectorlength(VECTOR_WIDTH)
   for (int pidx = 0; pidx < nop; pidx++) {
     // copy the particle
-    const pfloat xptilde = x[pidx];
-    const pfloat yptilde = y[pidx];
-    const pfloat zptilde = z[pidx];
-    const pfloat up_orig = u[pidx];
-    const pfloat vp_orig = v[pidx];
-    const pfloat wp_orig = w[pidx];
-    pfloat xp = xptilde;
-    pfloat yp = yptilde;
-    pfloat zp = zptilde;
-    pfloat up = up_orig;
-    pfloat vp = vp_orig;
-    pfloat wp = wp_orig;
-    pfloat uptilde;
-    pfloat vptilde;
-    pfloat wptilde;
+    const pfloat xorig = x[pidx];
+    const pfloat yorig = y[pidx];
+    const pfloat zorig = z[pidx];
+    const pfloat uorig = u[pidx];
+    const pfloat vorig = v[pidx];
+    const pfloat worig = w[pidx];
+    pfloat xavg = xorig;
+    pfloat yavg = yorig;
+    pfloat zavg = zorig;
+    pfloat uavg;
+    pfloat vavg;
+    pfloat wavg;
     // calculate the average velocity iteratively
     for (int innter = 0; innter < NiterMover; innter++) {
       // interpolation G-->P
-      const pfloat ixd = floor((xp - xstart) * inv_dx);
-      const pfloat iyd = floor((yp - ystart) * inv_dy);
-      const pfloat izd = floor((zp - zstart) * inv_dz);
+      const pfloat ixd = floor((xavg - xstart) * inv_dx);
+      const pfloat iyd = floor((yavg - ystart) * inv_dy);
+      const pfloat izd = floor((zavg - zstart) * inv_dz);
       int ix = 2 + int (ixd);
       int iy = 2 + int (iyd);
       int iz = 2 + int (izd);
@@ -362,12 +359,12 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       if (iz > nzn - 1)
         iz = nzn - 1;
 
-      const pfloat xi0   = xp - grid->get_pfloat_XN(ix-1);
-      const pfloat eta0  = yp - grid->get_pfloat_YN(iy-1);
-      const pfloat zeta0 = zp - grid->get_pfloat_ZN(iz-1);
-      const pfloat xi1   = grid->get_pfloat_XN(ix) - xp;
-      const pfloat eta1  = grid->get_pfloat_YN(iy) - yp;
-      const pfloat zeta1 = grid->get_pfloat_ZN(iz) - zp;
+      const pfloat xi0   = xavg - grid->get_pfloat_XN(ix-1);
+      const pfloat eta0  = yavg - grid->get_pfloat_YN(iy-1);
+      const pfloat zeta0 = zavg - grid->get_pfloat_ZN(iz-1);
+      const pfloat xi1   = grid->get_pfloat_XN(ix) - xavg;
+      const pfloat eta1  = grid->get_pfloat_YN(iy) - yavg;
+      const pfloat zeta1 = grid->get_pfloat_ZN(iz) - zavg;
 
       pfloat Exl = 0.0;
       pfloat Eyl = 0.0;
@@ -422,37 +419,35 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
         Eyl += weights[c] * field_components[c][4];
         Ezl += weights[c] * field_components[c][5];
       }
+      const double Omx = qdto2mc*Bxl;
+      const double Omy = qdto2mc*Byl;
+      const double Omz = qdto2mc*Bzl;
 
       // end interpolation
-      const pfloat omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
-      const pfloat denom = 1.0 / (1.0 + omdtsq);
+      const pfloat omsq = (Omx * Omx + Omy * Omy + Omz * Omz);
+      const pfloat denom = 1.0 / (1.0 + omsq);
       // solve the position equation
-      const pfloat ut = up + qomdt2 * Exl;
-      const pfloat vt = vp + qomdt2 * Eyl;
-      const pfloat wt = wp + qomdt2 * Ezl;
-      const pfloat udotb = ut * Bxl + vt * Byl + wt * Bzl;
+      const pfloat ut = uorig + qdto2mc * Exl;
+      const pfloat vt = vorig + qdto2mc * Eyl;
+      const pfloat wt = worig + qdto2mc * Ezl;
+      //const pfloat udotb = ut * Bxl + vt * Byl + wt * Bzl;
+      const pfloat udotOm = ut * Omx + vt * Omy + wt * Omz;
       // solve the velocity equation 
-      uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
-      vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
-      wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
-      // update position
-      xp = xptilde + uptilde * dto2;
-      yp = yptilde + vptilde * dto2;
-      zp = zptilde + wptilde * dto2;
+      uavg = (ut + (vt * Omz - wt * Omy + udotOm * Omx)) * denom;
+      vavg = (vt + (wt * Omx - ut * Omz + udotOm * Omy)) * denom;
+      wavg = (wt + (ut * Omy - vt * Omx + udotOm * Omz)) * denom;
+      // update average position
+      xavg = xorig + uavg * dto2;
+      yavg = yorig + vavg * dto2;
+      zavg = zorig + wavg * dto2;
     }                           // end of iteration
     // update the final position and velocity
-    up = 2.0 * uptilde - up_orig;
-    vp = 2.0 * vptilde - vp_orig;
-    wp = 2.0 * wptilde - wp_orig;
-    xp = xptilde + uptilde * dt;
-    yp = yptilde + vptilde * dt;
-    zp = zptilde + wptilde * dt;
-    x[pidx] = xp;
-    y[pidx] = yp;
-    z[pidx] = zp;
-    u[pidx] = up;
-    v[pidx] = vp;
-    w[pidx] = wp;
+    x[pidx] = xorig + uavg * dt;
+    y[pidx] = yorig + vavg * dt;
+    z[pidx] = zorig + wavg * dt;
+    u[pidx] = 2.0 * uavg - uorig;
+    v[pidx] = 2.0 * vavg - vorig;
+    w[pidx] = 2.0 * wavg - worig;
   }                             // END OF ALL THE PARTICLES
 }
 
