@@ -1,11 +1,11 @@
 
 #include <mpi.h>
 #include "Grid3DCU.h"
+#include "MPIdata.h"
 
 /*! constructor */
 Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {
-  // int get_rank();
-  // if(!get_rank())
+  if(!MPIdata::get_rank())
   {
     fflush(stdout);
     bool xerror = false;
@@ -37,17 +37,18 @@ Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {
   invdz = 1.0 / dz;
 
   // local grid dimensions and boundaries of active nodes
-  xStart = vct->getCoordinates(0) * (col->getLx() / (double) vct->getXLEN());
-
-  xEnd = xStart + (col->getLx() / (double) vct->getXLEN());
-
-  yStart = vct->getCoordinates(1) * (col->getLy() / (double) vct->getYLEN());
-
-  yEnd = yStart + (col->getLy() / (double) vct->getYLEN());
-
-  zStart = vct->getCoordinates(2) * (col->getLz() / (double) vct->getZLEN());
-
-  zEnd = zStart + (col->getLz() / (double) vct->getZLEN());
+  //
+  const double xWidth = (col->getLx() / (double) vct->getXLEN());
+  const double yWidth = (col->getLy() / (double) vct->getYLEN());
+  const double zWidth = (col->getLz() / (double) vct->getZLEN());
+  //
+  xStart = vct->getCoordinates(0) * xWidth;
+  yStart = vct->getCoordinates(1) * yWidth;
+  zStart = vct->getCoordinates(2) * zWidth;
+  //
+  xEnd = xStart + xWidth;
+  yEnd = yStart + yWidth;
+  zEnd = zStart + zWidth;
 
   // arrays allocation: nodes ---> the first node has index 1, the last has index nxn-2!
   pfloat_node_xcoord = new pfloat[nxn];
