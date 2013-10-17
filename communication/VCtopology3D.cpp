@@ -3,6 +3,8 @@
 #include "Collective.h"
 #include "VCtopology3D.h"
 #include <iostream>
+#include "MPIdata.h"
+#include "debug.h"
 
 using std::cout;
 using std::endl;
@@ -62,6 +64,11 @@ void VCtopology3D::setup_vctopology(MPI_Comm old_comm) {
   MPI_Cart_create(old_comm, 3, divisions, periods, reorder, &CART_COMM);
   // create a matrix with ranks, and neighbours for Particles
   MPI_Cart_create(old_comm, 3, divisions, periods_P, reorder, &CART_COMM_P);
+  // Why not the following line instead of the previous?  Was
+  // this written in anticipation that a different number of MPI
+  // processes would be used for fields versus for particles?
+  // But the code has not been consistently written this way...
+  //MPI_Cart_create(CART_COMM, 3, divisions, periods_P, 0, &CART_COMM_P);
   // field Communicator
   if (CART_COMM != MPI_COMM_NULL) {
     MPI_Comm_rank(CART_COMM, &cartesian_rank);
@@ -72,21 +79,32 @@ void VCtopology3D::setup_vctopology(MPI_Comm old_comm) {
     MPI_Cart_shift(CART_COMM, ZDIR, RIGHT, &zleft_neighbor, &zright_neighbor);
   }
   else {
-    // EXCEPTION
-    cout << "A process is trown away from the new topology for fields. VCtopology3D.h" << endl;
+    // previous check that nprocs = XLEN*YLEN*ZLEN should prevent reaching this line.
+    eprintf("A process is thrown away from the new topology for fields.");
   }
   // Particles Communicator
   if (CART_COMM_P != MPI_COMM_NULL) {
-    MPI_Comm_rank(CART_COMM_P, &cartesian_rank);
-    MPI_Cart_coords(CART_COMM_P, cartesian_rank, 3, coordinates);
+    int pcl_coordinates[3];
+    int pcl_cartesian_rank;
+    MPI_Comm_rank(CART_COMM_P, &pcl_cartesian_rank);
+    MPI_Cart_coords(CART_COMM_P, pcl_cartesian_rank, 3, pcl_coordinates);
+    
+    // This seems to be assumed elsewhere in the code.
+    assert_eq(cartesian_rank, MPIdata::get_rank());
+    // should agree
+    assert_eq(cartesian_rank,pcl_cartesian_rank);
+    for(int dim=0;dim<3;dim++)
+    {
+      assert_eq(coordinates[dim],pcl_coordinates[dim]);
+    }
 
     MPI_Cart_shift(CART_COMM_P, XDIR, RIGHT, &xleft_neighbor_P, &xright_neighbor_P);
     MPI_Cart_shift(CART_COMM_P, YDIR, RIGHT, &yleft_neighbor_P, &yright_neighbor_P);
     MPI_Cart_shift(CART_COMM_P, ZDIR, RIGHT, &zleft_neighbor_P, &zright_neighbor_P);
   }
   else {
-    // EXCEPTION
-    cout << "A process is trown away from the new topology for Particles. VCtopology3D.h" << endl;
+    // previous check that nprocs = XLEN*YLEN*ZLEN should prevent reaching this line.
+    eprintf("A process is thrown away from the new topology for Particles.");
   }
 
 }
