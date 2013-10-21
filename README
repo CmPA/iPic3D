@@ -1,0 +1,13 @@
+==== CPU ==== 
+
+-- Compilation 
+
+$ mkdir build 
+$ cd build
+$ cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/cmake_template.cmake.Xeon
+$ make
+$ mkdir data
+
+-- Execution
+
+$ mpiexec -n 4 exec/iPic3D ../inputfiles/GEM.inp

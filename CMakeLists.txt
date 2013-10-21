@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.8) 
 # compiler set in ../cmake/cmake_template.cmake.XeonPhi
-message ("for Xeon Phi:")
-message ("cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/cmake_template.cmake.XeonPhi")
+#message ("for Xeon Phi:")
+#message ("cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/cmake_template.cmake.XeonPhi")
 #message ("for Xeon:")
 #message ("cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/cmake_template.cmake.Xeon")
 #
@@ -21,13 +21,14 @@ set(LIBRARY_OUTPUT_PATH lib)
 # Set compiler flags per system
 #
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
-   set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -mmic")
+   #set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -mmic")
    #set(CMAKE_CXX_FLAGS "-openmp -g -mmic") # set flags for Xeon Phi, totalview
 elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
-   set(CMAKE_CXX_COMPILER "icpc")  
-   set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report")
+   #set(CMAKE_CXX_COMPILER "icpc")  
+   #set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report")
 else()
-   set(CMAKE_CXX_FLAGS "-O3")
+   #message("Toolchain file required")
+   #set(CMAKE_CXX_FLAGS "-O3")
 endif()
 
 #
