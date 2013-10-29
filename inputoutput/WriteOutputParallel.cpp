@@ -88,7 +88,6 @@ void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCt
 
     grpname = "Fields";
     dtaname = "Rho_" + snmbr.str();
-    EMf->getRHOcs(arr3,grid, is);
     EMf->getRHOcs(arr3, grid, is);
     outputfile.WritePHDF5dataset(grpname, dtaname, arr3, nxc-2, nyc-2, nzc-2);
   }
