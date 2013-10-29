@@ -379,8 +379,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
   // to the particles and then accumulate moments in smaller
   // subarrays.
   //#ifdef _OPENMP
-  TimeTasks timeTasksAcc;
-  #pragma omp parallel private(timeTasks)
+  #pragma omp parallel
   for (int i = 0; i < ns; i++)
   {
     const Particles3Dcomm& pcls = part[i];
@@ -398,7 +397,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
     const int nop = pcls.getNOP();
 
     int thread_num = omp_get_thread_num();
-    timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION);
+    if(!thread_num) { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
     Moments10& speciesMoments10 = fetch_moments10Array(thread_num);
     speciesMoments10.set_to_zero();
     arr4_double moments = speciesMoments10.fetch_arr();
@@ -492,10 +491,10 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
         }
       }
     }
-    timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
+    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
 
     // reduction
-    timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
+    if(!thread_num) timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
 
     // reduce arrays
     {
@@ -530,16 +529,11 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
       for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
         { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
     }
-    timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
-    #pragma omp critical
-    timeTasksAcc += timeTasks;
+    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
     // uncomment this and remove the loop below
     // when we change to use asynchronous communication.
     // communicateGhostP2G(is, 0, 0, 0, 0, vct);
   }
-  // reset timeTasks to be its average value for all threads
-  timeTasksAcc /= omp_get_max_threads();
-  timeTasks = timeTasksAcc;
   for (int i = 0; i < ns; i++)
   {
     communicateGhostP2G(i, 0, 0, 0, 0, vct);
