@@ -210,11 +210,12 @@ void xdmfile::setfields(){
 
 void xdmfile::readinput(string infile){
 
-  ifstream inp(infile.c_str());
-  int      beg, end, stp, nf;
-  string   fieldline;
-  string   dtset;
-  string   fieldname;
+  ifstream     inp(infile.c_str());
+
+  int    beg, end, stp, nf;
+  string fieldline;
+  string dtset;
+  string fieldname;
 
   inp >> h5filename;
   inp >> ndim;
@@ -300,22 +301,23 @@ void xdmfile::writexdmf(){
     filenmbr << setfill('0') << setw(5) << t;
     filename = h5filename + "_" + filenmbr.str() + ".h5";
 
-    xdmfout << "      <Grid Name=\"Structured mesh\" GridType=\"Uniform\"> " << endl;
-    xdmfout << "        <Topology TopologyType=\"2DCoRectMesh\" Dimensions=\"" << ncy+1 << " " << ncx+1 << "\"/> " << endl;
-    xdmfout << "        <Geometry GeometryType=\"ORIGIN_DXDY\"> " << endl;
-    xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"2\" NumberType=\"Float\"> " << endl;
-    xdmfout << "          " << setprecision(2) << fixed << grid.getOx() << " " << setprecision(2) << fixed << grid.getOy() << endl;
-    xdmfout << "          </DataItem> " << endl;
-    xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"2\" NumberType=\"Float\"> " << endl;
-    xdmfout << "          " << grid.getdx() << " " << grid.getdy() << endl;
-    xdmfout << "          </DataItem> " << endl;
-    xdmfout << "        </Geometry> " << endl;
+    if (ndim == 2){
+
+      xdmfout << "      <Grid Name=\"Structured mesh\" GridType=\"Uniform\"> " << endl;
+      xdmfout << "        <Topology TopologyType=\"2DCoRectMesh\" Dimensions=\"" << ncy+1 << " " << ncx+1 << "\"/> " << endl;
+      xdmfout << "        <Geometry GeometryType=\"ORIGIN_DXDY\"> " << endl;
+      xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"2\" NumberType=\"Float\"> " << endl;
+      xdmfout << "          " << setprecision(2) << fixed << grid.getOy() << " " << setprecision(2) << fixed << grid.getOx() << endl;
+      xdmfout << "          </DataItem> " << endl;
+      xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"2\" NumberType=\"Float\"> " << endl;
+      xdmfout << "          " << grid.getdy() << " " << grid.getdx() << endl;
+      xdmfout << "          </DataItem> " << endl;
+      xdmfout << "        </Geometry> " << endl;
 
     // ----------------
     // Write each field
     // ----------------
 
-    if (ndim == 2){
       for (int i = 0; i < fields.getnfields(); i++){
 
         xdmfout << "        <Attribute Name=\"" << fields.getidtname(i) << "\" Center=\"Cell\"> " << endl;
@@ -323,15 +325,39 @@ void xdmfile::writexdmf(){
         xdmfout << "          " <<  filename << ":" << fields.getidtset(i) << endl;
         xdmfout << "          </DataItem> " << endl;
         xdmfout << "        </Attribute> " << endl;
-        xdmfout << "      </Grid> " << endl;
 
       }
     }
     else{
-      cout << " Ohhh. So do you need the 3D version of this tool? It is easy to upgrade from the 2D version. " << endl;
-      cout << " Are you courageous enough to do it? Let us know!" << endl;
-      abort();
+
+      xdmfout << "      <Grid Name=\"Structured mesh\" GridType=\"Uniform\"> " << endl;
+      xdmfout << "        <Topology TopologyType=\"3DCoRectMesh\" Dimensions=\"" << ncx+1 << " " << ncy+1 << " " << ncz+1 << "\"/> " << endl;
+      xdmfout << "        <Geometry GeometryType=\"ORIGIN_DXDYDZ\"> " << endl;
+      xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"3\" NumberType=\"Float\"> " << endl;
+      xdmfout << "          " << setprecision(2) << fixed << grid.getOx() << " " << setprecision(2) << fixed << grid.getOy() << " " << setprecision(2) << fixed << grid.getOz() << endl;
+      xdmfout << "          </DataItem> " << endl;
+      xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"3\" NumberType=\"Float\"> " << endl;
+      xdmfout << "          " << grid.getdx() << " " << grid.getdy() << " " << grid.getdz() << endl;
+      xdmfout << "          </DataItem> " << endl;
+      xdmfout << "        </Geometry> " << endl;
+
+    // ----------------
+    // Write each field
+    // ----------------
+
+      for (int i = 0; i < fields.getnfields(); i++){
+
+        xdmfout << "        <Attribute Name=\"" << fields.getidtname(i) << "\" Center=\"Cell\"> " << endl;
+        xdmfout << "          <DataItem Format=\"HDF\" Dimensions=\"" << ncx << " " << ncy << " " << ncz << "\" NumberType=\"Float\"> " << endl;
+        xdmfout << "          " <<  filename << ":" << fields.getidtset(i) << endl;
+        xdmfout << "          </DataItem> " << endl;
+        xdmfout << "        </Attribute> " << endl;
+
+      }
+
     }
+
+    xdmfout << "      </Grid> " << endl;
 
   }  // End cycles loop
 

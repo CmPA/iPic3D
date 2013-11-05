@@ -78,7 +78,7 @@ set(IPIC_TESTS_DIR "${CMAKE_BINARY_DIR}/tests" CACHE STRING "Location of the sou
 
 option(IPIC_PARALLEL_HDF5 "Output is done using the parallel HDF5 library" OFF)
 if(IPIC_PARALLEL_HDF5)
-  add_definitions(-DUSE_PHDF5)
+  add_definitions(-DPHDF5)
 endif()
 
 option(IPIC_BATSRUS "Compile library with coupling code for BATS-R-US" OFF)
