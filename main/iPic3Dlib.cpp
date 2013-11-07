@@ -55,7 +55,9 @@ int c_Solver::Init(int argc, char **argv) {
     mpi->Print();
     vct->Print();
     col->Print();
+#if FILE_IO
     col->save();
+#endif
   }
   // Create the local grid
   MPI_Barrier(MPI_COMM_WORLD);
@@ -114,19 +116,23 @@ int c_Solver::Init(int argc, char **argv) {
     hdf5_agent.set_simulation_pointers_part(&part[i]);
   output_mgr.push_back(&hdf5_agent);  // Add the HDF5 output agent to the Output Manager's list
   if (myrank == 0 & restart < 2) {
+#if FILE_IO
     hdf5_agent.open(SaveDirName + "/settings.hdf");
     output_mgr.output("collective + total_topology + proc_topology", 0);
     hdf5_agent.close();
     hdf5_agent.open(RestartDirName + "/settings.hdf");
     output_mgr.output("collective + total_topology + proc_topology", 0);
     hdf5_agent.close();
+#endif
   }
   // Restart
   num_proc << myrank;
   if (restart == 0) {           // new simulation from input file
+#if FILE_IO
     hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() + ".hdf");
     output_mgr.output("proc_topology ", 0);
     hdf5_agent.close();
+#endif
   }
   else {                        // restart append the results to the previous simulation 
     hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
@@ -139,19 +145,24 @@ int c_Solver::Init(int argc, char **argv) {
   Ke = new double[ns];
   momentum = new double[ns];
   cq = SaveDirName + "/ConservedQuantities.txt";
+#if FILE_IO
   if (myrank == 0) {
     ofstream my_file(cq.c_str());
     my_file.close();
   }
+#endif
   // Distribution functions
   nDistributionBins = 1000;
   ds = SaveDirName + "/DistributionFunctions.txt";
+#if FILE_IO
   if (myrank == 0) {
     ofstream my_file(ds.c_str());
     my_file.close();
   }
+#endif
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
+#if FILE_IO
   ofstream my_file(cqsat.c_str(), fstream::binary);
   nsat = 3;
   for (int isat = 0; isat < nsat; isat++) {
@@ -163,6 +174,7 @@ int c_Solver::Init(int argc, char **argv) {
         my_file << grid->getXC(index1, index2, index3) << "\t" << grid->getYC(index1, index2, index3) << "\t" << grid->getZC(index1, index2, index3) << endl;
       }}}
   my_file.close();
+#endif
 
   Qremoved = new double[ns];
 

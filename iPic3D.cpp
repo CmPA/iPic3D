@@ -34,9 +34,11 @@ int main(int argc, char **argv) {
       i = KCode.LastCycle() + 1;
     }
 
+#if FILE_IO
     KCode.WriteOutput(i);
     KCode.WriteConserved(i);
     KCode.WriteRestart(i);
+#endif
 
   }
 
