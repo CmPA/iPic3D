@@ -272,6 +272,10 @@ class EMfields3D                // :public Field
     // OpenBC
     void updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col);
 
+    /*! Synchronize data with particle solver */
+    void syncMoments();
+    void syncFields();
+
     /* ********************************* // VARIABLES ********************************* */
   private:
     /*! light speed */

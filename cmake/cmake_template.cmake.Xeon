@@ -8,6 +8,7 @@ SET(CMAKE_CXX_COMPILER g++)
 SET(MPI_C_COMPILER mpicc)
 SET(CMAKE_CXX_COMPILER mpicxx)
 # "CACHE STRING "" FORCE" is a workaround so that FLAGS are not ignored
-SET(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -Wall" CACHE STRING "" FORCE)
+#SET(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -Wall" CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -ftree-vectorizer-verbose=0 -Wall" CACHE STRING "" FORCE)
 
 SET(ENV{HDF5_ROOT} "/opt/hdf5/1.8.11/")

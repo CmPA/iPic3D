@@ -15,6 +15,7 @@
 #include "Restart3D.h"
 #include "Timing.h"
 #include "WriteOutputParallel.h"
+#include "SolverType.h"
 
 #include <iostream>
 #include <fstream>
@@ -42,6 +43,8 @@ namespace iPic3D {
     void WriteConserved(int cycle);
     void WriteRestart(int cycle);
     void Finalize();
+    void syncMoments();
+    void syncFields();
 
     inline int FirstCycle();
     inline int LastCycle();
@@ -58,6 +61,7 @@ namespace iPic3D {
     double        *momentum;
     double        *Qremoved;
     Timing        *my_clock;
+    SolverType    solver_type; // Which type of solver I am
 
     PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
     myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent;  // Create an Output Agent for HDF5 output

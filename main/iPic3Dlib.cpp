@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include "iPic3D.h"
 #include "TimeTasks.h"
 #include "ipicdefs.h"
@@ -19,6 +20,29 @@ int c_Solver::Init(int argc, char **argv) {
   mpi = &MPIdata::instance();
   nprocs = MPIdata::get_nprocs();
   myrank = MPIdata::get_rank();
+
+  /*
+   * Here the particles solver (initial MPI_COMM_WORLD) spawns the fields solver.
+   * Note that both solvers execute this function.
+   */
+
+  /* Set type of solver */
+  MPI_Comm_get_parent(&mpi->intercomm);                                 // Returns MPI_COMM_NULL for initial MPI_COMM_WORLD
+  solver_type = (MPI_COMM_NULL == mpi->intercomm) ? PARTICLES : FIELDS; // Initial MPI_COMM_WORLD is particles solver
+
+  /* If I'm particles solver then I spawn fields solver */
+  if (PARTICLES == solver_type)
+  {
+    MPI_Comm_spawn(
+      "exec/iPic3D_fields",  // Filename
+      MPI_ARGV_NULL,         // No arguments
+      nprocs,                // Number MPI procs
+      MPI_INFO_NULL,         // Info argument
+      0,                     // Root
+      MPI_COMM_WORLD,        // Group of spawning procs
+      &mpi->intercomm,       // Intercommunicator to children
+      MPI_ERRCODES_IGNORE);  // Error codes
+  }
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
   verbose = col->getVerbose();
@@ -388,3 +412,10 @@ void c_Solver::Finalize() {
   mpi->finalize_mpi();
 }
 
+void c_Solver::syncMoments() {
+  //EMf->syncMoments(solver_type, mpi);
+}
+
+void c_Solver::syncFields() {
+  //EMf->syncFields(solver_type, mpi);
+}
