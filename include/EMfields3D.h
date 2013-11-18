@@ -23,6 +23,7 @@
 //#include "TimeTasks.h"
 #include "asserts.h"
 #include "BCStructure.h"
+#include "SolverType.h"
 
 using std::cout;
 using std::cerr;
@@ -272,9 +273,16 @@ class EMfields3D                // :public Field
     // OpenBC
     void updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col);
 
-    /*! Synchronize data with particle solver */
-    void syncMoments();
-    void syncFields();
+
+    /*! Create MPI data types used in sync{Moments, Fields}() functions */
+    void syncInit();
+
+    /*! Free MPI data types used in sync{Moments, Fields}() functions */
+    void syncFinalize();
+
+    /*! Synchronize data between fields and particles solver */
+    void syncMoments(SolverType solver_type, MPIdata *mpi);
+    void syncFields(SolverType solver_type, MPIdata *mpi);
 
     /* ********************************* // VARIABLES ********************************* */
   private:
@@ -516,6 +524,10 @@ class EMfields3D                // :public Field
     void BoundaryConditionsEImage(arr3_double imageX, arr3_double imageY, arr3_double imageZ,
       const_arr3_double vectorX, const_arr3_double vectorY, const_arr3_double vectorZ,
       int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
+
+    /*! MPI data types used in sync{Moments, Fields}() functions */
+    MPI_Datatype mpi_datatype_moments;
+    MPI_Datatype mpi_datatype_fields;
 };
 
 inline void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is) {

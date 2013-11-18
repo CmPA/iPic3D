@@ -3430,6 +3430,86 @@ double EMfields3D::getBenergy(void) {
 void EMfields3D::print(void) const {
 }
 
+/*! Create MPI data types used in sync{Moments, Fields}() functions */
+void EMfields3D::syncInit()
+{
+  /*
+   * Create MPI data type for moments
+   */
+  {
+    MPI_Datatype type_blocks[5] = {
+        MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};
+    MPI_Aint disp_blocks[5];
+    int len_blocks[5];
+
+    len_blocks[0] = nxc * nyc * nzc;      // rhoc
+    len_blocks[1] = ns * nxn * nyn * nzn; // rhons
+    len_blocks[2] = nxn * nyn * nzn;      // Jxh
+    len_blocks[3] = nxn * nyn * nzn;      // Jyh
+    len_blocks[4] = nxn * nyn * nzn;      // Jzh
+
+    /*
+     * All displacements relative to MPI_BOTTOM.
+     * Requires MPI_BOTTOM to be passed as buf argument
+     * using the new data type.
+     */
+    MPI_Get_address(&rhoc[0][0][0], &disp_blocks[0]);
+    MPI_Get_address(&rhons[0][0][0][0], &disp_blocks[1]);
+    MPI_Get_address(&Jxh[0][0][0], &disp_blocks[2]);
+    MPI_Get_address(&Jyh[0][0][0], &disp_blocks[3]);
+    MPI_Get_address(&Jzh[0][0][0], &disp_blocks[4]);
+
+    MPI_Type_create_struct(5, len_blocks, disp_blocks, type_blocks, &mpi_datatype_moments);
+    MPI_Type_commit(&mpi_datatype_moments);
+  }
+  /*
+   * Create MPI data type for fields
+   */
+  {
+    MPI_Datatype type_block;
+    MPI_Aint disp_block;
+    int len_block;
+
+#ifdef SINGLE_PRECISION_PCLS
+    type_block = MPI_FLOAT;
+#else
+    type_block = MPI_DOUBLE;
+#endif
+
+    len_block = nxn * nyn * nzn * 6;
+
+    /*
+     * Displacement relative to MPI_BOTTOM.
+     * Requires MPI_BOTTOM to be passed as buf argument
+     * using the new data type.
+     */
+    MPI_Get_address(&fieldForPcls[0][0][0][0], &disp_block);
+
+    MPI_Type_create_struct(1, &len_block, &disp_block, &type_block, &mpi_datatype_fields);
+    MPI_Type_commit(&mpi_datatype_fields);
+  }
+}
+
+/*! Free MPI data types used in sync{Moments, Fields}() functions */
+void EMfields3D::syncFinalize()
+{
+  MPI_Type_free(&mpi_datatype_moments);
+  MPI_Type_free(&mpi_datatype_fields);
+}
+
+/*
+ * Synchronize data between fields and particles solver
+ */
+void EMfields3D::syncMoments(SolverType solver_type, MPIdata *mpi)
+{
+
+}
+
+void EMfields3D::syncFields(SolverType solver_type, MPIdata *mpi)
+{
+
+}
+
 /*! destructor*/
 EMfields3D::~EMfields3D() {
   delete [] qom;

@@ -22,7 +22,7 @@ int c_Solver::Init(int argc, char **argv) {
   myrank = MPIdata::get_rank();
 
   /*
-   * Here the particles solver (initial MPI_COMM_WORLD) spawns the fields solver.
+   * Here, the particles solver (initial MPI_COMM_WORLD) spawns the fields solver.
    * Note that both solvers execute this function.
    */
 
@@ -115,22 +115,36 @@ int c_Solver::Init(int argc, char **argv) {
   // OpenBC
   EMf->updateInfoFields(grid,vct,col);
 
-  // Allocation of particles
-  part = new Particles3D[ns];
-  for (int i = 0; i < ns; i++)
-    part[i].allocate(i, col, vct, grid);
-
-  // Initial Condition for PARTICLES if you are not starting from RESTART
-  if (restart == 0) {
-    // wave = new Planewave(col, EMf, grid, vct);
-    // wave->Wave_Rotated(part); // Single Plane Wave
+  /*
+   * Allocate and init particles in particles solver only
+   */
+  if (PARTICLES == solver_type)
+  {
+    // Allocation of particles
+    part = new Particles3D[ns];
     for (int i = 0; i < ns; i++)
-      if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
+      part[i].allocate(i, col, vct, grid);
+
+    // Initial Condition for PARTICLES if you are not starting from RESTART
+    if (restart == 0) {
+      // wave = new Planewave(col, EMf, grid, vct);
+      // wave->Wave_Rotated(part); // Single Plane Wave
+      for (int i = 0; i < ns; i++)
+        if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
 #ifdef BATSRUS
-      else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
 #endif
-      else                                  part[i].maxwellian(grid, EMf, vct);
+        else                                  part[i].maxwellian(grid, EMf, vct);
+    }
   }
+
+
+  /*
+   * Create MPI data types for fields and moments synchronization
+   * between fields and particles solver
+   */
+  EMf->syncInit();
+
 
   // Initialize the output (simulation results and restart file)
   // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
