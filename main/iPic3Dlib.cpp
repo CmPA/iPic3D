@@ -143,7 +143,7 @@ int c_Solver::Init(int argc, char **argv) {
    * Create MPI data types for fields and moments synchronization
    * between fields and particles solver
    */
-  EMf->syncInit();
+  EMf->syncInit(solver_type);
 
 
   // Initialize the output (simulation results and restart file)
@@ -270,8 +270,14 @@ bool c_Solver::ParticlesMover() {
   // move all species of particles
   {
     timeTasks_set_main_task(TimeTasks::PARTICLES);
-    // Should change this to add background field
-    EMf->set_fieldForPcls();
+
+    /*
+     * We already MPI-received into fieldForPcls.
+     * Thus, set_fieldForPcls() is not needed anymore.
+     *
+     *  // Should change this to add background field
+     *  EMf->set_fieldForPcls();
+     */
     #pragma omp parallel
     for (int i = 0; i < ns; i++)  // move each species
     {
@@ -418,6 +424,9 @@ void c_Solver::Finalize() {
 
   // stop profiling
   my_clock->stopTiming();
+
+  /* Free MPI data types used for particles and fields solver synchronization */
+  EMf->syncFinalize();
 
   // deallocate
   delete[]Ke;

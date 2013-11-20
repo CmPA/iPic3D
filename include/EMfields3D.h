@@ -275,7 +275,7 @@ class EMfields3D                // :public Field
 
 
     /*! Create MPI data types used in sync{Moments, Fields}() functions */
-    void syncInit();
+    void syncInit(SolverType solver_type);
 
     /*! Free MPI data types used in sync{Moments, Fields}() functions */
     void syncFinalize();

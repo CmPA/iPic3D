@@ -3431,10 +3431,11 @@ void EMfields3D::print(void) const {
 }
 
 /*! Create MPI data types used in sync{Moments, Fields}() functions */
-void EMfields3D::syncInit()
+void EMfields3D::syncInit(SolverType solver_type)
 {
   /*
-   * Create MPI data type for moments
+   * Create MPI data type for moments.
+   * Same for particles and fields solver.
    */
   {
     MPI_Datatype type_blocks[5] = {
@@ -3449,44 +3450,77 @@ void EMfields3D::syncInit()
     len_blocks[4] = nxn * nyn * nzn;      // Jzh
 
     /*
-     * All displacements relative to MPI_BOTTOM.
-     * Requires MPI_BOTTOM to be passed as buf argument
-     * using the new data type.
+     * All displacements relative to MPI_BOTTOM, i.e., absolute addresses.
+     * Requires MPI_BOTTOM to be passed as buf argument using the new data type.
      */
-    MPI_Get_address(&rhoc[0][0][0], &disp_blocks[0]);
-    MPI_Get_address(&rhons[0][0][0][0], &disp_blocks[1]);
-    MPI_Get_address(&Jxh[0][0][0], &disp_blocks[2]);
-    MPI_Get_address(&Jyh[0][0][0], &disp_blocks[3]);
-    MPI_Get_address(&Jzh[0][0][0], &disp_blocks[4]);
+    disp_blocks[0] = (MPI_Aint) &rhoc[0][0][0];
+    disp_blocks[1] = (MPI_Aint) &rhons[0][0][0][0];
+    disp_blocks[2] = (MPI_Aint) &Jxh[0][0][0];
+    disp_blocks[3] = (MPI_Aint) &Jyh[0][0][0];
+    disp_blocks[4] = (MPI_Aint) &Jzh[0][0][0];
 
     MPI_Type_create_struct(5, len_blocks, disp_blocks, type_blocks, &mpi_datatype_moments);
     MPI_Type_commit(&mpi_datatype_moments);
   }
+
   /*
-   * Create MPI data type for fields
+   * Create MPI data type for fields.
+   * Different between particles and fields solver.
    */
   {
-    MPI_Datatype type_block;
-    MPI_Aint disp_block;
-    int len_block;
+    MPI_Datatype type_pfloat;
 
 #ifdef SINGLE_PRECISION_PCLS
-    type_block = MPI_FLOAT;
+    /*
+     * Make sure to send floats and not doubles to particles solver.
+     * For this, increase the extent to account for differences in memory size
+     * between double and float. See MPI_Type_create_resized() below.
+     */
+    type_pfloat = MPI_FLOAT;
 #else
-    type_block = MPI_DOUBLE;
+    type_pfloat = MPI_DOUBLE;
 #endif
 
-    len_block = nxn * nyn * nzn * 6;
+    if (FIELDS == solver_type)
+    {
+      MPI_Datatype type_element, type_blocks[6];
+      MPI_Aint disp_blocks[6];
+      int len_blocks[6];
+      int i;
 
-    /*
-     * Displacement relative to MPI_BOTTOM.
-     * Requires MPI_BOTTOM to be passed as buf argument
-     * using the new data type.
-     */
-    MPI_Get_address(&fieldForPcls[0][0][0][0], &disp_block);
+      /* pfloat with extent of double */
+      MPI_Type_create_resized(type_pfloat, 0, sizeof(double), &type_element);
 
-    MPI_Type_create_struct(1, &len_block, &disp_block, &type_block, &mpi_datatype_fields);
-    MPI_Type_commit(&mpi_datatype_fields);
+      /* B{x, y, z}n and E{x, y, z}n */
+      for (i = 0; i < 6; i++) {
+        type_blocks[i] = type_element;
+        len_blocks[i]  = nxn * nyn * nzn;
+      }
+
+      /*
+       * All displacements relative to MPI_BOTTOM, i.e., absolute addresses.
+       * Requires MPI_BOTTOM to be passed as buf argument using the new data type.
+       */
+      disp_blocks[0] = (MPI_Aint) &Bxn[0][0][0];
+      disp_blocks[1] = (MPI_Aint) &Byn[0][0][0];
+      disp_blocks[2] = (MPI_Aint) &Bzn[0][0][0];
+      disp_blocks[3] = (MPI_Aint) &Ex[0][0][0];
+      disp_blocks[4] = (MPI_Aint) &Ey[0][0][0];
+      disp_blocks[5] = (MPI_Aint) &Ez[0][0][0];
+
+      MPI_Type_create_struct(6, len_blocks, disp_blocks, type_blocks, &mpi_datatype_fields);
+      MPI_Type_commit(&mpi_datatype_fields);
+    }
+    else if (PARTICLES == solver_type)
+    {
+      int count = nxn * nyn * nzn * 6;
+      MPI_Type_contiguous(count, type_pfloat, &mpi_datatype_fields);
+    }
+    /* Solver unknown */
+    else
+    {
+      cout << __func__ << ": error: Solver type unknown." << endl;
+    }
   }
 }
 
