@@ -90,32 +90,34 @@ int c_Solver::Init(int argc, char **argv) {
       else                                  part[i].maxwellian(grid, EMf, vct);
   }
 
-  // Initialize the output (simulation results and restart file)
-  // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
-  // myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent; // Create an Output Agent for HDF5 output
-  hdf5_agent.set_simulation_pointers(EMf, grid, vct, mpi, col);
-  for (int i = 0; i < ns; ++i)
-    hdf5_agent.set_simulation_pointers_part(&part[i]);
-  output_mgr.push_back(&hdf5_agent);  // Add the HDF5 output agent to the Output Manager's list
-  if (myrank == 0 & restart < 2) {
-    hdf5_agent.open(SaveDirName + "/settings.hdf");
-    output_mgr.output("collective + total_topology + proc_topology", 0);
-    hdf5_agent.close();
-    hdf5_agent.open(RestartDirName + "/settings.hdf");
-    output_mgr.output("collective + total_topology + proc_topology", 0);
-    hdf5_agent.close();
-  }
-  // Restart
-  num_proc << myrank;
-  if (restart == 0) {           // new simulation from input file
-    hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-    output_mgr.output("proc_topology ", 0);
-    hdf5_agent.close();
-  }
-  else {                        // restart append the results to the previous simulation 
-    hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-    output_mgr.output("proc_topology ", 0);
-    hdf5_agent.close();
+  if (col->getWriteMethod() == "default") {
+    // Initialize the output (simulation results and restart file)
+    // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
+    // myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent; // Create an Output Agent for HDF5 output
+    hdf5_agent.set_simulation_pointers(EMf, grid, vct, mpi, col);
+    for (int i = 0; i < ns; ++i)
+      hdf5_agent.set_simulation_pointers_part(&part[i]);
+    output_mgr.push_back(&hdf5_agent);  // Add the HDF5 output agent to the Output Manager's list
+    if (myrank == 0 & restart < 2) {
+      hdf5_agent.open(SaveDirName + "/settings.hdf");
+      output_mgr.output("collective + total_topology + proc_topology", 0);
+      hdf5_agent.close();
+      hdf5_agent.open(RestartDirName + "/settings.hdf");
+      output_mgr.output("collective + total_topology + proc_topology", 0);
+      hdf5_agent.close();
+    }
+    // Restart
+    num_proc << myrank;
+    if (restart == 0) {           // new simulation from input file
+      hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+      output_mgr.output("proc_topology ", 0);
+      hdf5_agent.close();
+    }
+    else {                        // restart append the results to the previous simulation 
+      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+      output_mgr.output("proc_topology ", 0);
+      hdf5_agent.close();
+    }
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
