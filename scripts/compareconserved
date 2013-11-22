@@ -51,32 +51,39 @@ def main(argv):
     errB    = abs(fB   -rB   )/abs(rB   )
     errTk   = abs(fTk  -rTk  )/abs(rTk  )
 
-    if (maxerr < errEBTk):
+    minABS     = 1e-7
+    ABSerrEBTk = abs(fEBTk-rEBTk)
+    ABSerrTm   = abs(fTm  -rTm  )
+    ABSerrE    = abs(fE   -rE   )
+    ABSerrB    = abs(fB   -rB   )
+    ABSerrTk   = abs(fTk  -rTk  )
+
+    if (maxerr < errEBTk and ABSerrEBTk > minABS):
       maxerr = errEBTk
       ierrcy = fcycle
       errstr = "Total energy"
 
-    if (maxerr < errTm):
+    if (maxerr < errTm and ABSerrTm > minABS):
       maxerr = errTm
       ierrcy = fcycle
       errstr = "Total momentum energy"
 
-    if (maxerr < errE):
+    if (maxerr < errE and ABSerrE > minABS):
       maxerr = errE
       ierrcy = fcycle
       errstr = "Electric energy"
 
-    if (maxerr < errB):
+    if (maxerr < errB and ABSerrB > minABS):
       maxerr = errB
       ierrcy = fcycle
       errstr = "Magnetic energy"
 
-    if (maxerr < errTk):
+    if (maxerr < errTk and ABSerrTk > minABS):
       maxerr = errTk
       ierrcy = fcycle
       errstr = "Total Kinetc energy"
 
-  EPS      = 1.0e-10
+  EPS      = 0.01
   ERR_CODE = 10
   ERR_NONE = 0
 

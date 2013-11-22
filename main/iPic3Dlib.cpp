@@ -189,6 +189,17 @@ void c_Solver::CalculateField() {
   EMf->calculateE(grid, vct, col);               // calculate the E field
   // timeTasks.end(TimeTasks::FIELDS);
 
+  /* --------------------- */
+  /* Calculate the B field */
+  /* --------------------- */
+
+  // timeTasks.start(TimeTasks::BFIELD);
+  EMf->calculateB(grid, vct, col);   // calculate the B field
+  // timeTasks.end(TimeTasks::BFIELD);
+
+  // print out total time for all tasks
+  // timeTasks.print_cycle_times();
+
 }
 
 bool c_Solver::ParticlesMover() {
@@ -241,17 +252,6 @@ bool c_Solver::ParticlesMover() {
       Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
   }
 
-  /* --------------------- */
-  /* Calculate the B field */
-  /* This step must be taken out of here! */
-  /* --------------------- */
-
-  // timeTasks.start(TimeTasks::BFIELD);
-  EMf->calculateB(grid, vct, col);   // calculate the B field
-  // timeTasks.end(TimeTasks::BFIELD);
-
-  // print out total time for all tasks
-  // timeTasks.print_cycle_times();
   return (false);
 
 }
