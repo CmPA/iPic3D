@@ -125,6 +125,7 @@ target_link_libraries(
          ${HDF5_LIBRARIES}
          ${HDF5_HL_LIBRARIES}
          ${MPI_LIBRARIES}
+         ${CMAKE_DL_LIBS}
 )
 
 target_link_libraries(

@@ -2179,19 +2179,29 @@ void EMfields3D::initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col)
         double y = grid->getYN(i,j,k);
         double z = grid->getZN(i,j,k);
 
+        double r2 = ((x-xc)*(x-xc)) + ((y-yc)*(y-yc)) + ((z-zc)*(z-zc));
+
         // Compute dipolar field B_ext
-        loopZ(blp, x, y, z, a, xc, yc, zc, B1z);
-        Bx_ext[i][j][k]  = blp[0];
-        By_ext[i][j][k]  = blp[1];
-        Bz_ext[i][j][k]  = blp[2];
-        loopX(blp, x, y, z, a, xc, yc, zc, B1x);
-        Bx_ext[i][j][k] += blp[0];
-        By_ext[i][j][k] += blp[1];
-        Bz_ext[i][j][k] += blp[2];
-        loopY(blp, x, y, z, a, xc, yc, zc, B1y);
-        Bx_ext[i][j][k] += blp[0];
-        By_ext[i][j][k] += blp[1];
-        Bz_ext[i][j][k] += blp[2];
+
+        if (r2 > delta*delta) {
+          loopZ(blp, x, y, z, a, xc, yc, zc, B1z);
+          Bx_ext[i][j][k]  = blp[0];
+          By_ext[i][j][k]  = blp[1];
+          Bz_ext[i][j][k]  = blp[2];
+          loopX(blp, x, y, z, a, xc, yc, zc, B1x);
+          Bx_ext[i][j][k] += blp[0];
+          By_ext[i][j][k] += blp[1];
+          Bz_ext[i][j][k] += blp[2];
+          loopY(blp, x, y, z, a, xc, yc, zc, B1y);
+          Bx_ext[i][j][k] += blp[0];
+          By_ext[i][j][k] += blp[1];
+          Bz_ext[i][j][k] += blp[2];
+        }
+        else {
+          Bx_ext[i][j][k]  = 0.0;
+          By_ext[i][j][k]  = 0.0;
+          Bz_ext[i][j][k]  = 0.0;
+        }
 
         Bxn[i][j][k] = B0x + Bx_ext[i][j][k];
         Byn[i][j][k] = B0y + By_ext[i][j][k];
