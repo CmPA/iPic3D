@@ -3462,7 +3462,6 @@ void EMfields3D::syncInit(SolverType solver_type)
     MPI_Type_create_struct(5, len_blocks, disp_blocks, type_blocks, &mpi_datatype_moments);
     MPI_Type_commit(&mpi_datatype_moments);
   }
-
   /*
    * Create MPI data type for fields.
    * Different between particles and fields solver.
@@ -3491,7 +3490,7 @@ void EMfields3D::syncInit(SolverType solver_type)
       /* pfloat with extent of double */
       MPI_Type_create_resized(type_pfloat, 0, sizeof(double), &type_element);
 
-      /* B{x, y, z}n and E{x, y, z}n */
+      /* B{x, y, z}n and E{x, y, z} */
       for (i = 0; i < 6; i++) {
         type_blocks[i] = type_element;
         len_blocks[i]  = nxn * nyn * nzn;
@@ -3499,7 +3498,7 @@ void EMfields3D::syncInit(SolverType solver_type)
 
       /*
        * All displacements relative to MPI_BOTTOM, i.e., absolute addresses.
-       * Requires MPI_BOTTOM to be passed as buf argument using the new data type.
+       * Requires MPI_BOTTOM to be passed as buf argument using the new data type
        */
       disp_blocks[0] = (MPI_Aint) &Bxn[0][0][0];
       disp_blocks[1] = (MPI_Aint) &Byn[0][0][0];
@@ -3513,8 +3512,16 @@ void EMfields3D::syncInit(SolverType solver_type)
     }
     else if (PARTICLES == solver_type)
     {
-      int count = nxn * nyn * nzn * 6;
-      MPI_Type_contiguous(count, type_pfloat, &mpi_datatype_fields);
+      MPI_Aint disp_block = (MPI_Aint) &fieldForPcls[0][0][0][0];
+      MPI_Datatype type_block = type_pfloat;
+      int len_block = nxn * nyn * nzn * 6;
+
+      /*
+       * Displacement "disp_block" is absolute address, which requires
+       * MPI_BOTTOM as buf argument using the new data type
+       */
+      MPI_Type_create_struct(1, &len_block, &disp_block, &type_block, &mpi_datatype_fields);
+      MPI_Type_commit(&mpi_datatype_fields);
     }
     /* Solver unknown */
     else
@@ -3536,12 +3543,24 @@ void EMfields3D::syncFinalize()
  */
 void EMfields3D::syncMoments(SolverType solver_type, MPIdata *mpi)
 {
+  int send_cnt, recv_cnt;
 
+  /* Particles solver sends and fields solver receives */
+  send_cnt = (PARTICLES == solver_type);
+  recv_cnt = (FIELDS == solver_type);
+
+  MPI_Alltoall(MPI_BOTTOM, send_cnt, mpi_datatype_moments, MPI_BOTTOM, recv_cnt, mpi_datatype_moments, mpi->intercomm);
 }
 
 void EMfields3D::syncFields(SolverType solver_type, MPIdata *mpi)
 {
+  int send_cnt, recv_cnt;
 
+  /* Fields solver sends and particles solver receives */
+  send_cnt = (FIELDS == solver_type);
+  recv_cnt = (PARTICLES == solver_type);
+
+  MPI_Alltoall(MPI_BOTTOM, send_cnt, mpi_datatype_fields, MPI_BOTTOM, recv_cnt, mpi_datatype_fields, mpi->intercomm);
 }
 
 /*! destructor*/
