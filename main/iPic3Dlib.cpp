@@ -143,7 +143,7 @@ int c_Solver::Init(int argc, char **argv) {
    * Create MPI data types for fields and moments synchronization
    * between fields and particles solver
    */
-  EMf->syncInit(solver_type);
+  EMf->syncInit(solver_type, mpi);
 
 
   // Initialize the output (simulation results and restart file)
@@ -428,6 +428,9 @@ void c_Solver::Finalize() {
   /* Free MPI data types used for particles and fields solver synchronization */
   EMf->syncFinalize();
 
+  /* Free intercommunicator */
+  MPI_Comm_disconnect(&mpi->intercomm);
+
   // deallocate
   delete[]Ke;
   delete[]momentum;
@@ -436,9 +439,9 @@ void c_Solver::Finalize() {
 }
 
 void c_Solver::syncMoments() {
-  //EMf->syncMoments(solver_type, mpi);
+  EMf->syncMoments(solver_type, mpi);
 }
 
 void c_Solver::syncFields() {
-  //EMf->syncFields(solver_type, mpi);
+  EMf->syncFields(solver_type, mpi);
 }

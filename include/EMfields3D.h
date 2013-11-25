@@ -275,7 +275,7 @@ class EMfields3D                // :public Field
 
 
     /*! Create MPI data types used in sync{Moments, Fields}() functions */
-    void syncInit(SolverType solver_type);
+    void syncInit(SolverType solver_type, MPIdata *mpi);
 
     /*! Free MPI data types used in sync{Moments, Fields}() functions */
     void syncFinalize();
@@ -528,6 +528,9 @@ class EMfields3D                // :public Field
     /*! MPI data types used in sync{Moments, Fields}() functions */
     MPI_Datatype mpi_datatype_moments;
     MPI_Datatype mpi_datatype_fields;
+    /*! Arrays used for frequent MPI communication between fields and particles solver */
+    int *mpi_send_cnts, *mpi_recv_cnts;
+    int *mpi_send_displs, *mpi_recv_displs;
 };
 
 inline void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is) {
