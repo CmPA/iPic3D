@@ -30,12 +30,19 @@ int c_Solver::Init(int argc, char **argv) {
   MPI_Comm_get_parent(&mpi->intercomm);                                 // Returns MPI_COMM_NULL for initial MPI_COMM_WORLD
   solver_type = (MPI_COMM_NULL == mpi->intercomm) ? PARTICLES : FIELDS; // Initial MPI_COMM_WORLD is particles solver
 
+  if (PARTICLES == solver_type) {
+    cout << "Particles solver: " << MPIdata::get_rank() << endl;
+  }
+  else {
+    cout << "Fields solver: " << MPIdata::get_rank() << " argv[1]: " << argv[1] << endl;
+  }
+
   /* If I'm particles solver then I spawn fields solver */
   if (PARTICLES == solver_type)
   {
     MPI_Comm_spawn(
       "exec/iPic3D_fields",  // Filename
-      MPI_ARGV_NULL,         // No arguments
+      &argv[1],              // No arguments
       nprocs,                // Number MPI procs
       MPI_INFO_NULL,         // Info argument
       0,                     // Root

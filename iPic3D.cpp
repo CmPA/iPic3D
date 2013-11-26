@@ -20,14 +20,21 @@ int main(int argc, char **argv) {
     if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
 
     if (!b_err) {
-      timeTasks.resetCycle();
+      //timeTasks.resetCycle();
+
       KCode.CalculateMoments();
-      KCode.CalculateField();
+      KCode.syncMoments();
+
+        //KCode.CalculateField();
+
+      KCode.syncFields();
       b_err = KCode.ParticlesMover();
-      KCode.CalculateB();
+
+      //cout << "ParticlesMover() done" << endl;
+      //  KCode.CalculateB();
 
       // print out total time for all tasks
-      timeTasks.print_cycle_times(i);
+      //timeTasks.print_cycle_times(i);
     }
 
     if (b_err) {

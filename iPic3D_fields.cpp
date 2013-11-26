@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
       //b_err = KCode.ParticlesMover();
 
       KCode.CalculateB();
-
+      //cout << "CalculateB() done" << endl;
 
       // print out total time for all tasks
       //timeTasks.print_cycle_times(i);
