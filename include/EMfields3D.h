@@ -281,8 +281,12 @@ class EMfields3D                // :public Field
     void syncFinalize();
 
     /*! Synchronize data between fields and particles solver */
-    void syncMoments(SolverType solver_type, MPIdata *mpi);
-    void syncFields(SolverType solver_type, MPIdata *mpi);
+    void syncMoments(SolverType solver_type, MPIdata *mpi, int iter);
+    void syncFields(SolverType solver_type, MPIdata *mpi, int iter);
+
+    /*! Checksum */
+    void checksumFields(int iter, MPIdata *mpi);
+    unsigned short int checksum(unsigned char *addr, unsigned int count);
 
     /* ********************************* // VARIABLES ********************************* */
   private:

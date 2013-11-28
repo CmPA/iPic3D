@@ -281,10 +281,10 @@ bool c_Solver::ParticlesMover() {
     /*
      * We already MPI-received into fieldForPcls.
      * Thus, set_fieldForPcls() is not needed anymore.
-     *
-     *  // Should change this to add background field
-     *  EMf->set_fieldForPcls();
      */
+     // Should change this to add background field
+    EMf->set_fieldForPcls();
+
     #pragma omp parallel
     for (int i = 0; i < ns; i++)  // move each species
     {
@@ -344,36 +344,39 @@ void c_Solver::WriteRestart(int cycle) {
 }
 
 void c_Solver::WriteConserved(int cycle) {
-  // write the conserved quantities
-  if (cycle % col->getDiagnosticsOutputCycle() == 0) {
-    Eenergy = EMf->getEenergy();
-    Benergy = EMf->getBenergy();
-    TOTenergy = 0.0;
-    TOTmomentum = 0.0;
-    for (int is = 0; is < ns; is++) {
-      Ke[is] = part[is].getKe();
-      TOTenergy += Ke[is];
-      momentum[is] = part[is].getP();
-      TOTmomentum += momentum[is];
-    }
-    if (myrank == 0) {
-      ofstream my_file(cq.c_str(), fstream::app);
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
-      my_file.close();
-    }
-    // Velocity distribution
-    for (int is = 0; is < ns; is++) {
-      double maxVel = part[is].getMaxVelocity();
-      long long *VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
+  if (PARTICLES == solver_type)
+  {
+    // write the conserved quantities
+    if (cycle % col->getDiagnosticsOutputCycle() == 0) {
+      Eenergy = EMf->getEenergy();
+      Benergy = EMf->getBenergy();
+      TOTenergy = 0.0;
+      TOTmomentum = 0.0;
+      for (int is = 0; is < ns; is++) {
+        Ke[is] = part[is].getKe();
+        TOTenergy += Ke[is];
+        momentum[is] = part[is].getP();
+        TOTmomentum += momentum[is];
+      }
       if (myrank == 0) {
-        ofstream my_file(ds.c_str(), fstream::app);
-        my_file << cycle << "\t" << is << "\t" << maxVel;
-        for (int i = 0; i < nDistributionBins; i++)
-          my_file << "\t" << VelocityDist[i];
-        my_file << endl;
+        ofstream my_file(cq.c_str(), fstream::app);
+        my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
         my_file.close();
       }
-      delete [] VelocityDist;
+      // Velocity distribution
+      for (int is = 0; is < ns; is++) {
+        double maxVel = part[is].getMaxVelocity();
+        long long *VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
+        if (myrank == 0) {
+          ofstream my_file(ds.c_str(), fstream::app);
+          my_file << cycle << "\t" << is << "\t" << maxVel;
+          for (int i = 0; i < nDistributionBins; i++)
+            my_file << "\t" << VelocityDist[i];
+          my_file << endl;
+          my_file.close();
+        }
+        delete [] VelocityDist;
+      }
     }
   }
 }
@@ -445,10 +448,14 @@ void c_Solver::Finalize() {
   mpi->finalize_mpi();
 }
 
-void c_Solver::syncMoments() {
-  EMf->syncMoments(solver_type, mpi);
+void c_Solver::syncMoments(int iter) {
+  EMf->syncMoments(solver_type, mpi, iter);
 }
 
-void c_Solver::syncFields() {
-  EMf->syncFields(solver_type, mpi);
+void c_Solver::syncFields(int iter) {
+  EMf->syncFields(solver_type, mpi, iter);
+}
+
+void c_Solver::checksumFields(int iter) {
+  EMf->checksumFields(iter, mpi);
 }

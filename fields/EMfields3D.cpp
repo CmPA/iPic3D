@@ -3451,28 +3451,30 @@ void EMfields3D::syncInit(SolverType solver_type, MPIdata *mpi)
    * Same for particles and fields solver.
    */
   {
-    MPI_Datatype type_blocks[5] = {
-        MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};
-    MPI_Aint disp_blocks[5];
-    int len_blocks[5];
+    MPI_Datatype type_blocks[6] = {
+        MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE};
+    MPI_Aint disp_blocks[6];
+    int len_blocks[6];
 
     len_blocks[0] = nxc * nyc * nzc;      // rhoc
-    len_blocks[1] = ns * nxn * nyn * nzn; // rhons
-    len_blocks[2] = nxn * nyn * nzn;      // Jxh
-    len_blocks[3] = nxn * nyn * nzn;      // Jyh
-    len_blocks[4] = nxn * nyn * nzn;      // Jzh
+    len_blocks[1] = nxc * nyc * nzc;      // rhoh
+    len_blocks[2] = ns * nxn * nyn * nzn; // rhons
+    len_blocks[3] = nxn * nyn * nzn;      // Jxh
+    len_blocks[4] = nxn * nyn * nzn;      // Jyh
+    len_blocks[5] = nxn * nyn * nzn;      // Jzh
 
     /*
      * All displacements relative to MPI_BOTTOM, i.e., absolute addresses.
      * Requires MPI_BOTTOM to be passed as buf argument using the new data type.
      */
     disp_blocks[0] = (MPI_Aint) &rhoc[0][0][0];
-    disp_blocks[1] = (MPI_Aint) &rhons[0][0][0][0];
-    disp_blocks[2] = (MPI_Aint) &Jxh[0][0][0];
-    disp_blocks[3] = (MPI_Aint) &Jyh[0][0][0];
-    disp_blocks[4] = (MPI_Aint) &Jzh[0][0][0];
+    disp_blocks[1] = (MPI_Aint) &rhoh[0][0][0];
+    disp_blocks[2] = (MPI_Aint) &rhons[0][0][0][0];
+    disp_blocks[3] = (MPI_Aint) &Jxh[0][0][0];
+    disp_blocks[4] = (MPI_Aint) &Jyh[0][0][0];
+    disp_blocks[5] = (MPI_Aint) &Jzh[0][0][0];
 
-    MPI_Type_create_struct(5, len_blocks, disp_blocks, type_blocks, &mpi_datatype_moments);
+    MPI_Type_create_struct(6, len_blocks, disp_blocks, type_blocks, &mpi_datatype_moments);
     MPI_Type_commit(&mpi_datatype_moments);
   }
 
@@ -3481,62 +3483,30 @@ void EMfields3D::syncInit(SolverType solver_type, MPIdata *mpi)
    * Different between particles and fields solver.
    */
   {
-    MPI_Datatype type_pfloat;
+    MPI_Datatype type_element, type_blocks[6];
+    MPI_Aint disp_blocks[6];
+    int len_blocks[6];
+    int i;
 
-#ifdef SINGLE_PRECISION_PCLS
+    /* B{x, y, z}n and E{x, y, z} */
+    for (i = 0; i < 6; i++) {
+      type_blocks[i] = MPI_DOUBLE;
+      len_blocks[i]  = nxn * nyn * nzn;
+    }
+
     /*
-     * Make sure to send floats and not doubles to particles solver.
-     * For this, increase the extent to account for differences in memory size
-     * between double and float. See MPI_Type_create_resized() below.
+     * All displacements relative to MPI_BOTTOM, i.e., absolute addresses.
+     * Requires MPI_BOTTOM to be passed as buf argument using the new data type
      */
-    type_pfloat = MPI_FLOAT;
-#else
-    type_pfloat = MPI_DOUBLE;
-#endif
+    disp_blocks[0] = (MPI_Aint) &Bxn[0][0][0];
+    disp_blocks[1] = (MPI_Aint) &Byn[0][0][0];
+    disp_blocks[2] = (MPI_Aint) &Bzn[0][0][0];
+    disp_blocks[3] = (MPI_Aint) &Ex[0][0][0];
+    disp_blocks[4] = (MPI_Aint) &Ey[0][0][0];
+    disp_blocks[5] = (MPI_Aint) &Ez[0][0][0];
 
-    if (FIELDS == solver_type)
-    {
-      MPI_Datatype type_element, type_blocks[6];
-      MPI_Aint disp_blocks[6];
-      int len_blocks[6];
-      int i;
-
-      /* pfloat with extent of double */
-      MPI_Type_create_resized(type_pfloat, 0, sizeof(double), &type_element);
-
-      /* B{x, y, z}n and E{x, y, z} */
-      for (i = 0; i < 6; i++) {
-        type_blocks[i] = type_element;
-        len_blocks[i]  = nxn * nyn * nzn;
-      }
-
-      /*
-       * All displacements relative to MPI_BOTTOM, i.e., absolute addresses.
-       * Requires MPI_BOTTOM to be passed as buf argument using the new data type
-       */
-      disp_blocks[0] = (MPI_Aint) &Bxn[0][0][0];
-      disp_blocks[1] = (MPI_Aint) &Byn[0][0][0];
-      disp_blocks[2] = (MPI_Aint) &Bzn[0][0][0];
-      disp_blocks[3] = (MPI_Aint) &Ex[0][0][0];
-      disp_blocks[4] = (MPI_Aint) &Ey[0][0][0];
-      disp_blocks[5] = (MPI_Aint) &Ez[0][0][0];
-
-      MPI_Type_create_struct(6, len_blocks, disp_blocks, type_blocks, &mpi_datatype_fields);
-      MPI_Type_commit(&mpi_datatype_fields);
-    }
-    else // (PARTICLES == solver_type)
-    {
-      MPI_Aint disp_block = (MPI_Aint) &fieldForPcls[0][0][0][0];
-      MPI_Datatype type_block = type_pfloat;
-      int len_block = nxn * nyn * nzn * 6;
-
-      /*
-       * Displacement "disp_block" is absolute address, which requires
-       * MPI_BOTTOM as buf argument using the new data type
-       */
-      MPI_Type_create_struct(1, &len_block, &disp_block, &type_block, &mpi_datatype_fields);
-      MPI_Type_commit(&mpi_datatype_fields);
-    }
+    MPI_Type_create_struct(6, len_blocks, disp_blocks, type_blocks, &mpi_datatype_fields);
+    MPI_Type_commit(&mpi_datatype_fields);
   }
 }
 
@@ -3555,7 +3525,7 @@ void EMfields3D::syncFinalize()
 /*
  * Synchronize data between fields and particles solver
  */
-void EMfields3D::syncMoments(SolverType solver_type, MPIdata *mpi)
+void EMfields3D::syncMoments(SolverType solver_type, MPIdata *mpi, int iter)
 {
   /*
    * Particles solver sends and fields solver receives moments.
@@ -3565,12 +3535,28 @@ void EMfields3D::syncMoments(SolverType solver_type, MPIdata *mpi)
    */
   mpi_send_cnts[mpi->get_rank()] = (PARTICLES == solver_type);
   mpi_recv_cnts[mpi->get_rank()] = (FIELDS == solver_type);
-
+#if 1
   MPI_Alltoallv(MPI_BOTTOM, mpi_send_cnts, mpi_send_displs, mpi_datatype_moments,
       MPI_BOTTOM, mpi_recv_cnts, mpi_recv_displs, mpi_datatype_moments, mpi->intercomm);
+#endif
+
+  if (!mpi->get_rank()) {
+    unsigned int count_rhoc  = nxc * nyc * nzc * sizeof(double);
+    unsigned int count_rhoh  = nxc * nyc * nzc * sizeof(double);
+    unsigned int count_rhons = ns * nxn * nyn * nzn * sizeof(double);
+    unsigned int count_Jh    = nxn * nyn * nzn * sizeof(double);
+
+    cout << "(" << iter << ") " << "rhoc: " << checksum((unsigned char *) &rhoc[0][0][0], count_rhoc) << endl;
+    cout << "(" << iter << ") " << "rhoh: " << checksum((unsigned char *) &rhoh[0][0][0], count_rhoh) << endl;
+    cout << "(" << iter << ") " << "rhons: " << checksum((unsigned char *) &rhons[0][0][0][0], count_rhons) << endl;
+    cout << "(" << iter << ") " << "Jxh: " << checksum((unsigned char *) &Jxh[0][0][0], count_Jh) << endl;
+    cout << "(" << iter << ") " << "Jyh: " << checksum((unsigned char *) &Jyh[0][0][0], count_Jh) << endl;
+    cout << "(" << iter << ") " << "Jzh: " << checksum((unsigned char *) &Jzh[0][0][0], count_Jh) << endl;
+  }
+  MPI_Barrier(mpi->intercomm);
 }
 
-void EMfields3D::syncFields(SolverType solver_type, MPIdata *mpi)
+void EMfields3D::syncFields(SolverType solver_type, MPIdata *mpi, int iter)
 {
   /*
    * Fields solver sends and particles solver receives fields
@@ -3583,6 +3569,58 @@ void EMfields3D::syncFields(SolverType solver_type, MPIdata *mpi)
 
   MPI_Alltoallv(MPI_BOTTOM, mpi_send_cnts, mpi_send_displs, mpi_datatype_fields,
       MPI_BOTTOM, mpi_recv_cnts, mpi_recv_displs, mpi_datatype_fields, mpi->intercomm);
+
+  if (!mpi->get_rank()) {
+    unsigned int count = nxn * nyn * nzn * sizeof(double);
+
+    cout << "(" << iter << ") " << "Bxn: " << checksum((unsigned char *) &Bxn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Byn: " << checksum((unsigned char *) &Byn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Bzn: " << checksum((unsigned char *) &Bzn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ex: " << checksum((unsigned char *) &Ex[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ey: " << checksum((unsigned char *) &Ey[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ez: " << checksum((unsigned char *) &Ez[0][0][0], count) << endl;
+  }
+  MPI_Barrier(mpi->intercomm);
+
+}
+
+void EMfields3D::checksumFields(int iter, MPIdata *mpi)
+{
+  if (!mpi->get_rank()) {
+    unsigned int count = nxn * nyn * nzn * sizeof(double);
+
+    cout << "(" << iter << ") " << "Bxn: " << checksum((unsigned char *) &Bxn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Byn: " << checksum((unsigned char *) &Byn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Bzn: " << checksum((unsigned char *) &Bzn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ex: " << checksum((unsigned char *) &Ex[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ey: " << checksum((unsigned char *) &Ey[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ez: " << checksum((unsigned char *) &Ez[0][0][0], count) << endl;
+  }
+
+  MPI_Barrier(mpi->intercomm);
+}
+
+unsigned short int EMfields3D::checksum(unsigned char *addr, unsigned int count)
+{
+  register unsigned int sum = 0;
+
+  // Main summing loop
+  while(count > 1)
+  {
+    sum = sum + *((unsigned short int *) addr);
+    addr += 2;
+    count = count - 2;
+  }
+
+  // Add left-over byte, if any
+  if (count > 0)
+    sum = sum + *((unsigned char *) addr);
+
+  // Fold 32-bit sum to 16 bits
+  while (sum>>16)
+    sum = (sum & 0xFFFF) + (sum >> 16);
+
+  return(~sum);
 }
 
 /*! destructor*/

@@ -22,6 +22,6 @@ declare_dprintvar_fileLine(double);
 declare_dprintvar_fileLine(const char *);
 
 // Switch file I/O on/off
-#define FILE_IO 0
+#define FILE_IO 1
 
 #endif
