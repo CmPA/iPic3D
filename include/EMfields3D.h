@@ -71,7 +71,7 @@ class EMfields3D                // :public Field
     void initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
-    void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);
+    void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col, SolverType solver_type, MPIdata *mpi, int iter);
     /*! Image of Poisson Solver (for SOLVER) */
     void PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);
     /*! Image of Maxwell Solver (for Solver) */
@@ -98,7 +98,7 @@ class EMfields3D                // :public Field
     void MUdot(arr3_double MUdotX, arr3_double MUdotY, arr3_double MUdotZ,
       const_arr3_double vectX, const_arr3_double vectY, const_arr3_double vectZ, Grid * grid);
     /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
-    void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
+    void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, SolverType solver_type, MPIdata *mpi, int iter);
 
 
     /*! communicate ghost for densities and interp rho from node to center */
@@ -287,6 +287,11 @@ class EMfields3D                // :public Field
     /*! Checksum */
     void checksumFields(int iter, MPIdata *mpi);
     unsigned short int checksum(unsigned char *addr, unsigned int count);
+
+    /*! Calculate rho hat on fields and particles solver */
+    void calcRhoHat(array3_double &rhoh, array3_double &rhoc,
+        array3_double &Jxh, array3_double &Jyh, array3_double &Jzh,
+        Grid *grid, VirtualTopology3D *vct);
 
     /* ********************************* // VARIABLES ********************************* */
   private:

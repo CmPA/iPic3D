@@ -228,7 +228,7 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
-void c_Solver::CalculateMoments() {
+void c_Solver::CalculateMoments(int iter) {
 
   timeTasks_set_main_task(TimeTasks::MOMENTS);
 
@@ -252,14 +252,14 @@ void c_Solver::CalculateMoments() {
   MPI_Barrier(MPI_COMM_WORLD);
 
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
-  EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
+  EMf->calculateHatFunctions(grid, vct, solver_type, mpi, iter);    // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
 //! MAXWELL SOLVER for Efield
-void c_Solver::CalculateField() {
+void c_Solver::CalculateField(int iter) {
   timeTasks_set_main_task(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct, col);               // calculate the E field
+  EMf->calculateE(grid, vct, col, solver_type, mpi, iter); // calculate the E field
 }
 
 //! MAXWELL SOLVER for Bfield (assuming Efield has already been calculated)

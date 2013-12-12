@@ -23,15 +23,13 @@ int main(int argc, char **argv) {
       //timeTasks.resetCycle();
 
 #if 1
-      KCode.CalculateMoments();
+      KCode.CalculateMoments(i);
 
-      KCode.syncMoments(i);
-
-      KCode.syncFields(i);
+      KCode.CalculateField(i);
 
       b_err = KCode.ParticlesMover();
 
-      KCode.syncFields(i);
+      KCode.CalculateB();
 #else
       KCode.CalculateMoments();
 

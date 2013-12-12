@@ -23,15 +23,9 @@ int main(int argc, char **argv) {
       //timeTasks.resetCycle();
 
 #if 1
-      KCode.syncMoments(i);
-
-      KCode.CalculateField();
-
-      KCode.syncFields(i);
+      KCode.CalculateField(i);
 
       KCode.CalculateB();
-
-      KCode.syncFields(i);
 #endif
 
       // print out total time for all tasks
