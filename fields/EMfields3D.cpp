@@ -543,6 +543,7 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
     /* Sync moments with particles solver */
     syncMoments(solver_type, mpi, iter);
     calcRhoHat(rhoh, rhoc, Jxh, Jyh, Jzh, grid, vct); // Calc rho hat based on synced moments
+    //printMoments(solver_type, mpi, iter);
 
     if (vct->getCartesian_rank() == 0)
       cout << "*** E CALCULATION ***" << endl;
@@ -629,6 +630,8 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   // OpenBC
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
   BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
+
+  //printFields(solver_type, mpi, iter);
 
   /* I'm fields solver */
   if (FIELDS == solver_type)
@@ -1445,8 +1448,9 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, Sol
 
   /* Sync moments with fields solver */
   syncMoments(solver_type, mpi, iter);
-
   calcRhoHat(rhoh, rhoc, Jxh, Jyh, Jzh, grid, vct);
+
+  //printMoments(solver_type, mpi, iter);
 }
 /*! Image of Poisson Solver */
 void EMfields3D::PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct) {
@@ -3552,24 +3556,9 @@ void EMfields3D::syncMoments(SolverType solver_type, MPIdata *mpi, int iter)
    */
   mpi_send_cnts[mpi->get_rank()] = (PARTICLES == solver_type);
   mpi_recv_cnts[mpi->get_rank()] = (FIELDS == solver_type);
-#if 1
+
   MPI_Alltoallv(MPI_BOTTOM, mpi_send_cnts, mpi_send_displs, mpi_datatype_moments,
       MPI_BOTTOM, mpi_recv_cnts, mpi_recv_displs, mpi_datatype_moments, mpi->intercomm);
-#endif
-
-  if (!mpi->get_rank()) {
-    unsigned int count_rhoc  = nxc * nyc * nzc * sizeof(double);
-    unsigned int count_rhons = ns * nxn * nyn * nzn * sizeof(double);
-    unsigned int count_Jh    = nxn * nyn * nzn * sizeof(double);
-
-    cout << "(" << iter << ") " << "rhoc: " << checksum((unsigned char *) &rhoc[0][0][0], count_rhoc) << endl;
-    cout << "(" << iter << ") " << "rhons: " << checksum((unsigned char *) &rhons[0][0][0][0], count_rhons) << endl;
-    cout << "(" << iter << ") " << "Jxh: " << checksum((unsigned char *) &Jxh[0][0][0], count_Jh) << endl;
-    cout << "(" << iter << ") " << "Jyh: " << checksum((unsigned char *) &Jyh[0][0][0], count_Jh) << endl;
-    cout << "(" << iter << ") " << "Jzh: " << checksum((unsigned char *) &Jzh[0][0][0], count_Jh) << endl;
-  }
-  MPI_Barrier(mpi->intercomm);
-
 }
 
 void EMfields3D::syncFields(SolverType solver_type, MPIdata *mpi, int iter)
@@ -3585,22 +3574,6 @@ void EMfields3D::syncFields(SolverType solver_type, MPIdata *mpi, int iter)
 
   MPI_Alltoallv(MPI_BOTTOM, mpi_send_cnts, mpi_send_displs, mpi_datatype_fields,
       MPI_BOTTOM, mpi_recv_cnts, mpi_recv_displs, mpi_datatype_fields, mpi->intercomm);
-
-  if (!mpi->get_rank()) {
-    unsigned int count = nxn * nyn * nzn * sizeof(double);
-
-    cout << "(" << iter << ") " << "Exth: " << checksum((unsigned char *) &Exth[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Eyth: " << checksum((unsigned char *) &Eyth[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Ezth: " << checksum((unsigned char *) &Ezth[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Ex: " << checksum((unsigned char *) &Ex[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Ey: " << checksum((unsigned char *) &Ey[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Ez: " << checksum((unsigned char *) &Ez[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Bxn: " << checksum((unsigned char *) &Bxn[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Byn: " << checksum((unsigned char *) &Byn[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Bzn: " << checksum((unsigned char *) &Bzn[0][0][0], count) << endl;
-  }
-  MPI_Barrier(mpi->intercomm);
-
 }
 
 void EMfields3D::checksumFields(int iter, MPIdata *mpi)
@@ -3615,7 +3588,6 @@ void EMfields3D::checksumFields(int iter, MPIdata *mpi)
     cout << "(" << iter << ") " << "Ey: " << checksum((unsigned char *) &Ey[0][0][0], count) << endl;
     cout << "(" << iter << ") " << "Ez: " << checksum((unsigned char *) &Ez[0][0][0], count) << endl;
   }
-
   MPI_Barrier(mpi->intercomm);
 }
 
@@ -3654,6 +3626,42 @@ void EMfields3D::calcRhoHat(array3_double &rhoh, array3_double &rhoc,
 
   // communicate rhoh
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
+}
+
+void EMfields3D::printMoments(SolverType solver_type, MPIdata *mpi, int iter)
+{
+  if (!mpi->get_rank()) {
+    unsigned int count_rhoc  = nxc * nyc * nzc * sizeof(double);
+    unsigned int count_rhons = ns * nxn * nyn * nzn * sizeof(double);
+    unsigned int count_Jh    = nxn * nyn * nzn * sizeof(double);
+    unsigned int count_rhoh  = nxc * nyc * nzc * sizeof(double);
+
+    cout << "(" << iter << ") " << "rhoc: " << checksum((unsigned char *) &rhoc[0][0][0], count_rhoc) << endl;
+    cout << "(" << iter << ") " << "rhons: " << checksum((unsigned char *) &rhons[0][0][0][0], count_rhons) << endl;
+    cout << "(" << iter << ") " << "Jxh: " << checksum((unsigned char *) &Jxh[0][0][0], count_Jh) << endl;
+    cout << "(" << iter << ") " << "Jyh: " << checksum((unsigned char *) &Jyh[0][0][0], count_Jh) << endl;
+    cout << "(" << iter << ") " << "Jzh: " << checksum((unsigned char *) &Jzh[0][0][0], count_Jh) << endl;
+    cout << "(" << iter << ") " << "rhoh: " << checksum((unsigned char *) &rhoh[0][0][0], count_rhoh) << endl;
+  }
+  MPI_Barrier(mpi->intercomm);
+}
+
+void EMfields3D::printFields(SolverType solver_type, MPIdata *mpi, int iter)
+{
+  if (!mpi->get_rank()) {
+    unsigned int count = nxn * nyn * nzn * sizeof(double);
+
+    cout << "(" << iter << ") " << "Exth: " << checksum((unsigned char *) &Exth[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Eyth: " << checksum((unsigned char *) &Eyth[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ezth: " << checksum((unsigned char *) &Ezth[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ex: " << checksum((unsigned char *) &Ex[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ey: " << checksum((unsigned char *) &Ey[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ez: " << checksum((unsigned char *) &Ez[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Bxn: " << checksum((unsigned char *) &Bxn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Byn: " << checksum((unsigned char *) &Byn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Bzn: " << checksum((unsigned char *) &Bzn[0][0][0], count) << endl;
+  }
+  MPI_Barrier(mpi->intercomm);
 }
 
 /*! destructor*/

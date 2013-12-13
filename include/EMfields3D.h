@@ -283,6 +283,9 @@ class EMfields3D                // :public Field
     /*! Synchronize data between fields and particles solver */
     void syncMoments(SolverType solver_type, MPIdata *mpi, int iter);
     void syncFields(SolverType solver_type, MPIdata *mpi, int iter);
+    /*! Print routines related to syncing fields and particles solver */
+    void printMoments(SolverType solver_type, MPIdata *mpi, int iter);
+    void printFields(SolverType solver_type, MPIdata *mpi, int iter);
 
     /*! Checksum */
     void checksumFields(int iter, MPIdata *mpi);
