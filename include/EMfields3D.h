@@ -287,8 +287,7 @@ class EMfields3D                // :public Field
     void printMoments(SolverType solver_type, MPIdata *mpi, int iter);
     void printFields(SolverType solver_type, MPIdata *mpi, int iter);
 
-    /*! Checksum */
-    void checksumFields(int iter, MPIdata *mpi);
+    /*! Checksum calculation */
     unsigned short int checksum(unsigned char *addr, unsigned int count);
 
     /*! Calculate rho hat on fields and particles solver */

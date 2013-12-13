@@ -22,11 +22,8 @@ int main(int argc, char **argv) {
     if (!b_err) {
       //timeTasks.resetCycle();
 
-#if 1
       KCode.CalculateField(i);
-
       KCode.CalculateB();
-#endif
 
       // print out total time for all tasks
       //timeTasks.print_cycle_times(i);

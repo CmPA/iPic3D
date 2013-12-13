@@ -610,6 +610,9 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   /* Sync fields between fields and particles solver */
   syncFields(solver_type, mpi, iter);
 
+  /*
+   * Calc E{x,y,z} based on E{x,y,z}th
+   */
   addscale(1 / th, -(1.0 - th) / th, Ex, Exth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ey, Eyth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ez, Ezth, nxn, nyn, nzn);
@@ -631,7 +634,7 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
   BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
 
-  //printFields(solver_type, mpi, iter);
+  //printFields(solver_type, mpi, iter); // Here, fields should be identical on fields and particles solver
 
   /* I'm fields solver */
   if (FIELDS == solver_type)
@@ -1449,7 +1452,6 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, Sol
   /* Sync moments with fields solver */
   syncMoments(solver_type, mpi, iter);
   calcRhoHat(rhoh, rhoc, Jxh, Jyh, Jzh, grid, vct);
-
   //printMoments(solver_type, mpi, iter);
 }
 /*! Image of Poisson Solver */
@@ -3574,21 +3576,6 @@ void EMfields3D::syncFields(SolverType solver_type, MPIdata *mpi, int iter)
 
   MPI_Alltoallv(MPI_BOTTOM, mpi_send_cnts, mpi_send_displs, mpi_datatype_fields,
       MPI_BOTTOM, mpi_recv_cnts, mpi_recv_displs, mpi_datatype_fields, mpi->intercomm);
-}
-
-void EMfields3D::checksumFields(int iter, MPIdata *mpi)
-{
-  if (!mpi->get_rank()) {
-    unsigned int count = nxn * nyn * nzn * sizeof(double);
-
-    cout << "(" << iter << ") " << "Bxn: " << checksum((unsigned char *) &Bxn[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Byn: " << checksum((unsigned char *) &Byn[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Bzn: " << checksum((unsigned char *) &Bzn[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Ex: " << checksum((unsigned char *) &Ex[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Ey: " << checksum((unsigned char *) &Ey[0][0][0], count) << endl;
-    cout << "(" << iter << ") " << "Ez: " << checksum((unsigned char *) &Ez[0][0][0], count) << endl;
-  }
-  MPI_Barrier(mpi->intercomm);
 }
 
 unsigned short int EMfields3D::checksum(unsigned char *addr, unsigned int count)

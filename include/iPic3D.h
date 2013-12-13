@@ -43,9 +43,6 @@ namespace iPic3D {
     void WriteConserved(int cycle);
     void WriteRestart(int cycle);
     void Finalize();
-    void syncMoments(int iter);
-    void syncFields(int iter);
-    void checksumFields(int iter);
 
     inline int FirstCycle();
     inline int LastCycle();

@@ -22,23 +22,10 @@ int main(int argc, char **argv) {
     if (!b_err) {
       //timeTasks.resetCycle();
 
-#if 1
       KCode.CalculateMoments(i);
-
       KCode.CalculateField(i);
-
       b_err = KCode.ParticlesMover();
-
       KCode.CalculateB();
-#else
-      KCode.CalculateMoments();
-
-      KCode.CalculateField();
-
-      b_err = KCode.ParticlesMover();
-
-      KCode.CalculateB();
-#endif
 
       // print out total time for all tasks
       //timeTasks.print_cycle_times(i);

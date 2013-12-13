@@ -42,7 +42,7 @@ int c_Solver::Init(int argc, char **argv) {
   {
     MPI_Comm_spawn(
       "exec/iPic3D_fields",  // Filename
-      &argv[1],              // No arguments
+      &argv[1],              // Arguments, same as particles solver
       nprocs,                // Number MPI procs
       MPI_INFO_NULL,         // Info argument
       0,                     // Root
@@ -446,16 +446,4 @@ void c_Solver::Finalize() {
   delete[]momentum;
   // close MPI
   mpi->finalize_mpi();
-}
-
-void c_Solver::syncMoments(int iter) {
-  EMf->syncMoments(solver_type, mpi, iter);
-}
-
-void c_Solver::syncFields(int iter) {
-  EMf->syncFields(solver_type, mpi, iter);
-}
-
-void c_Solver::checksumFields(int iter) {
-  EMf->checksumFields(iter, mpi);
 }
