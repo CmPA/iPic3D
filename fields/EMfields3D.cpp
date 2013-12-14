@@ -541,64 +541,85 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
-void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col) {
-  if (vct->getCartesian_rank() == 0)
-    cout << "*** E CALCULATION ***" << endl;
-  array3_double divE     (nxc, nyc, nzc);
-  array3_double gradPHIX (nxn, nyn, nzn);
-  array3_double gradPHIY (nxn, nyn, nzn);
-  array3_double gradPHIZ (nxn, nyn, nzn);
+void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col, SolverType solver_type, MPIdata *mpi, int iter) {
+  double *xkrylov, *bkrylov, *xkrylovPoisson, *bkrylovPoisson;
 
-  double *xkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 E components
-  double *bkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
+  /* I'm fields solver */
+  if (FIELDS == solver_type)
+  {
+    /* Sync moments with particles solver */
+    syncMoments(solver_type, mpi, iter);
+    calcRhoHat(rhoh, rhoc, Jxh, Jyh, Jzh, grid, vct); // Calc rho hat based on synced moments
+    //printMoments(solver_type, mpi, iter);
 
-  double *xkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
-  double *bkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
-  // set to zero all the stuff 
-  eqValue(0.0, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
-  eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
-  eqValue(0.0, bkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
-  eqValue(0.0, divE, nxc, nyc, nzc);
-  eqValue(0.0, tempC, nxc, nyc, nzc);
-  eqValue(0.0, gradPHIX, nxn, nyn, nzn);
-  eqValue(0.0, gradPHIY, nxn, nyn, nzn);
-  eqValue(0.0, gradPHIZ, nxn, nyn, nzn);
-  // Adjust E calculating laplacian(PHI) = div(E) -4*PI*rho DIVERGENCE CLEANING
-  if (PoissonCorrection) {
     if (vct->getCartesian_rank() == 0)
-      cout << "*** DIVERGENCE CLEANING ***" << endl;
-    grid->divN2C(divE, Ex, Ey, Ez);
-    scale(tempC, rhoc, -FourPI, nxc, nyc, nzc);
-    sum(divE, tempC, nxc, nyc, nzc);
-    // move to krylov space 
-    phys2solver(bkrylovPoisson, divE, nxc, nyc, nzc);
-    // use conjugate gradient first
-    if (!CG(xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 3000, CGtol, &Field::PoissonImage, grid, vct, this)) {
+      cout << "*** E CALCULATION ***" << endl;
+    array3_double divE     (nxc, nyc, nzc);
+    array3_double gradPHIX (nxn, nyn, nzn);
+    array3_double gradPHIY (nxn, nyn, nzn);
+    array3_double gradPHIZ (nxn, nyn, nzn);
+
+    xkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 E components
+    bkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
+
+    xkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
+    bkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
+    // set to zero all the stuff
+    eqValue(0.0, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
+    eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
+    eqValue(0.0, bkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
+    eqValue(0.0, divE, nxc, nyc, nzc);
+    eqValue(0.0, tempC, nxc, nyc, nzc);
+    eqValue(0.0, gradPHIX, nxn, nyn, nzn);
+    eqValue(0.0, gradPHIY, nxn, nyn, nzn);
+    eqValue(0.0, gradPHIZ, nxn, nyn, nzn);
+    // Adjust E calculating laplacian(PHI) = div(E) -4*PI*rho DIVERGENCE CLEANING
+    if (PoissonCorrection) {
       if (vct->getCartesian_rank() == 0)
-        cout << "CG not Converged. Trying with GMRes. Consider to increase the number of the CG iterations" << endl;
-      eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
-      GMRES(&Field::PoissonImage, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 20, 200, GMREStol, grid, vct, this);
-    }
-    solver2phys(PHI, xkrylovPoisson, nxc, nyc, nzc);
-    communicateCenterBC(nxc, nyc, nzc, PHI, 2, 2, 2, 2, 2, 2, vct);
-    // calculate the gradient
-    grid->gradC2N(gradPHIX, gradPHIY, gradPHIZ, PHI);
-    // sub
-    sub(Ex, gradPHIX, nxn, nyn, nzn);
-    sub(Ey, gradPHIY, nxn, nyn, nzn);
-    sub(Ez, gradPHIZ, nxn, nyn, nzn);
+        cout << "*** DIVERGENCE CLEANING ***" << endl;
+      grid->divN2C(divE, Ex, Ey, Ez);
+      scale(tempC, rhoc, -FourPI, nxc, nyc, nzc);
+      sum(divE, tempC, nxc, nyc, nzc);
+      // move to krylov space
+      phys2solver(bkrylovPoisson, divE, nxc, nyc, nzc);
+      // use conjugate gradient first
+      if (!CG(xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 3000, CGtol, &Field::PoissonImage, grid, vct, this)) {
+        if (vct->getCartesian_rank() == 0)
+          cout << "CG not Converged. Trying with GMRes. Consider to increase the number of the CG iterations" << endl;
+        eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
+        GMRES(&Field::PoissonImage, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2), bkrylovPoisson, 20, 200, GMREStol, grid, vct, this);
+      }
+      solver2phys(PHI, xkrylovPoisson, nxc, nyc, nzc);
+      communicateCenterBC(nxc, nyc, nzc, PHI, 2, 2, 2, 2, 2, 2, vct);
+      // calculate the gradient
+      grid->gradC2N(gradPHIX, gradPHIY, gradPHIZ, PHI);
+      // sub
+      sub(Ex, gradPHIX, nxn, nyn, nzn);
+      sub(Ey, gradPHIY, nxn, nyn, nzn);
+      sub(Ez, gradPHIZ, nxn, nyn, nzn);
 
-  }                             // end of divergence cleaning 
-  if (vct->getCartesian_rank() == 0)
-    cout << "*** MAXWELL SOLVER ***" << endl;
-  // prepare the source 
-  MaxwellSource(bkrylov, grid, vct, col);
-  phys2solver(xkrylov, Ex, Ey, Ez, nxn, nyn, nzn);
-  // solver
-  GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this);
-  // move from krylov space to physical space
-  solver2phys(Exth, Eyth, Ezth, xkrylov, nxn, nyn, nzn);
+    }                             // end of divergence cleaning
+    if (vct->getCartesian_rank() == 0)
+      cout << "*** MAXWELL SOLVER ***" << endl;
+    // prepare the source
+    MaxwellSource(bkrylov, grid, vct, col);
+    phys2solver(xkrylov, Ex, Ey, Ez, nxn, nyn, nzn);
+    // solver
+    GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this);
+    // move from krylov space to physical space
+    solver2phys(Exth, Eyth, Ezth, xkrylov, nxn, nyn, nzn);
+  }
 
+  /*
+   * Fields and particles solver run this
+   */
+
+  /* Sync fields between fields and particles solver */
+  syncFields(solver_type, mpi, iter);
+
+  /*
+   * Calc E{x,y,z} based on E{x,y,z}th
+   */
   addscale(1 / th, -(1.0 - th) / th, Ex, Exth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ey, Eyth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ez, Ezth, nxn, nyn, nzn);
@@ -620,11 +641,17 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
   BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
 
-  // deallocate temporary arrays
-  delete[]xkrylov;
-  delete[]bkrylov;
-  delete[]xkrylovPoisson;
-  delete[]bkrylovPoisson;
+  //printFields(solver_type, mpi, iter); // Here, fields should be identical on fields and particles solver
+
+  /* I'm fields solver */
+  if (FIELDS == solver_type)
+  {
+    // deallocate temporary arrays
+    delete[]xkrylov;
+    delete[]bkrylov;
+    delete[]xkrylovPoisson;
+    delete[]bkrylovPoisson;
+  }
 }
 
 /*! Calculate sorgent for Maxwell solver */
@@ -1398,7 +1425,7 @@ void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, double E
 
 
 /*! Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
-void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, SolverType solver_type, MPIdata *mpi, int iter) {
   // smoothing
   smooth(Smooth, rhoc, 0, grid, vct);
   // calculate j hat
@@ -1429,13 +1456,10 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
   smooth(Smooth, Jyh, 1, grid, vct);
   smooth(Smooth, Jzh, 1, grid, vct);
 
-  // calculate rho hat = rho - (dt*theta)div(jhat)
-  grid->divN2C(tempXC, Jxh, Jyh, Jzh);
-  scale(tempXC, -dt * th, nxc, nyc, nzc);
-  sum(tempXC, rhoc, nxc, nyc, nzc);
-  eq(rhoh, tempXC, nxc, nyc, nzc);
-  // communicate rhoh
-  communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
+  /* Sync moments with fields solver */
+  syncMoments(solver_type, mpi, iter);
+  calcRhoHat(rhoh, rhoc, Jxh, Jyh, Jzh, grid, vct);
+  //printMoments(solver_type, mpi, iter);
 }
 /*! Image of Poisson Solver */
 void EMfields3D::PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct) {
@@ -3435,6 +3459,203 @@ double EMfields3D::getBenergy(void) {
 
 /*! Print info about electromagnetic field */
 void EMfields3D::print(void) const {
+}
+
+/*! Create MPI data types used in sync{Moments, Fields}() functions */
+void EMfields3D::syncInit(SolverType solver_type, MPIdata *mpi)
+{
+  /*
+   * Alloc arrays frequently used for communication
+   */
+  mpi_send_cnts = new int[mpi->get_nprocs()];
+  mpi_recv_cnts = new int[mpi->get_nprocs()];
+  mpi_send_displs = new int[mpi->get_nprocs()];
+  mpi_recv_displs = new int[mpi->get_nprocs()];
+  /* Init arrays */
+  memset(mpi_send_cnts, 0, mpi->get_nprocs() * sizeof(int));
+  memset(mpi_recv_cnts, 0, mpi->get_nprocs() * sizeof(int));
+  memset(mpi_send_displs, 0, mpi->get_nprocs() * sizeof(int));
+  memset(mpi_recv_displs, 0, mpi->get_nprocs() * sizeof(int));
+
+  /*
+   * Create MPI data type for moments
+   */
+  {
+    int num_blocks = 5;
+    MPI_Datatype type_blocks[num_blocks];
+    MPI_Aint disp_blocks[num_blocks];
+    int len_blocks[num_blocks];
+    int i;
+
+    for (i = 0; i < num_blocks; i++) {
+      type_blocks[i] = MPI_DOUBLE;
+    }
+
+    len_blocks[0] = nxc * nyc * nzc;      // rhoc
+    len_blocks[1] = ns * nxn * nyn * nzn; // rhons
+    len_blocks[2] = nxn * nyn * nzn;      // Jxh
+    len_blocks[3] = nxn * nyn * nzn;      // Jyh
+    len_blocks[4] = nxn * nyn * nzn;      // Jzh
+
+    /*
+     * All displacements relative to MPI_BOTTOM, i.e., absolute addresses.
+     * Requires MPI_BOTTOM to be passed as buf argument using the new data type.
+     */
+    disp_blocks[0] = (MPI_Aint) &rhoc[0][0][0];
+    disp_blocks[1] = (MPI_Aint) &rhons[0][0][0][0];
+    disp_blocks[2] = (MPI_Aint) &Jxh[0][0][0];
+    disp_blocks[3] = (MPI_Aint) &Jyh[0][0][0];
+    disp_blocks[4] = (MPI_Aint) &Jzh[0][0][0];
+
+    MPI_Type_create_struct(num_blocks, len_blocks, disp_blocks, type_blocks, &mpi_datatype_moments);
+    MPI_Type_commit(&mpi_datatype_moments);
+  }
+
+  /*
+   * Create MPI data type for fields
+   */
+  {
+    int num_blocks = 3;
+    MPI_Datatype type_blocks[num_blocks];
+    MPI_Aint disp_blocks[num_blocks];
+    int len_blocks[num_blocks];
+    int i;
+
+    /* E{x, y, z}th */
+    for (i = 0; i < num_blocks; i++) {
+      type_blocks[i] = MPI_DOUBLE;
+      len_blocks[i]  = nxn * nyn * nzn;
+    }
+
+    /*
+     * All displacements relative to MPI_BOTTOM, i.e., absolute addresses.
+     * Requires MPI_BOTTOM to be passed as buf argument using the new data type
+     */
+    disp_blocks[0] = (MPI_Aint) &Exth[0][0][0];
+    disp_blocks[1] = (MPI_Aint) &Eyth[0][0][0];
+    disp_blocks[2] = (MPI_Aint) &Ezth[0][0][0];
+
+    MPI_Type_create_struct(num_blocks, len_blocks, disp_blocks, type_blocks, &mpi_datatype_fields);
+    MPI_Type_commit(&mpi_datatype_fields);
+  }
+}
+
+/*! Free MPI data types used in sync{Moments, Fields}() functions */
+void EMfields3D::syncFinalize()
+{
+  delete[] mpi_send_cnts;
+  delete[] mpi_recv_cnts;
+  delete[] mpi_send_displs;
+  delete[] mpi_recv_displs;
+
+  MPI_Type_free(&mpi_datatype_moments);
+  MPI_Type_free(&mpi_datatype_fields);
+}
+
+/*
+ * Synchronize data between fields and particles solver
+ */
+void EMfields3D::syncMoments(SolverType solver_type, MPIdata *mpi, int iter)
+{
+  /*
+   * Particles solver sends and fields solver receives moments.
+   *
+   * Send to or recv from proc with same rank in remote group.
+   * Remaining cnt entries are already 0
+   */
+  mpi_send_cnts[mpi->get_rank()] = (PARTICLES == solver_type);
+  mpi_recv_cnts[mpi->get_rank()] = (FIELDS == solver_type);
+
+  MPI_Alltoallv(MPI_BOTTOM, mpi_send_cnts, mpi_send_displs, mpi_datatype_moments,
+      MPI_BOTTOM, mpi_recv_cnts, mpi_recv_displs, mpi_datatype_moments, mpi->intercomm);
+}
+
+void EMfields3D::syncFields(SolverType solver_type, MPIdata *mpi, int iter)
+{
+  /*
+   * Fields solver sends and particles solver receives fields
+   *
+   * Send to or recv from proc with same rank in remote group.
+   * Remaining cnt entries are already 0
+   */
+  mpi_send_cnts[mpi->get_rank()] = (FIELDS == solver_type);
+  mpi_recv_cnts[mpi->get_rank()] = (PARTICLES == solver_type);
+
+  MPI_Alltoallv(MPI_BOTTOM, mpi_send_cnts, mpi_send_displs, mpi_datatype_fields,
+      MPI_BOTTOM, mpi_recv_cnts, mpi_recv_displs, mpi_datatype_fields, mpi->intercomm);
+}
+
+unsigned short int EMfields3D::checksum(unsigned char *addr, unsigned int count)
+{
+  register unsigned int sum = 0;
+
+  // Main summing loop
+  while(count > 1)
+  {
+    sum = sum + *((unsigned short int *) addr);
+    addr += 2;
+    count = count - 2;
+  }
+
+  // Add left-over byte, if any
+  if (count > 0)
+    sum = sum + *((unsigned char *) addr);
+
+  // Fold 32-bit sum to 16 bits
+  while (sum>>16)
+    sum = (sum & 0xFFFF) + (sum >> 16);
+
+  return(~sum);
+}
+
+void EMfields3D::calcRhoHat(array3_double &rhoh, array3_double &rhoc,
+     array3_double &Jxh, array3_double &Jyh, array3_double &Jzh,
+     Grid *grid, VirtualTopology3D *vct)
+{
+  // calculate rho hat = rho - (dt*theta)div(jhat)
+  grid->divN2C(tempXC, Jxh, Jyh, Jzh);
+  scale(tempXC, -dt * th, nxc, nyc, nzc);
+  sum(tempXC, rhoc, nxc, nyc, nzc);
+  eq(rhoh, tempXC, nxc, nyc, nzc);
+
+  // communicate rhoh
+  communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
+}
+
+void EMfields3D::printMoments(SolverType solver_type, MPIdata *mpi, int iter)
+{
+  if (!mpi->get_rank()) {
+    unsigned int count_rhoc  = nxc * nyc * nzc * sizeof(double);
+    unsigned int count_rhons = ns * nxn * nyn * nzn * sizeof(double);
+    unsigned int count_Jh    = nxn * nyn * nzn * sizeof(double);
+    unsigned int count_rhoh  = nxc * nyc * nzc * sizeof(double);
+
+    cout << "(" << iter << ") " << "rhoc: " << checksum((unsigned char *) &rhoc[0][0][0], count_rhoc) << endl;
+    cout << "(" << iter << ") " << "rhons: " << checksum((unsigned char *) &rhons[0][0][0][0], count_rhons) << endl;
+    cout << "(" << iter << ") " << "Jxh: " << checksum((unsigned char *) &Jxh[0][0][0], count_Jh) << endl;
+    cout << "(" << iter << ") " << "Jyh: " << checksum((unsigned char *) &Jyh[0][0][0], count_Jh) << endl;
+    cout << "(" << iter << ") " << "Jzh: " << checksum((unsigned char *) &Jzh[0][0][0], count_Jh) << endl;
+    cout << "(" << iter << ") " << "rhoh: " << checksum((unsigned char *) &rhoh[0][0][0], count_rhoh) << endl;
+  }
+  MPI_Barrier(mpi->intercomm);
+}
+
+void EMfields3D::printFields(SolverType solver_type, MPIdata *mpi, int iter)
+{
+  if (!mpi->get_rank()) {
+    unsigned int count = nxn * nyn * nzn * sizeof(double);
+
+    cout << "(" << iter << ") " << "Exth: " << checksum((unsigned char *) &Exth[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Eyth: " << checksum((unsigned char *) &Eyth[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ezth: " << checksum((unsigned char *) &Ezth[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ex: " << checksum((unsigned char *) &Ex[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ey: " << checksum((unsigned char *) &Ey[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Ez: " << checksum((unsigned char *) &Ez[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Bxn: " << checksum((unsigned char *) &Bxn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Byn: " << checksum((unsigned char *) &Byn[0][0][0], count) << endl;
+    cout << "(" << iter << ") " << "Bzn: " << checksum((unsigned char *) &Bzn[0][0][0], count) << endl;
+  }
+  MPI_Barrier(mpi->intercomm);
 }
 
 /*! destructor*/

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8.8) 
 # compiler set in ../cmake/cmake_template.cmake.XeonPhi
-message ("for Xeon Phi:")
-message ("cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/cmake_template.cmake.XeonPhi")
+#message ("for Xeon Phi:")
+#message ("cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/cmake_template.cmake.XeonPhi")
 #message ("for Xeon:")
 #message ("cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/cmake_template.cmake.Xeon")
 #
@@ -21,13 +21,14 @@ set(LIBRARY_OUTPUT_PATH lib)
 # Set compiler flags per system
 #
 if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
-   set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -mmic")
+   #set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report -mmic")
    #set(CMAKE_CXX_FLAGS "-openmp -g -mmic") # set flags for Xeon Phi, totalview
 elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
-   set(CMAKE_CXX_COMPILER "icpc")  
-   set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report")
+   #set(CMAKE_CXX_COMPILER "icpc")  
+   #set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report")
 else()
-   set(CMAKE_CXX_FLAGS "-O3")
+   #message("Toolchain file required")
+   #set(CMAKE_CXX_FLAGS "-O3")
 endif()
 
 #
@@ -86,7 +87,6 @@ file(
         communication/*.cpp
         fields/*.cpp
         grids/*.cpp
-        iPIC3D.cpp/*.cpp
         inputoutput/*.cpp
         mathlib/*.cpp
         mpidata/*.cpp
@@ -114,10 +114,18 @@ endif(DEFINED TEST_B)
 # Executable declaration
 #
 
+# Particle solver
 add_executable(
         iPic3D
         iPic3D.cpp
 )
+
+# Fields solver
+add_executable(
+        iPic3D_fields
+        iPic3D_fields.cpp
+)
+
 
 #build iPic as a library also
 #libiPic3Dlib.so in folder lib
@@ -145,6 +153,11 @@ target_link_libraries(
          iPic3Dlib
 )
 
+target_link_libraries(
+         iPic3D_fields
+         iPic3Dlib
+)
+
 
 ## to save the executable in the folder where the CMakeLists.txt file is, i.e. CMAKE_CURRENT_SOURCE_DIR
 #set_target_properties(iPic3D PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -159,4 +172,3 @@ message("CMAKE_SYSTEM_PROCESSOR is ${CMAKE_SYSTEM_PROCESSOR}")
 message("Compiler & compiler flags:")
 message("CMAKE_CXX_COMPILER is ${CMAKE_CXX_COMPILER}")
 message("CMAKE_CXX_FLAGS is ${CMAKE_CXX_FLAGS}")
-

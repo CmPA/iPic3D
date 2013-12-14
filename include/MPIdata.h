@@ -45,6 +45,8 @@ public:
   void Print(void);
   /** MPI status during the communication */
   MPI_Status status;
+  /** Intercommunicator to reach parent/child communicator after spawning */
+  MPI_Comm intercomm;
 public:
   static int get_rank(){return instance().rank;}
   static int get_nprocs(){return instance().nprocs;}

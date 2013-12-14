@@ -1,4 +1,5 @@
 
+#include <mpi.h>
 #include "iPic3D.h"
 #include "TimeTasks.h"
 #include "ipicdefs.h"
@@ -19,6 +20,36 @@ int c_Solver::Init(int argc, char **argv) {
   mpi = &MPIdata::instance();
   nprocs = MPIdata::get_nprocs();
   myrank = MPIdata::get_rank();
+
+  /*
+   * Here, the particles solver (initial MPI_COMM_WORLD) spawns the fields solver.
+   * Note that both solvers execute this function.
+   */
+
+  /* Set type of solver */
+  MPI_Comm_get_parent(&mpi->intercomm);                                 // Returns MPI_COMM_NULL for initial MPI_COMM_WORLD
+  solver_type = (MPI_COMM_NULL == mpi->intercomm) ? PARTICLES : FIELDS; // Initial MPI_COMM_WORLD is particles solver
+
+  if (PARTICLES == solver_type) {
+    cout << "Particles solver: " << MPIdata::get_rank() << endl;
+  }
+  else {
+    cout << "Fields solver: " << MPIdata::get_rank() << " argv[1]: " << argv[1] << endl;
+  }
+
+  /* If I'm particles solver then I spawn fields solver */
+  if (PARTICLES == solver_type)
+  {
+    MPI_Comm_spawn(
+      "exec/iPic3D_fields",  // Filename
+      &argv[1],              // Arguments, same as particles solver
+      nprocs,                // Number MPI procs
+      MPI_INFO_NULL,         // Info argument
+      0,                     // Root
+      MPI_COMM_WORLD,        // Group of spawning procs
+      &mpi->intercomm,       // Intercommunicator to children
+      MPI_ERRCODES_IGNORE);  // Error codes
+  }
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
   verbose = col->getVerbose();
@@ -55,7 +86,9 @@ int c_Solver::Init(int argc, char **argv) {
     mpi->Print();
     vct->Print();
     col->Print();
+#if FILE_IO
     col->save();
+#endif
   }
   // Create the local grid
   MPI_Barrier(MPI_COMM_WORLD);
@@ -89,22 +122,36 @@ int c_Solver::Init(int argc, char **argv) {
   // OpenBC
   EMf->updateInfoFields(grid,vct,col);
 
-  // Allocation of particles
-  part = new Particles3D[ns];
-  for (int i = 0; i < ns; i++)
-    part[i].allocate(i, col, vct, grid);
-
-  // Initial Condition for PARTICLES if you are not starting from RESTART
-  if (restart == 0) {
-    // wave = new Planewave(col, EMf, grid, vct);
-    // wave->Wave_Rotated(part); // Single Plane Wave
+  /*
+   * Allocate and init particles in particles solver only
+   */
+  if (PARTICLES == solver_type)
+  {
+    // Allocation of particles
+    part = new Particles3D[ns];
     for (int i = 0; i < ns; i++)
-      if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
+      part[i].allocate(i, col, vct, grid);
+
+    // Initial Condition for PARTICLES if you are not starting from RESTART
+    if (restart == 0) {
+      // wave = new Planewave(col, EMf, grid, vct);
+      // wave->Wave_Rotated(part); // Single Plane Wave
+      for (int i = 0; i < ns; i++)
+        if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
 #ifdef BATSRUS
-      else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
 #endif
-      else                                  part[i].maxwellian(grid, EMf, vct);
+        else                                  part[i].maxwellian(grid, EMf, vct);
+    }
   }
+
+
+  /*
+   * Create MPI data types for fields and moments synchronization
+   * between fields and particles solver
+   */
+  EMf->syncInit(solver_type, mpi);
+
 
   // Initialize the output (simulation results and restart file)
   // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
@@ -114,19 +161,23 @@ int c_Solver::Init(int argc, char **argv) {
     hdf5_agent.set_simulation_pointers_part(&part[i]);
   output_mgr.push_back(&hdf5_agent);  // Add the HDF5 output agent to the Output Manager's list
   if (myrank == 0 & restart < 2) {
+#if FILE_IO
     hdf5_agent.open(SaveDirName + "/settings.hdf");
     output_mgr.output("collective + total_topology + proc_topology", 0);
     hdf5_agent.close();
     hdf5_agent.open(RestartDirName + "/settings.hdf");
     output_mgr.output("collective + total_topology + proc_topology", 0);
     hdf5_agent.close();
+#endif
   }
   // Restart
   num_proc << myrank;
   if (restart == 0) {           // new simulation from input file
+#if FILE_IO
     hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() + ".hdf");
     output_mgr.output("proc_topology ", 0);
     hdf5_agent.close();
+#endif
   }
   else {                        // restart append the results to the previous simulation 
     hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
@@ -139,19 +190,24 @@ int c_Solver::Init(int argc, char **argv) {
   Ke = new double[ns];
   momentum = new double[ns];
   cq = SaveDirName + "/ConservedQuantities.txt";
+#if FILE_IO
   if (myrank == 0) {
     ofstream my_file(cq.c_str());
     my_file.close();
   }
+#endif
   // Distribution functions
   nDistributionBins = 1000;
   ds = SaveDirName + "/DistributionFunctions.txt";
+#if FILE_IO
   if (myrank == 0) {
     ofstream my_file(ds.c_str());
     my_file.close();
   }
+#endif
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
+#if FILE_IO
   ofstream my_file(cqsat.c_str(), fstream::binary);
   nsat = 3;
   for (int isat = 0; isat < nsat; isat++) {
@@ -163,6 +219,7 @@ int c_Solver::Init(int argc, char **argv) {
         my_file << grid->getXC(index1, index2, index3) << "\t" << grid->getYC(index1, index2, index3) << "\t" << grid->getZC(index1, index2, index3) << endl;
       }}}
   my_file.close();
+#endif
 
   Qremoved = new double[ns];
 
@@ -171,7 +228,7 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
-void c_Solver::CalculateMoments() {
+void c_Solver::CalculateMoments(int iter) {
 
   timeTasks_set_main_task(TimeTasks::MOMENTS);
 
@@ -195,14 +252,14 @@ void c_Solver::CalculateMoments() {
   MPI_Barrier(MPI_COMM_WORLD);
 
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
-  EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
+  EMf->calculateHatFunctions(grid, vct, solver_type, mpi, iter);    // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
 }
 
 //! MAXWELL SOLVER for Efield
-void c_Solver::CalculateField() {
+void c_Solver::CalculateField(int iter) {
   timeTasks_set_main_task(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct, col);               // calculate the E field
+  EMf->calculateE(grid, vct, col, solver_type, mpi, iter); // calculate the E field
 }
 
 //! MAXWELL SOLVER for Bfield (assuming Efield has already been calculated)
@@ -220,8 +277,14 @@ bool c_Solver::ParticlesMover() {
   // move all species of particles
   {
     timeTasks_set_main_task(TimeTasks::PARTICLES);
-    // Should change this to add background field
+
+    /*
+     * We already MPI-received into fieldForPcls.
+     * Thus, set_fieldForPcls() is not needed anymore.
+     */
+     // Should change this to add background field
     EMf->set_fieldForPcls();
+
     #pragma omp parallel
     for (int i = 0; i < ns; i++)  // move each species
     {
@@ -281,36 +344,39 @@ void c_Solver::WriteRestart(int cycle) {
 }
 
 void c_Solver::WriteConserved(int cycle) {
-  // write the conserved quantities
-  if (cycle % col->getDiagnosticsOutputCycle() == 0) {
-    Eenergy = EMf->getEenergy();
-    Benergy = EMf->getBenergy();
-    TOTenergy = 0.0;
-    TOTmomentum = 0.0;
-    for (int is = 0; is < ns; is++) {
-      Ke[is] = part[is].getKe();
-      TOTenergy += Ke[is];
-      momentum[is] = part[is].getP();
-      TOTmomentum += momentum[is];
-    }
-    if (myrank == 0) {
-      ofstream my_file(cq.c_str(), fstream::app);
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
-      my_file.close();
-    }
-    // Velocity distribution
-    for (int is = 0; is < ns; is++) {
-      double maxVel = part[is].getMaxVelocity();
-      long long *VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
+  if (PARTICLES == solver_type)
+  {
+    // write the conserved quantities
+    if (cycle % col->getDiagnosticsOutputCycle() == 0) {
+      Eenergy = EMf->getEenergy();
+      Benergy = EMf->getBenergy();
+      TOTenergy = 0.0;
+      TOTmomentum = 0.0;
+      for (int is = 0; is < ns; is++) {
+        Ke[is] = part[is].getKe();
+        TOTenergy += Ke[is];
+        momentum[is] = part[is].getP();
+        TOTmomentum += momentum[is];
+      }
       if (myrank == 0) {
-        ofstream my_file(ds.c_str(), fstream::app);
-        my_file << cycle << "\t" << is << "\t" << maxVel;
-        for (int i = 0; i < nDistributionBins; i++)
-          my_file << "\t" << VelocityDist[i];
-        my_file << endl;
+        ofstream my_file(cq.c_str(), fstream::app);
+        my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
         my_file.close();
       }
-      delete [] VelocityDist;
+      // Velocity distribution
+      for (int is = 0; is < ns; is++) {
+        double maxVel = part[is].getMaxVelocity();
+        long long *VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
+        if (myrank == 0) {
+          ofstream my_file(ds.c_str(), fstream::app);
+          my_file << cycle << "\t" << is << "\t" << maxVel;
+          for (int i = 0; i < nDistributionBins; i++)
+            my_file << "\t" << VelocityDist[i];
+          my_file << endl;
+          my_file.close();
+        }
+        delete [] VelocityDist;
+      }
     }
   }
 }
@@ -369,10 +435,15 @@ void c_Solver::Finalize() {
   // stop profiling
   my_clock->stopTiming();
 
+  /* Free MPI data types used for particles and fields solver synchronization */
+  EMf->syncFinalize();
+
+  /* Free intercommunicator */
+  MPI_Comm_disconnect(&mpi->intercomm);
+
   // deallocate
   delete[]Ke;
   delete[]momentum;
   // close MPI
   mpi->finalize_mpi();
 }
-

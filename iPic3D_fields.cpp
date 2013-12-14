@@ -17,14 +17,12 @@ int main(int argc, char **argv) {
 
   for (int i = KCode.FirstCycle(); i < KCode.LastCycle(); i++) {
 
-    if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
+    //if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
 
     if (!b_err) {
       //timeTasks.resetCycle();
 
-      KCode.CalculateMoments(i);
       KCode.CalculateField(i);
-      b_err = KCode.ParticlesMover();
       KCode.CalculateB();
 
       // print out total time for all tasks

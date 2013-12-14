@@ -23,6 +23,7 @@
 //#include "TimeTasks.h"
 #include "asserts.h"
 #include "BCStructure.h"
+#include "SolverType.h"
 
 using std::cout;
 using std::cerr;
@@ -70,7 +71,7 @@ class EMfields3D                // :public Field
     void initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
-    void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);
+    void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col, SolverType solver_type, MPIdata *mpi, int iter);
     /*! Image of Poisson Solver (for SOLVER) */
     void PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);
     /*! Image of Maxwell Solver (for Solver) */
@@ -97,7 +98,7 @@ class EMfields3D                // :public Field
     void MUdot(arr3_double MUdotX, arr3_double MUdotY, arr3_double MUdotZ,
       const_arr3_double vectX, const_arr3_double vectY, const_arr3_double vectZ, Grid * grid);
     /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
-    void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
+    void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, SolverType solver_type, MPIdata *mpi, int iter);
 
 
     /*! communicate ghost for densities and interp rho from node to center */
@@ -271,6 +272,28 @@ class EMfields3D                // :public Field
 
     // OpenBC
     void updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col);
+
+
+    /*! Create MPI data types used in sync{Moments, Fields}() functions */
+    void syncInit(SolverType solver_type, MPIdata *mpi);
+
+    /*! Free MPI data types used in sync{Moments, Fields}() functions */
+    void syncFinalize();
+
+    /*! Synchronize data between fields and particles solver */
+    void syncMoments(SolverType solver_type, MPIdata *mpi, int iter);
+    void syncFields(SolverType solver_type, MPIdata *mpi, int iter);
+    /*! Print routines related to syncing fields and particles solver */
+    void printMoments(SolverType solver_type, MPIdata *mpi, int iter);
+    void printFields(SolverType solver_type, MPIdata *mpi, int iter);
+
+    /*! Checksum calculation */
+    unsigned short int checksum(unsigned char *addr, unsigned int count);
+
+    /*! Calculate rho hat on fields and particles solver */
+    void calcRhoHat(array3_double &rhoh, array3_double &rhoc,
+        array3_double &Jxh, array3_double &Jyh, array3_double &Jzh,
+        Grid *grid, VirtualTopology3D *vct);
 
     /* ********************************* // VARIABLES ********************************* */
   private:
@@ -512,6 +535,13 @@ class EMfields3D                // :public Field
     void BoundaryConditionsEImage(arr3_double imageX, arr3_double imageY, arr3_double imageZ,
       const_arr3_double vectorX, const_arr3_double vectorY, const_arr3_double vectorZ,
       int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
+
+    /*! MPI data types used in sync{Moments, Fields}() functions */
+    MPI_Datatype mpi_datatype_moments;
+    MPI_Datatype mpi_datatype_fields;
+    /*! Arrays used for frequent MPI communication between fields and particles solver */
+    int *mpi_send_cnts, *mpi_recv_cnts;
+    int *mpi_send_displs, *mpi_recv_displs;
 };
 
 inline void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is) {
