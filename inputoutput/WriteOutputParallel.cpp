@@ -1,7 +1,7 @@
 
 #include "WriteOutputParallel.h"
 
-void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, int cycle){
+void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, Particles3Dcomm *part, CollectiveIO *col, VCtopology3D *vct, int cycle){
 
 #ifdef PHDF5
   string       grpname;
@@ -9,6 +9,8 @@ void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCt
 
   stringstream filenmbr;
   string       filename;
+
+  bool         bp;
 
   /* ------------------- */
   /* Setup the file name */
@@ -35,7 +37,10 @@ void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCt
 
   PHDF5fileClass outputfile(filename, 3, vct->getCoordinates(), vct->getComm());
 
-  outputfile.CreatePHDF5file(L, dglob, dlocl, false);
+  bp = false;
+  if (col->getParticlesOutputCycle() > 0) bp = true;
+
+  outputfile.CreatePHDF5file(L, dglob, dlocl, bp);
 
   /* ------------------------ */
   /* Write the Electric field */

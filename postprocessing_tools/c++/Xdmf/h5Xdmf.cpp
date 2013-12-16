@@ -331,7 +331,7 @@ void xdmfile::writexdmf(){
     else{
 
       xdmfout << "      <Grid Name=\"Structured mesh\" GridType=\"Uniform\"> " << endl;
-      xdmfout << "        <Topology TopologyType=\"3DCoRectMesh\" Dimensions=\"" << ncx+1 << " " << ncy+1 << " " << ncz+1 << "\"/> " << endl;
+      xdmfout << "        <Topology TopologyType=\"3DCoRectMesh\" Dimensions=\"" << ncz+1 << " " << ncy+1 << " " << ncx+1 << "\"/> " << endl;
       xdmfout << "        <Geometry GeometryType=\"ORIGIN_DXDYDZ\"> " << endl;
       xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"3\" NumberType=\"Float\"> " << endl;
       xdmfout << "          " << setprecision(2) << fixed << grid.getOx() << " " << setprecision(2) << fixed << grid.getOy() << " " << setprecision(2) << fixed << grid.getOz() << endl;
@@ -348,7 +348,7 @@ void xdmfile::writexdmf(){
       for (int i = 0; i < fields.getnfields(); i++){
 
         xdmfout << "        <Attribute Name=\"" << fields.getidtname(i) << "\" Center=\"Cell\"> " << endl;
-        xdmfout << "          <DataItem Format=\"HDF\" Dimensions=\"" << ncx << " " << ncy << " " << ncz << "\" NumberType=\"Float\"> " << endl;
+        xdmfout << "          <DataItem Format=\"HDF\" Dimensions=\"" << ncz << " " << ncy << " " << ncx << "\" NumberType=\"Float\"> " << endl;
         xdmfout << "          " <<  filename << ":" << fields.getidtset(i) << endl;
         xdmfout << "          </DataItem> " << endl;
         xdmfout << "        </Attribute> " << endl;

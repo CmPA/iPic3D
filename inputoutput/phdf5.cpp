@@ -81,7 +81,7 @@ void PHDF5fileClass::CreatePHDF5file(double *L, int *dglob, int *dlocl, bool bp)
   /* -------------------- */
 
   for (int i=0; i<ngrp; i++){
-    if (!(grpnames[i].c_str()=="Particles"&&!bparticles)){
+    if (!(grpnames[i]=="Particles"&&!bparticles)){
       hid_t grp;
       grp = H5Gcreate2(file_id, grpnames[i].c_str(), H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
       H5Gclose(grp);

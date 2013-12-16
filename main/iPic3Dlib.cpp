@@ -186,11 +186,6 @@ void c_Solver::CalculateField() {
   MPI_Barrier(MPI_COMM_WORLD);
   // timeTasks.end(TimeTasks::MOMENTS);
 
-  // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct, col);               // calculate the E field
-  // timeTasks.end(TimeTasks::FIELDS);
-
   /* --------------------- */
   /* Calculate the B field */
   /* --------------------- */
@@ -201,6 +196,11 @@ void c_Solver::CalculateField() {
 
   // print out total time for all tasks
   // timeTasks.print_cycle_times();
+
+  // MAXWELL'S SOLVER
+  // timeTasks.start(TimeTasks::FIELDS);
+  EMf->calculateE(grid, vct, col);               // calculate the E field
+  // timeTasks.end(TimeTasks::FIELDS);
 
 }
 
@@ -303,7 +303,7 @@ void c_Solver::WriteOutput(int cycle) {
 
   if (col->getWriteMethod() == "Parallel") {
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
-      WriteOutputParallel(grid, EMf, col, vct, cycle);
+      WriteOutputParallel(grid, EMf, part, col, vct, cycle);
     }
   }
   else
