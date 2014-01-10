@@ -16,7 +16,7 @@ import os
 def ipic_ctags(args):
     # create tags file using ctags
     create_tags_command = \
-        '''find . -name '*.cpp' -or -name '*.h' | xargs ctags --extra=+qf'''
+        '''find . -name '*.cpp' -or -name '*.h' | grep -v unused | xargs ctags --extra=+qf'''
     print create_tags_command
     os.system(create_tags_command)
     # sort tags file
