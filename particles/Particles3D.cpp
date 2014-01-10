@@ -26,7 +26,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 
 #include "Particles3D.h"
 
-
+#include "debug.h"
 #include "hdf5.h"
 #include <complex>
 
@@ -318,9 +318,10 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   }
   const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
 
+  #pragma omp master
+  timeTasks_begin_task(TimeTasks::MOVER_PCL_MOVING);
   const pfloat dto2 = .5 * dt, qdto2mc = qom * dto2 / c;
-  const pfloat inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
-  #pragma omp for
+  #pragma omp for schedule(static)
   // why does single precision make no difference in execution speed?
   //#pragma simd vectorlength(VECTOR_WIDTH)
   for (int pidx = 0; pidx < nop; pidx++) {
@@ -343,21 +344,23 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       const pfloat ixd = floor((xavg - xstart) * inv_dx);
       const pfloat iyd = floor((yavg - ystart) * inv_dy);
       const pfloat izd = floor((zavg - zstart) * inv_dz);
-      int ix = 2 + int (ixd);
-      int iy = 2 + int (iyd);
-      int iz = 2 + int (izd);
-      if (ix < 1)
-        ix = 1;
-      if (iy < 1)
-        iy = 1;
-      if (iz < 1)
-        iz = 1;
-      if (ix > nxn - 1)
-        ix = nxn - 1;
-      if (iy > nyn - 1)
-        iy = nyn - 1;
-      if (iz > nzn - 1)
-        iz = nzn - 1;
+      // interface of index to right of cell
+      int ix = 2 + int(ixd);
+      int iy = 2 + int(iyd);
+      int iz = 2 + int(izd);
+
+      // use field data of closest cell in domain
+      //
+      if (ix < 1) ix = 1;
+      if (iy < 1) iy = 1;
+      if (iz < 1) iz = 1;
+      if (ix > nxc) ix = nxc;
+      if (iy > nyc) iy = nyc;
+      if (iz > nzc) iz = nzc;
+      // index of cell of particle;
+      //const int cx = ix - 1;
+      //const int cy = iy - 1;
+      //const int cz = iz - 1;
 
       const pfloat xi0   = xavg - grid->get_pfloat_XN(ix-1);
       const pfloat eta0  = yavg - grid->get_pfloat_YN(iy-1);
@@ -449,6 +452,202 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     v[pidx] = 2.0 * vavg - vorig;
     w[pidx] = 2.0 * wavg - worig;
   }                             // END OF ALL THE PARTICLES
+  #pragma omp master
+  timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING);
+}
+
+/** mover with a Predictor-Corrector scheme */
+void Particles3D::mover_PC_vectorized(
+  Grid * grid, VirtualTopology3D * vct, Field * EMf)
+{
+  assert_eq(nxc,nxn-1);
+  assert_eq(nyc,nyn-1);
+  assert_eq(nzc,nzn-1);
+  #pragma omp master
+  if (vct->getCartesian_rank() == 0) {
+    cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+  }
+  const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
+
+  // initialize average positions
+  #pragma omp for schedule(static)
+  for(int pidx = 0; pidx < nop; pidx++)
+  {
+    xavg[pidx] = x[pidx];
+    yavg[pidx] = y[pidx];
+    zavg[pidx] = z[pidx];
+  }
+
+  const pfloat dto2 = .5 * dt, qdto2mc = qom * dto2 / c;
+  for(int niter=1; niter<=NiterMover; niter++)
+  {
+    // sort particles based on the time-averaged position
+    if(niter>1) // on first iteration already was sorted to sum moments
+    {
+      #pragma omp master
+      timeTasks_begin_task(TimeTasks::MOVER_PCL_SORTING);
+      sort_particles_serial(xavg, yavg, zavg, grid,vct);
+      #pragma omp master
+      timeTasks_end_task(TimeTasks::MOVER_PCL_SORTING);
+    }
+
+    #pragma omp master
+    timeTasks_begin_task(TimeTasks::MOVER_PCL_MOVING);
+    // move particles in parallel
+    //
+    // iterate over mesh cells
+    //const int ncells=nxc*nyc*nzc;
+    //int *numpcls_in_bucket_1d = &numpcls_in_bucket[0][0][0];
+    //int *bucket_offset_1d = &bucket_offset[0][0][0];
+    int serial_pidx = 0;
+    #pragma omp for collapse(2) // schedule(static)
+    for(int cx=0;cx<nxc;cx++)
+    for(int cy=0;cy<nyc;cy++)
+    for(int cz=0;cz<nzc;cz++)
+    //for(int cell=0; cell<ncells; cell++)
+    {
+      // interface to the right of cell
+      const int ix = cx+1;
+      const int iy = cy+1;
+      const int iz = cz+1;
+
+      arr1_pfloat_get field_components[8];
+      field_components[0] = fieldForPcls[ix][iy][iz]; // field000
+      field_components[1] = fieldForPcls[ix][iy][cz]; // field001
+      field_components[2] = fieldForPcls[ix][cy][iz]; // field010
+      field_components[3] = fieldForPcls[ix][cy][cz]; // field011
+      field_components[4] = fieldForPcls[cx][iy][iz]; // field100
+      field_components[5] = fieldForPcls[cx][iy][cz]; // field101
+      field_components[6] = fieldForPcls[cx][cy][iz]; // field110
+      field_components[7] = fieldForPcls[cx][cy][cz]; // field111
+
+      // push all particles in mesh cell
+      //
+      //const int numpcls_in_cell = numpcls_in_bucket_1d[cell];
+      const int numpcls_in_cell = get_numpcls_in_bucket(cx,cy,cz);
+      const int bucket_offset = get_bucket_offset(cx,cy,cz);
+      const int bucket_end = bucket_offset+numpcls_in_cell;
+      // this should vectorize, but could be faster if particle
+      // data were aligned.
+      #pragma simd
+      //for(int pidx=bucket_offset_1d[cell]; pidx<numpcls_in_cell; pidx++)
+      for(int pidx=bucket_offset; pidx<bucket_end; pidx++)
+      {
+        // serial case: check that pidx is correct
+        if(true)
+        {
+          assert_eq(pidx,serial_pidx++);
+        }
+        // confirm that particle is in correct cell
+        if(true)
+        {
+          int cx_,cy_,cz_;
+          get_safe_cell_for_pos(cx_,cy_,cz_,xavg[pidx],yavg[pidx],zavg[pidx]);
+          assert_eq(cx_,cx);
+          assert_eq(cy_,cy);
+          assert_eq(cz_,cz);
+        }
+
+        // copy the particle
+        const pfloat xorig = x[pidx];
+        const pfloat yorig = y[pidx];
+        const pfloat zorig = z[pidx];
+        const pfloat uorig = u[pidx];
+        const pfloat vorig = v[pidx];
+        const pfloat worig = w[pidx];
+
+        // compute weights for field components
+        //
+        double weights[8];
+        const double abs_xpos = xavg[pidx];
+        const double abs_ypos = yavg[pidx];
+        const double abs_zpos = zavg[pidx];
+        // xstart marks start of domain excluding ghosts
+        const double rel_xpos = abs_xpos - xstart;
+        const double rel_ypos = abs_ypos - ystart;
+        const double rel_zpos = abs_zpos - zstart;
+        // cell position minus 1 (due to ghost cells)
+        const double cxm1_pos = rel_xpos * inv_dx;
+        const double cym1_pos = rel_ypos * inv_dy;
+        const double czm1_pos = rel_zpos * inv_dz;
+        // index of interface to right of cell
+        const int ix = cx + 1;
+        const int iy = cy + 1;
+        const int iz = cz + 1;
+        // fraction of the distance from the right of the cell
+        const double w1x = cx - cxm1_pos;
+        const double w1y = cy - cym1_pos;
+        const double w1z = cz - czm1_pos;
+        // fraction of distance from the left
+        const double w0x = 1-w1x;
+        const double w0y = 1-w1y;
+        const double w0z = 1-w1z;
+        const double weight00 = w0x*w0y;
+        const double weight01 = w0x*w1y;
+        const double weight10 = w1x*w0y;
+        const double weight11 = w1x*w1y;
+        weights[0] = weight00*w0z; // weight000
+        weights[1] = weight00*w1z; // weight001
+        weights[2] = weight01*w0z; // weight010
+        weights[3] = weight01*w1z; // weight011
+        weights[4] = weight10*w0z; // weight100
+        weights[5] = weight10*w1z; // weight101
+        weights[6] = weight11*w0z; // weight110
+        weights[7] = weight11*w1z; // weight111
+
+        pfloat Exl = 0.0;
+        pfloat Eyl = 0.0;
+        pfloat Ezl = 0.0;
+        pfloat Bxl = 0.0;
+        pfloat Byl = 0.0;
+        pfloat Bzl = 0.0;
+        for(int c=0; c<8; c++)
+        {
+          Bxl += weights[c] * field_components[c][0];
+          Byl += weights[c] * field_components[c][1];
+          Bzl += weights[c] * field_components[c][2];
+          Exl += weights[c] * field_components[c][3];
+          Eyl += weights[c] * field_components[c][4];
+          Ezl += weights[c] * field_components[c][5];
+        }
+        const double Omx = qdto2mc*Bxl;
+        const double Omy = qdto2mc*Byl;
+        const double Omz = qdto2mc*Bzl;
+
+        // end interpolation
+        const pfloat omsq = (Omx * Omx + Omy * Omy + Omz * Omz);
+        const pfloat denom = 1.0 / (1.0 + omsq);
+        // solve the position equation
+        const pfloat ut = uorig + qdto2mc * Exl;
+        const pfloat vt = vorig + qdto2mc * Eyl;
+        const pfloat wt = worig + qdto2mc * Ezl;
+        //const pfloat udotb = ut * Bxl + vt * Byl + wt * Bzl;
+        const pfloat udotOm = ut * Omx + vt * Omy + wt * Omz;
+        // solve the velocity equation 
+        const pfloat uavg = (ut + (vt * Omz - wt * Omy + udotOm * Omx)) * denom;
+        const pfloat vavg = (vt + (wt * Omx - ut * Omz + udotOm * Omy)) * denom;
+        const pfloat wavg = (wt + (ut * Omy - vt * Omx + udotOm * Omz)) * denom;
+        // update average position
+        xavg[pidx] = xorig + uavg * dto2;
+        yavg[pidx] = yorig + vavg * dto2;
+        zavg[pidx] = zorig + wavg * dto2;
+
+        // if it is the last iteration, update the position and velocity
+        // (hopefully this will not compromise vectorization...)
+        if(niter==NiterMover)
+        {
+          x[pidx] = xorig + uavg * dt;
+          y[pidx] = yorig + vavg * dt;
+          z[pidx] = zorig + wavg * dt;
+          u[pidx] = 2.0 * uavg - uorig;
+          v[pidx] = 2.0 * vavg - vorig;
+          w[pidx] = 2.0 * wavg - worig;
+        }
+      }
+    }
+    #pragma omp master
+    timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING);
+  }
 }
 
 /** communicate particle after moving them */

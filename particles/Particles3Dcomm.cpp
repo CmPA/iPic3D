@@ -9,6 +9,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include <math.h>
 #include <limits.h>
 #include "asserts.h"
+#include <algorithm> // for swap
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
 #include "CollectiveIO.h"
@@ -24,6 +25,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "ompdefs.h"
 
 #include "Particles3Dcomm.h"
+#include "Parameters.h"
 
 #include "hdf5.h"
 #include <vector>
@@ -47,7 +49,7 @@ using std::endl;
  */
 
 /** constructor */
-Particles3Dcomm::Particles3Dcomm() {
+Particles3Dcomm::Particles3Dcomm(){
   // see allocate(int species, CollectiveIO* col, VirtualTopology3D* vct, Grid* grid)
 
 }
@@ -60,6 +62,22 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]v;
   delete[]w;
   delete[]q;
+  delete[]ParticleID;
+  delete[]xavg;
+  delete[]yavg;
+  delete[]zavg;
+  // deallocate alternate storage
+  delete[]xtmp;
+  delete[]ytmp;
+  delete[]ztmp;
+  delete[]utmp;
+  delete[]vtmp;
+  delete[]wtmp;
+  delete[]qtmp;
+  delete[]ParticleIDtmp;
+  delete[]xavgtmp;
+  delete[]yavgtmp;
+  delete[]zavgtmp;
   // deallocate buffers
   delete[]b_X_RIGHT;
   delete[]b_X_LEFT;
@@ -67,6 +85,9 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]b_Y_LEFT;
   delete[]b_Z_RIGHT;
   delete[]b_Z_LEFT;
+  delete numpcls_in_bucket;
+  delete numpcls_in_bucket_now;
+  delete bucket_offset;
 }
 /** constructors fo a single species*/
 void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid) {
@@ -112,10 +133,19 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   dx = grid->getDX();
   dy = grid->getDY();
   dz = grid->getDZ();
+  inv_dx = 1/dx;
+  inv_dy = 1/dy;
+  inv_dz = 1/dz;
 
   nxn = grid->getNXN();
   nyn = grid->getNYN();
   nzn = grid->getNZN();
+  nxc = grid->getNXC();
+  nyc = grid->getNYC();
+  nzc = grid->getNZC();
+  assert_eq(nxc,nxn-1);
+  assert_eq(nyc,nyn-1);
+  assert_eq(nzc,nzn-1);
   invVOL = grid->getInvVOL();
   // info from VirtualTopology3D
   cVERBOSE = vct->getcVERBOSE();
@@ -131,6 +161,20 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   bcPfaceYleft = col->getBcPfaceYleft();
   bcPfaceZright = col->getBcPfaceZright();
   bcPfaceZleft = col->getBcPfaceZleft();
+  //
+  // allocate arrays for sorting particles
+  //
+  numpcls_in_bucket = new array3_int(nxc,nyc,nzc);
+  numpcls_in_bucket_now = new array3_int(nxc,nyc,nzc);
+  bucket_offset = new array3_int(nxc,nyc,nzc);
+  //num_threads = omp_get_max_threads();
+  //numpcls_in_bucket_thr = (arr3_int*)malloc(sizeof(void*)*num_threads);
+  //for(int i=0; i<num_threads; i++)
+  //{
+  //  numpcls_in_bucket_thr[i] = new array3_int(nxc,nyc,nzc);
+  //}
+  
+  //
   // //////////////////////////////////////////////////////////////
   // ////////////// ALLOCATE ARRAYS /////////////////////////
   // //////////////////////////////////////////////////////////////
@@ -144,9 +188,51 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   w = new double[npmax];
   // charge
   q = new double[npmax];
+  // average positions, used in iterative particle advance
+  xavg = 0;
+  yavg = 0;
+  zavg = 0;
+  if(Parameters::get_USING_XAVG())
+  {
+    xavg = new double[npmax];
+    yavg = new double[npmax];
+    zavg = new double[npmax];
+  }
+  //
+  xtmp = 0;
+  ytmp = 0;
+  ztmp = 0;
+  utmp = 0;
+  vtmp = 0;
+  wtmp = 0;
+  qtmp = 0;
+  xavgtmp = 0;
+  yavgtmp = 0;
+  zavgtmp = 0;
+  if(Parameters::get_SORTING_PARTICLES())
+  {
+    xtmp = new double[npmax];
+    ytmp = new double[npmax];
+    ztmp = new double[npmax];
+    // velocities
+    utmp = new double[npmax];
+    vtmp = new double[npmax];
+    wtmp = new double[npmax];
+    // charge
+    qtmp = new double[npmax];
+    // average positions, used in iterative particle advance
+    xavgtmp = new double[npmax];
+    yavgtmp = new double[npmax];
+    zavgtmp = new double[npmax];
+  }
+
+  ParticleID = 0;
+  ParticleIDtmp = 0;
   // ID
   if (TrackParticleID) {
     ParticleID = new long long[npmax];
+    if(Parameters::get_SORTING_PARTICLES())
+      ParticleIDtmp = new long long[npmax];
     BirthRank[0] = vct->getCartesian_rank();
     if (vct->getNprocs() > 1)
       BirthRank[1] = (int) ceil(log10((double) (vct->getNprocs())));  // Number of digits needed for # of process in ID
@@ -887,3 +973,241 @@ void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
   cout << endl;
 }
+
+/***** particle sorting routines *****/
+
+void Particles3Dcomm::sort_particles_serial(Grid * grid, VirtualTopology3D * vct)
+{
+  sort_particles_serial(x,y,z, grid,vct);
+}
+
+// need to sort and communicate particles after each iteration
+void Particles3Dcomm::sort_particles_serial(
+  double *xpos, double *ypos, double *zpos,
+  Grid * grid, VirtualTopology3D * vct)
+{
+  #pragma omp critical (sort_particles_serial)
+  {
+    numpcls_in_bucket->setall(0);
+    // iterate through particles and count where they will go
+    for (int pidx = 0; pidx < nop; pidx++)
+    {
+      // get the cell indices of the particle
+      //
+      int cx,cy,cz;
+      get_safe_cell_for_pos(cx,cy,cz,xpos[pidx],ypos[pidx],zpos[pidx]);
+      //
+      // is it better just to recompute this?
+      //
+      //xcell[pidx]=cx;
+      //ycell[pidx]=cy;
+      //zcell[pidx]=cz;
+
+      // increment the number of particles in bucket of this particle
+      (*numpcls_in_bucket)[cx][cy][cz]++;
+    }
+
+    // compute prefix sum to determine initial position
+    // of each bucket (could parallelize this)
+    //
+    int accpcls=0;
+    for(int cx=0;cx<nxc;cx++)
+    for(int cy=0;cy<nyc;cy++)
+    for(int cz=0;cz<nzc;cz++)
+    {
+      (*bucket_offset)[cx][cy][cz] = accpcls;
+      accpcls += (*numpcls_in_bucket)[cx][cy][cz];
+    }
+
+    numpcls_in_bucket_now->setall(0);
+    // put the particles where they are supposed to go
+    for (int pidx = 0; pidx < nop; pidx++)
+    {
+      // get the cell indices of the particle
+      //
+      int cx,cy,cz;
+      get_safe_cell_for_pos(cx,cy,cz,xpos[pidx],ypos[pidx],zpos[pidx]);
+      //
+      //cx = xcell[pidx];
+      //cy = ycell[pidx];
+      //cz = zcell[pidx];
+
+      // compute where the data should go
+      const int numpcls_now = (*numpcls_in_bucket_now)[cx][cy][cz]++;
+      const int outpidx = (*bucket_offset)[cx][cy][cz] + numpcls_now;
+
+      // copy particle data to new location
+      //
+      xtmp[outpidx] = x[pidx];
+      ytmp[outpidx] = y[pidx];
+      ztmp[outpidx] = z[pidx];
+      utmp[outpidx] = u[pidx];
+      vtmp[outpidx] = v[pidx];
+      wtmp[outpidx] = w[pidx];
+      qtmp[outpidx] = q[pidx];
+      if (TrackParticleID)
+        ParticleIDtmp[outpidx] = ParticleID[pidx];
+      xavgtmp[outpidx] = xavg[pidx];
+      yavgtmp[outpidx] = yavg[pidx];
+      zavgtmp[outpidx] = zavg[pidx];
+    }
+    // swap the tmp particle memory with the official particle memory
+    {
+      swap(xtmp,x);
+      swap(ytmp,y);
+      swap(ztmp,z);
+      swap(utmp,u);
+      swap(vtmp,v);
+      swap(wtmp,w);
+      swap(qtmp,q);
+      swap(ParticleIDtmp,ParticleID);
+      swap(xavgtmp,xavg);
+      swap(yavgtmp,yavg);
+      swap(zavgtmp,zavg);
+    }
+
+    // check if the particles were sorted incorrectly
+    if(true)
+    {
+      for(int cx=0;cx<nxc;cx++)
+      for(int cy=0;cy<nyc;cy++)
+      for(int cz=0;cz<nzc;cz++)
+      {
+        assert_eq((*numpcls_in_bucket_now)[cx][cy][cz], (*numpcls_in_bucket)[cx][cy][cz]);
+      }
+    }
+  }
+}
+
+//void Particles3Dcomm::sort_particles_parallel(
+//  double *xpos, double *ypos, double *zpos,
+//  Grid * grid, VirtualTopology3D * vct)
+//{
+//  // should change this to first communicate particles so that
+//  // they are in the correct process and all particles
+//  // lie in this subdomain.
+//
+//  // count the number of particles to go in each bucket
+//  numpcls_in_bucket.setall(0);
+//  #pragma omp parallel
+//  {
+//    const int thread_num = omp_get_thread_num();
+//    arr3_int numpcls_in_bucket_thr = fetch_numpcls_in_bucket_thr(thread_num);
+//    numpcls_in_bucket_thr.setall(0);
+//    // iterate through particles and count where they will go
+//    #pragma omp for // nowait
+//    for (int pidx = 0; pidx < nop; pidx++)
+//    {
+//      // get the cell indices of the particle
+//      // (should change this to use xavg[pidx])
+//      const pfloat xpos = xpos[pidx];
+//      const pfloat ypos = ypos[pidx];
+//      const pfloat zpos = zpos[pidx];
+//      int cx,cy,cz;
+//      get_safe_cell_for_pos(cx,cy,cz,xpos,ypos,zpos);
+//
+//      // need to allocate these
+//      //
+//      //xidx[pidx]=cx;
+//      //yidx[pidx]=cy;
+//      //zidx[pidx]=cz;
+//
+//      // increment the number of particles in bucket of this particle
+//      numpcls_in_bucket_thr[cx][cy][cz]++;
+//    }
+//    // reduce the thread buckets into the main bucket
+//    // #pragma omp critical (numpcls_in_bucket_reduction)
+//    {
+//      #pragma omp for collapse(2)
+//      for(int cx=0;cx<nxc;cx++)
+//      for(int cy=0;cy<nyc;cy++)
+//      for(int th=0;th<num_threads;th++)
+//      for(int cz=0;cz<nzc;cz++)
+//      {
+//        numpcls_in_bucket[cx][cy][cz]
+//          += get_numpcls_in_bucket_thr(th)[cx][cy][cz];
+//      }
+//    }
+//
+//    // compute prefix sum to determine initial position
+//    // of each bucket (could parallelize this)
+//    //
+//    int accpcls=0;
+//    #pragma omp critical (bucket_offset_reduction)
+//    for(int cx=0;cx<nxc;cx++)
+//    for(int cy=0;cy<nyc;cy++)
+//    for(int cz=0;cz<nzc;cz++)
+//    {
+//      bucket_offset[cx][cy][cz] = accpcls;
+//      accpcls += numpcls_in_bucket[cx][cy][cz];
+//    }
+//
+//    // cycle through the mesh cells mod 3
+//    // (or mod(2*N+1), where N is number of mesh cells
+//    // that a slow particle can move).
+//    // This ensures that slow particles can be moved
+//    // to their destinations without write conflicts
+//    // among threads.  But what about cache contention?
+//    //
+//    for(int cxmod3=0; cxmod3<3; cxmod3++)
+//    #pragma omp for collapse(2)
+//    for(int cx=cxmod3; cx<nxc; cx+=3)
+//    for(int cy=0; cy<nyc; cy++)
+//    for(int cz=0; cz<nzc; cz++)
+//    {
+//      // put the slow particles where they are supposed to go and
+//      // set aside the fast particles for separate processing.
+//      // (to vectorize would need to sort separately in each
+//      // dimension of space).
+//      //
+//      // problem: particles might have to be moved not because
+//      // they are fast but because of an overall shift in the
+//      // number of particles in a location, e.g. because of
+//      // particles flowing in from a jet. Need a different
+//      // approach, where memory is allocated for each cell.
+//      _numpcls_in_bucket = numpcls_in_bucket[cx][cy][cz];
+//      for(int pidx=bucket_offset[cx][cy][cz]; pidx<_numpcls_in_bucket; pidx++)
+//      {
+//        const int outcx = xidx[pidx];
+//        const int outcy = yidx[pidx];
+//        const int outcz = zidx[pidx];
+//        const int cxlower = outcx <= 0 ? 0 : outcx-1;
+//        const int cxupper = outcx >= (nxc-1) ? nxc-1 : outcx+1;
+//        const int lowerindex = bucket_offset[cxlower][cylower][czlower];
+//        const int upperoffset = bucket_offset[cxupper][cyupper][czupper];
+//        const int upperindex = upperoffset + numpcls_in_bucket[outcx][outcy][outcz];
+//        ...
+//      }
+//    }
+//    // (1) put fast particles that must be moved more than one
+//    // mesh cell at the end of the cell's list, and
+//    // (2) put slow particles in the correct location
+//
+//    // count the number of particles that need to be moved
+//    // more than one mesh cell and allocate a special buffer for them.
+//    // (could change to count number of particles that need
+//    // to move more than N mesh cells).
+//    //
+//    int numpcls_long_move_thr = 0;
+//    #pragma omp for // nowait
+//    for (int i = 0; i < nop; i++)
+//    {
+//      const int cx = xidx[pidx];
+//      const int cy = yidx[pidx];
+//      const int cz = zidx[pidx];
+//
+//      const int cxlower = cx <= 0 ? 0 : cx-1;
+//      const int cxupper = cx >= (nxc-1) ? nxc-1 : cx+1;
+//      const int lowerindex = bucket_offset[cxlower][cylower][czlower];
+//      const int upperoffset = bucket_offset[cxupper][cyupper][czupper];
+//      const int upperindex = upperoffset + numpcls_in_bucket[cx][cy][cz];
+//      if(i < lowerindex || i > upperindex)
+//      {
+//        numpcls_long_move_thr++;
+//      }
+//    }
+//  }
+//}
+//#endif
+
+

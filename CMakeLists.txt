@@ -95,7 +95,7 @@ file(
         processtopology/*.cpp
         solvers/*.cpp
         utility/*.cpp
-        main/iPic3Dlib.cpp
+        main/*.cpp
 )
 
 #

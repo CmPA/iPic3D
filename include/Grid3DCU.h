@@ -163,6 +163,9 @@ public: // accessors (inline)
   double getDX() { return (dx); }
   double getDY() { return (dy); }
   double getDZ() { return (dz); }
+  double get_invdx() { return (invdx); }
+  double get_invdy() { return (invdy); }
+  double get_invdz() { return (invdz); }
   //
   // coordinate accessors
   //

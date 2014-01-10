@@ -27,8 +27,11 @@ class TimeTasks
     PARTICLES,
     LAST, // no more exclusive tasks
     BFIELD,
+    MOMENT_PCL_SORTING,
     MOMENT_ACCUMULATION,
     MOMENT_REDUCTION,
+    MOVER_PCL_SORTING,
+    MOVER_PCL_MOVING,
     NUMBER_OF_TASKS // this line should be last
   };
 

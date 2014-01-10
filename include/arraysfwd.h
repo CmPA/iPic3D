@@ -33,12 +33,10 @@ namespace iPic3D
 // - so that they can be redefined according to the user's
 //   preferred array implementation.
 //
-//typedef array_ref1<int> intArr1;
-//typedef array_ref2<int> intArr2;
-//typedef array_ref3<int> intArr3;
-//typedef array_ref4<int> intArr4;
-//typedef const_array_ref1<double> arr1_double;
-//typedef const_array_ref2<double> arr2_double;
+typedef iPic3D::array_ref1<int> arr1_int;
+typedef iPic3D::array_ref2<int> arr2_int;
+typedef iPic3D::array_ref3<int> arr3_int;
+typedef iPic3D::array_ref4<int> arr4_int;
 //
 typedef iPic3D::const_array_ref3<double> const_arr3_double;
 typedef iPic3D::const_array_ref4<double> const_arr4_double;
@@ -47,6 +45,10 @@ typedef iPic3D::array_ref1<double> arr1_double;
 typedef iPic3D::array_ref2<double> arr2_double;
 typedef iPic3D::array_ref3<double> arr3_double;
 typedef iPic3D::array_ref4<double> arr4_double;
+typedef iPic3D::array1<int> array1_int;
+typedef iPic3D::array2<int> array2_int;
+typedef iPic3D::array3<int> array3_int;
+typedef iPic3D::array4<int> array4_int;
 typedef iPic3D::array1<double> array1_double;
 typedef iPic3D::array2<double> array2_double;
 typedef iPic3D::array3<double> array3_double;

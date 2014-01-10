@@ -540,6 +540,183 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
   }
 }
 
+void EMfields3D::sumMoments_vectorized(
+  const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct)
+{
+  const double inv_dx = grid->get_invdx();
+  const double inv_dy = grid->get_invdy();
+  const double inv_dz = grid->get_invdz();
+  const int nxn = grid->getNXN();
+  const int nyn = grid->getNYN();
+  const int nzn = grid->getNZN();
+  const double xstart = grid->getXstart();
+  const double ystart = grid->getYstart();
+  const double zstart = grid->getZstart();
+  #pragma omp parallel
+  for (int species_idx = 0; species_idx < ns; species_idx++)
+  {
+    const Particles3Dcomm& pcls = part[species_idx];
+    const int is = pcls.get_ns();
+    assert_eq(species_idx,is);
+
+    double const*const x = pcls.getXall();
+    double const*const y = pcls.getYall();
+    double const*const z = pcls.getZall();
+    double const*const u = pcls.getUall();
+    double const*const v = pcls.getVall();
+    double const*const w = pcls.getWall();
+    double const*const q = pcls.getQall();
+
+    const int nop = pcls.getNOP();
+    #pragma omp master
+    timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION);
+    Moments10& speciesMoments10 = fetch_moments10Array(0);
+    speciesMoments10.set_to_zero();
+    arr4_double moments = speciesMoments10.fetch_arr();
+    #pragma omp for collapse(2) // schedule(static)
+    for(int cx=0;cx<nxc;cx++)
+    for(int cy=0;cy<nyc;cy++)
+    for(int cz=0;cz<nzc;cz++)
+    {
+      const int numpcls_in_cell = pcls.get_numpcls_in_bucket(cx,cy,cz);
+      const int bucket_offset = pcls.get_bucket_offset(cx,cy,cz);
+      const int bucket_end = bucket_offset+numpcls_in_cell;
+      #pragma simd
+      for(int i=bucket_offset; i<bucket_end; i++)
+      {
+        // compute the quadratic moments of velocity
+        //
+        const double ui=u[i];
+        const double vi=v[i];
+        const double wi=w[i];
+        const double uui=ui*ui;
+        const double uvi=ui*vi;
+        const double uwi=ui*wi;
+        const double vvi=vi*vi;
+        const double vwi=vi*wi;
+        const double wwi=wi*wi;
+        double velmoments[10];
+        velmoments[0] = 1.;
+        velmoments[1] = ui;
+        velmoments[2] = vi;
+        velmoments[3] = wi;
+        velmoments[4] = uui;
+        velmoments[5] = uvi;
+        velmoments[6] = uwi;
+        velmoments[7] = vvi;
+        velmoments[8] = vwi;
+        velmoments[9] = wwi;
+
+        // compute the weights to distribute the moments
+        //
+        double weights[8];
+        const double abs_xpos = x[i];
+        const double abs_ypos = y[i];
+        const double abs_zpos = z[i];
+        const double rel_xpos = abs_xpos - xstart;
+        const double rel_ypos = abs_ypos - ystart;
+        const double rel_zpos = abs_zpos - zstart;
+        const double cxm1_pos = rel_xpos * inv_dx;
+        const double cym1_pos = rel_ypos * inv_dy;
+        const double czm1_pos = rel_zpos * inv_dz;
+        if(false)
+        {
+          const int cx_inf = int(floor(cxm1_pos));
+          const int cy_inf = int(floor(cym1_pos));
+          const int cz_inf = int(floor(czm1_pos));
+          assert_eq(cx-1,cx_inf);
+          assert_eq(cy-1,cy_inf);
+          assert_eq(cz-1,cz_inf);
+        }
+        // index of interface to right of cell
+        const int ix = cx + 1;
+        const int iy = cy + 1;
+        const int iz = cz + 1;
+        // fraction of the distance from the right of the cell
+        const double w1x = cx - cxm1_pos;
+        const double w1y = cy - cym1_pos;
+        const double w1z = cz - czm1_pos;
+        // fraction of distance from the left
+        const double w0x = 1-w1x;
+        const double w0y = 1-w1y;
+        const double w0z = 1-w1z;
+        // we are calculating a charge moment.
+        const double qi=q[i];
+        const double weight0 = qi*w0x;
+        const double weight1 = qi*w1x;
+        const double weight00 = weight0*w0y;
+        const double weight01 = weight0*w1y;
+        const double weight10 = weight1*w0y;
+        const double weight11 = weight1*w1y;
+        weights[0] = weight00*w0z; // weight000
+        weights[1] = weight00*w1z; // weight001
+        weights[2] = weight01*w0z; // weight010
+        weights[3] = weight01*w1z; // weight011
+        weights[4] = weight10*w0z; // weight100
+        weights[5] = weight10*w1z; // weight101
+        weights[6] = weight11*w0z; // weight110
+        weights[7] = weight11*w1z; // weight111
+
+        // add particle to moments
+        {
+          arr1_double_fetch momentsArray[8];
+          arr2_double_fetch moments00 = moments[ix][iy];
+          arr2_double_fetch moments01 = moments[ix][cy];
+          arr2_double_fetch moments10 = moments[cx][iy];
+          arr2_double_fetch moments11 = moments[cx][cy];
+          momentsArray[0] = moments00[iz]; // moments000 
+          momentsArray[1] = moments00[cz]; // moments001 
+          momentsArray[2] = moments01[iz]; // moments010 
+          momentsArray[3] = moments01[cz]; // moments011 
+          momentsArray[4] = moments10[iz]; // moments100 
+          momentsArray[5] = moments10[cz]; // moments101 
+          momentsArray[6] = moments11[iz]; // moments110 
+          momentsArray[7] = moments11[cz]; // moments111 
+
+          for(int m=0; m<10; m++)
+          for(int c=0; c<8; c++)
+          {
+            momentsArray[c][m] += velmoments[m]*weights[c];
+          }
+        }
+      }
+    }
+    #pragma omp master
+    timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
+
+    // reduction
+    #pragma omp master
+    timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
+    {
+      #pragma omp for collapse(2)
+      for(int i=0;i<nxn;i++)
+      for(int j=0;j<nyn;j++)
+      for(int k=0;k<nzn;k++)
+      {
+        rhons[is][i][j][k] = invVOL*moments[i][j][k][0];
+        Jxs  [is][i][j][k] = invVOL*moments[i][j][k][1];
+        Jys  [is][i][j][k] = invVOL*moments[i][j][k][2];
+        Jzs  [is][i][j][k] = invVOL*moments[i][j][k][3];
+        pXXsn[is][i][j][k] = invVOL*moments[i][j][k][4];
+        pXYsn[is][i][j][k] = invVOL*moments[i][j][k][5];
+        pXZsn[is][i][j][k] = invVOL*moments[i][j][k][6];
+        pYYsn[is][i][j][k] = invVOL*moments[i][j][k][7];
+        pYZsn[is][i][j][k] = invVOL*moments[i][j][k][8];
+        pZZsn[is][i][j][k] = invVOL*moments[i][j][k][9];
+      }
+    }
+    #pragma omp master
+    timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
+    // uncomment this and remove the loop below
+    // when we change to use asynchronous communication.
+    // communicateGhostP2G(is, 0, 0, 0, 0, vct);
+  }
+  for (int i = 0; i < ns; i++)
+  {
+    communicateGhostP2G(i, 0, 0, 0, 0, vct);
+  }
+}
+
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
 void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col) {
   if (vct->getCartesian_rank() == 0)

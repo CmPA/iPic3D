@@ -59,6 +59,53 @@ public:
   /** calculate the weights given the position of particles */
   // void calculateWeights(double*** weight, double xp, double yp, double zp,int ix, int iy, int iz, Grid* grid);
 
+  /*! sort particles for vectorized push (needs to be parallelized) */
+  void sort_particles_serial(Grid * grid, VirtualTopology3D * vct);
+  /*! sort particles with respect to provided position data */
+  void sort_particles_serial(
+    pfloat *xpos, pfloat *ypos, pfloat *zpos,
+    Grid * grid, VirtualTopology3D * vct);
+  void get_safe_cell_for_pos(
+    int& cx, int& cy, int& cz, 
+    pfloat xpos, pfloat ypos, pfloat zpos)
+  {
+    // xstart is left edge of domain excluding ghost cells
+    // cx=0 for ghost cell layer.
+    cx = 1 + int(floor((xpos - xstart) * inv_dx));
+    cy = 1 + int(floor((ypos - ystart) * inv_dy));
+    cz = 1 + int(floor((zpos - zstart) * inv_dz));
+    //
+    // if the cell is outside the domain, then treat it as
+    // in the nearest ghost cell.
+    //
+    if (cx < 0) cx = 0;
+    if (cy < 0) cy = 0;
+    if (cz < 0) cz = 0;
+    // number of cells in x direction including ghosts is nxc
+    if (cx >= nxc) cx = nxc-1;
+    if (cy >= nyc) cy = nyc-1;
+    if (cz >= nzc) cz = nzc-1;
+  }
+
+  /*! version that assumes particle is in domain */
+  void get_cell_for_pos_in_domain(
+    int& cx, int& cy, int& cz, 
+    pfloat xpos, pfloat ypos, pfloat zpos)
+  {
+    // xstart is left edge of domain excluding ghost cells
+    // cx=0 for ghost cell layer.
+    cx = 1 + int(floor((xpos - xstart) * inv_dx));
+    cy = 1 + int(floor((ypos - ystart) * inv_dy));
+    cz = 1 + int(floor((zpos - zstart) * inv_dz));
+    //
+    assert_le(0,cx);
+    assert_le(0,cy);
+    assert_le(0,cz);
+    assert_le(cx,nxc);
+    assert_le(cy,nyc);
+    assert_le(cz,nzc);
+  }
+
   // inline get accessors
   //
   double *getXall()  const { return (x); }
@@ -99,6 +146,10 @@ public:
 public:
   // accessors
   int get_ns()const{return ns;}
+  int get_numpcls_in_bucket(int cx, int cy, int cz)const
+  { return (*numpcls_in_bucket)[cx][cy][cz]; }
+  int get_bucket_offset(int cx, int cy, int cz)const
+  { return (*bucket_offset)[cx][cy][cz]; }
 
 protected:
   /** number of this species */
@@ -133,7 +184,10 @@ protected:
   double v0;
   /** w0 Drift velocity - Direction Z */
   double w0;
-  /** Positions arra - X component */
+
+  // particles data
+  //
+  /** Positions array - X component */
   double *x;
   /** Positions array - Y component */
   double *y;
@@ -145,16 +199,58 @@ protected:
   double *v;
   /** Velocities array - Z component */
   double *w;
+  /** Charge array */
+  double *q;
   /** TrackParticleID */
   bool TrackParticleID;
   /** ParticleID */
   long long *ParticleID;
+  /** Average position data (used during particle push) **/
+  double *xavg;
+  double *yavg;
+  double *zavg;
+
+  // structures for sorting particles
+  //
+  // alternate storage for sorting particles
+  //
+  double *xtmp;
+  double *ytmp;
+  double *ztmp;
+  double *utmp;
+  double *vtmp;
+  double *wtmp;
+  double *qtmp;
+  long long *ParticleIDtmp;
+  double *xavgtmp;
+  double *yavgtmp;
+  double *zavgtmp;
+  //int *xcell;
+  //int *ycell;
+  //int *zcell;
+
+  // references for buckets
+  //
+  array3_int* numpcls_in_bucket;
+  array3_int* numpcls_in_bucket_now; // accumulator used during sorting
+  //array3_int* bucket_size; // maximum number of particles in bucket
+  array3_int* bucket_offset;
+  // 
+  // bucket totals per thread
+  //
+  //int num_threads;
+  //array3_int* numpcls_in_bucket_thr;
+  //arr3_int fetch_numpcls_in_bucket_thr(int i)
+  //{
+  //  assert_le(0,i);
+  //  assert_lt(i,num_threads);
+  //  return *(numpcls_in_bucket_thr[i]);
+  //};
+
   /** rank of processor in which particle is created (for ID) */
   int BirthRank[2];
   /** number of variables to be stored in buffer for communication for each particle  */
   int nVar;
-  /** Charge array */
-  double *q;
   /** Simulation domain lengths */
   double xstart, xend, ystart, yend, zstart, zend, invVOL;
   /** time step */
@@ -167,9 +263,10 @@ protected:
   double Lz;
   /** grid spacings */
   double dx, dy, dz;
-  /** number of grid 
-          nodes */
+  /** number of grid nodes */
   int nxn, nyn, nzn;
+  /** number of grid cells */
+  int nxc, nyc, nzc;
   /** buffers for communication */
   /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
   int buffer_size;
@@ -252,6 +349,11 @@ protected:
   double Q_removed;
   /** density of the injection of the particles */
   double Ninj;
+
+  // convenience values from grid
+  double inv_dx;
+  double inv_dy;
+  double inv_dz;
 };
 
 typedef Particles3Dcomm Particles;

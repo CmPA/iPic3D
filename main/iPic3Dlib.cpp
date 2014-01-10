@@ -3,6 +3,7 @@
 #include "TimeTasks.h"
 #include "ipicdefs.h"
 #include "debug.h"
+#include "Parameters.h"
 
 using namespace iPic3D;
 MPIdata* iPic3D::c_Solver::mpi=0;
@@ -16,6 +17,7 @@ int c_Solver::Init(int argc, char **argv) {
   // initialized MPI environment
   // nprocs = number of processors
   // myrank = rank of tha process*/
+  Parameters::init_parameters();
   mpi = &MPIdata::instance();
   nprocs = MPIdata::get_nprocs();
   myrank = MPIdata::get_rank();
@@ -178,7 +180,27 @@ void c_Solver::CalculateMoments() {
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
 
-  EMf->sumMoments(part, grid, vct);
+  if(Parameters::get_SORTING_PARTICLES())
+  {
+    // sort particles
+    #pragma omp master
+    timeTasks_begin_task(TimeTasks::MOMENT_PCL_SORTING);
+    for(int species_idx=0; species_idx<ns; species_idx++)
+      part[species_idx].sort_particles_serial(grid,vct);
+    #pragma omp master
+    timeTasks_end_task(TimeTasks::MOMENT_PCL_SORTING);
+  }
+
+  if(Parameters::get_VECTORIZE_MOMENTS())
+  {
+    // since particles are sorted,
+    // we can vectorize interpolation of particles to grid
+    EMf->sumMoments_vectorized(part, grid, vct);
+  }
+  else
+  {
+    EMf->sumMoments(part, grid, vct);
+  }
   //for (int i = 0; i < ns; i++)
   //{
   //  EMf->sumMomentsOld(part[i], grid, vct);
@@ -228,7 +250,11 @@ bool c_Solver::ParticlesMover() {
       // #pragma omp task inout(part[i]) in(grid) target_device(booster)
       //
       // should merely pass EMf->get_fieldForPcls() rather than EMf.
-      part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
+      // use the Predictor Corrector scheme to move particles
+      if(Parameters::get_VECTORIZE_MOVER())
+        part[i].mover_PC_vectorized(grid, vct, EMf);
+      else
+        part[i].mover_PC(grid, vct, EMf);
     }
     for (int i = 0; i < ns; i++)  // move each species
     {
