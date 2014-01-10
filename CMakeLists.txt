@@ -1,136 +1,59 @@
 cmake_minimum_required(VERSION 2.8.8)
 
 #
-# Project declaration
+# Set project name
 #
 
 project(iPic3D)
 
 #
-# Set exec path
-#
-
-set(EXECUTABLE_OUTPUT_PATH exec/${CMAKE_BUILD_TYPE})
-set(LIBRARY_OUTPUT_PATH lib)
-
-#
-# Find third class libraries
+# Find packages (already managed by CMake)
 #
 
 find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
 
 #
-# include and lib directories
+# Options
 #
-
-include_directories(
-        include
-        ${HDF5_INCLUDE_DIRS}
-        ${MPI_INCLUDE_PATH}
-)
-
-link_directories(
-        ${HDF5_LIBRARY_DIRS}
-        ${MPI_LIBRARY_DIRS}
-)
-
-#
-# Header file list
-#
-
-file(
-        GLOB
-        inc_files
-        include/*.h
-)
-
-#
-# Source file list
-#
-
-file(
-        GLOB
-        src_files
-        ConfigFile/src/*.cpp
-        PSKOutput3D/*.cpp
-        bc/*.cpp
-        communication/*.cpp
-        fields/*.cpp
-        grids/*.cpp
-        iPIC3D.cpp/*.cpp
-        inputoutput/*.cpp
-        mathlib/*.cpp
-        mpidata/*.cpp
-        particles/*.cpp
-        performances/*.cpp
-        processtopology/*.cpp
-        solvers/*.cpp
-        utility/*.cpp
-        main/iPic3Dlib.cpp
-)
-
-#
-# Compilation options
-#
-
-set(IPIC_TESTS_DIR "${CMAKE_BINARY_DIR}/tests" CACHE STRING "Location of the source files for iPic3D")
-
-option(IPIC_PARALLEL_HDF5 "Output is done using the parallel HDF5 library" OFF)
-if(IPIC_PARALLEL_HDF5)
-  add_definitions(-DPHDF5)
-endif()
-
-option(IPIC_BATSRUS "Compile library with coupling code for BATS-R-US" OFF)
-if(IPIC_BATSRUS)
-  add_definitions( -DBATSRUS )
-endif()
-
-option(IPIC_XEONPHI "Compile options for Xeon Phi" OFF)
-if(IPIC_XEONPHI)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-endif()
 
 option(IPIC_TESTS "Set up the code tests" OFF)
 
-option(IPIC_BUILD_SHARED "Compile shared library" OFF)
-if(IPIC_BUILD_SHARED)
-  set(IPIC_BUILD_TYPE SHARED)
-else()
-  set(IPIC_BUILD_TYPE STATIC)
+#
+# Include sub-directories
+#
+
+add_subdirectory(main)
+if(IPIC_H5HUT_OUTPUT)
+  add_subdirectory(H5hut-io)
+  set(H5HUTIO_LIBRARIES H5hut-io)
 endif()
 
+include_directories(
+    include
+    ${HDF5_INCLUDE_DIRS}
+    ${MPI_INCLUDE_PATH}
+)
+
 #
-# Executable declaration
+# Executable compilation
 #
 
 add_executable(
-        iPic3D
-        iPic3D.cpp
-)
-
-add_library(
-        iPic3Dlib
-        ${IPIC_BUILD_TYPE}
-        ${inc_files}
-        ${src_files}
+    iPic3D
+    iPic3D.cpp
 )
 
 #
-# Link external libraries
+# Libraries linked
 #
 
 target_link_libraries(
-         iPic3Dlib
-         ${HDF5_LIBRARIES}
-         ${HDF5_HL_LIBRARIES}
-         ${MPI_LIBRARIES}
-         ${CMAKE_DL_LIBS}
-)
-
-target_link_libraries(
-         iPic3D
-         iPic3Dlib
+    iPic3D
+    iPic3Dlib
+    ${H5HUTIO_LIBRARIES}
+    ${H5HUT_LIBRARIES}
+    ${CMAKE_DL_LIBS}
 )
 
 #
@@ -139,6 +62,7 @@ target_link_libraries(
 
 if(IPIC_TESTS)
   enable_testing()
+  set(IPIC_TESTS_DIR "${CMAKE_BINARY_DIR}/tests" CACHE STRING "Location of the source files for iPic3D")
 
   add_test(NAME GEM-test
            COMMAND ${CMAKE_COMMAND}

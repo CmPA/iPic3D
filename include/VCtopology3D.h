@@ -92,6 +92,8 @@ public:
   int getCoordinates(int dir);
   /** get the coordinates of process*/
   int *getCoordinates();
+  /** get the number of procs in each direction*/
+  int *getDivisions();
   /** get Periodicity condition in dir direction */
   int getPeriods(int dir);
   /** if cVERBOSE == true, print to the screen all the comunication */
@@ -379,6 +381,10 @@ inline int VCtopology3D::getCoordinates(int dir) {
 /** get the coordinates in dir direction of process*/
 inline int *VCtopology3D::getCoordinates() {
   return (coordinates);
+}
+/** get the number of processors in each direction */
+inline int *VCtopology3D::getDivisions() {
+  return (divisions);
 }
 /** get Periodicity condition in dir direction */
 inline int VCtopology3D::getPeriods(int dir) {

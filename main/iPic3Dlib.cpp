@@ -303,7 +303,7 @@ void c_Solver::WriteOutput(int cycle) {
 
   if (col->getWriteMethod() == "Parallel") {
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
-      WriteOutputParallel(grid, EMf, part, col, vct, cycle);
+      WriteOutputH5hut(ns, grid, EMf, part, col, vct, cycle);
     }
   }
   else

@@ -14,7 +14,7 @@
 #include "Particles3D.h"
 #include "Restart3D.h"
 #include "Timing.h"
-#include "WriteOutputParallel.h"
+#include "WriteOutputH5hut.h"
 
 #include <iostream>
 #include <fstream>

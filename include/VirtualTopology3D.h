@@ -71,6 +71,8 @@ public:
   virtual int getCoordinates(int dir) = 0;
   /** get the coordinates of process*/
   virtual int *getCoordinates() = 0;
+  /** get the number of processors in each direction*/
+  virtual int *getDivisions() = 0;
   /** get Periodicity condition in dir direction */
   virtual int getPeriods(int dir) = 0;
   /** if cVERBOSE == true, print to the screen all the comunication */

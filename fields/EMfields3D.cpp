@@ -160,7 +160,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   vectY = newArr3(double, nxn, nyn, nzn);
   vectZ = newArr3(double, nxn, nyn, nzn);
   divC = newArr3(double, nxc, nyc, nzc);
-  arr = newArr3(double,nxc-2,nyc-2,nzc-2);
+  arr = newArr3(double,nxc,nyc,nzc);
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -2955,19 +2955,20 @@ double ***EMfields3D::getEx() {
   return (Ex);
 }
 /*! get Electric Field component X array cell without the ghost cells */
-double ***EMfields3D::getExc(Grid3DCU *grid) {
-  double ***tmp;
+double ***EMfields3D::getExc() {
 
-  tmp = newArr3(double,nxc,nyc,nzc);
+  for (int i = 0; i < nxc; i++)
+    for (int j = 0; j < nyc; j++)
+      for (int k = 0; k < nzc; k++)
+        arr[i][j][k] = .125 * (Ex[i][j][k]     + 
+                               Ex[i + 1][j][k] + 
+                               Ex[i][j + 1][k] + 
+                               Ex[i][j][k + 1] + 
+                               Ex[i + 1][j + 1][k] + 
+                               Ex[i + 1][j][k + 1] + 
+                               Ex[i][j + 1][k + 1] + 
+                               Ex[i + 1][j + 1][k + 1]);
 
-  grid->interpN2C(tmp, Ex);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[i][j][k];
-
-  delArr3(tmp,nxc,nyc);
   return arr;
 }
 /*! get Ey(X,Y,Z) */
@@ -2979,19 +2980,19 @@ double ***EMfields3D::getEy() {
   return (Ey);
 }
 /*! get Electric Field component Y array cell without the ghost cells */
-double ***EMfields3D::getEyc(Grid3DCU *grid) {
-  double ***tmp;
+double ***EMfields3D::getEyc() {
 
-  tmp = newArr3(double,nxc,nyc,nzc);
-
-  grid->interpN2C(tmp, Ey);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[i][j][k];
-
-  delArr3(tmp,nxc,nyc);
+  for (int i = 0; i < nxc; i++)
+    for (int j = 0; j < nyc; j++)
+      for (int k = 0; k < nzc; k++)
+        arr[i][j][k] = .125 * (Ey[i][j][k]     + 
+                               Ey[i + 1][j][k] + 
+                               Ey[i][j + 1][k] + 
+                               Ey[i][j][k + 1] + 
+                               Ey[i + 1][j + 1][k] + 
+                               Ey[i + 1][j][k + 1] + 
+                               Ey[i][j + 1][k + 1] + 
+                               Ey[i + 1][j + 1][k + 1]);
   return arr;
 }
 /*! get Ez(X,Y,Z) */
@@ -3003,19 +3004,20 @@ double ***EMfields3D::getEz() {
   return (Ez);
 }
 /*! get Electric Field component Z array cell without the ghost cells */
-double ***EMfields3D::getEzc(Grid3DCU *grid) {
-  double ***tmp;
+double ***EMfields3D::getEzc() {
 
-  tmp = newArr3(double,nxc,nyc,nzc);
+  for (int i = 0; i < nxc; i++)
+    for (int j = 0; j < nyc; j++)
+      for (int k = 0; k < nzc; k++)
+        arr[i][j][k] = .125 * (Ez[i][j][k]     +
+                               Ez[i + 1][j][k] +
+                               Ez[i][j + 1][k] +
+                               Ez[i][j][k + 1] +
+                               Ez[i + 1][j + 1][k] +
+                               Ez[i + 1][j][k + 1] +
+                               Ez[i][j + 1][k + 1] +
+                               Ez[i + 1][j + 1][k + 1]);
 
-  grid->interpN2C(tmp, Ez);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[i][j][k];
-
-  delArr3(tmp,nxc,nyc);
   return arr;
 }
 /*! get Bx(X,Y,Z) */
@@ -3028,11 +3030,7 @@ double ***EMfields3D::getBx() {
 }
 /*! get Magnetic Field component X array cell without the ghost cells */
 double ***EMfields3D::getBxc() {
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=Bxc[i][j][k];
-  return arr;
+  return (Bxc);
 }
 /*! get By(X,Y,Z) */
 double &EMfields3D::getBy(int indexX, int indexY, int indexZ) const {
@@ -3044,11 +3042,7 @@ double ***EMfields3D::getBy() {
 }
 /*! get Magnetic Field component Y array cell without the ghost cells */
 double ***EMfields3D::getByc() {
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=Byc[i][j][k];
-  return arr;
+  return (Byc);
 }
 /*! get Bz(X,Y,Z) */
 double &EMfields3D::getBz(int indexX, int indexY, int indexZ) const {
@@ -3060,11 +3054,7 @@ double ***EMfields3D::getBz() {
 }
 /*! get Magnetic Field component Z array cell without the ghost cells */
 double ***EMfields3D::getBzc() {
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=Bzc[i][j][k];
-  return arr;
+  return (Bzc);
 }
 /*! get rhoc(X,Y,Z) */
 double &EMfields3D::getRHOc(int indexX, int indexY, int indexZ) const {
@@ -3093,19 +3083,19 @@ double ****EMfields3D::getRHOns() {
   return (rhons);
 }
 /*! get species density component X array cell without the ghost cells */
-double ***EMfields3D::getRHOcs(Grid3DCU *grid, int is) {
-  double ****tmp;
+double ***EMfields3D::getRHOcs(int is) {
+  for (int i = 0; i < nxc; i++)
+    for (int j = 0; j < nyc; j++)
+      for (int k = 0; k < nzc; k++)
+        arr[i][j][k] = .125 * (rhons[is][i][j][k]     +
+                               rhons[is][i + 1][j][k] +
+                               rhons[is][i][j + 1][k] +
+                               rhons[is][i][j][k + 1] +
+                               rhons[is][i + 1][j + 1][k] +
+                               rhons[is][i + 1][j][k + 1] +
+                               rhons[is][i][j + 1][k + 1] +
+                               rhons[is][i + 1][j + 1][k + 1]);
 
-  tmp = newArr4(double,ns,nxc,nyc,nzc);
-
-  grid->interpN2C(tmp, is, rhons);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-
-  delArr4(tmp,nxc,nyc,nzc);
   return arr;
 }
 
@@ -3192,19 +3182,19 @@ double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const {
   return (Jxs[is][indexX][indexY][indexZ]);
 }
 /*! get Magnetic Field component X array species is cell without the ghost cells */
-double ***EMfields3D::getJxsc(Grid3DCU *grid, int is) {
-  double ****tmp;
+double ***EMfields3D::getJxsc(int is) {
+  for (int i = 0; i < nxc; i++)
+    for (int j = 0; j < nyc; j++)
+      for (int k = 0; k < nzc; k++)
+        arr[i][j][k] = .125 * (Jxs[is][i][j][k]     +
+                               Jxs[is][i + 1][j][k] +
+                               Jxs[is][i][j + 1][k] +
+                               Jxs[is][i][j][k + 1] +
+                               Jxs[is][i + 1][j + 1][k] +
+                               Jxs[is][i + 1][j][k + 1] +
+                               Jxs[is][i][j + 1][k + 1] +
+                               Jxs[is][i + 1][j + 1][k + 1]);
 
-  tmp = newArr4(double,ns,nxc,nyc,nzc);
-
-  grid->interpN2C(tmp, is, Jxs);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-
-  delArr4(tmp,nxc,nyc,nzc);
   return arr;
 }
 /*! SPECIES: get current array Y component */
@@ -3216,19 +3206,19 @@ double &EMfields3D::getJys(int indexX, int indexY, int indexZ, int is) const {
   return (Jys[is][indexX][indexY][indexZ]);
 }
 /*! get current component Y array species is cell without the ghost cells */
-double ***EMfields3D::getJysc(Grid3DCU *grid, int is) {
-  double ****tmp;
+double ***EMfields3D::getJysc(int is) {
+  for (int i = 0; i < nxc; i++)
+    for (int j = 0; j < nyc; j++)
+      for (int k = 0; k < nzc; k++)
+        arr[i][j][k] = .125 * (Jys[is][i][j][k]     + 
+                               Jys[is][i + 1][j][k] +
+                               Jys[is][i][j + 1][k] +
+                               Jys[is][i][j][k + 1] +
+                               Jys[is][i + 1][j + 1][k] +
+                               Jys[is][i + 1][j][k + 1] +
+                               Jys[is][i][j + 1][k + 1] +
+                               Jys[is][i + 1][j + 1][k + 1]);
 
-  tmp = newArr4(double,ns,nxc,nyc,nzc);
-
-  grid->interpN2C(tmp, is, Jys);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-
-  delArr4(tmp,nxc,nyc,nzc);
   return arr;
 }
 /*!SPECIES: get current array Z component */
@@ -3240,19 +3230,19 @@ double &EMfields3D::getJzs(int indexX, int indexY, int indexZ, int is) const {
   return (Jzs[is][indexX][indexY][indexZ]);
 }
 /*! get current component Z array species is cell without the ghost cells */
-double ***EMfields3D::getJzsc(Grid3DCU *grid, int is) {
-  double ****tmp;
+double ***EMfields3D::getJzsc(int is) {
+  for (int i = 0; i < nxc; i++)
+    for (int j = 0; j < nyc; j++)
+      for (int k = 0; k < nzc; k++)
+        arr[i][j][k] = .125 * (Jzs[is][i][j][k]     + 
+                               Jzs[is][i + 1][j][k] +
+                               Jzs[is][i][j + 1][k] +
+                               Jzs[is][i][j][k + 1] +
+                               Jzs[is][i + 1][j + 1][k] +
+                               Jzs[is][i + 1][j][k + 1] +
+                               Jzs[is][i][j + 1][k + 1] +
+                               Jzs[is][i + 1][j + 1][k + 1]);
 
-  tmp = newArr4(double,ns,nxc,nyc,nzc);
-
-  grid->interpN2C(tmp, is, Jzs);
-
-  for (int i = 1; i < nxc-1; i++)
-    for (int j = 1; j < nyc-1; j++)
-      for (int k = 1; k < nzc-1; k++)
-        arr[i-1][j-1][k-1]=tmp[is][i][j][k];
-
-  delArr4(tmp,nxc,nyc,nzc);
   return arr;
 }
 /*! get the electric field energy */
