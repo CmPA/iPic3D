@@ -192,7 +192,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) :
   injFieldsFront  = new injInfoFields(nxn, nyn, nzn);
   injFieldsRear   = new injInfoFields(nxn, nyn, nzn);
 
-  sizeMomentsArray = omp_get_max_threads();
+  // EDIT: delete "+ns" before checking in
+  sizeMomentsArray = omp_get_max_threads()+ns;
   moments10Array = new Moments10*[sizeMomentsArray];
   for(int i=0;i<sizeMomentsArray;i++)
   {
@@ -380,6 +381,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
   // subarrays.
   //#ifdef _OPENMP
   #pragma omp parallel
+  {
   for (int i = 0; i < ns; i++)
   {
     const Particles3Dcomm& pcls = part[i];
@@ -399,8 +401,16 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
     int thread_num = omp_get_thread_num();
     if(!thread_num) { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
     Moments10& speciesMoments10 = fetch_moments10Array(thread_num);
-    speciesMoments10.set_to_zero();
     arr4_double moments = speciesMoments10.fetch_arr();
+    //
+    // moments.setmode(ompmode::mine);
+    // moments.setall(0.);
+    // 
+    double *moments1d = &moments[0][0][0][0];
+    int moments1dsize = moments.get_size();
+    for(int i=0; i<moments1dsize; i++) moments1d[i]=0;
+    //
+    #pragma omp barrier
     // The following loop is expensive, so it is wise to assume that the
     // compiler is stupid.  Therefore we should on the one hand
     // expand things out and on the other hand avoid repeating computations.
@@ -534,6 +544,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
     // when we change to use asynchronous communication.
     // communicateGhostP2G(is, 0, 0, 0, 0, vct);
   }
+  }
   for (int i = 0; i < ns; i++)
   {
     communicateGhostP2G(i, 0, 0, 0, 0, vct);
@@ -553,6 +564,7 @@ void EMfields3D::sumMoments_vectorized(
   const double ystart = grid->getYstart();
   const double zstart = grid->getZstart();
   #pragma omp parallel
+  {
   for (int species_idx = 0; species_idx < ns; species_idx++)
   {
     const Particles3Dcomm& pcls = part[species_idx];
@@ -570,14 +582,61 @@ void EMfields3D::sumMoments_vectorized(
     const int nop = pcls.getNOP();
     #pragma omp master
     { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
-    Moments10& speciesMoments10 = fetch_moments10Array(0);
-    speciesMoments10.set_to_zero();
+    // EDIT change arr_idx to 0 before checking this in!!
+    const int arr_idx = omp_get_max_threads()+is;
+    Moments10& speciesMoments10 = fetch_moments10Array(arr_idx);
     arr4_double moments = speciesMoments10.fetch_arr();
-    #pragma omp for collapse(2) // schedule(static)
-    for(int cx=0;cx<nxc;cx++)
-    for(int cy=0;cy<nyc;cy++)
+    //
+    // moments.setmode(ompmode::ompfor);
+    //moments.setall(0.);
+    double *moments1d = &moments[0][0][0][0];
+    int moments1dsize = moments.get_size();
+    #pragma omp for // because shared
+    for(int i=0; i<moments1dsize; i++) moments1d[i]=0;
+    //
+    #pragma omp for collapse(2)
+    for(int cx=0;cx<nxc; cx++)
+    for(int cy=0;cy<nyc; cy++)
+    for(int cz=0;cz<nzc; cz++)
+    for(int m=0;m<10;m++)
+    {
+      assert_eq(moments[cx][cy][cz][m],0.);
+      //if(moments[cx][cy][cz][m]!=0.)
+      //{
+      //  eprintf("moments[%d][%d][%d][%d]==%g", cx, cy, cz, m, moments[cx][cy][cz][m]);
+      //}
+    }
+    
+    for(int cxmod2=0; cxmod2<2; cxmod2++)
+    // threads should not be writing to the same location
+    #pragma omp for
+    for(int cx=cxmod2;cx<nxc;cx+=2) {
+    for(int cy=0;cy<nyc;cy++) {
     for(int cz=0;cz<nzc;cz++)
     {
+     //dprint(cz);
+     // index of interface to right of cell
+     const int ix = cx + 1;
+     const int iy = cy + 1;
+     const int iz = cz + 1;
+     {
+      // reference the 8 nodes to which we will
+      // write moment data for particles in this mesh cell.
+      //
+      arr1_double_fetch momentsArray[8];
+      arr2_double_fetch moments00 = moments[ix][iy];
+      arr2_double_fetch moments01 = moments[ix][cy];
+      arr2_double_fetch moments10 = moments[cx][iy];
+      arr2_double_fetch moments11 = moments[cx][cy];
+      momentsArray[0] = moments00[iz]; // moments000 
+      momentsArray[1] = moments00[cz]; // moments001 
+      momentsArray[2] = moments01[iz]; // moments010 
+      momentsArray[3] = moments01[cz]; // moments011 
+      momentsArray[4] = moments10[iz]; // moments100 
+      momentsArray[5] = moments10[cz]; // moments101 
+      momentsArray[6] = moments11[iz]; // moments110 
+      momentsArray[7] = moments11[cz]; // moments111 
+
       const int numpcls_in_cell = pcls.get_numpcls_in_bucket(cx,cy,cz);
       const int bucket_offset = pcls.get_bucket_offset(cx,cy,cz);
       const int bucket_end = bucket_offset+numpcls_in_cell;
@@ -619,19 +678,15 @@ void EMfields3D::sumMoments_vectorized(
         const double cxm1_pos = rel_xpos * inv_dx;
         const double cym1_pos = rel_ypos * inv_dy;
         const double czm1_pos = rel_zpos * inv_dz;
-        if(false)
-        {
-          const int cx_inf = int(floor(cxm1_pos));
-          const int cy_inf = int(floor(cym1_pos));
-          const int cz_inf = int(floor(czm1_pos));
-          assert_eq(cx-1,cx_inf);
-          assert_eq(cy-1,cy_inf);
-          assert_eq(cz-1,cz_inf);
-        }
-        // index of interface to right of cell
-        const int ix = cx + 1;
-        const int iy = cy + 1;
-        const int iz = cz + 1;
+        //if(true)
+        //{
+        //  const int cx_inf = int(floor(cxm1_pos));
+        //  const int cy_inf = int(floor(cym1_pos));
+        //  const int cz_inf = int(floor(czm1_pos));
+        //  assert_eq(cx-1,cx_inf);
+        //  assert_eq(cy-1,cy_inf);
+        //  assert_eq(cz-1,cz_inf);
+        //}
         // fraction of the distance from the right of the cell
         const double w1x = cx - cxm1_pos;
         const double w1y = cy - cym1_pos;
@@ -659,27 +714,17 @@ void EMfields3D::sumMoments_vectorized(
 
         // add particle to moments
         {
-          arr1_double_fetch momentsArray[8];
-          arr2_double_fetch moments00 = moments[ix][iy];
-          arr2_double_fetch moments01 = moments[ix][cy];
-          arr2_double_fetch moments10 = moments[cx][iy];
-          arr2_double_fetch moments11 = moments[cx][cy];
-          momentsArray[0] = moments00[iz]; // moments000 
-          momentsArray[1] = moments00[cz]; // moments001 
-          momentsArray[2] = moments01[iz]; // moments010 
-          momentsArray[3] = moments01[cz]; // moments011 
-          momentsArray[4] = moments10[iz]; // moments100 
-          momentsArray[5] = moments10[cz]; // moments101 
-          momentsArray[6] = moments11[iz]; // moments110 
-          momentsArray[7] = moments11[cz]; // moments111 
-
           for(int m=0; m<10; m++)
           for(int c=0; c<8; c++)
           {
             momentsArray[c][m] += velmoments[m]*weights[c];
+            assert_isnum(momentsArray[c][m]);
           }
         }
       }
+     }
+    }
+    }
     }
     #pragma omp master
     { timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION); }
@@ -689,8 +734,8 @@ void EMfields3D::sumMoments_vectorized(
     { timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION); }
     {
       #pragma omp for collapse(2)
-      for(int i=0;i<nxn;i++)
-      for(int j=0;j<nyn;j++)
+      for(int i=0;i<nxn;i++){
+      for(int j=0;j<nyn;j++){
       for(int k=0;k<nzn;k++)
       {
         rhons[is][i][j][k] = invVOL*moments[i][j][k][0];
@@ -703,7 +748,7 @@ void EMfields3D::sumMoments_vectorized(
         pYYsn[is][i][j][k] = invVOL*moments[i][j][k][7];
         pYZsn[is][i][j][k] = invVOL*moments[i][j][k][8];
         pZZsn[is][i][j][k] = invVOL*moments[i][j][k][9];
-      }
+      }}}
     }
     #pragma omp master
     { timeTasks_end_task(TimeTasks::MOMENT_REDUCTION); }
@@ -711,9 +756,64 @@ void EMfields3D::sumMoments_vectorized(
     // when we change to use asynchronous communication.
     // communicateGhostP2G(is, 0, 0, 0, 0, vct);
   }
+  }
   for (int i = 0; i < ns; i++)
   {
     communicateGhostP2G(i, 0, 0, 0, 0, vct);
+  }
+}
+
+void EMfields3D::checkMoment(const Particles3Dcomm* part)
+{
+}
+
+void EMfields3D::checkMoments(const Particles3Dcomm* part)
+{
+  #pragma omp parallel
+  for (int species_idx = 0; species_idx < ns; species_idx++)
+  {
+    const Particles3Dcomm& pcls = part[species_idx];
+    const int is = pcls.get_ns();
+    assert_eq(species_idx,is);
+
+    const int nop = pcls.getNOP();
+    const int arr_idx = omp_get_max_threads()+is;
+    Moments10& speciesMoments10 = fetch_moments10Array(arr_idx);
+    arr4_double moments = speciesMoments10.fetch_arr();
+
+    //#pragma omp master
+    //eprintf("rhons[%d][1][1][1]:=%g but invVOL*moments[1][1][1][0]:=%g",
+    // is,
+    // getRHOns(is,1,1,1),
+    // // rhons[is][1][1][1],
+    // invVOL*moments[1][1][1][0]);
+    //#pragma omp barrier
+    // ghost and boundary cell values will be changed,
+    // but interior values should be the same.
+    #pragma omp for collapse(2)
+    for(int i=2;i<nxn-2;i++)
+    for(int j=2;j<nyn-2;j++)
+    for(int k=2;k<nzn-2;k++)
+    {
+      if(fcmp(rhons[is][i][j][k], invVOL*moments[i][j][k][0], 1e-14))
+      {
+        dprintf("rhons[%d][%d][%d][%d]:=%g but invVOL*moments[%d][%d][%d][0]:=%g",
+          is,i,j,k, rhons[is][i][j][k],
+          i,j,k, invVOL*moments[i][j][k][0]);
+        abort();
+      }
+      //assert_almost_eq(rhons[is][i][j][k], invVOL*moments[i][j][k][0]);
+      assert_almost_eq(rhons[is][i][j][k], invVOL*moments[i][j][k][0]);
+      assert_almost_eq(Jxs  [is][i][j][k], invVOL*moments[i][j][k][1]);
+      assert_almost_eq(Jys  [is][i][j][k], invVOL*moments[i][j][k][2]);
+      assert_almost_eq(Jzs  [is][i][j][k], invVOL*moments[i][j][k][3]);
+      assert_almost_eq(pXXsn[is][i][j][k], invVOL*moments[i][j][k][4]);
+      assert_almost_eq(pXYsn[is][i][j][k], invVOL*moments[i][j][k][5]);
+      assert_almost_eq(pXZsn[is][i][j][k], invVOL*moments[i][j][k][6]);
+      assert_almost_eq(pYYsn[is][i][j][k], invVOL*moments[i][j][k][7]);
+      assert_almost_eq(pYZsn[is][i][j][k], invVOL*moments[i][j][k][8]);
+      assert_almost_eq(pZZsn[is][i][j][k], invVOL*moments[i][j][k][9]);
+    }
   }
 }
 

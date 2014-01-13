@@ -212,8 +212,10 @@ namespace iPic3D
       base_arr(size_t s) : size(s), arr(AlignedAlloc(type, s)) {}
       base_arr(type* in, size_t s) : size(s), arr(in) {}
       ~base_arr(){}
+      int get_size() { return size; }
       void free() { AlignedFree(arr); }
       void setall(type val){
+        // #pragma omp for
         for(size_t i=0;i<size;i++) arr[i]=val;
       }
       //type* fetch_arr(){return arr;}
@@ -547,6 +549,7 @@ namespace iPic3D
       void set(size_t n3,size_t n2,size_t n1, type value)
         { const_array_ref3<type>::set(n3,n2,n1, value); }
       void setall(type val){
+        // #pragma omp for
         for(size_t i=0;i<size;i++) arr[i]=val;
       }
       type*** fetch_arr3(){ return (type***) arr3; }
@@ -577,6 +580,7 @@ namespace iPic3D
         S4(s4), S3(s3), S2(s2), S1(s1),
         arr4(in)
       { }
+      int get_size() const { return size; }
     #if defined(FLAT_ARRAYS) || defined(CHECK_BOUNDS)
       const const_array_get3<type> operator[](size_t n4)const{
         check_bounds(n4, S4);
@@ -615,9 +619,8 @@ namespace iPic3D
     protected:
       void setall(type val)
       {
-        #pragma omp for
-        for(int i=0;i<size;i++)
-          arr[i]=val;
+        // #pragma omp for
+        for(int i=0;i<size;i++) arr[i]=val;
       }
   };
   
@@ -632,6 +635,8 @@ namespace iPic3D
       using const_array_ref4<type>::S1;
       using const_array_ref4<type>::arr4;
       using const_array_ref4<type>::getidx;
+    public: // this did not work unless I made the using statment public.
+      using const_array_ref4<type>::get_size;
     public:
       ~array_ref4(){}
       array_ref4(size_t s4, size_t s3, size_t s2, size_t s1) :

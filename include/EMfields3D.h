@@ -122,6 +122,8 @@ class EMfields3D                // :public Field
     /*! sum moments (interp_P2G) versions */
     void sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
     void sumMoments_vectorized(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
+    void checkMoments(const Particles3Dcomm* part);
+    void checkMoment(const Particles3Dcomm* part);
     void sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
     //void addToSpeciesMoments(const TenMoments & in, int is);
@@ -264,7 +266,7 @@ class EMfields3D                // :public Field
     /*! fetch array for summing moments of thread i */
     Moments10& fetch_moments10Array(int i){
       assert_le(0,i);
-      assert_le(i,sizeMomentsArray);
+      assert_lt(i,sizeMomentsArray);
       return *(moments10Array[i]);
     }
 

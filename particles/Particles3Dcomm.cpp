@@ -986,7 +986,6 @@ void Particles3Dcomm::sort_particles_serial(
   double *xpos, double *ypos, double *zpos,
   Grid * grid, VirtualTopology3D * vct)
 {
-  #pragma omp critical (sort_particles_serial)
   {
     numpcls_in_bucket->setall(0);
     // iterate through particles and count where they will go
@@ -1018,6 +1017,7 @@ void Particles3Dcomm::sort_particles_serial(
       (*bucket_offset)[cx][cy][cz] = accpcls;
       accpcls += (*numpcls_in_bucket)[cx][cy][cz];
     }
+    assert_eq(accpcls,nop);
 
     numpcls_in_bucket_now->setall(0);
     // put the particles where they are supposed to go
@@ -1035,6 +1035,10 @@ void Particles3Dcomm::sort_particles_serial(
       // compute where the data should go
       const int numpcls_now = (*numpcls_in_bucket_now)[cx][cy][cz]++;
       const int outpidx = (*bucket_offset)[cx][cy][cz] + numpcls_now;
+      assert_lt(outpidx, nop);
+      assert_ge(outpidx, 0);
+      assert_lt(pidx, nop);
+      assert_ge(pidx, 0);
 
       // copy particle data to new location
       //

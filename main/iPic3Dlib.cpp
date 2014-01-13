@@ -4,6 +4,9 @@
 #include "ipicdefs.h"
 #include "debug.h"
 #include "Parameters.h"
+#include "ompdefs.h"
+
+#include "Moments.h" // for debugging
 
 using namespace iPic3D;
 MPIdata* iPic3D::c_Solver::mpi=0;
@@ -178,17 +181,19 @@ void c_Solver::CalculateMoments() {
   timeTasks_set_main_task(TimeTasks::MOMENTS);
 
   EMf->updateInfoFields(grid,vct,col);
-  EMf->setZeroDensities();                  // set to zero the densities
+  EMf->setZeroDensities();
 
   if(Parameters::get_SORTING_PARTICLES())
   {
     // sort particles
-    #pragma omp master
-    timeTasks_begin_task(TimeTasks::MOMENT_PCL_SORTING);
-    for(int species_idx=0; species_idx<ns; species_idx++)
-      part[species_idx].sort_particles_serial(grid,vct);
-    #pragma omp master
-    timeTasks_end_task(TimeTasks::MOMENT_PCL_SORTING);
+    //#pragma omp master
+    {
+      //dprint(omp_get_thread_num());
+      timeTasks_begin_task(TimeTasks::MOMENT_PCL_SORTING);
+      for(int species_idx=0; species_idx<ns; species_idx++)
+        part[species_idx].sort_particles_serial(grid,vct);
+      timeTasks_end_task(TimeTasks::MOMENT_PCL_SORTING);
+    }
   }
 
   if(Parameters::get_VECTORIZE_MOMENTS())
@@ -201,6 +206,12 @@ void c_Solver::CalculateMoments() {
   {
     EMf->sumMoments(part, grid, vct);
   }
+  // do the moments calculated by the old and new code agree?
+  //EMf->setZeroDensities();
+  //EMf->sumMoments_vectorized(part, grid, vct);
+  //EMf->setZeroDensities();
+  //EMf->sumMoments(part, grid, vct);
+  //EMf->checkMoments(part);
   //for (int i = 0; i < ns; i++)
   //{
   //  EMf->sumMomentsOld(part[i], grid, vct);
@@ -245,6 +256,7 @@ bool c_Solver::ParticlesMover() {
     // Should change this to add background field
     EMf->set_fieldForPcls();
     #pragma omp parallel
+    {
     for (int i = 0; i < ns; i++)  // move each species
     {
       // #pragma omp task inout(part[i]) in(grid) target_device(booster)
@@ -255,6 +267,7 @@ bool c_Solver::ParticlesMover() {
         part[i].mover_PC_vectorized(grid, vct, EMf);
       else
         part[i].mover_PC(grid, vct, EMf);
+    }
     }
     for (int i = 0; i < ns; i++)  // move each species
     {

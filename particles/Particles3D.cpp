@@ -319,7 +319,7 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
 
   #pragma omp master
-  timeTasks_begin_task(TimeTasks::MOVER_PCL_MOVING);
+  { timeTasks_begin_task(TimeTasks::MOVER_PCL_MOVING); }
   const pfloat dto2 = .5 * dt, qdto2mc = qom * dto2 / c;
   #pragma omp for schedule(static)
   // why does single precision make no difference in execution speed?
@@ -453,7 +453,7 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     w[pidx] = 2.0 * wavg - worig;
   }                             // END OF ALL THE PARTICLES
   #pragma omp master
-  timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING);
+  { timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING); }
 }
 
 /** mover with a Predictor-Corrector scheme */
@@ -485,10 +485,12 @@ void Particles3D::mover_PC_vectorized(
     if(niter>1) // on first iteration already was sorted to sum moments
     {
       #pragma omp master
-      timeTasks_begin_task(TimeTasks::MOVER_PCL_SORTING);
-      sort_particles_serial(xavg, yavg, zavg, grid,vct);
-      #pragma omp master
-      timeTasks_end_task(TimeTasks::MOVER_PCL_SORTING);
+      {
+        timeTasks_begin_task(TimeTasks::MOVER_PCL_SORTING);
+        sort_particles_serial(xavg, yavg, zavg, grid,vct);
+        timeTasks_end_task(TimeTasks::MOVER_PCL_SORTING);
+      }
+      #pragma omp barrier
     }
 
     #pragma omp master
@@ -534,15 +536,23 @@ void Particles3D::mover_PC_vectorized(
       for(int pidx=bucket_offset; pidx<bucket_end; pidx++)
       {
         // serial case: check that pidx is correct
-        if(true)
-        {
-          assert_eq(pidx,serial_pidx++);
-        }
+        //assert_eq(pidx,serial_pidx++);
         // confirm that particle is in correct cell
         if(true)
         {
           int cx_,cy_,cz_;
           get_safe_cell_for_pos(cx_,cy_,cz_,xavg[pidx],yavg[pidx],zavg[pidx]);
+          //if((cx_!=cx)
+          // ||(cy_!=cy)
+          // ||(cz_!=cz))
+          //{
+          //  dprintf("\n\t cx =%d, cy =%d, cz =%d"
+          //          "\n\t cx_=%d, cy_=%d, cz_=%d"
+          //          "\n\t x=%g, y=%g, z_=%g",
+          //          cx,cy,cz,
+          //          cx_,cy_,cz_,
+          //          xavg[pidx], yavg[pidx], zavg[pidx]);
+          //}
           assert_eq(cx_,cx);
           assert_eq(cy_,cy);
           assert_eq(cz_,cz);
