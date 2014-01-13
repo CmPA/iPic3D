@@ -569,7 +569,7 @@ void EMfields3D::sumMoments_vectorized(
 
     const int nop = pcls.getNOP();
     #pragma omp master
-    timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION);
+    { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
     Moments10& speciesMoments10 = fetch_moments10Array(0);
     speciesMoments10.set_to_zero();
     arr4_double moments = speciesMoments10.fetch_arr();
@@ -682,11 +682,11 @@ void EMfields3D::sumMoments_vectorized(
       }
     }
     #pragma omp master
-    timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
+    { timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION); }
 
     // reduction
     #pragma omp master
-    timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
+    { timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION); }
     {
       #pragma omp for collapse(2)
       for(int i=0;i<nxn;i++)
@@ -706,7 +706,7 @@ void EMfields3D::sumMoments_vectorized(
       }
     }
     #pragma omp master
-    timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
+    { timeTasks_end_task(TimeTasks::MOMENT_REDUCTION); }
     // uncomment this and remove the loop below
     // when we change to use asynchronous communication.
     // communicateGhostP2G(is, 0, 0, 0, 0, vct);

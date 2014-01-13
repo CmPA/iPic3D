@@ -492,7 +492,7 @@ void Particles3D::mover_PC_vectorized(
     }
 
     #pragma omp master
-    timeTasks_begin_task(TimeTasks::MOVER_PCL_MOVING);
+    { timeTasks_begin_task(TimeTasks::MOVER_PCL_MOVING); }
     // move particles in parallel
     //
     // iterate over mesh cells
@@ -646,7 +646,7 @@ void Particles3D::mover_PC_vectorized(
       }
     }
     #pragma omp master
-    timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING);
+    { timeTasks_end_task(TimeTasks::MOVER_PCL_MOVING); }
   }
 }
 
