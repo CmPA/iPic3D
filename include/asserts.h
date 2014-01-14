@@ -125,12 +125,12 @@ extern "C" {
 #define builtin_expect(a,b) __builtin_expect(a,b)
 #endif
 // check whether two numbers are equal within machine precision
-#define assert_not_almost_eq(lhs,rhs) \
-  (fcmp(lhs, rhs, 1e-14) \
+#define assert_not_almost_eq(lhs,rhs,tol) \
+  (fcmp(lhs, rhs, tol) \
    ? (void)0 \
    : assert_error(__FILE__, __LINE__, __func__, " !=~= ", #lhs, #rhs, lhs, rhs))
-#define assert_almost_eq(lhs,rhs) \
-  (builtin_expect(fcmp(lhs, rhs, 1e-14),0) \
+#define assert_almost_eq(lhs,rhs,tol) \
+  (builtin_expect(fcmp(lhs, rhs, tol),0) \
    ? assert_error(__FILE__, __LINE__, __func__, " =~= ", #lhs, #rhs, lhs, rhs) \
    : (void)0)
 //#define assert_almost_eq(lhs,rhs) \
