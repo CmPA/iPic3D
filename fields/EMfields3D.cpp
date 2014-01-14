@@ -4,6 +4,7 @@
 #include "Particles3Dcomm.h"
 #include "TimeTasks.h"
 #include "Moments.h"
+#include "Parameters.h"
 #include "ompdefs.h"
 #include "debug.h"
 
@@ -192,8 +193,17 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) :
   injFieldsFront  = new injInfoFields(nxn, nyn, nzn);
   injFieldsRear   = new injInfoFields(nxn, nyn, nzn);
 
-  // EDIT: delete "+ns" before checking in
-  sizeMomentsArray = omp_get_max_threads()+ns;
+  if(Parameters::get_VECTORIZE_MOMENTS())
+  {
+    // In this case particles are sorted
+    // and there is no need for each thread
+    // to sum moments in a separate array.
+    sizeMomentsArray = 1;
+  }
+  else
+  {
+    sizeMomentsArray = omp_get_max_threads();
+  }
   moments10Array = new Moments10*[sizeMomentsArray];
   for(int i=0;i<sizeMomentsArray;i++)
   {
@@ -582,9 +592,7 @@ void EMfields3D::sumMoments_vectorized(
     const int nop = pcls.getNOP();
     #pragma omp master
     { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
-    // EDIT change arr_idx to 0 before checking this in!!
-    const int arr_idx = omp_get_max_threads()+is;
-    Moments10& speciesMoments10 = fetch_moments10Array(arr_idx);
+    Moments10& speciesMoments10 = fetch_moments10Array(0);
     arr4_double moments = speciesMoments10.fetch_arr();
     //
     // moments.setmode(ompmode::ompfor);
@@ -593,25 +601,13 @@ void EMfields3D::sumMoments_vectorized(
     int moments1dsize = moments.get_size();
     #pragma omp for // because shared
     for(int i=0; i<moments1dsize; i++) moments1d[i]=0;
-    //
-    #pragma omp for collapse(2)
-    for(int cx=0;cx<nxc; cx++)
-    for(int cy=0;cy<nyc; cy++)
-    for(int cz=0;cz<nzc; cz++)
-    for(int m=0;m<10;m++)
-    {
-      assert_eq(moments[cx][cy][cz][m],0.);
-      //if(moments[cx][cy][cz][m]!=0.)
-      //{
-      //  eprintf("moments[%d][%d][%d][%d]==%g", cx, cy, cz, m, moments[cx][cy][cz][m]);
-      //}
-    }
     
+    // prevent threads from writing to the same location
     for(int cxmod2=0; cxmod2<2; cxmod2++)
-    // threads should not be writing to the same location
-    #pragma omp for
-    for(int cx=cxmod2;cx<nxc;cx+=2) {
-    for(int cy=0;cy<nyc;cy++) {
+    for(int cymod2=0; cymod2<2; cymod2++)
+    #pragma omp for collapse(2)
+    for(int cx=cxmod2;cx<nxc;cx+=2)
+    for(int cy=cymod2;cy<nyc;cy+=2)
     for(int cz=0;cz<nzc;cz++)
     {
      //dprint(cz);
@@ -640,7 +636,8 @@ void EMfields3D::sumMoments_vectorized(
       const int numpcls_in_cell = pcls.get_numpcls_in_bucket(cx,cy,cz);
       const int bucket_offset = pcls.get_bucket_offset(cx,cy,cz);
       const int bucket_end = bucket_offset+numpcls_in_cell;
-      #pragma simd
+      // Why does uncommenting here cause a segmentation fault below on xeon?
+      //#pragma simd
       for(int i=bucket_offset; i<bucket_end; i++)
       {
         // compute the quadratic moments of velocity
@@ -714,17 +711,18 @@ void EMfields3D::sumMoments_vectorized(
 
         // add particle to moments
         {
+          // which is the superior order for the following loop?
           for(int m=0; m<10; m++)
           for(int c=0; c<8; c++)
           {
             momentsArray[c][m] += velmoments[m]*weights[c];
-            assert_isnum(momentsArray[c][m]);
+            // When simd above is uncommented,
+            // the following statement prevents segmentation fault
+            //assert_isnum(momentsArray[c][m]);
           }
         }
       }
      }
-    }
-    }
     }
     #pragma omp master
     { timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION); }
@@ -760,60 +758,6 @@ void EMfields3D::sumMoments_vectorized(
   for (int i = 0; i < ns; i++)
   {
     communicateGhostP2G(i, 0, 0, 0, 0, vct);
-  }
-}
-
-void EMfields3D::checkMoment(const Particles3Dcomm* part)
-{
-}
-
-void EMfields3D::checkMoments(const Particles3Dcomm* part)
-{
-  #pragma omp parallel
-  for (int species_idx = 0; species_idx < ns; species_idx++)
-  {
-    const Particles3Dcomm& pcls = part[species_idx];
-    const int is = pcls.get_ns();
-    assert_eq(species_idx,is);
-
-    const int nop = pcls.getNOP();
-    const int arr_idx = omp_get_max_threads()+is;
-    Moments10& speciesMoments10 = fetch_moments10Array(arr_idx);
-    arr4_double moments = speciesMoments10.fetch_arr();
-
-    //#pragma omp master
-    //eprintf("rhons[%d][1][1][1]:=%g but invVOL*moments[1][1][1][0]:=%g",
-    // is,
-    // getRHOns(is,1,1,1),
-    // // rhons[is][1][1][1],
-    // invVOL*moments[1][1][1][0]);
-    //#pragma omp barrier
-    // ghost and boundary cell values will be changed,
-    // but interior values should be the same.
-    #pragma omp for collapse(2)
-    for(int i=2;i<nxn-2;i++)
-    for(int j=2;j<nyn-2;j++)
-    for(int k=2;k<nzn-2;k++)
-    {
-      if(fcmp(rhons[is][i][j][k], invVOL*moments[i][j][k][0], 1e-14))
-      {
-        dprintf("rhons[%d][%d][%d][%d]:=%g but invVOL*moments[%d][%d][%d][0]:=%g",
-          is,i,j,k, rhons[is][i][j][k],
-          i,j,k, invVOL*moments[i][j][k][0]);
-        abort();
-      }
-      //assert_almost_eq(rhons[is][i][j][k], invVOL*moments[i][j][k][0]);
-      assert_almost_eq(rhons[is][i][j][k], invVOL*moments[i][j][k][0]);
-      assert_almost_eq(Jxs  [is][i][j][k], invVOL*moments[i][j][k][1]);
-      assert_almost_eq(Jys  [is][i][j][k], invVOL*moments[i][j][k][2]);
-      assert_almost_eq(Jzs  [is][i][j][k], invVOL*moments[i][j][k][3]);
-      assert_almost_eq(pXXsn[is][i][j][k], invVOL*moments[i][j][k][4]);
-      assert_almost_eq(pXYsn[is][i][j][k], invVOL*moments[i][j][k][5]);
-      assert_almost_eq(pXZsn[is][i][j][k], invVOL*moments[i][j][k][6]);
-      assert_almost_eq(pYYsn[is][i][j][k], invVOL*moments[i][j][k][7]);
-      assert_almost_eq(pYZsn[is][i][j][k], invVOL*moments[i][j][k][8]);
-      assert_almost_eq(pZZsn[is][i][j][k], invVOL*moments[i][j][k][9]);
-    }
   }
 }
 
@@ -1765,30 +1709,8 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   communicateNode_P(nxn, nyn, nzn, pZZsn, ns, vct);
 }
 
-/* add moments (e.g. from an OpenMP thread) to the accumulated moments */
-//void EMfields3D::addToSpeciesMoments(const TenMoments & in, int is) {
-//  assert_eq(in.get_nx(), nxn);
-//  assert_eq(in.get_ny(), nyn);
-//  assert_eq(in.get_nz(), nzn);
-//  for (register int i = 0; i < nxn; i++) {
-//    for (register int j = 0; j < nyn; j++)
-//      for (register int k = 0; k < nzn; k++) {
-//        rhons[is][i][j][k] += invVOL*in.get_rho(i, j, k);
-//        Jxs  [is][i][j][k] += invVOL*in.get_Jx(i, j, k);
-//        Jys  [is][i][j][k] += invVOL*in.get_Jy(i, j, k);
-//        Jzs  [is][i][j][k] += invVOL*in.get_Jz(i, j, k);
-//        pXXsn[is][i][j][k] += invVOL*in.get_pXX(i, j, k);
-//        pXYsn[is][i][j][k] += invVOL*in.get_pXY(i, j, k);
-//        pXZsn[is][i][j][k] += invVOL*in.get_pXZ(i, j, k);
-//        pYYsn[is][i][j][k] += invVOL*in.get_pYY(i, j, k);
-//        pYZsn[is][i][j][k] += invVOL*in.get_pYZ(i, j, k);
-//        pZZsn[is][i][j][k] += invVOL*in.get_pZZ(i, j, k);
-//      }
-//  }
-//}
-
-/*! set to 0 all the densities fields */
-void EMfields3D::setZeroDensities() {
+void EMfields3D::setZeroDerivedMoments()
+{
   for (register int i = 0; i < nxn; i++)
     for (register int j = 0; j < nyn; j++)
       for (register int k = 0; k < nzn; k++) {
@@ -1806,6 +1728,12 @@ void EMfields3D::setZeroDensities() {
         rhoc[i][j][k] = 0.0;
         rhoh[i][j][k] = 0.0;
       }
+}
+
+void EMfields3D::setZeroPrimaryMoments() {
+
+  // set primary moments to zero
+  //
   for (register int kk = 0; kk < ns; kk++)
     for (register int i = 0; i < nxn; i++)
       for (register int j = 0; j < nyn; j++)
@@ -1823,6 +1751,12 @@ void EMfields3D::setZeroDensities() {
         }
 
 }
+/*! set to 0 all the densities fields */
+void EMfields3D::setZeroDensities() {
+  setZeroDerivedMoments();
+  setZeroPrimaryMoments();
+}
+
 /*!SPECIES: Sum the charge density of different species on NODES */
 void EMfields3D::sumOverSpecies(VirtualTopology3D * vct) {
   for (int is = 0; is < ns; is++)

@@ -104,6 +104,10 @@ class EMfields3D                // :public Field
     void interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid);
     /*! set to 0 all the densities fields */
     void setZeroDensities();
+    /*! set to 0 primary moments */
+    void setZeroPrimaryMoments();
+    /*! set to 0 all densities derived from primary moments */
+    void setZeroDerivedMoments();
     /*! Sum rhon over species */
     void sumOverSpecies(VirtualTopology3D * vct);
     /*! Sum current over different species */
@@ -122,8 +126,6 @@ class EMfields3D                // :public Field
     /*! sum moments (interp_P2G) versions */
     void sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
     void sumMoments_vectorized(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
-    void checkMoments(const Particles3Dcomm* part);
-    void checkMoment(const Particles3Dcomm* part);
     void sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
     //void addToSpeciesMoments(const TenMoments & in, int is);

@@ -181,7 +181,6 @@ void c_Solver::CalculateMoments() {
   timeTasks_set_main_task(TimeTasks::MOMENTS);
 
   EMf->updateInfoFields(grid,vct,col);
-  EMf->setZeroDensities();
 
   if(Parameters::get_SORTING_PARTICLES())
   {
@@ -204,18 +203,14 @@ void c_Solver::CalculateMoments() {
   }
   else
   {
+    EMf->setZeroPrimaryMoments();
     EMf->sumMoments(part, grid, vct);
   }
-  // do the moments calculated by the old and new code agree?
-  //EMf->setZeroDensities();
-  //EMf->sumMoments_vectorized(part, grid, vct);
-  //EMf->setZeroDensities();
-  //EMf->sumMoments(part, grid, vct);
-  //EMf->checkMoments(part);
   //for (int i = 0; i < ns; i++)
   //{
   //  EMf->sumMomentsOld(part[i], grid, vct);
   //}
+  EMf->setZeroDerivedMoments();
   EMf->sumOverSpecies(vct);                 // sum all over the species
 
   // Fill with constant charge the planet
