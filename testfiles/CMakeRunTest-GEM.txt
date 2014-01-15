@@ -1,0 +1,36 @@
+####################################################
+#  GEM test
+####################################################
+
+# ------------------
+# Configure the test
+# ------------------
+
+set(IPIC_GEM_TEST_DIR "${IPIC_TESTS_DIR}/GEM")
+file(MAKE_DIRECTORY "${IPIC_GEM_TESTS_DIR}")
+file(MAKE_DIRECTORY "${IPIC_GEM_TEST_DIR}/data")
+
+configure_file("${IPIC_SOURCE_DIR}/inputfiles/GEM.inp" "${IPIC_GEM_TEST_DIR}")
+
+# ------------------
+# Launch the mpi run
+# ------------------
+
+execute_process(COMMAND ${MPIEXEC} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_POSTFLAGS} ${IPICEXEC} GEM.inp
+                WORKING_DIRECTORY ${IPIC_GEM_TEST_DIR}
+                TIMEOUT 180)
+
+# -------------------------------------------------------------
+# Copy the reference solution and compare using a python script
+# -------------------------------------------------------------
+
+file(COPY ${IPIC_SOURCE_DIR}/testfiles/ConservedQuantities.txt-GEM DESTINATION ${IPIC_GEM_TEST_DIR}/data/)
+execute_process(COMMAND ${IPIC_SOURCE_DIR}/scripts/compareconserved -r ${IPIC_GEM_TEST_DIR}/data/ConservedQuantities.txt-GEM -f ${IPIC_GEM_TEST_DIR}/data/ConservedQuantities.txt RESULT_VARIABLE ierr)
+
+# --------------------------------
+# Report the return value to ctest
+# --------------------------------
+
+if(NOT ${ierr} EQUAL 0)
+  message(FATAL_ERROR "GEM TEST failed with error number ${ierr}.")
+endif()

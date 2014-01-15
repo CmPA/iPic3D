@@ -397,6 +397,7 @@ class EMfields3D                // :public Field
     array3_double vectY;
     array3_double vectZ;
     array3_double divC;
+    //array3_double arr;
     /* temporary arrays for summing moments */
     int sizeMomentsArray;
     Moments10 **moments10Array;

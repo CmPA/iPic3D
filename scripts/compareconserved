@@ -1,0 +1,91 @@
+#!/usr/bin/python
+
+import sys
+
+from optparse import OptionParser
+from itertools import izip
+
+def main(argv):
+
+  usage = "usage: %compareconserved.py [-h] -r <Reference file> -f <File to compare>"
+  parser = OptionParser(usage)
+  parser.add_option("-r","--reference", dest="rname", help="Reference file", metavar="FILE")
+  parser.add_option("-f","--file", dest="fname", help="File to compare", metavar="FILE")
+  (opt, arg) = parser.parse_args()
+
+  if (opt.rname is None) or (opt.fname is None):
+    print "Number of options: ", len(opt)
+    parser.error("Incorrect number of options.")
+
+  rname = opt.rname
+  fname = opt.fname
+
+  r = open(rname,'r')
+  f = open(fname,'r')
+  
+  maxerr = 0.0
+  errstr = 'None'
+  ierrcy = 0
+
+  for liner, linef in izip(r,f):
+    rdata = liner.split()
+    fdata = linef.split()
+  
+    rcycle = int  (rdata[0])
+    rEBTk  = float(rdata[1])
+    rTm    = float(rdata[2])
+    rE     = float(rdata[3])
+    rB     = float(rdata[4])
+    rTk    = float(rdata[5])
+
+    fcycle = int  (fdata[0])
+    fEBTk  = float(fdata[1])
+    fTm    = float(fdata[2])
+    fE     = float(fdata[3])
+    fB     = float(fdata[4])
+    fTk    = float(fdata[5])
+
+    errEBTk = abs(fEBTk-rEBTk)/abs(rEBTk)
+    errTm   = abs(fTm  -rTm  )/abs(rTm  )
+    errE    = abs(fE   -rE   )/abs(rE   )
+    errB    = abs(fB   -rB   )/abs(rB   )
+    errTk   = abs(fTk  -rTk  )/abs(rTk  )
+
+    if (maxerr < errEBTk):
+      maxerr = errEBTk
+      ierrcy = fcycle
+      errstr = "Total energy"
+
+    if (maxerr < errTm):
+      maxerr = errTm
+      ierrcy = fcycle
+      errstr = "Total momentum energy"
+
+    if (maxerr < errE):
+      maxerr = errE
+      ierrcy = fcycle
+      errstr = "Electric energy"
+
+    if (maxerr < errB):
+      maxerr = errB
+      ierrcy = fcycle
+      errstr = "Magnetic energy"
+
+    if (maxerr < errTk):
+      maxerr = errTk
+      ierrcy = fcycle
+      errstr = "Total Kinetc energy"
+
+  EPS      = 1.0e-10
+  ERR_CODE = 10
+  ERR_NONE = 0
+
+  t = ERR_NONE if maxerr < EPS else ERR_CODE
+
+  if t == ERR_CODE:
+    print "Max. Relative error in cycle ", ierrcy, ", ", errstr, " = ", maxerr
+
+  sys.exit(t)
+
+if __name__ == "__main__":
+  main(sys.argv[:])

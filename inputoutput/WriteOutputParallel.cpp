@@ -4,6 +4,7 @@
 
 void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCtopology3D *vct, int cycle){
 
+#ifdef PHDF5
   string       grpname;
   string       dtaname;
 
@@ -119,5 +120,11 @@ void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, CollectiveIO *col, VCt
   }
 
   outputfile.ClosePHDF5file();
+
+#else  
+  cout << " ERROR: The input file request the use of the Parallel HDF5 functions, but the code has been compiled using the sequential HDF5 library. " << endl;
+  cout << "        Recompile the code using the parallel HDF5 options or change the input file options. " << endl;
+  abort();
+#endif
 
 }

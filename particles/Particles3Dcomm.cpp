@@ -294,7 +294,7 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
     species_name << ns;
     // the cycle of the last restart is set to 0
     string name_dataset = "/particles/species_" + species_name.str() + "/x/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     datatype = H5Dget_type(dataset_id);
     size = H5Tget_size(datatype);
     dataspace = H5Dget_space(dataset_id); /* dataspace handle */
@@ -310,50 +310,50 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
 
     // get y
     name_dataset = "/particles/species_" + species_name.str() + "/y/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, y);
     status = H5Dclose(dataset_id);
 
     // get z
     name_dataset = "/particles/species_" + species_name.str() + "/z/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, z);
     status = H5Dclose(dataset_id);
 
     // get u
     name_dataset = "/particles/species_" + species_name.str() + "/u/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, u);
     status = H5Dclose(dataset_id);
     // get v
     name_dataset = "/particles/species_" + species_name.str() + "/v/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
     status = H5Dclose(dataset_id);
     // get w
     name_dataset = "/particles/species_" + species_name.str() + "/w/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, w);
     status = H5Dclose(dataset_id);
     // get q
     name_dataset = "/particles/species_" + species_name.str() + "/q/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, q);
     status = H5Dclose(dataset_id);
     // ID 
     if (TrackParticleID) {
       // herr_t (*old_func)(void*); // HDF 1.6
-      H5E_auto_t old_func;      // HDF 1.8.8
+      H5E_auto2_t old_func;      // HDF 1.8.8
       void *old_client_data;
-      H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8.8
+      H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8.8
       /* Turn off error handling */
       // H5Eset_auto(NULL, NULL); // HDF 1.6
-      H5Eset_auto(H5E_DEFAULT, 0, 0); // HDF 1.8
+      H5Eset_auto2(H5E_DEFAULT, 0, 0); // HDF 1.8
       name_dataset = "/particles/species_" + species_name.str() + "/ID/cycle_0";
-      dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+      dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
 
       // H5Eset_auto(old_func, old_client_data); // HDF 1.6
-      H5Eset_auto(H5E_DEFAULT, old_func, old_client_data);
+      H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data);
       if (dataset_id > 0)
         status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID);
       else {

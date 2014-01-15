@@ -5,6 +5,8 @@
 #include "errors.h"
 #include "Alloc.h"
 
+#ifdef PHDF5
+
 PHDF5fileClass::PHDF5fileClass(string filestr, int nd, int *coord, MPI_Comm mpicomm){
 
   SetDefaultGroups();
@@ -299,3 +301,5 @@ int PHDF5fileClass::getPHDF5ncz(){
 int PHDF5fileClass::getPHDF5ndim(){
   return ndim;
 }
+
+#endif
