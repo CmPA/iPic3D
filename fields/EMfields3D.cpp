@@ -606,6 +606,7 @@ void EMfields3D::sumMoments_vectorized(
     // prevent threads from writing to the same location
     for(int cxmod2=0; cxmod2<2; cxmod2++)
     for(int cymod2=0; cymod2<2; cymod2++)
+    // each mesh cell is handled by its own thread
     #pragma omp for collapse(2)
     for(int cx=cxmod2;cx<nxc;cx+=2)
     for(int cy=cymod2;cy<nyc;cy+=2)
@@ -634,6 +635,14 @@ void EMfields3D::sumMoments_vectorized(
       momentsArray[6] = moments11[iz]; // moments110 
       momentsArray[7] = moments11[cz]; // moments111 
 
+      // accumulator for moments per each of 8 threads
+      double momentsAcc[8][10][8];
+      for(int c=0; c<8; c++)
+      for(int m=0; m<10; m++)
+      for(int i=0; i<8; i++)
+      {
+        momentsAcc[c][m][i] = 0;
+      }
       const int numpcls_in_cell = pcls.get_numpcls_in_bucket(cx,cy,cz);
       const int bucket_offset = pcls.get_bucket_offset(cx,cy,cz);
       const int bucket_end = bucket_offset+numpcls_in_cell;
@@ -716,12 +725,23 @@ void EMfields3D::sumMoments_vectorized(
           for(int c=0; c<8; c++)
           for(int m=0; m<10; m++)
           {
-            momentsArray[c][m] += velmoments[m]*weights[c];
+            momentsAcc[c][m][i%8] += velmoments[m]*weights[c];
+            //momentsArray[c][m] += velmoments[m]*weights[c];
             // When simd above is uncommented,
             // the following statement prevents segmentation fault
             //assert_isnum(momentsArray[c][m]);
           }
         }
+      }
+      // reduce the moments for this cell
+      for(int c=0; c<8; c++)
+      for(int m=0; m<10; m++)
+      for(int i=0; i<8; i++)
+      {
+        momentsArray[c][m] += momentsAcc[c][m][i];
+        // When simd above is uncommented,
+        // the following statement prevents segmentation fault
+        //assert_isnum(momentsArray[c][m]);
       }
      }
     }
