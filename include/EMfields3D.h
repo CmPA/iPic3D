@@ -203,12 +203,12 @@ class EMfields3D                // :public Field
 
     // field components without ghost cells
     //
-    void getExc(arr3_double arr, Grid3DCU *grid);
-    void getEyc(arr3_double arr, Grid3DCU *grid);
-    void getEzc(arr3_double arr, Grid3DCU *grid);
-    void getBxc(arr3_double arr);
-    void getByc(arr3_double arr);
-    void getBzc(arr3_double arr);
+    arr3_double getExc(Grid3DCU *grid);
+    arr3_double getEyc(Grid3DCU *grid);
+    arr3_double getEzc(Grid3DCU *grid);
+    arr3_double getBxc();
+    arr3_double getByc();
+    arr3_double getBzc();
 
     arr3_double getRHOc() { return rhoc; }
     arr3_double getRHOn() { return rhon; }
@@ -221,7 +221,7 @@ class EMfields3D                // :public Field
     double getRHOns(int X,int Y,int Z,int is)const{return rhons.get(is,X,Y,Z);}
     arr4_double getRHOns(){return rhons;}
     /* density on cells without ghost cells */
-    void getRHOcs(arr3_double arr, Grid3DCU *grid, int is);
+    arr3_double getRHOcs(Grid3DCU *grid, int is);
 
     double getBx_ext(int X, int Y, int Z) const{return Bx_ext.get(X,Y,Z);}
     double getBy_ext(int X, int Y, int Z) const{return By_ext.get(X,Y,Z);}
@@ -256,9 +256,9 @@ class EMfields3D                // :public Field
 
     // get current for species in all cells except ghost
     //
-    void getJxsc(arr3_double arr, Grid3DCU *grid, int is);
-    void getJysc(arr3_double arr, Grid3DCU *grid, int is);
-    void getJzsc(arr3_double arr, Grid3DCU *grid, int is);
+    arr3_double getJxsc(Grid3DCU *grid, int is);
+    arr3_double getJysc(Grid3DCU *grid, int is);
+    arr3_double getJzsc(Grid3DCU *grid, int is);
 
     /*! get the electric field energy */
     double getEenergy();
@@ -397,7 +397,7 @@ class EMfields3D                // :public Field
     array3_double vectY;
     array3_double vectZ;
     array3_double divC;
-    //array3_double arr;
+    array3_double arr;
     /* temporary arrays for summing moments */
     int sizeMomentsArray;
     Moments10 **moments10Array;
