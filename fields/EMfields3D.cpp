@@ -712,8 +712,8 @@ void EMfields3D::sumMoments_vectorized(
         // add particle to moments
         {
           // which is the superior order for the following loop?
-          for(int m=0; m<10; m++)
           for(int c=0; c<8; c++)
+          for(int m=0; m<10; m++)
           {
             momentsArray[c][m] += velmoments[m]*weights[c];
             // When simd above is uncommented,
