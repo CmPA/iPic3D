@@ -561,6 +561,110 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
   }
 }
 
+inline void compute_moments(double momentsAcc[8][10][8],
+  int i,
+  int imod,
+  double const * const x,
+  double const * const y,
+  double const * const z,
+  double const * const u,
+  double const * const v,
+  double const * const w,
+  double const * const q,
+  double xstart,
+  double ystart,
+  double zstart,
+  double inv_dx,
+  double inv_dy,
+  double inv_dz,
+  int cx,
+  int cy,
+  int cz)
+{
+  // compute the quadratic moments of velocity
+  //
+  const double ui=u[i];
+  const double vi=v[i];
+  const double wi=w[i];
+  const double uui=ui*ui;
+  const double uvi=ui*vi;
+  const double uwi=ui*wi;
+  const double vvi=vi*vi;
+  const double vwi=vi*wi;
+  const double wwi=wi*wi;
+  double velmoments[10];
+  velmoments[0] = 1.;
+  velmoments[1] = ui;
+  velmoments[2] = vi;
+  velmoments[3] = wi;
+  velmoments[4] = uui;
+  velmoments[5] = uvi;
+  velmoments[6] = uwi;
+  velmoments[7] = vvi;
+  velmoments[8] = vwi;
+  velmoments[9] = wwi;
+
+  // compute the weights to distribute the moments
+  //
+  double weights[8];
+  const double abs_xpos = x[i];
+  const double abs_ypos = y[i];
+  const double abs_zpos = z[i];
+  const double rel_xpos = abs_xpos - xstart;
+  const double rel_ypos = abs_ypos - ystart;
+  const double rel_zpos = abs_zpos - zstart;
+  const double cxm1_pos = rel_xpos * inv_dx;
+  const double cym1_pos = rel_ypos * inv_dy;
+  const double czm1_pos = rel_zpos * inv_dz;
+  //if(true)
+  //{
+  //  const int cx_inf = int(floor(cxm1_pos));
+  //  const int cy_inf = int(floor(cym1_pos));
+  //  const int cz_inf = int(floor(czm1_pos));
+  //  assert_eq(cx-1,cx_inf);
+  //  assert_eq(cy-1,cy_inf);
+  //  assert_eq(cz-1,cz_inf);
+  //}
+  // fraction of the distance from the right of the cell
+  const double w1x = cx - cxm1_pos;
+  const double w1y = cy - cym1_pos;
+  const double w1z = cz - czm1_pos;
+  // fraction of distance from the left
+  const double w0x = 1-w1x;
+  const double w0y = 1-w1y;
+  const double w0z = 1-w1z;
+  // we are calculating a charge moment.
+  const double qi=q[i];
+  const double weight0 = qi*w0x;
+  const double weight1 = qi*w1x;
+  const double weight00 = weight0*w0y;
+  const double weight01 = weight0*w1y;
+  const double weight10 = weight1*w0y;
+  const double weight11 = weight1*w1y;
+  weights[0] = weight00*w0z; // weight000
+  weights[1] = weight00*w1z; // weight001
+  weights[2] = weight01*w0z; // weight010
+  weights[3] = weight01*w1z; // weight011
+  weights[4] = weight10*w0z; // weight100
+  weights[5] = weight10*w1z; // weight101
+  weights[6] = weight11*w0z; // weight110
+  weights[7] = weight11*w1z; // weight111
+
+  // add particle to moments
+  {
+    // which is the superior order for the following loop?
+    for(int c=0; c<8; c++)
+    for(int m=0; m<10; m++)
+    {
+      momentsAcc[c][m][imod] += velmoments[m]*weights[c];
+      //momentsArray[c][m] += velmoments[m]*weights[c];
+      // When simd above is uncommented,
+      // the following statement prevents segmentation fault
+      //assert_isnum(momentsArray[c][m]);
+    }
+  }
+}
+
 void EMfields3D::sumMoments_vectorized(
   const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct)
 {
@@ -636,111 +740,93 @@ void EMfields3D::sumMoments_vectorized(
 
       // accumulator for moments per each of 8 threads
       double momentsAcc[8][10][8];
-      for(int c=0; c<8; c++)
-      for(int m=0; m<10; m++)
-      for(int i=0; i<8; i++)
-      {
-        momentsAcc[c][m][i] = 0;
-      }
       const int numpcls_in_cell = pcls.get_numpcls_in_bucket(cx,cy,cz);
       const int bucket_offset = pcls.get_bucket_offset(cx,cy,cz);
       const int bucket_end = bucket_offset+numpcls_in_cell;
-      // Why does uncommenting here cause a segmentation fault below on xeon?
-      //#pragma simd
-      for(int i=bucket_offset; i<bucket_end; i++)
+
+      // calculate lower and upper bounds of cell index that
+      // are divisible by the width of the vector unit.
+      const int aligned_start = (bucket_offset+(8-1))/8*8;
+      const int aligned_end = bucket_end/8*8;
+      if(aligned_start >= aligned_end)
       {
-        // compute the quadratic moments of velocity
-        //
-        const double ui=u[i];
-        const double vi=v[i];
-        const double wi=w[i];
-        const double uui=ui*ui;
-        const double uvi=ui*vi;
-        const double uwi=ui*wi;
-        const double vvi=vi*vi;
-        const double vwi=vi*wi;
-        const double wwi=wi*wi;
-        double velmoments[10];
-        velmoments[0] = 1.;
-        velmoments[1] = ui;
-        velmoments[2] = vi;
-        velmoments[3] = wi;
-        velmoments[4] = uui;
-        velmoments[5] = uvi;
-        velmoments[6] = uwi;
-        velmoments[7] = vvi;
-        velmoments[8] = vwi;
-        velmoments[9] = wwi;
-
-        // compute the weights to distribute the moments
-        //
-        double weights[8];
-        const double abs_xpos = x[i];
-        const double abs_ypos = y[i];
-        const double abs_zpos = z[i];
-        const double rel_xpos = abs_xpos - xstart;
-        const double rel_ypos = abs_ypos - ystart;
-        const double rel_zpos = abs_zpos - zstart;
-        const double cxm1_pos = rel_xpos * inv_dx;
-        const double cym1_pos = rel_ypos * inv_dy;
-        const double czm1_pos = rel_zpos * inv_dz;
-        //if(true)
-        //{
-        //  const int cx_inf = int(floor(cxm1_pos));
-        //  const int cy_inf = int(floor(cym1_pos));
-        //  const int cz_inf = int(floor(czm1_pos));
-        //  assert_eq(cx-1,cx_inf);
-        //  assert_eq(cy-1,cy_inf);
-        //  assert_eq(cz-1,cz_inf);
-        //}
-        // fraction of the distance from the right of the cell
-        const double w1x = cx - cxm1_pos;
-        const double w1y = cy - cym1_pos;
-        const double w1z = cz - czm1_pos;
-        // fraction of distance from the left
-        const double w0x = 1-w1x;
-        const double w0y = 1-w1y;
-        const double w0z = 1-w1z;
-        // we are calculating a charge moment.
-        const double qi=q[i];
-        const double weight0 = qi*w0x;
-        const double weight1 = qi*w1x;
-        const double weight00 = weight0*w0y;
-        const double weight01 = weight0*w1y;
-        const double weight10 = weight1*w0y;
-        const double weight11 = weight1*w1y;
-        weights[0] = weight00*w0z; // weight000
-        weights[1] = weight00*w1z; // weight001
-        weights[2] = weight01*w0z; // weight010
-        weights[3] = weight01*w1z; // weight011
-        weights[4] = weight10*w0z; // weight100
-        weights[5] = weight10*w1z; // weight101
-        weights[6] = weight11*w0z; // weight110
-        weights[7] = weight11*w1z; // weight111
-
-        // add particle to moments
+        for(int c=0; c<8; c++)
+        for(int m=0; m<10; m++)
         {
-          // which is the superior order for the following loop?
-          for(int c=0; c<8; c++)
-          for(int m=0; m<10; m++)
-          {
-            momentsAcc[c][m][i%8] += velmoments[m]*weights[c];
-            //momentsArray[c][m] += velmoments[m]*weights[c];
-            // When simd above is uncommented,
-            // the following statement prevents segmentation fault
-            //assert_isnum(momentsArray[c][m]);
-          }
+          momentsAcc[c][m][0] = 0;
+        }
+        for(int i=bucket_offset; i<bucket_end; i++)
+        {
+          compute_moments(momentsAcc, i, 0,
+            x, y, z, u, v, w, q,
+            xstart, ystart, zstart,
+            inv_dx, inv_dy, inv_dz,
+            cx, cy, cz);
+        }
+        for(int c=0; c<8; c++)
+        for(int m=0; m<10; m++)
+        {
+          momentsArray[c][m] += momentsAcc[c][m][0];
         }
       }
-      // reduce the moments for this cell
-      for(int c=0; c<8; c++)
-      for(int m=0; m<10; m++)
-      for(int i=0; i<8; i++)
+      // can vectorize for aligned section of particles
+      else
       {
-        momentsArray[c][m] += momentsAcc[c][m][i];
-        // When simd above is uncommented,
-        // the following statement prevents segmentation fault
-        //assert_isnum(momentsArray[c][m]);
+        for(int c=0; c<8; c++)
+        for(int m=0; m<10; m++)
+        for(int i=0; i<8; i++)
+        {
+          momentsAcc[c][m][i] = 0;
+        }
+        //const int numSections = (aligned_end-aligned_start)/8;
+        assert_le(bucket_offset, aligned_start);
+        assert_le(aligned_start, aligned_end);
+        assert_le(aligned_end,bucket_end);
+
+        for(int i=bucket_offset; i<aligned_start; i++)
+        {
+          compute_moments(momentsAcc, i, 0,
+            x, y, z, u, v, w, q,
+            xstart, ystart, zstart,
+            inv_dx, inv_dy, inv_dz,
+            cx, cy, cz);
+        }
+        //for(int i=aligned_start; i<aligned_end; i++)
+        //{
+        //  compute_moments(momentsAcc, i, i%8,
+        //    x, y, z, u, v, w, q,
+        //    xstart, ystart, zstart,
+        //    inv_dx, inv_dy, inv_dz,
+        //    cx, cy, cz);
+        //}
+        for(int istart = aligned_start; istart < aligned_end; istart+=8)
+        {
+          // this is intended to vectorize...
+          #pragma simd
+          for(int imod=0;imod<8;imod++)
+          {
+            compute_moments(momentsAcc, istart+imod, imod,
+              x, y, z, u, v, w, q,
+              xstart, ystart, zstart,
+              inv_dx, inv_dy, inv_dz,
+              cx, cy, cz);
+          }
+        }
+        for(int i=aligned_end; i<bucket_end; i++)
+        {
+          compute_moments(momentsAcc, i, 0,
+            x, y, z, u, v, w, q,
+            xstart, ystart, zstart,
+            inv_dx, inv_dy, inv_dz,
+            cx, cy, cz);
+        }
+        // reduce the moments for this cell
+        for(int c=0; c<8; c++)
+        for(int m=0; m<10; m++)
+        for(int i=0; i<8; i++)
+        {
+          momentsArray[c][m] += momentsAcc[c][m][i];
+        }
       }
      }
     }
