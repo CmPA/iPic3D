@@ -516,39 +516,63 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
     // reduction
     if(!thread_num) timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
 
-    // reduce arrays
+    // reduce moments in parallel
+    //
+    for(int thread_num=0;thread_num<get_sizeMomentsArray();thread_num++)
     {
-      #pragma omp critical (reduceMoment0)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { rhons[is][i][j][k] += invVOL*moments[i][j][k][0]; }}
-      #pragma omp critical (reduceMoment1)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { Jxs  [is][i][j][k] += invVOL*moments[i][j][k][1]; }}
-      #pragma omp critical (reduceMoment2)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { Jys  [is][i][j][k] += invVOL*moments[i][j][k][2]; }}
-      #pragma omp critical (reduceMoment3)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { Jzs  [is][i][j][k] += invVOL*moments[i][j][k][3]; }}
-      #pragma omp critical (reduceMoment4)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pXXsn[is][i][j][k] += invVOL*moments[i][j][k][4]; }}
-      #pragma omp critical (reduceMoment5)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pXYsn[is][i][j][k] += invVOL*moments[i][j][k][5]; }}
-      #pragma omp critical (reduceMoment6)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pXZsn[is][i][j][k] += invVOL*moments[i][j][k][6]; }}
-      #pragma omp critical (reduceMoment7)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pYYsn[is][i][j][k] += invVOL*moments[i][j][k][7]; }}
-      #pragma omp critical (reduceMoment8)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pYZsn[is][i][j][k] += invVOL*moments[i][j][k][8]; }}
-      #pragma omp critical (reduceMoment9)
-      for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
-        { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
+      arr4_double moments = fetch_moments10Array(thread_num).fetch_arr();
+      #pragma omp for collapse(2)
+      for(int i=0;i<nxn;i++)
+      for(int j=0;j<nyn;j++)
+      for(int k=0;k<nzn;k++)
+      {
+        rhons[is][i][j][k] += invVOL*moments[i][j][k][0];
+        Jxs  [is][i][j][k] += invVOL*moments[i][j][k][1];
+        Jys  [is][i][j][k] += invVOL*moments[i][j][k][2];
+        Jzs  [is][i][j][k] += invVOL*moments[i][j][k][3];
+        pXXsn[is][i][j][k] += invVOL*moments[i][j][k][4];
+        pXYsn[is][i][j][k] += invVOL*moments[i][j][k][5];
+        pXZsn[is][i][j][k] += invVOL*moments[i][j][k][6];
+        pYYsn[is][i][j][k] += invVOL*moments[i][j][k][7];
+        pYZsn[is][i][j][k] += invVOL*moments[i][j][k][8];
+        pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9];
+      }
     }
+    //
+    // This was the old way of reducing;
+    // did not scale well to large number of threads
+    //{
+    //  #pragma omp critical (reduceMoment0)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { rhons[is][i][j][k] += invVOL*moments[i][j][k][0]; }}
+    //  #pragma omp critical (reduceMoment1)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { Jxs  [is][i][j][k] += invVOL*moments[i][j][k][1]; }}
+    //  #pragma omp critical (reduceMoment2)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { Jys  [is][i][j][k] += invVOL*moments[i][j][k][2]; }}
+    //  #pragma omp critical (reduceMoment3)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { Jzs  [is][i][j][k] += invVOL*moments[i][j][k][3]; }}
+    //  #pragma omp critical (reduceMoment4)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { pXXsn[is][i][j][k] += invVOL*moments[i][j][k][4]; }}
+    //  #pragma omp critical (reduceMoment5)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { pXYsn[is][i][j][k] += invVOL*moments[i][j][k][5]; }}
+    //  #pragma omp critical (reduceMoment6)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { pXZsn[is][i][j][k] += invVOL*moments[i][j][k][6]; }}
+    //  #pragma omp critical (reduceMoment7)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { pYYsn[is][i][j][k] += invVOL*moments[i][j][k][7]; }}
+    //  #pragma omp critical (reduceMoment8)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { pYZsn[is][i][j][k] += invVOL*moments[i][j][k][8]; }}
+    //  #pragma omp critical (reduceMoment9)
+    //  for(int i=0;i<nxn;i++){for(int j=0;j<nyn;j++) for(int k=0;k<nzn;k++)
+    //    { pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9]; }}
+    //}
     if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
     // uncomment this and remove the loop below
     // when we change to use asynchronous communication.
@@ -561,9 +585,8 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
   }
 }
 
-inline void compute_moments(double momentsAcc[8][10][8],
+inline void compute_moments(double velmoments[10], double weights[8],
   int i,
-  int imod,
   double const * const x,
   double const * const y,
   double const * const z,
@@ -581,6 +604,13 @@ inline void compute_moments(double momentsAcc[8][10][8],
   int cy,
   int cz)
 {
+  ALIGNED(x);
+  ALIGNED(y);
+  ALIGNED(z);
+  ALIGNED(u);
+  ALIGNED(v);
+  ALIGNED(w);
+  ALIGNED(q);
   // compute the quadratic moments of velocity
   //
   const double ui=u[i];
@@ -592,7 +622,7 @@ inline void compute_moments(double momentsAcc[8][10][8],
   const double vvi=vi*vi;
   const double vwi=vi*wi;
   const double wwi=wi*wi;
-  double velmoments[10];
+  //double velmoments[10];
   velmoments[0] = 1.;
   velmoments[1] = ui;
   velmoments[2] = vi;
@@ -606,7 +636,7 @@ inline void compute_moments(double momentsAcc[8][10][8],
 
   // compute the weights to distribute the moments
   //
-  double weights[8];
+  //double weights[8];
   const double abs_xpos = x[i];
   const double abs_ypos = y[i];
   const double abs_zpos = z[i];
@@ -649,18 +679,152 @@ inline void compute_moments(double momentsAcc[8][10][8],
   weights[5] = weight10*w1z; // weight101
   weights[6] = weight11*w0z; // weight110
   weights[7] = weight11*w1z; // weight111
+}
 
-  // add particle to moments
+inline void add_moments_for_pcl(double momentsAcc[8][10],
+  int i,
+  double const * const x,
+  double const * const y,
+  double const * const z,
+  double const * const u,
+  double const * const v,
+  double const * const w,
+  double const * const q,
+  double xstart,
+  double ystart,
+  double zstart,
+  double inv_dx,
+  double inv_dy,
+  double inv_dz,
+  int cx,
+  int cy,
+  int cz)
+{
+  double velmoments[10];
+  double weights[8];
+  compute_moments(velmoments,weights,
+    i, x, y, z, u, v, w, q,
+    xstart, ystart, zstart,
+    inv_dx, inv_dy, inv_dz,
+    cx, cy, cz);
+
+  // add moments for this particle
   {
     // which is the superior order for the following loop?
     for(int c=0; c<8; c++)
     for(int m=0; m<10; m++)
     {
-      momentsAcc[c][m][imod] += velmoments[m]*weights[c];
-      //momentsArray[c][m] += velmoments[m]*weights[c];
-      // When simd above is uncommented,
-      // the following statement prevents segmentation fault
-      //assert_isnum(momentsArray[c][m]);
+      momentsAcc[c][m] += velmoments[m]*weights[c];
+    }
+  }
+}
+
+
+// vectorized version of previous method
+// 
+inline void add_moments_for_pcl_vec(double momentsAccVec[8][10][8],
+  double velmoments[10][8], double weights[8][8],
+  int i,
+  int imod,
+  double const * const x,
+  double const * const y,
+  double const * const z,
+  double const * const u,
+  double const * const v,
+  double const * const w,
+  double const * const q,
+  double xstart,
+  double ystart,
+  double zstart,
+  double inv_dx,
+  double inv_dy,
+  double inv_dz,
+  int cx,
+  int cy,
+  int cz)
+{
+  ALIGNED(x);
+  ALIGNED(y);
+  ALIGNED(z);
+  ALIGNED(u);
+  ALIGNED(v);
+  ALIGNED(w);
+  ALIGNED(q);
+  // compute the quadratic moments of velocity
+  //
+  const double ui=u[i];
+  const double vi=v[i];
+  const double wi=w[i];
+  const double uui=ui*ui;
+  const double uvi=ui*vi;
+  const double uwi=ui*wi;
+  const double vvi=vi*vi;
+  const double vwi=vi*wi;
+  const double wwi=wi*wi;
+  //double velmoments[10];
+  velmoments[0][imod] = 1.;
+  velmoments[1][imod] = ui;
+  velmoments[2][imod] = vi;
+  velmoments[3][imod] = wi;
+  velmoments[4][imod] = uui;
+  velmoments[5][imod] = uvi;
+  velmoments[6][imod] = uwi;
+  velmoments[7][imod] = vvi;
+  velmoments[8][imod] = vwi;
+  velmoments[9][imod] = wwi;
+
+  // compute the weights to distribute the moments
+  //
+  //double weights[8];
+  const double abs_xpos = x[i];
+  const double abs_ypos = y[i];
+  const double abs_zpos = z[i];
+  const double rel_xpos = abs_xpos - xstart;
+  const double rel_ypos = abs_ypos - ystart;
+  const double rel_zpos = abs_zpos - zstart;
+  const double cxm1_pos = rel_xpos * inv_dx;
+  const double cym1_pos = rel_ypos * inv_dy;
+  const double czm1_pos = rel_zpos * inv_dz;
+  //if(true)
+  //{
+  //  const int cx_inf = int(floor(cxm1_pos));
+  //  const int cy_inf = int(floor(cym1_pos));
+  //  const int cz_inf = int(floor(czm1_pos));
+  //  assert_eq(cx-1,cx_inf);
+  //  assert_eq(cy-1,cy_inf);
+  //  assert_eq(cz-1,cz_inf);
+  //}
+  // fraction of the distance from the right of the cell
+  const double w1x = cx - cxm1_pos;
+  const double w1y = cy - cym1_pos;
+  const double w1z = cz - czm1_pos;
+  // fraction of distance from the left
+  const double w0x = 1-w1x;
+  const double w0y = 1-w1y;
+  const double w0z = 1-w1z;
+  // we are calculating a charge moment.
+  const double qi=q[i];
+  const double weight0 = qi*w0x;
+  const double weight1 = qi*w1x;
+  const double weight00 = weight0*w0y;
+  const double weight01 = weight0*w1y;
+  const double weight10 = weight1*w0y;
+  const double weight11 = weight1*w1y;
+  weights[0][imod] = weight00*w0z; // weight000
+  weights[1][imod] = weight00*w1z; // weight001
+  weights[2][imod] = weight01*w0z; // weight010
+  weights[3][imod] = weight01*w1z; // weight011
+  weights[4][imod] = weight10*w0z; // weight100
+  weights[5][imod] = weight10*w1z; // weight101
+  weights[6][imod] = weight11*w0z; // weight110
+  weights[7][imod] = weight11*w1z; // weight111
+
+  // add moments for this particle
+  {
+    for(int c=0; c<8; c++)
+    for(int m=0; m<10; m++)
+    {
+      momentsAccVec[c][m][imod] += velmoments[m][imod]*weights[c][imod];
     }
   }
 }
@@ -738,26 +902,19 @@ void EMfields3D::sumMoments_vectorized(
       momentsArray[6] = moments11[iz]; // moments110 
       momentsArray[7] = moments11[cz]; // moments111 
 
-      // accumulator for moments per each of 8 threads
-      double momentsAcc[8][10][8];
       const int numpcls_in_cell = pcls.get_numpcls_in_bucket(cx,cy,cz);
       const int bucket_offset = pcls.get_bucket_offset(cx,cy,cz);
       const int bucket_end = bucket_offset+numpcls_in_cell;
 
-      // calculate lower and upper bounds of cell index that
-      // are divisible by the width of the vector unit.
-      const int aligned_start = (bucket_offset+(8-1))/8*8;
-      const int aligned_end = bucket_end/8*8;
-      if(aligned_start >= aligned_end)
+      bool vectorized=false;
+      if(!vectorized)
       {
-        for(int c=0; c<8; c++)
-        for(int m=0; m<10; m++)
-        {
-          momentsAcc[c][m][0] = 0;
-        }
+        // accumulators for moments per each of 8 threads
+        double momentsAcc[8][10];
+        memset(momentsAcc,0,sizeof(double)*8*10);
         for(int i=bucket_offset; i<bucket_end; i++)
         {
-          compute_moments(momentsAcc, i, 0,
+          add_moments_for_pcl(momentsAcc, i,
             x, y, z, u, v, w, q,
             xstart, ystart, zstart,
             inv_dx, inv_dy, inv_dz,
@@ -766,66 +923,30 @@ void EMfields3D::sumMoments_vectorized(
         for(int c=0; c<8; c++)
         for(int m=0; m<10; m++)
         {
-          momentsArray[c][m] += momentsAcc[c][m][0];
+          momentsArray[c][m] += momentsAcc[c][m];
         }
       }
-      // can vectorize for aligned section of particles
-      else
+      if(vectorized)
       {
-        for(int c=0; c<8; c++)
-        for(int m=0; m<10; m++)
-        for(int i=0; i<8; i++)
+        double velmoments[10][8];
+        double weights[8][8];
+        double momentsAccVec[8][10][8];
+        memset(momentsAccVec,0,sizeof(double)*8*10*8);
+        #pragma simd
+        for(int i=bucket_offset; i<bucket_end; i++)
         {
-          momentsAcc[c][m][i] = 0;
-        }
-        //const int numSections = (aligned_end-aligned_start)/8;
-        assert_le(bucket_offset, aligned_start);
-        assert_le(aligned_start, aligned_end);
-        assert_le(aligned_end,bucket_end);
-
-        for(int i=bucket_offset; i<aligned_start; i++)
-        {
-          compute_moments(momentsAcc, i, 0,
+          add_moments_for_pcl_vec(momentsAccVec, velmoments, weights,
+            i, i%8,
             x, y, z, u, v, w, q,
             xstart, ystart, zstart,
             inv_dx, inv_dy, inv_dz,
             cx, cy, cz);
         }
-        //for(int i=aligned_start; i<aligned_end; i++)
-        //{
-        //  compute_moments(momentsAcc, i, i%8,
-        //    x, y, z, u, v, w, q,
-        //    xstart, ystart, zstart,
-        //    inv_dx, inv_dy, inv_dz,
-        //    cx, cy, cz);
-        //}
-        for(int istart = aligned_start; istart < aligned_end; istart+=8)
-        {
-          // this is intended to vectorize...
-          #pragma simd
-          for(int imod=0;imod<8;imod++)
-          {
-            compute_moments(momentsAcc, istart+imod, imod,
-              x, y, z, u, v, w, q,
-              xstart, ystart, zstart,
-              inv_dx, inv_dy, inv_dz,
-              cx, cy, cz);
-          }
-        }
-        for(int i=aligned_end; i<bucket_end; i++)
-        {
-          compute_moments(momentsAcc, i, 0,
-            x, y, z, u, v, w, q,
-            xstart, ystart, zstart,
-            inv_dx, inv_dy, inv_dz,
-            cx, cy, cz);
-        }
-        // reduce the moments for this cell
         for(int c=0; c<8; c++)
         for(int m=0; m<10; m++)
         for(int i=0; i<8; i++)
         {
-          momentsArray[c][m] += momentsAcc[c][m][i];
+          momentsArray[c][m] += momentsAccVec[c][m][i];
         }
       }
      }

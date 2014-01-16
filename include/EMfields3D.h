@@ -271,6 +271,7 @@ class EMfields3D                // :public Field
       assert_lt(i,sizeMomentsArray);
       return *(moments10Array[i]);
     }
+    int get_sizeMomentsArray() { return sizeMomentsArray; }
 
     /*! print electromagnetic fields info */
     void print(void) const;

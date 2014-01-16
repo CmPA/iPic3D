@@ -529,8 +529,14 @@ void Particles3D::mover_PC_vectorized(
       const int numpcls_in_cell = get_numpcls_in_bucket(cx,cy,cz);
       const int bucket_offset = get_bucket_offset(cx,cy,cz);
       const int bucket_end = bucket_offset+numpcls_in_cell;
+      ALIGNED(x);
+      ALIGNED(y);
+      ALIGNED(z);
+      ALIGNED(u);
+      ALIGNED(v);
+      ALIGNED(w);
       // this should vectorize, but could be faster if particle
-      // data were aligned.
+      // data for each mesh cell were aligned.
       #pragma simd
       //for(int pidx=bucket_offset_1d[cell]; pidx<numpcls_in_cell; pidx++)
       for(int pidx=bucket_offset; pidx<bucket_end; pidx++)
@@ -538,25 +544,25 @@ void Particles3D::mover_PC_vectorized(
         // serial case: check that pidx is correct
         //assert_eq(pidx,serial_pidx++);
         // confirm that particle is in correct cell
-        if(true)
-        {
-          int cx_,cy_,cz_;
-          get_safe_cell_for_pos(cx_,cy_,cz_,xavg[pidx],yavg[pidx],zavg[pidx]);
-          //if((cx_!=cx)
-          // ||(cy_!=cy)
-          // ||(cz_!=cz))
-          //{
-          //  dprintf("\n\t cx =%d, cy =%d, cz =%d"
-          //          "\n\t cx_=%d, cy_=%d, cz_=%d"
-          //          "\n\t x=%g, y=%g, z_=%g",
-          //          cx,cy,cz,
-          //          cx_,cy_,cz_,
-          //          xavg[pidx], yavg[pidx], zavg[pidx]);
-          //}
-          assert_eq(cx_,cx);
-          assert_eq(cy_,cy);
-          assert_eq(cz_,cz);
-        }
+        //if(true)
+        //{
+        //  int cx_,cy_,cz_;
+        //  get_safe_cell_for_pos(cx_,cy_,cz_,xavg[pidx],yavg[pidx],zavg[pidx]);
+        //  //if((cx_!=cx)
+        //  // ||(cy_!=cy)
+        //  // ||(cz_!=cz))
+        //  //{
+        //  //  dprintf("\n\t cx =%d, cy =%d, cz =%d"
+        //  //          "\n\t cx_=%d, cy_=%d, cz_=%d"
+        //  //          "\n\t x=%g, y=%g, z_=%g",
+        //  //          cx,cy,cz,
+        //  //          cx_,cy_,cz_,
+        //  //          xavg[pidx], yavg[pidx], zavg[pidx]);
+        //  //}
+        //  assert_eq(cx_,cx);
+        //  assert_eq(cy_,cy);
+        //  assert_eq(cz_,cz);
+        //}
 
         // copy the particle
         const pfloat xorig = x[pidx];
@@ -611,6 +617,8 @@ void Particles3D::mover_PC_vectorized(
         pfloat Bxl = 0.0;
         pfloat Byl = 0.0;
         pfloat Bzl = 0.0;
+
+        // would expanding this out help to vectorize?
         for(int c=0; c<8; c++)
         {
           Bxl += weights[c] * field_components[c][0];
