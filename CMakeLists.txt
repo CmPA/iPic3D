@@ -25,7 +25,7 @@ if (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "k1om") ## Xeon Phi
    #set(CMAKE_CXX_FLAGS "-openmp -g -mmic") # set flags for Xeon Phi, totalview
 elseif (${CMAKE_SYSTEM_PROCESSOR} STREQUAL "x86_64") ## Xeon
    set(CMAKE_CXX_COMPILER "icpc")  
-   set(CMAKE_CXX_FLAGS "-O3 -openmp -fno-exceptions -vec-report")
+   set(CMAKE_CXX_FLAGS "-O3 -openmp -g -xHost -fno-exceptions -vec-report")
 else()
    set(CMAKE_CXX_FLAGS "-O3")
 endif()
