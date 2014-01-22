@@ -1,5 +1,6 @@
 #ifndef _ipicmath_h_
 #define _ipicmath_h_
+#include "assert.h"
 
 // valid if roundup power is representable.
 inline int

@@ -25,6 +25,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "ompdefs.h"
 #include "ipicmath.h"
 
+#include "Particle.h"
 #include "Particles3Dcomm.h"
 #include "Parameters.h"
 
@@ -191,7 +192,7 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   pcls = new SpeciesParticle[npmax];
   particleType = ParticleType::SoA;
   #ifdef __INTEL_COMPILER
-    assert_eq(sizeof(Particle),64);
+    assert_eq(sizeof(SpeciesParticle),64);
     ALIGNED(pcls);
   #endif
   //
@@ -1253,8 +1254,8 @@ void Particles3Dcomm::copyParticlesToSoA()
 
 void Particles3Dcomm::copyParticlesToAoS()
 {
-  #pragma omp for
   dprintf("copying to array of structs");
+  #pragma omp for
   for(int pidx=0; pidx<nop; pidx++)
   {
     pcls[pidx].set( ParticleID ? ParticleID[pidx] : 0,

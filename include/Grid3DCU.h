@@ -170,18 +170,18 @@ public: // accessors (inline)
   // coordinate accessors
   //
   // calculated equivalents (preferred for accelerator?):
-  const double calcXN(int X) { return xStart+(X-1)*dx;}
-  const double calcYN(int Y) { return yStart+(Y-1)*dy;}
-  const double calcZN(int Z) { return zStart+(Z-1)*dz;}
-  const pfloat &get_pfloat_XN(int X) { return pfloat_node_xcoord[X];}
-  const pfloat &get_pfloat_YN(int Y) { return pfloat_node_ycoord[Y];}
-  const pfloat &get_pfloat_ZN(int Z) { return pfloat_node_zcoord[Z];}
-  const double &getXN(int X) { return node_xcoord[X];}
-  const double &getYN(int Y) { return node_ycoord[Y];}
-  const double &getZN(int Z) { return node_zcoord[Z];}
-  const double &getXC(int X) { return center_xcoord[X];}
-  const double &getYC(int Y) { return center_ycoord[Y];}
-  const double &getZC(int Z) { return center_zcoord[Z];}
+  double calcXN(int X)const{ return xStart+(X-1)*dx;}
+  double calcYN(int Y)const{ return yStart+(Y-1)*dy;}
+  double calcZN(int Z)const{ return zStart+(Z-1)*dz;}
+  const pfloat &get_pfloat_XN(int X)const{ return pfloat_node_xcoord[X];}
+  const pfloat &get_pfloat_YN(int Y)const{ return pfloat_node_ycoord[Y];}
+  const pfloat &get_pfloat_ZN(int Z)const{ return pfloat_node_zcoord[Z];}
+  const double &getXN(int X)const{ return node_xcoord[X];}
+  const double &getYN(int Y)const{ return node_ycoord[Y];}
+  const double &getZN(int Z)const{ return node_zcoord[Z];}
+  const double &getXC(int X)const{ return center_xcoord[X];}
+  const double &getYC(int Y)const{ return center_ycoord[Y];}
+  const double &getZC(int Z)const{ return center_zcoord[Z];}
   //
   // The following could be eliminated in favor of the previous
   // unless we truly anticipate generalizing to a deformed
