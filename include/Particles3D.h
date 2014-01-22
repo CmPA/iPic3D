@@ -58,6 +58,9 @@ class Particles3D:public Particles3Dcomm {
     void mover_explicit(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** mover with a Predictor-Corrector Scheme */
     void mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /** array-of-structs version of mover_PC */
+    void mover_PC_AoS2(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    void mover_PC_AoS(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** vectorized version of mover_PC **/
     void mover_PC_vectorized(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** communicate particle after moving them */

@@ -13,6 +13,11 @@ import os
 # http://pymotw.com/2/subprocess/
 # http://stackoverflow.com/questions/3777301/how-to-call-a-shell-script-from-python-code
 
+def ipic_findcpph(args):
+    # create tags file using ctags
+    command = '''find . -name '*.cpp' -or -name '*.h' | grep -v unused | grep -v postprocessing_tools'''
+    os.system(command)
+
 def ipic_ctags(args):
     # create tags file using ctags
     create_tags_command = \
@@ -238,6 +243,8 @@ def main():
     elif command == "ctags":
         ipic_ctags(args)
         #print "ctags not yet implemented"
+    elif command == "findcpph":
+        ipic_findcpph(args)
     else:
         print progname, command, "not supported"
         sys.exit(-1)

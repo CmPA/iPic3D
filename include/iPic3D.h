@@ -47,6 +47,9 @@ namespace iPic3D {
     inline int LastCycle();
     inline int get_myrank();
 
+    void convertParticlesToSoA();
+    void convertParticlesToAoS();
+
   private:
     static MPIdata * mpi;
     Collective    *col;
@@ -96,7 +99,6 @@ namespace iPic3D {
   inline int c_Solver::get_myrank() {
     return (myrank);
   }
-
 }
 
 #endif

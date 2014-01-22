@@ -34,6 +34,7 @@ int main(int argc, char **argv) {
       i = KCode.LastCycle() + 1;
     }
 
+    KCode.convertParticlesToSoA();
     KCode.WriteOutput(i);
     KCode.WriteConserved(i);
     KCode.WriteRestart(i);

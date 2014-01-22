@@ -395,6 +395,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
   for (int i = 0; i < ns; i++)
   {
     const Particles3Dcomm& pcls = part[i];
+    assert_eq(pcls.get_particleType(), ParticleType::AoS);
     const int is = pcls.get_ns();
     assert_eq(i,is);
 
@@ -846,6 +847,7 @@ void EMfields3D::sumMoments_vectorized(
   for (int species_idx = 0; species_idx < ns; species_idx++)
   {
     const Particles3Dcomm& pcls = part[species_idx];
+    assert_eq(pcls.get_particleType(), ParticleType::SoA);
     const int is = pcls.get_ns();
     assert_eq(species_idx,is);
 

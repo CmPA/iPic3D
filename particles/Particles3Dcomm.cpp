@@ -23,6 +23,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "Field.h"
 #include "MPIdata.h"
 #include "ompdefs.h"
+#include "ipicmath.h"
 
 #include "Particles3Dcomm.h"
 #include "Parameters.h"
@@ -55,6 +56,7 @@ Particles3Dcomm::Particles3Dcomm(){
 }
 /** deallocate particles */
 Particles3Dcomm::~Particles3Dcomm() {
+  delete[]pcls;
   delete[]x;
   delete[]y;
   delete[]z;
@@ -100,6 +102,8 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   nop = col->getNp(species) / (vct->getNprocs());
   np_tot = col->getNp(species);
   npmax = col->getNpMax(species) / (vct->getNprocs());
+  // ensure that npmax is a multiple of AoS_PCLS_AT_A_TIME
+  npmax = roundup_to_multiple(npmax,AoS_PCLS_AT_A_TIME);
   qom = col->getQOM(species);
   uth = col->getUth(species);
   vth = col->getVth(species);
@@ -178,6 +182,21 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   // //////////////////////////////////////////////////////////////
   // ////////////// ALLOCATE ARRAYS /////////////////////////
   // //////////////////////////////////////////////////////////////
+  //
+  // AoS particle representation
+  //
+  // intel new allocates with 64-byte alignment
+  // since particles are 64 bytes wide, every particle
+  // is aligned.
+  pcls = new SpeciesParticle[npmax];
+  particleType = ParticleType::SoA;
+  #ifdef __INTEL_COMPILER
+    assert_eq(sizeof(Particle),64);
+    ALIGNED(pcls);
+  #endif
+  //
+  // SoA particle representation
+  //
   // positions
   x = new double[npmax];
   y = new double[npmax];
@@ -1214,4 +1233,54 @@ void Particles3Dcomm::sort_particles_serial(
 //}
 //#endif
 
+void Particles3Dcomm::copyParticlesToSoA()
+{
+  dprintf("copying to struct of arrays");
+  #pragma omp for
+  for(int pidx=0; pidx<nop; pidx++)
+  {
+    const SpeciesParticle& pcl = pcls[pidx];
+    if(ParticleID) ParticleID[pidx] = pcl.get_ID();
+    x[pidx] = pcl.get_x(0);
+    y[pidx] = pcl.get_x(1);
+    z[pidx] = pcl.get_x(2);
+    u[pidx] = pcl.get_u(0);
+    v[pidx] = pcl.get_u(1);
+    w[pidx] = pcl.get_u(2);
+    q[pidx] = pcl.get_q();
+  }
+}
+
+void Particles3Dcomm::copyParticlesToAoS()
+{
+  #pragma omp for
+  dprintf("copying to array of structs");
+  for(int pidx=0; pidx<nop; pidx++)
+  {
+    pcls[pidx].set( ParticleID ? ParticleID[pidx] : 0,
+      x[pidx],y[pidx],z[pidx],
+      u[pidx],v[pidx],w[pidx],
+      q[pidx]);
+  }
+}
+
+void Particles3Dcomm::convertParticlesToAoS()
+{
+  if(particleType!=ParticleType::AoS)
+  {
+    assert_eq(particleType,ParticleType::SoA);
+    copyParticlesToAoS();
+    particleType = ParticleType::AoS;
+  }
+}
+
+void Particles3Dcomm::convertParticlesToSoA()
+{
+  if(particleType != ParticleType::SoA)
+  {
+    assert_eq(particleType,ParticleType::AoS);
+    copyParticlesToSoA();
+    particleType = ParticleType::SoA;
+  }
+}
 

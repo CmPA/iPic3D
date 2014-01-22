@@ -156,7 +156,7 @@ int c_Solver::Init(int argc, char **argv) {
     my_file.close();
   }
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
-  // if(myrank==0){
+  // if(myrank==0)
   ofstream my_file(cqsat.c_str(), fstream::binary);
   nsat = 3;
   for (int isat = 0; isat < nsat; isat++) {
@@ -177,6 +177,8 @@ int c_Solver::Init(int argc, char **argv) {
 }
 
 void c_Solver::CalculateMoments() {
+
+  convertParticlesToSoA();
 
   timeTasks_set_main_task(TimeTasks::MOMENTS);
 
@@ -199,11 +201,13 @@ void c_Solver::CalculateMoments() {
   {
     // since particles are sorted,
     // we can vectorize interpolation of particles to grid
+    convertParticlesToSoA();
     EMf->sumMoments_vectorized(part, grid, vct);
   }
   else
   {
     EMf->setZeroPrimaryMoments();
+    convertParticlesToSoA();
     EMf->sumMoments(part, grid, vct);
   }
   //for (int i = 0; i < ns; i++)
@@ -259,12 +263,18 @@ bool c_Solver::ParticlesMover() {
       // should merely pass EMf->get_fieldForPcls() rather than EMf.
       // use the Predictor Corrector scheme to move particles
       if(Parameters::get_VECTORIZE_MOVER())
+      {
         part[i].mover_PC_vectorized(grid, vct, EMf);
+      }
       else
-        part[i].mover_PC(grid, vct, EMf);
+      {
+        //part[i].mover_PC(grid, vct, EMf);
+        //part[i].mover_PC_AoS2(grid, vct, EMf);
+        part[i].mover_PC_AoS(grid, vct, EMf);
+      }
     }
     }
-    for (int i = 0; i < ns; i++)  // move each species
+    for (int i = 0; i < ns; i++)  // communicate each species
     {
       mem_avail = part[i].communicate_particles(vct);
     }
@@ -350,22 +360,29 @@ void c_Solver::WriteConserved(int cycle) {
 }
 
 void c_Solver::WriteOutput(int cycle) {
-  // OUTPUT to large file, called proc**
+
+  bool write_fields = (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle);
+
+  bool write_particles = (cycle % (col->getParticlesOutputCycle()) == 0
+                         && col->getParticlesOutputCycle() != 1);
+
+  if(write_particles){ convertParticlesToSoA(); }
 
   if (col->getWriteMethod() == "Parallel") {
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+    if (write_fields) {
       WriteOutputParallel(grid, EMf, col, vct, cycle);
     }
   }
   else
   {
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+    // OUTPUT to large file, called proc**
+    if (write_fields) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
       // Pressure tensor is available
       hdf5_agent.close();
     }
-    if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
+    if (write_particles) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("position + velocity + q ", cycle, 1);
       hdf5_agent.close();
@@ -410,3 +427,16 @@ void c_Solver::Finalize() {
   mpi->finalize_mpi();
 }
 
+// convert particle to struct of arrays (assumed by I/O)
+void c_Solver::convertParticlesToSoA()
+{
+  for (int i = 0; i < ns; i++)
+    part[i].convertParticlesToSoA();
+}
+
+// convert particle to array of structs (used in computing)
+void c_Solver::convertParticlesToAoS()
+{
+  for (int i = 0; i < ns; i++)
+    part[i].convertParticlesToAoS();
+}

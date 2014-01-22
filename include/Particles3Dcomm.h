@@ -7,7 +7,11 @@ developers: Stefano Markidis, Giovanni Lapenta
 #ifndef Part3DCOMM_H
 #define Part3DCOMM_H
 
-#include "Particles.h"
+#include "CollectiveIO.h"
+#include "VirtualTopology3D.h"
+#include "Grid.h"
+#include "Field.h"
+#include "Particle.h"
 /**
  * 
  * class for particles of the same species with communications methods
@@ -59,6 +63,14 @@ public:
   /** calculate the weights given the position of particles */
   // void calculateWeights(double*** weight, double xp, double yp, double zp,int ix, int iy, int iz, Grid* grid);
 
+ private:
+  void copyParticlesToAoS();
+  void copyParticlesToSoA();
+
+ public:
+  void convertParticlesToAoS();
+  void convertParticlesToSoA();
+
   /*! sort particles for vectorized push (needs to be parallelized) */
   void sort_particles_serial(Grid * grid, VirtualTopology3D * vct);
   /*! sort particles with respect to provided position data */
@@ -108,6 +120,7 @@ public:
 
   // inline get accessors
   //
+  ParticleType::Type get_particleType()const { return particleType; }
   double *getXall()  const { return (x); }
   double *getYall()  const { return (y); }
   double *getZall()  const { return (z); }
@@ -185,7 +198,12 @@ protected:
   /** w0 Drift velocity - Direction Z */
   double w0;
 
+  ParticleType::Type particleType;
   // particles data
+  //
+  // AoS representation
+  SpeciesParticle *pcls;
+  // SoA representation
   //
   /** Positions array - X component */
   double *x;

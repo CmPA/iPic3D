@@ -38,6 +38,9 @@ typedef iPic3D::array_ref2<int> arr2_int;
 typedef iPic3D::array_ref3<int> arr3_int;
 typedef iPic3D::array_ref4<int> arr4_int;
 //
+typedef iPic3D::const_array_ref3<void*> const_arr3_ptr;
+typedef iPic3D::array_ref3<void*> arr3_ptr;
+//
 typedef iPic3D::const_array_ref3<double> const_arr3_double;
 typedef iPic3D::const_array_ref4<double> const_arr4_double;
 typedef iPic3D::const_array_ref4<pfloat> const_arr4_pfloat;

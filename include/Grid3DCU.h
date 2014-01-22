@@ -170,9 +170,9 @@ public: // accessors (inline)
   // coordinate accessors
   //
   // calculated equivalents (preferred for accelerator?):
-  //const double &calcXN(int X) { return xStart+(X-1)*dx;}
-  //const double &calcYN(int Y) { return yStart+(Y-1)*dy;}
-  //const double &calcZN(int Z) { return zStart+(Z-1)*dz;}
+  const double calcXN(int X) { return xStart+(X-1)*dx;}
+  const double calcYN(int Y) { return yStart+(Y-1)*dy;}
+  const double calcZN(int Z) { return zStart+(Z-1)*dz;}
   const pfloat &get_pfloat_XN(int X) { return pfloat_node_xcoord[X];}
   const pfloat &get_pfloat_YN(int Y) { return pfloat_node_ycoord[Y];}
   const pfloat &get_pfloat_ZN(int Z) { return pfloat_node_zcoord[Z];}
