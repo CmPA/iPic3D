@@ -73,6 +73,7 @@ public:
 
   /*! sort particles for vectorized push (needs to be parallelized) */
   void sort_particles_serial(Grid * grid, VirtualTopology3D * vct);
+  void sort_particles_serial_AoS(Grid * grid, VirtualTopology3D * vct);
   /*! sort particles with respect to provided position data */
   void sort_particles_serial(
     pfloat *xpos, pfloat *ypos, pfloat *zpos,
@@ -118,10 +119,29 @@ public:
     assert_le(cz,nzc);
   }
 
+  // get accessors for optional arrays
+  //
+  SpeciesParticle *fetch_pcls(){ return _pcls; }
+  SpeciesParticle *fetch_pclstmp(){ return _pclstmp; }
+  double * fetch_xavg() { return _xavg; }
+  double * fetch_yavg() { return _yavg; }
+  double * fetch_zavg() { return _zavg; }
+  double * fetch_xtmp() { return _xtmp; }
+  double * fetch_ytmp() { return _ytmp; }
+  double * fetch_ztmp() { return _ztmp; }
+  double * fetch_utmp() { return _utmp; }
+  double * fetch_vtmp() { return _vtmp; }
+  double * fetch_wtmp() { return _wtmp; }
+  double * fetch_qtmp() { return _qtmp; }
+  double * fetch_xavgtmp() { return _xavgtmp; }
+  double * fetch_yavgtmp() { return _yavgtmp; }
+  double * fetch_zavgtmp() { return _zavgtmp; }
+  long long *fetch_ParticleIDtmp(){ return _ParticleIDtmp; }
+
   // inline get accessors
   //
   ParticleType::Type get_particleType()const { return particleType; }
-  const SpeciesParticle& get_pcl(int pidx)const{ return pcls[pidx]; }
+  const SpeciesParticle& get_pcl(int pidx)const{ return _pcls[pidx]; }
   double *getXall()  const { return (x); }
   double *getYall()  const { return (y); }
   double *getZall()  const { return (z); }
@@ -202,8 +222,6 @@ protected:
   ParticleType::Type particleType;
   // particles data
   //
-  // AoS representation
-  SpeciesParticle *pcls;
   // SoA representation
   //
   /** Positions array - X component */
@@ -224,30 +242,34 @@ protected:
   bool TrackParticleID;
   /** ParticleID */
   long long *ParticleID;
-  /** Average position data (used during particle push) **/
-  double *xavg;
-  double *yavg;
-  double *zavg;
+  //
+  // AoS representation
+  //
+  SpeciesParticle *_pcls;
 
   // structures for sorting particles
   //
-  // alternate storage for sorting particles
+  /** Average position data (used during particle push) **/
   //
-  double *xtmp;
-  double *ytmp;
-  double *ztmp;
-  double *utmp;
-  double *vtmp;
-  double *wtmp;
-  double *qtmp;
-  long long *ParticleIDtmp;
-  double *xavgtmp;
-  double *yavgtmp;
-  double *zavgtmp;
-  //int *xcell;
-  //int *ycell;
-  //int *zcell;
-
+  double *_xavg;
+  double *_yavg;
+  double *_zavg;
+  //
+  // alternate temporary storage for sorting particles
+  //
+  long long *_ParticleIDtmp;
+  double *_xtmp;
+  double *_ytmp;
+  double *_ztmp;
+  double *_utmp;
+  double *_vtmp;
+  double *_wtmp;
+  double *_qtmp;
+  SpeciesParticle *_pclstmp;
+  double *_xavgtmp;
+  double *_yavgtmp;
+  double *_zavgtmp;
+  //
   // references for buckets
   //
   array3_int* numpcls_in_bucket;

@@ -49,6 +49,8 @@ namespace iPic3D {
 
     void convertParticlesToSoA();
     void convertParticlesToAoS();
+  private:
+    void sortParticles();
 
   private:
     static MPIdata * mpi;

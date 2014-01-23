@@ -127,6 +127,7 @@ class EMfields3D                // :public Field
     void sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
     void sumMoments_AoS(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
     void sumMoments_vectorized(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
+    void sumMoments_vectorized_AoS(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
     void sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
     //void addToSpeciesMoments(const TenMoments & in, int is);
