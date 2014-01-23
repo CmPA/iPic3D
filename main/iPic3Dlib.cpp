@@ -209,6 +209,8 @@ void c_Solver::CalculateMoments() {
     EMf->setZeroPrimaryMoments();
     convertParticlesToSoA();
     EMf->sumMoments(part, grid, vct);
+    //convertParticlesToAoS();
+    //EMf->sumMoments_AoS(part, grid, vct);
   }
   //for (int i = 0; i < ns; i++)
   //{
@@ -265,12 +267,13 @@ bool c_Solver::ParticlesMover() {
       if(Parameters::get_VECTORIZE_MOVER())
       {
         part[i].mover_PC_vectorized(grid, vct, EMf);
+        //part[i].mover_PC_AoS_XeonVec(grid, vct, EMf);
       }
       else
       {
-        //part[i].mover_PC(grid, vct, EMf);
+        part[i].mover_PC(grid, vct, EMf);
+        //part[i].mover_PC_AoS(grid, vct, EMf);
         //part[i].mover_PC_AoS2(grid, vct, EMf);
-        part[i].mover_PC_AoS(grid, vct, EMf);
       }
     }
     }

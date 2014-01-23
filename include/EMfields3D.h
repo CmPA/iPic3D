@@ -125,6 +125,7 @@ class EMfields3D                // :public Field
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
     /*! sum moments (interp_P2G) versions */
     void sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
+    void sumMoments_AoS(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
     void sumMoments_vectorized(const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct);
     void sumMomentsOld(const Particles3Dcomm& pcls, Grid * grid, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */

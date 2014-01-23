@@ -395,7 +395,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
   for (int i = 0; i < ns; i++)
   {
     const Particles3Dcomm& pcls = part[i];
-    assert_eq(pcls.get_particleType(), ParticleType::AoS);
+    assert_eq(pcls.get_particleType(), ParticleType::SoA);
     const int is = pcls.get_ns();
     assert_eq(i,is);
 
@@ -578,6 +578,171 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
     // uncomment this and remove the loop below
     // when we change to use asynchronous communication.
     // communicateGhostP2G(is, 0, 0, 0, 0, vct);
+  }
+  }
+  for (int i = 0; i < ns; i++)
+  {
+    communicateGhostP2G(i, 0, 0, 0, 0, vct);
+  }
+}
+
+void EMfields3D::sumMoments_AoS(
+  const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct)
+{
+  const double inv_dx = 1.0 / dx;
+  const double inv_dy = 1.0 / dy;
+  const double inv_dz = 1.0 / dz;
+  const int nxn = grid->getNXN();
+  const int nyn = grid->getNYN();
+  const int nzn = grid->getNZN();
+  const double xstart = grid->getXstart();
+  const double ystart = grid->getYstart();
+  const double zstart = grid->getZstart();
+  // To make memory use scale to a large number of threads, we
+  // could first apply an efficient parallel sorting algorithm
+  // to the particles and then accumulate moments in smaller
+  // subarrays.
+  //#ifdef _OPENMP
+  #pragma omp parallel
+  {
+  for (int species_idx = 0; species_idx < ns; species_idx++)
+  {
+    const Particles3Dcomm& pcls = part[species_idx];
+    assert_eq(pcls.get_particleType(), ParticleType::AoS);
+    const int is = pcls.get_ns();
+    assert_eq(species_idx,is);
+
+    const int nop = pcls.getNOP();
+
+    int thread_num = omp_get_thread_num();
+    { timeTasks_begin_task(TimeTasks::MOMENT_ACCUMULATION); }
+    Moments10& speciesMoments10 = fetch_moments10Array(thread_num);
+    arr4_double moments = speciesMoments10.fetch_arr();
+    //
+    // moments.setmode(ompmode::mine);
+    // moments.setall(0.);
+    // 
+    double *moments1d = &moments[0][0][0][0];
+    int moments1dsize = moments.get_size();
+    for(int i=0; i<moments1dsize; i++) moments1d[i]=0;
+    //
+    #pragma omp barrier
+    #pragma omp for nowait
+    for (int pidx = 0; pidx < nop; pidx++)
+    {
+      const SpeciesParticle& pcl = pcls.get_pcl(pidx);
+      // compute the quadratic moments of velocity
+      //
+      const double ui=pcl.get_u();
+      const double vi=pcl.get_v();
+      const double wi=pcl.get_w();
+      const double uui=ui*ui;
+      const double uvi=ui*vi;
+      const double uwi=ui*wi;
+      const double vvi=vi*vi;
+      const double vwi=vi*wi;
+      const double wwi=wi*wi;
+      double velmoments[10];
+      velmoments[0] = 1.;
+      velmoments[1] = ui;
+      velmoments[2] = vi;
+      velmoments[3] = wi;
+      velmoments[4] = uui;
+      velmoments[5] = uvi;
+      velmoments[6] = uwi;
+      velmoments[7] = vvi;
+      velmoments[8] = vwi;
+      velmoments[9] = wwi;
+
+      //
+      // compute the weights to distribute the moments
+      //
+      const int ix = 2 + int (floor((pcl.get_x() - xstart) * inv_dx));
+      const int iy = 2 + int (floor((pcl.get_y() - ystart) * inv_dy));
+      const int iz = 2 + int (floor((pcl.get_z() - zstart) * inv_dz));
+      const double xi0   = pcl.get_x() - grid->getXN(ix-1);
+      const double eta0  = pcl.get_y() - grid->getYN(iy-1);
+      const double zeta0 = pcl.get_z() - grid->getZN(iz-1);
+      const double xi1   = grid->getXN(ix) - pcl.get_x();
+      const double eta1  = grid->getYN(iy) - pcl.get_y();
+      const double zeta1 = grid->getZN(iz) - pcl.get_z();
+      const double qi = pcl.get_q();
+      const double invVOLqi = invVOL*qi;
+      const double weight0 = invVOLqi * xi0;
+      const double weight1 = invVOLqi * xi1;
+      const double weight00 = weight0*eta0;
+      const double weight01 = weight0*eta1;
+      const double weight10 = weight1*eta0;
+      const double weight11 = weight1*eta1;
+      double weights[8];
+      weights[0] = weight00*zeta0; // weight000
+      weights[1] = weight00*zeta1; // weight001
+      weights[2] = weight01*zeta0; // weight010
+      weights[3] = weight01*zeta1; // weight011
+      weights[4] = weight10*zeta0; // weight100
+      weights[5] = weight10*zeta1; // weight101
+      weights[6] = weight11*zeta0; // weight110
+      weights[7] = weight11*zeta1; // weight111
+      //weights[0] = xi0 * eta0 * zeta0 * qi * invVOL; // weight000
+      //weights[1] = xi0 * eta0 * zeta1 * qi * invVOL; // weight001
+      //weights[2] = xi0 * eta1 * zeta0 * qi * invVOL; // weight010
+      //weights[3] = xi0 * eta1 * zeta1 * qi * invVOL; // weight011
+      //weights[4] = xi1 * eta0 * zeta0 * qi * invVOL; // weight100
+      //weights[5] = xi1 * eta0 * zeta1 * qi * invVOL; // weight101
+      //weights[6] = xi1 * eta1 * zeta0 * qi * invVOL; // weight110
+      //weights[7] = xi1 * eta1 * zeta1 * qi * invVOL; // weight111
+
+      // add particle to moments
+      {
+        arr1_double_fetch momentsArray[8];
+        arr2_double_fetch moments00 = moments[ix  ][iy  ];
+        arr2_double_fetch moments01 = moments[ix  ][iy-1];
+        arr2_double_fetch moments10 = moments[ix-1][iy  ];
+        arr2_double_fetch moments11 = moments[ix-1][iy-1];
+        momentsArray[0] = moments00[iz  ]; // moments000 
+        momentsArray[1] = moments00[iz-1]; // moments001 
+        momentsArray[2] = moments01[iz  ]; // moments010 
+        momentsArray[3] = moments01[iz-1]; // moments011 
+        momentsArray[4] = moments10[iz  ]; // moments100 
+        momentsArray[5] = moments10[iz-1]; // moments101 
+        momentsArray[6] = moments11[iz  ]; // moments110 
+        momentsArray[7] = moments11[iz-1]; // moments111 
+
+        for(int m=0; m<10; m++)
+        for(int c=0; c<8; c++)
+        {
+          momentsArray[c][m] += velmoments[m]*weights[c];
+        }
+      }
+    }
+    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_ACCUMULATION);
+
+    // reduction
+    if(!thread_num) timeTasks_begin_task(TimeTasks::MOMENT_REDUCTION);
+
+    // reduce moments in parallel
+    //
+    for(int thread_num=0;thread_num<get_sizeMomentsArray();thread_num++)
+    {
+      arr4_double moments = fetch_moments10Array(thread_num).fetch_arr();
+      #pragma omp for collapse(2)
+      for(int i=0;i<nxn;i++)
+      for(int j=0;j<nyn;j++)
+      for(int k=0;k<nzn;k++)
+      {
+        rhons[is][i][j][k] += invVOL*moments[i][j][k][0];
+        Jxs  [is][i][j][k] += invVOL*moments[i][j][k][1];
+        Jys  [is][i][j][k] += invVOL*moments[i][j][k][2];
+        Jzs  [is][i][j][k] += invVOL*moments[i][j][k][3];
+        pXXsn[is][i][j][k] += invVOL*moments[i][j][k][4];
+        pXYsn[is][i][j][k] += invVOL*moments[i][j][k][5];
+        pXZsn[is][i][j][k] += invVOL*moments[i][j][k][6];
+        pYYsn[is][i][j][k] += invVOL*moments[i][j][k][7];
+        pYZsn[is][i][j][k] += invVOL*moments[i][j][k][8];
+        pZZsn[is][i][j][k] += invVOL*moments[i][j][k][9];
+      }
+    }
+    if(!thread_num) timeTasks_end_task(TimeTasks::MOMENT_REDUCTION);
   }
   }
   for (int i = 0; i < ns; i++)

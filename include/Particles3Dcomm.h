@@ -121,6 +121,7 @@ public:
   // inline get accessors
   //
   ParticleType::Type get_particleType()const { return particleType; }
+  const SpeciesParticle& get_pcl(int pidx)const{ return pcls[pidx]; }
   double *getXall()  const { return (x); }
   double *getYall()  const { return (y); }
   double *getZall()  const { return (z); }
