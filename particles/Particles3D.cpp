@@ -460,6 +460,7 @@ void Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 void Particles3D::mover_PC_AoS2(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 {
   convertParticlesToAoS();
+  SpeciesParticle * pcls = fetch_pcls();
   #pragma omp master
   if (vct->getCartesian_rank() == 0) {
     cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
@@ -611,6 +612,7 @@ void Particles3D::mover_PC_AoS(Grid * grid, VirtualTopology3D * vct, Field * EMf
   }
   const_arr4_pfloat fieldForPcls = EMf->get_fieldForPcls();
 
+  SpeciesParticle * pcls = fetch_pcls();
   #pragma omp master
   { timeTasks_begin_task(TimeTasks::MOVER_PCL_MOVING); }
   const double dto2 = .5 * dt, qdto2mc = qom * dto2 / c;
@@ -765,6 +767,9 @@ void Particles3D::mover_PC_vectorized(
   Grid * grid, VirtualTopology3D * vct, Field * EMf)
 {
   convertParticlesToSoA();
+  double* xavg = fetch_xavg();
+  double* yavg = fetch_yavg();
+  double* zavg = fetch_zavg();
   assert_eq(nxc,nxn-1);
   assert_eq(nyc,nyn-1);
   assert_eq(nzc,nzn-1);
@@ -840,6 +845,9 @@ void Particles3D::mover_PC_vectorized(
       ALIGNED(u);
       ALIGNED(v);
       ALIGNED(w);
+      ALIGNED(xavg);
+      ALIGNED(yavg);
+      ALIGNED(zavg);
       // This pragma help on Xeon but hurts on Xeon Phi.
       // On the Phi we could accelerate by processing two particles at a time.
       #pragma simd
