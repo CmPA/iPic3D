@@ -33,6 +33,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include <vector>
 #include <complex>
 #include "debug.h"
+#include "TimeTasks.h"
 
 using std::cout;
 using std::cerr;
@@ -1236,6 +1237,7 @@ void Particles3Dcomm::sort_particles_serial(
 
 void Particles3Dcomm::copyParticlesToSoA()
 {
+  timeTasks_set_task(TimeTasks::TRANSPOSE_PCLS_TO_SOA);
   dprintf("copying to struct of arrays");
   #pragma omp for
   for(int pidx=0; pidx<nop; pidx++)
@@ -1254,6 +1256,7 @@ void Particles3Dcomm::copyParticlesToSoA()
 
 void Particles3Dcomm::copyParticlesToAoS()
 {
+  timeTasks_set_task(TimeTasks::TRANSPOSE_PCLS_TO_AOS);
   dprintf("copying to array of structs");
   #pragma omp for
   for(int pidx=0; pidx<nop; pidx++)

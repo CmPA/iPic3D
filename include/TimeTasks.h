@@ -32,6 +32,8 @@ class TimeTasks
     MOMENT_REDUCTION,
     MOVER_PCL_SORTING,
     MOVER_PCL_MOVING,
+    TRANSPOSE_PCLS_TO_AOS,
+    TRANSPOSE_PCLS_TO_SOA,
     NUMBER_OF_TASKS // this line should be last
   };
 
