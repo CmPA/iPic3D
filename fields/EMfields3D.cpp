@@ -425,7 +425,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
     // The following loop is expensive, so it is wise to assume that the
     // compiler is stupid.  Therefore we should on the one hand
     // expand things out and on the other hand avoid repeating computations.
-    #pragma omp for nowait
+    #pragma omp for // used nowait with the old way
     for (int i = 0; i < nop; i++)
     {
       // compute the quadratic moments of velocity
@@ -1158,6 +1158,7 @@ void EMfields3D::sumMoments_vectorized(
 void EMfields3D::sumMoments_vectorized_AoS(
   const Particles3Dcomm* part, Grid * grid, VirtualTopology3D * vct)
 {
+  dprint("entering")
   const double inv_dx = grid->get_invdx();
   const double inv_dy = grid->get_invdy();
   const double inv_dz = grid->get_invdz();
@@ -1233,18 +1234,18 @@ void EMfields3D::sumMoments_vectorized_AoS(
         memset(momentsAcc,0,sizeof(double)*8*10);
         for(int pidx=bucket_offset; pidx<bucket_end; pidx++)
         {
-          const SpeciesParticle& pcl = pcls.get_pcl(pidx);
+          const SpeciesParticle* pcl = &pcls.get_pcl(pidx);
           // This depends on the fact that the memory
           // occupied by a particle coincides with
           // the alignment interval (64 bytes)
-          ALIGNED(&pcl);
+          ALIGNED(pcl);
           double velmoments[10];
           double weights[8];
           // compute the quadratic moments of velocity
           //
-          const double ui=pcl.get_u();
-          const double vi=pcl.get_v();
-          const double wi=pcl.get_w();
+          const double ui=pcl->get_u();
+          const double vi=pcl->get_v();
+          const double wi=pcl->get_w();
           const double uui=ui*ui;
           const double uvi=ui*vi;
           const double uwi=ui*wi;
@@ -1266,9 +1267,9 @@ void EMfields3D::sumMoments_vectorized_AoS(
           // compute the weights to distribute the moments
           //
           //double weights[8];
-          const double abs_xpos = pcl.get_x();
-          const double abs_ypos = pcl.get_y();
-          const double abs_zpos = pcl.get_z();
+          const double abs_xpos = pcl->get_x();
+          const double abs_ypos = pcl->get_y();
+          const double abs_zpos = pcl->get_z();
           const double rel_xpos = abs_xpos - xstart;
           const double rel_ypos = abs_ypos - ystart;
           const double rel_zpos = abs_zpos - zstart;
@@ -1293,7 +1294,7 @@ void EMfields3D::sumMoments_vectorized_AoS(
           const double w0y = 1-w1y;
           const double w0z = 1-w1z;
           // we are calculating a charge moment.
-          const double qi=pcl.get_q();
+          const double qi=pcl->get_q();
           const double weight0 = qi*w0x;
           const double weight1 = qi*w1x;
           const double weight00 = weight0*w0y;

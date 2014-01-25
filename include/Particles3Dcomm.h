@@ -72,12 +72,10 @@ public:
   void convertParticlesToSoA();
 
   /*! sort particles for vectorized push (needs to be parallelized) */
+  void sort_particles_serial_SoA_by_xavg(Grid * grid, VirtualTopology3D * vct);
   void sort_particles_serial(Grid * grid, VirtualTopology3D * vct);
   void sort_particles_serial_AoS(Grid * grid, VirtualTopology3D * vct);
-  /*! sort particles with respect to provided position data */
-  void sort_particles_serial(
-    pfloat *xpos, pfloat *ypos, pfloat *zpos,
-    Grid * grid, VirtualTopology3D * vct);
+  void sort_particles_serial_SoA(Grid * grid, VirtualTopology3D * vct);
   void get_safe_cell_for_pos(
     int& cx, int& cy, int& cz, 
     pfloat xpos, pfloat ypos, pfloat zpos)

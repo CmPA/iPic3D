@@ -191,25 +191,42 @@ void c_Solver::CalculateMoments() {
 
   if(Parameters::get_VECTORIZE_MOMENTS())
   {
-    // since particles are sorted,
-    // we can vectorize interpolation of particles to grid
-    convertParticlesToSoA();
-	sortParticles();
-    EMf->sumMoments_vectorized(part, grid, vct);
-    //convertParticlesToAoS();
-	//sortParticles();
-    //EMf->sumMoments_vectorized_AoS(part, grid, vct);
+    switch(Parameters::get_MOMENTS_TYPE())
+    {
+      case Parameters::SoA:
+        // since particles are sorted,
+        // we can vectorize interpolation of particles to grid
+        convertParticlesToSoA();
+        sortParticles();
+        EMf->sumMoments_vectorized(part, grid, vct);
+        break;
+      case Parameters::AoS:
+        convertParticlesToAoS();
+        sortParticles();
+        EMf->sumMoments_vectorized_AoS(part, grid, vct);
+        break;
+      default:
+        unsupported_value_error(Parameters::get_MOMENTS_TYPE());
+    }
   }
   else
   {
     if(Parameters::get_SORTING_PARTICLES())
-	  sortParticles();
-
-    EMf->setZeroPrimaryMoments();
-    convertParticlesToSoA();
-    EMf->sumMoments(part, grid, vct);
-    //convertParticlesToAoS();
-    //EMf->sumMoments_AoS(part, grid, vct);
+      sortParticles();
+    switch(Parameters::get_MOMENTS_TYPE())
+    {
+      case Parameters::SoA:
+        EMf->setZeroPrimaryMoments();
+        convertParticlesToSoA();
+        EMf->sumMoments(part, grid, vct);
+        break;
+      case Parameters::AoS:
+        convertParticlesToAoS();
+        EMf->sumMoments_AoS(part, grid, vct);
+        break;
+      default:
+        unsupported_value_error(Parameters::get_MOMENTS_TYPE());
+    }
   }
   //for (int i = 0; i < ns; i++)
   //{
@@ -274,6 +291,9 @@ bool c_Solver::ParticlesMover() {
         case Parameters::AoS:
           part[i].mover_PC_AoS(grid, vct, EMf);
           //part[i].mover_PC_AoS2(grid, vct, EMf);
+          break;
+        case Parameters::AoSvec_onesort:
+          part[i].mover_PC_AoS_vec(grid, vct, EMf);
           break;
         default:
           unsupported_value_error(Parameters::get_MOVER_TYPE());
