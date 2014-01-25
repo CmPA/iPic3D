@@ -5,10 +5,14 @@
 //
 namespace Parameters
 {
-  enum MoverType
+  enum Enum
   {
-    SoA=0,
-    AoS,
+    SoA=0, // struct of arrays
+    AoS, // array of structs
+    // for moments type
+    AoSvec,
+    SoAvec,
+    // for mover type
     SoAvec_onesort,
     AoSvec_onesort,
     SoAvec_resort,
@@ -25,6 +29,7 @@ namespace Parameters
   inline bool get_USING_XAVG() { return get_RESORTING_PARTICLES(); }
   bool get_VECTORIZE_MOMENTS();
   //bool get_VECTORIZE_MOVER();
-  MoverType get_MOVER_TYPE();
+  Enum get_MOVER_TYPE();
+  Enum get_MOMENTS_TYPE();
 }
 #endif
