@@ -4,6 +4,7 @@
 #include "TimeTasks.h"
 #include "asserts.h"
 #include "MPIdata.h" // for get_rank
+#include "parallel.h"
 #include "debug.h"
 
 /** implementation of declarations in utility/TimeTasks.h **/
@@ -23,6 +24,8 @@ static const char *taskNames[] = // order must agree with Tasks in TimeTasks.h
   "moment_reduction",
   "mover_pcl_sorting",
   "mover_pcl_moving",
+  "transpose_pcls_to_AoS",
+  "transpose_pcls_to_SoA",
   "number_of_tasks"
 };
 
@@ -47,6 +50,7 @@ void TimeTasks::resetCycle()
 }
 void TimeTasks::start_main_task(TimeTasks::Tasks taskid)
 {
+  if(!is_output_thread()) return;
   assert(is_exclusive(taskid));
   assert_ne(active_task, taskid);
   active_task = taskid;
@@ -55,6 +59,7 @@ void TimeTasks::start_main_task(TimeTasks::Tasks taskid)
 }
 void TimeTasks::start_task(TimeTasks::Tasks taskid)
 {
+  if(!is_output_thread()) return;
   assert(!is_exclusive(taskid));
   assert(!active[taskid]);
   active[taskid]=true;
@@ -62,6 +67,7 @@ void TimeTasks::start_task(TimeTasks::Tasks taskid)
 // have to manage the task stack explicitly
 void TimeTasks::start_task(TimeTasks::Tasks taskid, double start_time)
 {
+  if(!is_output_thread()) return;
   if(stack_depth[taskid]==0)
   {
     start_times[taskid]=start_time;
@@ -71,11 +77,13 @@ void TimeTasks::start_task(TimeTasks::Tasks taskid, double start_time)
 }
 void TimeTasks::end_main_task(TimeTasks::Tasks taskid, double start_time)
 {
+  if(!is_output_thread()) return;
   end_task(taskid, start_time);
   active_task = NONE;
 }
 void TimeTasks::end_task(TimeTasks::Tasks taskid, double start_time)
 {
+  if(!is_output_thread()) return;
   assert(active[taskid]);
   double now = MPI_Wtime();
   // compute time spent on task
@@ -85,6 +93,7 @@ void TimeTasks::end_task(TimeTasks::Tasks taskid, double start_time)
 // have to manage the task stack explicitly
 void TimeTasks::end_task(TimeTasks::Tasks taskid)
 {
+  if(!is_output_thread()) return;
   stack_depth[taskid]--;
   assert_ge(stack_depth[taskid],0);
   if(stack_depth[taskid]==0)
@@ -94,6 +103,7 @@ void TimeTasks::end_task(TimeTasks::Tasks taskid)
 }
 void TimeTasks::end_communicating(double start_time)
 {
+  if(!is_output_thread()) return;
   assert(active_task);
   assert(communicating);
   double additional_communication_time = MPI_Wtime()-start_time;
@@ -103,9 +113,10 @@ void TimeTasks::end_communicating(double start_time)
 #define TIMING_PREFIX "| "
 void TimeTasks::print_cycle_times(int cycle)
 {
+  if(!is_output_thread()) return;
   FILE* file = stdout;
   // we could report average for all processes
-  if(!MPIdata::get_rank())
+  //if(!MPIdata::get_rank())
   {
     fflush(file);
     fprintf(file,"=== times for cycle %d for rank %d === \n",
@@ -145,9 +156,14 @@ void TimeTasks::print_cycle_times(int cycle)
     fprintf(file, TIMING_PREFIX "time   subtask\n");
     for(int e=LAST+1; e<NUMBER_OF_TASKS; e++)
     {
+      // do not show tasks that are not executed
+      double elapsed_time = get_time(e);
+      if(!elapsed_time)
+        continue;
+
       assert_eq(stack_depth[e],0);
       fprintf(file, TIMING_PREFIX "%6.3f %s\n",
-      get_time(e),
+      elapsed_time,
       get_taskname(e));
     }
     
@@ -160,6 +176,7 @@ void TimeTasks::print_cycle_times(int cycle)
 // 
 void TimeTasks::operator/=(int num)
 {
+  assert(false); // this method is not in use.
   for(int e=NONE+1;e<NUMBER_OF_TASKS;e++)
   {
     task_duration[e]/=num;
@@ -169,6 +186,7 @@ void TimeTasks::operator/=(int num)
 }
 void TimeTasks::operator+=(const TimeTasks& arg)
 {
+  assert(false); // this method is not in use.
   active_task = arg.active_task;
   communicating = arg.communicating;
   for(int e=NONE+1;e<NUMBER_OF_TASKS;e++)
@@ -182,6 +200,7 @@ void TimeTasks::operator+=(const TimeTasks& arg)
 }
 void TimeTasks::operator=(const TimeTasks& arg)
 {
+  assert(false); // this method is not in use.
   active_task = arg.active_task;
   communicating = arg.communicating;
   for(int e=NONE+1;e<NUMBER_OF_TASKS;e++)
@@ -194,9 +213,51 @@ void TimeTasks::operator=(const TimeTasks& arg)
   }
 }
 
+TimeTasks_caller_to_set_main_task_for_scope::
+TimeTasks_caller_to_set_main_task_for_scope(TimeTasks::Tasks _task) :
+  task(_task)
+{
+  if(!is_output_thread()) return;
+  start_time = MPI_Wtime();
+  timeTasks.start_main_task(task);
+}
+TimeTasks_caller_to_set_main_task_for_scope::
+~TimeTasks_caller_to_set_main_task_for_scope()
+{
+  if(!is_output_thread()) return;
+  timeTasks.end_main_task(task, start_time);
+}
+
+TimeTasks_caller_to_set_task_for_scope::
+TimeTasks_caller_to_set_task_for_scope(TimeTasks::Tasks _task)
+{
+  if(!is_output_thread()) return;
+  task = _task;
+  already_active = timeTasks.is_active(task);
+  if(!already_active)
+  {
+    start_time = MPI_Wtime();
+    timeTasks.start_task(task);
+  }
+}
+TimeTasks_caller_to_set_task_for_scope::
+~TimeTasks_caller_to_set_task_for_scope()
+{
+  if(!is_output_thread()) return;
+  if(already_active)
+  {
+    assert(timeTasks.is_active(task));
+  }
+  else
+  {
+    timeTasks.end_task(task, start_time);
+  }
+}
+
 TimeTasks_caller_to_set_communication_mode_for_scope::
 TimeTasks_caller_to_set_communication_mode_for_scope()
 {
+  if(!is_output_thread()) return;
   already_communicating = timeTasks.get_communicating();
   if(!already_communicating)
   {
@@ -207,6 +268,7 @@ TimeTasks_caller_to_set_communication_mode_for_scope()
 TimeTasks_caller_to_set_communication_mode_for_scope::
 ~TimeTasks_caller_to_set_communication_mode_for_scope()
 {
+  if(!is_output_thread()) return;
   if(!already_communicating)
   {
     timeTasks.end_communicating(start_time);

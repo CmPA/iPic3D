@@ -23,7 +23,9 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "Field.h"
 #include "MPIdata.h"
 #include "ompdefs.h"
+#include "ipicmath.h"
 
+#include "Particle.h"
 #include "Particles3Dcomm.h"
 #include "Parameters.h"
 
@@ -31,6 +33,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include <vector>
 #include <complex>
 #include "debug.h"
+#include "TimeTasks.h"
 
 using std::cout;
 using std::cerr;
@@ -63,21 +66,26 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]w;
   delete[]q;
   delete[]ParticleID;
-  delete[]xavg;
-  delete[]yavg;
-  delete[]zavg;
+  // AoS representation
+  delete[]_pcls;
+  // average position used in particle advance
+  delete[]_xavg;
+  delete[]_yavg;
+  delete[]_zavg;
   // deallocate alternate storage
-  delete[]xtmp;
-  delete[]ytmp;
-  delete[]ztmp;
-  delete[]utmp;
-  delete[]vtmp;
-  delete[]wtmp;
-  delete[]qtmp;
-  delete[]ParticleIDtmp;
-  delete[]xavgtmp;
-  delete[]yavgtmp;
-  delete[]zavgtmp;
+  delete[]_xtmp;
+  delete[]_ytmp;
+  delete[]_ztmp;
+  delete[]_utmp;
+  delete[]_vtmp;
+  delete[]_wtmp;
+  delete[]_qtmp;
+  delete[]_ParticleIDtmp;
+  delete[] _pclstmp;
+  // extra xavg for sort
+  delete[]_xavgtmp;
+  delete[]_yavgtmp;
+  delete[]_zavgtmp;
   // deallocate buffers
   delete[]b_X_RIGHT;
   delete[]b_X_LEFT;
@@ -100,6 +108,8 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   nop = col->getNp(species) / (vct->getNprocs());
   np_tot = col->getNp(species);
   npmax = col->getNpMax(species) / (vct->getNprocs());
+  // ensure that npmax is a multiple of AoS_PCLS_AT_A_TIME
+  npmax = roundup_to_multiple(npmax,AoS_PCLS_AT_A_TIME);
   qom = col->getQOM(species);
   uth = col->getUth(species);
   vth = col->getVth(species);
@@ -178,7 +188,11 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   // //////////////////////////////////////////////////////////////
   // ////////////// ALLOCATE ARRAYS /////////////////////////
   // //////////////////////////////////////////////////////////////
+  //
+  // SoA particle representation
+  //
   // positions
+  particleType = ParticleType::SoA;
   x = new double[npmax];
   y = new double[npmax];
   z = new double[npmax];
@@ -189,50 +203,75 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   // charge
   q = new double[npmax];
   // average positions, used in iterative particle advance
-  xavg = 0;
-  yavg = 0;
-  zavg = 0;
+  _xavg = 0;
+  _yavg = 0;
+  _zavg = 0;
+  //if(Parameters::get_USING_XAVG())
+  //{
+  //  xavg = new double[npmax];
+  //  yavg = new double[npmax];
+  //  zavg = new double[npmax];
+  //}
+  _xtmp = 0;
+  _ytmp = 0;
+  _ztmp = 0;
+  _utmp = 0;
+  _vtmp = 0;
+  _wtmp = 0;
+  _qtmp = 0;
+  _xavgtmp = 0;
+  _yavgtmp = 0;
+  _zavgtmp = 0;
+  _pcls = 0;
+  _pclstmp = 0;
+  _ParticleIDtmp = 0;
+  // accessors for data that should be allocated only if needed
+  //
   if(Parameters::get_USING_XAVG())
   {
-    xavg = new double[npmax];
-    yavg = new double[npmax];
-    zavg = new double[npmax];
+    _xavg=new double[npmax];
+    _yavg=new double[npmax];
+    _zavg=new double[npmax];
   }
-  //
-  xtmp = 0;
-  ytmp = 0;
-  ztmp = 0;
-  utmp = 0;
-  vtmp = 0;
-  wtmp = 0;
-  qtmp = 0;
-  xavgtmp = 0;
-  yavgtmp = 0;
-  zavgtmp = 0;
-  if(Parameters::get_SORTING_PARTICLES())
+  if(Parameters::get_SORTING_SOA())
   {
-    xtmp = new double[npmax];
-    ytmp = new double[npmax];
-    ztmp = new double[npmax];
-    // velocities
-    utmp = new double[npmax];
-    vtmp = new double[npmax];
-    wtmp = new double[npmax];
-    // charge
-    qtmp = new double[npmax];
-    // average positions, used in iterative particle advance
-    xavgtmp = new double[npmax];
-    yavgtmp = new double[npmax];
-    zavgtmp = new double[npmax];
+    _xtmp=new double[npmax];
+    _ytmp=new double[npmax];
+    _ztmp=new double[npmax];
+    _utmp=new double[npmax];
+    _vtmp=new double[npmax];
+    _wtmp=new double[npmax];
+    _qtmp=new double[npmax];
+    _xavgtmp=new double[npmax];
+    _yavgtmp=new double[npmax];
+    _zavgtmp=new double[npmax];
+    if(TrackParticleID)
+    {
+      _ParticleIDtmp = new long long[npmax];
+    }
+  }
+  if(Parameters::get_USING_AOS())
+  {
+    assert_eq(sizeof(SpeciesParticle),64);
+    //_pcls = AlignedAlloc(SpeciesParticle,npmax);
+    _pcls = new SpeciesParticle[npmax];
+    if(Parameters::get_SORTING_PARTICLES())
+    {
+      //_pclstmp = AlignedAlloc(SpeciesParticle,npmax);
+      _pclstmp = new SpeciesParticle[npmax];
+    }
+    #ifdef __INTEL_COMPILER
+      assert_eq(sizeof(SpeciesParticle),64);
+      ALIGNED(_pcls);
+    #endif
   }
 
   ParticleID = 0;
-  ParticleIDtmp = 0;
   // ID
   if (TrackParticleID) {
     ParticleID = new long long[npmax];
-    if(Parameters::get_SORTING_PARTICLES())
-      ParticleIDtmp = new long long[npmax];
+    //if(Parameters::get_SORTING_PARTICLES())
+    //  _ParticleIDtmp = new long long[npmax];
     BirthRank[0] = vct->getCartesian_rank();
     if (vct->getNprocs() > 1)
       BirthRank[1] = (int) ceil(log10((double) (vct->getNprocs())));  // Number of digits needed for # of process in ID
@@ -978,14 +1017,113 @@ void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
 
 void Particles3Dcomm::sort_particles_serial(Grid * grid, VirtualTopology3D * vct)
 {
-  sort_particles_serial(x,y,z, grid,vct);
+  switch(particleType)
+  {
+    case ParticleType::AoS:
+      sort_particles_serial_AoS(grid,vct);
+      break;
+    case ParticleType::SoA:
+      sort_particles_serial_SoA(grid,vct);
+      break;
+    default:
+      unsupported_value_error(particleType);
+  }
 }
 
 // need to sort and communicate particles after each iteration
-void Particles3Dcomm::sort_particles_serial(
-  double *xpos, double *ypos, double *zpos,
+void Particles3Dcomm::sort_particles_serial_AoS(
   Grid * grid, VirtualTopology3D * vct)
 {
+  SpeciesParticle* pcls = fetch_pcls();
+  SpeciesParticle* pclstmp = fetch_pclstmp();
+  {
+    numpcls_in_bucket->setall(0);
+    // iterate through particles and count where they will go
+    for (int pidx = 0; pidx < nop; pidx++)
+    {
+      const SpeciesParticle& pcl = get_pcl(pidx);
+      // get the cell indices of the particle
+      int cx,cy,cz;
+      get_safe_cell_for_pos(cx,cy,cz,pcl.get_x(),pcl.get_y(),pcl.get_z());
+
+      // increment the number of particles in bucket of this particle
+      (*numpcls_in_bucket)[cx][cy][cz]++;
+    }
+
+    // compute prefix sum to determine initial position
+    // of each bucket (could parallelize this)
+    //
+    int accpcls=0;
+    for(int cx=0;cx<nxc;cx++)
+    for(int cy=0;cy<nyc;cy++)
+    for(int cz=0;cz<nzc;cz++)
+    {
+      (*bucket_offset)[cx][cy][cz] = accpcls;
+      accpcls += (*numpcls_in_bucket)[cx][cy][cz];
+    }
+    assert_eq(accpcls,nop);
+
+    numpcls_in_bucket_now->setall(0);
+    // put the particles where they are supposed to go
+    for (int pidx = 0; pidx < nop; pidx++)
+    {
+      const SpeciesParticle& pcl = get_pcl(pidx);
+      // get the cell indices of the particle
+      int cx,cy,cz;
+      get_safe_cell_for_pos(cx,cy,cz,pcl.get_x(),pcl.get_y(),pcl.get_z());
+
+      // compute where the data should go
+      const int numpcls_now = (*numpcls_in_bucket_now)[cx][cy][cz]++;
+      const int outpidx = (*bucket_offset)[cx][cy][cz] + numpcls_now;
+      assert_lt(outpidx, nop);
+      assert_ge(outpidx, 0);
+      assert_lt(pidx, nop);
+      assert_ge(pidx, 0);
+
+      // copy particle data to new location
+      //
+      pclstmp[outpidx] = pcl;
+    }
+    // swap the tmp particle memory with the official particle memory
+    {
+      swap(_pclstmp,_pcls);
+    }
+
+    // check if the particles were sorted incorrectly
+    if(true)
+    {
+      for(int cx=0;cx<nxc;cx++)
+      for(int cy=0;cy<nyc;cy++)
+      for(int cz=0;cz<nzc;cz++)
+      {
+        assert_eq((*numpcls_in_bucket_now)[cx][cy][cz], (*numpcls_in_bucket)[cx][cy][cz]);
+      }
+    }
+  }
+}
+
+// need to sort and communicate particles after each iteration
+void Particles3Dcomm::sort_particles_serial_SoA(
+  Grid * grid, VirtualTopology3D * vct)
+{
+  double * xtmp = fetch_xtmp();
+  double * ytmp = fetch_ytmp();
+  double * ztmp = fetch_ztmp();
+  double * utmp = fetch_utmp();
+  double * vtmp = fetch_vtmp();
+  double * wtmp = fetch_wtmp();
+  double * qtmp = fetch_qtmp();
+
+  long long* ParticleIDtmp = 0;
+  if (TrackParticleID)
+  {
+    assert(ParticleID);
+    ParticleIDtmp = fetch_ParticleIDtmp();
+    assert(fetch_ParticleIDtmp());
+    assert(ParticleIDtmp);
+  }
+
+  // sort the particles
   {
     numpcls_in_bucket->setall(0);
     // iterate through particles and count where they will go
@@ -994,7 +1132,7 @@ void Particles3Dcomm::sort_particles_serial(
       // get the cell indices of the particle
       //
       int cx,cy,cz;
-      get_safe_cell_for_pos(cx,cy,cz,xpos[pidx],ypos[pidx],zpos[pidx]);
+      get_safe_cell_for_pos(cx,cy,cz,x[pidx],y[pidx],z[pidx]);
       //
       // is it better just to recompute this?
       //
@@ -1020,13 +1158,14 @@ void Particles3Dcomm::sort_particles_serial(
     assert_eq(accpcls,nop);
 
     numpcls_in_bucket_now->setall(0);
+
     // put the particles where they are supposed to go
     for (int pidx = 0; pidx < nop; pidx++)
     {
       // get the cell indices of the particle
       //
       int cx,cy,cz;
-      get_safe_cell_for_pos(cx,cy,cz,xpos[pidx],ypos[pidx],zpos[pidx]);
+      get_safe_cell_for_pos(cx,cy,cz,x[pidx],y[pidx],z[pidx]);
       //
       //cx = xcell[pidx];
       //cy = ycell[pidx];
@@ -1050,27 +1189,24 @@ void Particles3Dcomm::sort_particles_serial(
       wtmp[outpidx] = w[pidx];
       qtmp[outpidx] = q[pidx];
       if (TrackParticleID)
+      {
         ParticleIDtmp[outpidx] = ParticleID[pidx];
-      xavgtmp[outpidx] = xavg[pidx];
-      yavgtmp[outpidx] = yavg[pidx];
-      zavgtmp[outpidx] = zavg[pidx];
+      }
     }
     // swap the tmp particle memory with the official particle memory
     {
-      swap(xtmp,x);
-      swap(ytmp,y);
-      swap(ztmp,z);
-      swap(utmp,u);
-      swap(vtmp,v);
-      swap(wtmp,w);
-      swap(qtmp,q);
-      swap(ParticleIDtmp,ParticleID);
-      swap(xavgtmp,xavg);
-      swap(yavgtmp,yavg);
-      swap(zavgtmp,zavg);
+      swap(_xtmp,x);
+      swap(_ytmp,y);
+      swap(_ztmp,z);
+      swap(_utmp,u);
+      swap(_vtmp,v);
+      swap(_wtmp,w);
+      swap(_qtmp,q);
+      swap(_ParticleIDtmp,ParticleID);
     }
 
-    // check if the particles were sorted incorrectly
+    // check that the number of bins was correct
+    //
     if(true)
     {
       for(int cx=0;cx<nxc;cx++)
@@ -1078,6 +1214,208 @@ void Particles3Dcomm::sort_particles_serial(
       for(int cz=0;cz<nzc;cz++)
       {
         assert_eq((*numpcls_in_bucket_now)[cx][cy][cz], (*numpcls_in_bucket)[cx][cy][cz]);
+      }
+    }
+    // confirm that the particles were sorted correctly
+    if(false)
+    {
+      for(int cx=0;cx<nxc;cx++)
+      for(int cy=0;cy<nyc;cy++)
+      for(int cz=0;cz<nzc;cz++)
+      {
+        const int numpcls_in_cell = get_numpcls_in_bucket(cx,cy,cz);
+        const int bucket_offset = get_bucket_offset(cx,cy,cz);
+        const int bucket_end = bucket_offset+numpcls_in_cell;
+        for(int pidx=bucket_offset; pidx<bucket_end; pidx++)
+        {
+          // confirm that particle is in correct cell
+          {
+            int cx_,cy_,cz_;
+            get_safe_cell_for_pos(cx_,cy_,cz_,x[pidx],y[pidx],z[pidx]);
+            if((cx_!=cx)
+             ||(cy_!=cy)
+             ||(cz_!=cz))
+            {
+              dprintf("\n\t cx =%d, cy =%d, cz =%d"
+                      "\n\t cx_=%d, cy_=%d, cz_=%d"
+                      "\n\t cxf=%f, cyf=%f, czf=%f",
+                      cx,cy,cz,
+                      cx_,cy_,cz_,
+                      1.+(x[pidx]-xstart)*inv_dx,
+                      1.+(y[pidx]-ystart)*inv_dy,
+                      1.+(z[pidx]-zstart)*inv_dz);
+            }
+            assert_eq(cx_,cx);
+            assert_eq(cy_,cy);
+            assert_eq(cz_,cz);
+          }
+        }
+      }
+    }
+  }
+}
+
+// need to sort and communicate particles after each iteration
+void Particles3Dcomm::sort_particles_serial_SoA_by_xavg(
+  Grid * grid, VirtualTopology3D * vct)
+{
+  double * xtmp = fetch_xtmp();
+  double * ytmp = fetch_ytmp();
+  double * ztmp = fetch_ztmp();
+  double * utmp = fetch_utmp();
+  double * vtmp = fetch_vtmp();
+  double * wtmp = fetch_wtmp();
+  double * qtmp = fetch_qtmp();
+  double* xavg = fetch_xavg();
+  double* yavg = fetch_yavg();
+  double* zavg = fetch_zavg();
+  double* xavgtmp = fetch_xavgtmp();
+  double* yavgtmp = fetch_yavgtmp();
+  double* zavgtmp = fetch_zavgtmp();
+
+  long long* ParticleIDtmp = 0;
+  if (TrackParticleID) ParticleIDtmp = fetch_ParticleIDtmp();
+
+  // sort the particles
+  {
+    numpcls_in_bucket->setall(0);
+    // iterate through particles and count where they will go
+    for (int pidx = 0; pidx < nop; pidx++)
+    {
+      // get the cell indices of the particle
+      //
+      int cx,cy,cz;
+      get_safe_cell_for_pos(cx,cy,cz,xavg[pidx],yavg[pidx],zavg[pidx]);
+      //
+      // is it better just to recompute this?
+      //
+      //xcell[pidx]=cx;
+      //ycell[pidx]=cy;
+      //zcell[pidx]=cz;
+
+      // increment the number of particles in bucket of this particle
+      (*numpcls_in_bucket)[cx][cy][cz]++;
+    }
+
+    // compute prefix sum to determine initial position
+    // of each bucket (could parallelize this)
+    //
+    int accpcls=0;
+    for(int cx=0;cx<nxc;cx++)
+    for(int cy=0;cy<nyc;cy++)
+    for(int cz=0;cz<nzc;cz++)
+    {
+      (*bucket_offset)[cx][cy][cz] = accpcls;
+      accpcls += (*numpcls_in_bucket)[cx][cy][cz];
+    }
+    assert_eq(accpcls,nop);
+
+    numpcls_in_bucket_now->setall(0);
+
+    // put the particles where they are supposed to go
+    for (int pidx = 0; pidx < nop; pidx++)
+    {
+      // get the cell indices of the particle
+      //
+      int cx,cy,cz;
+      get_safe_cell_for_pos(cx,cy,cz,xavg[pidx],yavg[pidx],zavg[pidx]);
+      //
+      //cx = xcell[pidx];
+      //cy = ycell[pidx];
+      //cz = zcell[pidx];
+
+      // compute where the data should go
+      const int numpcls_now = (*numpcls_in_bucket_now)[cx][cy][cz]++;
+      const int outpidx = (*bucket_offset)[cx][cy][cz] + numpcls_now;
+      assert_lt(outpidx, nop);
+      assert_ge(outpidx, 0);
+      assert_lt(pidx, nop);
+      assert_ge(pidx, 0);
+
+      // copy particle data to new location
+      //
+      xtmp[outpidx] = x[pidx];
+      ytmp[outpidx] = y[pidx];
+      ztmp[outpidx] = z[pidx];
+      utmp[outpidx] = u[pidx];
+      vtmp[outpidx] = v[pidx];
+      wtmp[outpidx] = w[pidx];
+      qtmp[outpidx] = q[pidx];
+      xavgtmp[outpidx] = xavg[pidx];
+      yavgtmp[outpidx] = yavg[pidx];
+      zavgtmp[outpidx] = zavg[pidx];
+      if (TrackParticleID)
+      {
+        ParticleIDtmp[outpidx] = ParticleID[pidx];
+      }
+    }
+    // swap the tmp particle memory with the official particle memory
+    {
+      swap(_xtmp,x);
+      swap(_ytmp,y);
+      swap(_ztmp,z);
+      swap(_utmp,u);
+      swap(_vtmp,v);
+      swap(_wtmp,w);
+      swap(_qtmp,q);
+      swap(_ParticleIDtmp,ParticleID);
+      swap(_xavgtmp,_xavg);
+      swap(_yavgtmp,_yavg);
+      swap(_zavgtmp,_zavg);
+    }
+    xavg = _xavg;
+    yavg = _yavg;
+    zavg = _zavg;
+
+    // check that the number of bins was correct
+    //
+    if(true)
+    {
+      for(int cx=0;cx<nxc;cx++)
+      for(int cy=0;cy<nyc;cy++)
+      for(int cz=0;cz<nzc;cz++)
+      {
+        assert_eq((*numpcls_in_bucket_now)[cx][cy][cz], (*numpcls_in_bucket)[cx][cy][cz]);
+      }
+    }
+    int serial_pidx=0;
+    // confirm that the particles were sorted correctly
+    for(int cx=0;cx<nxc;cx++)
+    for(int cy=0;cy<nyc;cy++)
+    for(int cz=0;cz<nzc;cz++)
+    {
+      const int numpcls_in_cell = get_numpcls_in_bucket(cx,cy,cz);
+      const int bucket_offset = get_bucket_offset(cx,cy,cz);
+      const int bucket_end = bucket_offset+numpcls_in_cell;
+      for(int pidx=bucket_offset; pidx<bucket_end; pidx++)
+      {
+        // serial case: check that pidx is correct
+        assert_eq(pidx,serial_pidx);
+        serial_pidx++;
+        // confirm that particle is in correct cell
+        if(true)
+        {
+          int cx_,cy_,cz_;
+          get_safe_cell_for_pos(cx_,cy_,cz_,xavg[pidx],yavg[pidx],zavg[pidx]);
+          if((cx_!=cx)
+           ||(cy_!=cy)
+           ||(cz_!=cz))
+          {
+            dprint(cx)
+            dprintf("\n\t cx =%d, cy =%d, cz =%d"
+                    "\n\t cx_=%d, cy_=%d, cz_=%d"
+                    "\n\t cxf=%f, cyf=%f, czf=%f",
+                    cx,cy,cz,
+                    cx_,cy_,cz_,
+                    1.+(xavg[pidx]-xstart)*inv_dx,
+                    1.+(yavg[pidx]-ystart)*inv_dy,
+                    1.+(zavg[pidx]-zstart)*inv_dz);
+            dprint(serial_pidx);
+          }
+          assert_eq(cx_,cx);
+          assert_eq(cy_,cy);
+          assert_eq(cz_,cz);
+        }
       }
     }
   }
@@ -1214,4 +1552,74 @@ void Particles3Dcomm::sort_particles_serial(
 //}
 //#endif
 
+void Particles3Dcomm::copyParticlesToSoA()
+{
+  timeTasks_set_task(TimeTasks::TRANSPOSE_PCLS_TO_SOA);
+  dprintf("copying to struct of arrays");
+  SpeciesParticle const*const pcls = fetch_pcls();
+  #pragma omp for
+  for(int pidx=0; pidx<nop; pidx++)
+  {
+    const SpeciesParticle& pcl = pcls[pidx];
+    if(ParticleID) ParticleID[pidx] = pcl.get_ID();
+    x[pidx] = pcl.get_x(0);
+    y[pidx] = pcl.get_x(1);
+    z[pidx] = pcl.get_x(2);
+    u[pidx] = pcl.get_u(0);
+    v[pidx] = pcl.get_u(1);
+    w[pidx] = pcl.get_u(2);
+    q[pidx] = pcl.get_q();
+  }
+}
+
+void Particles3Dcomm::copyParticlesToAoS()
+{
+  SpeciesParticle * pcls = fetch_pcls();
+  timeTasks_set_task(TimeTasks::TRANSPOSE_PCLS_TO_AOS);
+  dprintf("copying to array of structs");
+  assert(pcls);
+  if(TrackParticleID)
+  {
+    assert(ParticleID);
+    #pragma omp for
+    for(int pidx=0; pidx<nop; pidx++)
+    {
+      pcls[pidx].set( ParticleID[pidx],
+        x[pidx],y[pidx],z[pidx],
+        u[pidx],v[pidx],w[pidx],
+        q[pidx]);
+    }
+  }
+  else
+  {
+    #pragma omp for
+    for(int pidx=0; pidx<nop; pidx++)
+    {
+      pcls[pidx].set( 0,
+        x[pidx],y[pidx],z[pidx],
+        u[pidx],v[pidx],w[pidx],
+        q[pidx]);
+    }
+  }
+}
+
+void Particles3Dcomm::convertParticlesToAoS()
+{
+  if(particleType!=ParticleType::AoS)
+  {
+    assert_eq(particleType,ParticleType::SoA);
+    copyParticlesToAoS();
+    particleType = ParticleType::AoS;
+  }
+}
+
+void Particles3Dcomm::convertParticlesToSoA()
+{
+  if(particleType != ParticleType::SoA)
+  {
+    assert_eq(particleType,ParticleType::AoS);
+    copyParticlesToSoA();
+    particleType = ParticleType::SoA;
+  }
+}
 

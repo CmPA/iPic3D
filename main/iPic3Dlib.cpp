@@ -156,7 +156,7 @@ int c_Solver::Init(int argc, char **argv) {
     my_file.close();
   }
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
-  // if(myrank==0){
+  // if(myrank==0)
   ofstream my_file(cqsat.c_str(), fstream::binary);
   nsat = 3;
   for (int isat = 0; isat < nsat; isat++) {
@@ -176,35 +176,57 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
+void c_Solver::sortParticles() {
+  timeTasks_begin_task(TimeTasks::MOMENT_PCL_SORTING);
+  for(int species_idx=0; species_idx<ns; species_idx++)
+    part[species_idx].sort_particles_serial(grid,vct);
+  timeTasks_end_task(TimeTasks::MOMENT_PCL_SORTING);
+}
+
 void c_Solver::CalculateMoments() {
 
   timeTasks_set_main_task(TimeTasks::MOMENTS);
 
   EMf->updateInfoFields(grid,vct,col);
 
-  if(Parameters::get_SORTING_PARTICLES())
-  {
-    // sort particles
-    //#pragma omp master
-    {
-      //dprint(omp_get_thread_num());
-      timeTasks_begin_task(TimeTasks::MOMENT_PCL_SORTING);
-      for(int species_idx=0; species_idx<ns; species_idx++)
-        part[species_idx].sort_particles_serial(grid,vct);
-      timeTasks_end_task(TimeTasks::MOMENT_PCL_SORTING);
-    }
-  }
-
   if(Parameters::get_VECTORIZE_MOMENTS())
   {
-    // since particles are sorted,
-    // we can vectorize interpolation of particles to grid
-    EMf->sumMoments_vectorized(part, grid, vct);
+    switch(Parameters::get_MOMENTS_TYPE())
+    {
+      case Parameters::SoA:
+        // since particles are sorted,
+        // we can vectorize interpolation of particles to grid
+        convertParticlesToSoA();
+        sortParticles();
+        EMf->sumMoments_vectorized(part, grid, vct);
+        break;
+      case Parameters::AoS:
+        convertParticlesToAoS();
+        sortParticles();
+        EMf->sumMoments_vectorized_AoS(part, grid, vct);
+        break;
+      default:
+        unsupported_value_error(Parameters::get_MOMENTS_TYPE());
+    }
   }
   else
   {
-    EMf->setZeroPrimaryMoments();
-    EMf->sumMoments(part, grid, vct);
+    if(Parameters::get_SORTING_PARTICLES())
+      sortParticles();
+    switch(Parameters::get_MOMENTS_TYPE())
+    {
+      case Parameters::SoA:
+        EMf->setZeroPrimaryMoments();
+        convertParticlesToSoA();
+        EMf->sumMoments(part, grid, vct);
+        break;
+      case Parameters::AoS:
+        convertParticlesToAoS();
+        EMf->sumMoments_AoS(part, grid, vct);
+        break;
+      default:
+        unsupported_value_error(Parameters::get_MOMENTS_TYPE());
+    }
   }
   //for (int i = 0; i < ns; i++)
   //{
@@ -258,13 +280,27 @@ bool c_Solver::ParticlesMover() {
       //
       // should merely pass EMf->get_fieldForPcls() rather than EMf.
       // use the Predictor Corrector scheme to move particles
-      if(Parameters::get_VECTORIZE_MOVER())
-        part[i].mover_PC_vectorized(grid, vct, EMf);
-      else
-        part[i].mover_PC(grid, vct, EMf);
+      switch(Parameters::get_MOVER_TYPE())
+      {
+        case Parameters::SoA:
+          part[i].mover_PC(grid, vct, EMf);
+          break;
+        case Parameters::SoAvec_resort:
+          part[i].mover_PC_vectorized(grid, vct, EMf);
+          break;
+        case Parameters::AoS:
+          part[i].mover_PC_AoS(grid, vct, EMf);
+          //part[i].mover_PC_AoS2(grid, vct, EMf);
+          break;
+        case Parameters::AoSvec_onesort:
+          part[i].mover_PC_AoS_vec(grid, vct, EMf);
+          break;
+        default:
+          unsupported_value_error(Parameters::get_MOVER_TYPE());
+      }
     }
     }
-    for (int i = 0; i < ns; i++)  // move each species
+    for (int i = 0; i < ns; i++)  // communicate each species
     {
       mem_avail = part[i].communicate_particles(vct);
     }
@@ -350,22 +386,29 @@ void c_Solver::WriteConserved(int cycle) {
 }
 
 void c_Solver::WriteOutput(int cycle) {
-  // OUTPUT to large file, called proc**
+
+  bool write_fields = (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle);
+
+  bool write_particles = (cycle % (col->getParticlesOutputCycle()) == 0
+                         && col->getParticlesOutputCycle() != 1);
+
+  if(write_particles){ convertParticlesToSoA(); }
 
   if (col->getWriteMethod() == "Parallel") {
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+    if (write_fields) {
       WriteOutputParallel(grid, EMf, col, vct, cycle);
     }
   }
   else
   {
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+    // OUTPUT to large file, called proc**
+    if (write_fields) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
       // Pressure tensor is available
       hdf5_agent.close();
     }
-    if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
+    if (write_particles) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("position + velocity + q ", cycle, 1);
       hdf5_agent.close();
@@ -410,3 +453,16 @@ void c_Solver::Finalize() {
   mpi->finalize_mpi();
 }
 
+// convert particle to struct of arrays (assumed by I/O)
+void c_Solver::convertParticlesToSoA()
+{
+  for (int i = 0; i < ns; i++)
+    part[i].convertParticlesToSoA();
+}
+
+// convert particle to array of structs (used in computing)
+void c_Solver::convertParticlesToAoS()
+{
+  for (int i = 0; i < ns; i++)
+    part[i].convertParticlesToAoS();
+}
