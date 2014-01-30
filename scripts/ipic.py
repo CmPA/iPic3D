@@ -62,23 +62,46 @@ def construct_run_command(args):
     args = list(args)
 
     # set default values
+    num_nodes = 1
     num_max_threads = 1
+    num_threads_per_node = 1
     output = 'data'
     inputfile = 'src/inputfiles/GEM.inp'
     hostname = ''
     mpirun = 'mpiexec'
     global system
-    if system == 'xeon':
+    if system == 'xeon' or system == 'mic':
+      if system == 'xeon':
         mpirun = 'mpiexec.hydra' # is this line needed?
-        num_max_threads = 4
-    elif system == 'mic':
+        # calculate number of threads per process
+        # - should extract this stuff from /proc/cpuinfo
+        num_nodes = 1
+        num_processors_per_node = 2
+        num_cores_per_processor = 8
+        num_threads_per_core = 2
+        num_threads_per_node = (
+          num_threads_per_core *
+          num_cores_per_processor *
+          num_processors_per_node)
+      elif system == 'mic':
         mpirun = 'mpiexec.hydra'
-        # this should be user configurable
-        num_max_threads = 50
+        # calculate number of threads per process
+        # - could use ssh to extract this stuff from /proc/cpuinfo
+        #   on the machine we will run on
+        num_nodes = 1
+        num_processors_per_node = 1
+        num_cores_per_processor = 57 # 57 on knc2, 60 on knc1
+        num_threads_per_core = 4
+        num_threads_per_node = (
+          num_threads_per_core *
+          num_cores_per_processor *
+          num_processors_per_node)
+        #
         hostname = socket.gethostname()
         micnum = 0
         hostname = hostname + '-mic' + str(micnum)
 
+    num_threads_is_given_by_user = 0
     try:
       opts, args = getopt.getopt(args, 'i:o:s:t:h:', \
         ['input=', 'output=', 'system=', 'threads=', 'host='])
@@ -107,6 +130,7 @@ def construct_run_command(args):
           print 'ERROR: -o is not yet supported'
           sys.exit(1)
         elif o in ("-t", "--threads"):
+          num_threads_is_given_by_user = 1
           num_max_threads = int(a)
         elif o in ("-s", "--system"):
           system = a
@@ -122,7 +146,12 @@ def construct_run_command(args):
     YLEN = dims[1]
     ZLEN = dims[2]
     num_procs = XLEN*YLEN*ZLEN
-    # num_procs = 4
+    num_procs_per_node = num_procs/num_nodes
+    num_threads_per_proc = num_threads_per_node/num_procs_per_node
+
+    if not num_threads_is_given_by_user:
+      # rounding down is the correct behavior
+      num_max_threads = int(num_threads_per_proc)
 
     arguments = ['exec/iPic3D', inputfile];
     options = ['-n', str(num_procs)]
