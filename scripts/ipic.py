@@ -213,6 +213,11 @@ def ipic_cmake(args):
     cmake_command.extend(['src'])
     issue_command(cmake_command)
 
+def ipic_findcpph(args):
+    # create tags file using ctags
+    command = '''find . -name '*.cpp' -or -name '*.h' | grep -v unused | grep -v postprocessing_tools'''
+    issue_shell_command(cmake_command)
+
 def ipic_ctags(args):
     # create tags file using ctags
     create_tags_command = \
@@ -489,6 +494,8 @@ def ipic_command(argv1):
         ipic_cmake(args)
     elif command == "run":
         ipic_run(args)
+    elif command == "findcpph":
+        ipic_findcpph(args)
     else:
         print progname, command, "is not supported"
         sys.exit(-1)

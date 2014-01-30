@@ -32,6 +32,8 @@ class TimeTasks
     MOMENT_REDUCTION,
     MOVER_PCL_SORTING,
     MOVER_PCL_MOVING,
+    TRANSPOSE_PCLS_TO_AOS,
+    TRANSPOSE_PCLS_TO_SOA,
     NUMBER_OF_TASKS // this line should be last
   };
 
@@ -118,16 +120,8 @@ class TimeTasks_caller_to_set_main_task_for_scope
   double start_time;
   TimeTasks::Tasks task;
  public:
-  TimeTasks_caller_to_set_main_task_for_scope(TimeTasks::Tasks _task) :
-    task(_task)
-  {
-    start_time = MPI_Wtime();
-    timeTasks.start_main_task(task);
-  }
-  ~TimeTasks_caller_to_set_main_task_for_scope()
-  {
-    timeTasks.end_main_task(task, start_time);
-  }
+  TimeTasks_caller_to_set_main_task_for_scope(TimeTasks::Tasks _task);
+  ~TimeTasks_caller_to_set_main_task_for_scope();
 };
 
 class TimeTasks_caller_to_set_task_for_scope
@@ -136,27 +130,8 @@ class TimeTasks_caller_to_set_task_for_scope
   double start_time;
   TimeTasks::Tasks task;
  public:
-  TimeTasks_caller_to_set_task_for_scope(TimeTasks::Tasks _task) :
-    task(_task)
-  {
-    already_active = timeTasks.is_active(task);
-    if(!already_active)
-    {
-      start_time = MPI_Wtime();
-      timeTasks.start_task(task);
-    }
-  }
-  ~TimeTasks_caller_to_set_task_for_scope()
-  {
-    if(already_active)
-    {
-      assert(timeTasks.is_active(task));
-    }
-    else
-    {
-      timeTasks.end_task(task, start_time);
-    }
-  }
+  TimeTasks_caller_to_set_task_for_scope(TimeTasks::Tasks _task);
+  ~TimeTasks_caller_to_set_task_for_scope();
 };
 
 class TimeTasks_caller_to_set_communication_mode_for_scope
@@ -172,7 +147,7 @@ class TimeTasks_caller_to_set_communication_mode_for_scope
 // These macros could be changed to provide file and line number
 //
 // We need to create nonanonymous instances so that the destructor
-// will not be called until the end of the scope, so we use the preprocessor.
+// will not be called until the end of the scope, so we use the preprocessor
 // to generate unique names of nonanonymous instances.
 //
 #define timeTasks_set_main_task(task) \

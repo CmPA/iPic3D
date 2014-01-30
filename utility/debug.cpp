@@ -70,7 +70,7 @@ void fprintf_fileLine(FILE * fptr,
   const char *type, const char *func, const char *file, int line_number,
   const char *format, ...)
 {
-  //if(!is_output_thread()) return; // temporary
+  if(!is_output_thread()) return; // temporary
 
   // writing directly to fptr would avoid limiting the length
   // of the output string, but by first writing to a string

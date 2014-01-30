@@ -74,6 +74,12 @@
     #define AlignedFree(S) (delete[] S)
     #define AlignedAlloc(T, NUM) (new T[NUM]) 
 #endif
+inline bool is_aligned(void *p, int N)
+{
+    return (unsigned long)p % N == 0;
+}
+#define assert_aligned(X, N) assert(is_aligned(X, N));
+
 
 // Compile with -DCHECK_BOUNDS to turn on bounds checking.
 //#define CHECK_BOUNDS
