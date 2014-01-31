@@ -194,7 +194,7 @@ def ipic_cmake(args):
       sys.exit()
 
     if sourcedir!='src':
-      rm_command = ['rm -f', 'src'];
+      rm_command = ['rm', '-f', 'src'];
       issue_command(rm_command);
       ln_command = ['ln', '-s', str(sourcedir), 'src'];
       issue_command(ln_command)
