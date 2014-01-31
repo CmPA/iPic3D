@@ -76,46 +76,6 @@ public:
   void sort_particles_serial(Grid * grid, VirtualTopology3D * vct);
   void sort_particles_serial_AoS(Grid * grid, VirtualTopology3D * vct);
   void sort_particles_serial_SoA(Grid * grid, VirtualTopology3D * vct);
-  void get_safe_cell_for_pos(
-    int& cx, int& cy, int& cz, 
-    pfloat xpos, pfloat ypos, pfloat zpos)
-  {
-    // xstart is left edge of domain excluding ghost cells
-    // cx=0 for ghost cell layer.
-    cx = 1 + int(floor((xpos - xstart) * inv_dx));
-    cy = 1 + int(floor((ypos - ystart) * inv_dy));
-    cz = 1 + int(floor((zpos - zstart) * inv_dz));
-    //
-    // if the cell is outside the domain, then treat it as
-    // in the nearest ghost cell.
-    //
-    if (cx < 0) cx = 0;
-    if (cy < 0) cy = 0;
-    if (cz < 0) cz = 0;
-    // number of cells in x direction including ghosts is nxc
-    if (cx >= nxc) cx = nxc-1;
-    if (cy >= nyc) cy = nyc-1;
-    if (cz >= nzc) cz = nzc-1;
-  }
-
-  /*! version that assumes particle is in domain */
-  void get_cell_for_pos_in_domain(
-    int& cx, int& cy, int& cz, 
-    pfloat xpos, pfloat ypos, pfloat zpos)
-  {
-    // xstart is left edge of domain excluding ghost cells
-    // cx=0 for ghost cell layer.
-    cx = 1 + int(floor((xpos - xstart) * inv_dx));
-    cy = 1 + int(floor((ypos - ystart) * inv_dy));
-    cz = 1 + int(floor((zpos - zstart) * inv_dz));
-    //
-    assert_le(0,cx);
-    assert_le(0,cy);
-    assert_le(0,cz);
-    assert_le(cx,nxc);
-    assert_le(cy,nyc);
-    assert_le(cz,nzc);
-  }
 
   // get accessors for optional arrays
   //
@@ -290,10 +250,13 @@ protected:
   int BirthRank[2];
   /** number of variables to be stored in buffer for communication for each particle  */
   int nVar;
-  /** Simulation domain lengths */
-  double xstart, xend, ystart, yend, zstart, zend, invVOL;
   /** time step */
   double dt;
+  //
+  // Copies of grid data (should just put pointer to Grid in this class)
+  //
+  /** Simulation domain lengths */
+  double xstart, xend, ystart, yend, zstart, zend, invVOL;
   /** Lx = simulation box length - x direction   */
   double Lx;
   /** Ly = simulation box length - y direction   */
@@ -306,6 +269,13 @@ protected:
   int nxn, nyn, nzn;
   /** number of grid cells */
   int nxc, nyc, nzc;
+  // convenience values from grid
+  double inv_dx;
+  double inv_dy;
+  double inv_dz;
+  //
+  // Communication variables
+  //
   /** buffers for communication */
   /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
   int buffer_size;
@@ -376,6 +346,9 @@ protected:
   int bcPfaceZright;
   /** Boundary Condition Particles: FaceYleft */
   int bcPfaceZleft;
+  //
+  // Other variables
+  //
   /** speed of light in vacuum */
   double c;
   /** restart variable for loading particles from restart file */
@@ -388,11 +361,6 @@ protected:
   double Q_removed;
   /** density of the injection of the particles */
   double Ninj;
-
-  // convenience values from grid
-  double inv_dx;
-  double inv_dy;
-  double inv_dz;
 };
 
 typedef Particles3Dcomm Particles;

@@ -285,15 +285,17 @@ bool c_Solver::ParticlesMover() {
         case Parameters::SoA:
           part[i].mover_PC(grid, vct, EMf);
           break;
-        case Parameters::SoAvec_resort:
+        case Parameters::SoA_vec_resort:
           part[i].mover_PC_vectorized(grid, vct, EMf);
           break;
         case Parameters::AoS:
           part[i].mover_PC_AoS(grid, vct, EMf);
-          //part[i].mover_PC_AoS2(grid, vct, EMf);
           break;
-        case Parameters::AoSvec_onesort:
+        case Parameters::AoSvec:
           part[i].mover_PC_AoS_vec(grid, vct, EMf);
+          break;
+        case Parameters::AoS_vec_onesort:
+          part[i].mover_PC_AoS_vec_onesort(grid, vct, EMf);
           break;
         default:
           unsupported_value_error(Parameters::get_MOVER_TYPE());

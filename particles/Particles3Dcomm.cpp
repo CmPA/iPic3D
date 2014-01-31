@@ -1044,7 +1044,7 @@ void Particles3Dcomm::sort_particles_serial_AoS(
       const SpeciesParticle& pcl = get_pcl(pidx);
       // get the cell indices of the particle
       int cx,cy,cz;
-      get_safe_cell_for_pos(cx,cy,cz,pcl.get_x(),pcl.get_y(),pcl.get_z());
+      grid->get_safe_cell_coordinates(cx,cy,cz,pcl.get_x(),pcl.get_y(),pcl.get_z());
 
       // increment the number of particles in bucket of this particle
       (*numpcls_in_bucket)[cx][cy][cz]++;
@@ -1070,7 +1070,7 @@ void Particles3Dcomm::sort_particles_serial_AoS(
       const SpeciesParticle& pcl = get_pcl(pidx);
       // get the cell indices of the particle
       int cx,cy,cz;
-      get_safe_cell_for_pos(cx,cy,cz,pcl.get_x(),pcl.get_y(),pcl.get_z());
+      grid->get_safe_cell_coordinates(cx,cy,cz,pcl.get_x(),pcl.get_y(),pcl.get_z());
 
       // compute where the data should go
       const int numpcls_now = (*numpcls_in_bucket_now)[cx][cy][cz]++;
@@ -1132,7 +1132,7 @@ void Particles3Dcomm::sort_particles_serial_SoA(
       // get the cell indices of the particle
       //
       int cx,cy,cz;
-      get_safe_cell_for_pos(cx,cy,cz,x[pidx],y[pidx],z[pidx]);
+      grid->get_safe_cell_coordinates(cx,cy,cz,x[pidx],y[pidx],z[pidx]);
       //
       // is it better just to recompute this?
       //
@@ -1165,7 +1165,7 @@ void Particles3Dcomm::sort_particles_serial_SoA(
       // get the cell indices of the particle
       //
       int cx,cy,cz;
-      get_safe_cell_for_pos(cx,cy,cz,x[pidx],y[pidx],z[pidx]);
+      grid->get_safe_cell_coordinates(cx,cy,cz,x[pidx],y[pidx],z[pidx]);
       //
       //cx = xcell[pidx];
       //cy = ycell[pidx];
@@ -1231,7 +1231,7 @@ void Particles3Dcomm::sort_particles_serial_SoA(
           // confirm that particle is in correct cell
           {
             int cx_,cy_,cz_;
-            get_safe_cell_for_pos(cx_,cy_,cz_,x[pidx],y[pidx],z[pidx]);
+            grid->get_safe_cell_coordinates(cx_,cy_,cz_,x[pidx],y[pidx],z[pidx]);
             if((cx_!=cx)
              ||(cy_!=cy)
              ||(cz_!=cz))
@@ -1285,7 +1285,7 @@ void Particles3Dcomm::sort_particles_serial_SoA_by_xavg(
       // get the cell indices of the particle
       //
       int cx,cy,cz;
-      get_safe_cell_for_pos(cx,cy,cz,xavg[pidx],yavg[pidx],zavg[pidx]);
+      grid->get_safe_cell_coordinates(cx,cy,cz,xavg[pidx],yavg[pidx],zavg[pidx]);
       //
       // is it better just to recompute this?
       //
@@ -1318,7 +1318,7 @@ void Particles3Dcomm::sort_particles_serial_SoA_by_xavg(
       // get the cell indices of the particle
       //
       int cx,cy,cz;
-      get_safe_cell_for_pos(cx,cy,cz,xavg[pidx],yavg[pidx],zavg[pidx]);
+      grid->get_safe_cell_coordinates(cx,cy,cz,xavg[pidx],yavg[pidx],zavg[pidx]);
       //
       //cx = xcell[pidx];
       //cy = ycell[pidx];
@@ -1396,7 +1396,7 @@ void Particles3Dcomm::sort_particles_serial_SoA_by_xavg(
         if(true)
         {
           int cx_,cy_,cz_;
-          get_safe_cell_for_pos(cx_,cy_,cz_,xavg[pidx],yavg[pidx],zavg[pidx]);
+          grid->get_safe_cell_coordinates(cx_,cy_,cz_,xavg[pidx],yavg[pidx],zavg[pidx]);
           if((cx_!=cx)
            ||(cy_!=cy)
            ||(cz_!=cz))

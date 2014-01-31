@@ -63,11 +63,13 @@ typedef iPic3D::array_fetch1<double> arr1_double_fetch;
 typedef iPic3D::array_get1<double> arr1_double_get;
 typedef iPic3D::array_get1<pfloat> arr1_pfloat_get;
 typedef iPic3D::array_fetch2<double> arr2_double_fetch;
+typedef iPic3D::array_fetch3<double> arr3_double_fetch;
 #else
 typedef double* arr1_double_fetch;
 typedef double* arr1_double_get;
 typedef pfloat* arr1_pfloat_get;
 typedef double** arr2_double_fetch;
+typedef double*** arr3_double_fetch;
 #endif
 
 #endif

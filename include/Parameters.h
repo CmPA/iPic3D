@@ -13,10 +13,10 @@ namespace Parameters
     AoSvec,
     SoAvec,
     // for mover type
-    SoAvec_onesort,
-    AoSvec_onesort,
-    SoAvec_resort,
-    AoSvec_resort,
+    SoA_vec_onesort,
+    AoS_vec_onesort,
+    SoA_vec_resort,
+    AoS_vec_resort,
   };
 
   void init_parameters();

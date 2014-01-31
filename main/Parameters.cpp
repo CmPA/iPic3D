@@ -7,7 +7,7 @@ using namespace Parameters;
 bool Parameters::get_VECTORIZE_MOMENTS() { return false; }
 // supported options: SoA AoS
 Parameters::Enum Parameters::get_MOMENTS_TYPE() { return SoA; }
-// supported options: SoA AoS AoSvec_onesort SoAvec_resort
+// supported options: SoA AoS AoSvec AoS_vec_onesort SoA_vec_resort
 Parameters::Enum Parameters::get_MOVER_TYPE() { return SoA; }
 //********** derived parameters *********
 
@@ -19,21 +19,21 @@ static bool SORTING_SOA;
 void Parameters::init_parameters()
 {
   RESORTING_PARTICLES = 
-       get_MOVER_TYPE()==SoAvec_resort
-    || get_MOVER_TYPE()==AoSvec_resort;
+       get_MOVER_TYPE()==SoA_vec_resort
+    || get_MOVER_TYPE()==AoS_vec_resort;
   SORTING_PARTICLES = get_VECTORIZE_MOMENTS()
-    || get_MOVER_TYPE()==SoAvec_onesort
-    || get_MOVER_TYPE()==AoSvec_onesort
-    || get_MOVER_TYPE()==SoAvec_resort
-    || get_MOVER_TYPE()==AoSvec_resort;
+    || get_MOVER_TYPE()==SoA_vec_onesort
+    || get_MOVER_TYPE()==AoS_vec_onesort
+    || get_MOVER_TYPE()==SoA_vec_resort
+    || get_MOVER_TYPE()==AoS_vec_resort;
   SORTING_SOA = get_VECTORIZE_MOMENTS()
-    || get_MOVER_TYPE()==SoAvec_onesort
-    || get_MOVER_TYPE()==SoAvec_resort;
+    || get_MOVER_TYPE()==SoA_vec_onesort
+    || get_MOVER_TYPE()==SoA_vec_resort;
   USING_AOS =
        get_MOMENTS_TYPE()==AoS
     || get_MOVER_TYPE()==AoS
-    || get_MOVER_TYPE()==AoSvec_onesort
-    || get_MOVER_TYPE()==AoSvec_resort;
+    || get_MOVER_TYPE()==AoS_vec_onesort
+    || get_MOVER_TYPE()==AoS_vec_resort;
 }
 
 bool Parameters::get_RESORTING_PARTICLES() { return RESORTING_PARTICLES; }

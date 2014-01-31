@@ -422,6 +422,7 @@ void EMfields3D::sumMoments(const Particles3Dcomm* part, Grid * grid, VirtualTop
     int moments1dsize = moments.get_size();
     for(int i=0; i<moments1dsize; i++) moments1d[i]=0;
     //
+    // This barrier is not needed
     #pragma omp barrier
     // The following loop is expensive, so it is wise to assume that the
     // compiler is stupid.  Therefore we should on the one hand

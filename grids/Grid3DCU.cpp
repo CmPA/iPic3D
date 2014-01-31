@@ -28,6 +28,9 @@ Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {
   nxn = nxc + 1;
   nyn = nyc + 1;
   nzn = nzc + 1;
+  cxlast = nxc-1;
+  cylast = nyc-1;
+  czlast = nzc-1;
   dx = col->getLx() / col->getNxc();
   dy = col->getLy() / col->getNyc();
   dz = col->getLz() / col->getNzc();
