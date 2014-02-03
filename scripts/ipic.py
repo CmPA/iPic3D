@@ -216,7 +216,10 @@ def ipic_cmake(args):
 def ipic_findcpph(args):
     # create tags file using ctags
     command = '''find . -name '*.cpp' -or -name '*.h' | grep -v unused | grep -v postprocessing_tools'''
-    issue_shell_command(cmake_command)
+    if(show):
+      print command
+    else:
+      os.system(command)
 
 def ipic_ctags(args):
     # create tags file using ctags
