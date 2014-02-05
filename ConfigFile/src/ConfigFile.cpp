@@ -1,6 +1,8 @@
 // ConfigFile.cpp
 
 #include "ConfigFile.h"
+#include "errors.h"
+#include "debug.h"
 
 using std::string;
 
@@ -11,7 +13,8 @@ ConfigFile::ConfigFile(string filename, string delimiter, string comment, string
   std::ifstream in(filename.c_str());
 
   if (!in)
-    throw file_not_found(filename);
+    eprintf("file not found: %s", filename.c_str());
+    //throw file_not_found(filename);
 
   in >> (*this);
 }

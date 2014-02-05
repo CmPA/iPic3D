@@ -34,8 +34,10 @@ namespace iPic3D {
 
   public:
     int Init(int argc, char **argv);
-    void CalculateField();
+    void CalculateMoments();
+    void CalculateField(); //! calculate Efield
     bool ParticlesMover();
+    void CalculateB();
     void WriteOutput(int cycle);
     void WriteConserved(int cycle);
     void WriteRestart(int cycle);
@@ -45,8 +47,13 @@ namespace iPic3D {
     inline int LastCycle();
     inline int get_myrank();
 
+    void convertParticlesToSoA();
+    void convertParticlesToAoS();
   private:
-    MPIdata       * mpi;
+    void sortParticles();
+
+  private:
+    static MPIdata * mpi;
     Collective    *col;
     VCtopology3D  *vct;
     Grid3DCU      *grid;
@@ -55,7 +62,6 @@ namespace iPic3D {
     double        *Ke;
     double        *momentum;
     double        *Qremoved;
-    unsigned long *VelocityDist;
     Timing        *my_clock;
 
     PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
@@ -95,7 +101,6 @@ namespace iPic3D {
   inline int c_Solver::get_myrank() {
     return (myrank);
   }
-
 }
 
 #endif

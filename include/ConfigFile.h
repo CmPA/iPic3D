@@ -48,6 +48,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "errors.h"
 
 using std::string;
 
@@ -165,7 +166,6 @@ template <> inline bool ConfigFile::string_as_T < bool > (const string & s) {
     *p = toupper(*p);           // make string all caps
   if (sup == string("FALSE") || sup == string("F") || sup == string("NO") || sup == string("N") || sup == string("0") || sup == string("NONE")) {
     b = false;
-    cout << "siamo qua " << endl;
   }
   return b;
 }
@@ -175,7 +175,8 @@ template < class T > T ConfigFile::read(const string & key) const {
   // Read the value corresponding to key
   mapci p = myContents.find(key);
   if (p == myContents.end())
-    throw key_not_found(key);
+    eprintf("key not found: %s", key.c_str());
+    //throw key_not_found(key);
   return string_as_T < T > (p->second);
 }
 

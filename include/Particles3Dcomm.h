@@ -7,16 +7,21 @@ developers: Stefano Markidis, Giovanni Lapenta
 #ifndef Part3DCOMM_H
 #define Part3DCOMM_H
 
-#include "Particles.h"
+#include "CollectiveIO.h"
+#include "VirtualTopology3D.h"
+#include "Grid.h"
+#include "Field.h"
+#include "Particle.h"
 /**
  * 
- * Abstract class for particles of the same species, in a 2D space and 3component velocity with communications methods
+ * class for particles of the same species with communications methods
  * @date Fri Jun 4 2007
  * @author Stefano Markidis, Giovanni Lapenta
  * @version 2.0
  *
  */
-class Particles3Dcomm:public Particles {
+class Particles3Dcomm // :public Particles
+{
 public:
   /** constructor */
   Particles3Dcomm();
@@ -26,25 +31,25 @@ public:
   void allocate(int species, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid);
 
   /** calculate the weights given the position of particles */
-  void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);
+  //void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);
   /** interpolation method GRID->PARTICLE order 1: CIC */
   void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct);
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   int communicate(VirtualTopology3D * ptVCT);
   /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXleft(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferXleft(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXright(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferXright(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYleft(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferYleft(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYright(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferYright(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZleft(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferZleft(double *b_, int np, VirtualTopology3D * vct);
   /** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZright(double *b_, long long np, VirtualTopology3D * vct);
+  void bufferZright(double *b_, int np, VirtualTopology3D * vct);
   /** Delete the a particle from a list(array) and pack the list(array) */
-  void del_pack(long long np, long long *nplast);
+  void del_pack(int np, int *nplast);
 
   /** method to debuild the buffer received */
   int unbuffer(double *b_);
@@ -57,46 +62,72 @@ public:
   int maxNpExiting();
   /** calculate the weights given the position of particles */
   // void calculateWeights(double*** weight, double xp, double yp, double zp,int ix, int iy, int iz, Grid* grid);
-  /** get X-position array for all the particles */
-  double *getXall() const;
-  /** get Y-position array for all the particles */
-  double *getYall() const;
-  /** get Z-position array for all the particles */
-  double *getZall() const;
-  /** get u (X-velocity) array for all the particles */
-  double *getUall() const;
-  /** get v (Y-velocity) array for all the particles */
-  double *getVall() const;
-  /** get w (Z-velocity) array for all the particles */
-  double *getWall() const;
-  /** get the ID array   */
-  unsigned long *getParticleIDall() const;
-  /** get X-position of particle with label indexPart */
-  double getX(long long indexPart) const;
-  /** get Y-position of particle with label indexPart */
-  double getY(long long indexPart) const;
-  /** get Z-position of particle with label indexPart */
-  double getZ(long long indexPart) const;
-  /** get u (X-velocity) of particle with label indexPart */
-  double getU(long long indexPart) const;
-  /** get v (Y-velocity) of particle with label indexPart */
-  double getV(long long indexPart) const;
-  /** get w (Z-velocity) of particle with label indexPart */
-  double getW(long long indexPart) const;
-  /** get ID of particle with label indexPart */
-  unsigned long getParticleID(long long indexPart) const;
-  /**get charge of particle with label indexPart */
-  double getQ(long long indexPart) const;
-  /** get charge of array for ID particles */
-  double *getQall() const;
-  /** get the number of particles of this subdomain */
-  long long getNOP() const;
+
+ private:
+  void copyParticlesToAoS();
+  void copyParticlesToSoA();
+
+ public:
+  void convertParticlesToAoS();
+  void convertParticlesToSoA();
+
+  /*! sort particles for vectorized push (needs to be parallelized) */
+  void sort_particles_serial_SoA_by_xavg(Grid * grid, VirtualTopology3D * vct);
+  void sort_particles_serial(Grid * grid, VirtualTopology3D * vct);
+  void sort_particles_serial_AoS(Grid * grid, VirtualTopology3D * vct);
+  void sort_particles_serial_SoA(Grid * grid, VirtualTopology3D * vct);
+
+  // get accessors for optional arrays
+  //
+  SpeciesParticle *fetch_pcls(){ return _pcls; }
+  SpeciesParticle *fetch_pclstmp(){ return _pclstmp; }
+  double * fetch_xavg() { return _xavg; }
+  double * fetch_yavg() { return _yavg; }
+  double * fetch_zavg() { return _zavg; }
+  double * fetch_xtmp() { return _xtmp; }
+  double * fetch_ytmp() { return _ytmp; }
+  double * fetch_ztmp() { return _ztmp; }
+  double * fetch_utmp() { return _utmp; }
+  double * fetch_vtmp() { return _vtmp; }
+  double * fetch_wtmp() { return _wtmp; }
+  double * fetch_qtmp() { return _qtmp; }
+  double * fetch_xavgtmp() { return _xavgtmp; }
+  double * fetch_yavgtmp() { return _yavgtmp; }
+  double * fetch_zavgtmp() { return _zavgtmp; }
+  long long *fetch_ParticleIDtmp(){ return _ParticleIDtmp; }
+
+  // inline get accessors
+  //
+  ParticleType::Type get_particleType()const { return particleType; }
+  const SpeciesParticle& get_pcl(int pidx)const{ return _pcls[pidx]; }
+  double *getXall()  const { return (x); }
+  double *getYall()  const { return (y); }
+  double *getZall()  const { return (z); }
+  double *getUall()  const { return (u); }
+  double *getVall()  const { return (v); }
+  double *getWall()  const { return (w); }
+  long long *getParticleIDall()  const { return (ParticleID); }
+  double *getQall()  const { return (q); }
+  // accessors for particle with index indexPart
+  double getX(int indexPart)  const { return (x[indexPart]); }
+  double getY(int indexPart)  const { return (y[indexPart]); }
+  double getZ(int indexPart)  const { return (z[indexPart]); }
+  double getU(int indexPart)  const { return (u[indexPart]); }
+  double getV(int indexPart)  const { return (v[indexPart]); }
+  double getW(int indexPart)  const { return (w[indexPart]); }
+  long long getParticleID(int indexPart)  const
+    { return (ParticleID[indexPart]); }
+  double getQ(int indexPart)  const { return (q[indexPart]); }
+  int getNOP()  const { return (nop); }
+
+  // computed get access
+  //
   /** return the Kinetic energy */
   double getKe();
   /** return the maximum kinetic energy */
   double getMaxVelocity();
   /** return energy distribution */
-  unsigned long *getVelocityDistribution(int nBins, double maxVel);
+  long long *getVelocityDistribution(int nBins, double maxVel);
   /** return the momentum */
   double getP();
   /** Print particles info: positions, velocities */
@@ -104,13 +135,21 @@ public:
   /** Print the number of particles of this subdomain */
   void PrintNp(VirtualTopology3D * ptVCT) const;
 
+public:
+  // accessors
+  int get_ns()const{return ns;}
+  int get_numpcls_in_bucket(int cx, int cy, int cz)const
+  { return (*numpcls_in_bucket)[cx][cy][cz]; }
+  int get_bucket_offset(int cx, int cy, int cz)const
+  { return (*bucket_offset)[cx][cy][cz]; }
+
 protected:
-  /** number of species */
+  /** number of this species */
   int ns;
   /** maximum number of particles of this species on this domain. used for memory allocation */
-  long long npmax;
+  int npmax;
   /** number of particles of this species on this domain */
-  long long nop;
+  int nop;
   /** total number of particles */
   long long np_tot;
   /** number of particles per cell */
@@ -137,7 +176,13 @@ protected:
   double v0;
   /** w0 Drift velocity - Direction Z */
   double w0;
-  /** Positions arra - X component */
+
+  ParticleType::Type particleType;
+  // particles data
+  //
+  // SoA representation
+  //
+  /** Positions array - X component */
   double *x;
   /** Positions array - Y component */
   double *y;
@@ -149,20 +194,69 @@ protected:
   double *v;
   /** Velocities array - Z component */
   double *w;
+  /** Charge array */
+  double *q;
   /** TrackParticleID */
   bool TrackParticleID;
   /** ParticleID */
-  unsigned long *ParticleID;
+  long long *ParticleID;
+  //
+  // AoS representation
+  //
+  SpeciesParticle *_pcls;
+
+  // structures for sorting particles
+  //
+  /** Average position data (used during particle push) **/
+  //
+  double *_xavg;
+  double *_yavg;
+  double *_zavg;
+  //
+  // alternate temporary storage for sorting particles
+  //
+  long long *_ParticleIDtmp;
+  double *_xtmp;
+  double *_ytmp;
+  double *_ztmp;
+  double *_utmp;
+  double *_vtmp;
+  double *_wtmp;
+  double *_qtmp;
+  SpeciesParticle *_pclstmp;
+  double *_xavgtmp;
+  double *_yavgtmp;
+  double *_zavgtmp;
+  //
+  // references for buckets
+  //
+  array3_int* numpcls_in_bucket;
+  array3_int* numpcls_in_bucket_now; // accumulator used during sorting
+  //array3_int* bucket_size; // maximum number of particles in bucket
+  array3_int* bucket_offset;
+  // 
+  // bucket totals per thread
+  //
+  //int num_threads;
+  //array3_int* numpcls_in_bucket_thr;
+  //arr3_int fetch_numpcls_in_bucket_thr(int i)
+  //{
+  //  assert_le(0,i);
+  //  assert_lt(i,num_threads);
+  //  return *(numpcls_in_bucket_thr[i]);
+  //};
+
   /** rank of processor in which particle is created (for ID) */
   int BirthRank[2];
   /** number of variables to be stored in buffer for communication for each particle  */
   int nVar;
-  /** Charge array */
-  double *q;
-  /** Simulation domain lengths */
-  double xstart, xend, ystart, yend, zstart, zend, invVOL;
   /** time step */
   double dt;
+  //
+  // Copies of grid data (should just put pointer to Grid in this class)
+  //
+  /** Simulation domain lengths */
+  double xstart, xend, ystart, yend, zstart, zend, invVOL;
   /** Lx = simulation box length - x direction   */
   double Lx;
   /** Ly = simulation box length - y direction   */
@@ -171,9 +265,17 @@ protected:
   double Lz;
   /** grid spacings */
   double dx, dy, dz;
-  /** number of grid 
-          nodes */
+  /** number of grid nodes */
   int nxn, nyn, nzn;
+  /** number of grid cells */
+  int nxc, nyc, nzc;
+  // convenience values from grid
+  double inv_dx;
+  double inv_dy;
+  double inv_dz;
+  //
+  // Communication variables
+  //
   /** buffers for communication */
   /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
   int buffer_size;
@@ -244,6 +346,9 @@ protected:
   int bcPfaceZright;
   /** Boundary Condition Particles: FaceYleft */
   int bcPfaceZleft;
+  //
+  // Other variables
+  //
   /** speed of light in vacuum */
   double c;
   /** restart variable for loading particles from restart file */
@@ -258,5 +363,6 @@ protected:
   double Ninj;
 };
 
+typedef Particles3Dcomm Particles;
 
 #endif

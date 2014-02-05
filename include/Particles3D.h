@@ -8,7 +8,7 @@ developers: Stefano Markidis, Enrico Camporeale, Giovanni Lapenta, David Burgess
 #define Part2D_H
 
 #include "Particles3Dcomm.h"
-#include "TimeTasks.h"
+//#include "TimeTasks.h"
 
 /**
  * 
@@ -57,15 +57,25 @@ class Particles3D:public Particles3Dcomm {
     /** mover with the esplicit non relativistic scheme */
     void mover_explicit(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** mover with a Predictor-Corrector Scheme */
-    int mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    void mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /** array-of-structs version of mover_PC */
+    void mover_PC_AoS(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /* vectorized version of previous */
+    void mover_PC_AoS_vec(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /* this computes garbage */
+    void mover_PC_AoS_vec_onesort(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /** vectorized version of mover_PC **/
+    void mover_PC_vectorized(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /** communicate particle after moving them */
+    int communicate_particles(VirtualTopology3D * vct);
     /** relativistic mover with a Predictor-Corrector scheme */
     int mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** particle repopulator */
     int particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf);
     /** interpolation Particle->Grid only charge density, current */
-    void interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * vct);
+    //void interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * vct);
     /** interpolation Particle->Grid only for pressure tensor */
-    void interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * vct);
+    //void interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * vct);
     /*! Delete the particles inside the sphere with radius R and center x_center y_center and return the total charge removed */
     double deleteParticlesInsideSphere(double R, double x_center, double y_center, double z_center);
 
@@ -76,6 +86,12 @@ class Particles3D:public Particles3Dcomm {
     void MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long* ParticleID);
 #endif
 
+  private:
+
+    inline void get_field_components_for_cell(
+      arr1_double_get field_components[8],
+      const_arr4_double fieldForPcls,
+      int cx,int cy,int cz);
 };
 
 

@@ -8,25 +8,33 @@
 #ifndef Collective_H
 #define Collective_H
 
+#ifdef BATSRUS
+#include "InterfaceFluid.h"
+#endif
 
 
 #include <math.h>
-#include <iostream>
-#include <fstream>
+//#include <iostream>
+//#include <fstream>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "ConfigFile.h"
 #include "input_array.h"
 #include "hdf5.h"
-#include "CollectiveIO.h"
+//#include "CollectiveIO.h"
+using namespace std;
 
 using std::cout;
 using std::endl;
 using std::ofstream;
 using namespace std;
 
-class Collective:public CollectiveIO {
+class Collective
+#ifdef BATSRUS
+: public InterfaceFluid
+#endif
+{
   public:
     /*! constructor: initialize physical parameters with values */
     Collective(int argc, char **argv);
@@ -40,174 +48,97 @@ class Collective:public CollectiveIO {
     void Print();
     /*! save setting in a file */
     void save();
-    /*! get the physical space dimensions */
-    int getDim();
-    /*! Get length of the system - direction X */
-    double getLx();
-    /*! Get length of the system - direction Y */
-    double getLy();
-    /*! Get length of the system - direction Z */
-    double getLz();
-    /*! Get object center - direction X */
-    double getx_center();
-    /*! Get object center - direction Y */
-    double gety_center();
-    /*! Get object center - direction Z */
-    double getz_center();
-    /*! Get object size - cubic box */
-    double getL_square();
-    /*! Get the number of cells - direction X */
-    int getNxc();
-    /*! Get the number of cells - direction Y */
-    int getNyc();
-    /*! Get the number of cells - direction Z */
-    int getNzc();
-    /*! Get the grid spacing - direction X */
-    double getDx();
-    /*! Get the grid spacing - direction Y */
-    double getDy();
-    /*! Get the grid spacing - direction Z */
-    double getDz();
-    /*! get the light speed */
-    double getC();
-    /*! get the time step */
-    double getDt();
-    /*! get the decentering parameter */
-    double getTh();
-    /*! get the Smoothing value */
-    double getSmooth();
-    /*! get the number of time cycles */
-    int getNcycles();
-    /*! get the number of species */
-    int getNs();
-    /*! get the number of particles for different species */
-    long getNp(int nspecies);
-    /*! get the number of particles per cell */
-    int getNpcel(int nspecies);
-    /*! get the number of particles per cell - direction X */
-    int getNpcelx(int nspecies);
-    /*! get the number of particles per cell - direction Y */
-    int getNpcely(int nspecies);
-    /*! get the number of particles per cell - direction Z */
-    int getNpcelz(int nspecies);
-    /*! get maximum number of particles for different species */
-    long getNpMax(int nspecies);
-    /*! NpMax/Np is the ratio between the maximum number of particles allowed on a processor and the number of particles */
-    double getNpMaxNpRatio();
-    /*! get charge to mass ratio for different species */
-    double getQOM(int nspecies);
-    /*! get background charge for GEM challenge */
-    double getRHOinit(int nspecies);
-    /*! get rho injection */
-    double getRHOinject(int nspecies);
-    /*! get thermal velocity - X direction */
-    double getUth(int nspecies);
-    /*! get thermal velocity - Y direction */
-    double getVth(int nspecies);
-    /*! get thermal velocity - Z direction */
-    double getWth(int nspecies);
-    /*! get Drift velocity - Direction X */
-    double getU0(int nspecies);
-    /*! get Drift velocity - Direction Y */
-    double getV0(int nspecies);
-    /*! get Drift velocity - Direction Z */
-    double getW0(int nspecies);
-    /*! get the boolean value for TrackParticleID */
-    bool getTrackParticleID(int nspecies);
-    /*! get SaveDirName */
-    string getSaveDirName();
-    /*! get last_cycle */
-    int getLast_cycle();
-    /*! get RestartDirName */
-    string getRestartDirName();
 
-    /*! get Case type */
-    string getCase();
-    /*! get output writing method */
-    string getWriteMethod();
-    /*! get simulation name */
-    string getSimName();
-    /*! get Poisson correction flag */
-    string getPoissonCorrection();
-
-    /*! get Boundary Condition Particles: FaceXright */
-    int getBcPfaceXright();
-    /*! get Boundary Condition Particles: FaceXleft */
-    int getBcPfaceXleft();
-    /*! get Boundary Condition Particles: FaceYright */
-    int getBcPfaceYright();
-    /*! get Boundary Condition Particles: FaceYleft */
-    int getBcPfaceYleft();
-    /*! get Boundary Condition Particles: FaceYright */
-    int getBcPfaceZright();
-    /*! get Boundary Condition Particles: FaceYleft */
-    int getBcPfaceZleft();
-
-    /*! get Boundary Condition Electrostatic Potential: FaceXright */
-    int getBcPHIfaceXright();
-    /*! get Boundary Condition Electrostatic Potential:FaceXleft */
-    int getBcPHIfaceXleft();
-    /*! get Boundary Condition Electrostatic Potential:FaceYright */
-    int getBcPHIfaceYright();
-    /*! get Boundary Condition Electrostatic Potential:FaceYleft */
-    int getBcPHIfaceYleft();
-    /*! get Boundary Condition Electrostatic Potential:FaceYright */
-    int getBcPHIfaceZright();
-    /*! get Boundary Condition Electrostatic Potential:FaceYleft */
-    int getBcPHIfaceZleft();
-
-    /*! get Boundary ConditionElectric Field: FaceXright */
-    int getBcEMfaceXright();
-    /*! get Boundary Condition Electric Field: FaceXleft */
-    int getBcEMfaceXleft();
-    /*! get Boundary Condition Electric Field: FaceYright */
-    int getBcEMfaceYright();
-    /*! get Boundary Condition Electric Field: FaceYleft */
-    int getBcEMfaceYleft();
-    /*! get Boundary Condition Electric Field: FaceZright */
-    int getBcEMfaceZright();
-    /*! get Boundary Condition Electric Field: FaceZleft */
-    int getBcEMfaceZleft();
-
-    /*! get RESTART */
-    int getRestart_status();
-
-    /*! get the sheet thickness */
-    double getDelta();
-    /*! get the amplitude of the magnetic field along x */
-    double getB0x();
-    /*! get the amplitude of the magnetic field along y */
-    double getB0y();
-    /*! get the amplitude of the magnetic field along z */
-    double getB0z();
-    /*! get the amplitude of the magnetic field 1 along x */
-    double getB1x();
-    /*! get the amplitude of the magnetic field 1 along y */
-    double getB1y();
-    /*! get the amplitude of the magnetic field 1 along z */
-    double getB1z();
-
-    /*! get the boolean value for verbose results */
-    bool getVerbose();
-
-    /*! get the velocity of injection of the plasma from the wall */
-    double getVinj();
-
-    /*! get the converging tolerance for CG solver */
-    double getCGtol();
-    /*! get the converging tolerance for GMRES solver */
-    double getGMREStol();
-    /*! get the numbers of iteration for the PC mover */
-    int getNiterMover();
-
-    /*! output of fields */
-    int getFieldOutputCycle();
-    /*! output of particles */
-    int getParticlesOutputCycle();
-    /*! output of restart */
-    int getRestartOutputCycle();
-    /*! output of diagnostics */
-    int getDiagnosticsOutputCycle();
+    // accessors
+    //
+    int getDim()const{ return (dim); }
+    double getLx()const{ return (Lx); }
+    double getLy()const{ return (Ly); }
+    double getLz()const{ return (Lz); }
+    double getx_center()const{ return (x_center); }
+    double gety_center()const{ return (y_center); }
+    double getz_center()const{ return (z_center); }
+    double getL_square()const{ return (L_square); }
+    int getNxc()const{ return (nxc); }
+    int getNyc()const{ return (nyc); }
+    int getNzc()const{ return (nzc); }
+    int getXLEN()const{ return (XLEN); }
+    int getYLEN()const{ return (YLEN); }
+    int getZLEN()const{ return (ZLEN); }
+    bool getPERIODICX()const{ return (PERIODICX); }
+    bool getPERIODICY()const{ return (PERIODICY); }
+    bool getPERIODICZ()const{ return (PERIODICZ); }
+    double getDx()const{ return (dx); }
+    double getDy()const{ return (dy); }
+    double getDz()const{ return (dz); }
+    double getC()const{ return (c); }
+    double getDt()const{ return (dt); }
+    double getTh()const{ return (th); }
+    double getSmooth()const{ return (Smooth); }
+    int getNcycles()const{ return (ncycles); }
+    int getNs()const{ return (ns); }
+    int getNpcel(int nspecies)const{ return (npcel[nspecies]); }
+    int getNpcelx(int nspecies)const{ return (npcelx[nspecies]); }
+    int getNpcely(int nspecies)const{ return (npcely[nspecies]); }
+    int getNpcelz(int nspecies)const{ return (npcelz[nspecies]); }
+    int getNp(int nspecies)const{ return (np[nspecies]); }
+    int getNpMax(int nspecies)const{ return (npMax[nspecies]); }
+    double getNpMaxNpRatio()const{ return (NpMaxNpRatio); }
+    double getQOM(int nspecies)const{ return (qom[nspecies]); }
+    double getRHOinit(int nspecies)const{ return (rhoINIT[nspecies]); }
+    double getRHOinject(int nspecies)const { return(rhoINJECT[nspecies]); }
+    double getUth(int nspecies)const{ return (uth[nspecies]); }
+    double getVth(int nspecies)const{ return (vth[nspecies]); }
+    double getWth(int nspecies)const{ return (wth[nspecies]); }
+    double getU0(int nspecies)const{ return (u0[nspecies]); }
+    double getV0(int nspecies)const{ return (v0[nspecies]); }
+    double getW0(int nspecies)const{ return (w0[nspecies]); }
+    int getBcPfaceXright()const{ return (bcPfaceXright); }
+    int getBcPfaceXleft()const{ return (bcPfaceXleft); }
+    int getBcPfaceYright()const{ return (bcPfaceYright); }
+    int getBcPfaceYleft()const{ return (bcPfaceYleft); }
+    int getBcPfaceZright()const{ return (bcPfaceZright); }
+    int getBcPfaceZleft()const{ return (bcPfaceZleft); }
+    int getBcPHIfaceXright()const{ return (bcPHIfaceXright); }
+    int getBcPHIfaceXleft()const{ return (bcPHIfaceXleft); }
+    int getBcPHIfaceYright()const{ return (bcPHIfaceYright); }
+    int getBcPHIfaceYleft()const{ return (bcPHIfaceYleft); }
+    int getBcPHIfaceZright()const{ return (bcPHIfaceZright); }
+    int getBcPHIfaceZleft()const{ return (bcPHIfaceZleft); }
+    int getBcEMfaceXright()const{ return (bcEMfaceXright); }
+    int getBcEMfaceXleft()const{ return (bcEMfaceXleft); }
+    int getBcEMfaceYright()const{ return (bcEMfaceYright); }
+    int getBcEMfaceYleft()const{ return (bcEMfaceYleft); }
+    int getBcEMfaceZright()const{ return (bcEMfaceZright); }
+    int getBcEMfaceZleft()const{ return (bcEMfaceZleft); }
+    double getDelta()const{ return (delta); }
+    double getB0x()const{ return (B0x); }
+    double getB0y()const{ return (B0y); }
+    double getB0z()const{ return (B0z); }
+    double getB1x()const{ return (B1x); }
+    double getB1y()const{ return (B1y); }
+    double getB1z()const{ return (B1z); }
+    bool getVerbose()const{ return (verbose); }
+    bool getTrackParticleID(int nspecies)const
+      { return (TrackParticleID[nspecies]); }
+    int getRestart_status()const{ return (restart_status); }
+    string getSaveDirName()const{ return (SaveDirName); }
+    string getRestartDirName()const{ return (RestartDirName); }
+    string getinputfile()const{ return (inputfile); }
+    string getCase()const{ return (Case); }
+    string getSimName()const{ return (SimName); }
+    string getWriteMethod()const{ return (wmethod); }
+    string getPoissonCorrection()const{ return (PoissonCorrection); }
+    int getLast_cycle()const{ return (last_cycle); }
+    double getVinj()const{ return (Vinj); }
+    double getCGtol()const{ return (CGtol); }
+    double getGMREStol()const{ return (GMREStol); }
+    int getNiterMover()const{ return (NiterMover); }
+    int getFieldOutputCycle()const{ return (FieldOutputCycle); }
+    int getParticlesOutputCycle()const{ return (ParticlesOutputCycle); }
+    int getRestartOutputCycle()const{ return (RestartOutputCycle); }
+    int getDiagnosticsOutputCycle()const{ return (DiagnosticsOutputCycle); }
+    bool getCallFinalize()const{ return (CallFinalize); }
 
     /*! Boundary condition selection for BCFace for the electric field components */
     int bcEx[6], bcEy[6], bcEz[6];
@@ -257,6 +188,14 @@ class Collective:public CollectiveIO {
     double dy;
     /*! grid spacing - Z direction */
     double dz;
+    /*! number of MPI subdomains in each direction */
+    int XLEN;
+    int YLEN;
+    int ZLEN;
+    /*! periodicity in each direction */
+    bool PERIODICX;
+    bool PERIODICY;
+    bool PERIODICZ;
     /*! number of species */
     int ns;
     /*! number of particles per cell */
@@ -268,9 +207,9 @@ class Collective:public CollectiveIO {
     /*! number of particles per cell - Z direction */
     int *npcelz;
     /*! number of particles array for different species */
-    long *np;
+    int *np;
     /*! maximum number of particles array for different species */
-    long *npMax;
+    int *npMax;
     /*! max number of particles */
     double NpMaxNpRatio;
     /*! charge to mass ratio array for different species */
@@ -307,8 +246,6 @@ class Collective:public CollectiveIO {
     string SaveDirName;
     /*! RestartDirName */
     string RestartDirName;
-    /*! get inputfile */
-    string getinputfile();
     /*! restart_status 0 --> no restart; 1--> restart, create new; 2--> restart, append; */
     int restart_status;
     /*! last cycle */
@@ -392,6 +329,9 @@ class Collective:public CollectiveIO {
     int RestartOutputCycle;
     /*! Output for diagnostics */
     int DiagnosticsOutputCycle;
+    /*! Call Finalize() at end of program execution (true by default) */
+    bool CallFinalize;
 };
+typedef Collective CollectiveIO;
 
 #endif

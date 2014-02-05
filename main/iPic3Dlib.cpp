@@ -1,15 +1,29 @@
 
 #include "iPic3D.h"
+#include "TimeTasks.h"
+#include "ipicdefs.h"
+#include "debug.h"
+#include "Parameters.h"
+#include "ompdefs.h"
+
+#include "Moments.h" // for debugging
 
 using namespace iPic3D;
+MPIdata* iPic3D::c_Solver::mpi=0;
 
 int c_Solver::Init(int argc, char **argv) {
-  // initialize MPI environment
+  // get MPI data
+  //
+  // c_Solver is not a singleton, so the following line was pulled out.
+  //MPIdata::init(&argc, &argv);
+  //
+  // initialized MPI environment
   // nprocs = number of processors
   // myrank = rank of tha process*/
-  mpi = new MPIdata(&argc, &argv);
-  nprocs = mpi->nprocs;
-  myrank = mpi->rank;
+  Parameters::init_parameters();
+  mpi = &MPIdata::instance();
+  nprocs = MPIdata::get_nprocs();
+  myrank = MPIdata::get_rank();
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
   verbose = col->getVerbose();
@@ -20,7 +34,7 @@ int c_Solver::Init(int argc, char **argv) {
   ns = col->getNs();            // get the number of particle species involved in simulation
   first_cycle = col->getLast_cycle() + 1; // get the last cycle from the restart
   // initialize the virtual cartesian topology 
-  vct = new VCtopology3D();
+  vct = new VCtopology3D(*col);
   // Check if we can map the processes into a matrix ordering defined in Collective.cpp
   if (nprocs != vct->getNprocs()) {
     if (myrank == 0) {
@@ -60,6 +74,13 @@ int c_Solver::Init(int argc, char **argv) {
   else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
 #endif
   else if (col->getCase()=="Dipole")    EMf->initDipole(vct,grid,col);
+  else if (col->getCase()=="RandomCase") {
+    EMf->initRandomField(vct,grid,col);
+    if (myrank==0) {
+      cout << "Case is " << col->getCase() <<"\n";
+      cout <<"total # of particle per cell is " << col->getNpcel(0) << "\n";
+    }
+  }
   else {
     if (myrank==0) {
       cout << " =========================================================== " << endl;
@@ -129,14 +150,13 @@ int c_Solver::Init(int argc, char **argv) {
   }
   // Distribution functions
   nDistributionBins = 1000;
-  VelocityDist = new unsigned long[nDistributionBins];
   ds = SaveDirName + "/DistributionFunctions.txt";
   if (myrank == 0) {
     ofstream my_file(ds.c_str());
     my_file.close();
   }
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
-  // if(myrank==0){
+  // if(myrank==0)
   ofstream my_file(cqsat.c_str(), fstream::binary);
   nsat = 3;
   for (int isat = 0; isat < nsat; isat++) {
@@ -156,18 +176,63 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
-void c_Solver::CalculateField() {
+void c_Solver::sortParticles() {
+  timeTasks_begin_task(TimeTasks::MOMENT_PCL_SORTING);
+  for(int species_idx=0; species_idx<ns; species_idx++)
+    part[species_idx].sort_particles_serial(grid,vct);
+  timeTasks_end_task(TimeTasks::MOMENT_PCL_SORTING);
+}
 
-  // timeTasks.resetCycle();
-  // interpolation
-  // timeTasks.start(TimeTasks::MOMENTS);
+void c_Solver::CalculateMoments() {
+
+  timeTasks_set_main_task(TimeTasks::MOMENTS);
 
   EMf->updateInfoFields(grid,vct,col);
-  EMf->setZeroDensities();                  // set to zero the densities
 
-  for (int i = 0; i < ns; i++)
-    part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
-
+  if(Parameters::get_VECTORIZE_MOMENTS())
+  {
+    switch(Parameters::get_MOMENTS_TYPE())
+    {
+      case Parameters::SoA:
+        // since particles are sorted,
+        // we can vectorize interpolation of particles to grid
+        convertParticlesToSoA();
+        sortParticles();
+        EMf->sumMoments_vectorized(part, grid, vct);
+        break;
+      case Parameters::AoS:
+        convertParticlesToAoS();
+        sortParticles();
+        EMf->sumMoments_vectorized_AoS(part, grid, vct);
+        break;
+      default:
+        unsupported_value_error(Parameters::get_MOMENTS_TYPE());
+    }
+  }
+  else
+  {
+    if(Parameters::get_SORTING_PARTICLES())
+      sortParticles();
+    switch(Parameters::get_MOMENTS_TYPE())
+    {
+      case Parameters::SoA:
+        EMf->setZeroPrimaryMoments();
+        convertParticlesToSoA();
+        EMf->sumMoments(part, grid, vct);
+        break;
+      case Parameters::AoS:
+        convertParticlesToAoS();
+        EMf->sumMoments_AoS(part, grid, vct);
+        break;
+      default:
+        unsupported_value_error(Parameters::get_MOMENTS_TYPE());
+    }
+  }
+  //for (int i = 0; i < ns; i++)
+  //{
+  //  EMf->sumMomentsOld(part[i], grid, vct);
+  //}
+  EMf->setZeroDerivedMoments();
   EMf->sumOverSpecies(vct);                 // sum all over the species
 
   // Fill with constant charge the planet
@@ -182,28 +247,66 @@ void c_Solver::CalculateField() {
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
-  // timeTasks.end(TimeTasks::MOMENTS);
-
-  // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct, col);               // calculate the E field
-  // timeTasks.end(TimeTasks::FIELDS);
-
 }
 
+//! MAXWELL SOLVER for Efield
+void c_Solver::CalculateField() {
+  timeTasks_set_main_task(TimeTasks::FIELDS);
+  EMf->calculateE(grid, vct, col);               // calculate the E field
+}
+
+//! MAXWELL SOLVER for Bfield (assuming Efield has already been calculated)
+void c_Solver::CalculateB() {
+  timeTasks_set_main_task(TimeTasks::FIELDS);
+  timeTasks_set_task(TimeTasks::BFIELD); // subtask
+  EMf->calculateB(grid, vct, col);   // calculate the B field
+}
+
+/*  -------------- */
+/*!  Particle mover */
+/*  -------------- */
 bool c_Solver::ParticlesMover() {
 
-  /*  -------------- */
-  /*  Particle mover */
-  /*  -------------- */
-
-  // timeTasks.start(TimeTasks::PARTICLES);
-  for (int i = 0; i < ns; i++)  // move each species
+  // move all species of particles
   {
-    // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-    mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
+    timeTasks_set_main_task(TimeTasks::PARTICLES);
+    // Should change this to add background field
+    EMf->set_fieldForPcls();
+    #pragma omp parallel
+    {
+    for (int i = 0; i < ns; i++)  // move each species
+    {
+      // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+      //
+      // should merely pass EMf->get_fieldForPcls() rather than EMf.
+      // use the Predictor Corrector scheme to move particles
+      switch(Parameters::get_MOVER_TYPE())
+      {
+        case Parameters::SoA:
+          part[i].mover_PC(grid, vct, EMf);
+          break;
+        case Parameters::SoA_vec_resort:
+          part[i].mover_PC_vectorized(grid, vct, EMf);
+          break;
+        case Parameters::AoS:
+          part[i].mover_PC_AoS(grid, vct, EMf);
+          break;
+        case Parameters::AoSvec:
+          part[i].mover_PC_AoS_vec(grid, vct, EMf);
+          break;
+        case Parameters::AoS_vec_onesort:
+          part[i].mover_PC_AoS_vec_onesort(grid, vct, EMf);
+          break;
+        default:
+          unsupported_value_error(Parameters::get_MOVER_TYPE());
+      }
+    }
+    }
+    for (int i = 0; i < ns; i++)  // communicate each species
+    {
+      mem_avail = part[i].communicate_particles(vct);
+    }
   }
-  // timeTasks.end(TimeTasks::PARTICLES);
 
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -240,20 +343,7 @@ bool c_Solver::ParticlesMover() {
     for (int i=0; i < ns; i++)
       Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
   }
-
-  /* --------------------- */
-  /* Calculate the B field */
-  /* This step must be taken out of here! */
-  /* --------------------- */
-
-  // timeTasks.start(TimeTasks::BFIELD);
-  EMf->calculateB(grid, vct, col);   // calculate the B field
-  // timeTasks.end(TimeTasks::BFIELD);
-
-  // print out total time for all tasks
-  // timeTasks.print_cycle_times();
   return (false);
-
 }
 
 void c_Solver::WriteRestart(int cycle) {
@@ -283,7 +373,7 @@ void c_Solver::WriteConserved(int cycle) {
     // Velocity distribution
     for (int is = 0; is < ns; is++) {
       double maxVel = part[is].getMaxVelocity();
-      VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
+      long long *VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
       if (myrank == 0) {
         ofstream my_file(ds.c_str(), fstream::app);
         my_file << cycle << "\t" << is << "\t" << maxVel;
@@ -292,27 +382,35 @@ void c_Solver::WriteConserved(int cycle) {
         my_file << endl;
         my_file.close();
       }
+      delete [] VelocityDist;
     }
   }
 }
 
 void c_Solver::WriteOutput(int cycle) {
-  // OUTPUT to large file, called proc**
+
+  bool write_fields = (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle);
+
+  bool write_particles = (cycle % (col->getParticlesOutputCycle()) == 0
+                         && col->getParticlesOutputCycle() != 1);
+
+  if(write_particles){ convertParticlesToSoA(); }
 
   if (col->getWriteMethod() == "Parallel") {
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+    if (write_fields) {
       WriteOutputParallel(grid, EMf, col, vct, cycle);
     }
   }
   else
   {
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+    // OUTPUT to large file, called proc**
+    if (write_fields) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
       // Pressure tensor is available
       hdf5_agent.close();
     }
-    if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
+    if (write_particles) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("position + velocity + q ", cycle, 1);
       hdf5_agent.close();
@@ -341,8 +439,11 @@ void c_Solver::WriteOutput(int cycle) {
 }
 
 void c_Solver::Finalize() {
-  if (mem_avail == 0)           // write the restart only if the simulation finished succesfully
+  if (mem_avail == 0 // write the restart only if the simulation finished successfully
+   && col->getCallFinalize())
+  {
     writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
+  }
 
   // stop profiling
   my_clock->stopTiming();
@@ -352,4 +453,18 @@ void c_Solver::Finalize() {
   delete[]momentum;
   // close MPI
   mpi->finalize_mpi();
+}
+
+// convert particle to struct of arrays (assumed by I/O)
+void c_Solver::convertParticlesToSoA()
+{
+  for (int i = 0; i < ns; i++)
+    part[i].convertParticlesToSoA();
+}
+
+// convert particle to array of structs (used in computing)
+void c_Solver::convertParticlesToAoS()
+{
+  for (int i = 0; i < ns; i++)
+    part[i].convertParticlesToAoS();
 }

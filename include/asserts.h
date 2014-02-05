@@ -1,7 +1,6 @@
 #ifndef __ASSERTS_H__
 #define __ASSERTS_H__
 
-#include <iostream>
 #include <cstdlib>
 #include <cstdio>
 
@@ -39,16 +38,14 @@
 
 #else // ifndef NDEBUG
 
-// override system assert.h
-// #define assert_fileLine(e, file, line) \
-// ((void)printf ("%s:%u: failed assertion `%s'\n", file, line, e), abort())
-// void eprintf_fileLine(const char *func, const char *file, int line_number,
-// const char *format, ...);
+void eprintf_fileLine(FILE * fptr, const char *type, const char *func,
+  const char *file, int line_number, const char *format, ...);
 
 #define dassert_fileLine(e, file, line, func) \
-  (void)(printf("ERROR: file %s, line %d, function %s:\n\tfailed assertion: (%s)\n", file, line, func,e),abort())
-#define dassert_printf_fileLine(e, file, line, func, args...) \
-  (void)(printf("ERROR: file %s, line %d, function %s:\n\tfailed assertion: (%s)\n\t", file, line, func,e), printf(args), printf("\n"), abort())
+  (void)(eprintf_fileLine(stdout,"ERROR", func, file, line, \
+           "\n\tfailed assertion: (%s)", e), abort())
+//#define dassert_printf_fileLine(e, file, line, func, args...) \
+//  (void)(printf("ERROR: file %s, line %d, function %s:\n\tfailed assertion: (%s)\n\t", file, line, func,e), printf(args), printf("\n"), abort())
 
 // comment out the next line if __builtin_expect causes problems
 #define USE_GCC_OPTIMIZATION
@@ -60,16 +57,16 @@
 
 #define dassert_(e)  \
   ((void) ((e) ? (void)0 : dassert_fileLine(#e, __FILE__, __LINE__, __func__)))
-#define dassert_printf_(e, args...)  \
-  ((void) ((e) ? (void)0 : dassert_printf_fileLine(#e, __FILE__, __LINE__, __func__,##args)))
+//#define dassert_printf_(e, args...)  \
+//  ((void) ((e) ? (void)0 : dassert_printf_fileLine(#e, __FILE__, __LINE__, __func__,##args)))
 #else // ifdef USE_GCC_OPTIMIZATION
 // optimized version of preceding
 // #define assert(e) \
 // (__builtin_expect(!(e), 0) ? assert_fileLine (#e, __FILE__, __LINE__) : (void)0)
 #define dassert_(e)  \
   (__builtin_expect(!(e), 0) ? dassert_fileLine (#e, __FILE__, __LINE__, __func__) : (void)0)
-#define dassert_printf(e, args...)  \
-  (__builtin_expect(!(e), 0) ? dassert_printf_fileLine (#e, __FILE__, __LINE__, __func__,##args) : (void)0)
+//#define dassert_printf(e, args...)  \
+//  (__builtin_expect(!(e), 0) ? dassert_printf_fileLine (#e, __FILE__, __LINE__, __func__,##args) : (void)0)
 #endif // USE_GCC_OPTIMIZATION
 
 #if(MAX_ASSERT_LEVEL>=1)
@@ -108,8 +105,12 @@
   void assert_error(const char* file, int line, const char* func, \
       const char* op, const char* lhs_str, const char* rhs_str, \
       t1 lhs, t2 rhs);
-declare_assert_errmsg(double, double);  // this seems enough for all numbers
-declare_assert_errmsg(int, int);  // but maybe this is more efficient
+declare_assert_errmsg(double, double);
+declare_assert_errmsg(size_t, size_t);
+declare_assert_errmsg(int, size_t);
+declare_assert_errmsg(size_t, int);
+declare_assert_errmsg(int, int);
+declare_assert_errmsg(long long, long long);
 declare_assert_errmsg(const char *, const char *);
 // put in assert_string.h:
 // #include "assert.h"
@@ -123,14 +124,19 @@ extern "C" {
 #else
 #define builtin_expect(a,b) __builtin_expect(a,b)
 #endif
-#define assert_not_almost_eq(lhs,rhs) \
-  (fcmp(lhs, rhs, 1e-14) \
+// check whether two numbers are equal within machine precision
+#define assert_not_almost_eq(lhs,rhs,tol) \
+  (fcmp(lhs, rhs, tol) \
    ? (void)0 \
    : assert_error(__FILE__, __LINE__, __func__, " !=~= ", #lhs, #rhs, lhs, rhs))
-#define assert_almost_eq(lhs,rhs) \
-  (builtin_expect(fcmp(lhs, rhs, 1e-10),0) \
+#define assert_almost_eq(lhs,rhs,tol) \
+  (builtin_expect(fcmp(lhs, rhs, tol),0) \
    ? assert_error(__FILE__, __LINE__, __func__, " =~= ", #lhs, #rhs, lhs, rhs) \
    : (void)0)
+//#define assert_almost_eq(lhs,rhs) \
+//  (builtin_expect(fcmp((lhs-rhs)/(fabs(lhs)+fabs(rhs)),1e-14),0) \
+//   ? assert_error(__FILE__, __LINE__, __func__, " =~= ", #lhs, #rhs, lhs, rhs) \
+//   : (void)0)
 #define assert_divides(lhs,rhs) \
   (builtin_expect(rhs%lhs,0) \
    ? assert_error(__FILE__, __LINE__, __func__, "(divides)", #lhs, #rhs, lhs, rhs) \
