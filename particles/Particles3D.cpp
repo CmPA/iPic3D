@@ -116,10 +116,9 @@ void Particles3D::constantVelocity(double vel, int dim, Grid * grid, Field * EMf
 void Particles3D::alt_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 }
 
-#ifdef BATSRUS
 /** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* vct,Collective *col, int is){
-
+#ifdef BATSRUS
   /*
    * Constuctiong the distrebution function from a Fluid model
    */
@@ -131,10 +130,12 @@ void Particles3D::MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* v
     for (j=1; j< grid->getNYC()-1;j++)
       for (k=1; k< grid->getNZC()-1;k++)
         MaxwellianFromFluidCell(grid,col,is, i,j,k,counter,x,y,z,q,u,v,w,ParticleID);
+#endif
 }
 
 void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long* ParticleID)
 {
+#ifdef BATSRUS
   /*
    * grid           : local grid object (in)
    * col            : collective (global) object (in)
@@ -178,8 +179,8 @@ void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, i
           ParticleID[ip]= ip*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
         ip++ ;
       }
-}
 #endif
+}
 
 /** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {

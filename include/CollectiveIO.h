@@ -125,10 +125,15 @@ public:
 
   /** get Case type */
   virtual string getCase() = 0;
+  /** get Particle initialization type */
+  virtual string getPartInit() = 0;
   /** get simulation name */
   virtual string getSimName() = 0;
   /** get Poisson correction flag */
   virtual string getPoissonCorrection() = 0;
+
+  /** get initial solution flag */
+  virtual bool getSolInit() = 0;
 
   /** get Boundary Condition Particles: FaceXright */
   virtual int getBcPfaceXright() = 0;

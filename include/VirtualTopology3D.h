@@ -43,6 +43,8 @@ public:
   virtual bool getPERIODICZ() = 0;
   /** get the cartesian rank of the process */
   virtual int getCartesian_rank() = 0;
+  /** get the total number of process */
+  virtual int getNproc() = 0;
   /** get the cartesian rank of XLEFT neighbor */
   virtual int getXleft_neighbor() = 0;
   /** get the cartesian rank of XRIGHT neighbor */

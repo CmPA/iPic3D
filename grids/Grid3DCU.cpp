@@ -388,6 +388,13 @@ void Grid3DCU::derBC(double ***derBC, double ***vector, int leftActiveNode, int 
 }
 
 /** interpolate on nodes from central points: do this for the magnetic field*/
+void Grid3DCU::interpC2N(double ****vecFieldN, int ns, double ****vecFieldC) {
+  for (register int i = 1; i < nxn - 1; i++)
+    for (register int j = 1; j < nyn - 1; j++)
+      for (register int k = 1; k < nzn - 1; k++)
+        vecFieldN[ns][i][j][k] = .125 * (vecFieldC[ns][i][j][k] + vecFieldC[ns][i - 1][j][k] + vecFieldC[ns][i][j - 1][k] + vecFieldC[ns][i][j][k - 1] + vecFieldC[ns][i - 1][j - 1][k] + vecFieldC[ns][i - 1][j][k - 1] + vecFieldC[ns][i][j - 1][k - 1] + vecFieldC[ns][i - 1][j - 1][k - 1]);
+}
+/** interpolate on nodes from central points: do this for the magnetic field*/
 void Grid3DCU::interpC2N(double ***vecFieldN, double ***vecFieldC) {
   for (register int i = 1; i < nxn - 1; i++)
     for (register int j = 1; j < nyn - 1; j++)

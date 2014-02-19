@@ -185,10 +185,8 @@ class EMfields3D                // :public Field
     void initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with no Perturbation */
     void initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
-#ifdef BATSRUS
     /*! initialize from BATSRUS */
     void initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective * col);
-#endif
     /*! Random initial field */
     void initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! Init Force Free (JxB=0) */
@@ -343,10 +341,15 @@ class EMfields3D                // :public Field
     double &getRHOns(int indexX, int indexY, int indexZ, int is) const;
     /*! SPECIES: get density on center cell(indexX,indexY,indexZ) */
     double &getRHOcs(int indexX, int indexY, int indexZ, int is) const;
+    /*! SPECIES: get density on center cell(indexX,indexY,indexZ) */
+    double ****& getRHOcs();
     /*! SPECIES: get density array on nodes */
     double ****getRHOns();
+    /*! SPECIES: get density array on nodes */
+    double ***& getRHOns(int is);
     /*! SPECIES: get density array on cells without the ghost cells */
     double ***getRHOcs(int is);
+    double ***& getRHOcs(int is, int dummy);
 
     /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
     double &getBx_ext(int indexX, int indexY, int indexZ) const;

@@ -1521,9 +1521,9 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   }
 }
 
-#ifdef BATSRUS
 /*! initiliaze EM for GEM challange */
 void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+#ifdef BATSRUS
   cout << "------------------------------------------" << endl;
   cout << "         Initialize from BATSRUS          " << endl;
   cout << "------------------------------------------" << endl;
@@ -1554,8 +1554,8 @@ void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective *c
   grid->interpC2N(Bxn,Bxc);
   grid->interpC2N(Byn,Byc);
   grid->interpC2N(Bzn,Bzc);
-}
 #endif
+}
 
 /*! initiliaze EM for GEM challange */
 void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
@@ -3078,9 +3078,17 @@ double &EMfields3D::getRHOns(int indexX, int indexY, int indexZ, int is) const {
 double &EMfields3D::getRHOcs(int indexX, int indexY, int indexZ, int is) const {
   return (rhocs[is][indexX][indexY][indexZ]);
 }
+/*! SPECIES: get density array defined on center cells */
+double ****& EMfields3D::getRHOcs() {
+  return (rhocs);
+}
 /*! get density array defined on nodes */
 double ****EMfields3D::getRHOns() {
   return (rhons);
+}
+/*! get density array defined on nodes for one species */
+double ***& EMfields3D::getRHOns(int is) {
+  return (rhons[is]);
 }
 /*! get species density component X array cell without the ghost cells */
 double ***EMfields3D::getRHOcs(int is) {
@@ -3097,6 +3105,10 @@ double ***EMfields3D::getRHOcs(int is) {
                                rhons[is][i + 1][j + 1][k + 1]);
 
   return arr;
+}
+
+double ***& EMfields3D::getRHOcs(int is, int dummy) {
+  return (rhocs[is]);
 }
 
 /*! get Bx_ext(X,Y,Z)  */

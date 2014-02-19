@@ -75,6 +75,8 @@ public:
 
 
   /** interpolate on nodes from central points */
+  void interpC2N(double ****vecFieldN, int ns, double ****vecFieldC);
+  /** interpolate on nodes from central points */
   void interpC2N(double ***vecFieldN, double ***vecFieldC);
   /** interpolate on central points from nodes */
   void interpN2C(double ***vecFieldC, double ***vecFieldN);

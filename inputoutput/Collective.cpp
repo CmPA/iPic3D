@@ -42,6 +42,8 @@ void Collective::ReadInput(string inputfile) {
     delta = config.read < double >("delta");
 
     Case              = config.read<string>("Case");
+    FieldsInit        = config.read<string>("FieldsInit");
+    PartInit          = config.read<string>("PartInit");
     wmethod           = config.read<string>("WriteMethod");
     SimName           = config.read<string>("SimulationName");
     PoissonCorrection = config.read<string>("PoissonCorrection");
@@ -89,12 +91,67 @@ void Collective::ReadInput(string inputfile) {
   }
 
   if (RESTART1) {               // you are restarting
+    SolInit = false;
+    cout << " WARNING: Performing a restart with the classic files. " << endl;
+
     RestartDirName = config.read < string > ("RestartDirName");
     ReadRestart(RestartDirName);
   }
-  else {
+  else if (SOLINIT1) {
+#ifdef USEH5HUT
+    SolInit  = true;
+    initfile = FieldsInit;
+
+    /* ------------------------------------ */
+    /* Verify that the file name is correct */
+    /* ------------------------------------ */
+    stringstream ss;
+    string       ff;
+    unsigned first = initfile.find_last_of("-") + 1;
+    unsigned last  = initfile.find_last_of("_");
+    ss << initfile.substr(first, last-first);
+    ss >> ff;
+
+    if (ff=="Fields"){
+
+      /* ---------------------------------- */
+      /* Get the cycle number from the name */
+      /* ---------------------------------- */
+      first = initfile.find_last_of("_") + 1;
+      last  = initfile.find_last_of(".h5");
+      ss.clear();
+      ss.str(string());
+      ss << initfile.substr(first, last-first);
+      ss >> last_cycle;
+
+      /* --------------------------------- */
+      /* Extract the base name of the file */
+      /* --------------------------------- */
+      last  = initfile.find_last_of("-");
+      ss.clear();
+      ss.str(string());
+      ss << initfile.substr(0, last);
+      ss >> ff;
+
+      initfile = ff;
+
+    }
+    else {
+      cout << " ERROR: The name of the initial file is incorrect, please verify that you are " << endl;
+      cout << "        using an iPic3D file with the correct name: FileName-Fields_000000.h5" << endl;
+    }
+
+#else
+    cout << " ERROR: You want to restart from an HDF5 initial solution using the H5hut library. " << endl;
+    cout << "        However, the code was compiled without the H5hut options." << endl;
+    abort();
+#endif
+  }
+
+  if(!RESTART1) {
+
+    if (!SOLINIT1) last_cycle = -1;
     restart_status = 0;
-    last_cycle = -1;
     c = config.read < double >("c");
 
 #ifdef BATSRUS
@@ -533,27 +590,30 @@ int Collective::ReadRestart(string inputfile) {
 }
 /*! constructor */
 Collective::Collective(int argc, char **argv) {
+  SOLINIT1 = false;
+  RESTART1 = false;
+  initfile  = "dummy-Fields_00000.h5";
   if (argc < 2) {
     inputfile = "inputfile";
-    RESTART1 = false;
   }
   else if (argc < 3) {
     inputfile = argv[1];
-    RESTART1 = false;
   }
-  else {
+  else if (argc < 4) {
+
     if (strcmp(argv[1], "restart") == 0) {
       inputfile = argv[2];
       RESTART1 = true;
     }
-    else if (strcmp(argv[2], "restart") == 0) {
-      inputfile = argv[1];
-      RESTART1 = true;
+    else if (strcmp(argv[1], "solinit") == 0) {
+      inputfile = argv[2];
+      SOLINIT1 = true;
     }
-    else {
-      cout << "Error: syntax error in mpirun arguments. Did you mean to 'restart' ?" << endl;
-      return;
-    }
+
+  }
+  else {
+    cout << "Error: syntax error in mpirun arguments. Did you mean to 'restart' or 'soliniti' ?" << endl;
+    return;
   }
 
   ReadInput(inputfile);
@@ -966,9 +1026,17 @@ string Collective::getRestartDirName() {
 string Collective::getinputfile() {
   return (inputfile);
 }
+/*! get initfile */
+string Collective::getinitfile() {
+  return (initfile);
+}
 /*! get Case type */
 string Collective::getCase() {
   return (Case);
+}
+/*! get Particle initialization type */
+string Collective::getPartInit() {
+  return (PartInit);
 }
 /*! get simulation name */
 string Collective::getSimName() {
@@ -981,6 +1049,10 @@ string Collective::getWriteMethod() {
 /*! get Poisson correction flag */
 string Collective::getPoissonCorrection() {
   return (PoissonCorrection);
+}
+/*! get initial solution flag */
+bool Collective::getSolInit() {
+  return (SolInit);
 }
 /*! get last_cycle */
 int Collective::getLast_cycle() {

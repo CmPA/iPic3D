@@ -123,12 +123,17 @@ class Collective:public CollectiveIO {
 
     /*! get Case type */
     string getCase();
+    /*! get particle initialization type */
+    string getPartInit();
     /*! get output writing method */
     string getWriteMethod();
     /*! get simulation name */
     string getSimName();
-    /*! get Poisson correction flag */
+    /*! get poisson correction flag */
     string getPoissonCorrection();
+
+    /*! get initial solution flag */
+    bool getSolInit();
 
     /*! get Boundary Condition Particles: FaceXright */
     int getBcPfaceXright();
@@ -214,9 +219,14 @@ class Collective:public CollectiveIO {
     /*! Boundary condition selection for BCFace for the magnetic field components */
     int bcBx[6], bcBy[6], bcBz[6];
 
+    /*! get initfile */
+    string getinitfile();
+
   private:
     /*! inputfile */
     string inputfile;
+    /*! Restart HDF5 file */
+    string initfile;
     /*! light speed */
     double c;
     /*! 4 pi */
@@ -294,12 +304,19 @@ class Collective:public CollectiveIO {
 
     /*! Case type */
     string Case;
+    /*! Fields initialization type */
+    string FieldsInit;
+    /*! Particle initialization type */
+    string PartInit;
     /*! Output writing method */
     string wmethod;
     /*! Simulation name */
     string SimName;
     /*! Poisson correction flag */
     string PoissonCorrection;
+
+    /*! HDF5 initial solution flag */
+    bool SolInit;
 
     /*! TrackParticleID */
     bool *TrackParticleID;
@@ -373,6 +390,8 @@ class Collective:public CollectiveIO {
     bool verbose;
     /*! RESTART */
     bool RESTART1;
+    /*! SOLINIT */
+    bool SOLINIT1;
 
     /*! velocity of the injection from the wall */
     double Vinj;

@@ -1,4 +1,6 @@
 
+#include <fstream>
+
 #include "H5hut-io.h"
 
 /* ==================== */
@@ -10,13 +12,6 @@ H5hutpart::H5hutpart(){
 }
 
 H5hutpart::~H5hutpart(){
-  delete [] q;
-  delete [] x;
-  delete [] y;
-  delete [] z;
-  delete [] u;
-  delete [] v;
-  delete [] w;
 }
 
 void H5hutpart::memalloc(long long n){
@@ -34,28 +29,28 @@ void H5hutpart::memalloc(long long n){
   }
 }
 
-void H5hutpart::init(long long n, double chg){
+void H5hutpart::init(long long n, double chg, int Lx, int Ly, int Lz){
 
   if (!allocated) memalloc(n);
 
-  double LO = 0.1;
-  double HI = 99.9;
+  double LO = -50.0;
+  double HI =  50.0;
   for (int i=0; i<np; i++){
     q[i] = chg;
-    x[i] = LO + double(rand()) / double(RAND_MAX/(HI-LO));
-    y[i] = LO + double(rand()) / double(RAND_MAX/(HI-LO));
-    z[i] = LO + double(rand()) / double(RAND_MAX/(HI-LO));
-    u[i] = LO + double(rand()) / double(RAND_MAX/(HI-LO));
-    v[i] = LO + double(rand()) / double(RAND_MAX/(HI-LO));
-    w[i] = LO + double(rand()) / double(RAND_MAX/(HI-LO));
+    x[i] = 0.0 + double(rand()) / double(RAND_MAX/(Lx-0.0));
+    y[i] = 0.0 + double(rand()) / double(RAND_MAX/(Ly-0.0));
+    z[i] = 0.0 + double(rand()) / double(RAND_MAX/(Lz-0.0));
+    u[i] = LO  + double(rand()) / double(RAND_MAX/(HI-LO));
+    v[i] = LO  + double(rand()) / double(RAND_MAX/(HI-LO));
+    w[i] = LO  + double(rand()) / double(RAND_MAX/(HI-LO));
   }
 }
 
 void H5hutpart::info(){
   int i = int(np/2);
-  std::cout << "H5hutpart with np=" << np << ", ex. position: " << x[i] << " " << y[i] << " " << z[i] << std::endl;
-  std::cout << "H5hutpart with np=" << np << ", 1st position: " << x[0] << " " << y[0] << " " << z[0] << std::endl;
-  std::cout << "H5hutpart with np=" << np << ", Lst position: " << x[np-1] << " " << y[np-1] << " " << z[np-1] << std::endl;
+  std::cout << "[H5hut-io]" << " np=" << np << ", ex. position: " << x[i] << " " << y[i] << " " << z[i] << std::endl;
+  std::cout << "[H5hut-io]" << " np=" << np << ", 1st position: " << x[0] << " " << y[0] << " " << z[0] << std::endl;
+  std::cout << "[H5hut-io]" << " np=" << np << ", Lst position: " << x[np-1] << " " << y[np-1] << " " << z[np-1] << std::endl;
   std::cout << std::endl;
 }
 
@@ -63,78 +58,105 @@ void H5hutpart::info(){
 /*        OUTPUT          */
 /* ====================== */
 
-void H5output::SetBaseName(std::string name){
+
+void H5output::SetNameCycle(std::string name, int c){
   basename = name;
+  cycle    = c;
 }
 
-void H5output::OpenFieldsCellFile(int nspec, int ntcx, int ntcy, int ntcz, int cycle, int *coord, int *dimns, MPI_Comm CART_COMM){
+void H5output::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *dimns, MPI_Comm CART_COMM){
 
   std::stringstream filenmbr;
   std::string       filename;
 
-  filenmbr << std::setfill('0') << std::setw(5) << cycle;
+  filenmbr << std::setfill('0') << std::setw(6) << cycle;
   filename = basename + "-Fields" + "_" + filenmbr.str() + ".h5";
+
+  int d = -1;
+  if (dtype=="Cell") d = 0;
+
+  ntx = ntx + d;
+  nty = nty + d;
+  ntz = ntz + d;
 
   /* -------------- */
   /* Open HDF5 file */
   /* -------------- */
 
-  fldsfile = H5OpenFile(filename.c_str(), H5_O_WRONLY, CART_COMM);
+  fldsfile = H5OpenFile(filename.c_str(), H5_O_RDWR, CART_COMM);
   H5SetStep(fldsfile,0);
   H5WriteStepAttribInt32(fldsfile, "nspec", &nspec, 1);
   H5Block3dSetGrid(fldsfile, dimns[0], dimns[1], dimns[2]);
-  H5Block3dSetDims(fldsfile, ntcx/dimns[0], ntcy/dimns[1], ntcz/dimns[2]);
+  H5Block3dSetDims(fldsfile, ntx/dimns[0], nty/dimns[1], ntz/dimns[2]);
   H5Block3dSetHalo(fldsfile, 1, 1, 1);
 
   int irange[2];
   int jrange[2];
   int krange[2];
 
-  irange[0] =   coord[0]   * ntcx/dimns[0];
-  irange[1] = ((coord[0]+1)* ntcx/dimns[0]) -1;
-  jrange[0] =   coord[1]   * ntcy/dimns[1];
-  jrange[1] = ((coord[1]+1)* ntcy/dimns[1]) -1;
-  krange[0] =   coord[2]   * ntcz/dimns[2];
-  krange[1] = ((coord[2]+1)* ntcz/dimns[2]) -1;
+  int nnx = ntx/dimns[0];
+  int nny = nty/dimns[1];
+  int nnz = ntz/dimns[2];
 
-  /* --------------- */
-  /* Write EM fields */
-  /* --------------- */
+  d = 0;
+  if (dtype=="Cell") d = -1;   // Yes, this line is the oposite of the previous 'if'
+
+  irange[0] = coord[0]      * nnx;
+  irange[1] =(coord[0] + 1) * nnx + d;
+  jrange[0] = coord[1]      * nny;
+  jrange[1] =(coord[1] + 1) * nny + d;
+  krange[0] = coord[2]      * nnz;
+  krange[1] =(coord[2] + 1) * nnz + d;
+
+  /* -------------- */
+  /* Set the "view" */
+  /* -------------- */
   H5Block3dSetView(fldsfile, irange[0], irange[1],
                              jrange[0], jrange[1],
                              krange[0], krange[1]);
 
 }
 
-void H5output::CloseFieldsCellFile(){
+void H5output::CloseFieldsFile(){
   H5CloseFile(fldsfile);
 }
 
-void H5output::WriteFieldsCell(double ***field, std::string fname, int nxc, int nyc, int nzc){
+void H5output::WriteFields(double ***field, std::string fname, int nx, int ny, int nz, int rank){
 
   h5_float64_t*     buffer;
 
-  buffer = new h5_float64_t[nzc*nyc*nxc];
+  buffer = new h5_float64_t[nz*ny*nx];
+
+  std::ofstream myfile;
+
+  if (rank!=-1) {
+    std::stringstream  ss;
+    ss << "proc-" << rank << ".txt";
+    std::string filename = ss.str();
+    myfile.open(filename.c_str());
+  }
 
   int n = 0;
-  for (int k=0; k<nzc; k++) {
-    for (int j=0; j<nyc; j++) {
-      for (int i=0; i<nxc; i++) {
+  for (int k=1; k<nz-1; k++) {
+    for (int j=1; j<ny-1; j++) {
+      for (int i=1; i<nx-1; i++) {
         buffer[n++] = field[i][j][k];
+        if (rank!=-1) myfile << i << " " << j << " " << k << " : " << field[i][j][k] << std::endl;
       }
     }
   }
+  if (rank!=-1) myfile.close();
 
   H5Block3dWriteScalarFieldFloat64(fldsfile, fname.c_str(), buffer);
 
   delete [] buffer;
 }
 
-void H5output::OpenPartclFile(int nspec, int cycle, MPI_Comm CART_COMM){
+void H5output::OpenPartclFile(int nspec, MPI_Comm CART_COMM){
   std::stringstream filenmbr;
   std::string       filename;
 
-  filenmbr << std::setfill('0') << std::setw(5) << cycle;
+  filenmbr << std::setfill('0') << std::setw(6) << cycle;
   filename = basename + "-Partcl" + "_" + filenmbr.str() + ".h5";
 
   /* -------------- */
@@ -220,13 +242,158 @@ void H5output::WriteParticles(int ispec, long long np, double *q, double *x, dou
 /*         INPUT          */
 /* ====================== */
 
-void H5input::OpenPartclFile(int ns, std::string fn){
-  nspec = ns;
-  part = new H5hutpart[nspec];
-  filename = fn;
+void H5input::SetNameCycle(std::string name, int rc){
+  basename = name;
+  recycle  = rc;
 }
 
-void H5input::ReadParticles(int ndim, int rank, int nproc, int *dimns, double *L, MPI_Comm CART_COMM){
+void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *dimns, MPI_Comm CART_COMM){
+
+  int file_nspec;
+
+  std::stringstream filenmbr;
+  std::string       filename;
+
+  filenmbr << std::setfill('0') << std::setw(6) << recycle;
+  filename = basename + "-Fields" + "_" + filenmbr.str() + ".h5";
+
+  int d = -1;
+  if (dtype=="Cell") d = 0;
+
+  ntx = ntx + d;
+  nty = nty + d;
+  ntz = ntz + d;
+
+  /* -------------- */
+  /* Open HDF5 file */
+  /* -------------- */
+
+  fldsfile = H5OpenFile(filename.c_str(), H5_O_RDONLY, CART_COMM);
+  H5SetStep(fldsfile, 0);
+  H5ReadStepAttribInt32(fldsfile, "nspec", &file_nspec);
+
+  if (file_nspec!=nspec){
+   std::cout << "[H5hut-io]" << " ERROR: The number of species nspec=" << nspec << std::endl;
+   std::cout << "[H5hut-io]" << "        does not correspont to the number of species in the initial file." << std::endl;
+   std::cout << "[H5hut-io]" << "        file_nspec = " << file_nspec << std::endl; 
+   abort();
+  }
+
+  /* ---------------------------------------------------------------------------- */
+  /* Verify that the data in the file corresponds to the current case parametters */
+  /* TODO: in a future version instead of stoping the code we should include the  */
+  /*       input file into the initial file so the parameters are not separated.  */
+  /* ---------------------------------------------------------------------------- */
+
+  h5_size_t  f_rank, f_dims[3], e_rank;
+  h5_int64_t f_type;
+
+  H5BlockGetFieldInfoByName(fldsfile, "Ex", &f_rank, f_dims, &e_rank, &f_type);
+
+  int ndim = 3; // By default 2D is considered as a 'flat' 3D
+
+  if (f_rank!=ndim) {
+   std::cout << "[H5hut-io]" << " ERROR: The number of dimensions =" << ndim << std::endl;
+   std::cout << "[H5hut-io]" << "        does not correspont to the number of dimensions in the initial file." << std::endl;
+   std::cout << "[H5hut-io]" << "        f_ndim = " << f_rank << std::endl; 
+   abort();
+  }
+
+  if (f_dims[0]!=ntx-d) {
+   std::cout << "[H5hut-io]" << " ERROR: The number of cells in X =" << ntx << std::endl;
+   std::cout << "[H5hut-io]" << "        does not correspont to the number of cells in the initial file." << std::endl;
+   std::cout << "[H5hut-io]" << "        ncell x = " << f_dims[0] << std::endl; 
+   abort();
+  }
+
+  if (f_dims[1]!=nty-d) {
+   std::cout << "[H5hut-io]" << " ERROR: The number of cells in Y =" << nty << std::endl;
+   std::cout << "[H5hut-io]" << "        does not correspont to the number of cells in the initial file." << std::endl;
+   std::cout << "[H5hut-io]" << "        ncell y = " << f_dims[1] << std::endl; 
+   abort();
+  }
+
+  if (f_dims[2]!=ntz-d) {
+   std::cout << "[H5hut-io]" << " ERROR: The number of cells in Z =" << ntz << std::endl;
+   std::cout << "[H5hut-io]" << "        does not correspont to the number of cells in the initial file." << std::endl;
+   std::cout << "[H5hut-io]" << "        ncell z = " << f_dims[2] << std::endl; 
+   abort();
+  }
+
+  /* -------------------- */
+  /* Set Block properties */
+  /* -------------------- */
+
+  H5Block3dSetGrid(fldsfile, dimns[0], dimns[1], dimns[2]);
+  H5Block3dSetDims(fldsfile, ntx/dimns[0], nty/dimns[1], ntz/dimns[2]);
+  H5Block3dSetHalo(fldsfile, 1, 1, 1);
+
+  int irange[2];
+  int jrange[2];
+  int krange[2];
+
+  d = 0;
+  if (dtype=="Cell") d = -1;  // Yes, this is the oposite of the first 'if'
+
+  irange[0] =   coord[0]   * ntx/dimns[0];
+  irange[1] = ((coord[0]+1)* ntx/dimns[0]) + d;
+  jrange[0] =   coord[1]   * nty/dimns[1];
+  jrange[1] = ((coord[1]+1)* nty/dimns[1]) + d;
+  krange[0] =   coord[2]   * ntz/dimns[2];
+  krange[1] = ((coord[2]+1)* ntz/dimns[2]) + d;
+
+  /* -------------- */
+  /* Set the "view" */
+  /* -------------- */
+  H5Block3dSetView(fldsfile, irange[0], irange[1],
+                             jrange[0], jrange[1],
+                             krange[0], krange[1]);
+
+}
+
+void H5input::ReadFields(double ***field, std::string fname, int nx, int ny, int nz, int rank){
+
+  h5_float64_t*     buffer;
+
+  buffer = new h5_float64_t[nz*ny*nx];
+
+  H5Block3dReadScalarFieldFloat64(fldsfile, fname.c_str(), buffer);
+
+  std::ofstream myfile;
+
+  if (rank!=-1) {
+    std::stringstream  ss;
+    ss << "proc-" << rank << ".txt";
+    std::string filename = ss.str();
+    myfile.open(filename.c_str());
+  }
+
+  int n = 0;
+  for (int k=1; k<nz-1; k++) {
+    for (int j=1; j<ny-1; j++) {
+      for (int i=1; i<nx-1; i++) {
+        field[i][j][k] = buffer[n++];
+        if (rank!=-1) myfile << i << " " << j << " " << k << " : " << field[i][j][k] << std::endl;
+      }
+    }
+  }
+  if (rank!=-1) myfile.close();
+
+  delete [] buffer;
+}
+
+void H5input::CloseFieldsFile(){
+  H5CloseFile(fldsfile);
+}
+
+
+void H5input::OpenPartclFile(int ns){
+  nspec = ns;
+  part = new H5hutpart[nspec];
+}
+
+void H5input::ReadParticles(int rank, int nproc, int *dimns, double *L, MPI_Comm CART_COMM){
+  int ndim = 3; // By default 2D is considered as a 'flat' 3D
   LoadParticles(ndim, rank, nproc, dimns, L, CART_COMM);
   InitParticles(ndim, rank, CART_COMM);
 }
@@ -469,6 +636,7 @@ void H5input::InitParticles(int ndim, int rank, MPI_Comm CART_COMM){
     delete [] v_loc;
     delete [] w_loc;
   }
+
 }
 
 void H5input::LoadParticles(int ndim, int rank, int nproc, int *dimns, double *L, MPI_Comm CART_COMM){
@@ -504,7 +672,7 @@ void H5input::LoadParticles(int ndim, int rank, int nproc, int *dimns, double *L
 
   MPI_Comm_group (CART_COMM, &org_grp);
   ranks_rst = new int[nproc-1];
-  for (int i=0; i<nproc; i++)  ranks_rst[i] = i;
+  for (int i=0; i<nproc-1; i++)  ranks_rst[i] = i;
 
   if (rank==0) MPI_Group_incl (org_grp, 1, ranks_rdr, &reader_grp);
   else         MPI_Group_incl (org_grp, nproc-1, ranks_rst, &reader_grp);
@@ -519,17 +687,21 @@ void H5input::LoadParticles(int ndim, int rank, int nproc, int *dimns, double *L
     /* Open HDF5 file */
     /* -------------- */
 
-    h5_file_t *file = H5OpenFile(filename.c_str(), H5_O_RDONLY, READER_COMM);
-    H5SetStep(file, 0);
-    H5ReadStepAttribInt32(file, "nspec", &h5nspec);
+    std::stringstream filenmbr;
+    std::string       filename;
+
+    filenmbr << std::setfill('0') << std::setw(6) << recycle;
+    filename = basename + "-Partcl" + "_" + filenmbr.str() + ".h5";
+
+    partfile = H5OpenFile(filename.c_str(), H5_O_RDONLY, READER_COMM);
+    H5SetStep(partfile, 0);
+    H5ReadStepAttribInt32(partfile, "nspec", &h5nspec);
 
     if (nspec!=h5nspec) {
-      std::cout << "ERROR in ReadParallelParticles: the number of species in the initial file" << std::endl;
-      std::cout << "                                does not match the number of species requested." << std::endl;
+      std::cout << "[H5hut-io]" << "ERROR in ReadParallelParticles: the number of species in the initial file" << std::endl;
+      std::cout << "[H5hut-io]" << "                                does not match the number of species requested." << std::endl;
       abort();
     }
-
-    std::cout << "Reading "<< nspec << " species." << std::endl;
 
     h5npart = new h5_int64_t[nspec];
 
@@ -537,7 +709,7 @@ void H5input::LoadParticles(int ndim, int rank, int nproc, int *dimns, double *L
     for (int i=0; i<nspec; i++) {
       sstm << "npart_" << i;
       std::string nparti = sstm.str();
-      H5ReadStepAttribInt64(file, nparti.c_str(), &h5npart[i]);
+      H5ReadStepAttribInt64(partfile, nparti.c_str(), &h5npart[i]);
       sstm.str("");
       nop += h5npart[i];
     }
@@ -553,48 +725,48 @@ void H5input::LoadParticles(int ndim, int rank, int nproc, int *dimns, double *L
     offset = 0;
     for (int i=0; i<nspec; i++) {
 
-      std::cout << " Reading a total of " << h5npart[i] << " particles of species " << i << std::endl;
+      std::cout << "[H5hut-io]" << " Reading a total of " << h5npart[i] << " particles of species " << i << std::endl;
 
       sstm << "q_" << i;
       std::string dtset = sstm.str();
-      H5PartReadDataFloat64(file,dtset.c_str(),q+offset);
+      H5PartReadDataFloat64(partfile,dtset.c_str(),q+offset);
       sstm.str("");
 
       sstm << "x_" << i;
       dtset = sstm.str();
-      H5PartReadDataFloat64(file,dtset.c_str(),x+offset);
+      H5PartReadDataFloat64(partfile,dtset.c_str(),x+offset);
       sstm.str("");
 
       sstm << "y_" << i;
       dtset = sstm.str();
-      H5PartReadDataFloat64(file,dtset.c_str(),y+offset);
+      H5PartReadDataFloat64(partfile,dtset.c_str(),y+offset);
       sstm.str("");
 
       sstm << "z_" << i;
       dtset = sstm.str();
-      H5PartReadDataFloat64(file,dtset.c_str(),z+offset);
+      H5PartReadDataFloat64(partfile,dtset.c_str(),z+offset);
       sstm.str("");
 
       sstm << "u_" << i;
       dtset = sstm.str();
-      H5PartReadDataFloat64(file,dtset.c_str(),u+offset);
+      H5PartReadDataFloat64(partfile,dtset.c_str(),u+offset);
       sstm.str("");
 
       sstm << "v_" << i;
       dtset = sstm.str();
-      H5PartReadDataFloat64(file,dtset.c_str(),v+offset);
+      H5PartReadDataFloat64(partfile,dtset.c_str(),v+offset);
       sstm.str("");
 
       sstm << "w_" << i;
       dtset = sstm.str();
-      H5PartReadDataFloat64(file,dtset.c_str(),w+offset);
+      H5PartReadDataFloat64(partfile,dtset.c_str(),w+offset);
       sstm.str("");
 
       offset += h5npart[i];
 
     }
 
-    H5CloseFile(file);
+    H5CloseFile(partfile);
 
     FindLocalParticles(nproc, ndim, h5npart, nop, dimns, L, CART_COMM, q, x, y, z, u, v, w);
 
@@ -606,6 +778,43 @@ void H5input::LoadParticles(int ndim, int rank, int nproc, int *dimns, double *L
     delete [] v;
     delete [] w;
 
+    delete [] h5npart;
+
   }
 
+}
+
+void H5input::DumpPartclX(double*& tgt, int s){
+  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getX(i);
+  part[s].freeX();
+}
+
+void H5input::DumpPartclY(double*& tgt, int s){
+  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getY(i);
+  part[s].freeY();
+}
+
+void H5input::DumpPartclZ(double*& tgt, int s){
+  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getZ(i);
+  part[s].freeZ();
+}
+
+void H5input::DumpPartclU(double*& tgt, int s){
+  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getU(i);
+  part[s].freeU();
+}
+
+void H5input::DumpPartclV(double*& tgt, int s){
+  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getV(i);
+  part[s].freeV();
+}
+
+void H5input::DumpPartclW(double*& tgt, int s){
+  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getW(i);
+  part[s].freeW();
+}
+
+void H5input::DumpPartclQ(double*& tgt, int s){
+  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getQ(i);
+  part[s].freeQ();
 }

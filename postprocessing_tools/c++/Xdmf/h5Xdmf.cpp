@@ -5,7 +5,29 @@
 #include <cstdlib>
 #include <sstream>
 
+#include "ConfigFile.h"
+
 using namespace std;
+
+struct filefield{
+  string fieldname;
+  string dtset;
+
+  filefield & operator=(const filefield & orig) {
+    fieldname = orig.fieldname;
+    dtset     = orig.dtset;
+  }
+};
+
+inline ostream & operator<<(ostream & os, const filefield & t){
+  os << t.fieldname << " " << t.dtset;
+  return os;
+}
+
+inline istream & operator>>(istream & is, filefield & t){
+  is >> t.fieldname >> t.dtset;
+  return is;
+}
 
 class c_time{
   public:
@@ -45,6 +67,7 @@ class c_grid{
     ~c_grid() {;};
     void setdimorigin(int nd, double *org);
     void setdelta(double *delta);
+    void setlength(double *L);
 
     double getOx(){return Ox;};
     double getOy(){return Oy;};
@@ -62,6 +85,9 @@ class c_grid{
     double Ox;
     double Oy;
     double Oz;
+    double Lx;
+    double Ly;
+    double Lz;
 };
 
 c_grid::c_grid(){
@@ -72,6 +98,9 @@ c_grid::c_grid(){
   Ox = 0.0;
   Oy = 0.0;
   Oz = 0.0;
+  Lx = 0.0;
+  Ly = 0.0;
+  Lz = 0.0;
 }
 
 void c_grid::setdimorigin(int nd, double *org){
@@ -88,6 +117,14 @@ void c_grid::setdelta(double *delta){
   dx = delta[0];
   dy = delta[1];
   if (ndim == 3) dz = delta[2];
+
+}
+
+void c_grid::setlength(double *L){
+
+  Lx = L[0];
+  Ly = L[1];
+  if (ndim == 3) Lz = L[2];
 
 }
 
@@ -130,7 +167,9 @@ class xdmfile{
     ~xdmfile() {;};
     void writexdmf();
     void readinput(string infile);
-    void setgeometry(void);
+    void readinput_org(string infile);
+    void setgeometry(void){};
+    void setgeometry(int, double*, double*);
     void setcycles(void);
     void setfields(void);
     string h5filename;
@@ -159,10 +198,6 @@ class xdmfile{
     int cend;
     int cstp;
 
-    double Lx;
-    double Ly;
-    double Lz;
-  
 };
 
 xdmfile::xdmfile(){
@@ -174,27 +209,19 @@ xdmfile::xdmfile(){
   int cbeg    = 0;
   int cend    = 0;
   int cstp    = 0;
-
-  double Lx   = 0.0;
-  double Ly   = 0.0;
-  double Lz   = 0.0;
 }
 
-void xdmfile::setgeometry(){
+void xdmfile::setgeometry(int ndim, double *O, double *L){
 
   double *arr;
   arr = new double[ndim];
 
-  arr[0] = 0.0;
-  arr[1] = 0.0;
-  if (ndim == 3) arr[2] = 0.0;
+  arr[0] = L[0]/double(ncx);
+  arr[1] = L[1]/double(ncy);
+  if (ndim == 3) arr[2] = L[2]/double(ncz);
 
-  grid.setdimorigin(ndim,arr);
-
-  arr[0] = Lx/double(ncx);
-  arr[1] = Ly/double(ncy);
-  if (ndim == 3) arr[2] = Lz/double(ncz);
-
+  grid.setdimorigin(ndim, O);
+  grid.setlength(L);
   grid.setdelta(arr);
 
   delete [] arr;
@@ -209,8 +236,68 @@ void xdmfile::setfields(){
 }
 
 void xdmfile::readinput(string infile){
+  ConfigFile inp(infile);
+  int        beg, end, stp, nf;
+  double     Ox, Oy, Oz;
+  double     Lx, Ly, Lz;
+
+  h5filename = inp.read<string>("H5FileName");
+  ndim       = inp.read<int>   ("NumberOfDimensions");
+  beg        = inp.read<int>   ("FirstCycle");
+  end        = inp.read<int>   ("LastCycle");
+  stp        = inp.read<int>   ("StepBetweenCycles");
+  Ox         = inp.read<double>("OriginInX");
+  Oy         = inp.read<double>("OriginInY");
+  Oz         = inp.read<double>("OriginInZ");
+  Lx         = inp.read<double>("LenghtInX");
+  Ly         = inp.read<double>("LenghtInY");
+  Lz         = inp.read<double>("LenghtInZ");
+  ncx        = inp.read<int>   ("NumberOfCellsInX");
+  ncy        = inp.read<int>   ("NumberOfCellsInY");
+  ncz        = inp.read<int>   ("NumberOfCellsInZ");
+  nf         = inp.read<int>   ("NumberOfFields");
+
+  fields.initfields(nf);
+
+  for (int i = 0; i< fields.getnfields(); i++){
+    filefield ff;
+    stringstream ss;
+    ss << i+1;
+    string s_i = ss.str();
+    ff = inp.read<filefield>("Field_"+s_i);
+    fields.setfieldname(i, ff.dtset, ff.fieldname);
+  }
+
+  set_cbeg(beg);
+  set_cend(end);
+  set_cstp(stp);
+
+  if (ndim < 2 || ndim > 3) abort();
+
+  double *O = new double [ndim];
+  double *L = new double [ndim];
+
+  O[0] = Ox;
+  O[1] = Oy;
+  if (ndim==3) O[2] = Oz;
+  L[0] = Lx;
+  L[1] = Ly;
+  if (ndim==3) L[2] = Lz;
+
+  setgeometry(ndim, O, L);
+  setcycles();
+  setfields();
+
+  delete [] O;
+  delete [] L;
+
+}
+
+void xdmfile::readinput_org(string infile){
 
   ifstream     inp(infile.c_str());
+  double     Ox, Oy, Oz;
+  double     Lx, Ly, Lz;
 
   int    beg, end, stp, nf;
   string fieldline;
@@ -222,6 +309,9 @@ void xdmfile::readinput(string infile){
   inp >> beg;
   inp >> end;
   inp >> stp;
+  inp >> Ox;
+  inp >> Oy;
+  inp >> Oz;
   inp >> Lx;
   inp >> Ly;
   inp >> Lz;
@@ -298,7 +388,7 @@ void xdmfile::writexdmf(){
     stringstream filenmbr;
     string       filename;
 
-    filenmbr << setfill('0') << setw(5) << t;
+    filenmbr << setfill('0') << setw(6) << t;
     filename = h5filename + "_" + filenmbr.str() + ".h5";
 
     if (ndim == 2){
@@ -320,8 +410,8 @@ void xdmfile::writexdmf(){
 
       for (int i = 0; i < fields.getnfields(); i++){
 
-        xdmfout << "        <Attribute Name=\"" << fields.getidtname(i) << "\" Center=\"Cell\"> " << endl;
-        xdmfout << "          <DataItem Format=\"HDF\" Dimensions=\"" << ncy << " " << ncx << "\" NumberType=\"Float\"> " << endl;
+        xdmfout << "        <Attribute Name=\"" << fields.getidtname(i) << "\" Center=\"Node\"> " << endl;
+        xdmfout << "          <DataItem Format=\"HDF\" Dimensions=\"" << ncy+1 << " " << ncx+1 << "\" NumberType=\"Float\"> " << endl;
         xdmfout << "          " <<  filename << ":" << fields.getidtset(i) << endl;
         xdmfout << "          </DataItem> " << endl;
         xdmfout << "        </Attribute> " << endl;
@@ -337,7 +427,7 @@ void xdmfile::writexdmf(){
       xdmfout << "          " << setprecision(2) << fixed << grid.getOx() << " " << setprecision(2) << fixed << grid.getOy() << " " << setprecision(2) << fixed << grid.getOz() << endl;
       xdmfout << "          </DataItem> " << endl;
       xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"3\" NumberType=\"Float\"> " << endl;
-      xdmfout << "          " << grid.getdx() << " " << grid.getdy() << " " << grid.getdz() << endl;
+      xdmfout << "          " << grid.getdz() << " " << grid.getdy() << " " << grid.getdx() << endl;
       xdmfout << "          </DataItem> " << endl;
       xdmfout << "        </Geometry> " << endl;
 
@@ -347,8 +437,8 @@ void xdmfile::writexdmf(){
 
       for (int i = 0; i < fields.getnfields(); i++){
 
-        xdmfout << "        <Attribute Name=\"" << fields.getidtname(i) << "\" Center=\"Cell\"> " << endl;
-        xdmfout << "          <DataItem Format=\"HDF\" Dimensions=\"" << ncz << " " << ncy << " " << ncx << "\" NumberType=\"Float\"> " << endl;
+        xdmfout << "        <Attribute Name=\"" << fields.getidtname(i) << "\" Center=\"Node\"> " << endl;
+        xdmfout << "          <DataItem Format=\"HDF\" Dimensions=\"" << ncz+1 << " " << ncy+1 << " " << ncx+1 << "\" NumberType=\"Float\"> " << endl;
         xdmfout << "          " <<  filename << ":" << fields.getidtset(i) << endl;
         xdmfout << "          </DataItem> " << endl;
         xdmfout << "        </Attribute> " << endl;
@@ -378,12 +468,17 @@ void xdmfile::writexdmf(){
 
 }
 
-int main(void) {
+int main(int argc, char *argv[]) {
 
-  xdmfile xdmf;
-  string infile = "h5Xdmf.inp";
-  xdmf.readinput(infile);
-  xdmf.writexdmf();
+  if (argc==2) {
+    xdmfile xdmf;
+    string infile(argv[1]);
+    xdmf.readinput(infile);
+    xdmf.writexdmf();
+  }
+  else {
+    cout << " USE: h5Xdmf <inputfile>" << endl;
+  }
 
   return 0;
 

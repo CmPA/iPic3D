@@ -18,5 +18,6 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BUILD_TYPE})
 
 add_executable(
         h5Xdmf
+        ConfigFile.cpp
         h5Xdmf.cpp
 )

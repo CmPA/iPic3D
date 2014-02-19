@@ -53,21 +53,31 @@ int c_Solver::Init(int argc, char **argv) {
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
 
-  if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
-  else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
-  else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
-#ifdef BATSRUS
-  else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
-#endif
-  else if (col->getCase()=="Dipole")    EMf->initDipole(vct,grid,col);
+  if (col->getSolInit()) {
+    /* -------------------------------------------- */
+    /* If using parallel H5hut IO read initial file */
+    /* -------------------------------------------- */
+    ReadFieldsH5hut(ns, EMf, col, vct, grid);
+
+  }
   else {
-    if (myrank==0) {
-      cout << " =========================================================== " << endl;
-      cout << " WARNING: The case '" << col->getCase() << "' was not recognized. " << endl;
-      cout << "          Runing simulation with the default initialization. " << endl;
-      cout << " =========================================================== " << endl;
+    /* --------------------------------------------------------- */
+    /* If using 'default' IO initialize fields depending on case */
+    /* --------------------------------------------------------- */
+    if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
+    else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
+    else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
+    else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
+    else if (col->getCase()=="Dipole")    EMf->initDipole(vct,grid,col);
+    else {
+      if (myrank==0) {
+        cout << " =========================================================== " << endl;
+        cout << " WARNING: The case '" << col->getCase() << "' was not recognized. " << endl;
+        cout << "          Runing simulation with the default initialization. " << endl;
+        cout << " =========================================================== " << endl;
+      }
+      EMf->init(vct,grid,col);
     }
-    EMf->init(vct,grid,col);
   }
 
   // OpenBC
@@ -75,19 +85,22 @@ int c_Solver::Init(int argc, char **argv) {
 
   // Allocation of particles
   part = new Particles3D[ns];
-  for (int i = 0; i < ns; i++)
-    part[i].allocate(i, col, vct, grid);
-
-  // Initial Condition for PARTICLES if you are not starting from RESTART
-  if (restart == 0) {
-    // wave = new Planewave(col, EMf, grid, vct);
-    // wave->Wave_Rotated(part); // Single Plane Wave
+  if (col->getSolInit() && col->getPartInit()=="File") {
+    ReadPartclH5hut(ns, part, col, vct, grid);
+  }
+  else {
     for (int i = 0; i < ns; i++)
-      if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
-#ifdef BATSRUS
-      else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
-#endif
-      else                                  part[i].maxwellian(grid, EMf, vct);
+      part[i].allocate(i, 0, col, vct, grid);
+
+    // Initial Condition for PARTICLES if you are not starting from RESTART
+    if (restart == 0) {
+      // wave = new Planewave(col, EMf, grid, vct);
+      // wave->Wave_Rotated(part); // Single Plane Wave
+      for (int i = 0; i < ns; i++)
+        if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
+        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+        else                                  part[i].maxwellian(grid, EMf, vct);
+    }
   }
 
   if (col->getWriteMethod() == "default") {
@@ -179,8 +192,6 @@ void c_Solver::CalculateField() {
 
   EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
 
-  MPI_Barrier(MPI_COMM_WORLD);
-
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
@@ -260,8 +271,12 @@ bool c_Solver::ParticlesMover() {
 
 void c_Solver::WriteRestart(int cycle) {
   // write the RESTART file
-  if (cycle % restart_cycle == 0 && cycle != first_cycle)
-    writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0); // without ,0 add to restart file
+  if (cycle % restart_cycle == 0 && cycle != first_cycle) {
+    if (col->getWriteMethod() != "Parallel") {
+      // without ,0 add to restart file
+      writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0);
+    }
+  }
 }
 
 void c_Solver::WriteConserved(int cycle) {
@@ -299,15 +314,21 @@ void c_Solver::WriteConserved(int cycle) {
 }
 
 void c_Solver::WriteOutput(int cycle) {
-  // OUTPUT to large file, called proc**
 
   if (col->getWriteMethod() == "Parallel") {
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
-      WriteOutputH5hut(ns, grid, EMf, part, col, vct, cycle);
-    }
+
+    /* -------------------------------------------- */
+    /* Parallel HDF5 output using the H5hut library */
+    /* -------------------------------------------- */
+
+    if (cycle%(col->getFieldOutputCycle())==0)     WriteFieldsH5hut(ns, grid, EMf, col, vct, cycle);
+    if (cycle%(col->getParticlesOutputCycle())==0) WritePartclH5hut(ns, grid, part, col, vct, cycle);
+
   }
   else
   {
+
+    // OUTPUT to large file, called proc**
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
@@ -343,8 +364,11 @@ void c_Solver::WriteOutput(int cycle) {
 }
 
 void c_Solver::Finalize() {
-  if (mem_avail == 0)           // write the restart only if the simulation finished succesfully
-    writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
+  if (mem_avail == 0) {          // write the restart only if the simulation finished succesfully
+    if (col->getWriteMethod() != "Parallel") {
+      writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
+    }
+  }
 
   // stop profiling
   my_clock->stopTiming();

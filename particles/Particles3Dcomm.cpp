@@ -64,16 +64,26 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]b_Z_LEFT;
 }
 /** constructors fo a single species*/
-void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid) {
+void Particles3Dcomm::allocate(int species, int initnpmax, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid) {
   // info from collectiveIO
   ns = species;
   npcel = col->getNpcel(species);
   npcelx = col->getNpcelx(species);
   npcely = col->getNpcely(species);
   npcelz = col->getNpcelz(species);
-  nop = col->getNp(species) / (vct->getNprocs());
-  np_tot = col->getNp(species);
-  npmax = col->getNpMax(species) / (vct->getNprocs());
+
+  // This if is necessary to restart with H5hut-io
+  if (initnpmax==0){
+    npmax  = col->getNpMax(species) / (vct->getNprocs());
+    nop    = col->getNp(species) / (vct->getNprocs());
+    np_tot = col->getNp(species);
+  }
+  else {
+    npmax = initnpmax*col->getNpMaxNpRatio();
+    nop    = initnpmax;
+    np_tot = initnpmax*vct->getNprocs();
+  }
+
   qom = col->getQOM(species);
   uth = col->getUth(species);
   vth = col->getVth(species);
@@ -859,6 +869,34 @@ unsigned long *Particles3Dcomm::getParticleIDall()  const {
 double *Particles3Dcomm::getQall()  const {
   return (q);
 }
+/** return X-coordinate of particle array as reference */
+double *& Particles3Dcomm::getXref() {
+  return (x);
+}
+/** return Y-coordinate  of particle array as reference */
+double *& Particles3Dcomm::getYref() {
+  return (y);
+}
+/** return Z-coordinate  of particle array as reference */
+double *& Particles3Dcomm::getZref() {
+  return (z);
+}
+/** get X-velocity of particle with label indexPart as reference */
+double *& Particles3Dcomm::getUref() {
+  return (u);
+}
+/** get Y-velocity of particle with label indexPart as reference */
+double *& Particles3Dcomm::getVref() {
+  return (v);
+}
+/**get Z-velocity of particle with label indexPart as reference */
+double *& Particles3Dcomm::getWref() {
+  return (w);
+}
+/**get charge of particle with label indexPart as reference */
+double *& Particles3Dcomm::getQref() {
+  return (q);
+}
 /** return X-coordinate of particle with index indexPart */
 double Particles3Dcomm::getX(long long indexPart)  const {
   return (x[indexPart]);
@@ -891,7 +929,8 @@ unsigned long Particles3Dcomm::getParticleID(long long indexPart)  const {
 double Particles3Dcomm::getQ(long long indexPart)  const {
   return (q[indexPart]);
 }
-/** return the number of particles */ long long Particles3Dcomm::getNOP()  const {
+/** return the number of particles */
+long long Particles3Dcomm::getNOP()  const {
   return (nop);
 }
 /** return the Kinetic energy */

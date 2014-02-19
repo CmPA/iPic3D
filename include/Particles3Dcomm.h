@@ -23,7 +23,7 @@ public:
   /** destructor */
   ~Particles3Dcomm();
   /** allocate particles */
-  void allocate(int species, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid);
+  void allocate(int species, int initnpmax, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid);
 
   /** calculate the weights given the position of particles */
   void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);
@@ -69,6 +69,20 @@ public:
   double *getVall() const;
   /** get w (Z-velocity) array for all the particles */
   double *getWall() const;
+  /** get X-position array for all the particles by reference */
+  double *& getXref();
+  /** get Y-position array for all the particles by reference */
+  double *& getYref();
+  /** get Z-position array for all the particles by reference */
+  double *& getZref();
+  /** get u (X-velocity) array for all the particles by reference */
+  double *& getUref();
+  /** get v (Y-velocity) array for all the particles by reference */
+  double *& getVref();
+  /** get w (Z-velocity) array for all the particles by reference */
+  double *& getWref();
+  /** get q array for all the particles by reference */
+  double *& getQref();
   /** get the ID array   */
   unsigned long *getParticleIDall() const;
   /** get X-position of particle with label indexPart */

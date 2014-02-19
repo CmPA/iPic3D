@@ -69,12 +69,10 @@ class Particles3D:public Particles3Dcomm {
     /*! Delete the particles inside the sphere with radius R and center x_center y_center and return the total charge removed */
     double deleteParticlesInsideSphere(double R, double x_center, double y_center, double z_center);
 
-#ifdef BATSRUS
     /*! Initial condition: given a fluid model (BATSRUS) */
     void MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* vct,Collective *col, int is);
     /*! Initiate dist. func. for a single cell form a fluid model (BATSRUS) */
     void MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long* ParticleID);
-#endif
 
 };
 

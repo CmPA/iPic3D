@@ -64,6 +64,8 @@ public:
   bool getPERIODICZ();
   /** get the cartesian rank of the process */
   int getCartesian_rank();
+  /** get the total number of process */
+  int getNproc();
   /** get the cartesian rank of XLEFT neighbor */
   int getXleft_neighbor();
   /** get the cartesian rank of XRIGHT neighbor */
@@ -151,6 +153,8 @@ private:
   int coordinates[3];
   /** cartesian rank */
   int cartesian_rank;
+  /** Total number of processors */
+  int nproc;
   /** cartesian rank of XLEFT neighbor */
   int xleft_neighbor;
   /** cartesian rank of XRIGHT neighbor */
@@ -238,6 +242,7 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm) {
   // field Communicator
   if (CART_COMM != MPI_COMM_NULL) {
     MPI_Comm_rank(CART_COMM, &cartesian_rank);
+    MPI_Comm_size(CART_COMM, &nproc);
     MPI_Cart_coords(CART_COMM, cartesian_rank, 3, coordinates);
 
     MPI_Cart_shift(CART_COMM, XDIR, RIGHT, &xleft_neighbor, &xright_neighbor);
@@ -251,6 +256,7 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm) {
   // Particles Communicator
   if (CART_COMM_P != MPI_COMM_NULL) {
     MPI_Comm_rank(CART_COMM_P, &cartesian_rank);
+    MPI_Comm_size(CART_COMM, &nproc);
     MPI_Cart_coords(CART_COMM_P, cartesian_rank, 3, coordinates);
 
     MPI_Cart_shift(CART_COMM_P, XDIR, RIGHT, &xleft_neighbor_P, &xright_neighbor_P);
@@ -321,6 +327,10 @@ inline bool VCtopology3D::getPERIODICZ() {
 /** get the cartesian rank of the process */
 inline int VCtopology3D::getCartesian_rank() {
   return (cartesian_rank);
+}
+/** get the total number of process */
+inline int VCtopology3D::getNproc() {
+  return (nproc);
 }
 /** get the cartesian rank of XLEFT neighbor */
 inline int VCtopology3D::getXleft_neighbor() {
