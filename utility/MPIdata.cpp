@@ -1,10 +1,7 @@
 #include <mpi.h>
-#include <iostream>
 #include <assert.h>
 #include "MPIdata.h"
-
-using std::cout;
-using std::endl;
+#include "ompdefs.h" // for omp_get_max_threads
 
 // code to check that init() is called before instance()
 //
@@ -49,10 +46,13 @@ void MPIdata::finalize_mpi() {
 }
 
 void MPIdata::Print(void) {
-  cout << endl;
-  cout << "Number of processes = " << get_nprocs() << endl;
-  cout << "-------------------------" << endl;
-  cout << endl;
+  printf("\n"
+    "Number of processes = %d\n"
+    "-------------------------\n"
+    "Number of threads = %d\n"
+    "-------------------------\n",
+     get_nprocs(),
+     omp_get_max_threads());
 }
 
 // extern MPIdata *mpi; // instantiated in iPIC3D.cpp
