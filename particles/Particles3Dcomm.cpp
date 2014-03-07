@@ -981,13 +981,17 @@ long long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel) {
     else
       f[bin] += 1;
   }
-  long long localN = 0;
-  long long totalN = 0;
-  for (int i = 0; i < nBins; i++) {
-    localN = f[i];
-    MPI_Allreduce(&localN, &totalN, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
-    f[i] = totalN;
-  }
+  MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+  // This way of summing is very inefficient
+  //{
+  //  long long localN = 0;
+  //  long long totalN = 0;
+  //  for (int i = 0; i < nBins; i++) {
+  //    localN = f[i];
+  //    MPI_Allreduce(&localN, &totalN, 1, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+  //    f[i] = totalN;
+  //  }
+  //}
   return f;
 }
 
