@@ -6,8 +6,8 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
+#include <sstream>
 #include "errors.h"
-//#include "MPIdata.h" // for rank
 
 /** implementation of declarations in errors.h **/
 
@@ -33,20 +33,24 @@ void fprintf_fileLine(FILE * fptr, const char *type, const char *func, const cha
 //  abort();
 //}
 
-// This needs to be fixed to be thread-safe like
-// eprintf_fileLine() below.  Write the message to a string and
-// then print it out as an atomic operation.
+// lazy implementation using streams class
 //
-#include <iostream>
 using namespace std;
 #define implement_invalid_value_error(t1) \
   void invalid_value_error_fileLine(const char* file, int line, const char* func, \
     const char* type, const char* expr, t1 val) \
   { \
-    std::cerr<< "ERROR in file " << file << ", line " << line  \
+    /* To be thread-safe, write the message to a string and \
+     * then print it out as an atomic operation. */ \
+    std::stringstream ss; \
+    ss << "(" << MPIdata::get_rank() << "." << omp_get_thread_num() << ") " \
+      << "ERROR in file " << file << ", line " << line  \
       << ", function " << func  \
       <<"\n\t" << type << " value: " << expr << " = " << val << endl; \
-      abort(); \
+    fflush(stdout); \
+      { fprintf(stdout,ss.str().c_str()); } \
+    fflush(stdout); \
+    abort(); \
   }
 
 implement_invalid_value_error(double);
