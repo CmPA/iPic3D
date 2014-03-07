@@ -9,6 +9,14 @@
 
 // use precprocessor to remove MPI_Barrier() calls.
 #define MPI_Barrier(args...)
+#define former_MPI_Barrier(args...)
+
+#define ipicMPI_Allreduce(args...) \
+  { \
+    static int count=0; \
+    dprint(count++); \
+    MPI_Allreduce(## args); \
+  }
 
 //#define SINGLE_PRECISION_PCLS
 //
