@@ -35,7 +35,7 @@ Timing::Timing(int my_rank) {
   // MPE_Describe_state(event2a,event2b,"Field","blue"); // the mover is blue in the visualizer
   // MPE_Describe_state(event3a,event3b,"Interp P->G","yellow"); // the interpolation particle->Grid is yellow in the visualizer
   // }
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   // start the log
   // MPE_Start_log();
 
@@ -44,12 +44,12 @@ Timing::Timing(int my_rank) {
 /** start the timer */
 void Timing::startTiming() {
   ttick = MPI_Wtick();
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   tstart = MPI_Wtime();
 }
 /** stop the timer */
 void Timing::stopTiming() {
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   tend = MPI_Wtime();
   texecution = tend - tstart;
   if (rank_id == 0) {

@@ -63,7 +63,7 @@ int c_Solver::Init(int argc, char **argv) {
     col->save();
   }
   // Create the local grid
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
 
@@ -139,7 +139,7 @@ int c_Solver::Init(int argc, char **argv) {
     hdf5_agent.close();
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
   momentum = new double[ns];
@@ -242,11 +242,11 @@ void c_Solver::CalculateMoments() {
 
   EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
 
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
 }
 
 //! MAXWELL SOLVER for Efield

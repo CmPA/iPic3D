@@ -1088,14 +1088,14 @@ int Particles3D::communicate_particles(VirtualTopology3D * vct)
   const int avail = communicate(vct);
   if (avail < 0)
     return (-1);
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   // communicate again if particles are not in the correct domain
   while (isMessagingDone(vct) > 0) {
     // COMMUNICATION
     const int avail = communicate(vct);
     if (avail < 0)
       return (-1);
-    MPI_Barrier(MPI_COMM_WORLD);
+    former_MPI_Barrier(MPI_COMM_WORLD);
   }
   return 0; // exit successfully
 }
@@ -1463,7 +1463,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   avail = communicate(vct);
   if (avail < 0) return(-1);
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
 
   // communicate again if particles are not in the correct domain
   while(isMessagingDone(vct) >0){
@@ -1471,7 +1471,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
     avail = communicate(vct);
     if (avail < 0)
       return(-1);
-    MPI_Barrier(MPI_COMM_WORLD);
+    former_MPI_Barrier(MPI_COMM_WORLD);
   }
 
   return(0); // exit succcesfully (hopefully)

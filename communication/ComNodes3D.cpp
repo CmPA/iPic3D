@@ -4,10 +4,13 @@
 #include "TimeTasks.h"
 #include "ipicdefs.h"
 #include "Alloc.h"
+#include "debug.h"
+#include "parallel.h"
 
 /** communicate ghost cells (FOR NODES) */
 void communicateNode(int nx, int ny, int nz, arr3_double _vector, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector=_vector.fetch_arr3();
 
   // allocate 6 ghost cell Faces
@@ -54,19 +57,19 @@ void communicateNode(int nx, int ny, int nz, arr3_double _vector, VirtualTopolog
 
   // communicate twice each direction
   // X-DIRECTION: Z -> X
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZleftEdge, ghostXleftYsameZleftEdge);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZrightEdge, ghostXleftYsameZrightEdge);
   // Y-DIRECTION: X -> Y
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXleftYrightZsameEdge, ghostXleftYleftZsameEdge);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYrightZsameEdge, ghostXrightYleftZsameEdge);
   // Z-DIRECTION: Y -> Z
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYleftZrightEdge, ghostXsameYleftZleftEdge);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYrightZrightEdge, ghostXsameYrightZleftEdge);
   // parse
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
 
   parseEdgeZ(nx, ny, nz, vector, ghostXrightYrightZsameEdge, ghostXleftYleftZsameEdge, ghostXrightYleftZsameEdge, ghostXleftYrightZsameEdge);
   parseEdgeY(nx, ny, nz, vector, ghostXrightYsameZrightEdge, ghostXleftYsameZleftEdge, ghostXleftYsameZrightEdge, ghostXrightYsameZleftEdge);
@@ -110,6 +113,7 @@ void communicateNode(int nx, int ny, int nz, arr3_double _vector, VirtualTopolog
 /** communicate ghost cells (FOR NODES) */
 void communicateNodeBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector = _vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -155,19 +159,19 @@ void communicateNodeBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXr
 
   // communicate twice each direction
   // X-DIRECTION: Z -> X
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZleftEdge, ghostXleftYsameZleftEdge);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZrightEdge, ghostXleftYsameZrightEdge);
   // Y-DIRECTION: X -> Y
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXleftYrightZsameEdge, ghostXleftYleftZsameEdge);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYrightZsameEdge, ghostXrightYleftZsameEdge);
   // Z-DIRECTION: Y -> Z
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYleftZrightEdge, ghostXsameYleftZleftEdge);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYrightZrightEdge, ghostXsameYrightZleftEdge);
   // parse
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
 
   parseEdgeZ(nx, ny, nz, vector, ghostXrightYrightZsameEdge, ghostXleftYleftZsameEdge, ghostXrightYleftZsameEdge, ghostXleftYrightZsameEdge);
   parseEdgeY(nx, ny, nz, vector, ghostXrightYsameZrightEdge, ghostXleftYsameZleftEdge, ghostXleftYsameZrightEdge, ghostXrightYsameZleftEdge);
@@ -214,6 +218,7 @@ void communicateNodeBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXr
 /** communicate ghost cells (FOR NODES) with particles BC*/
 void communicateNodeBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -259,19 +264,19 @@ void communicateNodeBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFace
 
   // communicate twice each direction
   // X-DIRECTION: Z -> X
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZleftEdge, ghostXleftYsameZleftEdge);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZrightEdge, ghostXleftYsameZrightEdge);
   // Y-DIRECTION: X -> Y
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXleftYrightZsameEdge, ghostXleftYleftZsameEdge);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYrightZsameEdge, ghostXrightYleftZsameEdge);
   // Z-DIRECTION: Y -> Z
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYleftZrightEdge, ghostXsameYleftZleftEdge);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYrightZrightEdge, ghostXsameYrightZleftEdge);
   // parse
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
 
   parseEdgeZ(nx, ny, nz, vector, ghostXrightYrightZsameEdge, ghostXleftYleftZsameEdge, ghostXrightYleftZsameEdge, ghostXleftYrightZsameEdge);
   parseEdgeY(nx, ny, nz, vector, ghostXrightYsameZrightEdge, ghostXleftYsameZleftEdge, ghostXleftYsameZrightEdge, ghostXrightYsameZleftEdge);
@@ -319,6 +324,7 @@ void communicateNodeBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFace
 /** SPECIES: communicate ghost cells */
 void communicateNode(int nx, int ny, int nz, arr4_double _vector, int ns, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ****vector = _vector.fetch_arr4();
 
   // allocate 6 ghost cell Faces
@@ -366,19 +372,19 @@ void communicateNode(int nx, int ny, int nz, arr4_double _vector, int ns, Virtua
 
   // communicate twice each direction
   // X-DIRECTION: Z -> X
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZleftEdge, ghostXleftYsameZleftEdge);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZrightEdge, ghostXleftYsameZrightEdge);
   // Y-DIRECTION: X -> Y
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXleftYrightZsameEdge, ghostXleftYleftZsameEdge);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYrightZsameEdge, ghostXrightYleftZsameEdge);
   // Z-DIRECTION: Y -> Z
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYleftZrightEdge, ghostXsameYleftZleftEdge);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYrightZrightEdge, ghostXsameYrightZleftEdge);
   // parse
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   parseEdgeZ(nx, ny, nz, vector, ns, ghostXrightYrightZsameEdge, ghostXleftYleftZsameEdge, ghostXrightYleftZsameEdge, ghostXleftYrightZsameEdge);
   parseEdgeY(nx, ny, nz, vector, ns, ghostXrightYsameZrightEdge, ghostXleftYsameZleftEdge, ghostXleftYsameZrightEdge, ghostXrightYsameZleftEdge);
   parseEdgeX(nx, ny, nz, vector, ns, ghostXsameYrightZrightEdge, ghostXsameYleftZleftEdge, ghostXsameYleftZrightEdge, ghostXsameYrightZleftEdge);
@@ -422,6 +428,7 @@ void communicateNode(int nx, int ny, int nz, arr4_double _vector, int ns, Virtua
 /** SPECIES: communicate ghost cells */
 void communicateNode_P(int nx, int ny, int nz, arr4_double _vector, int ns, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ****vector = _vector.fetch_arr4();
 
   // allocate 6 ghost cell Faces
@@ -469,19 +476,19 @@ void communicateNode_P(int nx, int ny, int nz, arr4_double _vector, int ns, Virt
 
   // communicate twice each direction
   // X-DIRECTION: Z -> X
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZleftEdge, ghostXleftYsameZleftEdge);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZrightEdge, ghostXleftYsameZrightEdge);
   // Y-DIRECTION: X -> Y
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXleftYrightZsameEdge, ghostXleftYleftZsameEdge);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYrightZsameEdge, ghostXrightYleftZsameEdge);
   // Z-DIRECTION: Y -> Z
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYleftZrightEdge, ghostXsameYleftZleftEdge);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYrightZrightEdge, ghostXsameYrightZleftEdge);
   // parse
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   parseEdgeZ(nx, ny, nz, vector, ns, ghostXrightYrightZsameEdge, ghostXleftYleftZsameEdge, ghostXrightYleftZsameEdge, ghostXleftYrightZsameEdge);
   parseEdgeY(nx, ny, nz, vector, ns, ghostXrightYsameZrightEdge, ghostXleftYsameZleftEdge, ghostXleftYsameZrightEdge, ghostXrightYsameZleftEdge);
   parseEdgeX(nx, ny, nz, vector, ns, ghostXsameYrightZrightEdge, ghostXsameYleftZleftEdge, ghostXsameYleftZrightEdge, ghostXsameYrightZleftEdge);
@@ -525,6 +532,7 @@ void communicateNode_P(int nx, int ny, int nz, arr4_double _vector, int ns, Virt
 /** communicate ghost cells (FOR CENTERS) */
 void communicateCenter(int nx, int ny, int nz, arr3_double _vector, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector = _vector.fetch_arr3();
 
   // allocate 6 ghost cell Faces
@@ -571,19 +579,19 @@ void communicateCenter(int nx, int ny, int nz, arr3_double _vector, VirtualTopol
 
   // communicate twice each direction
   // X-DIRECTION: Z -> X
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZleftEdge, ghostXleftYsameZleftEdge);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZrightEdge, ghostXleftYsameZrightEdge);
   // Y-DIRECTION: X -> Y
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXleftYrightZsameEdge, ghostXleftYleftZsameEdge);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYrightZsameEdge, ghostXrightYleftZsameEdge);
   // Z-DIRECTION: Y -> Z
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYleftZrightEdge, ghostXsameYleftZleftEdge);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYrightZrightEdge, ghostXsameYrightZleftEdge);
   // parse
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   parseEdgeZ(nx, ny, nz, vector, ghostXrightYrightZsameEdge, ghostXleftYleftZsameEdge, ghostXrightYleftZsameEdge, ghostXleftYrightZsameEdge);
   parseEdgeY(nx, ny, nz, vector, ghostXrightYsameZrightEdge, ghostXleftYsameZleftEdge, ghostXleftYsameZrightEdge, ghostXrightYsameZleftEdge);
   parseEdgeX(nx, ny, nz, vector, ghostXsameYrightZrightEdge, ghostXsameYleftZleftEdge, ghostXsameYleftZrightEdge, ghostXsameYrightZleftEdge);
@@ -625,6 +633,7 @@ void communicateCenter(int nx, int ny, int nz, arr3_double _vector, VirtualTopol
 /** communicate ghost cells (FOR CENTERS) with BOX stencil*/
 void communicateCenterBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -657,6 +666,7 @@ void communicateCenterBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, 
 /** communicate ghost cells (FOR CENTERS) with BOX stencil*/
 void communicateCenterBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -691,6 +701,7 @@ void communicateCenterBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector
 
 void communicateNodeBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -722,6 +733,7 @@ void communicateNodeBoxStencilBC(int nx, int ny, int nz, arr3_double _vector, in
 
 void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector=_vector.fetch_arr3();
   // allocate 6 ghost cell Faces
   double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
@@ -756,6 +768,7 @@ void communicateNodeBoxStencilBC_P(int nx, int ny, int nz, arr3_double _vector, 
 /** SPECIES: communicate ghost cells */
 void communicateCenter(int nx, int ny, int nz, arr4_double _vector, int ns, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ****vector=_vector.fetch_arr4();
 
   // allocate 6 ghost cell Faces
@@ -801,19 +814,19 @@ void communicateCenter(int nx, int ny, int nz, arr4_double _vector, int ns, Virt
 
   // communicate twice each direction
   // X-DIRECTION: Z -> X
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZleftEdge, ghostXleftYsameZleftEdge);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZrightEdge, ghostXleftYsameZrightEdge);
   // Y-DIRECTION: X -> Y
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXleftYrightZsameEdge, ghostXleftYleftZsameEdge);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYrightZsameEdge, ghostXrightYleftZsameEdge);
   // Z-DIRECTION: Y -> Z
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYleftZrightEdge, ghostXsameYleftZleftEdge);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYrightZrightEdge, ghostXsameYrightZleftEdge);
   // parse
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   parseEdgeZ(nx, ny, nz, vector, ns, ghostXrightYrightZsameEdge, ghostXleftYleftZsameEdge, ghostXrightYleftZsameEdge, ghostXleftYrightZsameEdge);
   parseEdgeY(nx, ny, nz, vector, ns, ghostXrightYsameZrightEdge, ghostXleftYsameZleftEdge, ghostXleftYsameZrightEdge, ghostXrightYsameZleftEdge);
   parseEdgeX(nx, ny, nz, vector, ns, ghostXsameYrightZrightEdge, ghostXsameYleftZleftEdge, ghostXsameYleftZrightEdge, ghostXsameYrightZleftEdge);
@@ -855,6 +868,7 @@ void communicateCenter(int nx, int ny, int nz, arr4_double _vector, int ns, Virt
 // /////////// communication + BC ////////////////////////////
 void communicateCenterBC(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector=_vector.fetch_arr3();
 
   // allocate 6 ghost cell Faces
@@ -900,18 +914,18 @@ void communicateCenterBC(int nx, int ny, int nz, arr3_double _vector, int bcFace
 
   // communicate twice each direction
   // X-DIRECTION: Z -> X
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZleftEdge, ghostXleftYsameZleftEdge);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZrightEdge, ghostXleftYsameZrightEdge);
   // Y-DIRECTION: X -> Y
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXleftYrightZsameEdge, ghostXleftYleftZsameEdge);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYrightZsameEdge, ghostXrightYleftZsameEdge);
   // Z-DIRECTION: Y -> Z
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYleftZrightEdge, ghostXsameYleftZleftEdge);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYrightZrightEdge, ghostXsameYrightZleftEdge);
   // parse
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   parseEdgeZ(nx, ny, nz, vector, ghostXrightYrightZsameEdge, ghostXleftYleftZsameEdge, ghostXrightYleftZsameEdge, ghostXleftYrightZsameEdge);
   parseEdgeY(nx, ny, nz, vector, ghostXrightYsameZrightEdge, ghostXleftYsameZleftEdge, ghostXleftYsameZrightEdge, ghostXrightYsameZleftEdge);
   parseEdgeX(nx, ny, nz, vector, ghostXsameYrightZrightEdge, ghostXsameYleftZleftEdge, ghostXsameYleftZrightEdge, ghostXsameYrightZleftEdge);
@@ -957,6 +971,7 @@ void communicateCenterBC(int nx, int ny, int nz, arr3_double _vector, int bcFace
 // /////////// communication + BC ////////////////////////////
 void communicateCenterBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
   timeTasks_set_communicating();
+//  static int counter=0; if(is_output_thread()) { counter++; dprint(counter); }
   double ***vector=_vector.fetch_arr3();
 
   // allocate 6 ghost cell Faces
@@ -1002,18 +1017,18 @@ void communicateCenterBC_P(int nx, int ny, int nz, arr3_double _vector, int bcFa
 
   // communicate twice each direction
   // X-DIRECTION: Z -> X
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZleftEdge, ghostXleftYsameZleftEdge);
   communicateGhostFace(ny - 2, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYsameZrightEdge, ghostXleftYsameZrightEdge);
   // Y-DIRECTION: X -> Y
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXleftYrightZsameEdge, ghostXleftYleftZsameEdge);
   communicateGhostFace(nz - 2, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightYrightZsameEdge, ghostXrightYleftZsameEdge);
   // Z-DIRECTION: Y -> Z
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYleftZrightEdge, ghostXsameYleftZleftEdge);
   communicateGhostFace(nx - 2, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXsameYrightZrightEdge, ghostXsameYrightZleftEdge);
   // parse
-  MPI_Barrier(MPI_COMM_WORLD);
+  former_MPI_Barrier(MPI_COMM_WORLD);
   parseEdgeZ(nx, ny, nz, vector, ghostXrightYrightZsameEdge, ghostXleftYleftZsameEdge, ghostXrightYleftZsameEdge, ghostXleftYrightZsameEdge);
   parseEdgeY(nx, ny, nz, vector, ghostXrightYsameZrightEdge, ghostXleftYsameZleftEdge, ghostXleftYsameZrightEdge, ghostXrightYsameZleftEdge);
   parseEdgeX(nx, ny, nz, vector, ghostXsameYrightZrightEdge, ghostXsameYleftZleftEdge, ghostXsameYleftZrightEdge, ghostXsameYrightZleftEdge);
