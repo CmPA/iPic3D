@@ -40,7 +40,9 @@ public:
   /** initialize MPI environment */
   static void init(int *, char ***);
   /** close MPI environment */
-  void finalize_mpi();
+  static void finalize_mpi();
+  /** finalize and exit with error code */
+  static void exit(int code);
   /** print MPI data structure */
   void Print(void);
   /** MPI status during the communication */

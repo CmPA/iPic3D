@@ -41,6 +41,11 @@ void MPIdata::init(int *argc, char ***argv) {
   MPIdata_is_initialized = true;
 }
 
+void MPIdata::exit(int code) {
+  finalize_mpi();
+  ::exit(code);
+}
+
 void MPIdata::finalize_mpi() {
   MPI_Finalize();
 }
