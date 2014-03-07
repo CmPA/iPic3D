@@ -1,11 +1,9 @@
 #include "mpi.h"
+#include "ipicdefs.h"
 #include "Basic.h"
-
-#include <errors.h>
-
-#include "MPIdata.h"
 #include "EllipticF.h"
 #include "Alloc.h"
+#include "errors.h"
 
 /** method to calculate the parallel dot product with vect1, vect2 having the ghost cells*/
 double dotP(double *vect1, double *vect2, int n) {
