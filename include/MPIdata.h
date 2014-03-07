@@ -44,7 +44,7 @@ public:
   /** print MPI data structure */
   void Print(void);
   /** MPI status during the communication */
-  MPI_Status status;
+  //MPI_Status status;
 public:
   static int get_rank(){return instance().rank;}
   static int get_nprocs(){return instance().nprocs;}
@@ -55,7 +55,7 @@ private:
   static int nprocs;
 
   // evidently unused...
-  char *buffer;
-  int buffer_size;
+  //char *buffer;
+  //int buffer_size;
 };
 #endif
