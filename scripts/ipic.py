@@ -68,7 +68,7 @@ def construct_run_command(args):
     output = 'data'
     inputfile = 'src/inputfiles/GEM.inp'
     hostname = ''
-    mpirun = 'mpiexec'
+    mpirun = 'mpirun'
     global system
     if system == 'xeon' or system == 'mic':
       if system == 'xeon':
