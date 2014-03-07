@@ -15,7 +15,7 @@ void eprintf_fileLine(FILE * fptr, const char *type,
 //#define eprintf(args...) \
 //  eprintf_fileLine("ERROR",__func__, __FILE__, __LINE__, ## args);
 #define warning_printf(args...) \
-  eprintf_fileLine("WARNING",__func__, __FILE__, __LINE__, ## args);
+  fprintf_fileLine(stdout,"WARNING",__func__, __FILE__, __LINE__, ## args);
 #define declare_invalid_value_error(t1) \
   void invalid_value_error_fileLine(const char* file, int line, const char* func, \
     const char* type, const char* expr, t1 val);
