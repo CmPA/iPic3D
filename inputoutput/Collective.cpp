@@ -15,6 +15,49 @@
 #include "errors.h"
 #include "asserts.h" // for assert_ge
 
+// order must agree with Enum in Collective.h
+static const char *enumNames[] =
+{
+  "default",
+  "initial",
+  "final",
+  // used by ImplSusceptMode
+  "explPredict",
+  "implPredict",
+  // marker for last enumerated symbol of this class
+  "NUMBER_OF_ENUMS",
+  "INVALID_ENUM"
+};
+
+int Collective::read_enum_parameter(const char* option_name, char* default_value,
+  const ConfigFile& config)
+{
+  string enum_name = config.read < string >(option_name,default_value);
+  // search the list (could use std::map)
+  //
+  for(int i=0;i<NUMBER_OF_ENUMS;i++)
+  {
+    if(!strcmp(enum_name.c_str(),enumNames[i]))
+      return i;
+  }
+  // could not find enum, so issue error and quit.
+  if(!MPIdata::get_rank())
+  {
+    eprintf("in input file %s there is an invalid option %s\n",
+      inputfile.c_str(), enum_name.c_str());
+  }
+  MPIdata::exit(1);
+  // this is a better way
+  return INVALID_ENUM;
+}
+
+const char* Collective::get_name_of_enum(int in)
+{
+  assert_ge(in, 0);
+  assert_lt(in, NUMBER_OF_ENUMS);
+  return enumNames[in];
+}
+
 /*! Read the input file from text file and put the data in a collective wrapper: if it's a restart read from input file basic sim data and load particles and EM field from restart file */
 void Collective::ReadInput(string inputfile) {
   using namespace std;
@@ -41,6 +84,22 @@ void Collective::ReadInput(string inputfile) {
     ns = config.read < int >("ns");
     NpMaxNpRatio = config.read < double >("NpMaxNpRatio");
     assert_ge(NpMaxNpRatio, 1.);
+    // mode parameters for second order in time
+    PushWithBatTime = config.read < double >("PushWithBatTime",0);
+    PushWithEatTime = config.read < double >("PushWithEatTime",1);
+    ImplSusceptTime = config.read < double >("ImplSusceptTime",0);
+    ImplSusceptMode = read_enum_parameter("ImplSusceptMode", "initial",config);
+    switch(ImplSusceptMode)
+    {
+      // values not yet supported:
+      case explPredict:
+      case implPredict:
+      default:
+        unsupported_value_error(ImplSusceptMode);
+      // supported values:
+      case initial:
+        ;
+    }
     // GEM Challenge 
     B0x = config.read <double>("B0x");
     B0y = config.read <double>("B0y");

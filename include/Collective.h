@@ -26,6 +26,21 @@ class Collective
 : public InterfaceFluid
 #endif
 {
+  private:
+    enum Enum{
+      thedefault=0,
+      initial,
+      final,
+      // used by ImplSusceptMode
+      explPredict,
+      implPredict,
+      NUMBER_OF_ENUMS, // this must be last
+      INVALID_ENUM
+    };
+    int read_enum_parameter(const char* option_name, char* default_value,
+      const ConfigFile& config);
+  public:
+    static const char* get_name_of_enum(int in);
   public:
     /*! constructor: initialize physical parameters with values */
     Collective(int argc, char **argv);
@@ -65,6 +80,10 @@ class Collective
     double getC()const{ return (c); }
     double getDt()const{ return (dt); }
     double getTh()const{ return (th); }
+    double getPushWithBatTime()const{ return PushWithBatTime; }
+    double getPushWithEatTime()const{ return PushWithEatTime; }
+    double getImplSusceptTime()const{ return ImplSusceptTime; }
+    int getImplSusceptMode()const{ return ImplSusceptMode; }
     double getSmooth()const{ return (Smooth); }
     int getNcycles()const{ return (ncycles); }
     int getNs()const{ return (ns); }
@@ -145,8 +164,20 @@ class Collective
     double fourpi;
     /*! time step */
     double dt;
+    //
+    // parameters used to support second order accuracy in time 
+    //
     /*! decentering parameter */
-    double th;
+    double th; // second-order for th=1/2, stable for 1/2 <= th <= 1
+    /*! time of magnetic field used in particle push (0=initial, 1=final) */
+    double PushWithBatTime; // 0=initial (default), 1=final
+    /*! time of electric field used in particle push */
+    double PushWithEatTime; // 0=initial, 1=final (default)
+    /*! means of estimating time-advanced implicit susceptibility */
+    int ImplSusceptMode; // "initial" (default), "explPredict", "implPredict"
+    /*! time of implicit susceptibility used in field advance */
+    double ImplSusceptTime; // 0=initial (default), 1=final
+    //
     /*! Smoothing value */
     double Smooth;
     /*! number of time cycles */
