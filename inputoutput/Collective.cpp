@@ -3,7 +3,6 @@
 #include <math.h>
 //#include <iostream>
 //#include <fstream>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "input_array.h"
@@ -14,6 +13,7 @@
 #include "MPIdata.h"
 #include "errors.h"
 #include "asserts.h" // for assert_ge
+#include "string.h"
 
 // order must agree with Enum in Collective.h
 static const char *enumNames[] =

@@ -14,9 +14,6 @@
 #include "VirtualTopology3D.h"
 #include "Alloc.h"
 
-using std::cout;
-using std::endl;
-
 /**
  * Uniform cartesian local grid 3D
  *

@@ -87,13 +87,21 @@ Grid3DCU::~Grid3DCU() {
 
 /** print the local grid info */
 void Grid3DCU::print(VirtualTopology3D * ptVCT) {
-  cout << endl;
-  cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
-  cout << "Number of cell: -X=" << nxc - 2 << " -Y=" << nyc - 2 << " -Z=" << nzc - 2 << endl;
-  cout << "Xin = " << node_xcoord[1] << "; Xfin = " << node_xcoord[nxn - 2] << endl;
-  cout << "Yin = " << node_ycoord[1] << "; Yfin = " << node_ycoord[nyn - 2] << endl;
-  cout << "Zin = " << node_zcoord[1] << "; Zfin = " << node_zcoord[nzn - 2] << endl;
-  cout << endl;
+  printf("\nSubgrid (%d,%d,%d)\n",
+    ptVCT->getCoordinates(0),
+    ptVCT->getCoordinates(1),
+    ptVCT->getCoordinates(2));
+  printf("Number of cells: X:%d, Y:%d, Z:%d\n",
+    nxc - 2,
+    nyc - 2,
+    nzc - 2);
+  printf(
+    "Xin = %d; Xfin = %d\n"
+    "Yin = %d; Yfin = %d\n"
+    "Zin = %d; Zfin = %d\n\n",
+    node_xcoord[1], node_xcoord[nxn - 2],
+    node_ycoord[1], node_ycoord[nyn - 2],
+    node_zcoord[1], node_zcoord[nzn - 2]);
 }
 
 /** calculate gradient on nodes, given a scalar field defined on central points  */

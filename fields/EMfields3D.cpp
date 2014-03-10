@@ -7,6 +7,7 @@
 #include "Parameters.h"
 #include "ompdefs.h"
 #include "debug.h"
+#include "string.h" // for memset
 
 /*! constructor */
 //

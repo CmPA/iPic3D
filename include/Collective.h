@@ -11,14 +11,10 @@
 #ifdef BATSRUS
 #include "InterfaceFluid.h"
 #endif
-
+#include <string>
 
 //#include "CollectiveIO.h"
 class ConfigFile;
-using namespace std;
-using std::cout;
-using std::endl;
-using std::ofstream;
 using namespace std;
 
 class Collective
