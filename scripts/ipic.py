@@ -56,7 +56,7 @@ def issue_shell_command(command):
     print '+', command
     os.system(command)
 
-def construct_run_command(args):
+def construct_run_command(args,mpirun):
 
     # convert from deque to list for getopts
     args = list(args)
@@ -68,7 +68,6 @@ def construct_run_command(args):
     output = 'data'
     inputfile = 'src/inputfiles/GEM.inp'
     hostname = ''
-    mpirun = 'mpirun'
     global system
     if system == 'xeon' or system == 'mic':
       if system == 'xeon':
@@ -169,7 +168,11 @@ def construct_run_command(args):
     return command
 
 def ipic_run(args):
-    command = construct_run_command(args);
+    command = construct_run_command(args,'mpirun');
+    issue_command(command)
+
+def ipic_exec(args):
+    command = construct_run_command(args,'mpiexec');
     issue_command(command)
 
 def ipic_show_run(args):
@@ -497,6 +500,8 @@ def ipic_command(argv1):
         ipic_cmake(args)
     elif command == "run":
         ipic_run(args)
+    elif command == "exec":
+        ipic_exec(args)
     elif command == "findcpph":
         ipic_findcpph(args)
     else:
