@@ -1,8 +1,18 @@
 
 #include <mpi.h>
+#include <math.h>
+//#include <iostream>
+//#include <fstream>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "input_array.h"
+#include "hdf5.h"
 #include "Collective.h"
-#include "debug.h"
+#include "ConfigFile.h"
 #include "limits.h" // for INT_MAX
+#include "MPIdata.h"
+#include "errors.h"
 #include "asserts.h" // for assert_ge
 
 /*! Read the input file from text file and put the data in a collective wrapper: if it's a restart read from input file basic sim data and load particles and EM field from restart file */

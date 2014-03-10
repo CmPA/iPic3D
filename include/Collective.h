@@ -13,18 +13,9 @@
 #endif
 
 
-#include <math.h>
-//#include <iostream>
-//#include <fstream>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include "ConfigFile.h"
-#include "input_array.h"
-#include "hdf5.h"
 //#include "CollectiveIO.h"
+class ConfigFile;
 using namespace std;
-
 using std::cout;
 using std::endl;
 using std::ofstream;

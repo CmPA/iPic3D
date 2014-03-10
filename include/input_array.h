@@ -5,7 +5,7 @@
 // Modified P. Henri 8 June 2011
 // corrected by Markidis
 
-#include <iostream>
+#include <iosfwd>
 
 struct array_int {
   int a, b, c, d, e, f;
