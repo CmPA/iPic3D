@@ -60,8 +60,8 @@ typedef iPic3D::array4<pfloat> array4_pfloat;
 // This directive should be consistent with the directives in Alloc.h
 #if defined(FLAT_ARRAYS) || defined(CHECK_BOUNDS)
 typedef iPic3D::array_fetch1<double> arr1_double_fetch;
-typedef iPic3D::array_get1<double> arr1_double_get;
-typedef iPic3D::array_get1<pfloat> arr1_pfloat_get;
+typedef iPic3D::const_array_get1<double> arr1_double_get;
+typedef iPic3D::const_array_get1<pfloat> arr1_pfloat_get;
 typedef iPic3D::array_fetch2<double> arr2_double_fetch;
 typedef iPic3D::array_fetch3<double> arr3_double_fetch;
 #else

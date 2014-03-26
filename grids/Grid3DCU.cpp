@@ -2,6 +2,10 @@
 #include <mpi.h>
 #include "Grid3DCU.h"
 #include "MPIdata.h"
+#include "Alloc.h"
+#include "CollectiveIO.h"
+#include "ComNodes3D.h" // for communicateCenterBC
+#include "VirtualTopology3D.h"
 
 /*! constructor */
 Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {

@@ -7,13 +7,11 @@
 #ifndef GRID3DCU_H
 #define GRID3DCU_H
 
-#include "Grid.h"
-#include "CollectiveIO.h"
-#include "ComInterpNodes3D.h"
-#include "ComNodes3D.h"
-#include "VirtualTopology3D.h"
-#include "Alloc.h"
+#include "arraysfwd.h"
+#include "ipicfwd.h"
+#include "math.h" // for floor
 
+class VirtualTopology3D;
 /**
  * Uniform cartesian local grid 3D
  *

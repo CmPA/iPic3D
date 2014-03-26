@@ -14,10 +14,10 @@ developers: D. Burgess, June/July 2006
 #include <list>
 
 #include "errors.h"
+#include "Grid.h"
 #include "PSKException.h"
 #include "Particles3Dcomm.h"
 #include "Field.h"
-#include "Grid.h"
 #include "Collective.h"
 #include "VCtopology3D.h"
 #include "MPIdata.h"
