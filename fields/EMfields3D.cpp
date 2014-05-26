@@ -291,9 +291,12 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   // addscale(-FourPI/c,temp2Z,Jz_ext,nxn,nyn,nzn);
   // -- end of dipole SOURCE version using J_ext
 
+  // curl(B) - 4pi J_hat
   sum(temp2X, tempXN, nxn, nyn, nzn);
   sum(temp2Y, tempYN, nxn, nyn, nzn);
   sum(temp2Z, tempZN, nxn, nyn, nzn);
+
+  // cdt [curl(B) - 4pi J_hat]
   scale(temp2X, delt, nxn, nyn, nzn);
   scale(temp2Y, delt, nxn, nyn, nzn);
   scale(temp2Z, delt, nxn, nyn, nzn);
@@ -301,14 +304,17 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
   grid->gradC2N(tempX, tempY, tempZ, rhoh);
 
+  // cdt^2 * 4pi * grad(rho_hat)
   scale(tempX, -delt * delt * FourPI, nxn, nyn, nzn);
   scale(tempY, -delt * delt * FourPI, nxn, nyn, nzn);
   scale(tempZ, -delt * delt * FourPI, nxn, nyn, nzn);
-  // sum E, past values
+
+  // sum E, past values:  E + cdt^2 * 4pi * grad(rho_hat)
   sum(tempX, Ex, nxn, nyn, nzn);
   sum(tempY, Ey, nxn, nyn, nzn);
   sum(tempZ, Ez, nxn, nyn, nzn);
-  // sum curl(B) + jhat part
+
+  // cdt [curl(B) - 4pi J_hat]  +  E + cdt^2 * 4pi * grad(rho_hat)
   sum(tempX, temp2X, nxn, nyn, nzn);
   sum(tempY, temp2Y, nxn, nyn, nzn);
   sum(tempZ, temp2Z, nxn, nyn, nzn);
@@ -377,7 +383,7 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   scale(imageY, delt * delt, nxn, nyn, nzn);
   scale(imageZ, delt * delt, nxn, nyn, nzn);
 
-  // -lap(E(n +theta)) - grad(div(mu dot E(n + theta)) + eps dot E(n + theta)
+  // -lap(E(n +theta)) - grad(div(mu dot E(n + theta))) + eps dot E(n + theta)
   sum(imageX, Dx, nxn, nyn, nzn);
   sum(imageY, Dy, nxn, nyn, nzn);
   sum(imageZ, Dz, nxn, nyn, nzn);
@@ -901,10 +907,12 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
 
   // calculate the curl of Eth
   grid->curlN2C(tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
+
   // update the magnetic field
   addscale(-c * dt, 1, Bxc, tempXC, nxc, nyc, nzc);
   addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
   addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
+
   // communicate ghost 
   communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
@@ -1494,7 +1502,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
       ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
     }
 
-    ConstantChargeOpenBC(grid, vct);
+    // ConstantChargeOpenBC(grid, vct);
 
     // communicate ghost
     communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
@@ -2865,13 +2873,13 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
   if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
-        vectorX[1][j][k] = injFieldsLeft->ExITemp[1][j][k];
-        vectorY[1][j][k] = injFieldsLeft->EyITemp[1][j][k];
-        vectorZ[1][j][k] = injFieldsLeft->EzITemp[1][j][k];
+//      vectorX[1][j][k] = injFieldsLeft->ExITemp[1][j][k];
+//      vectorY[1][j][k] = injFieldsLeft->EyITemp[1][j][k];
+//      vectorZ[1][j][k] = injFieldsLeft->EzITemp[1][j][k];
 
-//      vectorX[0][j][k] = injFieldsLeft->ExITemp[0][j][k];
-//      vectorY[0][j][k] = injFieldsLeft->EyITemp[0][j][k];
-//      vectorZ[0][j][k] = injFieldsLeft->EzITemp[0][j][k];
+        vectorX[0][j][k] = injFieldsLeft->ExITemp[0][j][k];
+        vectorY[0][j][k] = injFieldsLeft->EyITemp[0][j][k];
+        vectorZ[0][j][k] = injFieldsLeft->EzITemp[0][j][k];
       } 
   }
 
@@ -2879,13 +2887,13 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
     for (int j=0; j < ny;j++)
       for (int k=0; k < nz;k++){
 
-//      vectorX[nx-2][j][k] = injFieldsRight->ExITemp[1][j][k];
-//      vectorY[nx-2][j][k] = injFieldsRight->EyITemp[1][j][k];
-//      vectorZ[nx-2][j][k] = injFieldsRight->EzITemp[1][j][k];
+//      vectorX[nx-2][j][k] = injFieldsRight->ExITemp[nx-2][j][k];
+//      vectorY[nx-2][j][k] = injFieldsRight->EyITemp[nx-2][j][k];
+//      vectorZ[nx-2][j][k] = injFieldsRight->EzITemp[nx-2][j][k];
 
-        vectorX[nx-1][j][k] = injFieldsRight->ExITemp[0][j][k];
-        vectorY[nx-1][j][k] = injFieldsRight->EyITemp[0][j][k];
-        vectorZ[nx-1][j][k] = injFieldsRight->EzITemp[0][j][k];
+        vectorX[nx-1][j][k] = injFieldsRight->ExITemp[nx-1][j][k];
+        vectorY[nx-1][j][k] = injFieldsRight->EyITemp[nx-1][j][k];
+        vectorZ[nx-1][j][k] = injFieldsRight->EzITemp[nx-1][j][k];
       }
   }
 
@@ -2905,13 +2913,13 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
   if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==2) {
     for (int i=0; i < nx;i++)
       for (int k=0; k < nz;k++){
-//      vectorX[i][ny-2][k] = injFieldsTop->ExITemp[i][1][k];
-//      vectorY[i][ny-2][k] = injFieldsTop->EyITemp[i][1][k];
-//      vectorZ[i][ny-2][k] = injFieldsTop->EzITemp[i][1][k];
+//      vectorX[i][ny-2][k] = injFieldsTop->ExITemp[i][ny-2][k];
+//      vectorY[i][ny-2][k] = injFieldsTop->EyITemp[i][ny-2][k];
+//      vectorZ[i][ny-2][k] = injFieldsTop->EzITemp[i][ny-2][k];
 
-        vectorX[i][ny-1][k] = injFieldsTop->ExITemp[i][0][k];
-        vectorY[i][ny-1][k] = injFieldsTop->EyITemp[i][0][k];
-        vectorZ[i][ny-1][k] = injFieldsTop->EzITemp[i][0][k];
+        vectorX[i][ny-1][k] = injFieldsTop->ExITemp[i][ny-1][k];
+        vectorY[i][ny-1][k] = injFieldsTop->EyITemp[i][ny-1][k];
+        vectorZ[i][ny-1][k] = injFieldsTop->EzITemp[i][ny-1][k];
       }
   }
 
@@ -2931,13 +2939,13 @@ void EMfields3D::BoundaryConditionsE(double ***vectorX, double ***vectorY, doubl
   if(vct->getZright_neighbor()==MPI_PROC_NULL && bcEMfaceZright ==2) {
     for (int i=0; i < nx;i++)
       for (int j=0; j < ny;j++){
-//      vectorX[i][j][nz-2] = injFieldsFront->ExITemp[i][j][1];
-//      vectorY[i][j][nz-2] = injFieldsFront->EyITemp[i][j][1];
-//      vectorZ[i][j][nz-2] = injFieldsFront->EzITemp[i][j][1];
+//      vectorX[i][j][nz-2] = injFieldsFront->ExITemp[i][j][nz-2];
+//      vectorY[i][j][nz-2] = injFieldsFront->EyITemp[i][j][nz-2];
+//      vectorZ[i][j][nz-2] = injFieldsFront->EzITemp[i][j][nz-2];
 
-        vectorX[i][j][nz-1] = injFieldsFront->ExITemp[i][j][0];
-        vectorY[i][j][nz-1] = injFieldsFront->EyITemp[i][j][0];
-        vectorZ[i][j][nz-1] = injFieldsFront->EzITemp[i][j][0];
+        vectorX[i][j][nz-1] = injFieldsFront->ExITemp[i][j][nz-1];
+        vectorY[i][j][nz-1] = injFieldsFront->EyITemp[i][j][nz-1];
+        vectorZ[i][j][nz-1] = injFieldsFront->EzITemp[i][j][nz-1];
       }
   }
 }

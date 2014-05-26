@@ -35,7 +35,7 @@ class c_time{
     ~c_time() {;} ;
     void initcycledata(int b, int e, int s, int n);
     int  getncycle(){return ncycle;};
-    int  geticycle(int i){return (i*stp);};
+    int  geticycle(int i){return (beg+i*stp);};
     int  getbeg(){return beg;};
     int  getend(){return end;};
     int  getstp(){return stp;};
