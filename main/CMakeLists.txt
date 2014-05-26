@@ -64,8 +64,6 @@ option(IPIC_H5HUT_OUTPUT "Output is done using Parallel HDF5 with the H5hut libr
 if(IPIC_H5HUT_OUTPUT)
   set(H5HUT_HOME $ENV{H5HUT_DIR} CACHE STRING "H5hut home directory")
   set(H5HUT_INCLUDE_DIRS ${H5HUT_HOME}/include)
-  set(H5HUT_LIBRARY_DIRS ${H5HUT_HOME}/lib)
-  set(H5HUT_LIBRARIES H5hut)
 
   set(H5HUTIO_HOME ${IPIC_HOME}/H5hut-io CACHE STRING "H5hut-io library home")
   set(H5HUTIO_INCLUDE_DIRS ${H5HUTIO_HOME}/include)
@@ -106,7 +104,6 @@ include_directories(
 
 link_directories(
         ${H5HUTIO_LIBRARY_DIRS}
-        ${H5HUT_LIBRARY_DIRS}
 )
 
 #
@@ -127,7 +124,6 @@ add_library(
 target_link_libraries(
          iPic3Dlib
          ${H5HUTIO_LIBRARIES}
-         ${H5HUT_LIBRARIES}
          ${HDF5_LIBRARIES}
          ${MPI_LIBRARIES}
          ${CMAKE_DL_LIBS}

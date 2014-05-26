@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 2.8.8)
 # Set project name
 #
 
-project(iPic3D)
+project(iPic3D-KUL)
 
 #
 # Find packages (already managed by CMake)
@@ -26,7 +26,6 @@ option(IPIC_TESTS "Set up the code tests" OFF)
 add_subdirectory(main)
 if(IPIC_H5HUT_OUTPUT)
   add_subdirectory(H5hut-io)
-  set(H5HUTIO_LIBRARIES H5hut-io)
 endif()
 
 include_directories(
@@ -51,8 +50,6 @@ add_executable(
 target_link_libraries(
     iPic3D
     iPic3Dlib
-    ${H5HUTIO_LIBRARIES}
-    ${H5HUT_LIBRARIES}
     ${CMAKE_DL_LIBS}
 )
 

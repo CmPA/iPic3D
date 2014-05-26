@@ -82,7 +82,7 @@ add_library(
 
 target_link_libraries(
          H5hut-io
-         H5hut
+         ${H5HUT_LIBRARIES}
          ${HDF5_LIBRARIES}
          ${MPI_LIBRARIES}
          ${CMAKE_DL_LIBS}

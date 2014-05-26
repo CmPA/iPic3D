@@ -112,9 +112,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Bx_ext = newArr3(double,nxn,nyn,nzn);
   By_ext = newArr3(double,nxn,nyn,nzn);
   Bz_ext = newArr3(double,nxn,nyn,nzn);
-  Jx_ext = newArr3(double,nxn,nyn,nzn);
-  Jy_ext = newArr3(double,nxn,nyn,nzn);
-  Jz_ext = newArr3(double,nxn,nyn,nzn);
+  // Jx_ext = newArr3(double,nxn,nyn,nzn);
+  // Jy_ext = newArr3(double,nxn,nyn,nzn);
+  // Jz_ext = newArr3(double,nxn,nyn,nzn);
   // involving species
   rhons = newArr4(double, ns, nxn, nyn, nzn);
   rhocs = newArr4(double, ns, nxc, nyc, nzn);
@@ -286,9 +286,9 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   scale(temp2Z, Jzh, -FourPI / c, nxn, nyn, nzn);
 
   // -- dipole SOURCE version using J_ext
-  addscale(-FourPI/c,temp2X,Jx_ext,nxn,nyn,nzn);
-  addscale(-FourPI/c,temp2Y,Jy_ext,nxn,nyn,nzn);
-  addscale(-FourPI/c,temp2Z,Jz_ext,nxn,nyn,nzn);
+  // addscale(-FourPI/c,temp2X,Jx_ext,nxn,nyn,nzn);
+  // addscale(-FourPI/c,temp2Y,Jy_ext,nxn,nyn,nzn);
+  // addscale(-FourPI/c,temp2Z,Jz_ext,nxn,nyn,nzn);
   // -- end of dipole SOURCE version using J_ext
 
   sum(temp2X, tempXN, nxn, nyn, nzn);
@@ -2208,9 +2208,9 @@ void EMfields3D::initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col)
         Bzn[i][j][k] = B0z + Bz_ext[i][j][k];
 
         // -- Uncomment if using the J_ext method:
-        Bx_ext[i][j][k]  = 0.0;
-        By_ext[i][j][k]  = 0.0;
-        Bz_ext[i][j][k]  = 0.0;
+        // Bx_ext[i][j][k]  = 0.0;
+        // By_ext[i][j][k]  = 0.0;
+        // Bz_ext[i][j][k]  = 0.0;
         // -- end Uncomment
       }
     }
@@ -2225,10 +2225,10 @@ void EMfields3D::initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col)
   communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct);
 
   // initialize J_ext =c/4*pi curl(B) on nodes (current due to the dipole)
-  grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc);
-  scale(Jx_ext,tempXN,c/FourPI,nxn,nyn,nzn);
-  scale(Jy_ext,tempYN,c/FourPI,nxn,nyn,nzn);
-  scale(Jz_ext,tempZN,c/FourPI,nxn,nyn,nzn);
+  // grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc);
+  // scale(Jx_ext,tempXN,c/FourPI,nxn,nyn,nzn);
+  // scale(Jy_ext,tempYN,c/FourPI,nxn,nyn,nzn);
+  // scale(Jz_ext,tempZN,c/FourPI,nxn,nyn,nzn);
 
   for (int is=0 ; is<ns; is++)
     grid->interpN2C(rhocs,is,rhons);
@@ -2430,7 +2430,7 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
       susxz = newArr2(double,nxn,nyn);
       susyz = newArr2(double,nxn,nyn);
       suszz = newArr2(double,nxn,nyn);
-      sustensorLeftZ(susxy, susyy, suszy);
+      sustensorLeftZ(susxz, susyz, suszz);
       for (int i=1; i <  nxn-1;i++)
         for (int j=1; j <  nyn-1;j++){
           imageX[i][j][1] = vectorX[i][j][1];

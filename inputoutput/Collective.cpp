@@ -90,8 +90,8 @@ void Collective::ReadInput(string inputfile) {
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
   }
 
+  SolInit = false;
   if (RESTART1) {               // you are restarting
-    SolInit = false;
     cout << " WARNING: Performing a restart with the classic files. " << endl;
 
     RestartDirName = config.read < string > ("RestartDirName");
