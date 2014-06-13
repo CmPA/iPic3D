@@ -4,21 +4,20 @@
 developers: Stefano Markidis, Giovanni Lapenta.
  ********************************************************************************************/
 
-#include <mpi.h>
 #include <iostream>
 #include <math.h>
-#include "../processtopology/VirtualTopology3D.h"
-#include "../processtopology/VCtopology3D.h"
-#include "../inputoutput/CollectiveIO.h"
-#include "../inputoutput/Collective.h"
-#include "../communication/ComParticles3D.h"
-#include "../utility/Alloc.h"
-#include "../mathlib/Basic.h"
-#include "../mathlib/Bessel.h"
-#include "../bc/BcParticles.h"
-#include "../grids/Grid.h"
-#include "../grids/Grid3DCU.h"
-#include "../fields/Field.h"
+#include "VirtualTopology3D.h"
+#include "VCtopology3D.h"
+#include "CollectiveIO.h"
+#include "Collective.h"
+#include "ComParticles3D.h"
+#include "Alloc.h"
+#include "Basic.h"
+#include "BcParticles.h"
+#include "Grid.h"
+#include "Grid3DCU.h"
+#include "Field.h"
+#include "MPIdata.h"
 
 #include "Particles3Dcomm.h"
 
@@ -65,16 +64,26 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]b_Z_LEFT;
 }
 /** constructors fo a single species*/
-void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid) {
+void Particles3Dcomm::allocate(int species, int initnpmax, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid) {
   // info from collectiveIO
   ns = species;
   npcel = col->getNpcel(species);
   npcelx = col->getNpcelx(species);
   npcely = col->getNpcely(species);
   npcelz = col->getNpcelz(species);
-  nop = col->getNp(species) / (vct->getNprocs());
-  np_tot = col->getNp(species);
-  npmax = col->getNpMax(species) / (vct->getNprocs());
+
+  // This if is necessary to restart with H5hut-io
+  if (initnpmax==0){
+    npmax  = col->getNpMax(species) / (vct->getNprocs());
+    nop    = col->getNp(species) / (vct->getNprocs());
+    np_tot = col->getNp(species);
+  }
+  else {
+    npmax = initnpmax*col->getNpMaxNpRatio();
+    nop    = initnpmax;
+    np_tot = initnpmax*vct->getNprocs();
+  }
+
   qom = col->getQOM(species);
   uth = col->getUth(species);
   vth = col->getVth(species);
@@ -96,6 +105,7 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
   NiterMover = col->getNiterMover();
   // velocity of the injection from the wall
   Vinj = col->getVinj();
+  Ninj = col->getRHOinject(species);
   // info from Grid
   xstart = grid->getXstart();
   xend = grid->getXend();
@@ -203,7 +213,7 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
     species_name << ns;
     // the cycle of the last restart is set to 0
     string name_dataset = "/particles/species_" + species_name.str() + "/x/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     datatype = H5Dget_type(dataset_id);
     size = H5Tget_size(datatype);
     dataspace = H5Dget_space(dataset_id); /* dataspace handle */
@@ -219,50 +229,50 @@ void Particles3Dcomm::allocate(int species, CollectiveIO * col, VirtualTopology3
 
     // get y
     name_dataset = "/particles/species_" + species_name.str() + "/y/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, y);
     status = H5Dclose(dataset_id);
 
     // get z
     name_dataset = "/particles/species_" + species_name.str() + "/z/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, z);
     status = H5Dclose(dataset_id);
 
     // get u
     name_dataset = "/particles/species_" + species_name.str() + "/u/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, u);
     status = H5Dclose(dataset_id);
     // get v
     name_dataset = "/particles/species_" + species_name.str() + "/v/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
     status = H5Dclose(dataset_id);
     // get w
     name_dataset = "/particles/species_" + species_name.str() + "/w/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, w);
     status = H5Dclose(dataset_id);
     // get q
     name_dataset = "/particles/species_" + species_name.str() + "/q/cycle_0";
-    dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+    dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, q);
     status = H5Dclose(dataset_id);
     // ID 
     if (TrackParticleID) {
       // herr_t (*old_func)(void*); // HDF 1.6
-      H5E_auto_t old_func;      // HDF 1.8.8
+      H5E_auto2_t old_func;      // HDF 1.8.8
       void *old_client_data;
-      H5Eget_auto(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8.8
+      H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8.8
       /* Turn off error handling */
       // H5Eset_auto(NULL, NULL); // HDF 1.6
-      H5Eset_auto(H5E_DEFAULT, 0, 0); // HDF 1.8
+      H5Eset_auto2(H5E_DEFAULT, 0, 0); // HDF 1.8
       name_dataset = "/particles/species_" + species_name.str() + "/ID/cycle_0";
-      dataset_id = H5Dopen(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+      dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
 
       // H5Eset_auto(old_func, old_client_data); // HDF 1.6
-      H5Eset_auto(H5E_DEFAULT, old_func, old_client_data);
+      H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data);
       if (dataset_id > 0)
         status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID);
       else {
@@ -289,6 +299,7 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
       for (int k = 0; k < 2; k++)
         weight[i][j][k] = xi[i] * eta[j] * zeta[k] * invVOL;
 }
+
 
 /** Interpolation Particle --> Grid */
 void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
@@ -395,7 +406,6 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
 }
 
-
 /** communicate buffers */
 int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // allocate buffers
@@ -414,106 +424,126 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   }
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   long long np_current = 0, nplast = nop - 1;
-  while (np_current < nplast + 1) {
+
+  while (np_current < nplast+1){
+
     // BC on particles
     if (x[np_current] < 0 && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&x[np_current], &u[np_current], &v[np_current], &w[np_current], Lx, uth, vth, wth, bcPfaceXright, bcPfaceXleft);
+      BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft);
     else if (x[np_current] > Lx && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&x[np_current], &u[np_current], &v[np_current], &w[np_current], Lx, uth, vth, wth, bcPfaceXright, bcPfaceXleft);
-    if (y[np_current] < 0 && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL) // check it here
-      BCpart(&y[np_current], &v[np_current], &u[np_current], &w[np_current], Ly, vth, uth, wth, bcPfaceYright, bcPfaceYleft);
-    else if (y[np_current] > Ly && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL)  // check it here
-      BCpart(&y[np_current], &v[np_current], &u[np_current], &w[np_current], Ly, vth, uth, wth, bcPfaceYright, bcPfaceYleft);
-    if (z[np_current] < 0 && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL) // check it here
-      BCpart(&z[np_current], &v[np_current], &u[np_current], &w[np_current], Lz, vth, uth, wth, bcPfaceZright, bcPfaceZleft);
-    else if (z[np_current] > Lz && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL)  // check it here
-      BCpart(&z[np_current], &v[np_current], &u[np_current], &w[np_current], Lz, vth, uth, wth, bcPfaceZright, bcPfaceZleft);
+      BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft); 
+    if (y[np_current] < 0 && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL)  // check it here
+      BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft);
+    else if (y[np_current] > Ly && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL) //check it here
+      BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft); 
+    if (z[np_current] < 0 && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL)  // check it here
+      BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
+    else if (z[np_current] > Lz && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) //check it here
+      BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
+
     // if the particle exits, apply the boundary conditions add the particle to communication buffer
-    if (x[np_current] < xstart || x[np_current] > xend) {
+    if (x[np_current] < xstart || x[np_current] >xend){
       // communicate if they don't belong to the domain
-      if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL) {
+      if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitXleft + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer to " << (int) (buffer_size * 2) << " buffer size" << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitXleft+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferXleft(b_X_LEFT, np_current, ptVCT);
+        bufferXleft(b_X_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
         npExitXleft++;
-      }
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL) {
+      } 
+      else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL){
+        del_pack(np_current,&nplast);
+        npExitXleft++;
+      } 
+      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitXright + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitXright+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferXright(b_X_RIGHT, np_current, ptVCT);
+        bufferXright(b_X_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
+        npExitXright++;
+      }
+      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL){
+        del_pack(np_current,&nplast);
         npExitXright++;
       }
 
-    }
-    else if (y[np_current] < ystart || y[np_current] > yend) {
+    } else  if (y[np_current] < ystart || y[np_current] >yend){
       // communicate if they don't belong to the domain
-      if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL) {
+      if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitYleft + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitYleft+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferYleft(b_Y_LEFT, np_current, ptVCT);
+        bufferYleft(b_Y_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
         npExitYleft++;
       }
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL) {
+      else if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL){
+        // delete the particle and pack the particle array, the value of nplast changes
+        del_pack(np_current,&nplast);
+        npExitYleft++;
+      }
+      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitYright + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitYright+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferYright(b_Y_RIGHT, np_current, ptVCT);
+        bufferYright(b_Y_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
         npExitYright++;
       }
-    }
-    else if (z[np_current] < zstart || z[np_current] > zend) {
+      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL){
+        // delete the particle and pack the particle array, the value of nplast changes
+        del_pack(np_current,&nplast);
+        npExitYright++;
+      }
+    } else  if (z[np_current] < zstart || z[np_current] >zend){
       // communicate if they don't belong to the domain
-      if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL) {
+      if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitZleft + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitZleft+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferZleft(b_Z_LEFT, np_current, ptVCT);
+        bufferZleft(b_Z_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
 
         npExitZleft++;
+      } 
+      else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL){
+        del_pack(np_current,&nplast);
+        npExitZleft++;
       }
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL) {
+      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitZright + 1) * nVar) >= buffer_size) {
-          cout << "resizing the sending buffer " << (int) (buffer_size * 2) << endl;
-          resize_buffers((int) (buffer_size * 2));
+        if(((npExitZright+1)*nVar)>=buffer_size){
+          resize_buffers((int) (buffer_size*2)); 
         }
         // put it in the communication buffer
-        bufferZright(b_Z_RIGHT, np_current, ptVCT);
+        bufferZright(b_Z_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current, &nplast);
+        del_pack(np_current,&nplast);
 
         npExitZright++;
       }
-    }
-    else {
+      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL){
+        del_pack(np_current,&nplast);
+        npExitZright++;
+      }
+    }  else {
       // particle is still in the domain, procede with the next particle
       np_current++;
     }
@@ -529,9 +559,9 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // broadcast the maximum number of particles exiting for sizing the buffer and to check if communication is really needed
   npExitingMax = reduceMaxNpExiting(npExitingMax);
 
-/*****************************************************/
+  /*****************************************************/
   /* SEND AND RECEIVE MESSAGES */
-/*****************************************************/
+  /*****************************************************/
 
   new_buffer_size = npExitingMax * nVar + 1;
 
@@ -808,71 +838,99 @@ int Particles3Dcomm::maxNpExiting() {
   return (maxNp);
 }
 /** return X-coordinate of particle array */
-double *Particles3Dcomm::getXall() const {
+double *Particles3Dcomm::getXall()  const {
   return (x);
 }
 /** return Y-coordinate  of particle array */
-double *Particles3Dcomm::getYall() const {
+double *Particles3Dcomm::getYall()  const {
   return (y);
 }
 /** return Z-coordinate  of particle array*/
-double *Particles3Dcomm::getZall() const {
+double *Particles3Dcomm::getZall()  const {
   return (z);
 }
 /** get X-velocity of particle with label indexPart */
-double *Particles3Dcomm::getUall() const {
+double *Particles3Dcomm::getUall()  const {
   return (u);
 }
 /** get Y-velocity of particle with label indexPart */
-double *Particles3Dcomm::getVall() const {
+double *Particles3Dcomm::getVall()  const {
   return (v);
 }
 /**get Z-velocity of particle with label indexPart */
-double *Particles3Dcomm::getWall() const {
+double *Particles3Dcomm::getWall()  const {
   return (w);
 }
 /**get ID of particle with label indexPart */
-unsigned long *Particles3Dcomm::getParticleIDall() const {
+unsigned long *Particles3Dcomm::getParticleIDall()  const {
   return (ParticleID);
 }
 /**get charge of particle with label indexPart */
-double *Particles3Dcomm::getQall() const {
+double *Particles3Dcomm::getQall()  const {
+  return (q);
+}
+/** return X-coordinate of particle array as reference */
+double *& Particles3Dcomm::getXref() {
+  return (x);
+}
+/** return Y-coordinate  of particle array as reference */
+double *& Particles3Dcomm::getYref() {
+  return (y);
+}
+/** return Z-coordinate  of particle array as reference */
+double *& Particles3Dcomm::getZref() {
+  return (z);
+}
+/** get X-velocity of particle with label indexPart as reference */
+double *& Particles3Dcomm::getUref() {
+  return (u);
+}
+/** get Y-velocity of particle with label indexPart as reference */
+double *& Particles3Dcomm::getVref() {
+  return (v);
+}
+/**get Z-velocity of particle with label indexPart as reference */
+double *& Particles3Dcomm::getWref() {
+  return (w);
+}
+/**get charge of particle with label indexPart as reference */
+double *& Particles3Dcomm::getQref() {
   return (q);
 }
 /** return X-coordinate of particle with index indexPart */
-double Particles3Dcomm::getX(long long indexPart) const {
+double Particles3Dcomm::getX(long long indexPart)  const {
   return (x[indexPart]);
 }
 /** return Y-coordinate  of particle with index indexPart */
-double Particles3Dcomm::getY(long long indexPart) const {
+double Particles3Dcomm::getY(long long indexPart)  const {
   return (y[indexPart]);
 }
 /** return Y-coordinate  of particle with index indexPart */
-double Particles3Dcomm::getZ(long long indexPart) const {
+double Particles3Dcomm::getZ(long long indexPart)  const {
   return (z[indexPart]);
 }
 /** get u (X-velocity) of particle with label indexPart */
-double Particles3Dcomm::getU(long long indexPart) const {
+double Particles3Dcomm::getU(long long indexPart)  const {
   return (u[indexPart]);
 }
 /** get v (Y-velocity) of particle with label indexPart */
-double Particles3Dcomm::getV(long long indexPart) const {
+double Particles3Dcomm::getV(long long indexPart)  const {
   return (v[indexPart]);
 }
 /**get w (Z-velocity) of particle with label indexPart */
-double Particles3Dcomm::getW(long long indexPart) const {
+double Particles3Dcomm::getW(long long indexPart)  const {
   return (w[indexPart]);
 }
 /**get ID of particle with label indexPart */
-unsigned long Particles3Dcomm::getParticleID(long long indexPart) const {
+unsigned long Particles3Dcomm::getParticleID(long long indexPart)  const {
   return (ParticleID[indexPart]);
 }
 /**get charge of particle with label indexPart */
-double Particles3Dcomm::getQ(long long indexPart) const {
+double Particles3Dcomm::getQ(long long indexPart)  const {
   return (q[indexPart]);
 }
 /** return the number of particles */
-long long Particles3Dcomm::getNOP() const {
+long long Particles3Dcomm::getNOP()  const {
   return (nop);
 }
 /** return the Kinetic energy */
@@ -895,37 +953,37 @@ double Particles3Dcomm::getP() {
 }
 
 /** return the highest kinetic energy */
-double Particles3Dcomm::getMaxVelocity(){  
+double Particles3Dcomm::getMaxVelocity() {
   double localVel = 0.0;
   double maxVel = 0.0;
-  for (long long i=0; i < nop; i++)
-    localVel = max(localVel, sqrt(u[i]*u[i] + v[i]*v[i] + w[i]*w[i]));
+  for (long long i = 0; i < nop; i++)
+    localVel = max(localVel, sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]));
   MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-  return(maxVel);
+  return (maxVel);
 }
 
 
 /** get energy spectrum */
-unsigned long* Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel){  
-  unsigned long* f = new unsigned long [nBins];
-  for (int i=0; i < nBins; i++)
-      f[i] = 0;
+unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel) {
+  unsigned long *f = new unsigned long[nBins];
+  for (int i = 0; i < nBins; i++)
+    f[i] = 0;
   double Vel = 0.0;
   double dv = maxVel / nBins;
   int bin = 0;
-  for (long long i=0; i < nop; i++) {
-    Vel = sqrt(u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
-    bin = int(floor(Vel/dv));
-    if (bin >= nBins) 
-      f[nBins-1] += 1;
+  for (long long i = 0; i < nop; i++) {
+    Vel = sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    bin = int (floor(Vel / dv));
+    if (bin >= nBins)
+      f[nBins - 1] += 1;
     else
       f[bin] += 1;
   }
   unsigned long localN = 0;
   unsigned long totalN = 0;
-  for (int i=0; i < nBins; i++) {
+  for (int i = 0; i < nBins; i++) {
     localN = f[i];
-    MPI_Allreduce(&localN, &totalN, 1, MPI_UNSIGNED_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&localN, &totalN, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     f[i] = totalN;
   }
   return f;
@@ -946,7 +1004,7 @@ void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
   cout << endl;
 }
 /** print just the number of particles */
-void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT) const {
+void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
   cout << endl;
   cout << "Number of Particles of species " << ns << ": " << nop << endl;
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;

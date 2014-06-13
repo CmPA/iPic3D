@@ -1,0 +1,21 @@
+H5FileName         = GEM-Fields [ Output file name ]
+NumberOfDimensions = 3        [ Number of dimensions ]
+FirstCycle         = 100      [ First cycle ]
+LastCycle          = 100      [ Last cycle ]
+StepBetweenCycles  = 1        [ Cycle interval ]
+
+OriginInX          = 0.00     [ Origin in X ]
+OriginInY          = 0.00     [ Origin in Y ]
+OriginInZ          = 0.00     [ Origin in Z ]
+LenghtInX          = 10.0     [ Domain size in X ]
+LenghtInY          = 10.0     [ Domain size in Y ]
+LenghtInZ          = 1.0      [ Domain size in Z ]
+
+NumberOfCellsInX   = 64       [ Number of cells in X ]
+NumberOfCellsInY   = 64       [ Number of cells in Y ]
+NumberOfCellsInZ   = 1        [ Number of cells in Z ]
+
+NumberOfFields     = 3        [ Number of fields to write ]
+Field_1            = Bx  /Step#0/Block/Bx/0
+Field_2            = By  /Step#0/Block/By/0
+Field_3            = Bz  /Step#0/Block/Bz/0

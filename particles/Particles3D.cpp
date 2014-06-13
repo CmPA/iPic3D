@@ -4,21 +4,23 @@
 developers: Stefano Markidis, Giovanni Lapenta
  ********************************************************************************************/
 
-#include <mpi.h>
+
 #include <iostream>
 #include <math.h>
-#include "../processtopology/VirtualTopology3D.h"
-#include "../processtopology/VCtopology3D.h"
-#include "../inputoutput/CollectiveIO.h"
-#include "../inputoutput/Collective.h"
-#include "../mathlib/Basic.h"
-#include "../bc/BcParticles.h"
-#include "../grids/Grid.h"
-#include "../grids/Grid3DCU.h"
-#include "../fields/Field.h"
+
+#include "VirtualTopology3D.h"
+#include "VCtopology3D.h"
+#include "CollectiveIO.h"
+#include "Collective.h"
+#include "Basic.h"
+#include "BcParticles.h"
+#include "Grid.h"
+#include "Grid3DCU.h"
+#include "Field.h"
+#include "MPIdata.h"
+#include "TimeTasks.h"
 
 #include "Particles3D.h"
-#include "../utility/TimeTasks.h"
 
 
 #include "hdf5.h"
@@ -112,8 +114,72 @@ void Particles3D::constantVelocity(double vel, int dim, Grid * grid, Field * EMf
 
 /** alternative routine maxellian random velocity and uniform spatial distribution */
 void Particles3D::alt_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+}
 
+/** Maxellian random velocity and uniform spatial distribution */
+void Particles3D::MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* vct,Collective *col, int is){
+#ifdef BATSRUS
+  /*
+   * Constuctiong the distrebution function from a Fluid model
+   */
 
+  // loop over grid cells and set position, velociy and charge of all particles indexed by counter
+  // there are multiple (27 or so) particles per grid cell.
+  int i,j,k,counter=0;
+  for (i=1; i< grid->getNXC()-1;i++)
+    for (j=1; j< grid->getNYC()-1;j++)
+      for (k=1; k< grid->getNZC()-1;k++)
+        MaxwellianFromFluidCell(grid,col,is, i,j,k,counter,x,y,z,q,u,v,w,ParticleID);
+#endif
+}
+
+void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long* ParticleID)
+{
+#ifdef BATSRUS
+  /*
+   * grid           : local grid object (in)
+   * col            : collective (global) object (in)
+   * is             : species index (in)
+   * i,j,k          : grid cell index on proc (in)
+   * ip             : particle number counter (inout)
+   * x,y,z          : particle position (out)
+   * q              : particle charge (out)
+   * vx,vy,vz       : particle velocity (out)
+   * ParticleID     : particle tracking ID (out)
+   */
+
+  double harvest;
+  double prob, theta;
+
+  // loop over particles inside grid cell i,j,k
+  for (int ii=0; ii < npcelx; ii++)
+    for (int jj=0; jj < npcely; jj++)
+      for (int kk=0; kk < npcelz; kk++){
+        // Assign particle positions: uniformly spaced. x_cellnode + dx_particle*(0.5+index_particle)
+        x[ip] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);
+        y[ip] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+        z[ip] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+        // q = charge
+        q[ip] =  (qom/fabs(qom))*(col->getFluidRhoCenter(i,j,k,is)/npcel)*(1.0/grid->getInvVOL());
+        // u = X velocity
+        harvest =   rand()/(double)RAND_MAX;
+        prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+        harvest =   rand()/(double)RAND_MAX;
+        theta = 2.0*M_PI*harvest;
+        u[ip] = col->getFluidUx(i,j,k,is) + col->getFluidUthx(i,j,k,is)*prob*cos(theta);
+        // v = Y velocity
+        v[ip] = col->getFluidUy(i,j,k,is) + col->getFluidUthy(i,j,k,is)*prob*sin(theta);
+        // w = Z velocity
+        harvest =   rand()/(double)RAND_MAX;
+        prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+        harvest =   rand()/(double)RAND_MAX;
+        theta = 2.0*M_PI*harvest;
+        w[ip] = col->getFluidUz(i,j,k,is) + col->getFluidUthz(i,j,k,is)*prob*cos(theta);
+        if (TrackParticleID)
+          ParticleID[ip]= ip*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+        ip++ ;
+      }
+#endif
 }
 
 /** Maxellian random velocity and uniform spatial distribution */
@@ -124,7 +190,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
   double harvest;
   double prob, theta, sign;
-	long long counter=0;
+  long long counter = 0;
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++)
@@ -220,7 +286,7 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 }
 
 /**Add a periodic perturbation in J exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
-inline void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double jx_mod, double jx_phase, double jy_mod, double jy_phase, double jz_mod, double jz_phase, double B0, Grid * grid) {
+void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double jx_mod, double jx_phase, double jy_mod, double jy_phase, double jz_mod, double jz_phase, double B0, Grid * grid) {
 
   // rescaling of amplitudes according to deltaBoB //
   double alpha;
@@ -253,14 +319,20 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
   double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
   double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
-  double **** node_coordinate = asgArr4(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), 3, grid->getN());
+
+  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+  double ****node_coordinate = asgArr4(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), 3, grid->getN());
+
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.
-  #pragma omp parallel for
-  #pragma simd // this just slows things down (why?)
+#pragma omp parallel for
+#pragma simd                    // this just slows things down (why?)
   for (long long rest = 0; rest < nop; rest++) {
     // copy the particle
     double xp = x[rest];
@@ -300,41 +372,46 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       double xi[2];
       double eta[2];
       double zeta[2];
-      xi[0]   = xp - node_coordinate[ix-1][iy  ][iz  ][0];
-      eta[0]  = yp - node_coordinate[ix  ][iy-1][iz  ][1];
-      zeta[0] = zp - node_coordinate[ix  ][iy  ][iz-1][2];
-      xi[1]   = node_coordinate[ix][iy][iz][0] - xp;
-      eta[1]  = node_coordinate[ix][iy][iz][1] - yp;
+      xi[0] = xp - node_coordinate[ix - 1][iy][iz][0];
+      eta[0] = yp - node_coordinate[ix][iy - 1][iz][1];
+      zeta[0] = zp - node_coordinate[ix][iy][iz - 1][2];
+      xi[1] = node_coordinate[ix][iy][iz][0] - xp;
+      eta[1] = node_coordinate[ix][iy][iz][1] - yp;
       zeta[1] = node_coordinate[ix][iy][iz][2] - zp;
 
-      double Exl = 0.0; double Eyl = 0.0; double Ezl = 0.0; double Bxl = 0.0; double Byl = 0.0; double Bzl = 0.0;
+      double Exl = 0.0;
+      double Eyl = 0.0;
+      double Ezl = 0.0;
+      double Bxl = 0.0;
+      double Byl = 0.0;
+      double Bzl = 0.0;
 
       // MIC refuses to vectorize this ...
-      //
-      //double weight[2][2][2];
-      //for (int ii = 0; ii < 2; ii++)
-      //  for (int jj = 0; jj < 2; jj++)
-      //    for (int kk = 0; kk < 2; kk++)
-      //      weight[ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
-      //for (int ii = 0; ii < 2; ii++)
-      //  for (int jj = 0; jj < 2; jj++)
-      //    for (int kk = 0; kk < 2; kk++) {
-      //      const double Exlp = weight[ii][jj][kk] * Ex.get(ix - ii, iy - jj, iz - kk);
-      //      const double Eylp = weight[ii][jj][kk] * Ey.get(ix - ii, iy - jj, iz - kk);
-      //      const double Ezlp = weight[ii][jj][kk] * Ez.get(ix - ii, iy - jj, iz - kk);
-      //      const double Bxlp = weight[ii][jj][kk] * Bx.get(ix - ii, iy - jj, iz - kk);
-      //      const double Bylp = weight[ii][jj][kk] * By.get(ix - ii, iy - jj, iz - kk);
-      //      const double Bzlp = weight[ii][jj][kk] * Bz.get(ix - ii, iy - jj, iz - kk);
-      //      Exl += Exlp;
-      //      Eyl += Eylp;
-      //      Ezl += Ezlp;
-      //      Bxl += Bxlp;
-      //      Byl += Bylp;
-      //      Bzl += Bzlp;
-      //    }
+      // 
+      // double weight[2][2][2];
+      // for (int ii = 0; ii < 2; ii++)
+      // for (int jj = 0; jj < 2; jj++)
+      // for (int kk = 0; kk < 2; kk++)
+      // weight[ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
+      // for (int ii = 0; ii < 2; ii++)
+      // for (int jj = 0; jj < 2; jj++)
+      // for (int kk = 0; kk < 2; kk++) {
+      // const double Exlp = weight[ii][jj][kk] * Ex.get(ix - ii, iy - jj, iz - kk);
+      // const double Eylp = weight[ii][jj][kk] * Ey.get(ix - ii, iy - jj, iz - kk);
+      // const double Ezlp = weight[ii][jj][kk] * Ez.get(ix - ii, iy - jj, iz - kk);
+      // const double Bxlp = weight[ii][jj][kk] * Bx.get(ix - ii, iy - jj, iz - kk);
+      // const double Bylp = weight[ii][jj][kk] * By.get(ix - ii, iy - jj, iz - kk);
+      // const double Bzlp = weight[ii][jj][kk] * Bz.get(ix - ii, iy - jj, iz - kk);
+      // Exl += Exlp;
+      // Eyl += Eylp;
+      // Ezl += Ezlp;
+      // Bxl += Bxlp;
+      // Byl += Bylp;
+      // Bzl += Bzlp;
+      // }
 
       // ... so we expand things out instead
-      //
+      // 
       const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
       const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
       const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
@@ -343,60 +420,60 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
       const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
       const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
-      //
-      Bxl += weight000 * Bx[ix  ][iy  ][iz  ];
-      Bxl += weight001 * Bx[ix  ][iy  ][iz-1];
-      Bxl += weight010 * Bx[ix  ][iy-1][iz  ];
-      Bxl += weight011 * Bx[ix  ][iy-1][iz-1];
-      Bxl += weight100 * Bx[ix-1][iy  ][iz  ];
-      Bxl += weight101 * Bx[ix-1][iy  ][iz-1];
-      Bxl += weight110 * Bx[ix-1][iy-1][iz  ];
-      Bxl += weight111 * Bx[ix-1][iy-1][iz-1];
-      //
-      Byl += weight000 * By[ix  ][iy  ][iz  ];
-      Byl += weight001 * By[ix  ][iy  ][iz-1];
-      Byl += weight010 * By[ix  ][iy-1][iz  ];
-      Byl += weight011 * By[ix  ][iy-1][iz-1];
-      Byl += weight100 * By[ix-1][iy  ][iz  ];
-      Byl += weight101 * By[ix-1][iy  ][iz-1];
-      Byl += weight110 * By[ix-1][iy-1][iz  ];
-      Byl += weight111 * By[ix-1][iy-1][iz-1];
-      //
-      Bzl += weight000 * Bz[ix  ][iy  ][iz  ];
-      Bzl += weight001 * Bz[ix  ][iy  ][iz-1];
-      Bzl += weight010 * Bz[ix  ][iy-1][iz  ];
-      Bzl += weight011 * Bz[ix  ][iy-1][iz-1];
-      Bzl += weight100 * Bz[ix-1][iy  ][iz  ];
-      Bzl += weight101 * Bz[ix-1][iy  ][iz-1];
-      Bzl += weight110 * Bz[ix-1][iy-1][iz  ];
-      Bzl += weight111 * Bz[ix-1][iy-1][iz-1];
-      //
-      Exl += weight000 * Ex[ix  ][iy  ][iz  ];
-      Exl += weight001 * Ex[ix  ][iy  ][iz-1];
-      Exl += weight010 * Ex[ix  ][iy-1][iz  ];
-      Exl += weight011 * Ex[ix  ][iy-1][iz-1];
-      Exl += weight100 * Ex[ix-1][iy  ][iz  ];
-      Exl += weight101 * Ex[ix-1][iy  ][iz-1];
-      Exl += weight110 * Ex[ix-1][iy-1][iz  ];
-      Exl += weight111 * Ex[ix-1][iy-1][iz-1];
-      //
-      Eyl += weight000 * Ey[ix  ][iy  ][iz  ];
-      Eyl += weight001 * Ey[ix  ][iy  ][iz-1];
-      Eyl += weight010 * Ey[ix  ][iy-1][iz  ];
-      Eyl += weight011 * Ey[ix  ][iy-1][iz-1];
-      Eyl += weight100 * Ey[ix-1][iy  ][iz  ];
-      Eyl += weight101 * Ey[ix-1][iy  ][iz-1];
-      Eyl += weight110 * Ey[ix-1][iy-1][iz  ];
-      Eyl += weight111 * Ey[ix-1][iy-1][iz-1];
-      //
-      Ezl += weight000 * Ez[ix  ][iy  ][iz  ];
-      Ezl += weight001 * Ez[ix  ][iy  ][iz-1];
-      Ezl += weight010 * Ez[ix  ][iy-1][iz  ];
-      Ezl += weight011 * Ez[ix  ][iy-1][iz-1];
-      Ezl += weight100 * Ez[ix-1][iy  ][iz  ];
-      Ezl += weight101 * Ez[ix-1][iy  ][iz-1];
-      Ezl += weight110 * Ez[ix-1][iy-1][iz  ];
-      Ezl += weight111 * Ez[ix-1][iy-1][iz-1];
+      // 
+      Bxl += weight000 * (Bx[ix][iy][iz]             + Bx_ext[ix][iy][iz]);
+      Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Bx_ext[ix][iy][iz-1]);
+      Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Bx_ext[ix][iy-1][iz]);
+      Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Bx_ext[ix][iy-1][iz-1]);
+      Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Bx_ext[ix-1][iy][iz]);
+      Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Bx_ext[ix-1][iy][iz-1]);
+      Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Bx_ext[ix-1][iy-1][iz]);
+      Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Bx_ext[ix-1][iy-1][iz-1]);
+      // 
+      Byl += weight000 * (By[ix][iy][iz]             + By_ext[ix][iy][iz]);
+      Byl += weight001 * (By[ix][iy][iz - 1]         + By_ext[ix][iy][iz-1]);
+      Byl += weight010 * (By[ix][iy - 1][iz]         + By_ext[ix][iy-1][iz]);
+      Byl += weight011 * (By[ix][iy - 1][iz - 1]     + By_ext[ix][iy-1][iz-1]);
+      Byl += weight100 * (By[ix - 1][iy][iz]         + By_ext[ix-1][iy][iz]);
+      Byl += weight101 * (By[ix - 1][iy][iz - 1]     + By_ext[ix-1][iy][iz-1]);
+      Byl += weight110 * (By[ix - 1][iy - 1][iz]     + By_ext[ix-1][iy-1][iz]);
+      Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + By_ext[ix-1][iy-1][iz-1]);
+      // 
+      Bzl += weight000 * (Bz[ix][iy][iz]             + Bz_ext[ix][iy][iz]);
+      Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Bz_ext[ix][iy][iz-1]);
+      Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Bz_ext[ix][iy-1][iz]);
+      Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Bz_ext[ix][iy-1][iz-1]);
+      Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Bz_ext[ix-1][iy][iz]);
+      Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Bz_ext[ix-1][iy][iz-1]);
+      Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Bz_ext[ix-1][iy-1][iz]);
+      Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Bz_ext[ix-1][iy-1][iz-1]);
+      // 
+      Exl += weight000 * Ex[ix][iy][iz];
+      Exl += weight001 * Ex[ix][iy][iz - 1];
+      Exl += weight010 * Ex[ix][iy - 1][iz];
+      Exl += weight011 * Ex[ix][iy - 1][iz - 1];
+      Exl += weight100 * Ex[ix - 1][iy][iz];
+      Exl += weight101 * Ex[ix - 1][iy][iz - 1];
+      Exl += weight110 * Ex[ix - 1][iy - 1][iz];
+      Exl += weight111 * Ex[ix - 1][iy - 1][iz - 1];
+      // 
+      Eyl += weight000 * Ey[ix][iy][iz];
+      Eyl += weight001 * Ey[ix][iy][iz - 1];
+      Eyl += weight010 * Ey[ix][iy - 1][iz];
+      Eyl += weight011 * Ey[ix][iy - 1][iz - 1];
+      Eyl += weight100 * Ey[ix - 1][iy][iz];
+      Eyl += weight101 * Ey[ix - 1][iy][iz - 1];
+      Eyl += weight110 * Ey[ix - 1][iy - 1][iz];
+      Eyl += weight111 * Ey[ix - 1][iy - 1][iz - 1];
+      // 
+      Ezl += weight000 * Ez[ix][iy][iz];
+      Ezl += weight001 * Ez[ix][iy][iz - 1];
+      Ezl += weight010 * Ez[ix][iy - 1][iz];
+      Ezl += weight011 * Ez[ix][iy - 1][iz - 1];
+      Ezl += weight100 * Ez[ix - 1][iy][iz];
+      Ezl += weight101 * Ez[ix - 1][iy][iz - 1];
+      Ezl += weight110 * Ez[ix - 1][iy - 1][iz];
+      Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
 
       // end interpolation
       const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
@@ -433,7 +510,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // ********************//
   // COMMUNICATION 
   // *******************//
-  timeTasks.start_communicate();
+  // timeTasks.start_communicate();
   const int avail = communicate(vct);
   if (avail < 0)
     return (-1);
@@ -446,16 +523,386 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       return (-1);
     MPI_Barrier(MPI_COMM_WORLD);
   }
-  timeTasks.addto_communicate();
+  // timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
 }
-
 
 /** relativistic mover with a Predictor-Corrector scheme */
 int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   return (0);
 }
 
+int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf){
+
+  if (vct->getCartesian_rank()==0){
+    cout << "*** Repopulator species " << ns << " ***" << endl;
+  }
+  double  FourPI =16*atan(1.0);
+  int avail;
+  long long store_nop=nop;
+
+  ////////////////////////
+  // INJECTION FROM XLEFT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcPfaceXleft == 2){ // use Field topology in this case
+    long long particles_index=0;
+    long long nplast = nop-1;
+
+    while (particles_index < nplast+1) {
+      if (x[particles_index] < 3.0*dx ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< 4;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=1; k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  store_nop = nop;
+
+  ////////////////////////
+  // INJECTION FROM YLEFT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL  && bcPfaceYleft == 2)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (y[particles_index] < 3.0*dy ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=1; j< 4;j++)
+        for (int k=1; k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  ////////////////////////
+  // INJECTION FROM ZLEFT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL  && bcPfaceZleft == 2)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (z[particles_index] < 3.0*dz ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=1; k< 4;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  ////////////////////////
+  // INJECTION FROM XRIGHT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getXright_neighbor() == MPI_PROC_NULL  && bcPfaceXright == 2){
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (x[particles_index] > (Lx-3.0*dx) ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=(grid->getNXC()-4); i< grid->getNXC()-1;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=1; k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  ////////////////////////
+  // INJECTION FROM YRIGHT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getYright_neighbor() == MPI_PROC_NULL  && bcPfaceYright == 2)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (y[particles_index] > (Ly-3.0*dy) ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=(grid->getNYC()-4); j< grid->getNYC()-1;j++)
+        for (int k=1; k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  ////////////////////////
+  // INJECTION FROM ZRIGHT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getZright_neighbor() == MPI_PROC_NULL  && bcPfaceZright == 2)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (z[particles_index] > (Lz-3.0*dz) ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=(grid->getNZC()-4); k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+
+  if (vct->getCartesian_rank()==0){
+    cout << "*** number of particles " << nop << " ***" << endl;
+  }
+
+  //********************//
+  // COMMUNICATION
+  // *******************//
+  avail = communicate(vct);
+  if (avail < 0) return(-1);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  // communicate again if particles are not in the correct domain
+  while(isMessagingDone(vct) >0){
+    // COMMUNICATION
+    avail = communicate(vct);
+    if (avail < 0)
+      return(-1);
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+
+  return(0); // exit succcesfully (hopefully)
+}
 
 /** interpolation Particle->Grid only for pressure tensor */
 void Particles3D::interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
@@ -651,7 +1098,7 @@ double Particles3D::delta_f(double u, double v, double w, double x, double y, do
   y = temp * sin(theta) + y * cos(theta);
 
 
-/** for compilation issues comment this part: PUT in the math stuff */
+  /** for compilation issues comment this part: PUT in the math stuff */
   // calc_bessel_Jn_seq(lambda, lmax, bessel_Jn_array, bessel_Jn_prime_array);
   factor = (kpar * vperp / omega * df0_dvpar(vpar, vperp) + (1.0 - (kpar * vpar / omega)) * df0_dvperp(vpar, vperp));
   for (register int l = -lmax; l < 0; l++) {  // negative index
@@ -711,3 +1158,28 @@ void Particles3D::RotatePlaneXY(double theta) {
     v[s] = -temp * sin(theta) + temp2 * cos(theta);
   }
 }
+
+/*! Delete the particles inside the sphere with radius R and center x_center y_center and return the total charge removed */
+double Particles3D::deleteParticlesInsideSphere(double R, double x_center, double y_center, double z_center){
+
+  long long np_current = 0;
+  long long nplast     = nop-1;
+
+  while (np_current < nplast+1){
+
+    double xd = x[np_current] - x_center;
+    double yd = y[np_current] - y_center;
+    double zd = z[np_current] - z_center;
+
+    if ( (xd*xd+yd*yd+zd*zd) < R*R ){
+      Q_removed += q[np_current];
+      del_pack(np_current,&nplast);
+
+    } else {
+      np_current++;
+    }
+  }
+  nop = nplast +1;
+  return(Q_removed);
+}
+

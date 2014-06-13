@@ -1,106 +1,79 @@
 cmake_minimum_required(VERSION 2.8.8)
 
 #
-# Project declaration
+# Set project name
 #
 
-project(iPic3D)
+project(iPic3D-KUL)
 
 #
-# Set exec path
-#
-
-set(EXECUTABLE_OUTPUT_PATH work/${CMAKE_BUILD_TYPE})
-set(LIBRARY_OUTPUT_PATH lib)
-
-#
-# Find third class libraries
+# Find packages (already managed by CMake)
 #
 
 find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
 
 #
-# include and lib directories
+# Options
 #
+
+option(IPIC_TESTS "Set up the code tests" OFF)
+
+#
+# Include sub-directories
+#
+
+add_subdirectory(main)
+if(IPIC_H5HUT_OUTPUT)
+  add_subdirectory(H5hut-io)
+endif()
 
 include_directories(
-        include
-        ${HDF5_INCLUDE_DIRS}
-        ${MPI_INCLUDE_PATH}
-)
-
-link_directories(
-        ${HDF5_LIBRARY_DIRS}
-        ${MPI_LIBRARY_DIRS}
+    include
+    ${HDF5_INCLUDE_DIRS}
+    ${MPI_INCLUDE_PATH}
 )
 
 #
-# Header file list
-#
-
-file(
-        GLOB
-        inc_files
-        ConfigFile/src/*.h
-        PSKOutput3D/*.h
-        bc/*.h
-        communication/*.h
-        fields/*.h
-        grids/*.h
-        iPIC3D.h/*.h
-        inputoutput/*.h
-        mathlib/*.h
-        mpidata/*.h
-        particles/*.h
-        performances/*.h
-        processtopology/*.h
-        solvers/*.h
-        utility/*.h
-)
-
-#
-# Source file list
-#
-
-file(
-        GLOB
-        src_files
-        ConfigFile/src/*.cpp
-        PSKOutput3D/*.cpp
-        bc/*.cpp
-        communication/*.cpp
-        fields/*.cpp
-        grids/*.cpp
-        iPIC3D.cpp/*.cpp
-        inputoutput/*.cpp
-        mathlib/*.cpp
-        mpidata/*.cpp
-        particles/*.cpp
-        performances/*.cpp
-        processtopology/*.cpp
-        solvers/*.cpp
-        utility/*.cpp
-        iPIC3D.cpp
-)
-
-#
-# Executable declaration
+# Executable compilation
 #
 
 add_executable(
-        iPIC3D
-        ${inc_files}
-        ${src_files}
+    iPic3D
+    iPic3D.cpp
 )
 
 #
-# Link external libraries
+# Libraries linked
 #
 
 target_link_libraries(
-         iPIC3D
-         ${HDF5_LIBRARIES}
-         ${HDF5_HL_LIBRARIES}
-         ${MPI_LIBRARIES}
+    iPic3D
+    iPic3Dlib
+    ${CMAKE_DL_LIBS}
 )
+
+#
+# Code testing
+#
+
+if(IPIC_TESTS)
+  enable_testing()
+  set(IPIC_TESTS_DIR "${CMAKE_BINARY_DIR}/tests" CACHE STRING "Location of the source files for iPic3D")
+
+  add_test(NAME GEM-test
+           COMMAND ${CMAKE_COMMAND}
+           -DIPIC_TESTS_DIR=${IPIC_TESTS_DIR}
+           -DIPIC_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+           -DIPICEXEC=$<TARGET_FILE:iPic3D>
+           -DMPIEXEC=${MPIEXEC}
+           -DMPIEXEC_NUMPROC_FLAG=${MPIEXEC_NUMPROC_FLAG}
+           -DMPIEXEC_POSTFLAGS=${MPIEXEC_POSTFLAGS}
+           -DIPIC_TESTS_DIR=${IPIC_TESTS_DIR}
+           -P ${CMAKE_SOURCE_DIR}/testfiles/CMakeRunTest-GEM.txt)
+
+  add_test(NAME uname-test
+           COMMAND ${CMAKE_COMMAND}
+           -P ${CMAKE_SOURCE_DIR}/testfiles/CMakeRunTest-uname.txt)
+
+endif(IPIC_TESTS)
