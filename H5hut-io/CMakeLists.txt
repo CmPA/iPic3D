@@ -32,6 +32,7 @@ include_directories(
         include
         ${H5HUT_INCLUDE_DIRS}
         ${HDF5_INCLUDE_DIRS}
+        ${MPI_INCLUDE_PATH}
 )
 
 link_directories(
