@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 2.8.5)
 
 #
 # Set project name
 #
 
-project(iPic3D-KUL)
+project(iPic3D)
 
 #
 # Find packages (already managed by CMake)

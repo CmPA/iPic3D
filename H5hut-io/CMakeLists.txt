@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 2.8.5)
 
 #
 # Project declaration
@@ -32,6 +32,7 @@ include_directories(
         include
         ${H5HUT_INCLUDE_DIRS}
         ${HDF5_INCLUDE_DIRS}
+        ${MPI_INCLUDE_PATH}
 )
 
 link_directories(
