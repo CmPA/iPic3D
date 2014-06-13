@@ -1,4 +1,4 @@
-
+#include <mpi.h>
 #include "BcParticles.h"
 
 /** set the boundary VirtualTopology3D3Dcondition  for particle in 2D

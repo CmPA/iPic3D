@@ -1,4 +1,4 @@
-
+#include <mpi.h>
 #include "EMfields3D.h"
 
 /*! constructor */

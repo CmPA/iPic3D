@@ -4,7 +4,7 @@
 developers: Stefano Markidis, Giovanni Lapenta
  ********************************************************************************************/
 
-
+#include <mpi.h>
 #include <iostream>
 #include <math.h>
 

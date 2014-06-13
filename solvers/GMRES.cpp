@@ -1,4 +1,4 @@
-
+#include <mpi.h>
 #include "GMRES.h"
 
 void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b, int m, int max_iter, double tol, Grid * grid, VirtualTopology3D * vct, Field * field) {
