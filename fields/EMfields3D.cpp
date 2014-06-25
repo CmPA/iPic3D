@@ -117,7 +117,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   // Jz_ext = newArr3(double,nxn,nyn,nzn);
   // involving species
   rhons = newArr4(double, ns, nxn, nyn, nzn);
-  rhocs = newArr4(double, ns, nxc, nyc, nzn);
+  rhocs = newArr4(double, ns, nxc, nyc, nzc);
   Jxs = newArr4(double, ns, nxn, nyn, nzn);
   Jys = newArr4(double, ns, nxn, nyn, nzn);
   Jzs = newArr4(double, ns, nxn, nyn, nzn);
@@ -2759,9 +2759,9 @@ void EMfields3D::BoundaryConditionsEImage(double ***imageX, double ***imageY, do
   if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==2) {
     for (int i=1; i < nx-1;i++)
       for (int k=1; k < nz-1;k++){
-        imageX[i][ny-1][k] = vectorX[i][ny-1][k]-injFieldsTop->ExITemp[i][nx-1][k];
-        imageY[i][ny-1][k] = vectorY[i][ny-1][k]-injFieldsTop->EyITemp[i][nx-1][k];
-        imageZ[i][ny-1][k] = vectorZ[i][ny-1][k]-injFieldsTop->EzITemp[i][nx-1][k];
+        imageX[i][ny-1][k] = vectorX[i][ny-1][k]-injFieldsTop->ExITemp[i][ny-1][k];
+        imageY[i][ny-1][k] = vectorY[i][ny-1][k]-injFieldsTop->EyITemp[i][ny-1][k];
+        imageZ[i][ny-1][k] = vectorZ[i][ny-1][k]-injFieldsTop->EzITemp[i][ny-1][k];
       }
   }
 
