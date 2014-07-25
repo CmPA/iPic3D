@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 2.8.8)
 
 #
 # Project declaration
@@ -10,7 +10,6 @@ project(iPic3Dlib)
 # Set exec path
 #
 
-set(EXECUTABLE_OUTPUT_PATH exec/${CMAKE_BUILD_TYPE})
 set(LIBRARY_OUTPUT_PATH lib)
 set(IPIC_HOME ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
@@ -44,7 +43,6 @@ file(
         ${IPIC_HOME}/communication/*.cpp
         ${IPIC_HOME}/fields/*.cpp
         ${IPIC_HOME}/grids/*.cpp
-        ${IPIC_HOME}/iPIC3D.cpp/*.cpp
         ${IPIC_HOME}/inputoutput/*.cpp
         ${IPIC_HOME}/mathlib/*.cpp
         ${IPIC_HOME}/mpidata/*.cpp
@@ -62,15 +60,12 @@ file(
 
 option(IPIC_H5HUT_OUTPUT "Output is done using Parallel HDF5 with the H5hut library")
 if(IPIC_H5HUT_OUTPUT)
-  set(H5HUT_HOME $ENV{H5HUT_DIR} CACHE STRING "H5hut home directory")
-  set(H5HUT_INCLUDE_DIRS ${H5HUT_HOME}/include)
-
-  set(H5HUTIO_HOME ${IPIC_HOME}/H5hut-io CACHE STRING "H5hut-io library home")
-  set(H5HUTIO_INCLUDE_DIRS ${H5HUTIO_HOME}/include)
-  set(H5HUTIO_LIBRARY_DIRS ${H5HUTIO_HOME}/lib)
+  add_subdirectory(${IPIC_HOME}/H5hut-io H5hut-io)
+  set(H5HUTIO_INCLUDE_DIRS ${IPIC_HOME}/H5hut-io/include)
   set(H5HUTIO_LIBRARIES H5hut-io)
 
   add_definitions(-DUSEH5HUT)
+  add_definitions(-DPARALLEL_IO)
 endif()
 
 option(IPIC_BATSRUS "Compile library with coupling code for BATS-R-US" OFF)
@@ -83,13 +78,6 @@ if(IPIC_XEONPHI)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
-option(IPIC_BUILD_SHARED "Compile shared library" OFF)
-if(IPIC_BUILD_SHARED)
-  set(IPIC_BUILD_TYPE SHARED)
-else()
-  set(IPIC_BUILD_TYPE STATIC)
-endif()
-
 #
 # include and lib directories
 #
@@ -97,7 +85,6 @@ endif()
 include_directories(
         ${IPIC_HOME}/include
         ${H5HUTIO_INCLUDE_DIRS}
-        ${H5HUT_INCLUDE_DIRS}
         ${HDF5_INCLUDE_DIRS}
         ${MPI_INCLUDE_PATH}
 )
@@ -112,7 +99,7 @@ link_directories(
 
 add_library(
         iPic3Dlib
-        ${IPIC_BUILD_TYPE}
+        STATIC
         ${inc_files}
         ${src_files}
 )
@@ -124,7 +111,4 @@ add_library(
 target_link_libraries(
          iPic3Dlib
          ${H5HUTIO_LIBRARIES}
-         ${HDF5_LIBRARIES}
-         ${MPI_LIBRARIES}
-         ${CMAKE_DL_LIBS}
 )

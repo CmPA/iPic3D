@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.5)
+cmake_minimum_required(VERSION 2.8.8)
 
 #
 # Project declaration
@@ -32,7 +32,6 @@ include_directories(
         include
         ${H5HUT_INCLUDE_DIRS}
         ${HDF5_INCLUDE_DIRS}
-        ${MPI_INCLUDE_PATH}
 )
 
 link_directories(
@@ -63,17 +62,9 @@ file(
 # Compilation options
 #
 
-option(H5HUTIO_BUILD_SHARED "Compile shared library" OFF)
-if(H5HUTIO_BUILD_SHARED)
-  set(H5HUTIO_BUILD_TYPE SHARED)
-else()
-  set(H5HUTIO_BUILD_TYPE STATIC)
-endif()
-
 add_library(
         H5hut-io
-        ${H5HUTIO_BUILD_TYPE}
-        ${inc_files}
+        STATIC
         ${src_files}
 )
 
@@ -84,8 +75,5 @@ add_library(
 target_link_libraries(
          H5hut-io
          ${H5HUT_LIBRARIES}
-         ${HDF5_LIBRARIES}
-         ${MPI_LIBRARIES}
-         ${CMAKE_DL_LIBS}
 )
 
