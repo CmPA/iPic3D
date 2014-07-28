@@ -2,7 +2,7 @@
 #include "Grid3DCU.h"
 
 /*! constructor */
-Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {
+Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   // FOR TESTS - this must be uncommented next
   // int get_rank();
   // if(!get_rank())

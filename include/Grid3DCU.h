@@ -10,7 +10,7 @@
 #include <iostream>
 
 #include "Grid.h"
-#include "CollectiveIO.h"
+#include "Collective.h"
 #include "ComInterpNodes3D.h"
 #include "ComNodes3D.h"
 #include "VirtualTopology3D.h"
@@ -32,11 +32,11 @@ class Grid3DCU                  // :public Grid
 {
 public:
   /** constructor */
-  Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct);
+  Grid3DCU(Collective * col, VirtualTopology3D * vct);
   /** destructor */
   ~Grid3DCU();
   /** allocate grid arrays for this domain */
-  void allocate(CollectiveIO * ptC, VirtualTopology3D * ptVCT);
+  void allocate(Collective * ptC, VirtualTopology3D * ptVCT);
   /** deallocate grid arrays for this domain */
   void deallocate();
   /** print grid info */

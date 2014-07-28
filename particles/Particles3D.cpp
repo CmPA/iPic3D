@@ -10,7 +10,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
-#include "CollectiveIO.h"
+#include "Collective.h"
 #include "Collective.h"
 #include "Basic.h"
 #include "BcParticles.h"
@@ -47,7 +47,7 @@ using std::endl;
 
 /** constructor */
 Particles3D::Particles3D() {
-  // see allocate(int species, CollectiveIO* col, VirtualTopology3D* vct, Grid* grid)
+  // see allocate(int species, Collective* col, VirtualTopology3D* vct, Grid* grid)
 
 }
 /** deallocate particles */

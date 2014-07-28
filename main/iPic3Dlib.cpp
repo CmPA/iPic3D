@@ -20,7 +20,7 @@ int c_Solver::Init(int argc, char **argv) {
   ns = col->getNs();            // get the number of particle species involved in simulation
   first_cycle = col->getLast_cycle() + 1; // get the last cycle from the restart
   // initialize the virtual cartesian topology 
-  vct = new VCtopology3D();
+  vct = new VCtopology3D(col);
   // Check if we can map the processes into a matrix ordering defined in Collective.cpp
   if (nprocs != vct->getNprocs()) {
     if (myrank == 0) {

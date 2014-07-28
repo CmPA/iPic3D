@@ -8,7 +8,6 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include <math.h>
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
-#include "CollectiveIO.h"
 #include "Collective.h"
 #include "ComParticles3D.h"
 #include "Alloc.h"
@@ -43,7 +42,7 @@ using std::endl;
 
 /** constructor */
 Particles3Dcomm::Particles3Dcomm() {
-  // see allocate(int species, CollectiveIO* col, VirtualTopology3D* vct, Grid* grid)
+  // see allocate(int species, Collective* col, VirtualTopology3D* vct, Grid* grid)
 
 }
 /** deallocate particles */
@@ -64,7 +63,7 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]b_Z_LEFT;
 }
 /** constructors fo a single species*/
-void Particles3Dcomm::allocate(int species, int initnpmax, CollectiveIO * col, VirtualTopology3D * vct, Grid * grid) {
+void Particles3Dcomm::allocate(int species, int initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
   // info from collectiveIO
   ns = species;
   npcel = col->getNpcel(species);

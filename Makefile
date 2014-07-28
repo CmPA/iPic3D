@@ -48,6 +48,7 @@ SRC = \
  $(IPIC_HOME)/communication/ComInterpNodes3D.cpp \
  $(IPIC_HOME)/communication/ComParticles3D.cpp \
  $(IPIC_HOME)/communication/ComBasic3D.cpp \
+ $(IPIC_HOME)/communication/VCtopology3D.cpp \
  $(IPIC_HOME)/utility/debug.cpp \
  $(IPIC_HOME)/utility/asserts.cpp
 
