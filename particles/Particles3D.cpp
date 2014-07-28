@@ -324,8 +324,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
   double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
-  double ****node_coordinate = asgArr4(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), 3, grid->getN());
-
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   // don't bother trying to push any particles simultaneously;
@@ -369,15 +367,16 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       if (iz > nzn - 1)
         iz = nzn - 1;
 
-      double xi[2];
-      double eta[2];
+      double xi  [2];
+      double eta [2];
       double zeta[2];
-      xi[0] = xp - node_coordinate[ix - 1][iy][iz][0];
-      eta[0] = yp - node_coordinate[ix][iy - 1][iz][1];
-      zeta[0] = zp - node_coordinate[ix][iy][iz - 1][2];
-      xi[1] = node_coordinate[ix][iy][iz][0] - xp;
-      eta[1] = node_coordinate[ix][iy][iz][1] - yp;
-      zeta[1] = node_coordinate[ix][iy][iz][2] - zp;
+
+      xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+      eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+      zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+      xi  [1] = grid->getXN(ix,iy,iz) - xp;
+      eta [1] = grid->getYN(ix,iy,iz) - yp;
+      zeta[1] = grid->getZN(ix,iy,iz) - zp;
 
       double Exl = 0.0;
       double Eyl = 0.0;

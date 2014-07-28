@@ -101,20 +101,14 @@ public:
   double getDY();
   /** return dz */
   double getDZ();
-  /** get xn(X,Y,Z) */
-  double &getXN(int indexX, int indexY, int indexZ);
-  /** get yn(X,Y,Z) */
-  double &getYN(int indexX, int indexY, int indexZ);
-  /** get zn(X,Y,Z) */
-  double &getZN(int indexX, int indexY, int indexZ);
-  /** get the whole vector of nodes*/
-  double ****getN();
-  /** get xc(X,Y,Z) */
-  double &getXC(int indexX, int indexY, int indexZ);
-  /** get yc(X,Y,Z) */
-  double &getYC(int indexX, int indexY, int indexZ);
-  /** get zc(X,Y,Z) */
-  double &getZC(int indexX, int indexY, int indexZ);
+
+  const double &getXN(int X, int Y, int Z) { return node_xcoord[X];}
+  const double &getYN(int X, int Y, int Z) { return node_ycoord[Y];}
+  const double &getZN(int X, int Y, int Z) { return node_zcoord[Z];}
+  const double &getXC(int X, int Y, int Z) { return center_xcoord[X];}
+  const double &getYC(int X, int Y, int Z) { return center_ycoord[Y];}
+  const double &getZC(int X, int Y, int Z) { return center_zcoord[Z];}
+
   /** get Xstart */
   double getXstart();
   /** get Xend */
@@ -158,10 +152,15 @@ private:
   double invdz;
   /** invol = inverse of volume*/
   double invVOL;
-  /** node coordinate */
-  double ****node_coordinate;
-  /** center coordinate */
-  double ****center_coordinate;
+
+  double *node_xcoord; /** Node X coordinate */
+  double *node_ycoord; /** Node Y coordinate */
+  double *node_zcoord; /** Node Z coordinate */
+
+  double *center_xcoord; /** Cell center X coordinate */
+  double *center_ycoord; /** Cell center Y coordinate */
+  double *center_zcoord; /** Cell center Z coordinate */
+
   /** local grid boundaries coordinate  */
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
 
