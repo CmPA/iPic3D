@@ -13,6 +13,8 @@ H5HUT_HOME  = /usr/local/H5hut/1.99.12
 IPIC_FLAGS  = "-DUSEH5HUT -DPARALLEL_IO"
 ## END OF SECTION
 
+OPTIM       = -O3
+
 HDF5_LIB    = $(HDF5_HOME)/lib/libhdf5_hl.a $(HDF5_HOME)/lib/libhdf5.a
 H5HUT_LIB   = $(H5HUT_HOME)/lib/libH5hut.a
 H5HUTIO_LIB = $(IPIC_HOME)/H5hut-io/libH5hut-io.a
@@ -81,5 +83,5 @@ cleanio :
 
 %.o : %.cpp
 	echo " Compiling " $@
-	$(CXX) $(CXXFLAGS) $(IPIC_FLAGS) -I$(INC_DIR) -I$(INC_H5HUTIO) -I$(INC_HDF5) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(OPTIM) $(IPIC_FLAGS) -I$(INC_DIR) -I$(INC_H5HUTIO) -I$(INC_HDF5) -c $< -o $@
 

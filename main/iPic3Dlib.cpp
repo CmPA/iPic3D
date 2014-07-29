@@ -171,6 +171,21 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
+void c_Solver::GatherMoments(){
+  // timeTasks.resetCycle();
+  // interpolation
+  // timeTasks.start(TimeTasks::MOMENTS);
+
+  EMf->updateInfoFields(grid,vct,col);
+  EMf->setZeroDensities();                  // set to zero the densities
+
+  for (int i = 0; i < ns; i++)
+    part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
+
+  EMf->sumOverSpecies(vct);                 // sum all over the species
+
+}
+
 void c_Solver::CalculateField() {
 
   // timeTasks.resetCycle();
@@ -197,6 +212,14 @@ void c_Solver::CalculateField() {
   MPI_Barrier(MPI_COMM_WORLD);
   // timeTasks.end(TimeTasks::MOMENTS);
 
+  // MAXWELL'S SOLVER
+  // timeTasks.start(TimeTasks::FIELDS);
+  EMf->calculateE(grid, vct, col);               // calculate the E field
+  // timeTasks.end(TimeTasks::FIELDS);
+
+}
+
+void c_Solver::CalculateBField() {
   /* --------------------- */
   /* Calculate the B field */
   /* --------------------- */
@@ -207,12 +230,6 @@ void c_Solver::CalculateField() {
 
   // print out total time for all tasks
   // timeTasks.print_cycle_times();
-
-  // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct, col);               // calculate the E field
-  // timeTasks.end(TimeTasks::FIELDS);
-
 }
 
 bool c_Solver::ParticlesMover() {
