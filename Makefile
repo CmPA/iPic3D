@@ -20,6 +20,7 @@ H5HUT_LIB   = $(H5HUT_HOME)/lib/libH5hut.a
 H5HUTIO_LIB = $(IPIC_HOME)/H5hut-io/libH5hut-io.a
 
 INC_DIR     = ./include
+INC_H5HUT   = $(H5HUT_HOME)/include
 INC_H5HUTIO = $(IPIC_HOME)/H5hut-io/include
 INC_HDF5    = $(HDF5_HOME)/include
 
@@ -83,5 +84,5 @@ cleanio :
 
 %.o : %.cpp
 	echo " Compiling " $@
-	$(CXX) $(CXXFLAGS) $(OPTIM) $(IPIC_FLAGS) -I$(INC_DIR) -I$(INC_H5HUTIO) -I$(INC_HDF5) -c $< -o $@
+	$(CXX) $(CXXFLAGS) $(OPTIM) $(IPIC_FLAGS) -I$(INC_DIR) -I$(INC_H5HUTIO) -I$(INC_H5HUT) -I$(INC_HDF5) -c $< -o $@
 
