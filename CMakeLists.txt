@@ -24,13 +24,10 @@ option(IPIC_TESTS "Set up the code tests" OFF)
 #
 
 add_subdirectory(main)
-## if(IPIC_H5HUT_OUTPUT)
-##   add_subdirectory(H5hut-io)
-##   set(H5HUTIO_LIBRARIES H5hut-io)
-## endif()
 
 include_directories(
     include
+    ${MPI_INCLUDE_PATH}
     ${HDF5_INCLUDE_DIRS}
 )
 
@@ -50,7 +47,6 @@ add_executable(
 target_link_libraries(
     iPic3D
     iPic3Dlib
-##    ${H5HUTIO_LIBRARIES}
     ${MPI_LIBRARIES}
     ${HDF5_LIBRARIES}
 )
