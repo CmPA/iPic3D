@@ -1,9 +1,9 @@
 /***************************************************************************
   Collective.h  -  Stefano Markidis, Giovanni Lapenta
-  -------------------
+  -------------------------------------------------------------------------- */
 
 
-/**
+/*!
  *  Collective properties. Input physical parameters for the simulation.
  *  Use ConfigFile to parse the input file
  *
@@ -40,311 +40,311 @@ using namespace std;
 
 class Collective:public CollectiveIO {
 public:
-  /** constructor: initialize physical parameters with values */
+  /*! constructor: initialize physical parameters with values */
   Collective(int argc, char **argv);
-  /** destructor */
+  /*! destructor */
    ~Collective();
-  /** read input file */
+  /*! read input file */
   void ReadInput(string inputfile);
-  /** read the restart input file from HDF5 */
+  /*! read the restart input file from HDF5 */
   int ReadRestart(string inputfile);
-  /** Print physical parameters */
+  /*! Print physical parameters */
   void Print();
-  /** save setting in a file */
+  /*! save setting in a file */
   void save();
-  /** get the physical space dimensions            */
+  /*! get the physical space dimensions            */
   int getDim();
-  /** Get length of the system - direction X */
+  /*! Get length of the system - direction X */
   double getLx();
-  /** Get length of the system - direction Y */
+  /*! Get length of the system - direction Y */
   double getLy();
-  /** Get length of the system - direction Z */
+  /*! Get length of the system - direction Z */
   double getLz();
-  /** Get object center - direction X */
+  /*! Get object center - direction X */
   double getx_center();
-  /** Get object center - direction Y */
+  /*! Get object center - direction Y */
   double gety_center();
-  /** Get object center - direction Z */
+  /*! Get object center - direction Z */
   double getz_center();
-  /** Get object size - cubic box */
+  /*! Get object size - cubic box */
   double getL_square();
-  /** Get the number of cells - direction X*/
+  /*! Get the number of cells - direction X*/
   int getNxc();
-  /** Get the number of cells - direction Y*/
+  /*! Get the number of cells - direction Y*/
   int getNyc();
-  /** Get the number of cells - direction Z*/
+  /*! Get the number of cells - direction Z*/
   int getNzc();
-  /** Get the grid spacing - direction X*/
+  /*! Get the grid spacing - direction X*/
   double getDx();
-  /** Get the grid spacing - direction Y*/
+  /*! Get the grid spacing - direction Y*/
   double getDy();
-  /** Get the grid spacing - direction Z*/
+  /*! Get the grid spacing - direction Z*/
   double getDz();
-  /** get the light speed */
+  /*! get the light speed */
   double getC();
-  /** get the time step */
+  /*! get the time step */
   double getDt();
-  /** get the decentering parameter */
+  /*! get the decentering parameter */
   double getTh();
-  /** get the Smoothing value*/
+  /*! get the Smoothing value*/
   double getSmooth();
-  /** get the number of time cycles */
+  /*! get the number of time cycles */
   int getNcycles();
-  /** get the number of species */
+  /*! get the number of species */
   int getNs();
-  /** get the number of particles for different species */
+  /*! get the number of particles for different species */
   long getNp(int nspecies);
-  /** get the number of particles per cell  */
+  /*! get the number of particles per cell  */
   int getNpcel(int nspecies);
-  /** get the number of particles per cell - direction X  */
+  /*! get the number of particles per cell - direction X  */
   int getNpcelx(int nspecies);
-  /** get the number of particles per cell - direction Y  */
+  /*! get the number of particles per cell - direction Y  */
   int getNpcely(int nspecies);
-  /** get the number of particles per cell - direction Z  */
+  /*! get the number of particles per cell - direction Z  */
   int getNpcelz(int nspecies);
-  /** get maximum number of particles for different species */
+  /*! get maximum number of particles for different species */
   long getNpMax(int nspecies);
-  /** NpMax/Np is the ratio between the maximum number of particles allowed on a processor and the number of particles*/
+  /*! NpMax/Np is the ratio between the maximum number of particles allowed on a processor and the number of particles*/
   double getNpMaxNpRatio();
-  /** get charge to mass ratio for different species */
+  /*! get charge to mass ratio for different species */
   double getQOM(int nspecies);
-  /** get background charge for GEM challenge */
+  /*! get background charge for GEM challenge */
   double getRHOinit(int nspecies);
-  /** get thermal velocity  - X direction    */
+  /*! get thermal velocity  - X direction    */
   double getUth(int nspecies);
-  /** get thermal velocity  - Y direction    */
+  /*! get thermal velocity  - Y direction    */
   double getVth(int nspecies);
-  /** get thermal velocity  - Z direction    */
+  /*! get thermal velocity  - Z direction    */
   double getWth(int nspecies);
-  /** get Drift velocity - Direction X         */
+  /*! get Drift velocity - Direction X         */
   double getU0(int nspecies);
-  /** get Drift velocity - Direction Y         */
+  /*! get Drift velocity - Direction Y         */
   double getV0(int nspecies);
-  /** get Drift velocity - Direction Z         */
+  /*! get Drift velocity - Direction Z         */
   double getW0(int nspecies);
-  /** get the boolean value for TrackParticleID */
+  /*! get the boolean value for TrackParticleID */
   bool getTrackParticleID(int nspecies);
-  /** get SaveDirName  */
+  /*! get SaveDirName  */
   string getSaveDirName();
-  /** get last_cycle  */
+  /*! get last_cycle  */
   int getLast_cycle();
-  /** get RestartDirName  */
+  /*! get RestartDirName  */
   string getRestartDirName();
 
-  /** get Boundary Condition Particles: FaceXright */
+  /*! get Boundary Condition Particles: FaceXright */
   int getBcPfaceXright();
-  /** get Boundary Condition Particles: FaceXleft */
+  /*! get Boundary Condition Particles: FaceXleft */
   int getBcPfaceXleft();
-  /** get Boundary Condition Particles: FaceYright */
+  /*! get Boundary Condition Particles: FaceYright */
   int getBcPfaceYright();
-  /** get Boundary Condition Particles: FaceYleft */
+  /*! get Boundary Condition Particles: FaceYleft */
   int getBcPfaceYleft();
-  /** get Boundary Condition Particles: FaceYright */
+  /*! get Boundary Condition Particles: FaceYright */
   int getBcPfaceZright();
-  /** get Boundary Condition Particles: FaceYleft */
+  /*! get Boundary Condition Particles: FaceYleft */
   int getBcPfaceZleft();
 
-  /** get Boundary Condition Electrostatic Potential: FaceXright */
+  /*! get Boundary Condition Electrostatic Potential: FaceXright */
   int getBcPHIfaceXright();
-  /** get Boundary Condition Electrostatic Potential:FaceXleft */
+  /*! get Boundary Condition Electrostatic Potential:FaceXleft */
   int getBcPHIfaceXleft();
-  /** get Boundary Condition Electrostatic Potential:FaceYright */
+  /*! get Boundary Condition Electrostatic Potential:FaceYright */
   int getBcPHIfaceYright();
-  /** get Boundary Condition Electrostatic Potential:FaceYleft */
+  /*! get Boundary Condition Electrostatic Potential:FaceYleft */
   int getBcPHIfaceYleft();
-  /** get Boundary Condition Electrostatic Potential:FaceYright */
+  /*! get Boundary Condition Electrostatic Potential:FaceYright */
   int getBcPHIfaceZright();
-  /** get Boundary Condition Electrostatic Potential:FaceYleft */
+  /*! get Boundary Condition Electrostatic Potential:FaceYleft */
   int getBcPHIfaceZleft();
 
-  /** get Boundary ConditionElectric Field: FaceXright */
+  /*! get Boundary ConditionElectric Field: FaceXright */
   int getBcEMfaceXright();
-  /** get Boundary Condition Electric Field: FaceXleft */
+  /*! get Boundary Condition Electric Field: FaceXleft */
   int getBcEMfaceXleft();
-  /** get Boundary Condition Electric Field: FaceYright */
+  /*! get Boundary Condition Electric Field: FaceYright */
   int getBcEMfaceYright();
-  /** get Boundary Condition Electric Field: FaceYleft */
+  /*! get Boundary Condition Electric Field: FaceYleft */
   int getBcEMfaceYleft();
-  /** get Boundary Condition Electric Field: FaceZright */
+  /*! get Boundary Condition Electric Field: FaceZright */
   int getBcEMfaceZright();
-  /** get Boundary Condition Electric Field: FaceZleft */
+  /*! get Boundary Condition Electric Field: FaceZleft */
   int getBcEMfaceZleft();
 
-  /** get RESTART */
+  /*! get RESTART */
   int getRestart_status();
 
-  /** get the sheet thickness */
+  /*! get the sheet thickness */
   double getDelta();
-  /** get the amplitude of the magnetic field along x */
+  /*! get the amplitude of the magnetic field along x */
   double getB0x();
-  /** get the amplitude of the magnetic field along y */
+  /*! get the amplitude of the magnetic field along y */
   double getB0y();
-  /** get the amplitude of the magnetic field along z */
+  /*! get the amplitude of the magnetic field along z */
   double getB0z();
 
-  /** get the boolean value for verbose results */
+  /*! get the boolean value for verbose results */
   bool getVerbose();
 
-  /** get the velocity of injection of the plasma from the wall */
+  /*! get the velocity of injection of the plasma from the wall */
   double getVinj();
 
-  /** get the converging tolerance for CG solver */
+  /*! get the converging tolerance for CG solver */
   double getCGtol();
-  /** get the converging tolerance for GMRES solver */
+  /*! get the converging tolerance for GMRES solver */
   double getGMREStol();
-  /** get the numbers of iteration for the PC mover */
+  /*! get the numbers of iteration for the PC mover */
   int getNiterMover();
 
-  /** output of fields */
+  /*! output of fields */
   int getFieldOutputCycle();
-  /** output of particles */
+  /*! output of particles */
   int getParticlesOutputCycle();
-  /** output of restart */
+  /*! output of restart */
   int getRestartOutputCycle();
-  /** output of diagnostics */
+  /*! output of diagnostics */
   int getDiagnosticsOutputCycle();
 private:
-  /** inputfile */
+  /*! inputfile */
   string inputfile;
-  /** light speed */
+  /*! light speed */
   double c;
-  /** 4  pi */
+  /*! 4  pi */
   double fourpi;
-  /** time step */
+  /*! time step */
   double dt;
-  /** decentering parameter */
+  /*! decentering parameter */
   double th;
-  /** Smoothing value*/
+  /*! Smoothing value*/
   double Smooth;
-  /** number of time cycles */
+  /*! number of time cycles */
   int ncycles;
-  /** physical space dimensions            */
+  /*! physical space dimensions            */
   int dim;
-  /** simulation box length - X direction   */
+  /*! simulation box length - X direction   */
   double Lx;
-  /** simulation box length - Y direction   */
+  /*! simulation box length - Y direction   */
   double Ly;
-  /** simulation box length - Z direction   */
+  /*! simulation box length - Z direction   */
   double Lz;
-  /** object center - X direction   */
+  /*! object center - X direction   */
   double x_center;
-  /** object center - Y direction   */
+  /*! object center - Y direction   */
   double y_center;
-  /** object center - Z direction   */
+  /*! object center - Z direction   */
   double z_center;
-  /** object size - assuming a cubic box  */
+  /*! object size - assuming a cubic box  */
   double L_square;
-  /** number of cells - X direction        */
+  /*! number of cells - X direction        */
   int nxc;
-  /** number of cells - Y direction        */
+  /*! number of cells - Y direction        */
   int nyc;
-  /** number of cells - Z direction        */
+  /*! number of cells - Z direction        */
   int nzc;
-  /** grid spacing - X direction */
+  /*! grid spacing - X direction */
   double dx;
-  /** grid spacing - Y direction */
+  /*! grid spacing - Y direction */
   double dy;
-  /** grid spacing - Z direction */
+  /*! grid spacing - Z direction */
   double dz;
-  /** number of species */
+  /*! number of species */
   int ns;
-  /** number of particles per cell */
+  /*! number of particles per cell */
   int *npcel;
-  /** number of particles per cell - X direction */
+  /*! number of particles per cell - X direction */
   int *npcelx;
-  /** number of particles per cell - Y direction */
+  /*! number of particles per cell - Y direction */
   int *npcely;
-  /** number of particles per cell - Z direction */
+  /*! number of particles per cell - Z direction */
   int *npcelz;
-  /** number of particles array for different species */
+  /*! number of particles array for different species */
   long *np;
-  /** maximum number of particles array for different species */
+  /*! maximum number of particles array for different species */
   long *npMax;
-  /** max number of particles */
+  /*! max number of particles */
   double NpMaxNpRatio;
-  /** charge to mass ratio array for different species */
+  /*! charge to mass ratio array for different species */
   double *qom;
-  /** charge to mass ratio array for different species */
+  /*! charge to mass ratio array for different species */
   double *rhoINIT;
-  /** thermal velocity  - Direction X  */
+  /*! thermal velocity  - Direction X  */
   double *uth;
-  /** thermal velocity  - Direction Y  */
+  /*! thermal velocity  - Direction Y  */
   double *vth;
-  /** thermal velocity  - Direction Z  */
+  /*! thermal velocity  - Direction Z  */
   double *wth;
-  /** Drift velocity - Direction X     */
+  /*! Drift velocity - Direction X     */
   double *u0;
-  /** Drift velocity - Direction Y    */
+  /*! Drift velocity - Direction Y    */
   double *v0;
-  /** Drift velocity - Direction Z     */
+  /*! Drift velocity - Direction Z     */
   double *w0;
 
-  /** TrackParticleID     */
+  /*! TrackParticleID     */
   bool *TrackParticleID;
-  /** SaveDirName     */
+  /*! SaveDirName     */
   string SaveDirName;
-  /** RestartDirName     */
+  /*! RestartDirName     */
   string RestartDirName;
-  /** get inputfile  */
+  /*! get inputfile  */
   string getinputfile();
-  /** restart_status  0 --> no restart; 1--> restart, create new; 2--> restart, append; */
+  /*! restart_status  0 --> no restart; 1--> restart, create new; 2--> restart, append; */
   int restart_status;
-  /** last cycle */
+  /*! last cycle */
   int last_cycle;
 
-  /** Boundary condition on particles
+  /*! Boundary condition on particles
           0 = exit
           1 = perfect mirror
           2 = riemission
           */
-  /** Boundary Condition Particles: FaceXright */
+  /*! Boundary Condition Particles: FaceXright */
   int bcPfaceXright;
-  /** Boundary Condition Particles: FaceXleft */
+  /*! Boundary Condition Particles: FaceXleft */
   int bcPfaceXleft;
-  /** Boundary Condition Particles: FaceYright */
+  /*! Boundary Condition Particles: FaceYright */
   int bcPfaceYright;
-  /** Boundary Condition Particles: FaceYleft */
+  /*! Boundary Condition Particles: FaceYleft */
   int bcPfaceYleft;
-  /** Boundary Condition Particles: FaceYright */
+  /*! Boundary Condition Particles: FaceYright */
   int bcPfaceZright;
-  /** Boundary Condition Particles: FaceYleft */
+  /*! Boundary Condition Particles: FaceYleft */
   int bcPfaceZleft;
 
 
-  /** Field Boundary Condition
+  /*! Field Boundary Condition
           0 =  Dirichlet Boundary Condition: specifies the valueto take pn the boundary of the domain
           1 =  Neumann Boundary Condition: specifies the value of derivative to take on the boundary of the domain
           2 =  Periodic Condition
           */
-  /** Boundary Condition Electrostatic Potential: FaceXright */
+  /*! Boundary Condition Electrostatic Potential: FaceXright */
   int bcPHIfaceXright;
-  /** Boundary Condition Electrostatic Potential:FaceXleft */
+  /*! Boundary Condition Electrostatic Potential:FaceXleft */
   int bcPHIfaceXleft;
-  /** Boundary Condition Electrostatic Potential:FaceYright */
+  /*! Boundary Condition Electrostatic Potential:FaceYright */
   int bcPHIfaceYright;
-  /** Boundary Condition Electrostatic Potential:FaceYleft */
+  /*! Boundary Condition Electrostatic Potential:FaceYleft */
   int bcPHIfaceYleft;
-  /** Boundary Condition Electrostatic Potential:FaceZright */
+  /*! Boundary Condition Electrostatic Potential:FaceZright */
   int bcPHIfaceZright;
-  /** Boundary Condition Electrostatic Potential:FaceZleft */
+  /*! Boundary Condition Electrostatic Potential:FaceZleft */
   int bcPHIfaceZleft;
 
-  /** Boundary Condition EM Field: FaceXright */
+  /*! Boundary Condition EM Field: FaceXright */
   int bcEMfaceXright;
-  /** Boundary Condition EM Field: FaceXleft */
+  /*! Boundary Condition EM Field: FaceXleft */
   int bcEMfaceXleft;
-  /** Boundary Condition EM Field: FaceYright */
+  /*! Boundary Condition EM Field: FaceYright */
   int bcEMfaceYright;
-  /** Boundary Condition EM Field: FaceYleft */
+  /*! Boundary Condition EM Field: FaceYleft */
   int bcEMfaceYleft;
-  /** Boundary Condition EM Field: FaceZright */
+  /*! Boundary Condition EM Field: FaceZright */
   int bcEMfaceZright;
-  /** Boundary Condition EM Field: FaceZleft */
+  /*! Boundary Condition EM Field: FaceZleft */
   int bcEMfaceZleft;
 
 
-  /** GEM Challenge parameters */
-  /** current sheet thickness */
+  /*! GEM Challenge parameters */
+  /*! current sheet thickness */
   double delta;
   /* Amplitude of the field */
   double B0x;
@@ -352,31 +352,31 @@ private:
   double B0z;
 
 
-  /** boolean value for verbose results */
+  /*! boolean value for verbose results */
   bool verbose;
-  /** RESTART */
+  /*! RESTART */
   bool RESTART1;
 
-  /** velocity of the injection from the wall */
+  /*! velocity of the injection from the wall */
   double Vinj;
 
-  /** CG solver stopping criterium tolerance */
+  /*! CG solver stopping criterium tolerance */
   double CGtol;
-  /** GMRES solver stopping criterium tolerance */
+  /*! GMRES solver stopping criterium tolerance */
   double GMREStol;
-  /** mover predictor correcto iteration */
+  /*! mover predictor correcto iteration */
   int NiterMover;
 
-  /** Output for field */
+  /*! Output for field */
   int FieldOutputCycle;
-  /** Output for particles */
+  /*! Output for particles */
   int ParticlesOutputCycle;
-  /** restart cycle */
+  /*! restart cycle */
   int RestartOutputCycle;
-  /** Output for diagnostics */
+  /*! Output for diagnostics */
   int DiagnosticsOutputCycle;
 };
-/** Read the input file from text file and put the data in a collective wrapper:
+/*! Read the input file from text file and put the data in a collective wrapper:
   if it's a restart read from input file basic sim data and load particles and EM field
   from restart file */
 inline void Collective::ReadInput(string inputfile) {
@@ -590,7 +590,7 @@ inline void Collective::ReadInput(string inputfile) {
 
 
 }
-/** 
+/*! 
  *  Read the collective information from the RESTART file in HDF5 format 
  *
  *  There are three restart status:
@@ -663,7 +663,7 @@ inline int Collective::ReadRestart(string inputfile) {
   status = H5Dclose(dataset_id);
 
 
-/** Boundary condition information */
+/*! Boundary condition information */
   // read EMfaceXleft
   dataset_id = H5Dopen(file_id, "/collective/bc/EMfaceXleft", H5P_DEFAULT); // HDF 1.8.8
   status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &bcEMfaceXleft);
@@ -781,7 +781,7 @@ inline int Collective::ReadRestart(string inputfile) {
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &qom[i]);
     status = H5Dclose(dataset_id);
   }
-/** not needed for restart **/
+/*! not needed for restart **/
   for (int i = 0; i < ns; i++)
     uth[i] = 0.0;
   for (int i = 0; i < ns; i++)
@@ -837,7 +837,7 @@ inline int Collective::ReadRestart(string inputfile) {
 
   return (0);
 }
-/** constructor */
+/*! constructor */
 inline Collective::Collective(int argc, char **argv) {
   if (argc < 2) {
     inputfile = "inputfile";
@@ -863,19 +863,19 @@ inline Collective::Collective(int argc, char **argv) {
   }
 
   ReadInput(inputfile);
-/** fourpi = 4 greek pi */
+/*! fourpi = 4 greek pi */
   fourpi = 16.0 * atan(1.0);
-/** dx = space step - X direction */
+/*! dx = space step - X direction */
   dx = Lx / (double) nxc;
-/** dy = space step - Y direction */
+/*! dy = space step - Y direction */
   dy = Ly / (double) nyc;
-/** dz = space step - Z direction */
+/*! dz = space step - Z direction */
   dz = Lz / (double) nzc;
-/** npcel = number of particles per cell */
+/*! npcel = number of particles per cell */
   npcel = new int[ns];
-/** np = number of particles of different species */
+/*! np = number of particles of different species */
   np = new long[ns];
-/** npMax = maximum number of particles of different species */
+/*! npMax = maximum number of particles of different species */
   npMax = new long[ns];
 
   for (int i = 0; i < ns; i++) {
@@ -888,7 +888,7 @@ inline Collective::Collective(int argc, char **argv) {
 
 }
 
-/** destructor */
+/*! destructor */
 inline Collective::~Collective() {
   delete[]np;
   delete[]npcel;
@@ -911,7 +911,7 @@ inline Collective::~Collective() {
   delete[]rhoINIT;
 
 }
-/** Print Simulation Parameters */
+/*! Print Simulation Parameters */
 inline void Collective::Print() {
   cout << endl;
   cout << "Simulation Parameters" << endl;
@@ -963,7 +963,7 @@ inline void Collective::Print() {
 
 
 }
-/** Print Simulation Parameters */
+/*! Print Simulation Parameters */
 inline void Collective::save() {
   string temp;
   temp = SaveDirName + "/SimulationData.txt";
@@ -1005,219 +1005,219 @@ inline void Collective::save() {
 
 }
 
-/** get the physical space dimensions            */
+/*! get the physical space dimensions            */
 inline int Collective::getDim() {
   return (dim);
 }
-/** get Lx */
+/*! get Lx */
 inline double Collective::getLx() {
   return (Lx);
 }
-/** get Ly */
+/*! get Ly */
 inline double Collective::getLy() {
   return (Ly);
 }
-/** get Lz */
+/*! get Lz */
 inline double Collective::getLz() {
   return (Lz);
 }
-/** get x_center */
+/*! get x_center */
 inline double Collective::getx_center() {
   return (x_center);
 }
-/** get y_center */
+/*! get y_center */
 inline double Collective::gety_center() {
   return (y_center);
 }
-/** get z_center */
+/*! get z_center */
 inline double Collective::getz_center() {
   return (z_center);
 }
-/** get L_square */
+/*! get L_square */
 inline double Collective::getL_square() {
   return (L_square);
 }
-/** get nxc */
+/*! get nxc */
 inline int Collective::getNxc() {
   return (nxc);
 }
-/** get nyx */
+/*! get nyx */
 inline int Collective::getNyc() {
   return (nyc);
 }
-/** get nzc */
+/*! get nzc */
 inline int Collective::getNzc() {
   return (nzc);
 }
-/** get dx */
+/*! get dx */
 inline double Collective::getDx() {
   return (dx);
 }
-/** get dy */
+/*! get dy */
 inline double Collective::getDy() {
   return (dy);
 }
-/** get dz */
+/*! get dz */
 inline double Collective::getDz() {
   return (dz);
 }
-/** get the light speed */
+/*! get the light speed */
 inline double Collective::getC() {
   return (c);
 }
-/** get the time step */
+/*! get the time step */
 inline double Collective::getDt() {
   return (dt);
 }
-/** get the decentering parameter */
+/*! get the decentering parameter */
 inline double Collective::getTh() {
   return (th);
 }
-/** get the smooth parameter */
+/*! get the smooth parameter */
 inline double Collective::getSmooth() {
   return (Smooth);
 }
 
-/** get the number of time cycles */
+/*! get the number of time cycles */
 inline int Collective::getNcycles() {
   return (ncycles);
 }
-/** get the number of species */
+/*! get the number of species */
 inline int Collective::getNs() {
   return (ns);
 }
-/** get the number of particles per cell for species nspecies */
+/*! get the number of particles per cell for species nspecies */
 inline int Collective::getNpcel(int nspecies) {
   return (npcel[nspecies]);
 }
-/** get the number of particles per cell for species nspecies - direction X */
+/*! get the number of particles per cell for species nspecies - direction X */
 inline int Collective::getNpcelx(int nspecies) {
   return (npcelx[nspecies]);
 }
-/** get the number of particles per cell for species nspecies - direction Y */
+/*! get the number of particles per cell for species nspecies - direction Y */
 inline int Collective::getNpcely(int nspecies) {
   return (npcely[nspecies]);
 }
-/** get the number of particles per cell for species nspecies - direction Z */
+/*! get the number of particles per cell for species nspecies - direction Z */
 inline int Collective::getNpcelz(int nspecies) {
   return (npcelz[nspecies]);
 }
-/** get the number of particles for different species */
+/*! get the number of particles for different species */
 inline long Collective::getNp(int nspecies) {
   return (np[nspecies]);
 }
-/** get maximum number of particles for different species */
+/*! get maximum number of particles for different species */
 inline long Collective::getNpMax(int nspecies) {
   return (npMax[nspecies]);
 }
 inline double Collective::getNpMaxNpRatio() {
   return (NpMaxNpRatio);
 }
-/** get charge to mass ratio for different species */
+/*! get charge to mass ratio for different species */
 inline double Collective::getQOM(int nspecies) {
   return (qom[nspecies]);
 }
-/** get the background density for GEM challenge */
+/*! get the background density for GEM challenge */
 inline double Collective::getRHOinit(int nspecies) {
   return (rhoINIT[nspecies]);
 }
-/** get thermal velocity  - Direction X     */
+/*! get thermal velocity  - Direction X     */
 inline double Collective::getUth(int nspecies) {
   return (uth[nspecies]);
 }
-/** get thermal velocity  - Direction Y     */
+/*! get thermal velocity  - Direction Y     */
 inline double Collective::getVth(int nspecies) {
   return (vth[nspecies]);
 }
-/** get thermal velocity  - Direction Z     */
+/*! get thermal velocity  - Direction Z     */
 inline double Collective::getWth(int nspecies) {
   return (wth[nspecies]);
 }
-/** get beam velocity - Direction X        */
+/*! get beam velocity - Direction X        */
 inline double Collective::getU0(int nspecies) {
   return (u0[nspecies]);
 }
-/** get beam velocity - Direction Y        */
+/*! get beam velocity - Direction Y        */
 inline double Collective::getV0(int nspecies) {
   return (v0[nspecies]);
 }
-/** get beam velocity - Direction Z        */
+/*! get beam velocity - Direction Z        */
 inline double Collective::getW0(int nspecies) {
   return (w0[nspecies]);
 }
-/** get Boundary Condition Particles: FaceXright */
+/*! get Boundary Condition Particles: FaceXright */
 inline int Collective::getBcPfaceXright() {
   return (bcPfaceXright);
 }
-/** get Boundary Condition Particles: FaceXleft */
+/*! get Boundary Condition Particles: FaceXleft */
 inline int Collective::getBcPfaceXleft() {
   return (bcPfaceXleft);
 }
-/** get Boundary Condition Particles: FaceYright */
+/*! get Boundary Condition Particles: FaceYright */
 inline int Collective::getBcPfaceYright() {
   return (bcPfaceYright);
 }
-/** get Boundary Condition Particles: FaceYleft */
+/*! get Boundary Condition Particles: FaceYleft */
 inline int Collective::getBcPfaceYleft() {
   return (bcPfaceYleft);
 }
-/** get Boundary Condition Particles: FaceZright */
+/*! get Boundary Condition Particles: FaceZright */
 inline int Collective::getBcPfaceZright() {
   return (bcPfaceZright);
 }
-/** get Boundary Condition Particles: FaceZleft */
+/*! get Boundary Condition Particles: FaceZleft */
 inline int Collective::getBcPfaceZleft() {
   return (bcPfaceZleft);
 }
-/** get Boundary Condition Electrostatic Potential: FaceXright */
+/*! get Boundary Condition Electrostatic Potential: FaceXright */
 inline int Collective::getBcPHIfaceXright() {
   return (bcPHIfaceXright);
 }
-/** get Boundary Condition Electrostatic Potential:FaceXleft */
+/*! get Boundary Condition Electrostatic Potential:FaceXleft */
 inline int Collective::getBcPHIfaceXleft() {
   return (bcPHIfaceXleft);
 }
-/** get Boundary Condition Electrostatic Potential:FaceYright */
+/*! get Boundary Condition Electrostatic Potential:FaceYright */
 inline int Collective::getBcPHIfaceYright() {
   return (bcPHIfaceYright);
 }
-/** get Boundary Condition Electrostatic Potential:FaceYleft */
+/*! get Boundary Condition Electrostatic Potential:FaceYleft */
 inline int Collective::getBcPHIfaceYleft() {
   return (bcPHIfaceYleft);
 }
-/** get Boundary Condition Electrostatic Potential:FaceZright */
+/*! get Boundary Condition Electrostatic Potential:FaceZright */
 inline int Collective::getBcPHIfaceZright() {
   return (bcPHIfaceZright);
 }
-/** get Boundary Condition Electrostatic Potential:FaceZleft */
+/*! get Boundary Condition Electrostatic Potential:FaceZleft */
 inline int Collective::getBcPHIfaceZleft() {
   return (bcPHIfaceZleft);
 }
-/** get Boundary Condition EM Field: FaceXright */
+/*! get Boundary Condition EM Field: FaceXright */
 inline int Collective::getBcEMfaceXright() {
   return (bcEMfaceXright);
 }
-/** get Boundary Condition EM Field: FaceXleft */
+/*! get Boundary Condition EM Field: FaceXleft */
 inline int Collective::getBcEMfaceXleft() {
   return (bcEMfaceXleft);
 }
-/** get Boundary Condition EM Field: FaceYright */
+/*! get Boundary Condition EM Field: FaceYright */
 inline int Collective::getBcEMfaceYright() {
   return (bcEMfaceYright);
 }
-/** get Boundary Condition EM Field: FaceYleft */
+/*! get Boundary Condition EM Field: FaceYleft */
 inline int Collective::getBcEMfaceYleft() {
   return (bcEMfaceYleft);
 }
-/** get Boundary Condition EM Field: FaceZright */
+/*! get Boundary Condition EM Field: FaceZright */
 inline int Collective::getBcEMfaceZright() {
   return (bcEMfaceZright);
 }
-/** get Boundary Condition EM Field: FaceZleft */
+/*! get Boundary Condition EM Field: FaceZleft */
 inline int Collective::getBcEMfaceZleft() {
   return (bcEMfaceZleft);
 }
-/** Get GEM Challenge parameters */
+/*! Get GEM Challenge parameters */
 inline double Collective::getDelta() {
   return (delta);
 }
@@ -1230,62 +1230,62 @@ inline double Collective::getB0y() {
 inline double Collective::getB0z() {
   return (B0z);
 }
-/** get the boolean value for verbose results */
+/*! get the boolean value for verbose results */
 inline bool Collective::getVerbose() {
   return (verbose);
 }
-/** get the boolean value for TrackParticleID */
+/*! get the boolean value for TrackParticleID */
 inline bool Collective::getTrackParticleID(int nspecies) {
   return (TrackParticleID[nspecies]);
 }
 inline int Collective::getRestart_status() {
   return (restart_status);
 }
-/** get SaveDirName  */
+/*! get SaveDirName  */
 inline string Collective::getSaveDirName() {
   return (SaveDirName);
 }
-/** get RestartDirName  */
+/*! get RestartDirName  */
 inline string Collective::getRestartDirName() {
   return (RestartDirName);
 }
-/** get inputfile  */
+/*! get inputfile  */
 inline string Collective::getinputfile() {
   return (inputfile);
 }
-/** get last_cycle  */
+/*! get last_cycle  */
 inline int Collective::getLast_cycle() {
   return (last_cycle);
 }
-/** get the velocity of injection of the plasma from the wall */
+/*! get the velocity of injection of the plasma from the wall */
 inline double Collective::getVinj() {
   return (Vinj);
 }
-/** get the converging tolerance for CG solver */
+/*! get the converging tolerance for CG solver */
 inline double Collective::getCGtol() {
   return (CGtol);
 }
-/** get the converging tolerance for GMRES solver */
+/*! get the converging tolerance for GMRES solver */
 inline double Collective::getGMREStol() {
   return (GMREStol);
 }
-/** get the numbers of iteration for the PC mover */
+/*! get the numbers of iteration for the PC mover */
 inline int Collective::getNiterMover() {
   return (NiterMover);
 }
-/** output of fields */
+/*! output of fields */
 inline int Collective::getFieldOutputCycle() {
   return (FieldOutputCycle);
 }
-/** output of particles */
+/*! output of particles */
 inline int Collective::getParticlesOutputCycle() {
   return (ParticlesOutputCycle);
 }
-/** restart cycle */
+/*! restart cycle */
 inline int Collective::getRestartOutputCycle() {
   return (RestartOutputCycle);
 }
-/** output of fields */
+/*! output of fields */
 inline int Collective::getDiagnosticsOutputCycle() {
   return (DiagnosticsOutputCycle);
 }

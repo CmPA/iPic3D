@@ -73,5 +73,6 @@ inline void MPIdata::Print(void) {
   cout << "-------------------------" << endl;
   cout << endl;
 }
+extern MPIdata *mpi; // instantiated in iPIC3D.cpp
 
 #endif

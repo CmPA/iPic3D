@@ -1,0 +1,41 @@
+#DYLD_LIBRARY_PATH = /users/cpa/volshevs/local/hdf5/lib
+
+CPP = mpiicpc
+#CPP = mpicxx
+OPTFLAGS=  -O3 -mavx -openmp #-DMPICH_IGNORE_CXX_SEEK
+HDF5DIR = /opt/hdf5/1.8.10-patch1
+# include files
+INC_HDF5 = -I${HDF5DIR}/include
+# libs
+LIB_HDF5 = -L${HDF5DIR}/lib
+
+HDF5LIBS = ${LIB_HDF5} -lhdf5 -lhdf5_hl 
+
+iPIC3D: iPIC3D.cpp Particles3Dcomm.o Particles3D.o ConfigFile.o
+	${CPP} ${OPTFLAGS} -o iPIC3D ${INC_HDF5} ${INC_MPI} \
+	iPIC3D.cpp Particles3Dcomm.o Particles3D.o ConfigFile.o ${LIB_HDF5} ${LIB_MPI} ${HDF5LIBS} ${MPELIB}
+
+iPIC3D.o: iPIC3D.cpp 
+	${CPP} ${OPTFLAGS} ${INC_HDF5} ${INC_MPI} -c iPIC3D.cpp 
+
+ConfigFile.o: ./ConfigFile/src/ConfigFile.cpp
+	${CPP} ${OPTFLAGS} -c ./ConfigFile/src/ConfigFile.cpp
+
+Particles3Dcomm.o: ./particles/Particles3Dcomm.cpp
+	${CPP} ${OPTFLAGS} ${INC_MPI} ${INC_HDF5} -c ./particles/Particles3Dcomm.cpp
+
+Particles3D.o: ./particles/Particles3D.cpp 
+	${CPP} ${OPTFLAGS} ${INC_MPI} ${INC_HDF5} -c ./particles/Particles3D.cpp
+
+clean:
+	rm -rf *.o iPIC3D
+
+run:
+	mpiexec.hydra -np 4 -env OMP_NUM_THREADS=1 ./iPIC3D inputfiles/GEM.inp
+
+tags: retags
+
+retags:
+	find . -name '*.cpp' -or -name '*.h' | xargs ctags --extra=+q
+	find . -name '*.cpp' -or -name '*.h' | xargs makefiletags >> tags
+	LC_ALL=C sort -u tags -o tags

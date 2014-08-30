@@ -26,7 +26,8 @@ using std::endl;
  * @version 3.0
  *
  */
-class Grid3DCU:public Grid {
+class Grid3DCU //:public Grid
+{
 public:
   /** constructor */
   Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct);
@@ -102,6 +103,8 @@ public:
   double &getYN(int indexX, int indexY, int indexZ);
   /** get zn(X,Y,Z) */
   double &getZN(int indexX, int indexY, int indexZ);
+  /** get the whole vector of nodes*/
+  double ****getN();
   /** get xc(X,Y,Z) */
   double &getXC(int indexX, int indexY, int indexZ);
   /** get yc(X,Y,Z) */
@@ -109,11 +112,11 @@ public:
   /** get zc(X,Y,Z) */
   double &getZC(int indexX, int indexY, int indexZ);
   /** get the whole vector xc*/
-  double ***getXC();
+  //double ***getXC(); // not used
   /** get the whole vector yc*/
-  double ***getYC();
+  //double ***getYC(); // not used
   /** get the whole vector zc*/
-  double ***getZC();
+  //double ***getZC(); // not used
   /** get Xstart */
   double getXstart();
   /** get Xend */
@@ -165,8 +168,26 @@ private:
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
 
 };
+typedef Grid3DCU Grid;
 /** constructor */
 inline Grid3DCU::Grid3DCU(CollectiveIO * col, VirtualTopology3D * vct) {
+  int get_rank();
+  if(!get_rank())
+  {
+    fflush(stdout);
+    bool xerror = false;
+    bool yerror = false;
+    bool zerror = false;
+    if((col->getNxc()) % (vct->getXLEN())) xerror=true;
+    if((col->getNyc()) % (vct->getYLEN())) yerror=true;
+    if((col->getNzc()) % (vct->getZLEN())) zerror=true;
+    if(xerror) printf("!!!ERROR: XLEN=%d does not divide nxc=%d\n", vct->getXLEN(),col->getNxc());
+    if(yerror) printf("!!!ERROR: YLEN=%d does not divide nyc=%d\n", vct->getYLEN(),col->getNyc());
+    if(zerror) printf("!!!ERROR: ZLEN=%d does not divide nzc=%d\n", vct->getZLEN(),col->getNzc());
+    fflush(stdout);
+    bool error = xerror||yerror||zerror;
+    if(error) exit(1);
+  }
   // add 2 for the guard cells
   nxc = (col->getNxc()) / (vct->getXLEN()) + 2;
   nyc = (col->getNyc()) / (vct->getYLEN()) + 2;
@@ -609,18 +630,24 @@ inline double &Grid3DCU::getZC(int indexX, int indexY, int indexZ) {
   return (center_coordinate[indexX][indexY][indexZ][2]);
 }
 
-/** get the whole vector xc*/
-inline double ***Grid3DCU::getXC() {
-  return (center_coordinate[0]);
+/** get the whole vector of nodes*/
+inline double ****Grid3DCU::getN() {
+  return node_coordinate;
 }
-/** get the whole vector yc*/
-inline double ***Grid3DCU::getYC() {
-  return (center_coordinate[1]);
-}
-/** get the whole vector zc*/
-inline double ***Grid3DCU::getZC() {
-  return (center_coordinate[2]);
-}
+// This code is not used and does not make sense, so I commented it out. -eaj
+//
+///** get the whole vector xc*/
+//inline double ***Grid3DCU::getXC() {
+//  return (center_coordinate[0]);
+//}
+///** get the whole vector yc*/
+//inline double ***Grid3DCU::getYC() {
+//  return (center_coordinate[1]);
+//}
+///** get the whole vector zc*/
+//inline double ***Grid3DCU::getZC() {
+//  return (center_coordinate[2]);
+//}
 /** get Xstart */
 inline double Grid3DCU::getXstart() {
   return (xStart);
