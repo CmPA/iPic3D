@@ -199,6 +199,7 @@ class EMfields3D                // :public Field
     void AddPerturbation(double deltaBoB, double kx, double ky, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, double B0, Grid * grid);
     /*! Initialise a combination of magnetic dipoles */
     void initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    void initDipole_2(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
     void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);

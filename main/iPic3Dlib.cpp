@@ -58,6 +58,8 @@ int c_Solver::Init(int argc, char **argv) {
     /* If using parallel H5hut IO read initial file */
     /* -------------------------------------------- */
     ReadFieldsH5hut(ns, EMf, col, vct, grid);
+    if (col->getCase()=="Dipole") EMf->initDipole_2(vct,grid,col);
+
 
   }
   else {
@@ -68,7 +70,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
     else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
-    else if (col->getCase()=="Dipole")    EMf->initDipole(vct,grid,col);
+    else if (col->getCase()=="Dipole")    EMf->initDipole_2(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;

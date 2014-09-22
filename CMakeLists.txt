@@ -19,6 +19,11 @@ find_package(MPI REQUIRED)
 
 option(IPIC_TESTS "Set up the code tests" OFF)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options
+are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)
+endif()
+
 #
 # Include sub-directories
 #
