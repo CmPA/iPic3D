@@ -645,6 +645,9 @@ class EMfields3D                // :public Field
     /*! GMRES tolerance criterium for stopping iterations */
     double GMREStol;
 
+    /*! Temporal damping parameter */
+    double*** Lambda;
+
     // OpenBC implementation
 
     injInfoFields *injFieldsLeft, *injFieldsRight, *injFieldsTop, *injFieldsBottom, *injFieldsFront, *injFieldsRear;

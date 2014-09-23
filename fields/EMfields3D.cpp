@@ -161,6 +161,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   vectZ = newArr3(double, nxn, nyn, nzn);
   divC = newArr3(double, nxc, nyc, nzc);
   arr = newArr3(double,nxc,nyc,nzc);
+
+  Lambda = newArr3(double, nxn, nyn, nzn);
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -390,6 +392,11 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sum(imageX, vectX, nxn, nyn, nzn);
   sum(imageY, vectY, nxn, nyn, nzn);
   sum(imageZ, vectZ, nxn, nyn, nzn);
+
+  // Temporal damping
+  sumscalprod(imageX, delt, vectX, Lambda, nxn, nyn, nzn);
+  sumscalprod(imageY, delt, vectY, Lambda, nxn, nyn, nzn);
+  sumscalprod(imageZ, delt, vectZ, Lambda, nxn, nyn, nzn);
 
   // boundary condition: Xleft
   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
@@ -2214,6 +2221,16 @@ void EMfields3D::initDipole_2(VirtualTopology3D *vct, Grid *grid, Collective *co
         Bxn[i][j][k] += Bx_ext[i][j][k];
         Byn[i][j][k] += By_ext[i][j][k];
         Bzn[i][j][k] += Bz_ext[i][j][k];
+
+        // temporal damping mask:
+
+        double f;
+        double xmin_r = Lx - 40.0 * dx;
+        double xmax_r = Lx;
+
+        f = x < xmin_r ? 0.0 : (xmax_r - x) /  (xmax_r - xmin_r) * 2.0 * M_PI / dx;
+
+        Lambda[i][j][k] = f;
 
       }
     }
