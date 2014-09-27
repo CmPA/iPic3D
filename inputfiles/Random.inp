@@ -10,14 +10,14 @@ RestartDirName = data
 NpMaxNpRatio = 3.0
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
-B0x = 0.0097
+B0x = 0.001
 B0y = 0.00
 B0z = 0.00
 delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
 dt = 0.5                    # dt = time step  
-ncycles = 1001		     # cycles
+ncycles = 2001		     # cycles
 th = 1.0                     # th =   decentering parameter
 c = 1.0                      # c = light speed 
 
@@ -35,8 +35,8 @@ y_center =   1.                  # Ly = simulation box length - y direction in m
 z_center =   1.                  # Lz = simulation box length - z direction in m  
 L_square =   .1
 
-nxc =  64                   # nxc = number of cells - x direction        
-nyc =  64                   # nyc = number of cells - y direction
+nxc =  120                  # nxc = number of cells - x direction        
+nyc =  120                  # nyc = number of cells - y direction
 nzc =  1                   # nzc = number of cells - z direction        
 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
@@ -44,31 +44,31 @@ nzc =  1                   # nzc = number of cells - z direction
 #    0 = electrons
 #    1 = protons
 #    2,3,4,5,... = ions
-ns = 2 
+ns = 4
 # Initial density (make sure you are neutral)
-rhoINIT =  1.0	1.0
+rhoINIT =  0.01	0.01  0.2  0.2
 # TrackParticleID[species] = 1=true, 0=false --> Assign ID to particles 
-TrackParticleID = 0	0
+TrackParticleID = 0	0 0 0
 # npcelx = number of particles per cell - Direction X 
-npcelx =   3	3
+npcelx =    8	 8	 8	 8
 # npcely = number of particles per cell - Direction Y 
-npcely =   3	3
+npcely =    8	 8	 8	 8
 # npcelz = number of particles per cell - Direction Z 
-npcelz =   3	3
+npcelz =   1	1	1	1
 # qom = charge to mass ratio for different species 
-qom =  -256.0	1.0
+qom =  -256.0	1.0	-256.0	1.0
 # uth = thermal velocity for different species - Direction X  
-uth  = 0.045      0.0063
+uth  = 0.045      0.0063	0.045      0.0063
 # vth = thermal velocity for different species - Direction Y 
-vth  = 0.045      0.0063
+vth  = 0.045      0.0063	0.045      0.0063
 # wth = thermal velocity for different species - Direction Z 
-wth  = 0.045      0.0063
+wth  = 0.045      0.0063	0.045      0.0063
 # u0 = drift velocity   - Direction X    
-u0 = 0.0	0.0  
+u0 = 0.0	0.0  0.0	0.0  
 # v0 = drift velocity   - Direction Y    
-v0 = 0.0	0.0   
+v0 = 0.0	0.0   0.0	0.0  
 # w0 = drift velocity   - Direction Z    
-w0 = 0.00325	-0.01624
+w0 = 0.000001	-0.000256 0.0	0.0  
 
 
 # &&&&&&&&&&&& boundary conditions &&&&&&&&&&&&&&&
@@ -118,10 +118,8 @@ w0 = 0.00325	-0.01624
 # mover predictor corrector iteration
     NiterMover = 3
 # Output for field
-   FieldOutputCycle = 100
+   FieldOutputCycle = 10
 # Output for particles if 1 it doesnt save particles data
    ParticlesOutputCycle = 1
 # restart cycle
-   RestartOutputCycle = 4000
-# Diagnostics cycle
-   DiagnosticsOutputCycle = 1
+   RestartOutputCycle = 2000

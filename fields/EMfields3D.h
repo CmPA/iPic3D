@@ -1,4 +1,4 @@
-/***************************************************************************
+/*!*************************************************************************
   EMfields3D.h  -  ElectroMagnetic fields definition
   -------------------
 begin             : May 2008
@@ -17,6 +17,8 @@ developers        : Stefano Markidis, Giovanni Lapenta
 
 
 #include "../utility/Alloc.h"
+#include "../utility/asserts.h"
+#include "../utility/ompdefs.h"
 #include "../mathlib/Basic.h"
 #include "../utility/TransArraySpace3D.h"
 #include "../solvers/CG.h"
@@ -29,7 +31,7 @@ using std::endl;
 
 
 
-/**
+/*!
  *  Electromagnetic fields and sources defined for each local grid, and for an implicit maxwell's solver 
  *   
  * @date May 2008
@@ -39,291 +41,412 @@ using std::endl;
  * @version 3.0
  */
 
-class EMfields3D:public Field {
+// class to accumulate node-centered species moments
+// 
+class Moments
+{
+private:
+  double invVOL;
+  double ***rho;
+
+  /** current density, defined on nodes */
+  double ***Jx;
+  double ***Jy;
+  double ***Jz;
+
+  /** pressure tensor components, defined on nodes */
+  double ***pXX;
+  double ***pXY;
+  double ***pXZ;
+  double ***pYY;
+  double ***pYZ;
+  double ***pZZ;
+  int nx;
+  int ny;
+  int nz;
 public:
-  /** constructor */
+  int get_nx()const{return nx;}
+  int get_ny()const{return ny;}
+  int get_nz()const{return nz;}
+  double get_invVOL()const{return invVOL;}
+  double get_rho(int i,int j,int k)const{return rho[i][j][k];}
+  double get_Jx (int i,int j,int k)const{return Jx [i][j][k];}
+  double get_Jy (int i,int j,int k)const{return Jy [i][j][k];}
+  double get_Jz (int i,int j,int k)const{return Jz [i][j][k];}
+  double get_pXX(int i,int j,int k)const{return pXX[i][j][k];}
+  double get_pXY(int i,int j,int k)const{return pXY[i][j][k];}
+  double get_pXZ(int i,int j,int k)const{return pXZ[i][j][k];}
+  double get_pYY(int i,int j,int k)const{return pYY[i][j][k];}
+  double get_pYZ(int i,int j,int k)const{return pYZ[i][j][k];}
+  double get_pZZ(int i,int j,int k)const{return pZZ[i][j][k];}
+public:
+  Moments(){};
+  Moments(int nx_, int ny_, int nz_, double invVOL_){
+    init(nx_,ny_,nz_,invVOL_);
+  }
+  void init(int nx_, int ny_, int nz_, double invVOL_);
+  ~Moments();
+  void set_to_zero();
+  void addRho(double weight[][2][2], int X, int Y, int Z);
+  void addJx(double weight[][2][2], int X, int Y, int Z);
+  void addJy(double weight[][2][2], int X, int Y, int Z);
+  void addJz(double weight[][2][2], int X, int Y, int Z);
+
+  void addPxx(double weight[][2][2], int X, int Y, int Z);
+  void addPxy(double weight[][2][2], int X, int Y, int Z);
+  void addPxz(double weight[][2][2], int X, int Y, int Z);
+  void addPyy(double weight[][2][2], int X, int Y, int Z);
+  void addPyz(double weight[][2][2], int X, int Y, int Z);
+  void addPzz(double weight[][2][2], int X, int Y, int Z);
+};
+
+// construct empty instance (not zeroed)
+inline void Moments::init(int nx_, int ny_, int nz_,double invVOL_)
+{
+  nx = nx_;
+  ny = ny_;
+  nz = nz_;
+  invVOL = invVOL_;
+  rho = newArr3(double, nx, ny, nz);
+  Jx  = newArr3(double, nx, ny, nz);
+  Jy  = newArr3(double, nx, ny, nz);
+  Jz  = newArr3(double, nx, ny, nz);
+  pXX = newArr3(double, nx, ny, nz);
+  pXY = newArr3(double, nx, ny, nz);
+  pXZ = newArr3(double, nx, ny, nz);
+  pYY = newArr3(double, nx, ny, nz);
+  pYZ = newArr3(double, nx, ny, nz);
+  pZZ = newArr3(double, nx, ny, nz);
+}
+
+inline Moments::~Moments() {
+  // nodes and species
+  delArr3(rho, nx, ny);
+  delArr3(Jx,  nx, ny);
+  delArr3(Jy,  nx, ny);
+  delArr3(Jz,  nx, ny);
+  delArr3(pXX, nx, ny);
+  delArr3(pXY, nx, ny);
+  delArr3(pXZ, nx, ny);
+  delArr3(pYY, nx, ny);
+  delArr3(pYZ, nx, ny);
+  delArr3(pZZ, nx, ny);
+}
+
+inline void Moments::set_to_zero() {
+  //#pragma omp parallel for collapse(1)
+  for (register int i = 0; i < nx; i++)
+    for (register int j = 0; j < ny; j++)
+      for (register int k = 0; k < nz; k++) {
+        rho[i][j][k] = 0.0;
+        Jx [i][j][k] = 0.0;
+        Jy [i][j][k] = 0.0;
+        Jz [i][j][k] = 0.0;
+        pXX[i][j][k] = 0.0;
+        pXY[i][j][k] = 0.0;
+        pXZ[i][j][k] = 0.0;
+        pYY[i][j][k] = 0.0;
+        pYZ[i][j][k] = 0.0;
+        pZZ[i][j][k] = 0.0;
+      }
+}
+
+class EMfields3D //:public Field
+{
+public:
+  /*! constructor */
   EMfields3D(CollectiveIO * col, Grid * grid);
-  /** destructor */
+  /*! destructor */
   ~EMfields3D();
 
-  /** initialize the electromagnetic fields with constant values */
+  /*! initialize the electromagnetic fields with constant values */
   void init(VirtualTopology3D * vct, Grid * grid);
-  /** init beam */
+  /*! init beam */
   void initBEAM(VirtualTopology3D * vct, Grid * grid, double x_center, double y_center, double z_center, double radius);
-  /** initialize GEM challenge */
+  /*! initialize GEM challenge */
   void initGEM(VirtualTopology3D * vct, Grid * grid);
   void initOriginalGEM(VirtualTopology3D *vct, Grid *grid);
   void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D *vct, Grid *grid);
-  /** initialize GEM challenge with dipole-like tail without perturbation */
+  /*! initialize GEM challenge with dipole-like tail without perturbation */
   void initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid);
-  /** initialize GEM challenge with no Perturbation */
+  /*! initialize GEM challenge with no Perturbation */
   void initGEMnoPert(VirtualTopology3D * vct, Grid * grid);
-  /**  Init Force Free (JxB=0) */
+  /** Random initial field */
+  void initRandomField(VirtualTopology3D *vct, Grid *grid);
+  /*!  Init Force Free (JxB=0) */
   void initForceFree(VirtualTopology3D * vct, Grid * grid);
-  /** initialized with rotated magnetic field */
+  /*! initialized with rotated magnetic field */
   void initEM_rotate(VirtualTopology3D * vct, Grid * grid, double B, double theta);
-  /** add a perturbattion to charge density */
+  /*! add a perturbattion to charge density */
   void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
-  /** add a perturbattion to the EM field */
+  /*! add a perturbattion to the EM field */
   void AddPerturbation(double deltaBoB, double kx, double ky, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, double B0, Grid * grid);
 
 
-  /** Calculate Electric field using the implicit Maxwell solver */
+  /*! Calculate Electric field using the implicit Maxwell solver */
   void calculateE(Grid * grid, VirtualTopology3D * vct);
-  /** Image of Poisson Solver (for SOLVER)*/
+  /*! Image of Poisson Solver (for SOLVER)*/
   void PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);
-  /** Image of Maxwell Solver (for Solver) */
+  /*! Image of Maxwell Solver (for Solver) */
   void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct);
-  /** Maxwell source term (for SOLVER) */
+  /*! Maxwell source term (for SOLVER) */
   void MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct);
-  /** Calculate Magnetic field with the implicit solver: calculate B defined on nodes
+  /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes
           With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
   void calculateB(Grid * grid, VirtualTopology3D * vct);
-  /** fix B on the boundary for gem challange*/
+  /*! fix B on the boundary for gem challange*/
   void fixBgem(Grid * grid, VirtualTopology3D * vct);
-  /** fix B on the boundary for gem challange*/
+  /*! fix B on the boundary for gem challange*/
   void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
 
-  /** Calculate the three components of Pi(implicit pressure) cross image vector */
+  /*! Calculate the three components of Pi(implicit pressure) cross image vector */
   void PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid);
-  /** Calculate the three components of mu (implicit permeattivity) cross image vector */
+  /*! Calculate the three components of mu (implicit permeattivity) cross image vector */
   void MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid);
-  /** Calculate rho hat, Jx hat, Jy hat, Jz hat */
+  /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
   void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
 
-  /** communicate ghost for densities and interp rho from node to center */
+  /*! communicate ghost for densities and interp rho from node to center */
   void interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid);
-  /** set to 0 all the densities fields */
+  /*! set to 0 all the densities fields */
   void setZeroDensities();
-  /** Sum rhon over species */
+  /*! Sum rhon over species */
   void sumOverSpecies(VirtualTopology3D * vct);
-  /** Sum current over different species */
+  /*! Sum current over different species */
   void sumOverSpeciesJ();
-  /** Smoothing after the interpolation**/
-  void smooth(double value, double ***vector, bool type, Grid * grid, VirtualTopology3D * vct);
-  /** SPECIES: Smoothing after the interpolation for species fields**/
-  void smooth(double value, double ****vector, int is, bool type, Grid * grid, VirtualTopology3D * vct);
-  /** smooth the electric field */
+  /*! Smoothing after the interpolation**/
+  void smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct);
+  /*! SPECIES: Smoothing after the interpolation for species fields**/
+  void smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
+  /*! smooth the electric field */
   void smoothE(double value, VirtualTopology3D * vct);
 
-  /** communicate ghost for grid -> Particles interpolation */
+  /*! communicate ghost for grid -> Particles interpolation */
   void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
-  /** add an amount of charge density to charge density field at node X,Y,Z */
+  /*! add accumulated moments to the moments for a given species */
+  void addToSpeciesMoments(const Moments& in, int is);
+  /*! add an amount of charge density to charge density field at node X,Y,Z */
   void addRho(double weight[][2][2], int X, int Y, int Z, int is);
-  /** add an amount of current density - direction X to current density field at node X,Y,Z */
+  /*! add an amount of current density - direction X to current density field at node X,Y,Z */
   void addJx(double weight[][2][2], int X, int Y, int Z, int is);
-  /** add an amount of current density - direction Y to current density field at node X,Y,Z */
+  /*! add an amount of current density - direction Y to current density field at node X,Y,Z */
   void addJy(double weight[][2][2], int X, int Y, int Z, int is);
-  /** add an amount of current density - direction Z to current density field at node X,Y,Z */
+  /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
   void addJz(double weight[][2][2], int X, int Y, int Z, int is);
 
-  /** add an amount of pressure density - direction XX to current density field at node X,Y,Z */
+  /*! add an amount of pressure density - direction XX to current density field at node X,Y,Z */
   void addPxx(double weight[][2][2], int X, int Y, int Z, int is);
-  /** add an amount of pressure density - direction XY to current density field at node X,Y,Z */
+  /*! add an amount of pressure density - direction XY to current density field at node X,Y,Z */
   void addPxy(double weight[][2][2], int X, int Y, int Z, int is);
-  /** add an amount of pressure density - direction XZ to current density field at node X,Y,Z */
+  /*! add an amount of pressure density - direction XZ to current density field at node X,Y,Z */
   void addPxz(double weight[][2][2], int X, int Y, int Z, int is);
-  /** add an amount of pressure density - direction YY to current density field at node X,Y,Z */
+  /*! add an amount of pressure density - direction YY to current density field at node X,Y,Z */
   void addPyy(double weight[][2][2], int X, int Y, int Z, int is);
-  /** add an amount of pressure density - direction YZ to current density field at node X,Y,Z */
+  /*! add an amount of pressure density - direction YZ to current density field at node X,Y,Z */
   void addPyz(double weight[][2][2], int X, int Y, int Z, int is);
-  /** add an amount of pressure density - direction ZZ to current density field at node X,Y,Z */
+  /*! add an amount of pressure density - direction ZZ to current density field at node X,Y,Z */
   void addPzz(double weight[][2][2], int X, int Y, int Z, int is);
 
-  /** adjust densities on boundaries that are not periodic */
+  /*! adjust densities on boundaries that are not periodic */
   void adjustNonPeriodicDensities(int is, VirtualTopology3D * vct);
 
 
-  /** Perfect conductor boundary conditions LEFT wall */
+  /*! Perfect conductor boundary conditions LEFT wall */
   void perfectConductorLeft(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid);
-  /** Perfect conductor boundary conditions RIGHT wall */
+  /*! Perfect conductor boundary conditions RIGHT wall */
   void perfectConductorRight(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid);
-  /** Perfect conductor boundary conditions for source LEFT wall*/
+  /*! Perfect conductor boundary conditions for source LEFT wall*/
   void perfectConductorLeftS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
-  /** Perfect conductor boundary conditions for source RIGHT wall*/
+  /*! Perfect conductor boundary conditions for source RIGHT wall*/
   void perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
 
-  /** Calculate the sysceptibility tensor on the boundary */
+  /*! Calculate the sysceptibility tensor on the boundary */
   void sustensorRightY(double **susxy, double **susyy, double **suszy);
   void sustensorLeftY(double **susxy, double **susyy, double **suszy);
 
-  /** get Potential array */
+  /*! get Potential array */
   double ***getPHI();
-  /** get Electric Field component X defined on node(indexX,indexY,indexZ) */
+  /*! get Electric Field component X defined on node(indexX,indexY,indexZ) */
   double &getEx(int indexX, int indexY, int indexZ) const;
-  /** get Electric field X component array */
+  /*! get Electric field X component array */
   double ***getEx();
-  /** get Electric Field component Y defined on node(indexX,indexY,indexZ) */
+  /*! get Electric Field component Y defined on node(indexX,indexY,indexZ) */
   double &getEy(int indexX, int indexY, int indexZ) const;
-  /** get Electric field Y component array */
+  /*! get Electric field Y component array */
   double ***getEy();
-  /** get Electric Field component Z defined on node(indexX,indexY,indexZ) */
+  /*! get Electric Field component Z defined on node(indexX,indexY,indexZ) */
   double &getEz(int indexX, int indexY, int indexZ) const;
-  /** get Electric field Z component array */
+  /*! get Electric field Z component array */
   double ***getEz();
-  /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
+  /*! get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
   double &getBx(int indexX, int indexY, int indexZ) const;
-  /** get Magnetic field X component array */
+  /*! get Magnetic field X component array */
   double ***getBx();
-  /** get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
+  /*! get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
   double &getBy(int indexX, int indexY, int indexZ) const;
-  /** get Magnetic field Y component array */
+  /*! get Magnetic field Y component array */
   double ***getBy();
-  /** get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
+  /*! get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
   double &getBz(int indexX, int indexY, int indexZ) const;
-  /** get Magnetic field Z component array */
+  /*! get Magnetic field Z component array */
   double ***getBz();
-  /** get density on cell(indexX,indexY,indexZ)  */
+  /*! get density on cell(indexX,indexY,indexZ)  */
   double &getRHOc(int indexX, int indexY, int indexZ) const;
-  /** get density array on center cell */
+  /*! get density array on center cell */
   double ***getRHOc();
-  /** get density on nodes(indexX,indexY,indexZ)  */
+  /*! get density on nodes(indexX,indexY,indexZ)  */
   double &getRHOn(int indexX, int indexY, int indexZ) const;
-  /** get density array on nodes  */
+  /*! get density array on nodes  */
   double ***getRHOn();
-  /** SPECIES: get density on nodes(indexX,indexY,indexZ)*/
+  /*! SPECIES: get density on nodes(indexX,indexY,indexZ)*/
   double &getRHOns(int indexX, int indexY, int indexZ, int is) const;
-  /** SPECIES: get density on center cell(indexX,indexY,indexZ)*/
+  /*! SPECIES: get density on center cell(indexX,indexY,indexZ)*/
   double &getRHOcs(int indexX, int indexY, int indexZ, int is) const;
-  /** SPECIES: get density array on nodes*/
+  /*! SPECIES: get density array on nodes*/
   double ****getRHOns();
 
 
 
-  /** get pressure tensor XX for species */
+  /*! get pressure tensor XX for species */
   double ****getpXXsn();
-  /** get pressure tensor XY for species */
+  /*! get pressure tensor XY for species */
   double ****getpXYsn();
-  /** get pressure tensor XZ for species*/
+  /*! get pressure tensor XZ for species*/
   double ****getpXZsn();
-  /** get pressure tensor YY for species */
+  /*! get pressure tensor YY for species */
   double ****getpYYsn();
-  /** get pressure tensor YZ for species */
+  /*! get pressure tensor YZ for species */
   double ****getpYZsn();
-  /** get pressure tensor ZZ for species */
+  /*! get pressure tensor ZZ for species */
   double ****getpZZsn();
 
-  /** get Jx(X,Y,Z)  */
+  /*! get Jx(X,Y,Z)  */
   double &getJx(int indexX, int indexY, int indexZ) const;
-  /** get current -Direction X */
+  /*! get current -Direction X */
   double ***getJx();
-  /** get Jxs(X,Y,Z,is)  */
+  /*! get Jxs(X,Y,Z,is)  */
   double &getJxs(int indexX, int indexY, int indexZ, int is) const;
-  /** SPECIES: get current -Direction X */
+  /*! SPECIES: get current -Direction X */
   double ****getJxs();
-  /** get Jy(X,Y,Z)  */
+  /*! get Jy(X,Y,Z)  */
   double &getJy(int indexX, int indexY, int indexZ) const;
-  /** get current -Direction Y */
+  /*! get current -Direction Y */
   double ***getJy();
-  /** get Jys(X,Y,Z,is)  */
+  /*! get Jys(X,Y,Z,is)  */
   double &getJys(int indexX, int indexY, int indexZ, int is) const;
-  /** SPECIES: get current -Direction Y */
+  /*! SPECIES: get current -Direction Y */
   double ****getJys();
-  /** get Jz(X,Y,Z)  */
+  /*! get Jz(X,Y,Z)  */
   double &getJz(int indexX, int indexY, int indexZ) const;
-  /** get current -Direction Z */
+  /*! get current -Direction Z */
   double ***getJz();
-  /** get Jzs(X,Y,Z,is)  */
+  /*! get Jzs(X,Y,Z,is)  */
   double &getJzs(int indexX, int indexY, int indexZ, int is) const;
-  /** SPECIES: get current -Direction Z */
+  /*! SPECIES: get current -Direction Z */
   double ****getJzs();
-  /** get the electric field energy */
+  /*! get the electric field energy */
   double getEenergy();
-  /** get the magnetic field energy */
+  /*! get the magnetic field energy */
   double getBenergy();
 
+  /*! fetch array for summing moments of thread i */
+  Moments& fetch_momentsArray(int i){
+    assert_le(0,i);
+    assert_le(i,sizeMomentsArray);
+    return momentsArray[i];
+  }
 
-  /** print electromagnetic fields info */
+  /*! print electromagnetic fields info */
   void print(void) const;
 
-  /**********************************
+  /* *********************************
         // VARIABLES
-        /  /**************************** */
+     ********************************* */
 private:
-  /** light speed */
+  /*! light speed */
   double c;
   /* 4*PI for normalization */
   double FourPI;
-  /** time step */
+  /*! time step */
   double dt;
-  /** decentering parameter */
+  /*! decentering parameter */
   double th;
-  /** Smoothing value*/
+  /*! Smoothing value*/
   double Smooth;
-  /** delt = c*th*dt */
+  /*! delt = c*th*dt */
   double delt;
-  /** number of particles species */
+  /*! number of particles species */
   int ns;
-  /** GEM challenge parameters */
+  /*! GEM challenge parameters */
   double B0x, B0y, B0z, delta;
-  /** charge to mass ratio array for different species */
+  /*! charge to mass ratio array for different species */
   double *qom;
 
 
   // KEEP IN MEMORY GUARD CELLS ARE INCLUDED
-  /** number of cells - X direction, including + 2 (guard cells) */
+  /*! number of cells - X direction, including + 2 (guard cells) */
   int nxc;
-  /** number of nodes - X direction, including + 2 extra nodes for guard cells */
+  /*! number of nodes - X direction, including + 2 extra nodes for guard cells */
   int nxn;
-  /** number of cell - Y direction, including + 2 (guard cells) */
+  /*! number of cell - Y direction, including + 2 (guard cells) */
   int nyc;
-  /** number of nodes - Y direction, including + 2 extra nodes for guard cells */
+  /*! number of nodes - Y direction, including + 2 extra nodes for guard cells */
   int nyn;
-  /** number of cell - Z direction, including + 2 (guard cells) */
+  /*! number of cell - Z direction, including + 2 (guard cells) */
   int nzc;
-  /** number of nodes - Z direction, including + 2 extra nodes for guard cells */
+  /*! number of nodes - Z direction, including + 2 extra nodes for guard cells */
   int nzn;
-  /** local grid boundaries coordinate  */
+  /*! local grid boundaries coordinate  */
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
-  /** grid spacing */
+  /*! grid spacing */
   double dx, dy, dz, invVOL;
-  /** simulation box length - X direction   */
+  /*! simulation box length - X direction   */
   double Lx;
-  /** simulation box length - Y direction   */
+  /*! simulation box length - Y direction   */
   double Ly;
-  /** simulation box length - Z direction   */
+  /*! simulation box length - Z direction   */
   double Lz;
 
 
-  /** PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes*/
+  /*! PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes*/
   double ***PHI;
-  /** Ex: electric field X-component (indexX, indexY, indexZ), defined on nodes */
+  /*! Ex: electric field X-component (indexX, indexY, indexZ), defined on nodes */
   double ***Ex;
-  /** Exth: implicit electric field X-component (indexX, indexY, indexZ), defined on nodes */
+  /*! Exth: implicit electric field X-component (indexX, indexY, indexZ), defined on nodes */
   double ***Exth;
-  /** Ey: electric field Y-component (indexX, indexY, indexZ), defined on nodes */
+  /*! Ey: electric field Y-component (indexX, indexY, indexZ), defined on nodes */
   double ***Ey;
-  /** Eyth: implicit electric field Y-component (indexX, indexY, indexZ), defined on nodes */
+  /*! Eyth: implicit electric field Y-component (indexX, indexY, indexZ), defined on nodes */
   double ***Eyth;
-  /** Ez: electric field Z-component (indexX, indexY, indexZ, #species), defined on nodes */
+  /*! Ez: electric field Z-component (indexX, indexY, indexZ, #species), defined on nodes */
   double ***Ez;
-  /** Ezth: implicit electric field Z-component (indexX, indexY, indexZ), defined on nodes */
+  /*! Ezth: implicit electric field Z-component (indexX, indexY, indexZ), defined on nodes */
   double ***Ezth;
-  /** Bxc: magnetic field X-component (indexX, indexY, indexZ), defined on central points between nodes*/
+  /*! Bxc: magnetic field X-component (indexX, indexY, indexZ), defined on central points between nodes*/
   double ***Bxc;
-  /** Byc: magnetic field Y-component (indexX, indexY, indexZ), defined on central points between nodes*/
+  /*! Byc: magnetic field Y-component (indexX, indexY, indexZ), defined on central points between nodes*/
   double ***Byc;
-  /** Bzc: magnetic field Z-component (indexX, indexY, indexZ), defined on central points between nodes*/
+  /*! Bzc: magnetic field Z-component (indexX, indexY, indexZ), defined on central points between nodes*/
   double ***Bzc;
-  /** Bxn: magnetic field X-component (indexX, indexY, indexZ), defined on nodes*/
+  /*! Bxn: magnetic field X-component (indexX, indexY, indexZ), defined on nodes*/
   double ***Bxn;
-  /** Byn: magnetic field Y-component (indexX, indexY, indexZ), defined on nodes*/
+  /*! Byn: magnetic field Y-component (indexX, indexY, indexZ), defined on nodes*/
   double ***Byn;
-  /** Bzn: magnetic field Z-component (indexX, indexY, indexZ), defined on nodes*/
+  /*! Bzn: magnetic field Z-component (indexX, indexY, indexZ), defined on nodes*/
   double ***Bzn;
 
   // *************************************
   // TEMPORARY ARRAY
   // ************************************
-  /**some temporary arrays (for calculate hat functions)*/
+  /*!some temporary arrays (for calculate hat functions)*/
   double ***tempXC;
   double ***tempYC;
   double ***tempZC;
   double ***tempXN;
   double ***tempYN;
   double ***tempZN;
-  /** other temporary arrays (in MaxwellSource) */
+  /*! other temporary arrays (in MaxwellSource) */
   double ***tempC;
   double ***tempX;
   double ***tempY;
@@ -331,7 +454,7 @@ private:
   double ***temp2X;
   double ***temp2Y;
   double ***temp2Z;
-  /** and some for MaxwellImage */
+  /*! and some for MaxwellImage */
   double ***imageX;
   double ***imageY;
   double ***imageZ;
@@ -342,112 +465,117 @@ private:
   double ***vectY;
   double ***vectZ;
   double ***divC;
+  /* temporary arrays for summing moments */
+  int sizeMomentsArray;
+  Moments *momentsArray;
 
 
-  /*********************************************************************************
-  /*************                SOURCES                                           **
-  /********************************************************************************/
+  // *******************************************************************************
+  // ***********                SOURCES                                           **
+  // *******************************************************************************
 
-  /** Charge density, defined on central points of the cell */
+  /*! Charge density, defined on central points of the cell */
   double ***rhoc;
-  /** Charge density, defined on nodes */
+  /*! Charge density, defined on nodes */
   double ***rhon;
-  /** Implicit charge density, defined on central points of the cell */
+  /*! Implicit charge density, defined on central points of the cell */
   double ***rhoh;
-  /** SPECIES: charge density for each species, defined on nodes */
+  /*! SPECIES: charge density for each species, defined on nodes */
   double ****rhons;
-  /** SPECIES: charge density for each species, defined on central points of the cell */
+  /*! SPECIES: charge density for each species, defined on central points of the cell */
   double ****rhocs;
-  /** Current density component-X, defined on nodes */
+  /*! Current density component-X, defined on nodes */
   double ***Jx;
-  /** Current density component-Y, defined on nodes */
+  /*! Current density component-Y, defined on nodes */
   double ***Jy;
-  /** Current density component-Z, defined on nodes */
+  /*! Current density component-Z, defined on nodes */
   double ***Jz;
-  /** Implicit current density X-component, defined on nodes */
+  /*! Implicit current density X-component, defined on nodes */
   double ***Jxh;
-  /** Implicit current density Y-component, defined on nodes */
+  /*! Implicit current density Y-component, defined on nodes */
   double ***Jyh;
-  /** Implicit current density Z-component, defined on nodes */
+  /*! Implicit current density Z-component, defined on nodes */
   double ***Jzh;
-  /** SPECIES: current density component-X for species, defined on nodes */
+  /*! SPECIES: current density component-X for species, defined on nodes */
   double ****Jxs;
-  /** SPECIES: current density component-Y for species, defined on nodes */
+  /*! SPECIES: current density component-Y for species, defined on nodes */
   double ****Jys;
-  /** SPECIES: current density component-Z for species, defined on nodes */
+  /*! SPECIES: current density component-Z for species, defined on nodes */
   double ****Jzs;
 
-  /** SPECIES: pressure tensor component-XX, defined on nodes */
+  /*! SPECIES: pressure tensor component-XX, defined on nodes */
   double ****pXXsn;
-  /** SPECIES: pressure tensor component-XY, defined on nodes */
+  /*! SPECIES: pressure tensor component-XY, defined on nodes */
   double ****pXYsn;
-  /** SPECIES: pressure tensor component-XZ, defined on nodes */
+  /*! SPECIES: pressure tensor component-XZ, defined on nodes */
   double ****pXZsn;
-  /** SPECIES: pressure tensor component-XZ, defined on nodes */
+  /*! SPECIES: pressure tensor component-XZ, defined on nodes */
   double ****pYYsn;
-  /** SPECIES: pressure tensor component-YZ, defined on nodes */
+  /*! SPECIES: pressure tensor component-YZ, defined on nodes */
   double ****pYZsn;
-  /** SPECIES: pressure tensor component-ZZ, defined on nodes */
+  /*! SPECIES: pressure tensor component-ZZ, defined on nodes */
   double ****pZZsn;
 
 
-  /** Field Boundary Condition
+  /*! Field Boundary Condition
           0 =  Dirichlet Boundary Condition: specifies the value to take on the boundary of the domain
           1 =  Neumann Boundary Condition: specifies the value of derivative to take on the boundary of the domain
           2 =  Periodic condition
           */
 
-  /** Boundary Condition Electrostatic Potential: FaceXright */
+  /*! Boundary Condition Electrostatic Potential: FaceXright */
   int bcPHIfaceXright;
-  /** Boundary Condition Electrostatic Potential:FaceXleft */
+  /*! Boundary Condition Electrostatic Potential:FaceXleft */
   int bcPHIfaceXleft;
-  /** Boundary Condition Electrostatic Potential:FaceYright */
+  /*! Boundary Condition Electrostatic Potential:FaceYright */
   int bcPHIfaceYright;
-  /** Boundary Condition Electrostatic Potential:FaceYleft */
+  /*! Boundary Condition Electrostatic Potential:FaceYleft */
   int bcPHIfaceYleft;
-  /** Boundary Condition Electrostatic Potential:FaceZright */
+  /*! Boundary Condition Electrostatic Potential:FaceZright */
   int bcPHIfaceZright;
-  /** Boundary Condition Electrostatic Potential:FaceZleft */
+  /*! Boundary Condition Electrostatic Potential:FaceZleft */
   int bcPHIfaceZleft;
 
-  /** Boundary condition for electric field
+  /*! Boundary condition for electric field
           0 = perfect conductor
           1 = magnetic mirror
           */
-  /** Boundary Condition EM Field: FaceXright */
+  /*! Boundary Condition EM Field: FaceXright */
   int bcEMfaceXright;
-  /** Boundary Condition EM Field: FaceXleft */
+  /*! Boundary Condition EM Field: FaceXleft */
   int bcEMfaceXleft;
-  /** Boundary Condition EM Field: FaceYright */
+  /*! Boundary Condition EM Field: FaceYright */
   int bcEMfaceYright;
-  /** Boundary Condition EM Field: FaceYleft */
+  /*! Boundary Condition EM Field: FaceYleft */
   int bcEMfaceYleft;
-  /** Boundary Condition EM Field: FaceZright */
+  /*! Boundary Condition EM Field: FaceZright */
   int bcEMfaceZright;
-  /** Boundary Condition EM Field: FaceZleft */
+  /*! Boundary Condition EM Field: FaceZleft */
   int bcEMfaceZleft;
 
 
-  /** GEM Challenge background ion */
+  /*! GEM Challenge background ion */
   double *rhoINIT;
-  /** Drift of the species */
+  /*! Drift of the species */
   bool *DriftSpecies;
 
-  /** boolean for divergence cleaning */
+  /*! boolean for divergence cleaning */
   bool PoissonCorrection;
-  /** RESTART BOOLEAN */
+  /*! RESTART BOOLEAN */
   int restart1;
-  /** String with the directory for the restart file */
+  /*! String with the directory for the restart file */
   string RestartDirName;
 
-  /** CG tolerance criterium for stopping iterations */
+  /*! CG tolerance criterium for stopping iterations */
   double CGtol;
-  /**  GMRES tolerance criterium for stopping iterations */
+  /*!  GMRES tolerance criterium for stopping iterations */
   double GMREStol;
 
 };
+// already in CG.h
+//typedef EMfields3D Field;
 
-/** constructor */
+/*! constructor */
 inline EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
   nxc = grid->getNXC();
   nxn = grid->getNXN();
@@ -509,9 +637,9 @@ inline EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
     else
       DriftSpecies[i] = false;
   }
-  /** parameters for GEM challenge */
+  /*! parameters for GEM challenge */
   FourPI = 16 * atan(1.0);
-  /** Restart */
+  /*! Restart */
   restart1 = col->getRestart_status();
   RestartDirName = col->getRestartDirName();
   // arrays allocation: nodes
@@ -576,9 +704,15 @@ inline EMfields3D::EMfields3D(CollectiveIO * col, Grid * grid) {
   vectY = newArr3(double, nxn, nyn, nzn);
   vectZ = newArr3(double, nxn, nyn, nzn);
   divC = newArr3(double, nxc, nyc, nzc);
+  sizeMomentsArray = omp_thread_count();
+  momentsArray = new Moments[sizeMomentsArray];
+  for(int i=0;i<sizeMomentsArray;i++)
+  {
+    momentsArray[i].init(nxn,nyn,nzn,invVOL);
+  }
 }
 
-/** Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
+/*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
 inline void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getCartesian_rank() == 0)
     cout << "*** E CALCULATION ***" << endl;
@@ -670,7 +804,7 @@ inline void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct) {
 
 }
 
-/** Calculate sorgent for Maxwell solver */
+/*! Calculate sorgent for Maxwell solver */
 inline void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct) {
   eqValue(0.0, tempC, nxc, nyc, nzc);
   eqValue(0.0, tempX, nxn, nyn, nzn);
@@ -741,7 +875,7 @@ inline void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopol
   phys2solver(bkrylov, tempX, tempY, tempZ, nxn, nyn, nzn);
 
 }
-/** Mapping of Maxwell image to give to solver */
+/*! Mapping of Maxwell image to give to solver */
 inline void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct) {
   eqValue(0.0, im, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
   eqValue(0.0, imageX, nxn, nyn, nzn);
@@ -814,7 +948,7 @@ inline void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, Vi
 
 }
 
-/** Calculate PI dot (vectX, vectY, vectZ)*/
+/*! Calculate PI dot (vectX, vectY, vectZ)*/
 inline void EMfields3D::PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid) {
   double beta, edotb, omcx, omcy, omcz, denom;
   beta = .5 * qom[ns] * dt / c;
@@ -833,7 +967,7 @@ inline void EMfields3D::PIdot(double ***PIdotX, double ***PIdotY, double ***PIdo
 
 
 }
-/** Calculate MU dot (vectX, vectY, vectZ)*/
+/*! Calculate MU dot (vectX, vectY, vectZ)*/
 inline void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid) {
   double beta, edotb, omcx, omcy, omcz, denom;
   for (int i = 1; i < nxn - 1; i++)
@@ -862,7 +996,7 @@ inline void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdo
 
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-inline void EMfields3D::smooth(double value, double ***vector, bool type, Grid * grid, VirtualTopology3D * vct) {
+inline void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
 
   int nvolte = 6;
   for (int icount = 1; icount < nvolte + 1; icount++) {
@@ -959,11 +1093,11 @@ inline void EMfields3D::smoothE(double value, VirtualTopology3D * vct) {
 }
 
 /* SPECIES: Interpolation smoothing TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector type = 1 --> node based vector */
-inline void EMfields3D::smooth(double value, double ****vector, int is, bool type, Grid * grid, VirtualTopology3D * vct) {
+inline void EMfields3D::smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
   cout << "Smoothing for Species not implemented in 3D" << endl;
 }
 
-/** fix the B boundary when running gem*/
+/*! fix the B boundary when running gem*/
 inline void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++)
@@ -992,7 +1126,7 @@ inline void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
 
 }
 
-/** fix the B boundary when running forcefree*/
+/*! fix the B boundary when running forcefree*/
 inline void EMfields3D::fixBforcefree(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++)
@@ -1018,15 +1152,15 @@ inline void EMfields3D::fixBforcefree(Grid * grid, VirtualTopology3D * vct) {
 }
 
 
-/** adjust densities on boundaries that are not periodic */
+/*! adjust densities on boundaries that are not periodic */
 inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
   if (vct->getXleft_neighbor_P() == MPI_PROC_NULL) {
     for (int i = 1; i < nyn - 1; i++)
       for (int k = 1; k < nzn - 1; k++) {
         rhons[is][1][i][k] += rhons[is][1][i][k];
-        Jxs[is][1][i][k] += Jxs[is][1][i][k];
-        Jys[is][1][i][k] += Jys[is][1][i][k];
-        Jzs[is][1][i][k] += Jzs[is][1][i][k];
+        Jxs  [is][1][i][k] += Jxs  [is][1][i][k];
+        Jys  [is][1][i][k] += Jys  [is][1][i][k];
+        Jzs  [is][1][i][k] += Jzs  [is][1][i][k];
         pXXsn[is][1][i][k] += pXXsn[is][1][i][k];
         pXYsn[is][1][i][k] += pXYsn[is][1][i][k];
         pXZsn[is][1][i][k] += pXZsn[is][1][i][k];
@@ -1039,9 +1173,9 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * v
     for (int i = 1; i < nxn - 1; i++)
       for (int k = 1; k < nzn - 1; k++) {
         rhons[is][i][1][k] += rhons[is][i][1][k];
-        Jxs[is][i][1][k] += Jxs[is][i][1][k];
-        Jys[is][i][1][k] += Jys[is][i][1][k];
-        Jzs[is][i][1][k] += Jzs[is][i][1][k];
+        Jxs  [is][i][1][k] += Jxs  [is][i][1][k];
+        Jys  [is][i][1][k] += Jys  [is][i][1][k];
+        Jzs  [is][i][1][k] += Jzs  [is][i][1][k];
         pXXsn[is][i][1][k] += pXXsn[is][i][1][k];
         pXYsn[is][i][1][k] += pXYsn[is][i][1][k];
         pXZsn[is][i][1][k] += pXZsn[is][i][1][k];
@@ -1054,9 +1188,9 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * v
     for (int i = 1; i < nxn - 1; i++)
       for (int j = 1; j < nyn - 1; j++) {
         rhons[is][i][j][1] += rhons[is][i][j][1];
-        Jxs[is][i][j][1] += Jxs[is][i][j][1];
-        Jys[is][i][j][1] += Jys[is][i][j][1];
-        Jzs[is][i][j][1] += Jzs[is][i][j][1];
+        Jxs  [is][i][j][1] += Jxs  [is][i][j][1];
+        Jys  [is][i][j][1] += Jys  [is][i][j][1];
+        Jzs  [is][i][j][1] += Jzs  [is][i][j][1];
         pXXsn[is][i][j][1] += pXXsn[is][i][j][1];
         pXYsn[is][i][j][1] += pXYsn[is][i][j][1];
         pXZsn[is][i][j][1] += pXZsn[is][i][j][1];
@@ -1069,9 +1203,9 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * v
     for (int i = 1; i < nyn - 1; i++)
       for (int k = 1; k < nzn - 1; k++) {
         rhons[is][nxn - 2][i][k] += rhons[is][nxn - 2][i][k];
-        Jxs[is][nxn - 2][i][k] += Jxs[is][nxn - 2][i][k];
-        Jys[is][nxn - 2][i][k] += Jys[is][nxn - 2][i][k];
-        Jzs[is][nxn - 2][i][k] += Jzs[is][nxn - 2][i][k];
+        Jxs  [is][nxn - 2][i][k] += Jxs  [is][nxn - 2][i][k];
+        Jys  [is][nxn - 2][i][k] += Jys  [is][nxn - 2][i][k];
+        Jzs  [is][nxn - 2][i][k] += Jzs  [is][nxn - 2][i][k];
         pXXsn[is][nxn - 2][i][k] += pXXsn[is][nxn - 2][i][k];
         pXYsn[is][nxn - 2][i][k] += pXYsn[is][nxn - 2][i][k];
         pXZsn[is][nxn - 2][i][k] += pXZsn[is][nxn - 2][i][k];
@@ -1084,9 +1218,9 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * v
     for (int i = 1; i < nxn - 1; i++)
       for (int k = 1; k < nzn - 1; k++) {
         rhons[is][i][nyn - 2][k] += rhons[is][i][nyn - 2][k];
-        Jxs[is][i][nyn - 2][k] += Jxs[is][i][nyn - 2][k];
-        Jys[is][i][nyn - 2][k] += Jys[is][i][nyn - 2][k];
-        Jzs[is][i][nyn - 2][k] += Jzs[is][i][nyn - 2][k];
+        Jxs  [is][i][nyn - 2][k] += Jxs  [is][i][nyn - 2][k];
+        Jys  [is][i][nyn - 2][k] += Jys  [is][i][nyn - 2][k];
+        Jzs  [is][i][nyn - 2][k] += Jzs  [is][i][nyn - 2][k];
         pXXsn[is][i][nyn - 2][k] += pXXsn[is][i][nyn - 2][k];
         pXYsn[is][i][nyn - 2][k] += pXYsn[is][i][nyn - 2][k];
         pXZsn[is][i][nyn - 2][k] += pXZsn[is][i][nyn - 2][k];
@@ -1099,9 +1233,9 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * v
     for (int i = 1; i < nxn - 1; i++)
       for (int j = 1; j < nyn - 1; j++) {
         rhons[is][i][j][nzn - 2] += rhons[is][i][j][nzn - 2];
-        Jxs[is][i][j][nzn - 2] += Jxs[is][i][j][nzn - 2];
-        Jys[is][i][j][nzn - 2] += Jys[is][i][j][nzn - 2];
-        Jzs[is][i][j][nzn - 2] += Jzs[is][i][j][nzn - 2];
+        Jxs  [is][i][j][nzn - 2] += Jxs  [is][i][j][nzn - 2];
+        Jys  [is][i][j][nzn - 2] += Jys  [is][i][j][nzn - 2];
+        Jzs  [is][i][j][nzn - 2] += Jzs  [is][i][j][nzn - 2];
         pXXsn[is][i][j][nzn - 2] += pXXsn[is][i][j][nzn - 2];
         pXYsn[is][i][j][nzn - 2] += pXYsn[is][i][j][nzn - 2];
         pXZsn[is][i][j][nzn - 2] += pXZsn[is][i][j][nzn - 2];
@@ -1111,7 +1245,7 @@ inline void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * v
       }
   }
 }
-/** Calculate Magnetic field with the implicit solver: calculate B defined on nodes
+/*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes
   With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
 inline void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getCartesian_rank() == 0)
@@ -1140,7 +1274,7 @@ inline void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct) {
 
 
 }
-/** initialize EM field with transverse electric waves 1D and rotate
+/*! initialize EM field with transverse electric waves 1D and rotate
   anticlockwise (theta degrees)*/
 inline void EMfields3D::initEM_rotate(VirtualTopology3D * vct, Grid * grid, double B, double theta) {
   // initialize E and rhos on nodes
@@ -1165,7 +1299,7 @@ inline void EMfields3D::initEM_rotate(VirtualTopology3D * vct, Grid * grid, doub
     grid->interpN2C(rhocs, is, rhons);
 
 }
-/**Add a periodic perturbation in rho exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
+/*!Add a periodic perturbation in rho exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
 inline void EMfields3D::AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid) {
 
   double alpha;
@@ -1185,7 +1319,7 @@ inline void EMfields3D::AddPerturbationRho(double deltaBoB, double kx, double ky
 }
 
 
-/**Add a periodic perturbation exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
+/*!Add a periodic perturbation exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
 inline void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, double B0, Grid * grid) {
 
   double alpha;
@@ -1219,7 +1353,7 @@ inline void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, d
 }
 
 
-/** Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
+/*! Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
 inline void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
   // smoothing
   smooth(Smooth, rhoc, 0, grid, vct);
@@ -1259,7 +1393,7 @@ inline void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * v
   // communicate rhoh
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
 }
-/** Image of Poisson Solver */
+/*! Image of Poisson Solver */
 inline void EMfields3D::PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct) {
   // allocate 2 three dimensional service vectors
   double ***temp = newArr3(double, nxc, nyc, nzc);
@@ -1277,12 +1411,12 @@ inline void EMfields3D::PoissonImage(double *image, double *vector, Grid * grid,
   delArr3(temp, nxc, nyc);
   delArr3(im, nxc, nyc);
 }
-/** interpolate charge density and pressure density from node to center */
+/*! interpolate charge density and pressure density from node to center */
 inline void EMfields3D::interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid) {
   // do we need communication or not really?
   grid->interpN2C(rhoc, rhon);
 }
-/** communicate ghost for grid -> Particles interpolation */
+/*! communicate ghost for grid -> Particles interpolation */
 inline void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct) {
   // interpolate adding common nodes among processors
   communicateInterp(nxn, nyn, nzn, ns, rhons, 0, 0, 0, 0, 0, 0, vct);
@@ -1314,69 +1448,184 @@ inline void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFace
 
 
 /** add an amount of charge density to charge density field at node X,Y */
+inline void Moments::addRho(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++) {
+        const double temp = weight[i][j][k] * invVOL;
+        rho[X - i][Y - j][Z - k] += temp;
+      }
+}
+/** add an amount of charge density to current density - direction X to current density field on the node*/
+inline void Moments::addJx(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+        const double temp = weight[i][j][k] * invVOL;
+        Jx[X - i][Y - j][Z - k] += temp;
+      }
+}
+/** add an amount of current density - direction Y to current density field on the node */
+inline void Moments::addJy(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+        const double temp = weight[i][j][k] * invVOL;
+        Jy[X - i][Y - j][Z - k] += temp;
+      }
+}
+/** add an amount of current density - direction Z to current density field on the node */
+inline void Moments::addJz(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+        const double temp = weight[i][j][k] * invVOL;
+        Jz[X - i][Y - j][Z - k] += temp;
+      }
+}
+/** add an amount of pressure density - direction XX to current density field on the node */
+inline void Moments::addPxx(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+        const double temp = weight[i][j][k] * invVOL;
+        pXX[X - i][Y - j][Z - k] += temp;
+      }
+}
+/** add an amount of pressure density - direction XY to current density field on the node*/
+inline void Moments::addPxy(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+        const double temp = weight[i][j][k] * invVOL;
+        pXY[X - i][Y - j][Z - k] += temp;
+      }
+}
+/** add an amount of pressure density - direction XZ to current density field on the node */
+inline void Moments::addPxz(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+        const double temp = weight[i][j][k] * invVOL;
+        pXZ[X - i][Y - j][Z - k] += temp;
+      }
+}
+/** add an amount of pressure density - direction YY to current density field on the node*/
+inline void Moments::addPyy(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+        const double temp = weight[i][j][k] * invVOL;
+        pYY[X - i][Y - j][Z - k] += temp;
+      }
+}
+/** add an amount of pressure density - direction YZ to current density field on the node */
+inline void Moments::addPyz(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+        const double temp = weight[i][j][k] * invVOL;
+        pYZ[X - i][Y - j][Z - k] += temp;
+      }
+}
+/** add an amount of pressure density - direction ZZ to current density field on the node */
+inline void Moments::addPzz(double weight[][2][2], int X, int Y, int Z) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+        const double temp = weight[i][j][k] * invVOL;
+        pZZ[X - i][Y - j][Z - k] += temp;
+      }
+}
+
+inline void EMfields3D::addToSpeciesMoments(const Moments& in, int is)
+{
+  assert_eq(in.get_nx(), nxn);
+  assert_eq(in.get_ny(), nyn);
+  assert_eq(in.get_nz(), nzn);
+  for (register int i = 0; i < nxn; i++)
+  {
+    for (register int j = 0; j < nyn; j++)
+      for (register int k = 0; k < nzn; k++)
+      {
+        rhons[is][i][j][k] += in.get_rho(i,j,k);
+        Jxs  [is][i][j][k] += in.get_Jx (i,j,k);
+        Jys  [is][i][j][k] += in.get_Jy (i,j,k);
+        Jzs  [is][i][j][k] += in.get_Jz (i,j,k);
+        pXXsn[is][i][j][k] += in.get_pXX(i,j,k);
+        pXYsn[is][i][j][k] += in.get_pXY(i,j,k);
+        pXZsn[is][i][j][k] += in.get_pXZ(i,j,k);
+        pYYsn[is][i][j][k] += in.get_pYY(i,j,k);
+        pYZsn[is][i][j][k] += in.get_pYZ(i,j,k);
+        pZZsn[is][i][j][k] += in.get_pZZ(i,j,k);
+      }
+  }
+}
+
+/*! add an amount of charge density to charge density field at node X,Y */
 inline void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         rhons[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-/** add an amount of charge density to current density - direction X to current density field on the node*/
+/*! add an amount of charge density to current density - direction X to current density field on the node*/
 inline void EMfields3D::addJx(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         Jxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-/** add an amount of current density - direction Y to current density field on the node */
+/*! add an amount of current density - direction Y to current density field on the node */
 inline void EMfields3D::addJy(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         Jys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-/** add an amount of current density - direction Z to current density field on the node */
+/*! add an amount of current density - direction Z to current density field on the node */
 inline void EMfields3D::addJz(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         Jzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-/** add an amount of pressure density - direction XX to current density field on the node */
+/*! add an amount of pressure density - direction XX to current density field on the node */
 inline void EMfields3D::addPxx(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         pXXsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-/** add an amount of pressure density - direction XY to current density field on the node*/
+/*! add an amount of pressure density - direction XY to current density field on the node*/
 inline void EMfields3D::addPxy(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         pXYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-/** add an amount of pressure density - direction XZ to current density field on the node */
+/*! add an amount of pressure density - direction XZ to current density field on the node */
 inline void EMfields3D::addPxz(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         pXZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-/** add an amount of pressure density - direction YY to current density field on the node*/
+/*! add an amount of pressure density - direction YY to current density field on the node*/
 inline void EMfields3D::addPyy(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         pYYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-/** add an amount of pressure density - direction YZ to current density field on the node */
+/*! add an amount of pressure density - direction YZ to current density field on the node */
 inline void EMfields3D::addPyz(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         pYZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-/** add an amount of pressure density - direction ZZ to current density field on the node */
+/*! add an amount of pressure density - direction ZZ to current density field on the node */
 inline void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
@@ -1386,7 +1635,7 @@ inline void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int i
 
 
 
-/** set to 0 all the densities fields */
+/*! set to 0 all the densities fields */
 inline void EMfields3D::setZeroDensities() {
   for (register int i = 0; i < nxn; i++)
     for (register int j = 0; j < nyn; j++)
@@ -1422,7 +1671,7 @@ inline void EMfields3D::setZeroDensities() {
         }
 
 }
-/**SPECIES: Sum the charge density of different species on NODES*/
+/*!SPECIES: Sum the charge density of different species on NODES*/
 inline void EMfields3D::sumOverSpecies(VirtualTopology3D * vct) {
   for (int is = 0; is < ns; is++)
     for (register int i = 0; i < nxn; i++)
@@ -1431,7 +1680,7 @@ inline void EMfields3D::sumOverSpecies(VirtualTopology3D * vct) {
           rhon[i][j][k] += rhons[is][i][j][k];
 }
 
-/**SPECIES: Sum current density for different species */
+/*!SPECIES: Sum current density for different species */
 inline void EMfields3D::sumOverSpeciesJ() {
   for (int is = 0; is < ns; is++)
     for (register int i = 0; i < nxn; i++)
@@ -1445,7 +1694,7 @@ inline void EMfields3D::sumOverSpeciesJ() {
 
 
 
-/** initialize Magnetic and Electric Field with initial configuration */
+/*! initialize Magnetic and Electric Field with initial configuration */
 inline void EMfields3D::init(VirtualTopology3D * vct, Grid * grid) {
   if (restart1 == 0) {
     for (int i = 0; i < nxn; i++) {
@@ -1611,7 +1860,7 @@ inline void EMfields3D::init(VirtualTopology3D * vct, Grid * grid) {
   }
 }
 
-/**  initiliaze EM for GEM challange */
+/*!  initiliaze EM for GEM challange */
 inline void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid) {
   // perturbation localized in X
   double pertX = 0.4;
@@ -1823,6 +2072,10 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
                     // guide field
                     Bzn[i][j][k] = B0z;
                 }
+        // communicate ghost
+        communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
         // initialize B on centers
         for (int i=0; i < nxc; i++)
             for (int j=0; j < nyc; j++)
@@ -1850,6 +2103,10 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
                     // guide field
                     Bzc[i][j][k] = B0z;
                 }
+        // communicate ghost
+        communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
+        communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
+        communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
         for (int is=0 ; is<ns; is++)
             grid->interpN2C(rhocs,is,rhons);
     } else {
@@ -1857,7 +2114,8 @@ inline void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(
     }
 }
 
-/** initialize GEM challenge with no Perturbation with dipole-like tail topology */
+
+/*! initialize GEM challenge with no Perturbation with dipole-like tail topology */
 inline void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid *grid){
 
       // parameters controling the field topology
@@ -1947,7 +2205,7 @@ inline void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D *vct, Grid
         
 }
 
-/** initialize GEM challenge with no Perturbation */
+/*! initialize GEM challenge with no Perturbation */
 inline void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid) {
   if (restart1 == 0) {
 
@@ -2007,7 +2265,109 @@ inline void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid) {
     init(vct, grid);            // use the fields from restart file
   }
 }
-/**
+
+inline void EMfields3D::initRandomField(VirtualTopology3D *vct, Grid *grid)
+{
+    double** modes_seed = newArr2(double, 7, 7);
+    if (restart1 ==0){
+        // initialize
+        if (vct->getCartesian_rank() ==0){
+            cout << "------------------------------------------" << endl;
+            cout << "Initialize GEM Challenge with Pertubation" << endl;
+            cout << "------------------------------------------" << endl;
+            cout << "B0x                              = " << B0x << endl;
+            cout << "B0y                              = " << B0y << endl;
+            cout << "B0z                              = " << B0z << endl;
+            cout << "Delta (current sheet thickness) = " << delta << endl;
+            for (int i=0; i < ns; i++){
+                cout << "rho species " << i <<" = " << rhoINIT[i];
+                if (DriftSpecies[i])
+                    cout << " DRIFTING " << endl;
+                else
+                    cout << " BACKGROUND " << endl;
+            }
+            cout << "-------------------------" << endl;
+        }
+        double phixy;
+        double phix;
+        double phiy;
+        double phiz;
+        double kx;
+        double ky;
+		phixy = rand() / (double) RAND_MAX;
+		phiz = rand() / (double) RAND_MAX;
+		phix = rand() / (double) RAND_MAX;
+		phiy = rand() / (double) RAND_MAX;
+		for (int m=-3; m < 4; m++)
+            for (int n=-3; n < 4; n++){
+            	modes_seed[m+3][n+3] = rand() / (double) RAND_MAX;
+            }
+        for (int i=0; i < nxn; i++)
+            for (int j=0; j < nyn; j++)
+                for (int k=0; k < nzn; k++){
+                    // initialize the density for species
+                    for (int is=0; is < ns; is++){
+                            rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+                    }
+                    // electric field
+                    Ex[i][j][k] =  0.0;
+                    Ey[i][j][k] =  0.0;
+                    Ez[i][j][k] =  0.0;
+                    // Magnetic field
+                    Bxn[i][j][k] =  0.0;
+                    Byn[i][j][k] =  0.0;
+                    Bzn[i][j][k] =  0.0;
+                    for (int m=-3; m < 4; m++)
+                         for (int n=-3; n < 4; n++){
+
+                             kx=2.0*M_PI*m/Lx;
+                             ky=2.0*M_PI*n/Ly;
+                             Bxn[i][j][k] += -B0x*ky*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*modes_seed[m+3][n+3]);
+                             Byn[i][j][k] += B0x*kx*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*modes_seed[m+3][n+3]);
+                             Bzn[i][j][k] += B0x*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*modes_seed[m+3][n+3]);
+                                       	}
+
+/*                    for (int m=1; m < 4; m++)
+                    	for (int n=1; n < 4; n++){
+
+                    		kx=2.0*M_PI*m/Lx;
+                            ky=2.0*M_PI*n/Ly;
+                    		Bxn[i][j][k] += B0x/kx*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phixy);
+                    		Byn[i][j][k] += B0x/ky*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phixy);
+                    		Bzn[i][j][k] += B0x/(kx+ky)*cos(grid->getXN(i,j,k)*kx+grid->getYN(i,j,k)*ky+2.0*M_PI*phiz);
+                    	}
+                    	for(int n=1; n < 4; n++){
+
+                            ky=2.0*M_PI*n/Ly;
+                    		Bxn[i][j][k] += B0x/(2.0*M_PI/Lx)*cos(grid->getYN(i,j,k)*ky+2.0*M_PI*phix);
+                    		}
+                    	for(int m=1; m < 4; m++){
+
+                            kx=2.0*M_PI*m/Lx;
+                    		Byn[i][j][k] += B0x/(2.0*M_PI/Ly)*cos(grid->getXN(i,j,k)*kx+2.0*M_PI*phiy);
+                    		}
+*/
+                }
+        // communicate ghost
+        communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
+        // initialize B on centers
+        grid->interpN2C(Bxc, Bxn);
+        grid->interpN2C(Byc, Byn);
+        grid->interpN2C(Bzc, Bzn);
+        // communicate ghost
+        communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
+        communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
+        communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
+        for (int is=0 ; is<ns; is++)
+            grid->interpN2C(rhocs,is,rhons);
+    } else {
+        init(vct,grid);  // use the fields from restart file
+    }
+    delArr2(modes_seed, 7);
+}
+/*!
  *
  *  Init Force Free (JxB=0)
  */
@@ -2066,7 +2426,7 @@ inline void EMfields3D::initForceFree(VirtualTopology3D * vct, Grid * grid) {
     init(vct, grid);            // use the fields from restart file
   }
 }
-/** Initialize the EM field with constants values or from restart*/
+/*! Initialize the EM field with constants values or from restart*/
 inline void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, double x_center, double y_center, double z_center, double radius) {
   double distance;
   // initialize E and rhos on nodes
@@ -2112,7 +2472,7 @@ inline void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, double x_
 }
 
 
-/** Calculate the susceptibility on the boundary left*/
+/*! Calculate the susceptibility on the boundary left*/
 inline void EMfields3D::sustensorLeftY(double **susxy, double **susyy, double **suszy) {
   double beta, omcx, omcy, omcz, denom;
   for (int i = 0; i < nxn; i++)
@@ -2136,7 +2496,7 @@ inline void EMfields3D::sustensorLeftY(double **susxy, double **susyy, double **
   }
 
 }
-/** Calculate the susceptibility on the boundary right*/
+/*! Calculate the susceptibility on the boundary right*/
 inline void EMfields3D::sustensorRightY(double **susxy, double **susyy, double **suszy) {
   double beta, omcx, omcy, omcz, denom;
   for (int i = 0; i < nxn; i++)
@@ -2160,7 +2520,7 @@ inline void EMfields3D::sustensorRightY(double **susxy, double **susyy, double *
   }
 }
 
-/** Perfect conductor boundary conditions: LEFT wall */
+/*! Perfect conductor boundary conditions: LEFT wall */
 inline void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid) {
   double **susxy;
   double **susyy;
@@ -2175,9 +2535,9 @@ inline void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY,
         }
       break;
     case 1:                    // boundary condition on Y-DIRECTION
-      susxy = newArr(double, nxn, nzn);
-      susyy = newArr(double, nxn, nzn);
-      suszy = newArr(double, nxn, nzn);
+      susxy = newArr2(double, nxn, nzn);
+      susyy = newArr2(double, nxn, nzn);
+      suszy = newArr2(double, nxn, nzn);
       sustensorLeftY(susxy, susyy, suszy);
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nzn - 1; j++) {
@@ -2195,11 +2555,11 @@ inline void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY,
         }
       break;
   }
-  delArr(susxy, nxn);
-  delArr(susyy, nxn);
-  delArr(suszy, nxn);
+  delArr2(susxy, nxn);
+  delArr2(susyy, nxn);
+  delArr2(suszy, nxn);
 }
-/** Perfect conductor boundary conditions: RIGHT wall */
+/*! Perfect conductor boundary conditions: RIGHT wall */
 inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid) {
   double beta, omcx, omcy, omcz, denom;
   double **susxy;
@@ -2216,9 +2576,9 @@ inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY
         }
       break;
     case 1:                    // boundary condition on Y-DIRECTION RIGHT
-      susxy = newArr(double, nxn, nzn);
-      susyy = newArr(double, nxn, nzn);
-      suszy = newArr(double, nxn, nzn);
+      susxy = newArr2(double, nxn, nzn);
+      susyy = newArr2(double, nxn, nzn);
+      suszy = newArr2(double, nxn, nzn);
       sustensorRightY(susxy, susyy, suszy);
       for (int i = 1; i < nxn - 1; i++)
         for (int j = 1; j < nzn - 1; j++) {
@@ -2237,11 +2597,11 @@ inline void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY
         }
       break;
   }
-  delArr(susxy, nxn);
-  delArr(susyy, nxn);
-  delArr(suszy, nxn);
+  delArr2(susxy, nxn);
+  delArr2(susyy, nxn);
+  delArr2(suszy, nxn);
 }
-/** Perfect conductor boundary conditions for source: LEFT WALL*/
+/*! Perfect conductor boundary conditions for source: LEFT WALL*/
 inline void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
   switch (dir) {
     case 0:                    // boundary condition on X-DIRECTION LEFT
@@ -2271,7 +2631,7 @@ inline void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vecto
   }
 }
 
-/** Perfect conductor boundary conditions for source: RIGHT WALL*/
+/*! Perfect conductor boundary conditions for source: RIGHT WALL*/
 inline void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
   switch (dir) {
     case 0:                    // boundary condition on X-DIRECTION RIGHT
@@ -2301,160 +2661,160 @@ inline void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vect
   }
 
 }
-/** get Potential array ***/
+/*! get Potential array ***/
 inline double ***EMfields3D::getPHI() {
   return (PHI);
 }
-/** get Ex(X,Y,Z)  */
+/*! get Ex(X,Y,Z)  */
 inline double &EMfields3D::getEx(int indexX, int indexY, int indexZ) const {
   return (Ex[indexX][indexY][indexZ]);
 }
-/** get Electric field  component X array*/
+/*! get Electric field  component X array*/
 inline double ***EMfields3D::getEx() {
   return (Ex);
 }
-/** get Ey(X,Y,Z)  */
+/*! get Ey(X,Y,Z)  */
 inline double &EMfields3D::getEy(int indexX, int indexY, int indexZ) const {
   return (Ey[indexX][indexY][indexZ]);
 }
-/** get Electric field  component Y array*/
+/*! get Electric field  component Y array*/
 inline double ***EMfields3D::getEy() {
   return (Ey);
 }
-/** get Ez(X,Y,Z)  */
+/*! get Ez(X,Y,Z)  */
 inline double &EMfields3D::getEz(int indexX, int indexY, int indexZ) const {
   return (Ez[indexX][indexY][indexZ]);
 }
-/** get Electric field  component Z array*/
+/*! get Electric field  component Z array*/
 inline double ***EMfields3D::getEz() {
   return (Ez);
 }
-/** get Bx(X,Y,Z)  */
+/*! get Bx(X,Y,Z)  */
 inline double &EMfields3D::getBx(int indexX, int indexY, int indexZ) const {
   return (Bxn[indexX][indexY][indexZ]);
 }
-/** get Magnetic Field component X array*/
+/*! get Magnetic Field component X array*/
 inline double ***EMfields3D::getBx() {
   return (Bxn);
 }
-/**  get By(X,Y,Z) */
+/*!  get By(X,Y,Z) */
 inline double &EMfields3D::getBy(int indexX, int indexY, int indexZ) const {
   return (Byn[indexX][indexY][indexZ]);
 }
-/** get Magnetic Field component Y array*/
+/*! get Magnetic Field component Y array*/
 inline double ***EMfields3D::getBy() {
   return (Byn);
 }
-/**  get Bz(X,Y,Z) */
+/*!  get Bz(X,Y,Z) */
 inline double &EMfields3D::getBz(int indexX, int indexY, int indexZ) const {
   return (Bzn[indexX][indexY][indexZ]);
 }
-/** get Magnetic Field component Z array*/
+/*! get Magnetic Field component Z array*/
 inline double ***EMfields3D::getBz() {
   return (Bzn);
 }
-/** get rhoc(X,Y,Z) */
+/*! get rhoc(X,Y,Z) */
 inline double &EMfields3D::getRHOc(int indexX, int indexY, int indexZ) const {
   return (rhoc[indexX][indexY][indexZ]);
 }
 inline double ***EMfields3D::getRHOc() {
   return (rhoc);
 }
-/** get density on node(indexX,indexY,indexZ)  */
+/*! get density on node(indexX,indexY,indexZ)  */
 inline double &EMfields3D::getRHOn(int indexX, int indexY, int indexZ) const {
   return (rhon[indexX][indexY][indexZ]);
 }
-/** get density array defined on nodes*/
+/*! get density array defined on nodes*/
 inline double ***EMfields3D::getRHOn() {
   return (rhon);
 }
-/** get rhos(X,Y,Z) : density for species*/
+/*! get rhos(X,Y,Z) : density for species*/
 inline double &EMfields3D::getRHOns(int indexX, int indexY, int indexZ, int is) const {
   return (rhons[is][indexX][indexY][indexZ]);
 }
-/** SPECIES: get density array defined on center cells  */
+/*! SPECIES: get density array defined on center cells  */
 inline double &EMfields3D::getRHOcs(int indexX, int indexY, int indexZ, int is) const {
   return (rhocs[is][indexX][indexY][indexZ]);
 }
-/** get density array defined on nodes*/
+/*! get density array defined on nodes*/
 inline double ****EMfields3D::getRHOns() {
   return (rhons);
 }
-/** SPECIES: get pressure tensor component XX defined on nodes */
+/*! SPECIES: get pressure tensor component XX defined on nodes */
 inline double ****EMfields3D::getpXXsn() {
   return (pXXsn);
 }
-/** SPECIES: get pressure tensor component XY defined on nodes */
+/*! SPECIES: get pressure tensor component XY defined on nodes */
 inline double ****EMfields3D::getpXYsn() {
   return (pXYsn);
 }
-/** SPECIES: get pressure tensor component XZ defined on nodes */
+/*! SPECIES: get pressure tensor component XZ defined on nodes */
 inline double ****EMfields3D::getpXZsn() {
   return (pXZsn);
 }
-/** SPECIES: get pressure tensor component YY defined on nodes */
+/*! SPECIES: get pressure tensor component YY defined on nodes */
 inline double ****EMfields3D::getpYYsn() {
   return (pYYsn);
 }
-/** SPECIES: get pressure tensor component YZ defined on nodes */
+/*! SPECIES: get pressure tensor component YZ defined on nodes */
 inline double ****EMfields3D::getpYZsn() {
   return (pYZsn);
 }
-/** SPECIES: get pressure tensor component ZZ defined on nodes */
+/*! SPECIES: get pressure tensor component ZZ defined on nodes */
 inline double ****EMfields3D::getpZZsn() {
   return (pZZsn);
 }
-/** get current -Direction X */
+/*! get current -Direction X */
 inline double &EMfields3D::getJx(int indexX, int indexY, int indexZ) const {
   return (Jx[indexX][indexY][indexZ]);
 }
-/** get current array X component **/
+/*! get current array X component **/
 inline double ***EMfields3D::getJx() {
   return (Jx);
 }
-/** get current -Direction Y */
+/*! get current -Direction Y */
 inline double &EMfields3D::getJy(int indexX, int indexY, int indexZ) const {
   return (Jy[indexX][indexY][indexZ]);
 }
-/** get current array Y component **/
+/*! get current array Y component **/
 inline double ***EMfields3D::getJy() {
   return (Jy);
 }
-/** get current -Direction Z */
+/*! get current -Direction Z */
 inline double &EMfields3D::getJz(int indexX, int indexY, int indexZ) const {
   return (Jz[indexX][indexY][indexZ]);
 }
-/** get current array Z component **/
+/*! get current array Z component **/
 inline double ***EMfields3D::getJz() {
   return (Jz);
 }
-/**SPECIES: get current array X component */
+/*!SPECIES: get current array X component */
 inline double ****EMfields3D::getJxs() {
   return (Jxs);
 }
-/** get Jxs(X,Y,Z,is) : density for species*/
+/*! get Jxs(X,Y,Z,is) : density for species*/
 inline double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const {
   return (Jxs[is][indexX][indexY][indexZ]);
 }
-/**SPECIES: get current array Y component */
+/*!SPECIES: get current array Y component */
 inline double ****EMfields3D::getJys() {
   return (Jys);
 }
-/** get Jxs(X,Y,Z,is) : density for species*/
+/*! get Jxs(X,Y,Z,is) : density for species*/
 inline double &EMfields3D::getJys(int indexX, int indexY, int indexZ, int is) const {
   return (Jys[is][indexX][indexY][indexZ]);
 }
-/**SPECIES: get current array Z component */
+/*!SPECIES: get current array Z component */
 inline double ****EMfields3D::getJzs() {
   return (Jzs);
 }
-/** get Jxs(X,Y,Z,is) : density for species*/
+/*! get Jxs(X,Y,Z,is) : density for species*/
 inline double &EMfields3D::getJzs(int indexX, int indexY, int indexZ, int is) const {
   return (Jzs[is][indexX][indexY][indexZ]);
 }
 
 
-/** get the electric field energy*/
+/*! get the electric field energy*/
 inline double EMfields3D::getEenergy(void) {
   double localEenergy = 0.0;
   double totalEenergy = 0.0;
@@ -2467,7 +2827,7 @@ inline double EMfields3D::getEenergy(void) {
   return (totalEenergy);
 
 }
-/** get the magnetic field energy*/
+/*! get the magnetic field energy*/
 inline double EMfields3D::getBenergy(void) {
   double localBenergy = 0.0;
   double totalBenergy = 0.0;
@@ -2481,12 +2841,12 @@ inline double EMfields3D::getBenergy(void) {
 }
 
 
-/** Print info about electromagnetic field */
+/*! Print info about electromagnetic field */
 inline void EMfields3D::print(void) const {
 
 
 }
-/** destructor: deallocate arrays*/
+/*! destructor: deallocate arrays*/
 inline EMfields3D::~EMfields3D() {
   // nodes
   delArr3(Ex, nxn, nyn);
@@ -2547,5 +2907,6 @@ inline EMfields3D::~EMfields3D() {
   delArr3(vectY, nxn, nyn);
   delArr3(vectZ, nxn, nyn);
   delArr3(divC, nxc, nyc);
+  delete [] momentsArray;
 }
 #endif
