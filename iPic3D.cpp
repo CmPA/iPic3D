@@ -29,6 +29,7 @@ int main(int argc, char **argv) {
     /*    Exit if there is a memory issue with the particles */
     /* ----------------------------------------------------- */
 
+    KCode.UpdateCycleInfo(i);
     KCode.CalculateField();
 
     b_err = KCode.ParticlesMover();

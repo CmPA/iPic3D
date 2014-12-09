@@ -324,6 +324,8 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
   double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
+  double Fext = EMf->getFext();
+
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   // don't bother trying to push any particles simultaneously;
@@ -420,32 +422,32 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
       const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
       // 
-      Bxl += weight000 * (Bx[ix][iy][iz]             + Bx_ext[ix][iy][iz]);
-      Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Bx_ext[ix][iy][iz-1]);
-      Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Bx_ext[ix][iy-1][iz]);
-      Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Bx_ext[ix][iy-1][iz-1]);
-      Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Bx_ext[ix-1][iy][iz]);
-      Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Bx_ext[ix-1][iy][iz-1]);
-      Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Bx_ext[ix-1][iy-1][iz]);
-      Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Bx_ext[ix-1][iy-1][iz-1]);
+      Bxl += weight000 * (Bx[ix][iy][iz]             + Fext*Bx_ext[ix][iy][iz]);
+      Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Fext*Bx_ext[ix][iy][iz-1]);
+      Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Fext*Bx_ext[ix][iy-1][iz]);
+      Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Fext*Bx_ext[ix][iy-1][iz-1]);
+      Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Fext*Bx_ext[ix-1][iy][iz]);
+      Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Fext*Bx_ext[ix-1][iy][iz-1]);
+      Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Fext*Bx_ext[ix-1][iy-1][iz]);
+      Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Fext*Bx_ext[ix-1][iy-1][iz-1]);
       // 
-      Byl += weight000 * (By[ix][iy][iz]             + By_ext[ix][iy][iz]);
-      Byl += weight001 * (By[ix][iy][iz - 1]         + By_ext[ix][iy][iz-1]);
-      Byl += weight010 * (By[ix][iy - 1][iz]         + By_ext[ix][iy-1][iz]);
-      Byl += weight011 * (By[ix][iy - 1][iz - 1]     + By_ext[ix][iy-1][iz-1]);
-      Byl += weight100 * (By[ix - 1][iy][iz]         + By_ext[ix-1][iy][iz]);
-      Byl += weight101 * (By[ix - 1][iy][iz - 1]     + By_ext[ix-1][iy][iz-1]);
-      Byl += weight110 * (By[ix - 1][iy - 1][iz]     + By_ext[ix-1][iy-1][iz]);
-      Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + By_ext[ix-1][iy-1][iz-1]);
+      Byl += weight000 * (By[ix][iy][iz]             + Fext*By_ext[ix][iy][iz]);
+      Byl += weight001 * (By[ix][iy][iz - 1]         + Fext*By_ext[ix][iy][iz-1]);
+      Byl += weight010 * (By[ix][iy - 1][iz]         + Fext*By_ext[ix][iy-1][iz]);
+      Byl += weight011 * (By[ix][iy - 1][iz - 1]     + Fext*By_ext[ix][iy-1][iz-1]);
+      Byl += weight100 * (By[ix - 1][iy][iz]         + Fext*By_ext[ix-1][iy][iz]);
+      Byl += weight101 * (By[ix - 1][iy][iz - 1]     + Fext*By_ext[ix-1][iy][iz-1]);
+      Byl += weight110 * (By[ix - 1][iy - 1][iz]     + Fext*By_ext[ix-1][iy-1][iz]);
+      Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + Fext*By_ext[ix-1][iy-1][iz-1]);
       // 
-      Bzl += weight000 * (Bz[ix][iy][iz]             + Bz_ext[ix][iy][iz]);
-      Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Bz_ext[ix][iy][iz-1]);
-      Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Bz_ext[ix][iy-1][iz]);
-      Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Bz_ext[ix][iy-1][iz-1]);
-      Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Bz_ext[ix-1][iy][iz]);
-      Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Bz_ext[ix-1][iy][iz-1]);
-      Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Bz_ext[ix-1][iy-1][iz]);
-      Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Bz_ext[ix-1][iy-1][iz-1]);
+      Bzl += weight000 * (Bz[ix][iy][iz]             + Fext*Bz_ext[ix][iy][iz]);
+      Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Fext*Bz_ext[ix][iy][iz-1]);
+      Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Fext*Bz_ext[ix][iy-1][iz]);
+      Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Fext*Bz_ext[ix][iy-1][iz-1]);
+      Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Fext*Bz_ext[ix-1][iy][iz]);
+      Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Fext*Bz_ext[ix-1][iy][iz-1]);
+      Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
+      Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
       // 
       Exl += weight000 * Ex[ix][iy][iz];
       Exl += weight001 * Ex[ix][iy][iz - 1];
@@ -531,7 +533,7 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
   return (0);
 }
 
-int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf){
+int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is){
 
   if (vct->getCartesian_rank()==0){
     cout << "*** Repopulator species " << ns << " ***" << endl;
@@ -633,7 +635,9 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 harvest =   rand()/(double)RAND_MAX ;
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
-                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                double rho = EMf->getRHOcs(i,j,k,is);
+                q[particles_index] = (rho/npcel)*(1.0/grid->getInvVOL());
+                //q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
@@ -744,7 +748,9 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 harvest =   rand()/(double)RAND_MAX ;
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
-                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                double rho = EMf->getRHOcs(i,j,k,is);
+                q[particles_index] = (rho/npcel)*(1.0/grid->getInvVOL());
+                //q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
@@ -800,7 +806,9 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 harvest =   rand()/(double)RAND_MAX ;
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
-                q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
+                double rho = EMf->getRHOcs(i,j,k,is);
+                q[particles_index] = (rho/npcel)*(1.0/grid->getInvVOL());
+                //q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));

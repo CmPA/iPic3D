@@ -25,13 +25,13 @@ int main (int argc, char *argv[])
   int       nspec    = 2;
   int       ntcx     = 64;
   int       ntcy     = 64;
-  int       ntcz     = 1;
+  int       ntcz     = 64;
   int       ntxn;
   int       ntyn;
   int       ntzn;
   double    Lx       = 10.0;
   double    Ly       = 10.0;
-  double    Lz       = 1.0;
+  double    Lz       = 10.0;
   double    L[3];
   MPI_Comm  CART_COMM;
   Fields    EMf;
@@ -84,29 +84,16 @@ int main (int argc, char *argv[])
 
   file.OpenPartclFile(nspec);
   file.ReadParticles(rank, size, dimns, L, CART_COMM);
+
   for (int s = 0; s < nspec; s++){
-    myPart[s].SetNp(file.GetNp(s));
+    myPart[s].memalloc(file.GetNp(s));
 
-    /* Allocation and deallocation (in DumpPartcl) allows to save memory */
-    myPart[s].memallocX();
     file.DumpPartclX(myPart[s].getXref(), s);
-
-    myPart[s].memallocY();
     file.DumpPartclY(myPart[s].getYref(), s);
-
-    myPart[s].memallocZ();
     file.DumpPartclZ(myPart[s].getZref(), s);
-
-    myPart[s].memallocU();
     file.DumpPartclU(myPart[s].getUref(), s);
-
-    myPart[s].memallocV();
     file.DumpPartclV(myPart[s].getVref(), s);
-
-    myPart[s].memallocW();
     file.DumpPartclW(myPart[s].getWref(), s);
-
-    myPart[s].memallocQ();
     file.DumpPartclQ(myPart[s].getQref(), s);
   }
   file.ClosePartclFile();
@@ -172,10 +159,14 @@ int main (int argc, char *argv[])
     }
   }
 
+  std::cout << rank << " : Freeing memory..." << std::endl;
+
   delete [] myPart;
   delete [] perio;
   delete [] dimns;
   delete [] coord;
+
+  std::cout << rank << " : Finalizing MPI" << std::endl;
 
   MPI_Finalize();
 

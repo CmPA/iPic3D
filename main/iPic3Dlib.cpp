@@ -58,8 +58,7 @@ int c_Solver::Init(int argc, char **argv) {
     /* If using parallel H5hut IO read initial file */
     /* -------------------------------------------- */
     ReadFieldsH5hut(ns, EMf, col, vct, grid);
-    if (col->getCase()=="Dipole") EMf->initDipole_2(vct,grid,col);
-
+    if (col->getCase()=="Dipole") {EMf->initDipole_2(vct,grid,col); EMf->SetLambda(grid);}
 
   }
   else {
@@ -188,6 +187,13 @@ void c_Solver::GatherMoments(){
 
 }
 
+void c_Solver::UpdateCycleInfo(int cycle) {
+
+  EMf->UpdateFext(cycle);
+  if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
+
+}
+
 void c_Solver::CalculateField() {
 
   // timeTasks.resetCycle();
@@ -255,7 +261,7 @@ bool c_Solver::ParticlesMover() {
 
   for (int i=0; i < ns; i++) {
     if (col->getRHOinject(i)>0.0)
-      mem_avail = part[i].particle_repopulator(grid,vct,EMf);
+      mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
   }
 
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation

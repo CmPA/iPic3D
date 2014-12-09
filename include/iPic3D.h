@@ -41,6 +41,7 @@ namespace iPic3D {
     void WriteOutput(int cycle);
     void WriteConserved(int cycle);
     void WriteRestart(int cycle);
+    void UpdateCycleInfo(int cycle);
     void Finalize();
 
     inline int FirstCycle();

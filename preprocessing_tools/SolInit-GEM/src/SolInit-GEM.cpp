@@ -21,11 +21,11 @@ int main (int argc, char *argv[])
   int       nspec    = 2;      /*!< Number of species */
   int       ntcx     = 64;     /*!< Number of cells in X */
   int       ntcy     = 64;     /*!< Number of cells in Y */
-  int       ntcz     = 1;      /*!< Number of cells in Z */
-  int       nppc     = 27;     /*!< Number of particles per cell */
+  int       ntcz     = 64;      /*!< Number of cells in Z */
+  int       nppc     = 125;    /*!< Number of particles per cell */
   double    Lx       = 10.0;   /*!< Domain size in X */
   double    Ly       = 10.0;   /*!< Domain size in Y */
-  double    Lz       = 1.0;    /*!< Domain size in Z */
+  double    Lz       = 10.0;   /*!< Domain size in Z */
   double    B0x      = 0.0097; /*!< Background B field in X */
   double    B0y      = 0.0;    /*!< Background B field in Y */
   double    B0z      = 0.0;    /*!< Background B field in Z */
