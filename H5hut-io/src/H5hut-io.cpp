@@ -1,60 +1,11 @@
 
 #include <fstream>
 #include <cmath>
+#include <exception>
+#include <stdexcept>
+#include <new>
 
 #include "H5hut-io.h"
-
-/* ==================== */
-/* Auxiliary structures */
-/* ==================== */
-
-H5hutpart::H5hutpart(){
-  allocated = false;
-}
-
-H5hutpart::~H5hutpart(){
-}
-
-void H5hutpart::memalloc(long long n){
-
-  SetNp(n);
-
-  if (allocated == false) {
-    q = new double[np];
-    x = new double[np];
-    y = new double[np];
-    z = new double[np];
-    u = new double[np];
-    v = new double[np];
-    w = new double[np];
-    allocated = true;
-  }
-}
-
-void H5hutpart::init(long long n, double chg, int Lx, int Ly, int Lz){
-
-  if (!allocated) memalloc(n);
-
-  double LO = -50.0;
-  double HI =  50.0;
-  for (int i=0; i<np; i++){
-    q[i] = chg;
-    x[i] = 0.0 + double(rand()) / double(RAND_MAX/(Lx-0.0));
-    y[i] = 0.0 + double(rand()) / double(RAND_MAX/(Ly-0.0));
-    z[i] = 0.0 + double(rand()) / double(RAND_MAX/(Lz-0.0));
-    u[i] = LO  + double(rand()) / double(RAND_MAX/(HI-LO));
-    v[i] = LO  + double(rand()) / double(RAND_MAX/(HI-LO));
-    w[i] = LO  + double(rand()) / double(RAND_MAX/(HI-LO));
-  }
-}
-
-void H5hutpart::info(){
-  int i = int(np/2);
-  std::cout << "[PHDF5-io]" << " np=" << np << ", ex. position: " << x[i] << " " << y[i] << " " << z[i] << std::endl;
-  std::cout << "[PHDF5-io]" << " np=" << np << ", 1st position: " << x[0] << " " << y[0] << " " << z[0] << std::endl;
-  std::cout << "[PHDF5-io]" << " np=" << np << ", Lst position: " << x[np-1] << " " << y[np-1] << " " << z[np-1] << std::endl;
-  std::cout << std::endl;
-}
 
 /* ====================== */
 /*        OUTPUT          */
@@ -388,58 +339,57 @@ void H5input::CloseFieldsFile(){
   H5CloseFile(fldsfile);
 }
 
-
-void H5input::OpenPartclFile(int ns){
-  nspec = ns;
-  part = new H5hutpart[nspec];
-}
-
 void H5input::ClosePartclFile(){
-  delete [] part;
+
+  H5Gclose(pclgroup);
+  H5Fclose(partfile);
+
+  delete [] h5npart;
+  delete [] nops_beg;
+  delete [] nops;
+  
 }
 
-void H5input::LoadLocalParticles(int ispec, long long r_nop, long long r_beg,
-                                 double *r_q,
-                                 double *r_x,
-                                 double *r_y,
-                                 double *r_z,
-                                 double *r_u,
-                                 double *r_v,
-                                 double *r_w) {
+void H5input::FillPartVectors(long long sizevec, int rank, int jproc, std::ofstream &myfile, int ispec, long long r_nop, long long r_beg, double* r_buffer,
+                              double *q, double *x, double *y, double *z, double *u, double *v, double *w) {
 
-  std::copy(r_q, r_q+r_nop, part[ispec].getQ()+r_beg);
-  std::copy(r_x, r_x+r_nop, part[ispec].getX()+r_beg);
-  std::copy(r_y, r_y+r_nop, part[ispec].getY()+r_beg);
-  std::copy(r_z, r_z+r_nop, part[ispec].getZ()+r_beg);
-  std::copy(r_u, r_u+r_nop, part[ispec].getU()+r_beg);
-  std::copy(r_v, r_v+r_nop, part[ispec].getV()+r_beg);
-  std::copy(r_w, r_w+r_nop, part[ispec].getW()+r_beg);
+  long long l = 0;
+  for (long long k=r_beg; k<r_beg+r_nop; k++){
+    try {
+      q[k] = r_buffer[l + 0*r_nop];
+      x[k] = r_buffer[l + 1*r_nop];
+      y[k] = r_buffer[l + 2*r_nop];
+      z[k] = r_buffer[l + 3*r_nop];
+      u[k] = r_buffer[l + 4*r_nop];
+      v[k] = r_buffer[l + 5*r_nop];
+      w[k] = r_buffer[l + 6*r_nop];
+      l++;
+    }
+    catch (const std::out_of_range& e) {
+      std::cout << rank << ": Out of Range error at element " << k << ": " << e.what() << std::endl;
+    } 
+  }
+
+  //myfile << " ---- All vectors filled" << std::endl;
 
 }
 
-void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long nop, int *pdims, double *L, MPI_Comm CART_COMM,
-                        double *q,
-                        double *x, double *y, double *z,
-                        double *u, double *v, double *w){
+void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long i_nop, int *pdims, double *L, MPI_Comm CART_COMM){
 
-  unsigned int *inproc;
   int          *pcoord;
   int          irank;
-  long long    *s_nop;
-  long long    *r_nop;
-  long long    *r_beg;
-  long long    f_nop;
-  long long    S_MAX_NOP;
-  long long    R_MAX_NOP;
 
-  double       *s_buffer;
-  double       *r_buffer;
-
-  pcoord = new int[ndim];
-  inproc = new unsigned int[nop];
-  s_nop  = new long long[nproc];
-  r_nop  = new long long[nproc];
-  r_beg  = new long long[nproc];
+  try {
+    pcoord = new int[ndim];
+    inproc = new unsigned int[i_nop];
+    s_nop  = new long long[nproc];
+    r_nop  = new long long[nproc];
+    r_beg  = new long long[nproc];
+  }
+  catch(std::bad_alloc& exc)
+  {
+    std::cout << rank << " : Bad allocation of auxiliary vectors in SortParticles: " << exc.what() << std::endl;
+  }
 
   MPI_Request req;
   MPI_Status  status;
@@ -448,9 +398,15 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
   /* Tag particles with proc # */
   /* ------------------------- */
 
+  // std::ofstream myfile;
+  // std::stringstream  ss;
+  // ss << "proc/proc-" << rank << ".txt";
+  // std::string filename = ss.str();
+  // myfile.open(filename.c_str(), std::fstream::app);
+
   for (int iproc=0; iproc<nproc; iproc++) s_nop[iproc] = 0;
 
-  for (long long p=0; p < nop; p++) {
+  for (long long p=0; p < i_nop; p++) {
 
     /* --------------------------------------- */
     /* Get processor coordinate for particle p */
@@ -458,9 +414,9 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
 
     for (int d=0; d<ndim; d++) {
       double r;
-      if (d==0) r = x[p];
-      if (d==1) r = y[p];
-      if (d==2) r = z[p];
+      if (d==0) r = i_x[p];
+      if (d==1) r = i_y[p];
+      if (d==2) r = i_z[p];
 
       pcoord[d] = int(r/(L[d]/pdims[d]));
     }
@@ -481,10 +437,21 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
   /* Communicate sizes and define offset */
   /* ----------------------------------- */
 
+  long long ntp = 0;
+  // myfile << std::endl;
+  for (int iproc=0; iproc<nproc; iproc++) {
+    if (s_nop[iproc]>0) {
+      ntp+= s_nop[iproc];
+      // myfile << iproc << "::" << i_nop << " = " << s_nop[iproc] << " -- " << ntp << std::endl;
+    }
+  }
+  // myfile << std::endl;
+
   S_MAX_NOP = 0;
   for (int iproc=0; iproc<nproc; iproc++) {
     if (rank!=iproc) MPI_Send(&s_nop[iproc], 1, MPI_LONG_LONG, iproc, 0, CART_COMM);
     if (s_nop[iproc] > S_MAX_NOP) S_MAX_NOP = s_nop[iproc];
+    // myfile << " s " << iproc << " : " << s_nop[iproc] << " / " << S_MAX_NOP << std::endl;
   }
 
   f_nop  = 0;
@@ -501,31 +468,49 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
 
     f_nop += r_nop[iproc];
 
+    // myfile << " r " << iproc << " : " << r_nop[iproc] << " / " << R_MAX_NOP << " t= " << f_nop << std::endl;
+
   }
 
-  /* ------------------------------------------- */
-  /* Allocate particle memory in local processor */
-  /* ------------------------------------------- */
+  // myfile.close();
 
-  if (rank==0) {
-    double memsize = 7*f_nop*sizeof(double)*1e-6;
-    std::cout << "[PHDF5-io] Species " << ispec << " -- Alloc final vectors memory: " << memsize << " MB " << std::endl;
-  }
+}
 
-  part[ispec].memalloc(f_nop);
+void H5input::ExchangeParticles(long long sizevec, int nproc, int rank, int ispec, long long i_nop, int *pdims, double *L, MPI_Comm CART_COMM,
+                        double *q,
+                        double *x, double *y, double *z,
+                        double *u, double *v, double *w){
+
+  double       *s_buffer;
+  double       *r_buffer;
+
+  std::ofstream myfile;
+  // std::stringstream  ss;
+  // ss << "proc/proc-" << rank << ".txt";
+  // std::string filename = ss.str();
+  // myfile.open(filename.c_str(), std::fstream::app);
 
   /* --------------------------------- */
   /* Allocate send and receive buffers */
   /* --------------------------------- */
 
+  MPI_Barrier(CART_COMM);
   if (rank==0) {
     double s_memsize = 7*S_MAX_NOP*sizeof(double)*1e-6;
     double r_memsize = 7*R_MAX_NOP*sizeof(double)*1e-6;
     std::cout << "[PHDF5-io] Species " << ispec << " -- Alloc send/recv buffer memory: " << s_memsize+r_memsize << " MB " << std::endl;
+    // myfile << " Receive buffer size: " << R_MAX_NOP << std::endl;
+    // myfile << " Send    buffer size: " << S_MAX_NOP << std::endl;
   }
 
-  s_buffer = new double[7*S_MAX_NOP];
-  r_buffer = new double[7*R_MAX_NOP];
+  try{
+    s_buffer = new double[7*S_MAX_NOP];
+    r_buffer = new double[7*R_MAX_NOP];
+  }
+  catch(std::bad_alloc& exc)
+  {
+    std::cout << rank << " : Bad allocation of send/receive buffers: " << exc.what() << std::endl;
+  }
 
   /* --------------------------------- */
   /* Fill send and receive the buffers */
@@ -539,15 +524,18 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
 
     long long p = 0;
 
-    for (long long n=0; n<nop; n++) {
+    MPI_Barrier(CART_COMM);
+    // if (rank==0) std::cout << "[PHDF5-io] Species " << ispec << " -- Fill send buffer " << iproc << std::endl;
+
+    for (long long n=0; n<i_nop; n++) {
       if (inproc[n]==iproc) {
-        s_buffer[p]                    = q[n];
-        s_buffer[p + (1*s_nop[iproc])] = x[n];
-        s_buffer[p + (2*s_nop[iproc])] = y[n];
-        s_buffer[p + (3*s_nop[iproc])] = z[n];
-        s_buffer[p + (4*s_nop[iproc])] = u[n];
-        s_buffer[p + (5*s_nop[iproc])] = v[n];
-        s_buffer[p + (6*s_nop[iproc])] = w[n];
+        s_buffer[p]                    = i_q[n];
+        s_buffer[p + (1*s_nop[iproc])] = i_x[n];
+        s_buffer[p + (2*s_nop[iproc])] = i_y[n];
+        s_buffer[p + (3*s_nop[iproc])] = i_z[n];
+        s_buffer[p + (4*s_nop[iproc])] = i_u[n];
+        s_buffer[p + (5*s_nop[iproc])] = i_v[n];
+        s_buffer[p + (6*s_nop[iproc])] = i_w[n];
         
         p++;
       }
@@ -562,46 +550,65 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
       std::cout << rank << "        p = " << p << " :: S_MAX_NOP = " << S_MAX_NOP << std::endl;
     }
 
-    /* -------------------- */
-    /* Send buffer to iproc */
-    /* -------------------- */
-
-    if (iproc!=rank) {
-      MPI_Send(s_buffer, 7*s_nop[iproc], MPI_DOUBLE, iproc, 0, CART_COMM);
-    }
+    MPI_Barrier(CART_COMM);
+    //if (rank==0) std::cout << "[PHDF5-io] Species " << ispec << " -- Performing send  " << iproc << std::endl;
 
     /* ---------------------------------- */
     /* Receive buffer in iproc from jproc */
     /* ---------------------------------- */
 
-    else {
+    // myfile << " Doing sends to " << iproc << std::endl;
+
+    if (iproc==rank) {
 
       for (int jproc=0; jproc<nproc; jproc++) {
-        if (jproc==rank) {
-          std::copy(s_buffer, s_buffer+(7*r_nop[jproc]), r_buffer);
+
+        // myfile << " inf frm --- " << jproc << " : " << iproc << " / " << rank << std::endl;
+
+        if (r_nop[jproc]>0) {
+
+          if (jproc==rank) {
+            for (int k=0; k<7*r_nop[jproc]; k++) r_buffer[k] = s_buffer[k];
+            // myfile << " Cpy frm " << jproc << " : " << 7*r_nop[jproc] << " :: " << 7*S_MAX_NOP << std::endl;
+          }
+          else {
+            MPI_Recv(r_buffer, 7*r_nop[jproc], MPI_DOUBLE, jproc, iproc, CART_COMM, MPI_STATUS_IGNORE);
+            // myfile << " Rcv frm " << jproc << " : " << 7*r_nop[jproc] << " :: " << 7*R_MAX_NOP << std::endl;
+          }
+
+          /* ------------------------------------------- */
+          /* Add received buffer to the particle vectors */
+          /* ------------------------------------------- */
+
+          // myfile << " Put " << r_nop[jproc] << " particles from position " << r_beg[jproc] << " to " << r_beg[jproc]+r_nop[jproc] << " of a total " << f_nop << std::endl;
+          FillPartVectors(sizevec, rank, jproc, myfile, ispec, r_nop[jproc], r_beg[jproc], r_buffer, q, x, y, z, u, v, w);
+
         }
         else {
-          MPI_Recv(r_buffer, 7*r_nop[jproc], MPI_DOUBLE, jproc, 0, CART_COMM, MPI_STATUS_IGNORE);
+          // myfile << " Cmm frm " << jproc << ": nothing to comm to " << iproc << std::endl;
         }
-
-        /* ------------------------------------------- */
-        /* Add received buffer to the particle vectors */
-        /* ------------------------------------------- */
-
-        LoadLocalParticles(ispec, r_nop[jproc], r_beg[jproc],
-                                  r_buffer, 
-                                  r_buffer+(1*r_nop[jproc]),
-                                  r_buffer+(2*r_nop[jproc]),
-                                  r_buffer+(3*r_nop[jproc]),
-                                  r_buffer+(4*r_nop[jproc]),
-                                  r_buffer+(5*r_nop[jproc]),
-                                  r_buffer+(6*r_nop[jproc]));
 
       }
 
     }
 
+    /* -------------------- */
+    /* Send buffer to iproc */
+    /* -------------------- */
+
+    else {
+      if (s_nop[iproc]>0) {
+        MPI_Send(s_buffer, 7*s_nop[iproc], MPI_DOUBLE, iproc, iproc, CART_COMM);
+        // myfile << " Send to " << iproc << " : " << 7*s_nop[iproc] << " :: " << 7*S_MAX_NOP << std::endl;
+      }
+    }
+
+    MPI_Barrier(CART_COMM);
+    // myfile << " End send to " << iproc << ": next proc...! " << std::endl;
+
   }
+
+  // myfile.close();
 
   delete [] inproc;
   delete [] s_nop;
@@ -615,32 +622,16 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
 
 }
 
-void H5input::ReadParticles(int rank, int nproc, int *pdims, double *L, MPI_Comm CART_COMM){
+void H5input::OpenPartclFile(int ns, int rank, int nproc, MPI_Comm CART_COMM){
 
-  int        ndim = 3; // By default 2D is considered as a 'flat' 3D
-  int        h5nspec;
-  long long  nop;
-  long long  MAX_NOPS;
-  long long  *nops_beg;
-  long long  *nops_end;
-  long long  *nops;
-  h5_int64_t *h5npart;
-  double     *i_q;
-  double     *i_x;
-  double     *i_y;
-  double     *i_z;
-  double     *i_u;
-  double     *i_v;
-  double     *i_w;
-
-  herr_t status;
-  hid_t  file;
-  hid_t  dataset;
-  hid_t  attr;
-  hid_t  group;
-  hid_t  fapl;
-
+  long long         nops_end;
+  int               h5nspec;
+  herr_t            status;
+  hid_t             attr;
+  hid_t             fapl;
   std::stringstream sstm;
+
+  nspec = ns;
 
   /* -------------- */
   /* Open HDF5 file */
@@ -652,9 +643,9 @@ void H5input::ReadParticles(int rank, int nproc, int *pdims, double *L, MPI_Comm
   filenmbr << std::setfill('0') << std::setw(6) << recycle;
   filename = basename + "-Partcl" + "_" + filenmbr.str() + ".h5";
 
-  fapl   = H5Pcreate(H5P_FILE_ACCESS);
-  status = H5Pset_fapl_mpio(fapl, CART_COMM, MPI_INFO_NULL);
-  file   = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, fapl);
+  fapl     = H5Pcreate(H5P_FILE_ACCESS);
+  status   = H5Pset_fapl_mpio(fapl, CART_COMM, MPI_INFO_NULL);
+  partfile = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, fapl);
 
   status = H5Pclose(fapl);
 
@@ -662,8 +653,8 @@ void H5input::ReadParticles(int rank, int nproc, int *pdims, double *L, MPI_Comm
   /* Compare Attributes to input */
   /* --------------------------- */
 
-  group    = H5Gopen2(file,"/Step#0",H5P_DEFAULT);
-  attr     = H5Aopen_name(group, "nspec");
+  pclgroup = H5Gopen2(partfile,"/Step#0",H5P_DEFAULT);
+  attr     = H5Aopen_name(pclgroup, "nspec");
   status   = H5Aread(attr, H5T_NATIVE_INT, &h5nspec);
   status   = H5Aclose(attr);
 
@@ -677,104 +668,122 @@ void H5input::ReadParticles(int rank, int nproc, int *pdims, double *L, MPI_Comm
   /* Set the reading limits for each processor */
   /* ----------------------------------------- */
 
-  h5npart  = new h5_int64_t[nspec];
+  h5npart  = new long long [nspec];
   nops_beg = new long long [nspec];
-  nops_end = new long long [nspec];
   nops     = new long long [nspec];
 
-  nop = 0;
-  MAX_NOPS = 0;
   for (int i=0; i<nspec; i++) {
+
     sstm << "npart_" << i;
     std::string nparti = sstm.str();
 
-    attr     = H5Aopen_name(group, nparti.c_str());
-    status   = H5Aread(attr, H5T_NATIVE_INT, &h5npart[i]);
+    attr     = H5Aopen_name(pclgroup, nparti.c_str());
+    status   = H5Aread(attr, H5T_NATIVE_LLONG, &h5npart[i]);
     status   = H5Aclose(attr);
     sstm.str("");
 
-    nops_beg[i] = rank     * ceil(h5npart[i]/nproc);
-    nops_end[i] = (rank+1) * ceil(h5npart[i]/nproc) - 1;
-    if (rank==nproc-1) nops_end[i] = h5npart[i]-1;
-    nops[i] = nops_end[i] - nops_beg[i] + 1;
+    nops_beg[i] = rank * ceil(h5npart[i]/nproc);
+    nops_end = (rank==nproc-1) ? h5npart[i] : (rank+1) * ceil(h5npart[i]/nproc);
 
-    if (nops[i]>MAX_NOPS) MAX_NOPS = nops[i];
-    nop += nops[i];
+    nops[i] = nops_end - nops_beg[i];
+
   }
 
-  delete [] nops_end;
+}
+
+void H5input::ReadParticles(int rank, int nproc, int i, int *pdims, double *L, MPI_Comm CART_COMM){
+
+  int               ndim = 3; // By default 2D is considered as a 'flat' 3D
+  long long         i_nop;
+  long long         i_beg;
+  std::stringstream sstm;
 
   /* --------------------------- */
   /* Allocate the reading arrays */
   /* --------------------------- */
 
+  i_nop = nops    [i];
+  i_beg = nops_beg[i];
+
   if (rank==0) {
-    double memsize = 7*MAX_NOPS*sizeof(double)*1e-9;
-    if (memsize<1.0) std::cout << "[PHDF5-io]" << " Allocating " << memsize*1e3 << " MB per processor to read particles file" << std::endl;
-    else             std::cout << "[PHDF5-io]" << " Allocating " << memsize << " GB per processor to read particles file" << std::endl;
+    double memsize = 7*i_nop*sizeof(double)*1e-9;
+    if (memsize<1.0) std::cout << "[PHDF5-io]" << " Allocating " << memsize*1e3 << " MB per processor to read " << i_nop << " particles from file" << std::endl;
+    else             std::cout << "[PHDF5-io]" << " Allocating " << memsize << " GB per processor to read " << i_nop << " particles from file" << std::endl;
   }
 
-  i_q = new double[MAX_NOPS];
-  i_x = new double[MAX_NOPS];
-  i_y = new double[MAX_NOPS];
-  i_z = new double[MAX_NOPS];
-  i_u = new double[MAX_NOPS];
-  i_v = new double[MAX_NOPS];
-  i_w = new double[MAX_NOPS];
+  try{
+    i_q = new double[i_nop];
+    i_x = new double[i_nop];
+    i_y = new double[i_nop];
+    i_z = new double[i_nop];
+    i_u = new double[i_nop];
+    i_v = new double[i_nop];
+    i_w = new double[i_nop];
+  }
+  catch(std::bad_alloc& exc)
+  {
+    std::cout << rank << " : Bad allocation of input vectors: " << exc.what() << std::endl;
+  }
 
   /* ------------------------------------- */
   /* Read the hyperslabs from the datasets */
   /* ------------------------------------- */
 
-  long long offset = 0;
+  MPI_Barrier(CART_COMM);
+  if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Found   " << h5npart[i] << " particles in file" << std::endl;
+  if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Reading " << i_nop << " particles in each processor" << std::endl;
 
-  for (int i=0; i<nspec; i++) {
+  sstm << "q_" << i;
+  std::string dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_q);
+  sstm.str("");
 
-    if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Found   " << h5npart[i] << " particles in file" << std::endl;
-    if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Reading " << nops[i] << " particles in each processor" << std::endl;
+  sstm << "x_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_x);
+  sstm.str("");
 
-    sstm << "q_" << i;
-    std::string dtset = sstm.str();
-    ReadPartDataset(group, dtset, nops[i], nops_beg[i], i_q);
-    sstm.str("");
+  sstm << "y_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_y);
+  sstm.str("");
 
-    sstm << "x_" << i;
-    dtset = sstm.str();
-    ReadPartDataset(group, dtset, nops[i], nops_beg[i], i_x);
-    sstm.str("");
+  sstm << "z_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_z);
+  sstm.str("");
 
-    sstm << "y_" << i;
-    dtset = sstm.str();
-    ReadPartDataset(group, dtset, nops[i], nops_beg[i], i_y);
-    sstm.str("");
+  sstm << "u_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_u);
+  sstm.str("");
 
-    sstm << "z_" << i;
-    dtset = sstm.str();
-    ReadPartDataset(group, dtset, nops[i], nops_beg[i], i_z);
-    sstm.str("");
+  sstm << "v_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_v);
+  sstm.str("");
 
-    sstm << "u_" << i;
-    dtset = sstm.str();
-    ReadPartDataset(group, dtset, nops[i], nops_beg[i], i_u);
-    sstm.str("");
+  sstm << "w_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_w);
+  sstm.str("");
 
-    sstm << "v_" << i;
-    dtset = sstm.str();
-    ReadPartDataset(group, dtset, nops[i], nops_beg[i], i_v);
-    sstm.str("");
+  MPI_Barrier(CART_COMM);
+  if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Sorting particles and distributing among processors: " << std::endl;
 
-    sstm << "w_" << i;
-    dtset = sstm.str();
-    ReadPartDataset(group, dtset, nops[i], nops_beg[i], i_w);
-    sstm.str("");
+  SortParticles(nproc, rank, i, ndim, i_nop, pdims, L, CART_COMM);
 
-    if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Sorting particles and distributing among processors: " << std::endl;
+}
 
-    SortParticles(nproc, rank, i, ndim, nops[i], pdims, L, CART_COMM, i_q, i_x, i_y, i_z, i_u, i_v, i_w);
 
-  }
+void H5input::LoadParticles(long long sizevec, int rank, int nproc, int i, int *pdims, double *L, MPI_Comm CART_COMM,
+                            double *q, double *x, double *y, double *z, 
+                            double *u, double *v, double *w){
 
-  if (rank==0) std::cout << "[PHDF5-io]" << " Freeing memory " << std::endl;
+  ExchangeParticles(sizevec, nproc, rank, i, nops[i], pdims, L, CART_COMM, q, x, y, z, u, v, w);
+
+  MPI_Barrier(CART_COMM);
+  if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Freeing memory " << std::endl;
 
   delete [] i_q;
   delete [] i_x;
@@ -783,10 +792,6 @@ void H5input::ReadParticles(int rank, int nproc, int *pdims, double *L, MPI_Comm
   delete [] i_u;
   delete [] i_v;
   delete [] i_w;
-
-  delete [] h5npart;
-  delete [] nops_beg;
-  delete [] nops;
   
 }
 
@@ -820,39 +825,4 @@ void H5input::ReadPartDataset(hid_t group, std::string dtset, long long nops, lo
 
   delete [] count;
   delete [] start;
-}
-
-void H5input::DumpPartclX(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getX(i);
-  part[s].freeX();
-}
-
-void H5input::DumpPartclY(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getY(i);
-  part[s].freeY();
-}
-
-void H5input::DumpPartclZ(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getZ(i);
-  part[s].freeZ();
-}
-
-void H5input::DumpPartclU(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getU(i);
-  part[s].freeU();
-}
-
-void H5input::DumpPartclV(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getV(i);
-  part[s].freeV();
-}
-
-void H5input::DumpPartclW(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getW(i);
-  part[s].freeW();
-}
-
-void H5input::DumpPartclQ(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getQ(i);
-  part[s].freeQ();
 }

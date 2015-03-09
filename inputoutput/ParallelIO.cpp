@@ -239,20 +239,41 @@ void ReadPartclH5hut(int nspec, Particles3Dcomm *part, Collective *col, VCtopolo
   double L[3] = {col->getLx(), col->getLy(), col->getLz()};
 
   infile.SetNameCycle(col->getinitfile(), col->getLast_cycle());
-  infile.OpenPartclFile(nspec);
-
-  infile.ReadParticles(vct->getCartesian_rank(), vct->getNproc(), vct->getDivisions(), L, vct->getComm());
+  infile.OpenPartclFile(nspec, vct->getCartesian_rank(), vct->getNproc(), vct->getComm());
 
   for (int s = 0; s < nspec; s++){
-    part[s].allocate(s, infile.GetNp(s), col, vct, grid);
 
-    infile.DumpPartclX(part[s].getXref(), s);
-    infile.DumpPartclY(part[s].getYref(), s);
-    infile.DumpPartclZ(part[s].getZref(), s);
-    infile.DumpPartclU(part[s].getUref(), s);
-    infile.DumpPartclV(part[s].getVref(), s);
-    infile.DumpPartclW(part[s].getWref(), s);
-    infile.DumpPartclQ(part[s].getQref(), s);
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (vct->getCartesian_rank()==0) std::cout << " --- Read from file..." << std::endl;
+
+    infile.ReadParticles(vct->getCartesian_rank(),
+                         vct->getNproc(),      s, 
+                         vct->getDivisions(),  L,
+                         vct->getComm());
+
+    part[s].allocate(s, infile.get_nops(), col, vct, grid);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (vct->getCartesian_rank()==0) std::cout << " --- Allocated " << infile.get_nops() << " particles for species " << s << std::endl;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (vct->getCartesian_rank()==0) std::cout << " --- Assigned pointers " << infile.get_nops() << " particles for species " << s << std::endl;
+
+    infile.LoadParticles(infile.get_nops(), vct->getCartesian_rank(),
+                         vct->getNproc(),      s,
+                         vct->getDivisions(),  L,
+                         vct->getComm(),
+                         part[s].getQall(),
+                         part[s].getXall(),
+                         part[s].getYall(),
+                         part[s].getZall(),
+                         part[s].getUall(),
+                         part[s].getVall(),
+                         part[s].getWall());
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    if (vct->getCartesian_rank()==0) std::cout << " --- Dumping " << infile.get_nops() << " particles for species " << s << std::endl;
+
   }
   infile.ClosePartclFile();
 
