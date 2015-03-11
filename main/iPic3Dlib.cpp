@@ -58,7 +58,6 @@ int c_Solver::Init(int argc, char **argv) {
     /* If using parallel H5hut IO read initial file */
     /* -------------------------------------------- */
     ReadFieldsH5hut(ns, EMf, col, vct, grid);
-    if (col->getCase()=="Dipole") {EMf->initDipole_2(vct,grid,col); EMf->SetLambda(grid);}
 
   }
   else {
@@ -69,7 +68,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
     else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
-    else if (col->getCase()=="Dipole")    EMf->initDipole_2(vct,grid,col);
+    else if (col->getCase()=="Dipole")    ;
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -134,7 +133,6 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
   momentum = new double[ns];
@@ -259,10 +257,7 @@ bool c_Solver::ParticlesMover() {
   /* Repopulate the buffer zone at the edge */
   /* -------------------------------------- */
 
-  for (int i=0; i < ns; i++) {
-    if (col->getRHOinject(i)>0.0)
-      mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
-  }
+  InjectBoundaryParticles();
 
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -286,6 +281,15 @@ bool c_Solver::ParticlesMover() {
 
 }
 
+void c_Solver::InjectBoundaryParticles(){
+
+  for (int i=0; i < ns; i++) {
+    if (col->getRHOinject(i)>0.0)
+      mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+  }
+
+}
+
 void c_Solver::WriteRestart(int cycle) {
   // write the RESTART file
   if (cycle % restart_cycle == 0 && cycle != first_cycle) {
@@ -294,6 +298,21 @@ void c_Solver::WriteRestart(int cycle) {
       writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0);
     }
   }
+
+  // Insert the planet in the simulation at cycle 200
+  if (cycle == 200) {
+    if (col->getCase()=="Dipole") {
+      EMf->initDipole_2(vct,grid,col);
+    }
+  }
+
+  if (cycle == first_cycle) {
+    if (col->getCase()=="Dipole" && col->getSolInit()) {
+      EMf->SetDipole_2Bext(vct,grid,col);
+      EMf->SetLambda(grid);
+    }
+  }
+
 }
 
 void c_Solver::WriteConserved(int cycle) {

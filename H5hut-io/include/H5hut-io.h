@@ -79,7 +79,7 @@ class H5input{
 
     // Particle read private functions:
     void ReadPartDataset(hid_t group, std::string dtset, long long nops, long long nops_beg, double *arr);
-    void FillPartVectors(long long sizevec, int rank, int jproc, std::ofstream &myfile, int ispec, long long r_nop, long long r_beg, double* r_buffer,
+    void FillPartVectors(long long sizevec, int rank, int jproc, int ispec, long long r_nop, long long r_beg, double* r_buffer,
                          double *q, double *x, double *y, double *z, double *u, double *v, double *w);
     void ExchangeParticles(long long sizevec, int nproc, int myrank, int ispec, long long nop, int *pdims, double *L, MPI_Comm CART_COMM,
                            double *q,

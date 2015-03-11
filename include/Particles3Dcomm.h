@@ -23,7 +23,7 @@ public:
   /** destructor */
   ~Particles3Dcomm();
   /** allocate particles */
-  void allocate(int species, int initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid);
+  void allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid);
 
   /** calculate the weights given the position of particles */
   void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);

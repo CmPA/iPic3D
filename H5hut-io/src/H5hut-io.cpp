@@ -80,25 +80,14 @@ void H5output::WriteFields(double ***field, std::string fname, int nx, int ny, i
 
   buffer = new h5_float64_t[nz*ny*nx];
 
-  std::ofstream myfile;
-
-  if (rank!=-1) {
-    std::stringstream  ss;
-    ss << "proc-" << rank << ".txt";
-    std::string filename = ss.str();
-    myfile.open(filename.c_str());
-  }
-
   int n = 0;
   for (int k=1; k<nz-1; k++) {
     for (int j=1; j<ny-1; j++) {
       for (int i=1; i<nx-1; i++) {
         buffer[n++] = field[i][j][k];
-        if (rank!=-1) myfile << i << " " << j << " " << k << " : " << field[i][j][k] << std::endl;
       }
     }
   }
-  if (rank!=-1) myfile.close();
 
   H5Block3dWriteScalarFieldFloat64(fldsfile, fname.c_str(), buffer);
 
@@ -312,25 +301,14 @@ void H5input::ReadFields(double ***field, std::string fname, int nx, int ny, int
 
   H5Block3dReadScalarFieldFloat64(fldsfile, fname.c_str(), buffer);
 
-  std::ofstream myfile;
-
-  if (rank!=-1) {
-    std::stringstream  ss;
-    ss << "proc-" << rank << ".txt";
-    std::string filename = ss.str();
-    myfile.open(filename.c_str());
-  }
-
   int n = 0;
   for (int k=1; k<nz-1; k++) {
     for (int j=1; j<ny-1; j++) {
       for (int i=1; i<nx-1; i++) {
         field[i][j][k] = buffer[n++];
-        if (rank!=-1) myfile << i << " " << j << " " << k << " : " << field[i][j][k] << std::endl;
       }
     }
   }
-  if (rank!=-1) myfile.close();
 
   delete [] buffer;
 }
@@ -350,7 +328,7 @@ void H5input::ClosePartclFile(){
   
 }
 
-void H5input::FillPartVectors(long long sizevec, int rank, int jproc, std::ofstream &myfile, int ispec, long long r_nop, long long r_beg, double* r_buffer,
+void H5input::FillPartVectors(long long sizevec, int rank, int jproc, int ispec, long long r_nop, long long r_beg, double* r_buffer,
                               double *q, double *x, double *y, double *z, double *u, double *v, double *w) {
 
   long long l = 0;
@@ -369,8 +347,6 @@ void H5input::FillPartVectors(long long sizevec, int rank, int jproc, std::ofstr
       std::cout << rank << ": Out of Range error at element " << k << ": " << e.what() << std::endl;
     } 
   }
-
-  //myfile << " ---- All vectors filled" << std::endl;
 
 }
 
@@ -397,12 +373,6 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
   /* ------------------------- */
   /* Tag particles with proc # */
   /* ------------------------- */
-
-  // std::ofstream myfile;
-  // std::stringstream  ss;
-  // ss << "proc/proc-" << rank << ".txt";
-  // std::string filename = ss.str();
-  // myfile.open(filename.c_str(), std::fstream::app);
 
   for (int iproc=0; iproc<nproc; iproc++) s_nop[iproc] = 0;
 
@@ -438,20 +408,16 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
   /* ----------------------------------- */
 
   long long ntp = 0;
-  // myfile << std::endl;
   for (int iproc=0; iproc<nproc; iproc++) {
     if (s_nop[iproc]>0) {
       ntp+= s_nop[iproc];
-      // myfile << iproc << "::" << i_nop << " = " << s_nop[iproc] << " -- " << ntp << std::endl;
     }
   }
-  // myfile << std::endl;
 
   S_MAX_NOP = 0;
   for (int iproc=0; iproc<nproc; iproc++) {
     if (rank!=iproc) MPI_Send(&s_nop[iproc], 1, MPI_LONG_LONG, iproc, 0, CART_COMM);
     if (s_nop[iproc] > S_MAX_NOP) S_MAX_NOP = s_nop[iproc];
-    // myfile << " s " << iproc << " : " << s_nop[iproc] << " / " << S_MAX_NOP << std::endl;
   }
 
   f_nop  = 0;
@@ -468,11 +434,7 @@ void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long 
 
     f_nop += r_nop[iproc];
 
-    // myfile << " r " << iproc << " : " << r_nop[iproc] << " / " << R_MAX_NOP << " t= " << f_nop << std::endl;
-
   }
-
-  // myfile.close();
 
 }
 
@@ -484,23 +446,14 @@ void H5input::ExchangeParticles(long long sizevec, int nproc, int rank, int ispe
   double       *s_buffer;
   double       *r_buffer;
 
-  std::ofstream myfile;
-  // std::stringstream  ss;
-  // ss << "proc/proc-" << rank << ".txt";
-  // std::string filename = ss.str();
-  // myfile.open(filename.c_str(), std::fstream::app);
-
   /* --------------------------------- */
   /* Allocate send and receive buffers */
   /* --------------------------------- */
 
-  MPI_Barrier(CART_COMM);
   if (rank==0) {
     double s_memsize = 7*S_MAX_NOP*sizeof(double)*1e-6;
     double r_memsize = 7*R_MAX_NOP*sizeof(double)*1e-6;
     std::cout << "[PHDF5-io] Species " << ispec << " -- Alloc send/recv buffer memory: " << s_memsize+r_memsize << " MB " << std::endl;
-    // myfile << " Receive buffer size: " << R_MAX_NOP << std::endl;
-    // myfile << " Send    buffer size: " << S_MAX_NOP << std::endl;
   }
 
   try{
@@ -523,9 +476,6 @@ void H5input::ExchangeParticles(long long sizevec, int nproc, int rank, int ispe
     /* -------------------- */
 
     long long p = 0;
-
-    MPI_Barrier(CART_COMM);
-    // if (rank==0) std::cout << "[PHDF5-io] Species " << ispec << " -- Fill send buffer " << iproc << std::endl;
 
     for (long long n=0; n<i_nop; n++) {
       if (inproc[n]==iproc) {
@@ -550,43 +500,31 @@ void H5input::ExchangeParticles(long long sizevec, int nproc, int rank, int ispe
       std::cout << rank << "        p = " << p << " :: S_MAX_NOP = " << S_MAX_NOP << std::endl;
     }
 
-    MPI_Barrier(CART_COMM);
-    //if (rank==0) std::cout << "[PHDF5-io] Species " << ispec << " -- Performing send  " << iproc << std::endl;
-
     /* ---------------------------------- */
     /* Receive buffer in iproc from jproc */
     /* ---------------------------------- */
-
-    // myfile << " Doing sends to " << iproc << std::endl;
 
     if (iproc==rank) {
 
       for (int jproc=0; jproc<nproc; jproc++) {
 
-        // myfile << " inf frm --- " << jproc << " : " << iproc << " / " << rank << std::endl;
-
         if (r_nop[jproc]>0) {
 
           if (jproc==rank) {
             for (int k=0; k<7*r_nop[jproc]; k++) r_buffer[k] = s_buffer[k];
-            // myfile << " Cpy frm " << jproc << " : " << 7*r_nop[jproc] << " :: " << 7*S_MAX_NOP << std::endl;
           }
           else {
             MPI_Recv(r_buffer, 7*r_nop[jproc], MPI_DOUBLE, jproc, iproc, CART_COMM, MPI_STATUS_IGNORE);
-            // myfile << " Rcv frm " << jproc << " : " << 7*r_nop[jproc] << " :: " << 7*R_MAX_NOP << std::endl;
           }
 
           /* ------------------------------------------- */
           /* Add received buffer to the particle vectors */
           /* ------------------------------------------- */
 
-          // myfile << " Put " << r_nop[jproc] << " particles from position " << r_beg[jproc] << " to " << r_beg[jproc]+r_nop[jproc] << " of a total " << f_nop << std::endl;
-          FillPartVectors(sizevec, rank, jproc, myfile, ispec, r_nop[jproc], r_beg[jproc], r_buffer, q, x, y, z, u, v, w);
+          FillPartVectors(sizevec, rank, jproc, ispec, r_nop[jproc], r_beg[jproc], r_buffer, q, x, y, z, u, v, w);
 
         }
-        else {
-          // myfile << " Cmm frm " << jproc << ": nothing to comm to " << iproc << std::endl;
-        }
+        // else{} // Nothing to comm
 
       }
 
@@ -599,16 +537,10 @@ void H5input::ExchangeParticles(long long sizevec, int nproc, int rank, int ispe
     else {
       if (s_nop[iproc]>0) {
         MPI_Send(s_buffer, 7*s_nop[iproc], MPI_DOUBLE, iproc, iproc, CART_COMM);
-        // myfile << " Send to " << iproc << " : " << 7*s_nop[iproc] << " :: " << 7*S_MAX_NOP << std::endl;
       }
     }
 
-    MPI_Barrier(CART_COMM);
-    // myfile << " End send to " << iproc << ": next proc...! " << std::endl;
-
   }
-
-  // myfile.close();
 
   delete [] inproc;
   delete [] s_nop;
@@ -729,7 +661,6 @@ void H5input::ReadParticles(int rank, int nproc, int i, int *pdims, double *L, M
   /* Read the hyperslabs from the datasets */
   /* ------------------------------------- */
 
-  MPI_Barrier(CART_COMM);
   if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Found   " << h5npart[i] << " particles in file" << std::endl;
   if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Reading " << i_nop << " particles in each processor" << std::endl;
 
@@ -768,7 +699,6 @@ void H5input::ReadParticles(int rank, int nproc, int i, int *pdims, double *L, M
   ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_w);
   sstm.str("");
 
-  MPI_Barrier(CART_COMM);
   if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Sorting particles and distributing among processors: " << std::endl;
 
   SortParticles(nproc, rank, i, ndim, i_nop, pdims, L, CART_COMM);
@@ -782,7 +712,6 @@ void H5input::LoadParticles(long long sizevec, int rank, int nproc, int i, int *
 
   ExchangeParticles(sizevec, nproc, rank, i, nops[i], pdims, L, CART_COMM, q, x, y, z, u, v, w);
 
-  MPI_Barrier(CART_COMM);
   if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Freeing memory " << std::endl;
 
   delete [] i_q;

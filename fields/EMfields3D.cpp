@@ -2186,6 +2186,57 @@ double EMfields3D::getFext(){
   return (Fext);
 }
 
+void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective *col){
+
+  for (int i=0; i < nxn; i++){
+    for (int j=0; j < nyn; j++){
+      for (int k=0; k < nzn; k++){
+
+        double a=delta;
+
+        double xc=x_center;
+        double yc=y_center;
+        double zc=z_center;
+
+        double x = grid->getXN(i,j,k);
+        double y = grid->getYN(i,j,k);
+        double z = grid->getZN(i,j,k);
+
+        double rx = x-xc;
+        double ry = y-yc;
+        // in 3D: double rz = z-zc;
+        double rz = 0.0;
+
+        double r      = sqrt(rx*rx + ry*ry + rz*rz);
+
+        if (r < 0.5*a) {
+          rx = 0.0;
+          ry = 0.5*a;
+          rz = 0.0;
+          r =  0.5*a; 
+        }
+
+        double one_r3 = 1.0/(r*r*r);
+
+        double rhx = rx/r;
+        double rhy = ry/r;
+        double rhz = rz/r;
+
+        double Mx = B1x;
+        double My = B1y;
+        double Mz = B1z;
+
+        Bx_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhx - Mx );
+        By_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhy - My );
+        Bz_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhz - Mz );
+
+      }
+    }
+  }
+
+  UpdateRHOcs(grid);
+
+}
 void EMfields3D::initDipole_2(VirtualTopology3D *vct, Grid *grid, Collective *col){
 
   for (int i=0; i < nxn; i++){
@@ -2258,7 +2309,7 @@ void EMfields3D::UpdateRHOcs(Grid * grid){
 
   double xmin = 0.0;
   double xmax = Lx;
-  double rmin = 0.1;
+  double rmin = 1.0;
   double rmax = 1.0;
 
   for (int is = 0; is < ns; is++)

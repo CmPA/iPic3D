@@ -25,7 +25,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 class Particles {
 public:
   /** allocate particles */
-  virtual void allocate(int species, int initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) = 0;
+  virtual void allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) = 0;
   /** interpolation Particle -> grid */
   virtual void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) = 0;
 

@@ -63,7 +63,7 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]b_Z_LEFT;
 }
 /** constructors fo a single species*/
-void Particles3Dcomm::allocate(int species, int initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
+void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
   // info from collectiveIO
   ns = species;
   npcel = col->getNpcel(species);

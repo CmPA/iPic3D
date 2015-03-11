@@ -145,13 +145,10 @@ void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *co
   file.WriteFields(EMf->getEx(), "Ex", grid->getNXN(), grid->getNYN(), grid->getNZN());
   file.WriteFields(EMf->getEy(), "Ey", grid->getNXN(), grid->getNYN(), grid->getNZN());
   file.WriteFields(EMf->getEz(), "Ez", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBx(), "Bx", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBy(), "By", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBz(), "Bz", grid->getNXN(), grid->getNYN(), grid->getNZN());
   file.WriteFields(EMf->getBxTot(), "Bt_x", grid->getNXN(), grid->getNYN(), grid->getNZN());
   file.WriteFields(EMf->getByTot(), "Bt_y", grid->getNXN(), grid->getNYN(), grid->getNZN());
   file.WriteFields(EMf->getBzTot(), "Bt_z", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->GetLambda(), "Lambda", grid->getNXN(), grid->getNYN(), grid->getNZN());
+  //file.WriteFields(EMf->GetLambda(), "Lambda", grid->getNXN(), grid->getNYN(), grid->getNZN());
 
   for (int is=0; is<nspec; is++) {
     stringstream  ss;
@@ -243,21 +240,12 @@ void ReadPartclH5hut(int nspec, Particles3Dcomm *part, Collective *col, VCtopolo
 
   for (int s = 0; s < nspec; s++){
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (vct->getCartesian_rank()==0) std::cout << " --- Read from file..." << std::endl;
-
     infile.ReadParticles(vct->getCartesian_rank(),
                          vct->getNproc(),      s, 
                          vct->getDivisions(),  L,
                          vct->getComm());
 
     part[s].allocate(s, infile.get_nops(), col, vct, grid);
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (vct->getCartesian_rank()==0) std::cout << " --- Allocated " << infile.get_nops() << " particles for species " << s << std::endl;
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (vct->getCartesian_rank()==0) std::cout << " --- Assigned pointers " << infile.get_nops() << " particles for species " << s << std::endl;
 
     infile.LoadParticles(infile.get_nops(), vct->getCartesian_rank(),
                          vct->getNproc(),      s,
@@ -270,9 +258,6 @@ void ReadPartclH5hut(int nspec, Particles3Dcomm *part, Collective *col, VCtopolo
                          part[s].getUall(),
                          part[s].getVall(),
                          part[s].getWall());
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (vct->getCartesian_rank()==0) std::cout << " --- Dumping " << infile.get_nops() << " particles for species " << s << std::endl;
 
   }
   infile.ClosePartclFile();
