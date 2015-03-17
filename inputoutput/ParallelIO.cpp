@@ -142,12 +142,15 @@ void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *co
 
   file.OpenFieldsFile("Node", nspec, col->getNxc()+1, col->getNyc()+1, col->getNzc()+1, vct->getCoordinates(), vct->getDivisions(), vct->getComm());
 
-  file.WriteFields(EMf->getEx(), "Ex", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getEy(), "Ey", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getEz(), "Ez", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBxTot(), "Bt_x", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getByTot(), "Bt_y", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBzTot(), "Bt_z", grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getEx(),    "Ex",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getEy(),    "Ey",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getEz(),    "Ez",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBx(),    "Bx",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBy(),    "By",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBz(),    "Bz",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBxTot(), "Btx", grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getByTot(), "Bty", grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBzTot(), "Btz", grid->getNXN(), grid->getNYN(), grid->getNZN());
   //file.WriteFields(EMf->GetLambda(), "Lambda", grid->getNXN(), grid->getNYN(), grid->getNZN());
 
   for (int is=0; is<nspec; is++) {
