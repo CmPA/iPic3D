@@ -2204,8 +2204,7 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
 
         double rx = x-xc;
         double ry = y-yc;
-        // in 3D: double rz = z-zc;
-        double rz = 0.0;
+        double rz = z-zc;
 
         double r      = sqrt(rx*rx + ry*ry + rz*rz);
 
@@ -2237,6 +2236,7 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
   UpdateRHOcs(grid);
 
 }
+
 void EMfields3D::initDipole_2(VirtualTopology3D *vct, Grid *grid, Collective *col){
 
   for (int i=0; i < nxn; i++){
