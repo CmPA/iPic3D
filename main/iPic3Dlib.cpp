@@ -20,7 +20,7 @@ int c_Solver::Init(int argc, char **argv) {
   ns = col->getNs();            // get the number of particle species involved in simulation
   first_cycle = col->getLast_cycle() + 1; // get the last cycle from the restart
   // initialize the virtual cartesian topology 
-  vct = new VCtopology3D();
+  vct = new VCtopology3D(col);
   // Check if we can map the processes into a matrix ordering defined in Collective.cpp
   if (nprocs != vct->getNprocs()) {
     if (myrank == 0) {
@@ -171,8 +171,7 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
-void c_Solver::CalculateField() {
-
+void c_Solver::GatherMoments(){
   // timeTasks.resetCycle();
   // interpolation
   // timeTasks.start(TimeTasks::MOMENTS);
@@ -184,6 +183,14 @@ void c_Solver::CalculateField() {
     part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
+
+}
+
+void c_Solver::CalculateField() {
+
+  // timeTasks.resetCycle();
+  // interpolation
+  // timeTasks.start(TimeTasks::MOMENTS);
 
   // Fill with constant charge the planet
   if (col->getCase()=="Dipole") {
@@ -197,6 +204,14 @@ void c_Solver::CalculateField() {
   MPI_Barrier(MPI_COMM_WORLD);
   // timeTasks.end(TimeTasks::MOMENTS);
 
+  // MAXWELL'S SOLVER
+  // timeTasks.start(TimeTasks::FIELDS);
+  EMf->calculateE(grid, vct, col);               // calculate the E field
+  // timeTasks.end(TimeTasks::FIELDS);
+
+}
+
+void c_Solver::CalculateBField() {
   /* --------------------- */
   /* Calculate the B field */
   /* --------------------- */
@@ -207,12 +222,6 @@ void c_Solver::CalculateField() {
 
   // print out total time for all tasks
   // timeTasks.print_cycle_times();
-
-  // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct, col);               // calculate the E field
-  // timeTasks.end(TimeTasks::FIELDS);
-
 }
 
 bool c_Solver::ParticlesMover() {

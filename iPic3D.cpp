@@ -14,6 +14,7 @@ int main(int argc, char **argv) {
   /* ------------------------------ */
 
   KCode.Init(argc, argv);
+  KCode.GatherMoments();
 
   /* ------------ */
   /* 1- Main loop */
@@ -28,10 +29,12 @@ int main(int argc, char **argv) {
     /*    Exit if there is a memory issue with the particles */
     /* ----------------------------------------------------- */
 
-    if (!b_err) {
-      KCode.CalculateField();
-      b_err = KCode.ParticlesMover();
-    }
+    KCode.CalculateField();
+
+    b_err = KCode.ParticlesMover();
+
+    if (!b_err) KCode.CalculateBField();
+    if (!b_err) KCode.GatherMoments();
 
     if (b_err) {
       i = KCode.LastCycle() + 1;

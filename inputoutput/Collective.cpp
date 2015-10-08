@@ -270,8 +270,15 @@ void Collective::ReadInput(string inputfile) {
       w0[1] = w00.f;
     }
 
-
     verbose = config.read < bool > ("verbose");
+
+    // MPI topology and periodicity
+    XLEN      = config.read < int > ("XLEN",1);
+    YLEN      = config.read < int > ("YLEN",1);
+    ZLEN      = config.read < int > ("ZLEN",1);
+    PERIODICX = config.read < bool >("PERIODICX");
+    PERIODICY = config.read < bool >("PERIODICY");
+    PERIODICZ = config.read < bool >("PERIODICZ");
 
     // PHI Electrostatic Potential 
     bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
@@ -882,7 +889,7 @@ double Collective::getRHOinit(int nspecies) {
   return (rhoINIT[nspecies]);
 }
 /*! get the background density for GEM challenge */
-inline double Collective::getRHOinject(int nspecies){
+double Collective::getRHOinject(int nspecies){
   return(rhoINJECT[nspecies]);
 }
 /*! get thermal velocity - Direction X */

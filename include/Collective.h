@@ -8,8 +8,6 @@
 #ifndef Collective_H
 #define Collective_H
 
-
-
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -19,14 +17,21 @@
 #include "ConfigFile.h"
 #include "input_array.h"
 #include "hdf5.h"
-#include "CollectiveIO.h"
+
+#ifdef BATSRUS
+#include "InterfaceFluid.h"
+#endif
 
 using std::cout;
 using std::endl;
 using std::ofstream;
 using namespace std;
 
-class Collective:public CollectiveIO {
+class Collective
+#ifdef BATSRUS
+: public InterfaceFluid
+#endif
+  {
   public:
     /*! constructor: initialize physical parameters with values */
     Collective(int argc, char **argv);
@@ -62,6 +67,15 @@ class Collective:public CollectiveIO {
     int getNyc();
     /*! Get the number of cells - direction Z */
     int getNzc();
+
+    int  getXLEN()      {return (XLEN);};
+    int  getYLEN()      {return (YLEN);};
+    int  getZLEN()      {return (ZLEN);};
+
+    bool getPERIODICX() {return (PERIODICX);};
+    bool getPERIODICY() {return (PERIODICY);};
+    bool getPERIODICZ() {return (PERIODICZ);};
+
     /*! Get the grid spacing - direction X */
     double getDx();
     /*! Get the grid spacing - direction Y */
@@ -267,6 +281,14 @@ class Collective:public CollectiveIO {
     double dy;
     /*! grid spacing - Z direction */
     double dz;
+
+    int XLEN;          /*! Number of subdomains in the X direction */
+    int YLEN;          /*! Number of subdomains in the Y direction */
+    int ZLEN;          /*! Number of subdomains in the Z direction */
+    bool PERIODICX;    /*! Periodicity in the X direction */
+    bool PERIODICY;    /*! Periodicity in the Y direction */
+    bool PERIODICZ;    /*! Periodicity in the Z direction */
+
     /*! number of species */
     int ns;
     /*! number of particles per cell */
