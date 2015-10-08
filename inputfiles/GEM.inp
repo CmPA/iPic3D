@@ -2,8 +2,8 @@
 # 2 Species
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
-SaveDirName    = data     # Output directory
-RestartDirName = data     # Restart directory (for WriteMethod=default)
+SaveDirName    = "data"     # Output directory (without trailing "/")
+RestartDirName = "data"     # Restart directory (for WriteMethod=default)
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
 
@@ -27,28 +27,28 @@ B1z = 0.000
 delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-dt = 0.5               # dt = time step  
+dt = 0.5               # dt = time step
 ncycles = 150          # cycles
 th = 1.0               # th =   decentering parameter
-c = 1.0                # c = light speed 
+c = 1.0                # c = light speed
 
 #  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
 Smooth = 0.5           # Smoothing value (5-points stencil)
 
 
 # %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
-Lx =   10.0            # Lx = simulation box length - x direction   
-Ly =   10.0            # Ly = simulation box length - y direction
-Lz =   1.0             # Lz = simulation box length - z direction   
+Lx =   25.6            # Lx = simulation box length - x direction
+Ly =   12.8            # Ly = simulation box length - y direction
+Lz =   1.0             # Lz = simulation box length - z direction
 
-x_center =   1.        # Lx = simulation box length - x direction in m  
+x_center =   1.        # Lx = simulation box length - x direction in m
 y_center =   1.        # Ly = simulation box length - y direction in m
-z_center =   1.        # Lz = simulation box length - z direction in m  
+z_center =   1.        # Lz = simulation box length - z direction in m
 L_square =   .1
 
-nxc =  64              # nxc = number of cells - x direction        
-nyc =  64              # nyc = number of cells - y direction
-nzc =  1               # nzc = number of cells - z direction        
+nxc = 512              # nxc = number of cells - x direction
+nyc = 256              # nyc = number of cells - y direction
+nzc =  1               # nzc = number of cells - z direction
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
 XLEN = 2               # Number of subdomains in the X direction
@@ -64,20 +64,20 @@ ZLEN = 1               # Number of subdomains in the X direction
 ns = 2                               # Number of particles
 rhoINIT         = 1.0  1.0           # Initial density (make sure you are neutral)
 rhoINJECT       = 1.0  1.0           # Injection density (make sure you are neutral)
-TrackParticleID = 0    0             # TrackParticleID[species] = 1=true, 0=false 
+TrackParticleID = 0    0             # TrackParticleID[species] = 1=true, 0=false
 
-npcelx          = 3    3             # Particles per cell in X
-npcely          = 3    3             # Particles per cell in Y
-npcelz          = 3    3             # Particles per cell in Z
+npcelx          = 12   12            # Particles per cell in X
+npcely          = 12   12            # Particles per cell in Y
+npcelz          = 12   12            # Particles per cell in Z
 NpMaxNpRatio    = 3.0                # Maximum number of particles allocated
 
-qom             = -256.0  1.0        # Charge/mass ratio
+qom             = -25.0   1.0        # Charge/mass ratio
 uth             = 0.045   0.0063     # Thermal velocity in X
 vth             = 0.045   0.0063     # Thermal velocity in Y
 wth             = 0.045   0.0063     # Thermal velocity in Z
 u0              = 0.0     0.0        # Drift velocity in X
-v0              = 0.0     0.0        # Drift velocity in X
-w0              = 0.00325 -0.01624   # Drift velocity in X
+v0              = 0.0     0.0        # Drift velocity in Y
+w0              = 0.0     0.0        # Drift velocity in Z
 
 # %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
 PERIODICX       = 1                  # In direction X (1=true, 0=false)
@@ -88,8 +88,8 @@ PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
 # If the PERIODIC flag is active in the previous section
 # periodic boundary conditions will be imposed
 #
-# PHI Electrostatic Potential     
-# 0,1 = Dirichilet boundary condition ;     
+# PHI Electrostatic Potential
+# 0,1 = Dirichilet boundary condition ;
 # 2   = Neumann boundary condition
     bcPHIfaceXright = 1
     bcPHIfaceXleft  = 1
@@ -97,7 +97,7 @@ PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
     bcPHIfaceYleft  = 1
     bcPHIfaceZright = 1
     bcPHIfaceZleft  = 1
-    
+
 #    EM field boundary condition
 #    0 = perfect conductor
 #    1 = magnetic mirror
@@ -107,7 +107,7 @@ PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
     bcEMfaceYleft =  0
     bcEMfaceZright = 0
     bcEMfaceZleft =  0
-    
+
 #    Particles Boundary condition
 #    0 = exit
 #    1 = perfect mirror
