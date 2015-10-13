@@ -77,14 +77,15 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   // This if is necessary to restart with H5hut-io
   if (initnpmax==0){
-    npmax  = col->getNpMax(species) / (vct->getNprocs());
-    nop    = col->getNp(species) / (vct->getNprocs());
-    np_tot = col->getNp(species);
+    long ncproc = int(col->getNxc()/col->getXLEN()) *
+                  int(col->getNyc()/col->getYLEN()) *
+                  int(col->getNzc()/col->getZLEN());
+    nop   = ncproc * npcel;
+    npmax = nop * col->getNpMaxNpRatio();
   }
   else {
     npmax = initnpmax*col->getNpMaxNpRatio();
-    nop    = initnpmax;
-    np_tot = initnpmax*vct->getNprocs();
+    nop   = initnpmax;
   }
 
   qom = col->getQOM(species);

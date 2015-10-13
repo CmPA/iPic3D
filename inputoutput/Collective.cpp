@@ -641,7 +641,7 @@ Collective::Collective(int argc, char **argv) {
 
   for (int i = 0; i < ns; i++) {
     npcel[i] = npcelx[i] * npcely[i] * npcelz[i];
-    np[i] = npcel[i] * nxc * nyc * nzc;
+    np[i] = npcel[i] * (nxc/XLEN) * (nyc/YLEN) * (nzc/ZLEN);
     npMax[i] = (long) (NpMaxNpRatio * np[i]);
   }
 
@@ -680,7 +680,7 @@ void Collective::Print() {
   cout << "---------------------" << endl;
   cout << "Number of species    = " << ns << endl;
   for (int i = 0; i < ns; i++)
-    cout << "Number of particles of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+    cout << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
   cout << "x-Length                 = " << Lx << endl;
   cout << "y-Length                 = " << Ly << endl;
   cout << "z-Length                 = " << Lz << endl;
@@ -739,7 +739,7 @@ void Collective::save() {
 
   my_file << "Number of species    = " << ns << endl;
   for (int i = 0; i < ns; i++)
-    my_file << "Number of particles of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+    my_file << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
   my_file << "---------------------------" << endl;
   my_file << "x-Length                 = " << Lx << endl;
   my_file << "y-Length                 = " << Ly << endl;
