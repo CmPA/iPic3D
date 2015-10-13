@@ -307,6 +307,83 @@ void Particles3D::mover_explicit(Grid * grid, VirtualTopology3D * vct, Field * E
   // to be implemented
 
 }
+
+void Particles3D::get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]){
+
+  const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+  const double ixd = floor((xp - xstart) * inv_dx);
+  const double iyd = floor((yp - ystart) * inv_dy);
+  const double izd = floor((zp - zstart) * inv_dz);
+
+  ix = 2 + int (ixd);
+  iy = 2 + int (iyd);
+  iz = 2 + int (izd);
+
+  if (ix < 1)
+    ix = 1;
+  if (iy < 1)
+    iy = 1;
+  if (iz < 1)
+    iz = 1;
+  if (ix > nxn - 1)
+    ix = nxn - 1;
+  if (iy > nyn - 1)
+    iy = nyn - 1;
+  if (iz > nzn - 1)
+    iz = nzn - 1;
+
+  double xi  [2];
+  double eta [2];
+  double zeta[2];
+
+  xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+  eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+  zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+  xi  [1] = grid->getXN(ix,iy,iz) - xp;
+  eta [1] = grid->getYN(ix,iy,iz) - yp;
+  zeta[1] = grid->getZN(ix,iy,iz) - zp;
+
+  for (int ii = 0; ii < 2; ii++)
+    for (int jj = 0; jj < 2; jj++)
+      for (int kk = 0; kk < 2; kk++)
+        weights[ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
+}
+
+void Particles3D::get_El(const double weights[2][2][2], int ix, int iy, int iz, double& Exl, double& Eyl, double& Ezl, double*** Ex, double*** Ey, double*** Ez){
+
+  Exl = 0.0;
+  Eyl = 0.0;
+  Ezl = 0.0;
+
+  int l = 0;
+  for (int i=0; i<=1; i++)
+    for (int j=0; j<=1; j++)
+      for (int k=0; k<=1; k++) {
+        Exl += weights[i][j][k] * Ex[ix-i][iy-j][iz-k];
+        Eyl += weights[i][j][k] * Ey[ix-i][iy-j][iz-k];
+        Ezl += weights[i][j][k] * Ez[ix-i][iy-j][iz-k];
+        l = l + 1;
+      }
+
+}
+
+void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext){
+
+  Bxl = 0.0;
+  Byl = 0.0;
+  Bzl = 0.0;
+
+  int l = 0;
+  for (int i=0; i<=1; i++)
+    for (int j=0; j<=1; j++)
+      for (int k=0; k<=1; k++) {
+        Bxl += weights[i][j][k] * (Bx[ix-i][iy-j][iz-k] + Fext*Bx_ext[ix-i][iy-j][iz-k]);
+        Byl += weights[i][j][k] * (By[ix-i][iy-j][iz-k] + Fext*By_ext[ix-i][iy-j][iz-k]);
+        Bzl += weights[i][j][k] * (Bz[ix-i][iy-j][iz-k] + Fext*Bz_ext[ix-i][iy-j][iz-k]);
+        l = l + 1;
+      }
+}
+
 /** mover with a Predictor-Corrector scheme */
 int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   if (vct->getCartesian_rank() == 0) {
@@ -528,6 +605,139 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   return (0);                   // exit succcesfully (hopefully) 
 }
 
+/** mover with a Predictor-Corrector scheme */
+int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+  if (vct->getCartesian_rank() == 0) {
+    cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+  }
+  double start_mover_PC = MPI_Wtime();
+  double weights[2][2][2];
+  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+
+  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+  double Fext = EMf->getFext();
+
+  // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+  // don't bother trying to push any particles simultaneously;
+  // MIC already does vectorization automatically, and trying
+  // to do it by hand only hurts performance.
+//#pragma omp parallel for
+//#pragma simd                    // this just slows things down (why?)
+
+  for (long long rest = 0; rest < nop; rest++) {
+    // copy the particle
+    double xp = x[rest];
+    double yp = y[rest];
+    double zp = z[rest];
+    double up = u[rest];
+    double vp = v[rest];
+    double wp = w[rest];
+    const double xptilde = x[rest];
+    const double yptilde = y[rest];
+    const double zptilde = z[rest];
+    double uptilde;
+    double vptilde;
+    double wptilde;
+
+    double Exl = 0.0;
+    double Eyl = 0.0;
+    double Ezl = 0.0;
+    double Bxl = 0.0;
+    double Byl = 0.0;
+    double Bzl = 0.0;
+    int ix;
+    int iy;
+    int iz;
+
+    // BEGIN OF SUBCYCLING LOOP
+
+    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+    get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+
+    const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+    double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
+    const int    sub_cycles = int(dt/dt_sub) + 1;
+
+    dt_sub = dt/double(sub_cycles);
+    
+    const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
+    
+    // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
+
+    for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
+
+      // calculate the average velocity iteratively
+      int nit = NiterMover;
+      if (sub_cycles > 2*NiterMover) nit = 1;
+
+      for (int innter = 0; innter < nit; innter++) {
+        // interpolation G-->P
+
+        get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+        get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+        get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+
+        // end interpolation
+        const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
+        const double denom = 1.0 / (1.0 + omdtsq);
+        // solve the position equation
+        const double ut = up + qomdt2 * Exl;
+        const double vt = vp + qomdt2 * Eyl;
+        const double wt = wp + qomdt2 * Ezl;
+        const double udotb = ut * Bxl + vt * Byl + wt * Bzl;
+        // solve the velocity equation 
+        uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
+        vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
+        wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
+        // update position
+        xp = xptilde + uptilde * dto2;
+        yp = yptilde + vptilde * dto2;
+        zp = zptilde + wptilde * dto2;
+      }                           // end of iteration
+      // update the final position and velocity
+      up = 2.0 * uptilde - u[rest];
+      vp = 2.0 * vptilde - v[rest];
+      wp = 2.0 * wptilde - w[rest];
+      xp = xptilde + uptilde * dt_sub;
+      yp = yptilde + vptilde * dt_sub;
+      zp = zptilde + wptilde * dt_sub;
+      x[rest] = xp;
+      y[rest] = yp;
+      z[rest] = zp;
+      u[rest] = up;
+      v[rest] = vp;
+      w[rest] = wp;
+    } // END  OF SUBCYCLING LOOP
+  }                             // END OF ALL THE PARTICLES
+
+  // ********************//
+  // COMMUNICATION 
+  // *******************//
+  // timeTasks.start_communicate();
+  const int avail = communicate(vct);
+  if (avail < 0)
+    return (-1);
+  MPI_Barrier(MPI_COMM_WORLD);
+  // communicate again if particles are not in the correct domain
+  while (isMessagingDone(vct) > 0) {
+    // COMMUNICATION
+    const int avail = communicate(vct);
+    if (avail < 0)
+      return (-1);
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+  // timeTasks.addto_communicate();
+  return (0);                   // exit succcesfully (hopefully) 
+}
+
 /** relativistic mover with a Predictor-Corrector scheme */
 int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   return (0);
@@ -577,7 +787,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
                 double rho = EMf->getRHOcs(i,j,k,is);
-                q[particles_index] = (rho/npcel)*(1.0/grid->getInvVOL());
+                q[particles_index] = (qom / fabs(qom))*(rho/npcel)*(1.0/grid->getInvVOL());
                 //q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
@@ -639,7 +849,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
                 double rho = EMf->getRHOcs(i,j,k,is);
-                q[particles_index] = (rho/npcel)*(1.0/grid->getInvVOL());
+                q[particles_index] = (qom / fabs(qom))*(rho/npcel)*(1.0/grid->getInvVOL());
                 //q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
@@ -697,7 +907,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
                 double rho = EMf->getRHOcs(i,j,k,is);
-                q[particles_index] = (rho/npcel)*(1.0/grid->getInvVOL());
+                q[particles_index] = (qom / fabs(qom))*(rho/npcel)*(1.0/grid->getInvVOL());
                 //q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
@@ -754,7 +964,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
                 double rho = EMf->getRHOcs(i,j,k,is);
-                q[particles_index] = (rho/npcel)*(1.0/grid->getInvVOL());
+                q[particles_index] = (qom / fabs(qom))*(rho/npcel)*(1.0/grid->getInvVOL());
                 //q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
@@ -812,7 +1022,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
                 double rho = EMf->getRHOcs(i,j,k,is);
-                q[particles_index] = (rho/npcel)*(1.0/grid->getInvVOL());
+                q[particles_index] = (qom / fabs(qom))*(rho/npcel)*(1.0/grid->getInvVOL());
                 //q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
@@ -870,7 +1080,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
                 double rho = EMf->getRHOcs(i,j,k,is);
-                q[particles_index] = (rho/npcel)*(1.0/grid->getInvVOL());
+                q[particles_index] = (qom / fabs(qom))*(rho/npcel)*(1.0/grid->getInvVOL());
                 //q[particles_index] =  (qom/fabs(qom))*(Ninj/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;

@@ -8,6 +8,57 @@ developers: Stefano Markidis, Giovanni Lapenta
 #define Part3DCOMM_H
 
 #include "Particles.h"
+
+/** Class for particle distribution calculation in 3D */
+class c_vDist {
+public:
+  c_vDist() {;};
+  ~c_vDist() {;};
+  /** Initialization of particle distribution arrays in 3D */
+  void init(int ispec, double vX, double vY, double vZ, int bi, int bj, int bk, double vR, double vFact, Collective * col, Grid * grid);
+  void add (double x, double y, double z, double u, double v, double w);
+  bool get_doVdist()     { return dovDist3D;};
+  double get_dim_i()     { return (vBinEnd_i-vBinBeg_i);};
+  double get_dim_j()     { return (vBinEnd_j-vBinBeg_j);};
+  double get_dim_k()     { return (vBinEnd_k-vBinBeg_k);};
+  double get_vBinBeg_i() { return vBinBeg_i;};
+  double get_vBinBeg_j() { return vBinBeg_j;};
+  double get_vBinBeg_k() { return vBinBeg_k;};
+  double get_vBinEnd_i() { return vBinEnd_i;};
+  double get_vBinEnd_j() { return vBinEnd_j;};
+  double get_vBinEnd_k() { return vBinEnd_k;};
+  double get_dvi()       { return dv_i;};
+  double get_dvj()       { return dv_j;};
+  double get_dvk()       { return dv_k;};
+  int    get_ntotBins()  { return (nBins_i*nBins_j*nBins_k);};
+  int    get_nBinsi()    { return nBins_i;};
+  int    get_nBinsj()    { return nBins_j;};
+  int    get_nBinsk()    { return nBins_k;};
+  long   get(int i, int j, int k) { return vDist3D[i][j][k];};
+  double get_vDistLoc_x()         { return vDistLoc_x;};
+  double get_vDistLoc_y()         { return vDistLoc_y;};
+  double get_vDistLoc_z()         { return vDistLoc_z;};
+private:
+  double           vDistRad;
+  double           vDistLoc_x;
+  double           vDistLoc_y;
+  double           vDistLoc_z;
+  double           dv_i;
+  double           dv_j;
+  double           dv_k;
+  bool             dovDist3D;
+  int              nBins_i;
+  int              nBins_j;
+  int              nBins_k;
+  unsigned long*** vDist3D;
+  double           vBinBeg_i;
+  double           vBinEnd_i;
+  double           vBinBeg_j;
+  double           vBinEnd_j;
+  double           vBinBeg_k;
+  double           vBinEnd_k;
+};
+
 /**
  * 
  * Abstract class for particles of the same species, in a 2D space and 3component velocity with communications methods
@@ -117,6 +168,9 @@ public:
   void Print(VirtualTopology3D * ptVCT) const;
   /** Print the number of particles of this subdomain */
   void PrintNp(VirtualTopology3D * ptVCT) const;
+  /** Add distributions in this iteration to the total */
+  void Add_vDist3D();
+  void Write_vDist3D(string SaveDirName);
 
 protected:
   /** number of species */
@@ -270,7 +324,10 @@ protected:
   double Q_removed;
   /** density of the injection of the particles */
   double Ninj;
-};
 
+  int nvDistLoc;
+  c_vDist* vDist;
+
+};
 
 #endif

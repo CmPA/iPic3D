@@ -5,6 +5,10 @@ developers: Stefano Markidis, Giovanni Lapenta.
  ********************************************************************************************/
 
 #include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <fstream>
 #include <math.h>
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
@@ -283,7 +287,127 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     status = H5Fclose(file_id);
   }
 
+  // //FOR TEST:
+  // nvDistLoc = 3;
+  // vDist     = new c_vDist[nvDistLoc];
+
+  // double vR    = 2 * sqrt(dx*dx + dy*dy + dz*dz);
+  // double vFact = 2.0;
+
+  // vDist[0].init(species, 3.0 , 11.00, 0.02625, 256, 256, 256, vR, vFact, col, grid);
+  // vDist[1].init(species, 6.36, 11.00, 0.02625, 256, 256, 256, vR, vFact, col, grid);
+  // vDist[2].init(species, 10.0, 15.0 , 0.02625, 256, 256, 256, vR, vFact, col, grid);
+  // //END FOR TEST
+
 }
+
+/** Initialie arrays for velocity distributions in 3D */
+void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, int bk, double vR, double vFact, Collective * col, Grid * grid){
+  vDistRad   = vR;
+
+  dovDist3D = false;
+  if (vX > grid->getXstart() && vX < grid->getXend())
+  if (vY > grid->getYstart() && vY < grid->getYend())
+  if (vZ > grid->getZstart() && vZ < grid->getZend())
+    dovDist3D = true;
+
+  if (dovDist3D) {
+    vDistLoc_x = vX;
+    vDistLoc_y = vY;
+    vDistLoc_z = vZ;
+    cout << " :: x,y,z= " << vDistLoc_x << " " << vDistLoc_y << " " << vDistLoc_z << endl;
+    nBins_i = bi;
+    nBins_j = bj;
+    nBins_k = bk;
+    vDist3D = newArr3(unsigned long, nBins_i, nBins_j, nBins_k);
+    for (int i = 0; i < nBins_i; i++)
+    for (int j = 0; j < nBins_j; j++)
+    for (int k = 0; k < nBins_k; k++) {
+      vDist3D[i][j][k] = 0;
+    }
+    vBinBeg_i = col->getU0(ispec) - vFact * col->getUth(ispec);
+    vBinEnd_i = col->getU0(ispec) + vFact * col->getUth(ispec);
+    vBinBeg_j = col->getV0(ispec) - vFact * col->getVth(ispec);
+    vBinEnd_j = col->getV0(ispec) + vFact * col->getVth(ispec);
+    vBinBeg_k = col->getW0(ispec) - vFact * col->getWth(ispec);
+    vBinEnd_k = col->getW0(ispec) + vFact * col->getWth(ispec);
+    dv_i      = (vBinEnd_i - vBinBeg_i) / double(nBins_i);
+    dv_j      = (vBinEnd_j - vBinBeg_j) / double(nBins_j);
+    dv_k      = (vBinEnd_k - vBinBeg_k) / double(nBins_k);
+  }
+}
+
+void c_vDist::add(double x, double y, double z, double u, double v, double w){
+
+  double r2 = (x-vDistLoc_x)*(x-vDistLoc_x) + (y-vDistLoc_y)*(y-vDistLoc_y) + (z-vDistLoc_z)*(z-vDistLoc_z);
+  cout << " --+-- r2, vDistRad = " << r2 << " " << vDistRad << endl;
+
+  if (r2 < vDistRad*vDistRad) {
+
+    int i = int((u-vBinBeg_i)/dv_i);
+    int j = int((v-vBinBeg_j)/dv_j);
+    int k = int((w-vBinBeg_k)/dv_k);
+
+    if (i < 0) i = 0; else if (i >= nBins_i) i = nBins_i;
+    if (j < 0) j = 0; else if (j >= nBins_j) j = nBins_j;
+    if (k < 0) k = 0; else if (k >= nBins_k) k = nBins_k;
+
+    vDist3D[i][j][k] += 1;
+  }
+  
+}
+
+/** Add velocity distributions in 3D */
+void Particles3Dcomm::Add_vDist3D(){
+
+  for (int i=0; i<nvDistLoc; i++) {
+
+    if (vDist[i].get_doVdist()) {
+      for (long long p=0; p<nop ;p++) {
+        cout << p << "/" << nop;
+        vDist[i].add(x[p], y[p], z[p], u[p], v[p], w[p]);
+      }
+    }
+
+  }
+}
+
+/** Print velocity distributions in 3D */
+void Particles3Dcomm::Write_vDist3D(string SaveDirName){
+
+  for (int n=0; n<nvDistLoc; n++) {
+
+    if (vDist[n].get_doVdist()) {
+
+      ofstream myfile;
+      stringstream ss;
+      ss << SaveDirName << "/vDist_" << n << ".vtk";
+      string filename = ss.str();
+      myfile.open(filename.c_str(), ios::trunc);
+
+      myfile << "# vtk DataFile Version 1.0" << endl;
+      myfile << "Electric Field from Parsek" << endl;
+      myfile << "ASCII" << endl;
+      myfile << "DATASET STRUCTURED_POINTS" << endl;
+      myfile << "DIMENSIONS " << vDist[n].get_dim_i() << " " << vDist[n].get_dim_j() << " " << vDist[n].get_dim_k() << endl;
+      myfile << "ORIGIN " << vDist[n].get_vBinBeg_i() << " " << vDist[n].get_vBinBeg_j() << " " << vDist[n].get_vBinBeg_k() << endl;
+      myfile << "SPACING " << vDist[n].get_dvi() << " " << vDist[n].get_dvj() << " " << vDist[n].get_dvk() << endl;
+      myfile << "POINT_DATA " << vDist[n].get_ntotBins() << endl;
+      myfile << "VECTORS E float" << endl;
+      myfile << "LOOKUP_TABLE default" << endl;
+
+      for (int i=0; i<vDist[n].get_nBinsi(); i++)
+        for (int j=0; j<vDist[n].get_nBinsj(); j++)
+          for (int k=0; k<vDist[n].get_nBinsk(); k++)
+            myfile << vDist[n].get(i, j, k);
+
+      myfile.close();
+      
+    }
+
+  }
+}
+
 /** calculate the weights given the position of particles 0,0,0 is the left,left, left node */
 void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid) {
   double xi[2], eta[2], zeta[2];

@@ -397,7 +397,7 @@ void xdmfile::writexdmf(){
       xdmfout << "        <Topology TopologyType=\"2DCoRectMesh\" Dimensions=\"" << ncy+1 << " " << ncx+1 << "\"/> " << endl;
       xdmfout << "        <Geometry GeometryType=\"ORIGIN_DXDY\"> " << endl;
       xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"2\" NumberType=\"Float\"> " << endl;
-      xdmfout << "          " << setprecision(2) << fixed << grid.getOy() << " " << setprecision(2) << fixed << grid.getOx() << endl;
+      xdmfout << "          " << setprecision(4) << fixed << grid.getOy() << " " << setprecision(4) << fixed << grid.getOx() << endl;
       xdmfout << "          </DataItem> " << endl;
       xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"2\" NumberType=\"Float\"> " << endl;
       xdmfout << "          " << grid.getdy() << " " << grid.getdx() << endl;
@@ -424,7 +424,7 @@ void xdmfile::writexdmf(){
       xdmfout << "        <Topology TopologyType=\"3DCoRectMesh\" Dimensions=\"" << ncz+1 << " " << ncy+1 << " " << ncx+1 << "\"/> " << endl;
       xdmfout << "        <Geometry GeometryType=\"ORIGIN_DXDYDZ\"> " << endl;
       xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"3\" NumberType=\"Float\"> " << endl;
-      xdmfout << "          " << setprecision(2) << fixed << grid.getOx() << " " << setprecision(2) << fixed << grid.getOy() << " " << setprecision(2) << fixed << grid.getOz() << endl;
+      xdmfout << "          " << setprecision(4) << fixed << grid.getOz() << " " << setprecision(4) << fixed << grid.getOy() << " " << setprecision(4) << fixed << grid.getOx() << endl;
       xdmfout << "          </DataItem> " << endl;
       xdmfout << "          <DataItem Format=\"XML\" Dimensions=\"3\" NumberType=\"Float\"> " << endl;
       xdmfout << "          " << grid.getdz() << " " << grid.getdy() << " " << grid.getdx() << endl;

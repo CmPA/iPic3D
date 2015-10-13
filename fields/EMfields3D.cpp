@@ -69,10 +69,12 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   delta = col->getDelta();
   Smooth = col->getSmooth();
   // get the density background for the gem Challange
-  rhoINIT = new double[ns];
+  rhoINIT   = new double[ns];
+  rhoINJECT = new double[ns];
   DriftSpecies = new bool[ns];
   for (int i = 0; i < ns; i++) {
-    rhoINIT[i] = col->getRHOinit(i);
+    rhoINIT  [i] = col->getRHOinit(i);
+    rhoINJECT[i] = col->getRHOinject(i);
     if ((fabs(col->getW0(i)) != 0) || (fabs(col->getU0(i)) != 0)) // GEM and LHDI
       DriftSpecies[i] = true;
     else
@@ -888,18 +890,17 @@ void EMfields3D::ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, doub
   double ff;
 
   for (int is = 0; is < ns; is++) {
-    ff = 1.0;
-    if (is == 0) ff = -1.0;
+    ff = (qom[is] / fabs(qom[is]));
     for (int i = 1; i < nxn; i++) {
       for (int j = 1; j < nyn; j++) {
         for (int k = 1; k < nzn; k++) {
 
-          xd = grid->getXN(i,j,k) - x_center;
-          yd = grid->getYN(i,j,k) - y_center;
-          zd = grid->getZN(i,j,k) - z_center;
+          xd = fabs(grid->getXN(i,j,k) - x_center) - dx;
+          yd = fabs(grid->getYN(i,j,k) - y_center) - dy;
+          zd = fabs(grid->getZN(i,j,k) - z_center) - dz;
 
-          if ((xd*xd+yd*yd+zd*zd) <= R*R) {
-            rhons[is][i][j][k] = ff * rhoINIT[is] / FourPI;
+          if ((xd*xd+yd*yd+zd*zd) < R*R) {
+            rhons[is][i][j][k] = ff * rhoINJECT[is] / FourPI;
           }
 
         }
@@ -2167,9 +2168,9 @@ void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col,
 
 void EMfields3D::UpdateFext(int cycle){
 
-  double t_beg = 200.0;
-  double t_end = 1200.0;
-  double Fmin  = 0.0;
+  double t_beg = 1.0;
+  double t_end = 1000.0;
+  double Fmin  = 0.75;
   double Fmax  = 1.0;
 
   double m     = (Fmax - Fmin) / (t_end - t_beg);
@@ -2184,6 +2185,61 @@ void EMfields3D::UpdateFext(int cycle){
 
 double EMfields3D::getFext(){
   return (Fext);
+}
+
+void EMfields3D::SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col){
+
+  double BE0 = sqrt(B1x*B1x + B1y*B1y + B1z*B1z);
+  double a=delta;
+
+  for (int i=0; i < nxn; i++){
+    for (int j=0; j < nyn; j++){
+      for (int k=0; k < nzn; k++){
+
+        double xc=x_center;
+        double yc=y_center;
+        double zc=z_center;
+
+        double x = grid->getXN(i,j,k);
+        double y = grid->getYN(i,j,k);
+        double z = grid->getZN(i,j,k);
+
+        double rx = x-xc;
+        //3d: double ry = y-yc;
+        double ry = 0.0;
+        double rz = z-zc;
+
+        double r         = sqrt(rx*rx + ry*ry + rz*rz);
+        double costheta  = fabs(rz) / r;
+        double sintheta  = sqrt( 1 - costheta*costheta);
+        //3d: double sinphi    = fabs(rx) / (r*sintheta);
+        //3d: double cosphi    = fabs(ry) / (r*sintheta);
+        double sinphi    = 1.0;
+        double cosphi    = 0.0;
+
+        double aor = a/r;
+        double Br = -2 * BE0 * aor*aor*aor * costheta;
+        double Bt =    - BE0 * aor*aor*aor * sintheta;
+
+        if (r>a) {
+          Bx_ext[i][j][k] =   Bt * costheta * sinphi + Br * sintheta * sinphi;
+          By_ext[i][j][k] = - Bt * costheta * cosphi + Br * sintheta * cosphi;
+          Bz_ext[i][j][k] =   Bt * sintheta          + Br * costheta;
+        }
+        else {
+          Bx_ext[i][j][k] = B0x;
+          By_ext[i][j][k] = B0y;
+          Bz_ext[i][j][k] = B0z;
+        }
+
+        //if (r<1.0*a) cout << " >> " << r << " " << ry << " ct=" << costheta << " st=" << sintheta << " cp=" << cosphi << " sp=" << sinphi << " ar=" << aor << " Br=" << Br << " Bt=" << Bt << " Bx=" << Bx_ext[i][j][k] << " By=" << By_ext[i][j][k] << " Bz=" << Bz_ext[i][j][k] << endl;
+
+      }
+    }
+  }
+
+  //UpdateRHOcs(grid);
+
 }
 
 void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective *col){
@@ -2204,36 +2260,49 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
 
         double rx = x-xc;
         double ry = y-yc;
+        //2d: double ry = 0.0;
         double rz = z-zc;
 
         double r      = sqrt(rx*rx + ry*ry + rz*rz);
-
-        if (r < 0.5*a) {
-          rx = 0.0;
-          ry = 0.5*a;
-          rz = 0.0;
-          r =  0.5*a; 
-        }
-
-        double one_r3 = 1.0/(r*r*r);
-
-        double rhx = rx/r;
-        double rhy = ry/r;
-        double rhz = rz/r;
 
         double Mx = B1x;
         double My = B1y;
         double Mz = B1z;
 
-        Bx_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhx - Mx );
-        By_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhy - My );
-        Bz_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhz - Mz );
+        if (r < 1.0*a) {
+          rz = sqrt(a*a - (rx*rx + ry*ry));
+          double one_r3 = 1.0/(a*a*a);
+          double rhx = rx/a;
+          double rhy = ry/a;
+          double rhz = rz/a;
+
+          double Bxe = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhx - Mx );
+          double Bye = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhy - My );
+          double Bze = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhz - Mz );
+          double Bme = sqrt(Bxe*Bxe + Bye*Bye + Bze*Bze);
+
+          Bx_ext[i][j][k] = 0.0;
+          By_ext[i][j][k] = 0.0;
+          Bz_ext[i][j][k] = (B1z/fabs(B1z)) * Bme;
+        }
+        else {
+
+          double one_r3 = 1.0/(r*r*r);
+
+          double rhx = rx/r;
+          double rhy = ry/r;
+          double rhz = rz/r;
+
+          Bx_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhx - Mx );
+          By_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhy - My );
+          Bz_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhz - Mz );
+        }
 
       }
     }
   }
 
-  UpdateRHOcs(grid);
+  //UpdateRHOcs(grid);
 
 }
 

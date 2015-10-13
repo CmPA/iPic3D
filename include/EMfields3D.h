@@ -201,6 +201,7 @@ class EMfields3D                // :public Field
     void initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col);
     void initDipole_2(VirtualTopology3D *vct, Grid *grid, Collective *col);
     void SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    void SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
     void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);
@@ -646,6 +647,7 @@ class EMfields3D                // :public Field
 
     /*! GEM Challenge background ion */
     double *rhoINIT;
+    double *rhoINJECT;
     /*! Drift of the species */
     bool *DriftSpecies;
 
