@@ -8,6 +8,7 @@ void Collective::ReadInput(string inputfile) {
   // Loading the input file 
   ConfigFile config(inputfile);
   // the following variables are ALWAYS taken from inputfile, even if restarting 
+  try {
   {
 
 #ifdef BATSRUS
@@ -352,8 +353,10 @@ void Collective::ReadInput(string inputfile) {
   if (ns > 5)
     TrackParticleID[5] = TrackParticleID0.f;
 
-
-
+  } catch (ConfigFile::key_not_found k) {
+    std::cout << " ERROR: Key not found = " << k.key.c_str() << std::endl;
+    abort();
+  }
 
 }
 /*! Read the collective information from the RESTART file in HDF5 format There are three restart status: restart_status = 0 ---> new inputfile restart_status = 1 ---> RESTART and restart and result directories does not coincide restart_status = 2 ---> RESTART and restart and result directories coincide */
