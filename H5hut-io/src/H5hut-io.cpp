@@ -1,3 +1,5 @@
+#ifdef USEH5HUT
+
 #include <mpi.h>
 #include <fstream>
 #include <cmath>
@@ -755,3 +757,5 @@ void H5input::ReadPartDataset(hid_t group, std::string dtset, long long nops, lo
   delete [] count;
   delete [] start;
 }
+
+#endif
