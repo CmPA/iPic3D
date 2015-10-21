@@ -68,7 +68,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
     else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
-    else if (col->getCase()=="Dipole")    EMf->initDipole(vct,grid,col);
+    else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -100,6 +100,15 @@ int c_Solver::Init(int argc, char **argv) {
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
         else                                  part[i].maxwellian(grid, EMf, vct);
+
+      // TEST
+      //if (col->getCase()=="Dipole") {
+      //  for (int i=0; i < ns; i++){
+      //    part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+      //  }
+      //}
+      // END TEST
+
     }
   }
 
@@ -133,7 +142,6 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
   momentum = new double[ns];
@@ -142,14 +150,15 @@ int c_Solver::Init(int argc, char **argv) {
     ofstream my_file(cq.c_str());
     my_file.close();
   }
-  // Distribution functions
-  nDistributionBins = 1000;
-  VelocityDist = new unsigned long[nDistributionBins];
-  ds = SaveDirName + "/DistributionFunctions.txt";
-  if (myrank == 0) {
-    ofstream my_file(ds.c_str());
-    my_file.close();
-  }
+  
+  // // Distribution functions
+  // nDistributionBins = 1000;
+  // VelocityDist = new unsigned long[nDistributionBins];
+  // ds = SaveDirName + "/DistributionFunctions.txt";
+  // if (myrank == 0) {
+  //   ofstream my_file(ds.c_str());
+  //   my_file.close();
+  // }
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
   ofstream my_file(cqsat.c_str(), fstream::binary);
@@ -183,6 +192,20 @@ void c_Solver::GatherMoments(){
     part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
+  //
+  // Fill with constant charge the planet
+  if (col->getCase()=="Dipole") {
+    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+  }
+
+  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
+
+}
+
+void c_Solver::UpdateCycleInfo(int cycle) {
+
+  EMf->UpdateFext(cycle);
+  if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
 
 }
 
@@ -191,13 +214,6 @@ void c_Solver::CalculateField() {
   // timeTasks.resetCycle();
   // interpolation
   // timeTasks.start(TimeTasks::MOMENTS);
-
-  // Fill with constant charge the planet
-  if (col->getCase()=="Dipole") {
-    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
-  }
-
-  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
 
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
@@ -234,7 +250,7 @@ bool c_Solver::ParticlesMover() {
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-    mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
+    mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
   // timeTasks.end(TimeTasks::PARTICLES);
 
@@ -251,10 +267,7 @@ bool c_Solver::ParticlesMover() {
   /* Repopulate the buffer zone at the edge */
   /* -------------------------------------- */
 
-  for (int i=0; i < ns; i++) {
-    if (col->getRHOinject(i)>0.0)
-      mem_avail = part[i].particle_repopulator(grid,vct,EMf);
-  }
+  InjectBoundaryParticles();
 
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -278,14 +291,38 @@ bool c_Solver::ParticlesMover() {
 
 }
 
+void c_Solver::InjectBoundaryParticles(){
+
+  for (int i=0; i < ns; i++) {
+    if (col->getRHOinject(i)>0.0)
+      mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+  }
+
+}
+
 void c_Solver::WriteRestart(int cycle) {
   // write the RESTART file
   if (cycle % restart_cycle == 0 && cycle != first_cycle) {
-    if (col->getWriteMethod() != "Parallel") {
+    if (col->getWriteMethod() != "h5hut") {
       // without ,0 add to restart file
       writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0);
     }
   }
+
+  // Insert the planet in the simulation at cycle 200
+  //if (cycle == 200) {
+  //  if (col->getCase()=="Dipole") {
+  //    EMf->initDipole_2(vct,grid,col);
+  //  }
+  //}
+
+  if (cycle == first_cycle) {
+    if (col->getCase()=="Dipole") {
+      EMf->SetDipole_2Bext(vct,grid,col);
+      EMf->SetLambda(grid);
+    }
+  }
+
 }
 
 void c_Solver::WriteConserved(int cycle) {
@@ -306,25 +343,32 @@ void c_Solver::WriteConserved(int cycle) {
       my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
       my_file.close();
     }
-    // Velocity distribution
-    for (int is = 0; is < ns; is++) {
-      double maxVel = part[is].getMaxVelocity();
-      VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
-      if (myrank == 0) {
-        ofstream my_file(ds.c_str(), fstream::app);
-        my_file << cycle << "\t" << is << "\t" << maxVel;
-        for (int i = 0; i < nDistributionBins; i++)
-          my_file << "\t" << VelocityDist[i];
-        my_file << endl;
-        my_file.close();
-      }
-    }
+    // // Velocity distribution
+    // for (int is = 0; is < ns; is++) {
+    //   double maxVel = part[is].getMaxVelocity();
+    //   VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
+    //   if (myrank == 0) {
+    //     ofstream my_file(ds.c_str(), fstream::app);
+    //     my_file << cycle << "\t" << is << "\t" << maxVel;
+    //     for (int i = 0; i < nDistributionBins; i++)
+    //       my_file << "\t" << VelocityDist[i];
+    //     my_file << endl;
+    //     my_file.close();
+    //   }
+    // }
   }
+  
+  //if (cycle%(col->getFieldOutputCycle())==0){
+  //  for (int is = 0; is < ns; is++) {
+  //    part[is].Add_vDist3D();
+  //    part[is].Write_vDist3D(SaveDirName);
+  //  }
+  //}
 }
 
 void c_Solver::WriteOutput(int cycle) {
 
-  if (col->getWriteMethod() == "Parallel") {
+  if (col->getWriteMethod() == "h5hut") {
 
     /* -------------------------------------------- */
     /* Parallel HDF5 output using the H5hut library */
@@ -374,7 +418,7 @@ void c_Solver::WriteOutput(int cycle) {
 
 void c_Solver::Finalize() {
   if (mem_avail == 0) {          // write the restart only if the simulation finished succesfully
-    if (col->getWriteMethod() != "Parallel") {
+    if (col->getWriteMethod() != "h5hut") {
       writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
     }
   }

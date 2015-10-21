@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 2.8.5)
 
 #
 # Project declaration
@@ -23,6 +23,11 @@ set(H5HUT_HOME $ENV{H5HUT_DIR} CACHE STRING "H5hut home directory")
 set(H5HUT_INCLUDE_DIRS ${H5HUT_HOME}/include)
 set(H5HUT_LIBRARY_DIRS ${H5HUT_HOME}/lib)
 set(H5HUT_LIBRARIES ${H5HUT_LIBRARY_DIRS}/libH5hut.a)
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options
+are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)
+endif()
 
 #
 # include and lib directories

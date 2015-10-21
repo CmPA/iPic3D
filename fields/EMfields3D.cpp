@@ -34,6 +34,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   z_center = col->getz_center();
   L_square = col->getL_square();
 
+  Fext = 0.0;
+
   delt = c * th * dt;
   PoissonCorrection = false;
   if (col->getPoissonCorrection()=="yes") PoissonCorrection = true;
@@ -67,10 +69,12 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   delta = col->getDelta();
   Smooth = col->getSmooth();
   // get the density background for the gem Challange
-  rhoINIT = new double[ns];
+  rhoINIT   = new double[ns];
+  rhoINJECT = new double[ns];
   DriftSpecies = new bool[ns];
   for (int i = 0; i < ns; i++) {
-    rhoINIT[i] = col->getRHOinit(i);
+    rhoINIT  [i] = col->getRHOinit(i);
+    rhoINJECT[i] = col->getRHOinject(i);
     if ((fabs(col->getW0(i)) != 0) || (fabs(col->getU0(i)) != 0)) // GEM and LHDI
       DriftSpecies[i] = true;
     else
@@ -160,7 +164,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   vectY = newArr3(double, nxn, nyn, nzn);
   vectZ = newArr3(double, nxn, nyn, nzn);
   divC = newArr3(double, nxc, nyc, nzc);
-  arr = newArr3(double,nxc,nyc,nzc);
+  arr = newArr3(double,nxn,nyn,nzn);
+
+  Lambda = newArr3(double, nxn, nyn, nzn);
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -391,6 +397,11 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sum(imageY, vectY, nxn, nyn, nzn);
   sum(imageZ, vectZ, nxn, nyn, nzn);
 
+  // Temporal damping
+  sumscalprod(imageX, delt, vectX, Lambda, nxn, nyn, nzn);
+  sumscalprod(imageY, delt, vectY, Lambda, nxn, nyn, nzn);
+  sumscalprod(imageZ, delt, vectZ, Lambda, nxn, nyn, nzn);
+
   // boundary condition: Xleft
   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
@@ -426,9 +437,9 @@ void EMfields3D::PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, dou
   for (int i = 1; i < nxn - 1; i++)
     for (int j = 1; j < nyn - 1; j++)
       for (int k = 1; k < nzn - 1; k++) {
-        omcx = beta * (Bxn[i][j][k] + Bx_ext[i][j][k]);
-        omcy = beta * (Byn[i][j][k] + By_ext[i][j][k]);
-        omcz = beta * (Bzn[i][j][k] + Bz_ext[i][j][k]);
+        omcx = beta * (Bxn[i][j][k] + Fext*Bx_ext[i][j][k]);
+        omcy = beta * (Byn[i][j][k] + Fext*By_ext[i][j][k]);
+        omcz = beta * (Bzn[i][j][k] + Fext*Bz_ext[i][j][k]);
         edotb = vectX[i][j][k] * omcx + vectY[i][j][k] * omcy + vectZ[i][j][k] * omcz;
         denom = 1 / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         PIdotX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
@@ -453,9 +464,9 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
     for (int i = 1; i < nxn - 1; i++)
       for (int j = 1; j < nyn - 1; j++)
         for (int k = 1; k < nzn - 1; k++) {
-          omcx = beta * (Bxn[i][j][k] + Bx_ext[i][j][k]);
-          omcy = beta * (Byn[i][j][k] + By_ext[i][j][k]);
-          omcz = beta * (Bzn[i][j][k] + Bz_ext[i][j][k]);
+          omcx = beta * (Bxn[i][j][k] + Fext*Bx_ext[i][j][k]);
+          omcy = beta * (Byn[i][j][k] + Fext*By_ext[i][j][k]);
+          omcz = beta * (Bzn[i][j][k] + Fext*Bz_ext[i][j][k]);
           edotb = vectX[i][j][k] * omcx + vectY[i][j][k] * omcy + vectZ[i][j][k] * omcz;
           denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
           MUdotX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
@@ -879,18 +890,17 @@ void EMfields3D::ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, doub
   double ff;
 
   for (int is = 0; is < ns; is++) {
-    ff = 1.0;
-    if (is == 0) ff = -1.0;
+    ff = (qom[is] / fabs(qom[is]));
     for (int i = 1; i < nxn; i++) {
       for (int j = 1; j < nyn; j++) {
         for (int k = 1; k < nzn; k++) {
 
-          xd = grid->getXN(i,j,k) - x_center;
-          yd = grid->getYN(i,j,k) - y_center;
-          zd = grid->getZN(i,j,k) - z_center;
+          xd = fabs(grid->getXN(i,j,k) - x_center) - dx;
+          yd = fabs(grid->getYN(i,j,k) - y_center) - dy;
+          zd = fabs(grid->getZN(i,j,k) - z_center) - dz;
 
-          if ((xd*xd+yd*yd+zd*zd) <= R*R) {
-            rhons[is][i][j][k] = ff * rhoINIT[is] / FourPI;
+          if ((xd*xd+yd*yd+zd*zd) < R*R) {
+            rhons[is][i][j][k] = ff * rhoINJECT[is] / FourPI;
           }
 
         }
@@ -2156,6 +2166,264 @@ void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col,
 
 }
 
+void EMfields3D::UpdateFext(int cycle){
+
+  double t_beg = 1.0;
+  double t_end = 1000.0;
+  double Fmin  = 0.75;
+  double Fmax  = 1.0;
+
+  double m     = (Fmax - Fmin) / (t_end - t_beg);
+  double b     = Fmax - m*t_end;
+
+  Fext = m * cycle + b;
+
+  if (cycle < t_beg) Fext = Fmin;
+  if (cycle > t_end) Fext = Fmax;
+
+}
+
+double EMfields3D::getFext(){
+  return (Fext);
+}
+
+void EMfields3D::SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col){
+
+  double BE0 = sqrt(B1x*B1x + B1y*B1y + B1z*B1z);
+  double a=delta;
+
+  for (int i=0; i < nxn; i++){
+    for (int j=0; j < nyn; j++){
+      for (int k=0; k < nzn; k++){
+
+        double xc=x_center;
+        double yc=y_center;
+        double zc=z_center;
+
+        double x = grid->getXN(i,j,k);
+        double y = grid->getYN(i,j,k);
+        double z = grid->getZN(i,j,k);
+
+        double rx = x-xc;
+        //3d: double ry = y-yc;
+        double ry = 0.0;
+        double rz = z-zc;
+
+        double r         = sqrt(rx*rx + ry*ry + rz*rz);
+        double costheta  = fabs(rz) / r;
+        double sintheta  = sqrt( 1 - costheta*costheta);
+        //3d: double sinphi    = fabs(rx) / (r*sintheta);
+        //3d: double cosphi    = fabs(ry) / (r*sintheta);
+        double sinphi    = 1.0;
+        double cosphi    = 0.0;
+
+        double aor = a/r;
+        double Br = -2 * BE0 * aor*aor*aor * costheta;
+        double Bt =    - BE0 * aor*aor*aor * sintheta;
+
+        if (r>a) {
+          Bx_ext[i][j][k] =   Bt * costheta * sinphi + Br * sintheta * sinphi;
+          By_ext[i][j][k] = - Bt * costheta * cosphi + Br * sintheta * cosphi;
+          Bz_ext[i][j][k] =   Bt * sintheta          + Br * costheta;
+        }
+        else {
+          Bx_ext[i][j][k] = B0x;
+          By_ext[i][j][k] = B0y;
+          Bz_ext[i][j][k] = B0z;
+        }
+
+        //if (r<1.0*a) cout << " >> " << r << " " << ry << " ct=" << costheta << " st=" << sintheta << " cp=" << cosphi << " sp=" << sinphi << " ar=" << aor << " Br=" << Br << " Bt=" << Bt << " Bx=" << Bx_ext[i][j][k] << " By=" << By_ext[i][j][k] << " Bz=" << Bz_ext[i][j][k] << endl;
+
+      }
+    }
+  }
+
+  //UpdateRHOcs(grid);
+
+}
+
+void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective *col){
+
+  for (int i=0; i < nxn; i++){
+    for (int j=0; j < nyn; j++){
+      for (int k=0; k < nzn; k++){
+
+        double a=delta;
+
+        double xc=x_center;
+        double yc=y_center;
+        double zc=z_center;
+
+        double x = grid->getXN(i,j,k);
+        double y = grid->getYN(i,j,k);
+        double z = grid->getZN(i,j,k);
+
+        double rx = x-xc;
+        double ry = y-yc;
+        //2d: double ry = 0.0;
+        double rz = z-zc;
+
+        double r      = sqrt(rx*rx + ry*ry + rz*rz);
+
+        double Mx = B1x;
+        double My = B1y;
+        double Mz = B1z;
+
+        if (r < 1.0*a) {
+          rz = sqrt(a*a - (rx*rx + ry*ry));
+          double one_r3 = 1.0/(a*a*a);
+          double rhx = rx/a;
+          double rhy = ry/a;
+          double rhz = rz/a;
+
+          double Bxe = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhx - Mx );
+          double Bye = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhy - My );
+          double Bze = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhz - Mz );
+          double Bme = sqrt(Bxe*Bxe + Bye*Bye + Bze*Bze);
+
+          Bx_ext[i][j][k] = 0.0;
+          By_ext[i][j][k] = 0.0;
+          Bz_ext[i][j][k] = (B1z/fabs(B1z)) * Bme;
+        }
+        else {
+
+          double one_r3 = 1.0/(r*r*r);
+
+          double rhx = rx/r;
+          double rhy = ry/r;
+          double rhz = rz/r;
+
+          Bx_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhx - Mx );
+          By_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhy - My );
+          Bz_ext[i][j][k] = one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhz - Mz );
+        }
+
+      }
+    }
+  }
+
+  //UpdateRHOcs(grid);
+
+}
+
+void EMfields3D::initDipole_2(VirtualTopology3D *vct, Grid *grid, Collective *col){
+
+  for (int i=0; i < nxn; i++){
+    for (int j=0; j < nyn; j++){
+      for (int k=0; k < nzn; k++){
+
+        double a=delta;
+
+        double xc=x_center;
+        double yc=y_center;
+        double zc=z_center;
+
+        double x = grid->getXN(i,j,k);
+        double y = grid->getYN(i,j,k);
+        double z = grid->getZN(i,j,k);
+
+        double rx = x-xc;
+        double ry = y-yc;
+        double rz = z-zc;
+
+        double r      = sqrt(rx*rx + ry*ry + rz*rz);
+
+        if (r > a/5.0) {
+          double one_r3 = 1.0/(r*r*r);
+
+          double rhx = rx/r;
+          double rhy = ry/r;
+          double rhz = rz/r;
+
+          double Mx = B1x;
+          double My = B1y;
+          double Mz = B1z;
+
+          Bx_ext[i][j][k] = B0x + one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhx - Mx );
+          By_ext[i][j][k] = B0y + one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhy - My );
+          Bz_ext[i][j][k] = B0z + one_r3 * ( 3 * (Mx*rhx+My*rhy+Mz*rhz) * rhz - Mz );
+        }
+        else{
+          Bx_ext[i][j][k] = B0x;
+          By_ext[i][j][k] = B0y;
+          Bz_ext[i][j][k] = B0z;
+        }
+
+        Bxn[i][j][k] = B0x;
+        Byn[i][j][k] = B0y;
+        Bzn[i][j][k] = B0z;
+        //Bxn[i][j][k] += Bx_ext[i][j][k];
+        //Byn[i][j][k] += By_ext[i][j][k];
+        //Bzn[i][j][k] += Bz_ext[i][j][k];
+
+      }
+    }
+  }
+
+  grid->interpN2C(Bxc,Bxn);
+  grid->interpN2C(Byc,Byn);
+  grid->interpN2C(Bzc,Bzn);
+
+  communicateCenterBC_P(nxc,nyc,nzc,Bxc,col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5],vct);
+  communicateCenterBC_P(nxc,nyc,nzc,Byc,col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5],vct);
+  communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct);
+
+  UpdateRHOcs(grid);
+
+}
+
+void EMfields3D::UpdateRHOcs(Grid * grid){
+
+  double r = 1.0;
+
+  double xmin = 0.0;
+  double xmax = Lx;
+  double rmin = 1.0;
+  double rmax = 1.0;
+
+  for (int is = 0; is < ns; is++)
+    for (int i=0; i<nxc-1; i++)
+      for (int j=0; j<nyc-1; j++)
+        for (int k=0; k<nzc-1; k++){
+          double x = grid->getXN(i,j,k);
+          r = rmin + (rmax-rmin) * (xmax - x) / (xmax - xmin);
+          if (r<xmin) r = rmax;
+          if (r>xmax) r = rmin;
+          rhocs[is][i][j][k] = (qom[is]/fabs(qom[is]))*(r/FourPI);
+        }
+    //grid->interpN2C(rhocs, is, rhons);
+}
+
+void EMfields3D::SetLambda(Grid *grid){
+
+  for (int i=0; i < nxn; i++){
+    for (int j=0; j < nyn; j++){
+      for (int k=0; k < nzn; k++){
+
+        double x = grid->getXN(i,j,k);
+        double y = grid->getYN(i,j,k);
+        double z = grid->getZN(i,j,k);
+
+        double xmin_r = Lx - 50.0 * dx;
+        double xmax_r = Lx - 5.0  * dx;
+
+        Lambda[i][j][k] = 0.0;
+
+        if (x > xmin_r) {
+          if (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * 2.0 * M_PI / dx;
+          else            Lambda[i][j][k] = 2.0 * M_PI / dx;
+        }
+
+      }
+    }
+  }
+
+}
+
+double*** EMfields3D::GetLambda(){
+  return(Lambda);
+}
+
 /*! Initialise a combination of magnetic dipoles */
 void EMfields3D::initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col){
 
@@ -2232,11 +2500,34 @@ void EMfields3D::initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col)
   communicateCenterBC_P(nxc,nyc,nzc,Byc,col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5],vct);
   communicateCenterBC_P(nxc,nyc,nzc,Bzc,col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5],vct);
 
-  // initialize J_ext =c/4*pi curl(B) on nodes (current due to the dipole)
+  // -- initialize J_ext =c/4*pi curl(B) on nodes (current due to the dipole)
+  // -- WHY IS THIS WORKING ANYWAYS?? grid->curlC2N(tempXN,tempYN,tempZN,Bxc_ext,Byc_ext,Bzc_ext);
   // grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc);
   // scale(Jx_ext,tempXN,c/FourPI,nxn,nyn,nzn);
   // scale(Jy_ext,tempYN,c/FourPI,nxn,nyn,nzn);
   // scale(Jz_ext,tempZN,c/FourPI,nxn,nyn,nzn);
+  // for (int i=0; i < nxn; i++){
+  //   for (int j=0; j < nyn; j++){
+  //     for (int k=0; k < nzn; k++){
+  //       if (i<3 || i>nxn-4) {
+  //         Jx_ext[i][j][k] = 0.0;
+  //         Jy_ext[i][j][k] = 0.0;
+  //         Jz_ext[i][j][k] = 0.0;
+  //       }
+  //       if (j<3 || j>nyn-4) {
+  //         Jx_ext[i][j][k] = 0.0;
+  //         Jy_ext[i][j][k] = 0.0;
+  //         Jz_ext[i][j][k] = 0.0;
+  //       }
+  //       if (k<3 || k>nzn-4) {
+  //         Jx_ext[i][j][k] = 0.0;
+  //         Jy_ext[i][j][k] = 0.0;
+  //         Jz_ext[i][j][k] = 0.0;
+  //       }
+  //     }
+  //   }
+  // }
+  // -- end J_ext
 
   for (int is=0 ; is<ns; is++)
     grid->interpN2C(rhocs,is,rhons);
@@ -2261,9 +2552,9 @@ void EMfields3D::sustensorLeftX(double **susxx, double **susyx, double **suszx) 
     beta = .5 * qom[is] * dt / c;
     for (int j = 0; j < nyn; j++)
       for (int k = 0; k < nzn; k++) {
-        omcx = beta * Bxn[1][j][k];
-        omcy = beta * Byn[1][j][k];
-        omcz = beta * Bzn[1][j][k];
+        omcx = beta * (Bxn[1][j][k] + Fext*Bx_ext[1][j][k]);
+        omcy = beta * (Byn[1][j][k] + Fext*By_ext[1][j][k]);
+        omcz = beta * (Bzn[1][j][k] + Fext*Bz_ext[1][j][k]);
         denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][1][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         susxx[j][k] += (  1.0 + omcx * omcx) * denom;
         susyx[j][k] += (-omcz + omcx * omcy) * denom;
@@ -2285,9 +2576,9 @@ void EMfields3D::sustensorRightX(double **susxx, double **susyx, double **suszx)
     beta = .5 * qom[is] * dt / c;
     for (int j = 0; j < nyn; j++)
       for (int k = 0; k < nzn; k++) {
-        omcx = beta * Bxn[nxn - 2][j][k];
-        omcy = beta * Byn[nxn - 2][j][k];
-        omcz = beta * Bzn[nxn - 2][j][k];
+        omcx = beta * (Bxn[nxn - 2][j][k] + Fext*Bx_ext[nxn - 2][j][k]);
+        omcy = beta * (Byn[nxn - 2][j][k] + Fext*By_ext[nxn - 2][j][k]);
+        omcz = beta * (Bzn[nxn - 2][j][k] + Fext*Bz_ext[nxn - 2][j][k]);
         denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][nxn - 2][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         susxx[j][k] += (  1.0 + omcx * omcx) * denom;
         susyx[j][k] += (-omcz + omcx * omcy) * denom;
@@ -2309,9 +2600,9 @@ void EMfields3D::sustensorLeftY(double **susxy, double **susyy, double **suszy) 
     beta = .5 * qom[is] * dt / c;
     for (int i = 0; i < nxn; i++)
       for (int k = 0; k < nzn; k++) {
-        omcx = beta * Bxn[i][1][k];
-        omcy = beta * Byn[i][1][k];
-        omcz = beta * Bzn[i][1][k];
+        omcx = beta * (Bxn[i][1][k] + Fext*Bx_ext[i][1][k]);
+        omcy = beta * (Byn[i][1][k] + Fext*By_ext[i][1][k]);
+        omcz = beta * (Bzn[i][1][k] + Fext*Bz_ext[i][1][k]);
         denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][1][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         susxy[i][k] += ( omcz + omcx * omcy) * denom;
         susyy[i][k] += (  1.0 + omcy * omcy) * denom;
@@ -2333,9 +2624,9 @@ void EMfields3D::sustensorRightY(double **susxy, double **susyy, double **suszy)
     beta = .5 * qom[is] * dt / c;
     for (int i = 0; i < nxn; i++)
       for (int k = 0; k < nzn; k++) {
-        omcx = beta * Bxn[i][nyn - 2][k];
-        omcy = beta * Byn[i][nyn - 2][k];
-        omcz = beta * Bzn[i][nyn - 2][k];
+        omcx = beta * (Bxn[i][nyn - 2][k] + Fext*Bx_ext[i][nyn - 2][k]);
+        omcy = beta * (Byn[i][nyn - 2][k] + Fext*By_ext[i][nyn - 2][k]);
+        omcz = beta * (Bzn[i][nyn - 2][k] + Fext*Bz_ext[i][nyn - 2][k]);
         denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][nyn - 2][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         susxy[i][k] += ( omcz + omcx * omcy) * denom;
         susyy[i][k] += (  1.0 + omcy * omcy) * denom;
@@ -2357,9 +2648,9 @@ void EMfields3D::sustensorLeftZ(double **susxz, double **susyz, double **suszz) 
     beta = .5 * qom[is] * dt / c;
     for (int i = 0; i < nxn; i++)
       for (int j = 0; j < nyn; j++) {
-        omcx = beta * Bxn[i][j][1];
-        omcy = beta * Byn[i][j][1];
-        omcz = beta * Bzn[i][j][1];
+        omcx = beta * (Bxn[i][j][1] + Fext*Bx_ext[i][j][1]);
+        omcy = beta * (Byn[i][j][1] + Fext*By_ext[i][j][1]);
+        omcz = beta * (Bzn[i][j][1] + Fext*Bz_ext[i][j][1]);
         denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][1] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         susxz[i][j] += (-omcy + omcx * omcz) * denom;
         susyz[i][j] += ( omcx + omcy * omcz) * denom;
@@ -2381,9 +2672,9 @@ void EMfields3D::sustensorRightZ(double **susxz, double **susyz, double **suszz)
     beta = .5 * qom[is] * dt / c;
     for (int i = 0; i < nxn; i++)
       for (int j = 0; j < nyn; j++) {
-        omcx = beta * Bxn[i][j][nzn - 2];
-        omcy = beta * Byn[i][j][nzn - 2];
-        omcz = beta * Bzn[i][j][nzn - 2];
+        omcx = beta * (Bxn[i][j][nzn - 2] + Fext*Bx_ext[i][j][nzn - 2]);
+        omcy = beta * (Byn[i][j][nzn - 2] + Fext*By_ext[i][j][nzn - 2]);
+        omcz = beta * (Bzn[i][j][nzn - 2] + Fext*Bz_ext[i][j][nzn - 2]);
         denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][nyn - 2] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         susxz[i][j] += (-omcy + omcx * omcz) * denom;
         susyz[i][j] += ( omcx + omcy * omcz) * denom;
@@ -2630,13 +2921,17 @@ void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *
       for (int j=0; j<nyn;j++)
         for (int k=0; k<nzn;k++){
 
-          injFieldsLeft->ExITemp[i][j][k]=w_0*B0y-v_0*B0z;
-          injFieldsLeft->EyITemp[i][j][k]=u_0*B0z-w_0*B0x;
-          injFieldsLeft->EzITemp[i][j][k]=v_0*B0x-u_0*B0y;
+          double Bxb = B0x;
+          double Byb = B0y;
+          double Bzb = B0z;
 
-          injFieldsLeft->BxITemp[i][j][k]=B0x;
-          injFieldsLeft->ByITemp[i][j][k]=B0y;
-          injFieldsLeft->BzITemp[i][j][k]=B0z;
+          injFieldsLeft->ExITemp[i][j][k]=w_0*Byb-v_0*Bzb;
+          injFieldsLeft->EyITemp[i][j][k]=u_0*Bzb-w_0*Bxb;
+          injFieldsLeft->EzITemp[i][j][k]=v_0*Bxb-u_0*Byb;
+
+          injFieldsLeft->BxITemp[i][j][k]=Bxb;
+          injFieldsLeft->ByITemp[i][j][k]=Byb;
+          injFieldsLeft->BzITemp[i][j][k]=Bzb;
         }
   }
 
@@ -2646,13 +2941,26 @@ void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *
       for (int j=0; j<nyn; j++)
         for (int k=0; k<nzn; k++){
 
-          injFieldsRight->ExITemp[i][j][k]=w_0*B0y-v_0*B0z;
-          injFieldsRight->EyITemp[i][j][k]=u_0*B0z-w_0*B0x;
-          injFieldsRight->EzITemp[i][j][k]=v_0*B0x-u_0*B0y;
+          //double Bxb = Bxn[i][j][k];
+          //double Byb = Byn[i][j][k];
+          //double Bzb = Bzn[i][j][k];
+          //double Exb = w_0*Byb-v_0*Bzb;
+          //double Eyb = u_0*Bzb-w_0*Bxb;
+          //double Ezb = v_0*Bxb-u_0*Byb;
+          double Bxb = 0.0;
+          double Byb = 0.0;
+          double Bzb = 0.0;
+          double Exb = 0.0;
+          double Eyb = 0.0;
+          double Ezb = 0.0;
 
-          injFieldsRight->BxITemp[i][j][k]=B0x;
-          injFieldsRight->ByITemp[i][j][k]=B0y;
-          injFieldsRight->BzITemp[i][j][k]=B0z;
+          injFieldsRight->ExITemp[i][j][k]=Exb;
+          injFieldsRight->EyITemp[i][j][k]=Eyb;
+          injFieldsRight->EzITemp[i][j][k]=Ezb;
+
+          injFieldsRight->BxITemp[i][j][k]=Bxb;
+          injFieldsRight->ByITemp[i][j][k]=Byb;
+          injFieldsRight->BzITemp[i][j][k]=Bzb;
 
         }
 
@@ -3145,6 +3453,31 @@ double ***EMfields3D::getBz_ext() {
   return(Bz_ext);
 }
 
+double ***&EMfields3D::getBxTot(){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++)
+        arr[i][j][k] = Bxn[i][j][k] + Fext * Bx_ext[i][j][k];
+
+  return arr;
+}
+double ***&EMfields3D::getByTot(){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++)
+        arr[i][j][k] = Byn[i][j][k] + Fext * By_ext[i][j][k];
+
+  return arr;
+}
+double ***&EMfields3D::getBzTot(){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++)
+        arr[i][j][k] = Bzn[i][j][k] + Fext * Bz_ext[i][j][k];
+
+  return arr;
+}
+
 /*! SPECIES: get pressure tensor component XX defined on nodes */
 double ****EMfields3D::getpXXsn() {
   return (pXXsn);
@@ -3197,6 +3530,9 @@ double ***EMfields3D::getJz() {
 double ****EMfields3D::getJxs() {
   return (Jxs);
 }
+double ***& EMfields3D::getJxs(int is) {
+  return (Jxs[is]);
+}
 /*! get Jxs(X,Y,Z,is) : density for species */
 double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const {
   return (Jxs[is][indexX][indexY][indexZ]);
@@ -3221,6 +3557,9 @@ double ***EMfields3D::getJxsc(int is) {
 double ****EMfields3D::getJys() {
   return (Jys);
 }
+double ***& EMfields3D::getJys(int is) {
+  return (Jys[is]);
+}
 /*! get Jxs(X,Y,Z,is) : density for species */
 double &EMfields3D::getJys(int indexX, int indexY, int indexZ, int is) const {
   return (Jys[is][indexX][indexY][indexZ]);
@@ -3244,6 +3583,9 @@ double ***EMfields3D::getJysc(int is) {
 /*!SPECIES: get current array Z component */
 double ****EMfields3D::getJzs() {
   return (Jzs);
+}
+double ***& EMfields3D::getJzs(int is) {
+  return (Jzs[is]);
 }
 /*! get Jxs(X,Y,Z,is) : density for species */
 double &EMfields3D::getJzs(int indexX, int indexY, int indexZ, int is) const {
@@ -3288,9 +3630,9 @@ double EMfields3D::getBenergy(void) {
   for (int i = 1; i < nxn - 2; i++)
     for (int j = 1; j < nyn - 2; j++)
       for (int k = 1; k < nzn - 2; k++){
-        Bxt = Bxn[i][j][k]+Bx_ext[i][j][k];
-        Byt = Byn[i][j][k]+By_ext[i][j][k];
-        Bzt = Bzn[i][j][k]+Bz_ext[i][j][k];
+        Bxt = Bxn[i][j][k]+Fext*Bx_ext[i][j][k];
+        Byt = Byn[i][j][k]+Fext*By_ext[i][j][k];
+        Bzt = Bzn[i][j][k]+Fext*Bz_ext[i][j][k];
         localBenergy += .5*dx*dy*dz*(Bxt*Bxt + Byt*Byt + Bzt*Bzt)/(FourPI);
       }
 

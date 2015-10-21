@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 2.8.5)
 
 #
 # Project declaration
@@ -62,6 +62,8 @@ option(IPIC_H5HUT_OUTPUT "Output is done using Parallel HDF5 with the H5hut libr
 
 if(IPIC_H5HUT_OUTPUT)
   add_subdirectory(${IPIC_HOME}/H5hut-io H5hut-io)
+  set(H5HUT_HOME $ENV{H5HUT_DIR} CACHE STRING "H5hut home directory")
+  set(H5HUT_INCLUDE_DIRS ${H5HUT_HOME}/include)
   set(H5HUTIO_INCLUDE_DIRS ${IPIC_HOME}/H5hut-io/include)
   set(H5HUTIO_LIBRARIES H5hut-io)
 
@@ -79,12 +81,18 @@ if(IPIC_XEONPHI)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options
+are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)
+endif()
+
 #
 # include and lib directories
 #
 
 include_directories(
         ${IPIC_HOME}/include
+        ${H5HUT_INCLUDE_DIRS}
         ${H5HUTIO_INCLUDE_DIRS}
         ${HDF5_INCLUDE_DIRS}
         ${MPI_INCLUDE_PATH}

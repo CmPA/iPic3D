@@ -165,7 +165,7 @@ template <> inline bool ConfigFile::string_as_T < bool > (const string & s) {
     *p = toupper(*p);           // make string all caps
   if (sup == string("FALSE") || sup == string("F") || sup == string("NO") || sup == string("N") || sup == string("0") || sup == string("NONE")) {
     b = false;
-    cout << "siamo qua " << endl;
+    //cout << "siamo qua " << endl;
   }
   return b;
 }

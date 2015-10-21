@@ -199,6 +199,9 @@ class EMfields3D                // :public Field
     void AddPerturbation(double deltaBoB, double kx, double ky, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, double B0, Grid * grid);
     /*! Initialise a combination of magnetic dipoles */
     void initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    void initDipole_2(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    void SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    void SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
     void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);
@@ -228,6 +231,9 @@ class EMfields3D                // :public Field
     /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
     void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
+    void UpdateRHOcs(Grid * grid);
+    void SetLambda  (Grid * grid);
+    double ***GetLambda();
 
     /*! communicate ghost for densities and interp rho from node to center */
     void interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid);
@@ -365,6 +371,13 @@ class EMfields3D                // :public Field
     /** get Magnetic Field component Z */
     double ***getBz_ext();
 
+    double ***&getBxTot();
+    double ***&getByTot();
+    double ***&getBzTot();
+
+    void UpdateFext(int cycle);
+    double getFext();
+
     /*! get pressure tensor XX for species */
     double ****getpXXsn();
     /*! get pressure tensor XY for species */
@@ -408,6 +421,11 @@ class EMfields3D                // :public Field
     double ****getJzs();
     /*! SPECIES: get current Z component for species is in all cells except ghost */
     double ***getJzsc(int is);
+
+    double ***&getJxs(int is);
+    double ***&getJys(int is);
+    double ***&getJzs(int is);
+
     /*! get the electric field energy */
     double getEenergy();
     /*! get the magnetic field energy */
@@ -581,6 +599,8 @@ class EMfields3D                // :public Field
     /*! External current field component-Z, defined on nodes */
     double***  Jz_ext;
 
+    double Fext;
+
     /*! SPECIES: pressure tensor component-XX, defined on nodes */
     double ****pXXsn;
     /*! SPECIES: pressure tensor component-XY, defined on nodes */
@@ -627,6 +647,7 @@ class EMfields3D                // :public Field
 
     /*! GEM Challenge background ion */
     double *rhoINIT;
+    double *rhoINJECT;
     /*! Drift of the species */
     bool *DriftSpecies;
 
@@ -643,6 +664,9 @@ class EMfields3D                // :public Field
     double CGtol;
     /*! GMRES tolerance criterium for stopping iterations */
     double GMREStol;
+
+    /*! Temporal damping parameter */
+    double*** Lambda;
 
     // OpenBC implementation
 

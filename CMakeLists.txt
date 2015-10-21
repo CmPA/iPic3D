@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.8)
+cmake_minimum_required(VERSION 2.8.5)
 
 #
 # Set project name
@@ -19,18 +19,20 @@ find_package(MPI REQUIRED)
 
 option(IPIC_TESTS "Set up the code tests" OFF)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options
+are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)
+endif()
+
 #
 # Include sub-directories
 #
 
 add_subdirectory(main)
-## if(IPIC_H5HUT_OUTPUT)
-##   add_subdirectory(H5hut-io)
-##   set(H5HUTIO_LIBRARIES H5hut-io)
-## endif()
 
 include_directories(
     include
+    ${MPI_INCLUDE_PATH}
     ${HDF5_INCLUDE_DIRS}
 )
 
@@ -50,7 +52,6 @@ add_executable(
 target_link_libraries(
     iPic3D
     iPic3Dlib
-##    ${H5HUTIO_LIBRARIES}
     ${MPI_LIBRARIES}
     ${HDF5_LIBRARIES}
 )

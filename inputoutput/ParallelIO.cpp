@@ -142,18 +142,25 @@ void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *co
 
   file.OpenFieldsFile("Node", nspec, col->getNxc()+1, col->getNyc()+1, col->getNzc()+1, vct->getCoordinates(), vct->getDivisions(), vct->getComm());
 
-  file.WriteFields(EMf->getEx(), "Ex", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getEy(), "Ey", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getEz(), "Ez", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBx(), "Bx", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBy(), "By", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBz(), "Bz", grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getEx(),    "Ex",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getEy(),    "Ey",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getEz(),    "Ez",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBx(),    "Bx",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBy(),    "By",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBz(),    "Bz",  grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBxTot(), "Btx", grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getByTot(), "Bty", grid->getNXN(), grid->getNYN(), grid->getNZN());
+  file.WriteFields(EMf->getBzTot(), "Btz", grid->getNXN(), grid->getNYN(), grid->getNZN());
+  //file.WriteFields(EMf->GetLambda(), "Lambda", grid->getNXN(), grid->getNYN(), grid->getNZN());
 
   for (int is=0; is<nspec; is++) {
     stringstream  ss;
     ss << is;
     string s_is = ss.str();
     file.WriteFields(EMf->getRHOns(is), "rho_"+ s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getJxs(is),   "Jx_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getJys(is),   "Jy_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getJzs(is),   "Jz_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
   }
 
   file.CloseFieldsFile();
@@ -232,20 +239,29 @@ void ReadPartclH5hut(int nspec, Particles3Dcomm *part, Collective *col, VCtopolo
   double L[3] = {col->getLx(), col->getLy(), col->getLz()};
 
   infile.SetNameCycle(col->getinitfile(), col->getLast_cycle());
-  infile.OpenPartclFile(nspec);
-
-  infile.ReadParticles(vct->getCartesian_rank(), vct->getNproc(), vct->getDivisions(), L, vct->getComm());
+  infile.OpenPartclFile(nspec, vct->getCartesian_rank(), vct->getNproc(), vct->getComm());
 
   for (int s = 0; s < nspec; s++){
-    part[s].allocate(s, infile.GetNp(s), col, vct, grid);
 
-    infile.DumpPartclX(part[s].getXref(), s);
-    infile.DumpPartclY(part[s].getYref(), s);
-    infile.DumpPartclZ(part[s].getZref(), s);
-    infile.DumpPartclU(part[s].getUref(), s);
-    infile.DumpPartclV(part[s].getVref(), s);
-    infile.DumpPartclW(part[s].getWref(), s);
-    infile.DumpPartclQ(part[s].getQref(), s);
+    infile.ReadParticles(vct->getCartesian_rank(),
+                         vct->getNproc(),      s, 
+                         vct->getDivisions(),  L,
+                         vct->getComm());
+
+    part[s].allocate(s, infile.get_nops(), col, vct, grid);
+
+    infile.LoadParticles(infile.get_nops(), vct->getCartesian_rank(),
+                         vct->getNproc(),      s,
+                         vct->getDivisions(),  L,
+                         vct->getComm(),
+                         part[s].getQall(),
+                         part[s].getXall(),
+                         part[s].getYall(),
+                         part[s].getZall(),
+                         part[s].getUall(),
+                         part[s].getVall(),
+                         part[s].getWall());
+
   }
   infile.ClosePartclFile();
 

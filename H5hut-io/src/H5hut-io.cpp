@@ -1,58 +1,11 @@
 #include <mpi.h>
 #include <fstream>
+#include <cmath>
+#include <exception>
+#include <stdexcept>
+#include <new>
 
 #include "H5hut-io.h"
-
-/* ==================== */
-/* Auxiliary structures */
-/* ==================== */
-
-H5hutpart::H5hutpart(){
-  allocated = false;
-}
-
-H5hutpart::~H5hutpart(){
-}
-
-void H5hutpart::memalloc(long long n){
-  np = n;
-
-  if (allocated == false) {
-    q = new double[np];
-    x = new double[np];
-    y = new double[np];
-    z = new double[np];
-    u = new double[np];
-    v = new double[np];
-    w = new double[np];
-    allocated = true;
-  }
-}
-
-void H5hutpart::init(long long n, double chg, int Lx, int Ly, int Lz){
-
-  if (!allocated) memalloc(n);
-
-  double LO = -50.0;
-  double HI =  50.0;
-  for (int i=0; i<np; i++){
-    q[i] = chg;
-    x[i] = 0.0 + double(rand()) / double(RAND_MAX/(Lx-0.0));
-    y[i] = 0.0 + double(rand()) / double(RAND_MAX/(Ly-0.0));
-    z[i] = 0.0 + double(rand()) / double(RAND_MAX/(Lz-0.0));
-    u[i] = LO  + double(rand()) / double(RAND_MAX/(HI-LO));
-    v[i] = LO  + double(rand()) / double(RAND_MAX/(HI-LO));
-    w[i] = LO  + double(rand()) / double(RAND_MAX/(HI-LO));
-  }
-}
-
-void H5hutpart::info(){
-  int i = int(np/2);
-  std::cout << "[H5hut-io]" << " np=" << np << ", ex. position: " << x[i] << " " << y[i] << " " << z[i] << std::endl;
-  std::cout << "[H5hut-io]" << " np=" << np << ", 1st position: " << x[0] << " " << y[0] << " " << z[0] << std::endl;
-  std::cout << "[H5hut-io]" << " np=" << np << ", Lst position: " << x[np-1] << " " << y[np-1] << " " << z[np-1] << std::endl;
-  std::cout << std::endl;
-}
 
 /* ====================== */
 /*        OUTPUT          */
@@ -64,7 +17,7 @@ void H5output::SetNameCycle(std::string name, int c){
   cycle    = c;
 }
 
-void H5output::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *dimns, MPI_Comm CART_COMM){
+void H5output::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *pdims, MPI_Comm CART_COMM){
 
   std::stringstream filenmbr;
   std::string       filename;
@@ -86,17 +39,17 @@ void H5output::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, in
   fldsfile = H5OpenFile(filename.c_str(), H5_O_RDWR, CART_COMM);
   H5SetStep(fldsfile,0);
   H5WriteStepAttribInt32(fldsfile, "nspec", &nspec, 1);
-  H5Block3dSetGrid(fldsfile, dimns[0], dimns[1], dimns[2]);
-  H5Block3dSetDims(fldsfile, ntx/dimns[0], nty/dimns[1], ntz/dimns[2]);
+  H5Block3dSetGrid(fldsfile, pdims[0], pdims[1], pdims[2]);
+  H5Block3dSetDims(fldsfile, ntx/pdims[0], nty/pdims[1], ntz/pdims[2]);
   H5Block3dSetHalo(fldsfile, 1, 1, 1);
 
   int irange[2];
   int jrange[2];
   int krange[2];
 
-  int nnx = ntx/dimns[0];
-  int nny = nty/dimns[1];
-  int nnz = ntz/dimns[2];
+  int nnx = ntx/pdims[0];
+  int nny = nty/pdims[1];
+  int nnz = ntz/pdims[2];
 
   d = 0;
   if (dtype=="Cell") d = -1;   // Yes, this line is the oposite of the previous 'if'
@@ -127,25 +80,14 @@ void H5output::WriteFields(double ***field, std::string fname, int nx, int ny, i
 
   buffer = new h5_float64_t[nz*ny*nx];
 
-  std::ofstream myfile;
-
-  if (rank!=-1) {
-    std::stringstream  ss;
-    ss << "proc-" << rank << ".txt";
-    std::string filename = ss.str();
-    myfile.open(filename.c_str());
-  }
-
   int n = 0;
   for (int k=1; k<nz-1; k++) {
     for (int j=1; j<ny-1; j++) {
       for (int i=1; i<nx-1; i++) {
         buffer[n++] = field[i][j][k];
-        if (rank!=-1) myfile << i << " " << j << " " << k << " : " << field[i][j][k] << std::endl;
       }
     }
   }
-  if (rank!=-1) myfile.close();
 
   H5Block3dWriteScalarFieldFloat64(fldsfile, fname.c_str(), buffer);
 
@@ -247,7 +189,7 @@ void H5input::SetNameCycle(std::string name, int rc){
   recycle  = rc;
 }
 
-void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *dimns, MPI_Comm CART_COMM){
+void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *pdims, MPI_Comm CART_COMM){
 
   int file_nspec;
 
@@ -273,9 +215,9 @@ void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int
   H5ReadStepAttribInt32(fldsfile, "nspec", &file_nspec);
 
   if (file_nspec!=nspec){
-   std::cout << "[H5hut-io]" << " ERROR: The number of species nspec=" << nspec << std::endl;
-   std::cout << "[H5hut-io]" << "        does not correspont to the number of species in the initial file." << std::endl;
-   std::cout << "[H5hut-io]" << "        file_nspec = " << file_nspec << std::endl; 
+   std::cout << "[PHDF5-io]" << " ERROR: The number of species nspec=" << nspec << std::endl;
+   std::cout << "[PHDF5-io]" << "        does not correspont to the number of species in the initial file." << std::endl;
+   std::cout << "[PHDF5-io]" << "        file_nspec = " << file_nspec << std::endl; 
    abort();
   }
 
@@ -293,30 +235,30 @@ void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int
   int ndim = 3; // By default 2D is considered as a 'flat' 3D
 
   if (f_rank!=ndim) {
-   std::cout << "[H5hut-io]" << " ERROR: The number of dimensions =" << ndim << std::endl;
-   std::cout << "[H5hut-io]" << "        does not correspont to the number of dimensions in the initial file." << std::endl;
-   std::cout << "[H5hut-io]" << "        f_ndim = " << f_rank << std::endl; 
+   std::cout << "[PHDF5-io]" << " ERROR: The number of dimensions =" << ndim << std::endl;
+   std::cout << "[PHDF5-io]" << "        does not correspont to the number of dimensions in the initial file." << std::endl;
+   std::cout << "[PHDF5-io]" << "        f_ndim = " << f_rank << std::endl; 
    abort();
   }
 
   if (f_dims[0]!=ntx-d) {
-   std::cout << "[H5hut-io]" << " ERROR: The number of cells in X =" << ntx << std::endl;
-   std::cout << "[H5hut-io]" << "        does not correspont to the number of cells in the initial file." << std::endl;
-   std::cout << "[H5hut-io]" << "        ncell x = " << f_dims[0] << std::endl; 
+   std::cout << "[PHDF5-io]" << " ERROR: The number of cells in X =" << ntx << std::endl;
+   std::cout << "[PHDF5-io]" << "        does not correspont to the number of cells in the initial file." << std::endl;
+   std::cout << "[PHDF5-io]" << "        ncell x = " << f_dims[0] << std::endl; 
    abort();
   }
 
   if (f_dims[1]!=nty-d) {
-   std::cout << "[H5hut-io]" << " ERROR: The number of cells in Y =" << nty << std::endl;
-   std::cout << "[H5hut-io]" << "        does not correspont to the number of cells in the initial file." << std::endl;
-   std::cout << "[H5hut-io]" << "        ncell y = " << f_dims[1] << std::endl; 
+   std::cout << "[PHDF5-io]" << " ERROR: The number of cells in Y =" << nty << std::endl;
+   std::cout << "[PHDF5-io]" << "        does not correspont to the number of cells in the initial file." << std::endl;
+   std::cout << "[PHDF5-io]" << "        ncell y = " << f_dims[1] << std::endl; 
    abort();
   }
 
   if (f_dims[2]!=ntz-d) {
-   std::cout << "[H5hut-io]" << " ERROR: The number of cells in Z =" << ntz << std::endl;
-   std::cout << "[H5hut-io]" << "        does not correspont to the number of cells in the initial file." << std::endl;
-   std::cout << "[H5hut-io]" << "        ncell z = " << f_dims[2] << std::endl; 
+   std::cout << "[PHDF5-io]" << " ERROR: The number of cells in Z =" << ntz << std::endl;
+   std::cout << "[PHDF5-io]" << "        does not correspont to the number of cells in the initial file." << std::endl;
+   std::cout << "[PHDF5-io]" << "        ncell z = " << f_dims[2] << std::endl; 
    abort();
   }
 
@@ -324,8 +266,8 @@ void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int
   /* Set Block properties */
   /* -------------------- */
 
-  H5Block3dSetGrid(fldsfile, dimns[0], dimns[1], dimns[2]);
-  H5Block3dSetDims(fldsfile, ntx/dimns[0], nty/dimns[1], ntz/dimns[2]);
+  H5Block3dSetGrid(fldsfile, pdims[0], pdims[1], pdims[2]);
+  H5Block3dSetDims(fldsfile, ntx/pdims[0], nty/pdims[1], ntz/pdims[2]);
   H5Block3dSetHalo(fldsfile, 1, 1, 1);
 
   int irange[2];
@@ -335,12 +277,12 @@ void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int
   d = 0;
   if (dtype=="Cell") d = -1;  // Yes, this is the oposite of the first 'if'
 
-  irange[0] =   coord[0]   * ntx/dimns[0];
-  irange[1] = ((coord[0]+1)* ntx/dimns[0]) + d;
-  jrange[0] =   coord[1]   * nty/dimns[1];
-  jrange[1] = ((coord[1]+1)* nty/dimns[1]) + d;
-  krange[0] =   coord[2]   * ntz/dimns[2];
-  krange[1] = ((coord[2]+1)* ntz/dimns[2]) + d;
+  irange[0] =   coord[0]   * ntx/pdims[0];
+  irange[1] = ((coord[0]+1)* ntx/pdims[0]) + d;
+  jrange[0] =   coord[1]   * nty/pdims[1];
+  jrange[1] = ((coord[1]+1)* nty/pdims[1]) + d;
+  krange[0] =   coord[2]   * ntz/pdims[2];
+  krange[1] = ((coord[2]+1)* ntz/pdims[2]) + d;
 
   /* -------------- */
   /* Set the "view" */
@@ -359,25 +301,14 @@ void H5input::ReadFields(double ***field, std::string fname, int nx, int ny, int
 
   H5Block3dReadScalarFieldFloat64(fldsfile, fname.c_str(), buffer);
 
-  std::ofstream myfile;
-
-  if (rank!=-1) {
-    std::stringstream  ss;
-    ss << "proc-" << rank << ".txt";
-    std::string filename = ss.str();
-    myfile.open(filename.c_str());
-  }
-
   int n = 0;
   for (int k=1; k<nz-1; k++) {
     for (int j=1; j<ny-1; j++) {
       for (int i=1; i<nx-1; i++) {
         field[i][j][k] = buffer[n++];
-        if (rank!=-1) myfile << i << " " << j << " " << k << " : " << field[i][j][k] << std::endl;
       }
     }
   }
-  if (rank!=-1) myfile.close();
 
   delete [] buffer;
 }
@@ -386,435 +317,441 @@ void H5input::CloseFieldsFile(){
   H5CloseFile(fldsfile);
 }
 
-
-void H5input::OpenPartclFile(int ns){
-  nspec = ns;
-  part = new H5hutpart[nspec];
-}
-
-void H5input::ReadParticles(int rank, int nproc, int *dimns, double *L, MPI_Comm CART_COMM){
-  int ndim = 3; // By default 2D is considered as a 'flat' 3D
-  LoadParticles(ndim, rank, nproc, dimns, L, CART_COMM);
-  InitParticles(ndim, rank, CART_COMM);
-}
-
 void H5input::ClosePartclFile(){
-  delete [] part;
+
+  H5Gclose(pclgroup);
+  H5Fclose(partfile);
+
+  delete [] h5npart;
+  delete [] nops_beg;
+  delete [] nops;
+  
 }
 
-void H5input::LoadLocalParticles(long long *np,
-                        double *q_loc,
-                        double *x_loc,
-                        double *y_loc,
-                        double *z_loc,
-                        double *u_loc,
-                        double *v_loc,
-                        double *w_loc) {
+void H5input::FillPartVectors(long long sizevec, int rank, int jproc, int ispec, long long r_nop, long long r_beg, double* r_buffer,
+                              double *q, double *x, double *y, double *z, double *u, double *v, double *w) {
 
-  long long n;
-
-  n = 0;
-  for (int s=0; s<nspec; s++){
-
-    part[s].memalloc(np[s]);
-
-    std::copy(q_loc+n, q_loc+n+np[s], part[s].getQ());
-    std::copy(x_loc+n, x_loc+n+np[s], part[s].getX());
-    std::copy(y_loc+n, y_loc+n+np[s], part[s].getY());
-    std::copy(z_loc+n, z_loc+n+np[s], part[s].getZ());
-    std::copy(u_loc+n, u_loc+n+np[s], part[s].getU());
-    std::copy(v_loc+n, v_loc+n+np[s], part[s].getV());
-    std::copy(w_loc+n, w_loc+n+np[s], part[s].getW());
-
-    n += np[s];
-  }
-}
-
-void H5input::FindLocalParticles(int nproc, int ndim, h5_int64_t *h5npart, long long nop, int *dimns, double *L, MPI_Comm CART_COMM,
-                        double *q,
-                        double *x, double *y, double *z,
-                        double *u, double *v, double *w){
-
-  double     *q_loc;
-  double     *x_loc;
-  double     *y_loc;
-  double     *z_loc;
-  double     *u_loc;
-  double     *v_loc;
-  double     *w_loc;
-  bool       *b;
-  long long  locnp[nspec][nproc];
-  long long  *locnop;
-  long long  *np;
-  long long  p;
-  long long  nn;
-  long long  MAX_NOP;
-  int        irank;
-  int        *pcoord;
-  int        *inproc;
-
-  pcoord = new int[ndim];
-  inproc = new int[nop];
-  np     = new long long[nspec+1];
-  locnop = new long long[nproc];
-
-  MAX_NOP = 1.1 * (nop/nproc);
-
-  /* ------------------- */
-  /* Initialize counters */
-  /* ------------------- */
-
-  for (int iproc=0; iproc<nproc; iproc++) {
-    locnop[iproc] = 0;
-    for (int i=0; i<nspec; i++) {
-      locnp[i][iproc] = 0;
+  long long l = 0;
+  for (long long k=r_beg; k<r_beg+r_nop; k++){
+    try {
+      q[k] = r_buffer[l + 0*r_nop];
+      x[k] = r_buffer[l + 1*r_nop];
+      y[k] = r_buffer[l + 2*r_nop];
+      z[k] = r_buffer[l + 3*r_nop];
+      u[k] = r_buffer[l + 4*r_nop];
+      v[k] = r_buffer[l + 5*r_nop];
+      w[k] = r_buffer[l + 6*r_nop];
+      l++;
     }
+    catch (const std::out_of_range& e) {
+      std::cout << rank << ": Out of Range error at element " << k << ": " << e.what() << std::endl;
+    } 
   }
+
+}
+
+void H5input::SortParticles(int nproc, int rank, int ispec, int ndim, long long i_nop, int *pdims, double *L, MPI_Comm CART_COMM){
+
+  int          *pcoord;
+  int          irank;
+
+  try {
+    pcoord = new int[ndim];
+    inproc = new unsigned int[i_nop];
+    s_nop  = new long long[nproc];
+    r_nop  = new long long[nproc];
+    r_beg  = new long long[nproc];
+  }
+  catch(std::bad_alloc& exc)
+  {
+    std::cout << rank << " : Bad allocation of auxiliary vectors in SortParticles: " << exc.what() << std::endl;
+  }
+
+  MPI_Request req;
+  MPI_Status  status;
 
   /* ------------------------- */
   /* Tag particles with proc # */
   /* ------------------------- */
 
-  nn = 0;
-  for (int i=0; i<nspec; i++) {
-    for (long long n=0; n < h5npart[i]; n++) {
+  for (int iproc=0; iproc<nproc; iproc++) s_nop[iproc] = 0;
 
-      p = nn + n;
+  for (long long p=0; p < i_nop; p++) {
 
-      /* --------------------------------------- */
-      /* Get processor coordinate for particle p */
-      /* --------------------------------------- */
+    /* --------------------------------------- */
+    /* Get processor coordinate for particle p */
+    /* --------------------------------------- */
 
-      for (int d=0; d<ndim; d++) {
-        double r;
-        if (d==0) r = x[p];
-        if (d==1) r = y[p];
-        if (d==2) r = z[p];
+    for (int d=0; d<ndim; d++) {
+      double r;
+      if (d==0) r = i_x[p];
+      if (d==1) r = i_y[p];
+      if (d==2) r = i_z[p];
 
-        pcoord[d] = int(r/(L[d]/dimns[d]));
-      }
-
-      /* ----------------------------------------------------- */
-      /* Detect processor rank and increment particle counters */
-      /* ----------------------------------------------------- */
-
-      MPI_Cart_rank(CART_COMM, pcoord, &irank);
-      inproc[p] = irank;
-      locnp[i][irank]++;
-      locnop[irank]++;
-
+      pcoord[d] = int(r/(L[d]/pdims[d]));
     }
 
-    nn += h5npart[i];
+    /* ----------------------------------------------------- */
+    /* Detect processor rank and increment particle counters */
+    /* ----------------------------------------------------- */
+
+    MPI_Cart_rank(CART_COMM, pcoord, &irank);
+    inproc[p] = irank;
+    s_nop[irank]++;
+
   }
 
-  /* ----------------------- */
-  /* Create the local arrays */
-  /* ----------------------- */
+  delete [] pcoord;
 
-  MAX_NOP = 0;
-  for (int iproc=0; iproc<nproc; iproc++){
-    if (locnop[iproc]>MAX_NOP) MAX_NOP = locnop[iproc];
+  /* ----------------------------------- */
+  /* Communicate sizes and define offset */
+  /* ----------------------------------- */
+
+  long long ntp = 0;
+  for (int iproc=0; iproc<nproc; iproc++) {
+    if (s_nop[iproc]>0) {
+      ntp+= s_nop[iproc];
+    }
   }
 
-  q_loc = new double[MAX_NOP];
-  x_loc = new double[MAX_NOP];
-  y_loc = new double[MAX_NOP];
-  z_loc = new double[MAX_NOP];
-  u_loc = new double[MAX_NOP];
-  v_loc = new double[MAX_NOP];
-  w_loc = new double[MAX_NOP];
+  S_MAX_NOP = 0;
+  for (int iproc=0; iproc<nproc; iproc++) {
+    if (rank!=iproc) MPI_Send(&s_nop[iproc], 1, MPI_LONG_LONG, iproc, 0, CART_COMM);
+    if (s_nop[iproc] > S_MAX_NOP) S_MAX_NOP = s_nop[iproc];
+  }
 
-  /* ------------------------------- */
-  /* Fill vectors for each processor */
-  /* ------------------------------- */
+  f_nop  = 0;
+  R_MAX_NOP = 0;
+  for (int iproc=0; iproc<nproc; iproc++) {
+
+    if   (rank==iproc) r_nop[iproc] = s_nop[iproc];
+    else MPI_Recv(&r_nop[iproc], 1, MPI_LONG_LONG, iproc, 0, CART_COMM, MPI_STATUS_IGNORE);
+
+    if (iproc==0)      r_beg[iproc]   = 0;
+    if (iproc<nproc-1) r_beg[iproc+1] = r_beg[iproc] + r_nop[iproc];
+
+    if (r_nop[iproc] > R_MAX_NOP) R_MAX_NOP = r_nop[iproc];
+
+    f_nop += r_nop[iproc];
+
+  }
+
+}
+
+void H5input::ExchangeParticles(long long sizevec, int nproc, int rank, int ispec, long long i_nop, int *pdims, double *L, MPI_Comm CART_COMM,
+                        double *q,
+                        double *x, double *y, double *z,
+                        double *u, double *v, double *w){
+
+  double       *s_buffer;
+  double       *r_buffer;
+
+  /* --------------------------------- */
+  /* Allocate send and receive buffers */
+  /* --------------------------------- */
+
+  if (rank==0) {
+    double s_memsize = 7*S_MAX_NOP*sizeof(double)*1e-6;
+    double r_memsize = 7*R_MAX_NOP*sizeof(double)*1e-6;
+    std::cout << "[PHDF5-io] Species " << ispec << " -- Alloc send/recv buffer memory: " << s_memsize+r_memsize << " MB " << std::endl;
+  }
+
+  try{
+    s_buffer = new double[7*S_MAX_NOP];
+    r_buffer = new double[7*R_MAX_NOP];
+  }
+  catch(std::bad_alloc& exc)
+  {
+    std::cout << rank << " : Bad allocation of send/receive buffers: " << exc.what() << std::endl;
+  }
+
+  /* --------------------------------- */
+  /* Fill send and receive the buffers */
+  /* --------------------------------- */
 
   for (int iproc=0; iproc<nproc; iproc++) {
 
-    /* ---------------- */
-    /* Fill the vectors */
-    /* ---------------- */
+    /* -------------------- */
+    /* Fill the send buffer */
+    /* -------------------- */
 
-    p = 0;
-    for (long long n=0; n<nop; n++) {
+    long long p = 0;
+
+    for (long long n=0; n<i_nop; n++) {
       if (inproc[n]==iproc) {
-        q_loc[p] = q[n];
-        x_loc[p] = x[n];
-        y_loc[p] = y[n];
-        z_loc[p] = z[n];
-        u_loc[p] = u[n];
-        v_loc[p] = v[n];
-        w_loc[p] = w[n];
+        s_buffer[p]                    = i_q[n];
+        s_buffer[p + (1*s_nop[iproc])] = i_x[n];
+        s_buffer[p + (2*s_nop[iproc])] = i_y[n];
+        s_buffer[p + (3*s_nop[iproc])] = i_z[n];
+        s_buffer[p + (4*s_nop[iproc])] = i_u[n];
+        s_buffer[p + (5*s_nop[iproc])] = i_v[n];
+        s_buffer[p + (6*s_nop[iproc])] = i_w[n];
+        
         p++;
       }
     }
 
-    /* ------------------------------------------------------------------- */
-    /* Copy particles in procesor 0 and send particles to other processors */
-    /* ------------------------------------------------------------------- */
-
-    for (int i=0; i<nspec; i++) np[i] = locnp[i][iproc];
-    np[nspec] = locnop[iproc]; // The last element in np contains the total (all species combined) number of particles.
-
-    if (iproc==0)  LoadLocalParticles(np, q_loc, x_loc, y_loc, z_loc, u_loc, v_loc, w_loc);
-    else{
-      MPI_Send(np    , nspec+1      , MPI_LONG_LONG, iproc, 0, CART_COMM);
-      MPI_Send(q_loc , locnop[iproc], MPI_DOUBLE,    iproc, 0, CART_COMM);
-      MPI_Send(x_loc , locnop[iproc], MPI_DOUBLE,    iproc, 0, CART_COMM);
-      MPI_Send(y_loc , locnop[iproc], MPI_DOUBLE,    iproc, 0, CART_COMM);
-      MPI_Send(z_loc , locnop[iproc], MPI_DOUBLE,    iproc, 0, CART_COMM);
-      MPI_Send(u_loc , locnop[iproc], MPI_DOUBLE,    iproc, 0, CART_COMM);
-      MPI_Send(v_loc , locnop[iproc], MPI_DOUBLE,    iproc, 0, CART_COMM);
-      MPI_Send(w_loc , locnop[iproc], MPI_DOUBLE,    iproc, 0, CART_COMM);
+    if (p != s_nop[iproc]) {
+      std::cout << rank << " ERROR: The number of particles dont match: " << std::endl;
+      std::cout << rank << "        p = " << p << " :: s_nop = " << s_nop[iproc] << std::endl;
     }
+    if (p > S_MAX_NOP) {
+      std::cout << rank << " ERROR: The number of particles in the send buffer is bigger than the buffer size: " << std::endl;
+      std::cout << rank << "        p = " << p << " :: S_MAX_NOP = " << S_MAX_NOP << std::endl;
+    }
+
+    /* ---------------------------------- */
+    /* Receive buffer in iproc from jproc */
+    /* ---------------------------------- */
+
+    if (iproc==rank) {
+
+      for (int jproc=0; jproc<nproc; jproc++) {
+
+        if (r_nop[jproc]>0) {
+
+          if (jproc==rank) {
+            for (int k=0; k<7*r_nop[jproc]; k++) r_buffer[k] = s_buffer[k];
+          }
+          else {
+            MPI_Recv(r_buffer, 7*r_nop[jproc], MPI_DOUBLE, jproc, iproc, CART_COMM, MPI_STATUS_IGNORE);
+          }
+
+          /* ------------------------------------------- */
+          /* Add received buffer to the particle vectors */
+          /* ------------------------------------------- */
+
+          FillPartVectors(sizevec, rank, jproc, ispec, r_nop[jproc], r_beg[jproc], r_buffer, q, x, y, z, u, v, w);
+
+        }
+        // else{} // Nothing to comm
+
+      }
+
+    }
+
+    /* -------------------- */
+    /* Send buffer to iproc */
+    /* -------------------- */
+
+    else {
+      if (s_nop[iproc]>0) {
+        MPI_Send(s_buffer, 7*s_nop[iproc], MPI_DOUBLE, iproc, iproc, CART_COMM);
+      }
+    }
+
   }
 
-  delete [] q_loc;
-  delete [] x_loc;
-  delete [] y_loc;
-  delete [] z_loc;
-  delete [] u_loc;
-  delete [] v_loc;
-  delete [] w_loc;
-
-  delete [] pcoord;
   delete [] inproc;
-  delete [] np;
-  delete [] locnop;
+  delete [] s_nop;
+  delete [] r_nop;
+  delete [] r_beg;
+
+  delete [] s_buffer;
+  delete [] r_buffer;
+
+  if (rank==0) std::cout << "[PHDF5-io] Species " << ispec << " -- Temporary memory deallocated" << std::endl;
 
 }
 
-void H5input::InitParticles(int ndim, int rank, MPI_Comm CART_COMM){
+void H5input::OpenPartclFile(int ns, int rank, int nproc, MPI_Comm CART_COMM){
 
-  long long  *np;
-  long long  nop;
-  double     *q_loc;
-  double     *x_loc;
-  double     *y_loc;
-  double     *z_loc;
-  double     *u_loc;
-  double     *v_loc;
-  double     *w_loc;
-
-  if (rank!=0) {
-    /* ---------------------------------------- */
-    /* Receive particle information from proc 0 */
-    /* ---------------------------------------- */
-
-    np = new long long[nspec+1];
-
-    MPI_Recv(np, nspec+1, MPI_LONG_LONG, 0, 0, CART_COMM, MPI_STATUS_IGNORE);
-    nop = np[nspec];
-
-    /* ----------------------- */
-    /* Create the local arrays */
-    /* ----------------------- */
-
-    q_loc = new double[nop];
-    x_loc = new double[nop];
-    y_loc = new double[nop];
-    z_loc = new double[nop];
-    u_loc = new double[nop];
-    v_loc = new double[nop];
-    w_loc = new double[nop];
-
-    MPI_Recv(q_loc, nop, MPI_DOUBLE, 0, 0, CART_COMM, MPI_STATUS_IGNORE);
-    MPI_Recv(x_loc, nop, MPI_DOUBLE, 0, 0, CART_COMM, MPI_STATUS_IGNORE);
-    MPI_Recv(y_loc, nop, MPI_DOUBLE, 0, 0, CART_COMM, MPI_STATUS_IGNORE);
-    MPI_Recv(z_loc, nop, MPI_DOUBLE, 0, 0, CART_COMM, MPI_STATUS_IGNORE);
-    MPI_Recv(u_loc, nop, MPI_DOUBLE, 0, 0, CART_COMM, MPI_STATUS_IGNORE);
-    MPI_Recv(v_loc, nop, MPI_DOUBLE, 0, 0, CART_COMM, MPI_STATUS_IGNORE);
-    MPI_Recv(w_loc, nop, MPI_DOUBLE, 0, 0, CART_COMM, MPI_STATUS_IGNORE);
-
-    LoadLocalParticles(np, q_loc, x_loc, y_loc, z_loc, u_loc, v_loc, w_loc);
-
-    delete [] q_loc;
-    delete [] x_loc;
-    delete [] y_loc;
-    delete [] z_loc;
-    delete [] u_loc;
-    delete [] v_loc;
-    delete [] w_loc;
-  }
-
-}
-
-void H5input::LoadParticles(int ndim, int rank, int nproc, int *dimns, double *L, MPI_Comm CART_COMM){
-
-  int        h5nspec;
-  int        ranks_rdr[1] = {0};
-  int        *ranks_rst;
-  long long  offset;
-  long long  nop;
-  h5_int64_t *h5npart;
-  double     *q;
-  double     *x;
-  double     *y;
-  double     *z;
-  double     *u;
-  double     *v;
-  double     *w;
-
+  long long         nops_end;
+  int               h5nspec;
+  herr_t            status;
+  hid_t             attr;
+  hid_t             fapl;
   std::stringstream sstm;
 
-  MPI_Comm  READER_COMM;
-  MPI_Group org_grp;
-  MPI_Group reader_grp;
+  nspec = ns;
 
-  part = new H5hutpart[nspec];
+  /* -------------- */
+  /* Open HDF5 file */
+  /* -------------- */
 
-  /* -------------------------------------------------- */
-  /* Create a new communicator for the reader processor */
-  /* This way only processor 0 reads the whole file.    */
-  /* It would be better if each processor read one part */
-  /* of the file...currently not possible with H5hut.   */
-  /* -------------------------------------------------- */
+  std::stringstream filenmbr;
+  std::string       filename;
 
-  MPI_Comm_group (CART_COMM, &org_grp);
-  ranks_rst = new int[nproc-1];
-  for (int i=0; i<nproc-1; i++)  ranks_rst[i] = i;
+  filenmbr << std::setfill('0') << std::setw(6) << recycle;
+  filename = basename + "-Partcl" + "_" + filenmbr.str() + ".h5";
 
-  if (rank==0) MPI_Group_incl (org_grp, 1, ranks_rdr, &reader_grp);
-  else         MPI_Group_incl (org_grp, nproc-1, ranks_rst, &reader_grp);
+  fapl     = H5Pcreate(H5P_FILE_ACCESS);
+  status   = H5Pset_fapl_mpio(fapl, CART_COMM, MPI_INFO_NULL);
+  partfile = H5Fopen(filename.c_str(), H5F_ACC_RDONLY, fapl);
 
-  delete [] ranks_rst;
+  status = H5Pclose(fapl);
 
-  MPI_Comm_create(CART_COMM, reader_grp, &READER_COMM);
+  /* --------------------------- */
+  /* Compare Attributes to input */
+  /* --------------------------- */
 
-  if (rank==0) {
+  pclgroup = H5Gopen2(partfile,"/Step#0",H5P_DEFAULT);
+  attr     = H5Aopen_name(pclgroup, "nspec");
+  status   = H5Aread(attr, H5T_NATIVE_INT, &h5nspec);
+  status   = H5Aclose(attr);
 
-    /* -------------- */
-    /* Open HDF5 file */
-    /* -------------- */
+  if (nspec!=h5nspec) {
+    std::cout << "[PHDF5-io]" << "ERROR in ReadParallelParticles: the number of species in the initial file" << std::endl;
+    std::cout << "[PHDF5-io]" << "                                does not match the number of species requested." << std::endl;
+    abort();
+  }
 
-    std::stringstream filenmbr;
-    std::string       filename;
+  /* ----------------------------------------- */
+  /* Set the reading limits for each processor */
+  /* ----------------------------------------- */
 
-    filenmbr << std::setfill('0') << std::setw(6) << recycle;
-    filename = basename + "-Partcl" + "_" + filenmbr.str() + ".h5";
+  h5npart  = new long long [nspec];
+  nops_beg = new long long [nspec];
+  nops     = new long long [nspec];
 
-    partfile = H5OpenFile(filename.c_str(), H5_O_RDONLY, READER_COMM);
-    H5SetStep(partfile, 0);
-    H5ReadStepAttribInt32(partfile, "nspec", &h5nspec);
+  for (int i=0; i<nspec; i++) {
 
-    if (nspec!=h5nspec) {
-      std::cout << "[H5hut-io]" << "ERROR in ReadParallelParticles: the number of species in the initial file" << std::endl;
-      std::cout << "[H5hut-io]" << "                                does not match the number of species requested." << std::endl;
-      abort();
-    }
+    sstm << "npart_" << i;
+    std::string nparti = sstm.str();
 
-    h5npart = new h5_int64_t[nspec];
+    attr     = H5Aopen_name(pclgroup, nparti.c_str());
+    status   = H5Aread(attr, H5T_NATIVE_LLONG, &h5npart[i]);
+    status   = H5Aclose(attr);
+    sstm.str("");
 
-    nop = 0;
-    for (int i=0; i<nspec; i++) {
-      sstm << "npart_" << i;
-      std::string nparti = sstm.str();
-      H5ReadStepAttribInt64(partfile, nparti.c_str(), &h5npart[i]);
-      sstm.str("");
-      nop += h5npart[i];
-    }
+    nops_beg[i] = rank * ceil(h5npart[i]/nproc);
+    nops_end = (rank==nproc-1) ? h5npart[i] : (rank+1) * ceil(h5npart[i]/nproc);
 
-    q = new double[nop];
-    x = new double[nop];
-    y = new double[nop];
-    z = new double[nop];
-    u = new double[nop];
-    v = new double[nop];
-    w = new double[nop];
-
-    offset = 0;
-    for (int i=0; i<nspec; i++) {
-
-      std::cout << "[H5hut-io]" << " Reading a total of " << h5npart[i] << " particles of species " << i << std::endl;
-
-      sstm << "q_" << i;
-      std::string dtset = sstm.str();
-      H5PartReadDataFloat64(partfile,dtset.c_str(),q+offset);
-      sstm.str("");
-
-      sstm << "x_" << i;
-      dtset = sstm.str();
-      H5PartReadDataFloat64(partfile,dtset.c_str(),x+offset);
-      sstm.str("");
-
-      sstm << "y_" << i;
-      dtset = sstm.str();
-      H5PartReadDataFloat64(partfile,dtset.c_str(),y+offset);
-      sstm.str("");
-
-      sstm << "z_" << i;
-      dtset = sstm.str();
-      H5PartReadDataFloat64(partfile,dtset.c_str(),z+offset);
-      sstm.str("");
-
-      sstm << "u_" << i;
-      dtset = sstm.str();
-      H5PartReadDataFloat64(partfile,dtset.c_str(),u+offset);
-      sstm.str("");
-
-      sstm << "v_" << i;
-      dtset = sstm.str();
-      H5PartReadDataFloat64(partfile,dtset.c_str(),v+offset);
-      sstm.str("");
-
-      sstm << "w_" << i;
-      dtset = sstm.str();
-      H5PartReadDataFloat64(partfile,dtset.c_str(),w+offset);
-      sstm.str("");
-
-      offset += h5npart[i];
-
-    }
-
-    H5CloseFile(partfile);
-
-    FindLocalParticles(nproc, ndim, h5npart, nop, dimns, L, CART_COMM, q, x, y, z, u, v, w);
-
-    delete [] q;
-    delete [] x;
-    delete [] y;
-    delete [] z;
-    delete [] u;
-    delete [] v;
-    delete [] w;
-
-    delete [] h5npart;
+    nops[i] = nops_end - nops_beg[i];
 
   }
 
 }
 
-void H5input::DumpPartclX(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getX(i);
-  part[s].freeX();
+void H5input::ReadParticles(int rank, int nproc, int i, int *pdims, double *L, MPI_Comm CART_COMM){
+
+  int               ndim = 3; // By default 2D is considered as a 'flat' 3D
+  long long         i_nop;
+  long long         i_beg;
+  std::stringstream sstm;
+
+  /* --------------------------- */
+  /* Allocate the reading arrays */
+  /* --------------------------- */
+
+  i_nop = nops    [i];
+  i_beg = nops_beg[i];
+
+  if (rank==0) {
+    double memsize = 7*i_nop*sizeof(double)*1e-9;
+    if (memsize<1.0) std::cout << "[PHDF5-io]" << " Allocating " << memsize*1e3 << " MB per processor to read " << i_nop << " particles from file" << std::endl;
+    else             std::cout << "[PHDF5-io]" << " Allocating " << memsize << " GB per processor to read " << i_nop << " particles from file" << std::endl;
+  }
+
+  try{
+    i_q = new double[i_nop];
+    i_x = new double[i_nop];
+    i_y = new double[i_nop];
+    i_z = new double[i_nop];
+    i_u = new double[i_nop];
+    i_v = new double[i_nop];
+    i_w = new double[i_nop];
+  }
+  catch(std::bad_alloc& exc)
+  {
+    std::cout << rank << " : Bad allocation of input vectors: " << exc.what() << std::endl;
+  }
+
+  /* ------------------------------------- */
+  /* Read the hyperslabs from the datasets */
+  /* ------------------------------------- */
+
+  if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Found   " << h5npart[i] << " particles in file" << std::endl;
+  if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Reading " << i_nop << " particles in each processor" << std::endl;
+
+  sstm << "q_" << i;
+  std::string dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_q);
+  sstm.str("");
+
+  sstm << "x_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_x);
+  sstm.str("");
+
+  sstm << "y_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_y);
+  sstm.str("");
+
+  sstm << "z_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_z);
+  sstm.str("");
+
+  sstm << "u_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_u);
+  sstm.str("");
+
+  sstm << "v_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_v);
+  sstm.str("");
+
+  sstm << "w_" << i;
+  dtset = sstm.str();
+  ReadPartDataset(pclgroup, dtset, i_nop, i_beg, i_w);
+  sstm.str("");
+
+  if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Sorting particles and distributing among processors: " << std::endl;
+
+  SortParticles(nproc, rank, i, ndim, i_nop, pdims, L, CART_COMM);
+
 }
 
-void H5input::DumpPartclY(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getY(i);
-  part[s].freeY();
+
+void H5input::LoadParticles(long long sizevec, int rank, int nproc, int i, int *pdims, double *L, MPI_Comm CART_COMM,
+                            double *q, double *x, double *y, double *z, 
+                            double *u, double *v, double *w){
+
+  ExchangeParticles(sizevec, nproc, rank, i, nops[i], pdims, L, CART_COMM, q, x, y, z, u, v, w);
+
+  if (rank==0) std::cout << "[PHDF5-io] Species " << i << " Freeing memory " << std::endl;
+
+  delete [] i_q;
+  delete [] i_x;
+  delete [] i_y;
+  delete [] i_z;
+  delete [] i_u;
+  delete [] i_v;
+  delete [] i_w;
+  
 }
 
-void H5input::DumpPartclZ(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getZ(i);
-  part[s].freeZ();
-}
+void H5input::ReadPartDataset(hid_t group, std::string dtset, long long nops, long long nops_beg, double *arr) {
 
-void H5input::DumpPartclU(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getU(i);
-  part[s].freeU();
-}
+  herr_t  status;
+  hid_t   dsetid;
+  hid_t   ds_mem;
+  hid_t   ds_file;
+  hid_t   dxpl;
 
-void H5input::DumpPartclV(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getV(i);
-  part[s].freeV();
-}
+  hsize_t* count  = new hsize_t[1];
+  hsize_t* start  = new hsize_t[1];
+ 
+  count [0] = nops;
+  start [0] = nops_beg;
 
-void H5input::DumpPartclW(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getW(i);
-  part[s].freeW();
-}
+  dsetid  = H5Dopen(group, dtset.c_str(), H5P_DEFAULT);
+  ds_file = H5Dget_space(dsetid);
+  status  = H5Sselect_hyperslab(ds_file, H5S_SELECT_SET, start, NULL, count, NULL);
+  ds_mem  = H5Screate_simple(1, count, NULL);
+  dxpl    = H5Pcreate(H5P_DATASET_XFER);
+  status  = H5Pset_dxpl_mpio(dxpl, H5FD_MPIO_COLLECTIVE);
 
-void H5input::DumpPartclQ(double*& tgt, int s){
-  for (int i=0; i<part[s].getNP(); i++) tgt[i] = part[s].getQ(i);
-  part[s].freeQ();
+  status  = H5Dread(dsetid, H5T_NATIVE_DOUBLE, ds_mem, ds_file, dxpl, arr);
+
+  status  = H5Pclose(dxpl);
+  status  = H5Sclose(ds_file);
+  status  = H5Sclose(ds_mem);
+  status  = H5Dclose(dsetid);
+
+  delete [] count;
+  delete [] start;
 }

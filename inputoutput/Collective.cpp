@@ -8,6 +8,7 @@ void Collective::ReadInput(string inputfile) {
   // Loading the input file 
   ConfigFile config(inputfile);
   // the following variables are ALWAYS taken from inputfile, even if restarting 
+  try {
   {
 
 #ifdef BATSRUS
@@ -352,8 +353,10 @@ void Collective::ReadInput(string inputfile) {
   if (ns > 5)
     TrackParticleID[5] = TrackParticleID0.f;
 
-
-
+  } catch (ConfigFile::key_not_found k) {
+    std::cout << " ERROR: Key not found = " << k.key.c_str() << std::endl;
+    abort();
+  }
 
 }
 /*! Read the collective information from the RESTART file in HDF5 format There are three restart status: restart_status = 0 ---> new inputfile restart_status = 1 ---> RESTART and restart and result directories does not coincide restart_status = 2 ---> RESTART and restart and result directories coincide */
@@ -641,7 +644,7 @@ Collective::Collective(int argc, char **argv) {
 
   for (int i = 0; i < ns; i++) {
     npcel[i] = npcelx[i] * npcely[i] * npcelz[i];
-    np[i] = npcel[i] * nxc * nyc * nzc;
+    np[i] = npcel[i] * (nxc/XLEN) * (nyc/YLEN) * (nzc/ZLEN);
     npMax[i] = (long) (NpMaxNpRatio * np[i]);
   }
 
@@ -680,7 +683,7 @@ void Collective::Print() {
   cout << "---------------------" << endl;
   cout << "Number of species    = " << ns << endl;
   for (int i = 0; i < ns; i++)
-    cout << "Number of particles of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+    cout << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
   cout << "x-Length                 = " << Lx << endl;
   cout << "y-Length                 = " << Ly << endl;
   cout << "z-Length                 = " << Lz << endl;
@@ -739,7 +742,7 @@ void Collective::save() {
 
   my_file << "Number of species    = " << ns << endl;
   for (int i = 0; i < ns; i++)
-    my_file << "Number of particles of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+    my_file << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
   my_file << "---------------------------" << endl;
   my_file << "x-Length                 = " << Lx << endl;
   my_file << "y-Length                 = " << Ly << endl;
