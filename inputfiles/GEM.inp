@@ -77,7 +77,7 @@ vth             = 0.045   0.0063     # Thermal velocity in Y
 wth             = 0.045   0.0063     # Thermal velocity in Z
 u0              = 0.0     0.0        # Drift velocity in X
 v0              = 0.0     0.0        # Drift velocity in Y
-w0              = 0.0     0.0        # Drift velocity in Z
+w0              = 0.00325 -0.01624   # Drift velocity in Z
 
 # %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
 PERIODICX       = 1                  # In direction X (1=true, 0=false)
