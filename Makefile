@@ -78,7 +78,7 @@ SRC = \
  $(IPIC_HOME)/utility/debug.cpp \
  $(IPIC_HOME)/utility/asserts.cpp
 
-ALLOBJ = $(subst .cpp,.o,$(SRC))
+ALL_OBJS = $(subst .cpp,.o,$(SRC))
 
 IPIC3D_EXE = $(IPIC_HOME)/iPic3D
 IPIC3D_LIB = $(IPIC_HOME)/libiPic3Dlib.a
@@ -88,15 +88,15 @@ all : io lib main
 io :
 	CXX=$(CXX) HDF5_HOME=$(HDF5_HOME) H5HUT_HOME=$(H5HUT_HOME) IPIC_FLAGS="$(IPIC_FLAGS)" $(MAKE) -C $(IPIC_HOME)/H5hut-io
 
-lib : $(ALLOBJ)
-	$(AR) sr $(IPIC3D_LIB) $(ALLOBJ)
+lib : $(ALL_OBJS)
+	$(AR) sr $(IPIC3D_LIB) $(ALL_OBJS)
 	ranlib $(IPIC3D_LIB)
 
 main : lib $(IPIC3D_EXE).o
 	$(CXX) $(INC_DIRS) iPic3D.cpp -o $(IPIC3D_EXE) $(IPIC3D_LIB) $(LD_LIBS)
 
 clean : cleanio
-	$(RM) $(ALLOBJ)
+	$(RM) $(ALL_OBJS)
 	$(RM) $(IPIC3D_LIB)
 	$(RM) $(IPIC3D_EXE).o
 	$(RM) $(IPIC3D_EXE)
