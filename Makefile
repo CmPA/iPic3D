@@ -92,7 +92,7 @@ lib : $(ALL_OBJS)
 	$(AR) sr $(IPIC3D_LIB) $(ALL_OBJS)
 	ranlib $(IPIC3D_LIB)
 
-main : lib $(IPIC3D_EXE).o
+main : lib iPic3D.o
 	$(CXX) $(INC_DIRS) iPic3D.o -o $(IPIC3D_EXE) $(IPIC3D_LIB) $(LD_LIBS)
 
 clean : cleanio
