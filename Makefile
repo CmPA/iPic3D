@@ -70,7 +70,7 @@ lib : $(ALLOBJ)
 	$(AR) sr $(IPIC3D_LIB) $(ALLOBJ)
 	ranlib $(IPIC3D_LIB)
 
-main : $(IPIC3D_EXE).o
+main : $(IPIC3D_LIB) $(IPIC3D_EXE).o
 	$(CXX) $(LDFLAGS) -I$(INC_DIR) -I$(INC_HDF5) iPic3D.cpp -o $(IPIC3D_EXE) $(LDLIBS)
 
 clean : cleanio
