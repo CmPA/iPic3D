@@ -101,14 +101,6 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
         else                                  part[i].maxwellian(grid, EMf, vct);
 
-      // TEST
-      //if (col->getCase()=="Dipole") {
-      //  for (int i=0; i < ns; i++){
-      //    part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
-      //  }
-      //}
-      // END TEST
-
     }
   }
 
@@ -374,8 +366,8 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0)     WriteFieldsH5hut(ns, grid, EMf, col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0) WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    if (cycle%(col->getFieldOutputCycle())==0)                                    WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    if (cycle%(col->getParticlesOutputCycle())==0 && cycle!=col->getLast_cycle()) WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
   }
   else
