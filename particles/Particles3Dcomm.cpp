@@ -88,6 +88,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     nop   = initnpmax;
   }
 
+  rhoINIT   = col->getRHOinit(species);
+  rhoINJECT = col->getRHOinject(species);
+
   qom = col->getQOM(species);
   uth = col->getUth(species);
   vth = col->getVth(species);

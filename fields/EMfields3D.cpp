@@ -730,16 +730,11 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
 
 void EMfields3D::ConstantChargeOpenBCv2(Grid * grid, VirtualTopology3D * vct) {
 
-  double ff;
-
   int nx = grid->getNXN();
   int ny = grid->getNYN();
   int nz = grid->getNZN();
 
   for (int is = 0; is < ns; is++) {
-
-    ff = 1.0;
-    if (is == 0) ff = -1.0;
 
     if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==2) {
       for (int j=0; j < ny;j++)
@@ -807,16 +802,13 @@ void EMfields3D::ConstantChargeOpenBCv2(Grid * grid, VirtualTopology3D * vct) {
 
 void EMfields3D::ConstantChargeOpenBC(Grid * grid, VirtualTopology3D * vct) {
 
-  double ff;
-
   int nx = grid->getNXN();
   int ny = grid->getNYN();
   int nz = grid->getNZN();
 
   for (int is = 0; is < ns; is++) {
 
-    ff = 1.0;
-    if (is == 0) ff = -1.0;
+    double ff = (qom[is] / fabs(qom[is]));
 
     if(vct->getXleft_neighbor()==MPI_PROC_NULL && (bcEMfaceXleft ==2)) {
       for (int j=0; j < ny;j++)
@@ -887,10 +879,8 @@ void EMfields3D::ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, doub
   double xd;
   double yd;
   double zd;
-  double ff;
 
   for (int is = 0; is < ns; is++) {
-    ff = (qom[is] / fabs(qom[is]));
     for (int i = 1; i < nxn; i++) {
       for (int j = 1; j < nyn; j++) {
         for (int k = 1; k < nzn; k++) {
@@ -900,7 +890,7 @@ void EMfields3D::ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, doub
           zd = fabs(grid->getZN(i,j,k) - z_center) - dz;
 
           if ((xd*xd+yd*yd+zd*zd) < R*R) {
-            rhons[is][i][j][k] = ff * rhoINJECT[is] / FourPI;
+            rhons[is][i][j][k] = (qom[is] / fabs(qom[is])) * rhoINJECT[is] / FourPI;
           }
 
         }
@@ -2168,16 +2158,17 @@ void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col,
 
 void EMfields3D::UpdateFext(int cycle){
 
-  double t_beg = 1.0;
-  double t_end = 1000.0;
-  double Fmin  = 0.75;
+  double t_beg = 500.0;
+  double t_end = 3000.0;
+  double Fmin  = 0.02;
   double Fmax  = 1.0;
 
   double m     = (Fmax - Fmin) / (t_end - t_beg);
   double b     = Fmax - m*t_end;
 
-  Fext = m * cycle + b;
+  //Fext = m * cycle + b;
 
+  if (cycle%int((t_end-t_beg)/9) == 0) Fext += (Fmax-Fmin)/10.0;
   if (cycle < t_beg) Fext = Fmin;
   if (cycle > t_end) Fext = Fmax;
 
@@ -2404,14 +2395,14 @@ void EMfields3D::SetLambda(Grid *grid){
         double y = grid->getYN(i,j,k);
         double z = grid->getZN(i,j,k);
 
-        double xmin_r = Lx - 50.0 * dx;
-        double xmax_r = Lx - 5.0  * dx;
+        double xmin_r = Lx - 75.0 * dx;
+        double xmax_r = Lx - 25.0  * dx;
 
         Lambda[i][j][k] = 0.0;
 
         if (x > xmin_r) {
-          if (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * 2.0 * M_PI / dx;
-          else            Lambda[i][j][k] = 2.0 * M_PI / dx;
+          if (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * 4.0 * M_PI / dx;
+          else            Lambda[i][j][k] = 4.0 * M_PI / dx;
         }
 
       }

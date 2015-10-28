@@ -227,6 +227,12 @@ protected:
   int nVar;
   /** Charge array */
   double *q;
+
+  /** Initial charge density */
+  double rhoINIT;
+  /** Injection charge density */
+  double rhoINJECT;
+
   /** Simulation domain lengths */
   double xstart, xend, ystart, yend, zstart, zend, invVOL;
   /** time step */
