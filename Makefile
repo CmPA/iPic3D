@@ -12,22 +12,22 @@ IPIC_HOME   = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 CXX         = mpicxx
 
-# Comment these lines if you do not want to use the HFD5 library:
-IPIC_FLAGS  += -DPARALLEL_IO
-HDF5_LIBS   += -lhdf5 -lhdf5_hl
+# Uncomment these lines if you want to use the HFD5 library:
+#IPIC_FLAGS  += -DPARALLEL_IO
+#HDF5_LIBS   += -lhdf5 -lhdf5_hl
 
-# If you have installed HDF5 manually in a non-default location,
-# please uncomment this block and set the location in "HDF5_HOME":
+# If you have installed HDF5 manually in a non-default location, please
+# uncomment this block and set the location in "HDF5_HOME", if necessary:
 #HDF5_HOME   += /usr/local/hdf5/1.8.11-par
 #HDF5_INCS   += -I$(HDF5_HOME)/include
 #HDF5_LIBS   += -L$(HDF5_HOME)/lib
 
-# Comment these lines if you do not want to use the H5HUT library:
-IPIC_FLAGS  += -DUSEH5HUT
-H5HUT_LIBS  += -lH5hut
+# Uncomment these lines if you want to use the H5HUT library:
+#IPIC_FLAGS  += -DUSEH5HUT
+#H5HUT_LIBS  += -lH5hut
 
-# If you have installed H5HUT manually in a non-default location,
-# please uncomment this block and set the location in "H5HUT_HOME":
+# If you have installed H5HUT manually in a non-default location, please
+# uncomment this block and set the location in "H5HUT_HOME", if necessary:
 #H5HUT_HOME  += /usr/local/H5hut/1.99.12
 #H5HUT_INCS  += -I$(H5HUT_HOME)/include
 #H5HUT_LIBS  += -L$(H5HUT_HOME)/lib
