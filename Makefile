@@ -106,5 +106,5 @@ cleanio :
 
 %.o : %.cpp
 	echo " Compiling " $@
-	$(CXX) $(OPTIM) "$(IPIC_FLAGS)" $(INC_DIRS) -c $< -o $@
+	$(CXX) $(OPTIM) $(IPIC_FLAGS) $(INC_DIRS) -c $< -o $@
 
