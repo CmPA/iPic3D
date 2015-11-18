@@ -12,9 +12,8 @@ IPIC_HOME   = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 CXX         = mpicxx
 
-# Uncomment these lines if you want to use the HFD5 library:
+# Uncomment this line if you want to use the parallel HFD5 library:
 #IPIC_FLAGS  += -DPARALLEL_IO
-#HDF5_LIBS   += -lhdf5 -lhdf5_hl
 
 # If you have installed HDF5 manually in a non-default location, please
 # uncomment this block and set the location in "HDF5_HOME", if necessary:
@@ -36,13 +35,19 @@ CXX         = mpicxx
 ## END OF USER-DEFINED SECTION
 ##
 
+# Some HDF5 library is mandatory, be it the sequential or parallel one:
+HDF5_LIBS   += -lhdf5 -lhdf5_hl
+
+# Optimization level:
 OPTIM       += -O3
 OPTIM       += -march=native
 
+# Include directories:
 INC_DIRS    += -I./include
 INC_DIRS    += $(HDF5_INCS)
 INC_DIRS    += $(H5HUT_INCS)
 
+# Additional libararies:
 LD_LIBS     += -ldl
 LD_LIBS     += $(HDF5_LIBS)
 LD_LIBS     += $(H5HUT_LIBS)
@@ -51,32 +56,32 @@ LD_LIBS     += $(H5HUT_LIBS)
 .SUFFIXES: .cpp .o .h
 
 SRC = \
- $(IPIC_HOME)/grids/Grid3DCU.cpp \
- $(IPIC_HOME)/fields/BCStructure.cpp \
- $(IPIC_HOME)/fields/EMfields3D.cpp \
- $(IPIC_HOME)/inputoutput/phdf5.cpp \
- $(IPIC_HOME)/inputoutput/Restart3D.cpp \
- $(IPIC_HOME)/inputoutput/ParallelIO.cpp \
- $(IPIC_HOME)/inputoutput/Collective.cpp \
- $(IPIC_HOME)/performances/Timing.cpp \
- $(IPIC_HOME)/PSKOutput3D/PSKhdf5adaptor.cpp \
- $(IPIC_HOME)/bc/BcParticles.cpp \
- $(IPIC_HOME)/bc/BcFields3D.cpp \
- $(IPIC_HOME)/mathlib/EllipticF.cpp \
- $(IPIC_HOME)/solvers/CG.cpp \
- $(IPIC_HOME)/solvers/GMRES.cpp \
- $(IPIC_HOME)/ConfigFile/src/ConfigFile.cpp \
- $(IPIC_HOME)/main/iPic3Dlib.cpp \
- $(IPIC_HOME)/particles/Particles3Dcomm.cpp \
- $(IPIC_HOME)/particles/Particles3D.cpp \
- $(IPIC_HOME)/communication/ComNodes3D.cpp \
- $(IPIC_HOME)/communication/ComParser3D.cpp \
- $(IPIC_HOME)/communication/ComInterpNodes3D.cpp \
- $(IPIC_HOME)/communication/ComParticles3D.cpp \
- $(IPIC_HOME)/communication/ComBasic3D.cpp \
- $(IPIC_HOME)/communication/VCtopology3D.cpp \
- $(IPIC_HOME)/utility/debug.cpp \
- $(IPIC_HOME)/utility/asserts.cpp
+	$(IPIC_HOME)/grids/Grid3DCU.cpp \
+	$(IPIC_HOME)/fields/BCStructure.cpp \
+	$(IPIC_HOME)/fields/EMfields3D.cpp \
+	$(IPIC_HOME)/inputoutput/phdf5.cpp \
+	$(IPIC_HOME)/inputoutput/Restart3D.cpp \
+	$(IPIC_HOME)/inputoutput/ParallelIO.cpp \
+	$(IPIC_HOME)/inputoutput/Collective.cpp \
+	$(IPIC_HOME)/performances/Timing.cpp \
+	$(IPIC_HOME)/PSKOutput3D/PSKhdf5adaptor.cpp \
+	$(IPIC_HOME)/bc/BcParticles.cpp \
+	$(IPIC_HOME)/bc/BcFields3D.cpp \
+	$(IPIC_HOME)/mathlib/EllipticF.cpp \
+	$(IPIC_HOME)/solvers/CG.cpp \
+	$(IPIC_HOME)/solvers/GMRES.cpp \
+	$(IPIC_HOME)/ConfigFile/src/ConfigFile.cpp \
+	$(IPIC_HOME)/main/iPic3Dlib.cpp \
+	$(IPIC_HOME)/particles/Particles3Dcomm.cpp \
+	$(IPIC_HOME)/particles/Particles3D.cpp \
+	$(IPIC_HOME)/communication/ComNodes3D.cpp \
+	$(IPIC_HOME)/communication/ComParser3D.cpp \
+	$(IPIC_HOME)/communication/ComInterpNodes3D.cpp \
+	$(IPIC_HOME)/communication/ComParticles3D.cpp \
+	$(IPIC_HOME)/communication/ComBasic3D.cpp \
+	$(IPIC_HOME)/communication/VCtopology3D.cpp \
+	$(IPIC_HOME)/utility/debug.cpp \
+	$(IPIC_HOME)/utility/asserts.cpp
 
 ALL_OBJS = $(subst .cpp,.o,$(SRC))
 
