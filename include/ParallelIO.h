@@ -25,7 +25,7 @@ void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *co
 void WritePartclH5hut(int nspec, Grid3DCU *grid, Particles3Dcomm *part, Collective *col, VCtopology3D *vct, int cycle);
 
 void ReadPartclH5hut(int nspec, Particles3Dcomm *part, Collective *col, VCtopology3D *vct, Grid3DCU *grid);
-void ReadFieldsH5hut(int nspec, EMfields3D *EMf,       Collective *col, VCtopology3D *vct, Grid3DCU *grid);
+void ReadFieldsH5hut(int nspec, bool readext, EMfields3D *EMf,       Collective *col, VCtopology3D *vct, Grid3DCU *grid);
 
 void WriteOutputParallel(Grid3DCU *grid, EMfields3D *EMf, Particles3Dcomm *part, Collective *col, VCtopology3D *vct, int cycle);
 

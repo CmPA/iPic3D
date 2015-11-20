@@ -94,7 +94,7 @@ namespace iPic3D {
     return (first_cycle);
   }
   inline int c_Solver::LastCycle() {
-    return (col->getNcycles() + first_cycle);
+    return (col->getNcycles() + first_cycle-1);
   }
   inline int c_Solver::get_myrank() {
     return (myrank);

@@ -57,7 +57,7 @@ int c_Solver::Init(int argc, char **argv) {
     /* -------------------------------------------- */
     /* If using parallel H5hut IO read initial file */
     /* -------------------------------------------- */
-    ReadFieldsH5hut(ns, EMf, col, vct, grid);
+    ReadFieldsH5hut(ns, false, EMf, col, vct, grid);
 
   }
   else {
@@ -85,8 +85,16 @@ int c_Solver::Init(int argc, char **argv) {
 
   // Allocation of particles
   part = new Particles3D[ns];
-  if (col->getSolInit() && col->getPartInit()=="File") {
-    ReadPartclH5hut(ns, part, col, vct, grid);
+  if (col->getSolInit()) {
+    if (col->getPartInit()=="File") ReadPartclH5hut(ns, part, col, vct, grid);
+    else {
+      if (myrank==0) cout << "WARNING: Particle drift velocity from ExB " << endl;
+      for (int i = 0; i < ns; i++){
+        part[i].allocate(i, 0, col, vct, grid);
+        if (col->getPartInit()=="EixB") part[i].MaxwellianFromFields(grid, EMf, vct);
+        else                            part[i].maxwellian(grid, EMf, vct);
+      }
+    }
   }
   else {
     for (int i = 0; i < ns; i++)
@@ -198,6 +206,13 @@ void c_Solver::UpdateCycleInfo(int cycle) {
 
   EMf->UpdateFext(cycle);
   if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
+  if (cycle == first_cycle) {
+    if (col->getCase()=="Dipole") {
+      EMf->SetDipole_2Bext(vct,grid,col);
+      EMf->SetLambda(grid);
+    }
+  }
+
 
 }
 
@@ -270,15 +285,6 @@ bool c_Solver::ParticlesMover() {
     return (true);              // exit from the time loop
   }
 
-  /* --------------------------------------- */
-  /* Remove particles from depopulation area */
-  /* --------------------------------------- */
-
-  if (col->getCase()=="Dipole") {
-    for (int i=0; i < ns; i++)
-      Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
-  }
-
   return (false);
 
 }
@@ -286,8 +292,20 @@ bool c_Solver::ParticlesMover() {
 void c_Solver::InjectBoundaryParticles(){
 
   for (int i=0; i < ns; i++) {
-    if (col->getRHOinject(i)>0.0)
+    if (col->getRHOinject(i)>0.0){
+
       mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+
+      /* --------------------------------------- */
+      /* Remove particles from depopulation area */
+      /* --------------------------------------- */
+
+      if (col->getCase()=="Dipole") {
+        for (int i=0; i < ns; i++)
+          Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+
+      }
+    }
   }
 
 }
@@ -298,20 +316,6 @@ void c_Solver::WriteRestart(int cycle) {
     if (col->getWriteMethod() != "h5hut") {
       // without ,0 add to restart file
       writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0);
-    }
-  }
-
-  // Insert the planet in the simulation at cycle 200
-  //if (cycle == 200) {
-  //  if (col->getCase()=="Dipole") {
-  //    EMf->initDipole_2(vct,grid,col);
-  //  }
-  //}
-
-  if (cycle == first_cycle) {
-    if (col->getCase()=="Dipole") {
-      EMf->SetDipole_2Bext(vct,grid,col);
-      EMf->SetLambda(grid);
     }
   }
 
@@ -366,8 +370,9 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0)                                    WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0 && cycle!=col->getLast_cycle()) WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    if (cycle%(col->getParticlesOutputCycle())==0 &&
+        cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
   }
   else

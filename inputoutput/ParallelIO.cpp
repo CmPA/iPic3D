@@ -285,7 +285,7 @@ void ReadPartclH5hut(int nspec, Particles3Dcomm *part, Collective *col, VCtopolo
 #endif
 }
 
-void ReadFieldsH5hut(int nspec, EMfields3D *EMf, Collective *col, VCtopology3D *vct, Grid3DCU *grid){
+void ReadFieldsH5hut(int nspec, bool readext, EMfields3D *EMf, Collective *col, VCtopology3D *vct, Grid3DCU *grid){
 #ifdef USEH5HUT
 
   H5input infile;
@@ -305,6 +305,12 @@ void ReadFieldsH5hut(int nspec, EMfields3D *EMf, Collective *col, VCtopology3D *
   infile.ReadFields(EMf->getBx(), "Bx", grid->getNXN(), grid->getNYN(), grid->getNZN());
   infile.ReadFields(EMf->getBy(), "By", grid->getNXN(), grid->getNYN(), grid->getNZN());
   infile.ReadFields(EMf->getBz(), "Bz", grid->getNXN(), grid->getNYN(), grid->getNZN());
+
+  if (readext) {
+    infile.ReadFields(EMf->getBx_ext(), "Btx", grid->getNXN(), grid->getNYN(), grid->getNZN());
+    infile.ReadFields(EMf->getBy_ext(), "Bty", grid->getNXN(), grid->getNYN(), grid->getNZN());
+    infile.ReadFields(EMf->getBz_ext(), "Btz", grid->getNXN(), grid->getNYN(), grid->getNZN());
+  }
 
   for (int is = 0; is < nspec; is++){
     std::stringstream  ss;
@@ -327,15 +333,11 @@ void ReadFieldsH5hut(int nspec, EMfields3D *EMf, Collective *col, VCtopology3D *
   grid->interpN2C(EMf->getByc(), EMf->getBy());
   grid->interpN2C(EMf->getBzc(), EMf->getBz());
 
-  // Comm ghost cells for B-field
-  communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx(), col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
-  communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy(), col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
-  communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz(), col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   // communicate E
-  communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx(), col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
-  communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy(), col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
-  communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz(), col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+  communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx(), col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+  communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy(), col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+  communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz(), col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
   for (int is = 0; is < nspec; is++)
     grid->interpN2C(EMf->getRHOcs(), is, EMf->getRHOns());

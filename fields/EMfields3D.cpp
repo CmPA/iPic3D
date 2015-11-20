@@ -2160,7 +2160,7 @@ void EMfields3D::UpdateFext(int cycle){
 
   double t_beg = 500.0;
   double t_end = 3000.0;
-  double Fmin  = 0.02;
+  double Fmin  = 1.0;
   double Fmax  = 1.0;
 
   double m     = (Fmax - Fmin) / (t_end - t_beg);
@@ -2912,13 +2912,22 @@ void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *
       for (int j=0; j<nyn;j++)
         for (int k=0; k<nzn;k++){
 
-          double Bxb = B0x;
-          double Byb = B0y;
-          double Bzb = B0z;
+          double Bxb = Bxn[i][j][k];
+          double Byb = Byn[i][j][k];
+          double Bzb = Bzn[i][j][k];
+          double Exb = w_0*Byb-v_0*Bzb;
+          double Eyb = u_0*Bzb-w_0*Bxb;
+          double Ezb = v_0*Bxb-u_0*Byb;
+          //double Bxb = 0.0;
+          //double Byb = 0.0;
+          //double Bzb = 0.0;
+          //double Exb = 0.0;
+          //double Eyb = 0.0;
+          //double Ezb = 0.0;
 
-          injFieldsLeft->ExITemp[i][j][k]=w_0*Byb-v_0*Bzb;
-          injFieldsLeft->EyITemp[i][j][k]=u_0*Bzb-w_0*Bxb;
-          injFieldsLeft->EzITemp[i][j][k]=v_0*Bxb-u_0*Byb;
+          injFieldsLeft->ExITemp[i][j][k]=Exb;
+          injFieldsLeft->EyITemp[i][j][k]=Eyb;
+          injFieldsLeft->EzITemp[i][j][k]=Ezb;
 
           injFieldsLeft->BxITemp[i][j][k]=Bxb;
           injFieldsLeft->ByITemp[i][j][k]=Byb;
@@ -2932,18 +2941,18 @@ void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *
       for (int j=0; j<nyn; j++)
         for (int k=0; k<nzn; k++){
 
-          //double Bxb = Bxn[i][j][k];
-          //double Byb = Byn[i][j][k];
-          //double Bzb = Bzn[i][j][k];
-          //double Exb = w_0*Byb-v_0*Bzb;
-          //double Eyb = u_0*Bzb-w_0*Bxb;
-          //double Ezb = v_0*Bxb-u_0*Byb;
-          double Bxb = 0.0;
-          double Byb = 0.0;
-          double Bzb = 0.0;
-          double Exb = 0.0;
-          double Eyb = 0.0;
-          double Ezb = 0.0;
+          double Bxb = B0x;
+          double Byb = B0y;
+          double Bzb = B0z;
+          double Exb = w_0*Byb-v_0*Bzb;
+          double Eyb = u_0*Bzb-w_0*Bxb;
+          double Ezb = v_0*Bxb-u_0*Byb;
+          //double Bxb = 0.0;
+          //double Byb = 0.0;
+          //double Bzb = 0.0;
+          //double Exb = 0.0;
+          //double Eyb = 0.0;
+          //double Ezb = 0.0;
 
           injFieldsRight->ExITemp[i][j][k]=Exb;
           injFieldsRight->EyITemp[i][j][k]=Eyb;
@@ -3336,6 +3345,10 @@ double ***EMfields3D::getBx() {
   return (Bxn);
 }
 /*! get Magnetic Field component X array cell without the ghost cells */
+double EMfields3D::getBxc(int i, int j, int k) {
+  return (Bxc[i][j][k]);
+}
+/*! get Magnetic Field component X array cell without the ghost cells */
 double ***EMfields3D::getBxc() {
   return (Bxc);
 }
@@ -3348,6 +3361,10 @@ double ***EMfields3D::getBy() {
   return (Byn);
 }
 /*! get Magnetic Field component Y array cell without the ghost cells */
+double EMfields3D::getByc(int i, int j, int k) {
+  return (Byc[i][j][k]);
+}
+/*! get Magnetic Field component Y array cell without the ghost cells */
 double ***EMfields3D::getByc() {
   return (Byc);
 }
@@ -3358,6 +3375,10 @@ double &EMfields3D::getBz(int indexX, int indexY, int indexZ) const {
 /*! get Magnetic Field component Z array */
 double ***EMfields3D::getBz() {
   return (Bzn);
+}
+/*! get Magnetic Field component Z array cell without the ghost cells */
+double EMfields3D::getBzc(int i, int j, int k) {
+  return (Bzc[i][j][k]);
 }
 /*! get Magnetic Field component Z array cell without the ghost cells */
 double ***EMfields3D::getBzc() {
