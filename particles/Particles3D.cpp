@@ -782,6 +782,7 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
 /** relativistic mover with a Predictor-Corrector scheme */
 int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+  cout << "*** Relativistic mover not implemented! ***" << endl;
   return (0);
 }
 
