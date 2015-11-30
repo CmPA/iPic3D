@@ -326,24 +326,25 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   sum(tempY, temp2Y, nxn, nyn, nzn);
   sum(tempZ, temp2Z, nxn, nyn, nzn);
 
-  // Boundary condition in the known term
-  // boundary condition: Xleft
-  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
+  // Boundary conditions (in the known term):
+  // 0 = perfect conductor
+  // Xleft
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)
     perfectConductorLeftS(tempX, tempY, tempZ, 0);
-  // boundary condition: Xright
-  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)  // perfect conductor
+  // Xright
+  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)
     perfectConductorRightS(tempX, tempY, tempZ, 0);
-  // boundary condition: Yleft
-  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)  // perfect conductor
+  // Yleft
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)
     perfectConductorLeftS(tempX, tempY, tempZ, 1);
-  // boundary condition: Yright
-  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)  // perfect conductor
+  // Yright
+  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)
     perfectConductorRightS(tempX, tempY, tempZ, 1);
-  // boundary condition: Zleft
-  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)  // perfect conductor
+  // Zleft
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)
     perfectConductorLeftS(tempX, tempY, tempZ, 2);
-  // boundary condition: Zright
-  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
+  // Zright
+  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)
     perfectConductorRightS(tempX, tempY, tempZ, 2);
 
   // physical space -> Krylov space
@@ -403,23 +404,25 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sumscalprod(imageY, delt, vectY, Lambda, nxn, nyn, nzn);
   sumscalprod(imageZ, delt, vectZ, Lambda, nxn, nyn, nzn);
 
-  // boundary condition: Xleft
-  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
+  // boundary conditions:
+  // 0 = perfect conductor
+  // Xleft
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
-  // boundary condition: Xright
-  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)  // perfect conductor
+  // Xright
+  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)
     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
-  // boundary condition: Yleft
-  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)  // perfect conductor
+  // Yleft
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid);
-  // boundary condition: Yright
-  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)  // perfect conductor
+  // Yright
+  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)
     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid);
-  // boundary condition: Zleft
-  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)  // perfect conductor
+  // Zleft
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid);
-  // boundary condition: Zright
-  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
+  // Zright
+  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)
     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid);
 
   // OpenBC
@@ -427,7 +430,6 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 
   // move from physical space to krylov space
   phys2solver(im, imageX, imageY, imageZ, nxn, nyn, nzn);
-
 
 }
 
