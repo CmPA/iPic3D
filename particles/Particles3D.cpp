@@ -592,7 +592,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       Ezl += weight101 * Ez[ix - 1][iy][iz - 1];
       Ezl += weight110 * Ez[ix - 1][iy - 1][iz];
       Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
-
       // end interpolation
 
       // prepare shortcuts
@@ -725,8 +724,9 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
         get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
         get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
         get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
-
         // end interpolation
+
+        // prepare shortcuts
         const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
         const double denom = 1.0 / (1.0 + omdtsq);
         // solve the position equation
