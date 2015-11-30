@@ -1014,7 +1014,7 @@ void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, double E
 }
 
 
-/*! Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
+/*! Calculate hat of rho, Jx, Jy, Jz */
 void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
   // smoothing
   smooth(Smooth, rhoc, 0, grid, vct);
@@ -1051,7 +1051,7 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
   scale(tempXC, -dt * th, nxc, nyc, nzc);
   sum(tempXC, rhoc, nxc, nyc, nzc);
   eq(rhoh, tempXC, nxc, nyc, nzc);
-  // communicate rhoh
+  // communicate rho hat
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
 }
 /*! Image of Poisson Solver */
