@@ -742,7 +742,8 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
         xp = xptilde + uptilde * dto2;
         yp = yptilde + vptilde * dto2;
         zp = zptilde + wptilde * dto2;
-      }                           // end of iteration
+        // end of iteration
+      }
       // update the final position and velocity
       up = 2.0 * uptilde - u[rest];
       vp = 2.0 * vptilde - v[rest];
