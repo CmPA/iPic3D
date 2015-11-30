@@ -2193,9 +2193,9 @@ void EMfields3D::UpdateFadeFactor(int cycle){
     fadeFactor = 0.0;
   } else {
     // smooth quintic step function
-    double width = 0.5 * (t_fade_end - t_fade_begin)
-    double xi = (cycle - t_fade_begin - width) / width
-    faceFactor = 0.5 + xi * (0.9375 + (xi*xi) * (-0.625 + (xi*xi) * 0.1875))
+    double width = 0.5 * (t_fade_end - t_fade_begin);
+    double xi = (cycle - t_fade_begin - width) / width;
+    faceFactor = 0.5 + xi * (0.9375 + (xi*xi) * (-0.625 + (xi*xi) * 0.1875));
     if (myrank == 0) cout << " fading in: factor = " << faceFactor << endl;
   }
 }
