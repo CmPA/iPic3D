@@ -1,5 +1,5 @@
 /*******************************************************************************************
-  Particles3Dcomm.cpp  -  Class for particles of the same species, in a 2D space and 3component velocity
+  Particles3Dcomm.cpp  -  Class for communication of particles of the same species in 3D
   -------------------
 developers: Stefano Markidis, Giovanni Lapenta.
  ********************************************************************************************/
@@ -37,7 +37,7 @@ using std::endl;
 #define MIN_VAL   1E-32
 /**
  * 
- * Class for particles of the same species, in a 2D space and 3component velocity
+ * Class for communication of particles of the same species in 3D
  * @date Fri Jun 4 2007
  * @author Stefano Markidis, Giovanni Lapenta
  * @version 2.0
@@ -918,10 +918,10 @@ int Particles3Dcomm::unbuffer(double *b_) {
   }
   return (0);                   // everything was fine
 }
-/** Delete the a particle from the array and pack the the array, update the number of 
- * particles that are exiting
- * For deleting the particle from the array take the last particle and put it
- * in the position of the particle you want to delete
+/** Delete the a particle from the array and pack the array,
+ * update the number of particles that are exiting.
+ * For deleting the particle from the array take the last particle and
+ * put it in the position of the particle you want to delete.
  * @param np = the index of the particle that must be deleted
  * @param nplast = the index of the last particle in the array
  */
