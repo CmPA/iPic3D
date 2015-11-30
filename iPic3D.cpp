@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
   /* 1- Main loop */
   /* ------------ */
 
-  for (int i = KCode.FirstCycle(); i < KCode.LastCycle(); i++) {
+  for (int i = KCode.FirstCycle(); i <= KCode.LastCycle(); i++) {
 
     if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
 
@@ -37,10 +37,7 @@ int main(int argc, char **argv) {
 
     if (!b_err) KCode.CalculateBField();
     if (!b_err) KCode.GatherMoments();
-
-    if (b_err) {
-      i = KCode.LastCycle() + 1;
-    }
+    if ( b_err) i = KCode.LastCycle() + 1;
 
     /* --------------- */
     /* 3- Output files */

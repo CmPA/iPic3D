@@ -322,17 +322,23 @@ class EMfields3D                // :public Field
     /*! get Magnetic field X component array */
     double ***getBx();
     /*! get Magnetic field X component cell array without the ghost cells */
+    double getBxc(int i, int j, int k);
+    /*! get Magnetic field X component cell array without the ghost cells */
     double ***getBxc();
     /*! get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
     double &getBy(int indexX, int indexY, int indexZ) const;
     /*! get Magnetic field Y component array */
     double ***getBy();
     /*! get Magnetic field Y component cell array without the ghost cells */
+    double getByc(int i, int j, int k);
+    /*! get Magnetic field Y component cell array without the ghost cells */
     double ***getByc();
     /*! get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
     double &getBz(int indexX, int indexY, int indexZ) const;
     /*! get Magnetic field Z component array */
     double ***getBz();
+    /*! get Magnetic field Z component cell array without the ghost cells */
+    double getBzc(int i, int j, int k);
     /*! get Magnetic field Z component cell array without the ghost cells */
     double ***getBzc();
     /*! get density on cell(indexX,indexY,indexZ) */
