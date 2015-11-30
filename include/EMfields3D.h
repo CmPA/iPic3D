@@ -384,6 +384,9 @@ class EMfields3D                // :public Field
     void UpdateFext(int cycle);
     double getFext();
 
+    void UpdateFadeFactor(int cycle);
+    double getFadeFactor();
+
     /*! get pressure tensor XX for species */
     double ****getpXXsn();
     /*! get pressure tensor XY for species */
@@ -606,6 +609,7 @@ class EMfields3D                // :public Field
     double***  Jz_ext;
 
     double Fext;
+    double fadeFactor;
 
     /*! SPECIES: pressure tensor component-XX, defined on nodes */
     double ****pXXsn;

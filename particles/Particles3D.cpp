@@ -448,6 +448,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
   double Fext = EMf->getFext();
+  double fade = getFadeFactor();
 
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
@@ -596,7 +597,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
       // prepare shortcuts
       const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
-      const double denom = 1.0 / (1.0 + omdtsq);
+      const double denom = fade / (1.0 + omdtsq);
       // solve the position equation
       const double ut = up + qomdt2 * Exl;
       const double vt = vp + qomdt2 * Eyl;
@@ -666,6 +667,7 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
   double Fext = EMf->getFext();
+  double fade = getFadeFactor();
 
   // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   // don't bother trying to push any particles simultaneously;
@@ -728,7 +730,7 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
         // prepare shortcuts
         const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
-        const double denom = 1.0 / (1.0 + omdtsq);
+        const double denom = fade / (1.0 + omdtsq);
         // solve the position equation
         const double ut = up + qomdt2 * Exl;
         const double vt = vp + qomdt2 * Eyl;

@@ -35,6 +35,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   L_square = col->getL_square();
 
   Fext = 0.0;
+  fadeFactor = 0.0;
 
   delt = c * th * dt;
   PoissonCorrection = false;
@@ -2176,6 +2177,29 @@ void EMfields3D::UpdateFext(int cycle){
 
 double EMfields3D::getFext(){
   return (Fext);
+}
+
+/*! Time-dependent fading-in factor that goes smoothly from 0 to 1. */
+void EMfields3D::UpdateFadeFactor(int cycle){
+
+  double t_fade_begin = 50.0;
+  double t_fade_end = 500.0;
+
+  if (cycle >= t_fade_end) {
+    fadeFactor = 1.0;
+  } else if (cycle <= t_fade_begin) {
+    fadeFactor = 0.0;
+  } else {
+    // smooth quintic step function
+    double width = 0.5 * (t_fade_end - t_fade_begin)
+    double xi = (cycle - t_fade_begin - width) / width
+    faceFactor = 0.5 + xi * (0.9375 + (xi*xi) * (-0.625 + (xi*xi) * 0.1875))
+    if (myrank == 0) cout << " fading in: factor = " << faceFactor << endl;
+  }
+}
+
+double EMfields3D::getFadeFactor(){
+  return (fadeFactor);
 }
 
 void EMfields3D::SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col){
