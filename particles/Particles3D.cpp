@@ -358,7 +358,6 @@ void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky, double
 /** explicit mover */
 void Particles3D::mover_explicit(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // to be implemented
-
 }
 
 void Particles3D::get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]) {
@@ -645,7 +644,8 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     MPI_Barrier(MPI_COMM_WORLD);
   }
   // timeTasks.addto_communicate();
-  return (0);                   // exit succcesfully (hopefully) 
+  // return with succcess
+  return (0);
 }
 
 /** mover with a Predictor-Corrector scheme */
@@ -700,8 +700,6 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     int iy;
     int iz;
 
-    // BEGIN OF SUBCYCLING LOOP
-
     get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
     get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
 
@@ -715,6 +713,7 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     
     // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
 
+    // BEGIN OF SUBCYCLING LOOP
     for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
 
       // calculate the average velocity iteratively
@@ -757,8 +756,10 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
       u[rest] = up;
       v[rest] = vp;
       w[rest] = wp;
-    } // END  OF SUBCYCLING LOOP
-  }                             // END OF ALL THE PARTICLES
+    }
+    // END OF SUBCYCLING LOOP
+  }
+  // END OF ALL THE PARTICLES
 
   // ********************//
   // COMMUNICATION 
@@ -775,7 +776,7 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     MPI_Barrier(MPI_COMM_WORLD);
   }
   // timeTasks.addto_communicate();
-  // return with succces
+  // return with succcess
   return (0);
 }
 
@@ -1166,8 +1167,8 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
     if (avail < 0) return(-1);
     MPI_Barrier(MPI_COMM_WORLD);
   }
-
-  return(0); // exit succcesfully (hopefully)
+  // return with succcess
+  return(0);
 }
 
 /** interpolation Particle->Grid only for pressure tensor */
