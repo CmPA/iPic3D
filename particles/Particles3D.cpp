@@ -595,6 +595,8 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
 
       // end interpolation
+
+      // prepare shortcuts
       const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
       const double denom = 1.0 / (1.0 + omdtsq);
       // solve the position equation
