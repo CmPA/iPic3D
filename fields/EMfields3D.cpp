@@ -2182,7 +2182,7 @@ double EMfields3D::getFext(){
 }
 
 /*! Time-dependent fading-in factor that goes smoothly from 0 to 1. */
-void EMfields3D::UpdateFadeFactor(int cycle){
+void EMfields3D::UpdateFadeFactor(int cycle, int myrank){
 
   double t_fade_begin = 50.0;
   double t_fade_end = 500.0;
@@ -2195,8 +2195,8 @@ void EMfields3D::UpdateFadeFactor(int cycle){
     // smooth quintic step function
     double width = 0.5 * (t_fade_end - t_fade_begin);
     double xi = (cycle - t_fade_begin - width) / width;
-    faceFactor = 0.5 + xi * (0.9375 + (xi*xi) * (-0.625 + (xi*xi) * 0.1875));
-    if (myrank == 0) cout << " fading in: factor = " << faceFactor << endl;
+    fadeFactor = 0.5 + xi * (0.9375 + (xi*xi) * (-0.625 + (xi*xi) * 0.1875));
+    if (myrank == 0) cout << " fading in: factor = " << fadeFactor << endl;
   }
 }
 

@@ -384,7 +384,7 @@ class EMfields3D                // :public Field
     void UpdateFext(int cycle);
     double getFext();
 
-    void UpdateFadeFactor(int cycle);
+    void UpdateFadeFactor(int cycle, int myrank);
     double getFadeFactor();
 
     /*! get pressure tensor XX for species */

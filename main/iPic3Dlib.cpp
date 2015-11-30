@@ -205,7 +205,7 @@ void c_Solver::GatherMoments(){
 void c_Solver::UpdateCycleInfo(int cycle) {
 
   EMf->UpdateFext(cycle);
-  EMf->UpdateFadeFactor(cycle);
+  EMf->UpdateFadeFactor(cycle, myrank);
   if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
   if (cycle == first_cycle) {
     if (col->getCase()=="Dipole") {
