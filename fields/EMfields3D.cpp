@@ -281,6 +281,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
+//  if (Case=="GEMOriginal")       fixBgem(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:
@@ -923,6 +924,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
+//  if (Case=="GEMOriginal")       fixBgem(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:
@@ -1653,7 +1655,7 @@ void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collectiv
     // initialize
     if (vct->getCartesian_rank() == 0) {
       cout << "------------------------------------------" << endl;
-      cout << "Initialize GEM Challenge with Pertubation" << endl;
+      cout << "Initialize Original GEM Challenge with Pertubation" << endl;
       cout << "------------------------------------------" << endl;
       cout << "B0x                              = " << B0x << endl;
       cout << "B0y                              = " << B0y << endl;
