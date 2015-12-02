@@ -2752,7 +2752,7 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
       for (int i=1; i <  nxn-1;i++)
         for (int j=1; j <  nyn-1;j++){
           imageX[i][j][1] = vectorX[i][j][1];
-          imageY[i][j][1] = vectorX[i][j][1];
+          imageY[i][j][1] = vectorY[i][j][1];
           imageZ[i][j][1] = vectorZ[i][j][1] - (Ez[i][j][1] - susxz[i][j]*vectorX[i][j][1] - susyz[i][j]*vectorY[i][j][1] - Jzh[i][j][1]*dt*th*FourPI)/suszz[i][j];
         }
       delArr2(susxz,nxn);
