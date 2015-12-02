@@ -365,6 +365,10 @@ public:
       this->output_adaptor.write("/collective/c", _col->getC());
       this->output_adaptor.write("/collective/Smooth", _col->getSmooth());
 
+      this->output_adaptor.write("/collective/FieldOutputCycle", _col->getFieldOutputCycle());
+      this->output_adaptor.write("/collective/ParticleOutputCycle", _col->getParticlesOutputCycle());
+      this->output_adaptor.write("/collective/RestartOutputCycle", _col->getRestartOutputCycle());
+
       this->output_adaptor.write("/collective/bc/PfaceXright", _col->getBcPfaceXright());
       this->output_adaptor.write("/collective/bc/PfaceXleft", _col->getBcPfaceXleft());
       this->output_adaptor.write("/collective/bc/PfaceYright", _col->getBcPfaceYright());
