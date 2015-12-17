@@ -2160,12 +2160,12 @@ void EMfields3D::UpdateFext(int cycle){
 
   /* -- NOTE: Hardcoded option -- */
   enum   {LINEAR,STAIRCASE};
-  int    utype = STAIRCASE;
+  int    utype = LINEAR;
   /* -- END NOTE -- */
 
   double t_beg = 500.0;
   double t_end = 4500.0;
-  double Fmin  = 0.1;
+  double Fmin  = 1.0;
   double Fmax  = 1.0;
 
   double m     = (Fmax - Fmin) / (t_end - t_beg);
