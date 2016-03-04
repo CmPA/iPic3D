@@ -791,7 +791,12 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
 
 int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is) {
 
-  if (vct->getCartesian_rank()==0) {
+  /* -- NOTE: Hardcoded option -- */
+  enum {LINEAR,INITIAL,FFIELD};
+  int rtype = INITIAL;
+  /* -- END NOTE -- */
+
+  if (vct->getCartesian_rank()==0){
     cout << "*** Repopulator species " << ns << " ***" << endl;
   }
   double  FourPI =16*atan(1.0);
@@ -833,11 +838,12 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 harvest =   rand()/(double)RAND_MAX;
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
-                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary:
-                   double rho = abs(EMf->getRHOcs(4,j,k,is));
+                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
+                   double rho = 1.0/FourPI;
+                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
+                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
-                */
-                q[particles_index] = (qom / fabs(qom))*(rhoINJECT/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
@@ -894,11 +900,12 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 harvest =   rand()/(double)RAND_MAX;
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
-                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary:
-                   double rho = abs(EMf->getRHOcs(i,4,k,is));
+                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
+                   double rho = 1.0/FourPI;
+                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
+                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
-                */
-                q[particles_index] = (qom / fabs(qom))*(rhoINJECT/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
@@ -954,9 +961,11 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
-                   double rho = abs(EMf->getRHOcs(i,j,4,is));
+                   double rho = 1.0/FourPI;
+                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
+                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
-                //q[particles_index] = (qom / fabs(qom))*(rhoINJECT/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
@@ -1010,10 +1019,12 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 harvest =   rand()/(double)RAND_MAX;
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
-                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary:*/
-                   double rho = abs(EMf->getRHOcs(grid->getNXC()-5,j,k,is));
+                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
+                   double rho = 1.0/FourPI;
+                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
+                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
-                //q[particles_index] = (qom / fabs(qom))*(rhoINJECT/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
@@ -1068,11 +1079,12 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 harvest =   rand()/(double)RAND_MAX;
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
-                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary:
-                   double rho = abs(EMf->getRHOcs(i,grid->getNYC()-5,k,is));
+                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
+                   double rho = 1.0/FourPI;
+                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
+                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
-                */
-                q[particles_index] = (qom / fabs(qom))*(rhoINJECT/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
@@ -1128,9 +1140,11 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
                 // q = charge
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
-                   double rho = abs(EMf->getRHOcs(i,j,grid->getNZC()-5,is));
+                   double rho = 1.0/FourPI;
+                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
+                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
-                //q[particles_index] = (qom / fabs(qom))*(rhoINJECT/FourPI/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
