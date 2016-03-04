@@ -592,6 +592,8 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
         Bxc[i][nyc - 2][k] = Bxc[i][nyc - 1][k];
         Bxc[i][nyc - 3][k] = Bxc[i][nyc - 1][k];
         Byc[i][nyc - 1][k] = B0y;
+        Byc[i][nyc - 2][k] = B0y;
+        Byc[i][nyc - 3][k] = B0y;
         Bzc[i][nyc - 1][k] = B0z;
         Bzc[i][nyc - 2][k] = B0z;
         Bzc[i][nyc - 3][k] = B0z;
@@ -604,6 +606,8 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
         Bxc[i][1][k] = Bxc[i][0][k];
         Bxc[i][2][k] = Bxc[i][0][k];
         Byc[i][0][k] = B0y;
+        Byc[i][1][k] = B0y;
+        Byc[i][2][k] = B0y;
         Bzc[i][0][k] = B0z;
         Bzc[i][1][k] = B0z;
         Bzc[i][2][k] = B0z;
