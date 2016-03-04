@@ -2163,17 +2163,27 @@ void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col,
 
 void EMfields3D::UpdateFext(int cycle){
 
+  /* -- NOTE: Hardcoded option -- */
+  enum   {LINEAR,STAIRCASE};
+  int    utype = STAIRCASE;
+  /* -- END NOTE -- */
+
   double t_beg = 500.0;
-  double t_end = 3000.0;
-  double Fmin  = 1.0;
+  double t_end = 4500.0;
+  double Fmin  = 0.1;
   double Fmax  = 1.0;
 
   double m     = (Fmax - Fmin) / (t_end - t_beg);
   double b     = Fmax - m*t_end;
 
-  //Fext = m * cycle + b;
+  if (utype==LINEAR) {
+    Fext = m * cycle + b;
+  }
+  else {
+    // Staircase function in 10 steps:
+    if (cycle%int((t_end-t_beg)/10) == 0) Fext += (Fmax-Fmin)/10.0;
+  }
 
-  if (cycle%int((t_end-t_beg)/9) == 0) Fext += (Fmax-Fmin)/10.0;
   if (cycle < t_beg) Fext = Fmin;
   if (cycle > t_end) Fext = Fmax;
 
@@ -2263,11 +2273,15 @@ void EMfields3D::SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective 
 
 void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective *col){
 
+  /* -- NOTE: Hardcoded option */
+  bool twodim = false;
+  /* -- END NOTE -- */
+
   for (int i=0; i < nxn; i++){
     for (int j=0; j < nyn; j++){
       for (int k=0; k < nzn; k++){
 
-        double a=delta;
+        double a=0.75*delta; // 0.75 x To avoid problems with de-centered dipoles
 
         double xc=x_center;
         double yc=y_center;
@@ -2279,8 +2293,8 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
 
         double rx = x-xc;
         double ry = y-yc;
-        //2d: double ry = 0.0;
         double rz = z-zc;
+        if (twodim) ry = 0.0;
 
         double r      = sqrt(rx*rx + ry*ry + rz*rz);
 
@@ -2929,6 +2943,10 @@ injInfoFields* EMfields3D::get_InfoFieldsRear() {return injFieldsRear;}
 
 void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col){
 
+  /* -- NOTE: Hardcoded option -- */
+  bool XRightOutflow = false;
+  /* -- END NOTE --*/
+
   double u_0, v_0, w_0;
   u_0=col->getU0(0);
   v_0=col->getV0(0);
@@ -2940,18 +2958,29 @@ void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *
       for (int j=0; j<nyn;j++)
         for (int k=0; k<nzn;k++){
 
-          double Bxb = Bxn[i][j][k];
-          double Byb = Byn[i][j][k];
-          double Bzb = Bzn[i][j][k];
-          double Exb = w_0*Byb-v_0*Bzb;
-          double Eyb = u_0*Bzb-w_0*Bxb;
-          double Ezb = v_0*Bxb-u_0*Byb;
-          //double Bxb = 0.0;
-          //double Byb = 0.0;
-          //double Bzb = 0.0;
-          //double Exb = 0.0;
-          //double Eyb = 0.0;
-          //double Ezb = 0.0;
+          double Bxb;
+          double Byb;
+          double Bzb;
+          double Exb;
+          double Eyb;
+          double Ezb;
+
+          if (!XRightOutflow) {
+            Bxb = 0.0;
+            Byb = 0.0;
+            Bzb = 0.0;
+            Exb = 0.0;
+            Eyb = 0.0;
+            Ezb = 0.0;
+          }
+          else {
+            Bxb = Bxn[i][j][k];
+            Byb = Byn[i][j][k];
+            Bzb = Bzn[i][j][k];
+            Exb = w_0*Byb-v_0*Bzb;
+            Eyb = u_0*Bzb-w_0*Bxb;
+            Ezb = v_0*Bxb-u_0*Byb;
+          }
 
           injFieldsLeft->ExITemp[i][j][k]=Exb;
           injFieldsLeft->EyITemp[i][j][k]=Eyb;
@@ -2969,18 +2998,29 @@ void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *
       for (int j=0; j<nyn; j++)
         for (int k=0; k<nzn; k++){
 
-          double Bxb = B0x;
-          double Byb = B0y;
-          double Bzb = B0z;
-          double Exb = w_0*Byb-v_0*Bzb;
-          double Eyb = u_0*Bzb-w_0*Bxb;
-          double Ezb = v_0*Bxb-u_0*Byb;
-          //double Bxb = 0.0;
-          //double Byb = 0.0;
-          //double Bzb = 0.0;
-          //double Exb = 0.0;
-          //double Eyb = 0.0;
-          //double Ezb = 0.0;
+          double Bxb;
+          double Byb;
+          double Bzb;
+          double Exb;
+          double Eyb;
+          double Ezb;
+
+          if (!XRightOutflow) {
+            Bxb = B0x;
+            Byb = B0y;
+            Bzb = B0z;
+            Exb = w_0*Byb-v_0*Bzb;
+            Eyb = u_0*Bzb-w_0*Bxb;
+            Ezb = v_0*Bxb-u_0*Byb;
+          }
+          else {
+            Bxb = 0.0;
+            Byb = 0.0;
+            Bzb = 0.0;
+            Exb = 0.0;
+            Eyb = 0.0;
+            Ezb = 0.0;
+          }
 
           injFieldsRight->ExITemp[i][j][k]=Exb;
           injFieldsRight->EyITemp[i][j][k]=Eyb;
