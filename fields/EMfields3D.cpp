@@ -588,9 +588,9 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++)
       for (int k = 0; k < nzc; k++) {
-        Bxc[i][nyc - 1][k] = B0x * tanh((grid->getYC(i, nyc - 1, k) - Ly / 2) / delta);
-        Bxc[i][nyc - 2][k] = Bxc[i][nyc - 1][k];
-        Bxc[i][nyc - 3][k] = Bxc[i][nyc - 1][k];
+        Bxc[i][nyc - 1][k] = B0x;
+        Bxc[i][nyc - 2][k] = B0x;
+        Bxc[i][nyc - 3][k] = B0x;
         Byc[i][nyc - 1][k] = B0y;
         Byc[i][nyc - 2][k] = B0y;
         Byc[i][nyc - 3][k] = B0y;
@@ -602,9 +602,9 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++)
       for (int k = 0; k < nzc; k++) {
-        Bxc[i][0][k] = B0x * tanh((grid->getYC(i, 0, k) - Ly / 2) / delta);
-        Bxc[i][1][k] = Bxc[i][0][k];
-        Bxc[i][2][k] = Bxc[i][0][k];
+        Bxc[i][0][k] = B0x;
+        Bxc[i][1][k] = B0x;
+        Bxc[i][2][k] = B0x;
         Byc[i][0][k] = B0y;
         Byc[i][1][k] = B0y;
         Byc[i][2][k] = B0y;
