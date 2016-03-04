@@ -583,7 +583,7 @@ void EMfields3D::smooth(double value, double ****vector, int is, int type, Grid 
   cout << "Smoothing for Species not implemented in 3D" << endl;
 }
 
-/*! fix the B boundary when running gem */
+/*! fix the B boundary when running GEM */
 void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++)
@@ -609,7 +609,6 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
         Bzc[i][2][k] = B0z;
       }
   }
-
 }
 
 /*! fix the B boundary when running forcefree */
@@ -634,9 +633,7 @@ void EMfields3D::fixBforcefree(Grid * grid, VirtualTopology3D * vct) {
         Bzc[i][2][k] = B0z / cosh((grid->getYC(i, 2, k) - Ly / 2) / delta);
       }
   }
-
 }
-
 
 /*! adjust densities on boundaries that are not periodic */
 void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
