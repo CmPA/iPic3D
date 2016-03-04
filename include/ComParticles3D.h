@@ -18,7 +18,7 @@ void communicateParticles(int buffer_size, double *b_Xleft, double *b_Xright, do
 /** communicate the number of particles are not in the right domain*/
 inline int reduceNumberParticles(int rightDomain) {
   int result = 0;
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   MPI_Allreduce(&rightDomain, &result, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
   return (result);
 }
@@ -26,7 +26,7 @@ inline int reduceNumberParticles(int rightDomain) {
 /** communicate the maximum number of particles from a domain */
 inline int reduceMaxNpExiting(int npExitingMax) {
   int result = 0;
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   MPI_Allreduce(&npExitingMax, &result, 1, MPI_INT, MPI_MAX, MPI_COMM_WORLD);
   return (result);
 }

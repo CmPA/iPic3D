@@ -49,7 +49,7 @@ int c_Solver::Init(int argc, char **argv) {
     col->save();
   }
   // Create the local grid
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
 
@@ -226,7 +226,7 @@ void c_Solver::CalculateField() {
 
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   // timeTasks.end(TimeTasks::MOMENTS);
 
   // MAXWELL'S SOLVER

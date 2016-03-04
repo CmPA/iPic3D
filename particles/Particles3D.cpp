@@ -635,13 +635,13 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // timeTasks.start_communicate();
   const int avail = communicate(vct);
   if (avail < 0) return (-1);
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   // communicate again if particles are not in the correct domain
   while (isMessagingDone(vct) > 0) {
     // COMMUNICATION
     const int avail = communicate(vct);
     if (avail < 0) return (-1);
-    MPI_Barrier(MPI_COMM_WORLD);
+  //  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   }
   // timeTasks.addto_communicate();
   // return with succcess
@@ -770,13 +770,13 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   // timeTasks.start_communicate();
   const int avail = communicate(vct);
   if (avail < 0) return (-1);
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   // communicate again if particles are not in the correct domain
   while (isMessagingDone(vct) > 0) {
     // COMMUNICATION
     const int avail = communicate(vct);
     if (avail < 0) return (-1);
-    MPI_Barrier(MPI_COMM_WORLD);
+  //  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   }
   // timeTasks.addto_communicate();
   // return with succcess
@@ -1176,14 +1176,14 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   avail = communicate(vct);
   if (avail < 0) return(-1);
 
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
 
   // communicate again if particles are not in the correct domain
   while(isMessagingDone(vct) >0) {
     // COMMUNICATION
     avail = communicate(vct);
     if (avail < 0) return(-1);
-    MPI_Barrier(MPI_COMM_WORLD);
+  //  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   }
   // return with succcess
   return(0);
