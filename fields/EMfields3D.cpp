@@ -583,14 +583,17 @@ void EMfields3D::smooth(double value, double ****vector, int is, int type, Grid 
   cout << "Smoothing for Species not implemented in 3D" << endl;
 }
 
-/*! fix the B boundary when running GEM */
+/* fix the B boundary when running GEM */
 void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
+    double B0x_tmp_1 = B0x * tanh((grid->getYC(0, nyc - 1, 0) - Ly / 2) / delta);
+    double B0x_tmp_2 = B0x * tanh((grid->getYC(0, nyc - 2, 0) - Ly / 2) / delta);
+    double B0x_tmp_3 = B0x * tanh((grid->getYC(0, nyc - 3, 0) - Ly / 2) / delta);
     for (int i = 0; i < nxc; i++)
       for (int k = 0; k < nzc; k++) {
-        Bxc[i][nyc - 1][k] = B0x;
-        Bxc[i][nyc - 2][k] = B0x;
-        Bxc[i][nyc - 3][k] = B0x;
+        Bxc[i][nyc - 1][k] = B0x_tmp_1;
+        Bxc[i][nyc - 2][k] = B0x_tmp_2;
+        Bxc[i][nyc - 3][k] = B0x_tmp_3;
         Byc[i][nyc - 1][k] = B0y;
         Byc[i][nyc - 2][k] = B0y;
         Byc[i][nyc - 3][k] = B0y;
@@ -600,11 +603,14 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
       }
   }
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
+    double B0x_tmp_0 = B0x * tanh((grid->getYC(0, 0, 0) - Ly / 2) / delta);
+    double B0x_tmp_1 = B0x * tanh((grid->getYC(0, 1, 0) - Ly / 2) / delta);
+    double B0x_tmp_2 = B0x * tanh((grid->getYC(0, 2, 0) - Ly / 2) / delta);
     for (int i = 0; i < nxc; i++)
       for (int k = 0; k < nzc; k++) {
-        Bxc[i][0][k] = B0x;
-        Bxc[i][1][k] = B0x;
-        Bxc[i][2][k] = B0x;
+        Bxc[i][0][k] = B0x_tmp_0;
+        Bxc[i][1][k] = B0x_tmp_1;
+        Bxc[i][2][k] = B0x_tmp_2;
         Byc[i][0][k] = B0y;
         Byc[i][1][k] = B0y;
         Byc[i][2][k] = B0y;
