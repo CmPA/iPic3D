@@ -1,7 +1,13 @@
-IPIC_HOME   = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+##
+## USER-DEFINED SECTION
+##
+
+IPIC_HOME = $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+IPIC_EXE = $(IPIC_HOME)/iPic3D
+IPIC_LIB = $(IPIC_HOME)/libiPic3Dlib.a
 
 ##
-## USER-DEFINED SECTION THAT DEPENDS ON THE SYSTEM
+## SYSTEM-DEPENDENT SECTION
 ##
 
 #  -- Modify these variables according to your system.
@@ -32,7 +38,7 @@ CXX         = mpicxx
 #H5HUT_LIBS  += -L$(H5HUT_HOME)/lib
 
 ##
-## END OF USER-DEFINED SECTION
+## GENERIC SECTION (do not edit, unless you know what you do!)
 ##
 
 # Some HDF5 library is mandatory, be it the sequential or parallel one:
@@ -85,26 +91,23 @@ SRC = \
 
 ALL_OBJS = $(subst .cpp,.o,$(SRC))
 
-IPIC3D_EXE = $(IPIC_HOME)/iPic3D
-IPIC3D_LIB = $(IPIC_HOME)/libiPic3Dlib.a
-
 all : io lib main
 
 io :
 	CXX=$(CXX) HDF5_HOME=$(HDF5_HOME) H5HUT_HOME=$(H5HUT_HOME) IPIC_FLAGS="$(IPIC_FLAGS)" $(MAKE) -C $(IPIC_HOME)/H5hut-io
 
 lib : $(ALL_OBJS)
-	$(AR) sr $(IPIC3D_LIB) $(ALL_OBJS)
-	ranlib $(IPIC3D_LIB)
+	$(AR) sr $(IPIC_LIB) $(ALL_OBJS)
+	ranlib $(IPIC_LIB)
 
 main : lib iPic3D.o
-	$(CXX) $(INC_DIRS) iPic3D.o -o $(IPIC3D_EXE) $(IPIC3D_LIB) $(LD_LIBS)
+	$(CXX) $(INC_DIRS) iPic3D.o -o $(IPIC_EXE) $(IPIC_LIB) $(LD_LIBS)
 
 clean : cleanio
 	$(RM) $(ALL_OBJS)
-	$(RM) $(IPIC3D_LIB)
-	$(RM) $(IPIC3D_EXE).o
-	$(RM) $(IPIC3D_EXE)
+	$(RM) $(IPIC_LIB)
+	$(RM) $(IPIC_EXE).o
+	$(RM) $(IPIC_EXE)
 
 cleanio :
 	$(MAKE) -C $(IPIC_HOME)/H5hut-io clean
