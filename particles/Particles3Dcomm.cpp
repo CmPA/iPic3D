@@ -574,7 +574,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitXleft+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
+          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
         bufferXleft(b_X_LEFT,np_current,ptVCT);
@@ -589,7 +589,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitXright+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
+          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
         bufferXright(b_X_RIGHT,np_current,ptVCT);
@@ -607,7 +607,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitYleft+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
+          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
         bufferYleft(b_Y_LEFT,np_current,ptVCT);
@@ -623,7 +623,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitYright+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
+          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
         bufferYright(b_Y_RIGHT,np_current,ptVCT);
@@ -641,7 +641,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitZleft+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
+          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
         bufferZleft(b_Z_LEFT,np_current,ptVCT);
@@ -657,7 +657,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitZright+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
+          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
         bufferZright(b_Z_RIGHT,np_current,ptVCT);
