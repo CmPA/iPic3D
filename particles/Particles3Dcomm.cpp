@@ -181,17 +181,11 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   buffer_size_small = (int) (.01 * nop * nVar + 1); // max 1% not resizable 
 
   b_X_RIGHT = new double[buffer_size];
-  b_X_RIGHT_ptr = b_X_RIGHT;    // alias to make the resize
   b_X_LEFT = new double[buffer_size];
-  b_X_LEFT_ptr = b_X_LEFT;      // alias to make the resize
   b_Y_RIGHT = new double[buffer_size];
-  b_Y_RIGHT_ptr = b_Y_RIGHT;    // alias to make the resize
   b_Y_LEFT = new double[buffer_size];
-  b_Y_LEFT_ptr = b_Y_LEFT;      // alias to make the resize
   b_Z_RIGHT = new double[buffer_size];
-  b_Z_RIGHT_ptr = b_Z_RIGHT;    // alias to make the resize
   b_Z_LEFT = new double[buffer_size];
-  b_Z_LEFT_ptr = b_Z_LEFT;      // alias to make the resize
 
   // if RESTART is true initialize the particle in allocate method
   restart = col->getRestart_status();
@@ -726,62 +720,56 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   // resize b_X_LEFT
   double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_X_LEFT_ptr[i];
+    temp[i] = b_X_LEFT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
     temp[i] = MIN_VAL;
   delete[]b_X_LEFT;
   b_X_LEFT = temp;
-  b_Y_LEFT_ptr = b_Y_LEFT;
 
   // resize b_X_RIGHT 
   double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_X_RIGHT_ptr[i];
+    temp[i] = b_X_RIGHT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
     temp[i] = MIN_VAL;
   delete[]b_X_RIGHT;
   b_X_RIGHT = temp;
-  b_X_RIGHT_ptr = b_X_RIGHT;
 
   // resize b_Y_RIGHT
   double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_Y_RIGHT_ptr[i];
+    temp[i] = b_Y_RIGHT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
     temp[i] = MIN_VAL;
   delete[]b_Y_RIGHT;
   b_Y_RIGHT = temp;
-  b_Y_RIGHT_ptr = b_Y_RIGHT;
 
   // resize b_Y_LEFT
   double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_Y_LEFT_ptr[i];
+    temp[i] = b_Y_LEFT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
     temp[i] = MIN_VAL;
   delete[]b_Y_LEFT;
   b_Y_LEFT = temp;
-  b_Z_RIGHT_ptr = b_Z_RIGHT;
 
   // resize b_Z_RIGHT
   double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_Z_RIGHT_ptr[i];
+    temp[i] = b_Z_RIGHT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
     temp[i] = MIN_VAL;
   delete[]b_Z_RIGHT;
   b_Z_RIGHT = temp;
-  b_X_LEFT_ptr = b_X_LEFT;
 
   // resize b_Z_LEFT
   double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_Z_LEFT_ptr[i];
+    temp[i] = b_Z_LEFT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
     temp[i] = MIN_VAL;
   delete[]b_Z_LEFT;
   b_Z_LEFT = temp;
-  b_Z_LEFT_ptr = b_Z_LEFT;
 
   buffer_size = new_buffer_size;
 }

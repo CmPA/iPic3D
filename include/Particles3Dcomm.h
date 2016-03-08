@@ -255,28 +255,16 @@ protected:
   int buffer_size_small;
   /** buffer with particles going to the right processor - Direction X */
   double *b_X_RIGHT;
-  /** pointer to the buffer for resizing */
-  double *b_X_RIGHT_ptr;
   /** buffer with particles going to the left processor - Direction X */
   double *b_X_LEFT;
-  /** pointer to the buffer for resizing */
-  double *b_X_LEFT_ptr;
   /** buffer with particles going to the right processor - Direction Y */
   double *b_Y_RIGHT;
-  /** pointer to the buffer for resizing */
-  double *b_Y_RIGHT_ptr;
   /** buffer with particles going to the left processor - Direction Y */
   double *b_Y_LEFT;
-  /** pointer to the buffer for resizing */
-  double *b_Y_LEFT_ptr;
   /** buffer with particles going to the right processor - Direction Z */
   double *b_Z_RIGHT;
-  /** pointer to the buffer for resizing */
-  double *b_Z_RIGHT_ptr;
   /** buffer with particles going to the left processor - Direction Z */
   double *b_Z_LEFT;
-  /** pointer to the buffer for resizing */
-  double *b_Z_LEFT_ptr;
 
   /** number of particles exiting per cycle*/
   int npExitXright;
