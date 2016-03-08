@@ -722,75 +722,65 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 /** resize the buffers */
 void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   cout << "RESIZING FROM " << buffer_size << " TO " << new_buffer_size << endl;
-  // resize b_X_LEFT
-  double *temp = new double[buffer_size];
 
+  // resize b_X_LEFT
+  double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_X_LEFT_ptr[i];
-  delete[]b_X_LEFT;
-  b_X_LEFT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_X_LEFT[i] = temp[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
-    b_X_LEFT[i] = MIN_VAL;
+    temp[i] = MIN_VAL;
+  delete[]b_X_LEFT;
+  b_X_LEFT = temp;
+  b_Y_LEFT_ptr = b_Y_LEFT;
 
   // resize b_X_RIGHT 
+  double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_X_RIGHT_ptr[i];
-  delete[]b_X_RIGHT;
-  b_X_RIGHT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_X_RIGHT[i] = temp[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
-    b_X_RIGHT[i] = MIN_VAL;
+    temp[i] = MIN_VAL;
+  delete[]b_X_RIGHT;
+  b_X_RIGHT = temp;
+  b_X_RIGHT_ptr = b_X_RIGHT;
 
   // resize b_Y_RIGHT
+  double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Y_RIGHT_ptr[i];
-  delete[]b_Y_RIGHT;
-  b_Y_RIGHT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_Y_RIGHT[i] = temp[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Y_RIGHT[i] = MIN_VAL;
+    temp[i] = MIN_VAL;
+  delete[]b_Y_RIGHT;
+  b_Y_RIGHT = temp;
+  b_Y_RIGHT_ptr = b_Y_RIGHT;
 
   // resize b_Y_LEFT
+  double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Y_LEFT_ptr[i];
-  delete[]b_Y_LEFT;
-  b_Y_LEFT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_Y_LEFT[i] = temp[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Y_LEFT[i] = MIN_VAL;
+    temp[i] = MIN_VAL;
+  delete[]b_Y_LEFT;
+  b_Y_LEFT = temp;
+  b_Z_RIGHT_ptr = b_Z_RIGHT;
 
   // resize b_Z_RIGHT
+  double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Z_RIGHT_ptr[i];
-  delete[]b_Z_RIGHT;
-  b_Z_RIGHT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_Z_RIGHT[i] = temp[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Z_RIGHT[i] = MIN_VAL;
+    temp[i] = MIN_VAL;
+  delete[]b_Z_RIGHT;
+  b_Z_RIGHT = temp;
+  b_X_LEFT_ptr = b_X_LEFT;
 
   // resize b_Z_LEFT
+  double *temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Z_LEFT_ptr[i];
-  delete[]b_Z_LEFT;
-  b_Z_LEFT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_Z_LEFT[i] = temp[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Z_LEFT[i] = MIN_VAL;
-
-  delete[]temp;
-
-  b_X_RIGHT_ptr = b_X_RIGHT;
-  b_Y_RIGHT_ptr = b_Y_RIGHT;
-  b_Z_RIGHT_ptr = b_Z_RIGHT;
-  b_Y_LEFT_ptr = b_Y_LEFT;
-  b_X_LEFT_ptr = b_X_LEFT;
+    temp[i] = MIN_VAL;
+  delete[]b_Z_LEFT;
+  b_Z_LEFT = temp;
   b_Z_LEFT_ptr = b_Z_LEFT;
 
   buffer_size = new_buffer_size;
