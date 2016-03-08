@@ -715,10 +715,11 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 }
 /** resize the buffers */
 void Particles3Dcomm::resize_buffers(int new_buffer_size) {
+  double *temp = NULL;
   cout << "RESIZING FROM " << buffer_size << " TO " << new_buffer_size << endl;
 
   // resize b_X_LEFT
-  double *temp = new double[new_buffer_size];
+  temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_X_LEFT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
@@ -727,7 +728,7 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_X_LEFT = temp;
 
   // resize b_X_RIGHT 
-  double *temp = new double[new_buffer_size];
+  temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_X_RIGHT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
@@ -736,7 +737,7 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_X_RIGHT = temp;
 
   // resize b_Y_RIGHT
-  double *temp = new double[new_buffer_size];
+  temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Y_RIGHT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
@@ -745,7 +746,7 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_Y_RIGHT = temp;
 
   // resize b_Y_LEFT
-  double *temp = new double[new_buffer_size];
+  temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Y_LEFT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
@@ -754,7 +755,7 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_Y_LEFT = temp;
 
   // resize b_Z_RIGHT
-  double *temp = new double[new_buffer_size];
+  temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Z_RIGHT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
@@ -763,7 +764,7 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_Z_RIGHT = temp;
 
   // resize b_Z_LEFT
-  double *temp = new double[new_buffer_size];
+  temp = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Z_LEFT[i];
   for (int i = buffer_size; i < new_buffer_size; i++)
