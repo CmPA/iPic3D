@@ -727,7 +727,6 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
 
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_X_LEFT_ptr[i];
-  // delete[] b_X_LEFT_ptr;
   delete[]b_X_LEFT;
   b_X_LEFT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
@@ -738,7 +737,6 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   // resize b_X_RIGHT 
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_X_RIGHT_ptr[i];
-  // delete[] b_X_RIGHT_ptr;
   delete[]b_X_RIGHT;
   b_X_RIGHT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
@@ -749,7 +747,6 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   // resize b_Y_RIGHT
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Y_RIGHT_ptr[i];
-  // delete[] b_Y_RIGHT_ptr;
   delete[]b_Y_RIGHT;
   b_Y_RIGHT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
@@ -760,7 +757,6 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   // resize b_Y_LEFT
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Y_LEFT_ptr[i];
-  // delete[] b_Y_LEFT_ptr;
   delete[]b_Y_LEFT;
   b_Y_LEFT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
@@ -771,7 +767,6 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   // resize b_Z_RIGHT
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Z_RIGHT_ptr[i];
-  // delete[] b_Z_RIGHT_ptr;
   delete[]b_Z_RIGHT;
   b_Z_RIGHT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
@@ -782,7 +777,6 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   // resize b_Z_LEFT
   for (int i = 0; i < buffer_size; i++)
     temp[i] = b_Z_LEFT_ptr[i];
-  // delete[] b_Z_LEFT_ptr;
   delete[]b_Z_LEFT;
   b_Z_LEFT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
