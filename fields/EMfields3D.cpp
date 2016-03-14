@@ -281,7 +281,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
-//  if (Case=="GEMOriginal")       fixBgem(grid, vct);
+  if (Case=="GEM-original") swamp_B_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:
@@ -621,6 +621,110 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
   }
 }
 
+/*! swamp region for B_z and less effective also for B_y, GEM challange */
+void EMfields3D::swamp_B_yz(Grid * grid, VirtualTopology3D * vct) {
+  double damp_1 = 1.0 - exp (-2);
+  double damp_2 = 1.0 - exp (-4);
+  double damp_3 = 1.0 - exp (-8);
+  double damp_4 = 1.0 - exp (-16);
+  double damp_5 = 1.0 - exp (-32);
+  double damp_6 = 1.0 - exp (-64);
+  if (vct->getYright_neighbor() == MPI_PROC_NULL) {
+    for (int i = 0; i < nxc; i++) {
+      for (int k = 0; k < nzc; k++) {
+        Byc[i][nyc - 1][k] *= damp_4;
+        Byc[i][nyc - 2][k] *= damp_5;
+        Byc[i][nyc - 3][k] *= damp_6;
+        Bzc[i][nyc - 1][k] *= damp_1;
+        Bzc[i][nyc - 2][k] *= damp_2;
+        Bzc[i][nyc - 3][k] *= damp_3;
+        Bzc[i][nyc - 4][k] *= damp_4;
+        Bzc[i][nyc - 5][k] *= damp_5;
+        Bzc[i][nyc - 6][k] *= damp_6;
+      }
+    }
+  }
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
+    for (int i = 0; i < nxc; i++) {
+      for (int k = 0; k < nzc; k++) {
+        Byc[i][0][k] *= damp_4;
+        Byc[i][1][k] *= damp_5;
+        Byc[i][2][k] *= damp_6;
+        Bzc[i][0][k] *= damp_1;
+        Bzc[i][1][k] *= damp_2;
+        Bzc[i][2][k] *= damp_3;
+        Bzc[i][3][k] *= damp_4;
+        Bzc[i][4][k] *= damp_5;
+        Bzc[i][5][k] *= damp_6;
+      }
+    }
+  }
+}
+
+/* swamp region for all B components at the boundary for GEM */
+void EMfields3D::swamp_B_all(Grid * grid, VirtualTopology3D * vct) {
+  double add_1 = exp (-2);
+  double add_2 = exp (-4);
+  double add_3 = exp (-8);
+  double add_4 = exp (-16);
+  double add_5 = exp (-32);
+  double add_6 = exp (-64);
+  double damp_1 = 1.0 - add_1;
+  double damp_2 = 1.0 - add_2;
+  double damp_3 = 1.0 - add_3;
+  double damp_4 = 1.0 - add_4;
+  double damp_5 = 1.0 - add_5;
+  double damp_6 = 1.0 - add_6;
+  if (vct->getYright_neighbor() == MPI_PROC_NULL) {
+    for (int i = 0; i < nxc; i++) {
+      for (int k = 0; k < nzc; k++) {
+        Bxc[i][nxc - 1][k] = Bxc[i][nxc - 1][k] * damp_1 + B0x * add_1;
+        Bxc[i][nxc - 2][k] = Bxc[i][nxc - 2][k] * damp_2 + B0x * add_2;
+        Bxc[i][nxc - 3][k] = Bxc[i][nxc - 3][k] * damp_3 + B0x * add_3;
+        Bxc[i][nxc - 4][k] = Bxc[i][nxc - 4][k] * damp_4 + B0x * add_4;
+        Bxc[i][nxc - 5][k] = Bxc[i][nxc - 5][k] * damp_5 + B0x * add_5;
+        Bxc[i][nxc - 6][k] = Bxc[i][nxc - 6][k] * damp_6 + B0x * add_6;
+        Byc[i][nyc - 1][k] = Byc[i][nyc - 1][k] * damp_1 + B0y * add_1;
+        Byc[i][nyc - 2][k] = Byc[i][nyc - 2][k] * damp_2 + B0y * add_2;
+        Byc[i][nyc - 3][k] = Byc[i][nyc - 3][k] * damp_3 + B0y * add_3;
+        Byc[i][nyc - 4][k] = Byc[i][nyc - 4][k] * damp_4 + B0y * add_4;
+        Byc[i][nyc - 5][k] = Byc[i][nyc - 5][k] * damp_5 + B0y * add_5;
+        Byc[i][nyc - 6][k] = Byc[i][nyc - 6][k] * damp_6 + B0y * add_6;
+        Bzc[i][nzc - 1][k] = Bzc[i][nzc - 1][k] * damp_1 + B0z * add_1;
+        Bzc[i][nzc - 2][k] = Bzc[i][nzc - 2][k] * damp_2 + B0z * add_2;
+        Bzc[i][nzc - 3][k] = Bzc[i][nzc - 3][k] * damp_3 + B0z * add_3;
+        Bzc[i][nzc - 4][k] = Bzc[i][nzc - 4][k] * damp_4 + B0z * add_4;
+        Bzc[i][nzc - 5][k] = Bzc[i][nzc - 5][k] * damp_5 + B0z * add_5;
+        Bzc[i][nzc - 6][k] = Bzc[i][nzc - 6][k] * damp_6 + B0z * add_6;
+      }
+    }
+  }
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
+    for (int i = 0; i < nxc; i++) {
+      for (int k = 0; k < nzc; k++) {
+        Bxc[i][0][k] = Bxc[i][0][k] * damp_1 + B0x * add_1;
+        Bxc[i][1][k] = Bxc[i][1][k] * damp_2 + B0x * add_2;
+        Bxc[i][2][k] = Bxc[i][2][k] * damp_3 + B0x * add_3;
+        Bxc[i][3][k] = Bxc[i][3][k] * damp_4 + B0x * add_4;
+        Bxc[i][4][k] = Bxc[i][4][k] * damp_5 + B0x * add_5;
+        Bxc[i][5][k] = Bxc[i][5][k] * damp_6 + B0x * add_6;
+        Byc[i][0][k] = Byc[i][0][k] * damp_1 + B0y * add_1;
+        Byc[i][1][k] = Byc[i][1][k] * damp_2 + B0y * add_2;
+        Byc[i][2][k] = Byc[i][2][k] * damp_3 + B0y * add_3;
+        Byc[i][3][k] = Byc[i][3][k] * damp_4 + B0y * add_4;
+        Byc[i][4][k] = Byc[i][4][k] * damp_5 + B0y * add_5;
+        Byc[i][5][k] = Byc[i][5][k] * damp_6 + B0y * add_6;
+        Bzc[i][0][k] = Bzc[i][0][k] * damp_1 + B0z * add_1;
+        Bzc[i][1][k] = Bzc[i][1][k] * damp_2 + B0z * add_2;
+        Bzc[i][2][k] = Bzc[i][2][k] * damp_3 + B0z * add_3;
+        Bzc[i][3][k] = Bzc[i][3][k] * damp_4 + B0z * add_4;
+        Bzc[i][4][k] = Bzc[i][4][k] * damp_5 + B0z * add_5;
+        Bzc[i][5][k] = Bzc[i][5][k] * damp_6 + B0z * add_6;
+      }
+    }
+  }
+}
+
 /*! fix the B boundary when running forcefree */
 void EMfields3D::fixBforcefree(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
@@ -931,7 +1035,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
-//  if (Case=="GEMOriginal")       fixBgem(grid, vct);
+  if (Case=="GEM-original") swamp_B_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:

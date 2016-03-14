@@ -219,9 +219,13 @@ class EMfields3D                // :public Field
     void ConstantChargeOpenBCv2(Grid * grid, VirtualTopology3D * vct);
     /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
     void calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col);
-    /*! fix B on the boundary for gem challange */
+    /*! fix B on the boundary for GEM challange */
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
-    /*! fix B on the boundary for gem challange */
+    /*! swamp region for B_z and less effective for B_y, GEM challange */
+    void swamp_B_yz(Grid * grid, VirtualTopology3D * vct);
+    /*! swamp region for all B components at the boundary for GEM */
+    void swamp_B_all(Grid * grid, VirtualTopology3D * vct);
+    /*! fix B on the boundary for GEM challange */
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
 
     /*! Calculate the three components of Pi(implicit pressure) cross image vector */
