@@ -575,11 +575,11 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         // delete the particle and pack the particle array, the value of nplast changes
         del_pack(np_current,&nplast);
         npExitXleft++;
-      } 
+      }
       else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
 //        npExitXleft++; // this particle was deleted!
-      } 
+      }
       else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitXright+1)*nVar)>=buffer_size){
@@ -643,7 +643,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
 
         npExitZleft++;
-      } 
+      }
       else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
 //        npExitZleft++; // this particle was deleted!
