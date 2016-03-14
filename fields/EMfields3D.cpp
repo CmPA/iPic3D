@@ -622,41 +622,52 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
   }
 }
 
-/*! swamp region for B_z and less effective also for B_y, GEM challange */
+/*! swamp region for B_z and B_y, fixating to zero at the y-boundaries, GEM challange */
 void EMfields3D::swamp_B_yz(Grid * grid, VirtualTopology3D * vct) {
-  double damp_1 = 1.0 - exp (-2);
-  double damp_2 = 1.0 - exp (-4);
-  double damp_3 = 1.0 - exp (-8);
-  double damp_4 = 1.0 - exp (-16);
-  double damp_5 = 1.0 - exp (-32);
-  double damp_6 = 1.0 - exp (-64);
+  double damp_0 = 0.0;
+  double damp_1 = 1.0 - 1.0 / 2;
+  double damp_2 = 1.0 - 1.0 / 4;
+  double damp_3 = 1.0 - 1.0 / 8;
+  double damp_4 = 1.0 - 1.0 / 16;
+  double damp_5 = 1.0 - 1.0 / 32;
+  double damp_6 = 1.0 - 1.0 / 64;
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++) {
       for (int k = 0; k < nzc; k++) {
-        Byc[i][nyc - 1][k] *= damp_4;
-        Byc[i][nyc - 2][k] *= damp_5;
-        Byc[i][nyc - 3][k] *= damp_6;
-        Bzc[i][nyc - 1][k] *= damp_1;
-        Bzc[i][nyc - 2][k] *= damp_2;
-        Bzc[i][nyc - 3][k] *= damp_3;
-        Bzc[i][nyc - 4][k] *= damp_4;
-        Bzc[i][nyc - 5][k] *= damp_5;
-        Bzc[i][nyc - 6][k] *= damp_6;
+        Byc[i][nyc - 1][k] *= damp_0;
+        Byc[i][nyc - 2][k] *= damp_1;
+        Byc[i][nyc - 3][k] *= damp_2;
+        Byc[i][nyc - 4][k] *= damp_3;
+        Byc[i][nyc - 5][k] *= damp_4;
+        Byc[i][nyc - 6][k] *= damp_5;
+        Byc[i][nyc - 7][k] *= damp_6;
+        Bzc[i][nyc - 1][k] *= damp_0;
+        Bzc[i][nyc - 2][k] *= damp_1;
+        Bzc[i][nyc - 3][k] *= damp_2;
+        Bzc[i][nyc - 4][k] *= damp_3;
+        Bzc[i][nyc - 5][k] *= damp_4;
+        Bzc[i][nyc - 6][k] *= damp_5;
+        Bzc[i][nyc - 7][k] *= damp_6;
       }
     }
   }
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++) {
       for (int k = 0; k < nzc; k++) {
-        Byc[i][0][k] *= damp_4;
-        Byc[i][1][k] *= damp_5;
-        Byc[i][2][k] *= damp_6;
-        Bzc[i][0][k] *= damp_1;
-        Bzc[i][1][k] *= damp_2;
-        Bzc[i][2][k] *= damp_3;
-        Bzc[i][3][k] *= damp_4;
-        Bzc[i][4][k] *= damp_5;
-        Bzc[i][5][k] *= damp_6;
+        Byc[i][0][k] *= damp_0;
+        Byc[i][1][k] *= damp_1;
+        Byc[i][2][k] *= damp_2;
+        Byc[i][3][k] *= damp_3;
+        Byc[i][4][k] *= damp_4;
+        Byc[i][5][k] *= damp_5;
+        Byc[i][6][k] *= damp_6;
+        Bzc[i][0][k] *= damp_0;
+        Bzc[i][1][k] *= damp_1;
+        Bzc[i][2][k] *= damp_2;
+        Bzc[i][3][k] *= damp_3;
+        Bzc[i][4][k] *= damp_4;
+        Bzc[i][5][k] *= damp_5;
+        Bzc[i][6][k] *= damp_6;
       }
     }
   }
