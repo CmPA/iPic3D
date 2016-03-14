@@ -281,6 +281,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
+  if (Case=="GEMOriginal") ;
   if (Case=="GEM-original") swamp_B_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
@@ -1035,6 +1036,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
+  if (Case=="GEMOriginal") ;
   if (Case=="GEM-original") swamp_B_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
