@@ -648,6 +648,20 @@ void EMfields3D::swamp_B_yz(Grid * grid, VirtualTopology3D * vct) {
         Bzc[i][nyc - 5][k] *= damp_4;
         Bzc[i][nyc - 6][k] *= damp_5;
         Bzc[i][nyc - 7][k] *= damp_6;
+        Ey[i][nyc - 1][k] *= damp_0;
+        Ey[i][nyc - 2][k] *= damp_1;
+        Ey[i][nyc - 3][k] *= damp_2;
+        Ey[i][nyc - 4][k] *= damp_3;
+        Ey[i][nyc - 5][k] *= damp_4;
+        Ey[i][nyc - 6][k] *= damp_5;
+        Ey[i][nyc - 7][k] *= damp_6;
+        Ez[i][nyc - 1][k] *= damp_0;
+        Ez[i][nyc - 2][k] *= damp_1;
+        Ez[i][nyc - 3][k] *= damp_2;
+        Ez[i][nyc - 4][k] *= damp_3;
+        Ez[i][nyc - 5][k] *= damp_4;
+        Ez[i][nyc - 6][k] *= damp_5;
+        Ez[i][nyc - 7][k] *= damp_6;
       }
     }
   }
@@ -668,6 +682,20 @@ void EMfields3D::swamp_B_yz(Grid * grid, VirtualTopology3D * vct) {
         Bzc[i][4][k] *= damp_4;
         Bzc[i][5][k] *= damp_5;
         Bzc[i][6][k] *= damp_6;
+        Ey[i][0][k] *= damp_0;
+        Ey[i][1][k] *= damp_1;
+        Ey[i][2][k] *= damp_2;
+        Ey[i][3][k] *= damp_3;
+        Ey[i][4][k] *= damp_4;
+        Ey[i][5][k] *= damp_5;
+        Ey[i][6][k] *= damp_6;
+        Ez[i][0][k] *= damp_0;
+        Ez[i][1][k] *= damp_1;
+        Ez[i][2][k] *= damp_2;
+        Ez[i][3][k] *= damp_3;
+        Ez[i][4][k] *= damp_4;
+        Ez[i][5][k] *= damp_5;
+        Ez[i][6][k] *= damp_6;
       }
     }
   }
