@@ -48,6 +48,9 @@ HDF5_LIBS   += -lhdf5 -lhdf5_hl
 OPTIM       += -O3
 OPTIM       += -march=native
 
+# Debugging options:
+DEBUG       += -g3 -ggdb
+
 # Include directories:
 INC_DIRS    += -I./include
 INC_DIRS    += $(HDF5_INCS)
@@ -114,5 +117,5 @@ cleanio :
 
 %.o : %.cpp
 	echo " Compiling " $@
-	$(CXX) $(OPTIM) $(IPIC_FLAGS) $(INC_DIRS) -c $< -o $@
+	$(CXX) $(OPTIM) $(DEBUG) $(IPIC_FLAGS) $(INC_DIRS) -c $< -o $@
 
