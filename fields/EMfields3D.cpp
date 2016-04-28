@@ -283,6 +283,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="GEMOriginal") ;
   if (Case=="GEM-original") swamp_B_yz(grid, vct);
+  if (Case=="GEM-smallpert") swamp_B_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:
@@ -1077,6 +1078,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="GEMOriginal") ;
   if (Case=="GEM-original") swamp_B_yz(grid, vct);
+  if (Case=="GEM-smallpert") swamp_B_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:
@@ -1723,9 +1725,8 @@ void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective *c
 }
 
 /*! initiliaze EM for GEM challange */
-void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col, double pertX) {
   // perturbation localized in X
-  double pertX = 0.4;
   double xpert, ypert, exp_pert;
   if (restart1 == 0) {
     // initialize

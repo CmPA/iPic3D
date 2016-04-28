@@ -68,7 +68,8 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="ForceFree")       EMf->initForceFree(vct,grid,col);
     else if (col->getCase()=="GEM")             EMf->initGEM(vct,grid,col);
     else if (col->getCase()=="GEMOriginal")     EMf->initOriginalGEM(vct,grid,col);
-    else if (col->getCase()=="GEM-original")    EMf->initGEM(vct,grid,col);
+    else if (col->getCase()=="GEM-original")    EMf->initOriginalGEM(vct,grid,col);
+    else if (col->getCase()=="GEM-smallpert")   EMf->initGEM(vct,grid,col,0.1);
     else if (col->getCase()=="BATSRUS")         EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")          EMf->init(vct,grid,col);
     else {
