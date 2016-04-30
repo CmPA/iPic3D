@@ -2349,8 +2349,8 @@ double EMfields3D::getFext(){
 /*! Time-dependent fading-in factor that goes smoothly from 0 to 1. */
 void EMfields3D::UpdateFadeFactor(int cycle, int myrank){
 
-  double t_fade_begin = 50.0;
-  double t_fade_end = 500.0;
+  double t_fade_begin = -1.0; // 50.0;
+  double t_fade_end = -1.0; // 500.0;
 
   if (cycle >= t_fade_end) {
     fadeFactor = 1.0;
