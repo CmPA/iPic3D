@@ -449,7 +449,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
   double Fext = EMf->getFext();
   double fade = EMf->getFadeFactor();
-  fade = 1.0; // switch this experimental feature off for now
 
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
@@ -669,7 +668,6 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
   double Fext = EMf->getFext();
   double fade = EMf->getFadeFactor();
-  fade = 1.0; // switch this experimental feature off for now
 
   // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   // don't bother trying to push any particles simultaneously;
