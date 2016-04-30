@@ -1181,7 +1181,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
 //  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
 
   // communicate again if particles are not in the correct domain
-  while(isMessagingDone(vct) >0) {
+  while(isMessagingDone(vct) > 0) {
     // COMMUNICATION
     avail = communicate(vct);
     if (avail < 0) return(-1);
