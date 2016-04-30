@@ -672,47 +672,40 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   }
 
   nop = nplast + 1;
-  npExitingMax = 0;
   // calculate the maximum number of particles exiting from this domain
-  // use this value to check if communication is needed
-  // and to resize the buffer
   npExitingMax = maxNpExiting();
-  // broadcast the maximum number of particles exiting for sizing the buffer and to check if communication is really needed
-  npExitingMax = reduceMaxNpExiting(npExitingMax);
+  // broadcast the global maximum number of particles exiting
+  npExitingMax = globalMaximum(npExitingMax);
+  // return immediately, if no further communication is needed
+  if (npExitingMax == 0) return (0);
 
-  /*****************************************************/
-  /* SEND AND RECEIVE MESSAGES */
-  /*****************************************************/
-
+  // resize buffers, if necessary
   new_buffer_size = npExitingMax * nVar + 1;
-
   if (new_buffer_size > buffer_size) {
     cout << "resizing the receiving buffer" << endl;
     resize_buffers(new_buffer_size);
   }
 
-  if (npExitingMax > 0) {
-    communicateParticles(new_buffer_size, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
+  /*****************************************************/
+  /* SEND AND RECEIVE MESSAGES */
+  /*****************************************************/
+  communicateParticles(new_buffer_size, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
 
-    // UNBUFFERING
-    // message from XLEFT
-    avail1 = unbuffer(b_X_RIGHT);
-    avail2 = unbuffer(b_X_LEFT);
-    avail3 = unbuffer(b_Y_RIGHT);
-    avail4 = unbuffer(b_Y_LEFT);
-    avail5 = unbuffer(b_Z_RIGHT);
-    avail6 = unbuffer(b_Z_LEFT);
-    // if one of these numbers is negative than there is not enough space for particles
-    avail = avail1 + avail2 + avail3 + avail4 + avail5 + avail6;
-    availALL = reduceNumberParticles(avail);
-    if (availALL < 0)
-      return (-1);              // too many particles coming, save data nad stop simulation
-  }
-
-  return (0);                   // everything was fine
-
-
+  // UNBUFFERING
+  // message from XLEFT
+  avail1 = unbuffer(b_X_RIGHT);
+  avail2 = unbuffer(b_X_LEFT);
+  avail3 = unbuffer(b_Y_RIGHT);
+  avail4 = unbuffer(b_Y_LEFT);
+  avail5 = unbuffer(b_Z_RIGHT);
+  avail6 = unbuffer(b_Z_LEFT);
+  // if one of these numbers is negative than there is not enough space for particles
+  avail = avail1 + avail2 + avail3 + avail4 + avail5 + avail6;
+  availALL = globalSum(avail);
+  if (availALL < 0) return (-1); // too many particles coming, save data nad stop simulation
+  return (0);
 }
+
 /** resize the buffers */
 void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   double *temp = NULL;
@@ -914,7 +907,7 @@ void Particles3Dcomm::del_pack(long long np_current, long long *nplast) {
 /** method to calculate how many particles are out of right domain */
 int Particles3Dcomm::isMessagingDone(VirtualTopology3D * ptVCT) {
   int result = 0;
-  result = reduceNumberParticles(rightDomain);
+  result = globalSum(rightDomain);
   if (result > 0 && cVERBOSE && ptVCT->getCartesian_rank() == 0)
     cout << "Further Comunication: " << result << " particles not in the right domain" << endl;
   return (result);
