@@ -700,18 +700,28 @@ void Collective::Print() {
   cout << "Check Simulation Constraints" << endl;
   cout << "---------------------" << endl;
   cout << "Accuracy Constraint:  " << endl;
+  int stop_me = 0;
   for (int i = 0; i < ns; i++) {
-    cout << "u_th < dx/dt species " << i << ".....";
+    cout << "u_th < dx/dt species " << i << " => ";
     if (uth[i] < (dx / dt))
       cout << "OK" << endl;
-    else
-      cout << "NOT SATISFIED. STOP THE SIMULATION." << endl;
+    else {
+      cout << "NOT SATISFIED." << endl;
+      stop_me++;
+    }
 
-    cout << "v_th < dy/dt species " << i << "......";
+    cout << "v_th < dy/dt species " << i << " => ";
     if (vth[i] < (dy / dt))
       cout << "OK" << endl;
-    else
-      cout << "NOT SATISFIED. STOP THE SIMULATION." << endl;
+    else {
+      cout << "NOT SATISFIED." << endl;
+      stop_me++;
+    }
+  }
+  if (stop_me) {
+    cout << "STOPPING THE SIMULATION!" << endl;
+    cout << "Please fix the above reported errors and retry." << endl;
+    exit (1);
   }
   cout << endl;
   cout << "Finite Grid Stability Constraint:  ";
