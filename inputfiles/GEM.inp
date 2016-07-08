@@ -28,7 +28,7 @@ delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
 dt = 0.5               # dt = time step
-ncycles = 150          # cycles
+ncycles = 201          # cycles
 th = 1.0               # th =   decentering parameter
 c = 1.0                # c = light speed
 
