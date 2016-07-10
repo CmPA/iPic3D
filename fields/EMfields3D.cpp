@@ -625,7 +625,7 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
 
 /*! swamp region for E and B, z and y components, fixating to zero at the y-boundaries, GEM challange */
 void EMfields3D::swamp_EB_yz(Grid * grid, VirtualTopology3D * vct) {
-  int layers = 13;
+  int layers = round (nyc * 0.025); // apply to outer 1/40 of grid layers
   double damp[layers], factor;
 
   damp[0] = 0.0;
@@ -663,7 +663,7 @@ void EMfields3D::swamp_EB_yz(Grid * grid, VirtualTopology3D * vct) {
 
 /* swamp region for all E and B components at the boundary for GEM */
 void EMfields3D::swamp_EB_all(Grid * grid, VirtualTopology3D * vct) {
-  int layers = 13;
+  int layers = round (nyc * 0.025); // apply to outer 1/40 of grid layers
   double add[layers], restore, damp[layers], factor;
 
   add[0] = 1.0;
