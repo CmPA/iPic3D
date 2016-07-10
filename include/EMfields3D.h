@@ -221,10 +221,10 @@ class EMfields3D                // :public Field
     void calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! fix B on the boundary for GEM challange */
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
-    /*! swamp region for B_z and less effective for B_y, GEM challange */
-    void swamp_B_yz(Grid * grid, VirtualTopology3D * vct);
-    /*! swamp region for all B components at the boundary for GEM */
-    void swamp_B_all(Grid * grid, VirtualTopology3D * vct);
+    /*! swamp region for E and B, z and y components, fixating to zero at the y-boundaries, GEM challange */
+    void swamp_EB_yz(Grid * grid, VirtualTopology3D * vct);
+    /*! swamp region for all E and B components at the boundary for GEM */
+    void swamp_EB_all(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for GEM challange */
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
 

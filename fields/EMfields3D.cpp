@@ -282,8 +282,8 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="GEMOriginal") ;
-  if (Case=="GEM-original") swamp_B_yz(grid, vct);
-  if (Case=="GEM-smallpert") swamp_B_yz(grid, vct);
+  if (Case=="GEM-original") swamp_EB_yz(grid, vct);
+  if (Case=="GEM-smallpert") swamp_EB_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:
@@ -623,144 +623,85 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
   }
 }
 
-/*! swamp region for B_z and B_y, fixating to zero at the y-boundaries, GEM challange */
-void EMfields3D::swamp_B_yz(Grid * grid, VirtualTopology3D * vct) {
-  double damp_0 = 0.0;
-  double damp_1 = 1.0 - 1.0 / 2;
-  double damp_2 = 1.0 - 1.0 / 4;
-  double damp_3 = 1.0 - 1.0 / 8;
-  double damp_4 = 1.0 - 1.0 / 16;
-  double damp_5 = 1.0 - 1.0 / 32;
-  double damp_6 = 1.0 - 1.0 / 64;
+/*! swamp region for E and B, z and y components, fixating to zero at the y-boundaries, GEM challange */
+void EMfields3D::swamp_EB_yz(Grid * grid, VirtualTopology3D * vct) {
+  int layers = 13;
+  double damp[layers], factor;
+
+  damp[0] = 0.0;
+  for (int layer = 1; layer < layers-1; layer++) {
+    damp[layer] = 1.0 - 1.0 / (exp2(layer/2) + 0.5 * (layer % 2) * exp2((layer-1)/2));
+  }
+
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++) {
-      for (int k = 0; k < nzc; k++) {
-        Byc[i][nyc - 1][k] *= damp_0;
-        Byc[i][nyc - 2][k] *= damp_1;
-        Byc[i][nyc - 3][k] *= damp_2;
-        Byc[i][nyc - 4][k] *= damp_3;
-        Byc[i][nyc - 5][k] *= damp_4;
-        Byc[i][nyc - 6][k] *= damp_5;
-        Byc[i][nyc - 7][k] *= damp_6;
-        Bzc[i][nyc - 1][k] *= damp_0;
-        Bzc[i][nyc - 2][k] *= damp_1;
-        Bzc[i][nyc - 3][k] *= damp_2;
-        Bzc[i][nyc - 4][k] *= damp_3;
-        Bzc[i][nyc - 5][k] *= damp_4;
-        Bzc[i][nyc - 6][k] *= damp_5;
-        Bzc[i][nyc - 7][k] *= damp_6;
-        Ey[i][nyc - 1][k] *= damp_0;
-        Ey[i][nyc - 2][k] *= damp_1;
-        Ey[i][nyc - 3][k] *= damp_2;
-        Ey[i][nyc - 4][k] *= damp_3;
-        Ey[i][nyc - 5][k] *= damp_4;
-        Ey[i][nyc - 6][k] *= damp_5;
-        Ey[i][nyc - 7][k] *= damp_6;
-        Ez[i][nyc - 1][k] *= damp_0;
-        Ez[i][nyc - 2][k] *= damp_1;
-        Ez[i][nyc - 3][k] *= damp_2;
-        Ez[i][nyc - 4][k] *= damp_3;
-        Ez[i][nyc - 5][k] *= damp_4;
-        Ez[i][nyc - 6][k] *= damp_5;
-        Ez[i][nyc - 7][k] *= damp_6;
+      for (int l = 0; l < layers; l++) {
+        factor = damp[l];
+        for (int k = 0; k < nzc; k++) {
+          Byc[i][nyc - l - 1][k] *= factor;
+          Bzc[i][nyc - l - 1][k] *= factor;
+          Ey[i][nyc - l - 1][k] *= factor;
+          Ez[i][nyc - l - 1][k] *= factor;
+        }
       }
     }
   }
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++) {
-      for (int k = 0; k < nzc; k++) {
-        Byc[i][0][k] *= damp_0;
-        Byc[i][1][k] *= damp_1;
-        Byc[i][2][k] *= damp_2;
-        Byc[i][3][k] *= damp_3;
-        Byc[i][4][k] *= damp_4;
-        Byc[i][5][k] *= damp_5;
-        Byc[i][6][k] *= damp_6;
-        Bzc[i][0][k] *= damp_0;
-        Bzc[i][1][k] *= damp_1;
-        Bzc[i][2][k] *= damp_2;
-        Bzc[i][3][k] *= damp_3;
-        Bzc[i][4][k] *= damp_4;
-        Bzc[i][5][k] *= damp_5;
-        Bzc[i][6][k] *= damp_6;
-        Ey[i][0][k] *= damp_0;
-        Ey[i][1][k] *= damp_1;
-        Ey[i][2][k] *= damp_2;
-        Ey[i][3][k] *= damp_3;
-        Ey[i][4][k] *= damp_4;
-        Ey[i][5][k] *= damp_5;
-        Ey[i][6][k] *= damp_6;
-        Ez[i][0][k] *= damp_0;
-        Ez[i][1][k] *= damp_1;
-        Ez[i][2][k] *= damp_2;
-        Ez[i][3][k] *= damp_3;
-        Ez[i][4][k] *= damp_4;
-        Ez[i][5][k] *= damp_5;
-        Ez[i][6][k] *= damp_6;
+      for (int l = 0; l < layers; l++) {
+        factor = damp[l];
+        for (int k = 0; k < nzc; k++) {
+          Byc[i][l][k] *= factor;
+          Bzc[i][l][k] *= factor;
+          Ey[i][l][k] *= factor;
+          Ez[i][l][k] *= factor;
+        }
       }
     }
   }
 }
 
-/* swamp region for all B components at the boundary for GEM */
-void EMfields3D::swamp_B_all(Grid * grid, VirtualTopology3D * vct) {
-  double add_1 = exp (-2);
-  double add_2 = exp (-4);
-  double add_3 = exp (-8);
-  double add_4 = exp (-16);
-  double add_5 = exp (-32);
-  double add_6 = exp (-64);
-  double damp_1 = 1.0 - add_1;
-  double damp_2 = 1.0 - add_2;
-  double damp_3 = 1.0 - add_3;
-  double damp_4 = 1.0 - add_4;
-  double damp_5 = 1.0 - add_5;
-  double damp_6 = 1.0 - add_6;
+/* swamp region for all E and B components at the boundary for GEM */
+void EMfields3D::swamp_EB_all(Grid * grid, VirtualTopology3D * vct) {
+  int layers = 13;
+  double add[layers], restore, damp[layers], factor;
+
+  add[0] = 1.0;
+  damp[0] = 0.0;
+  for (int layer = 1; layer < layers-1; layer++) {
+    add[layer] = 1.0 / exp2(layer/2) + 0.5 * (layer % 2) * exp2((layer-1)/2);
+    damp[layer] = 1.0 - add[layer];
+  }
+
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++) {
-      for (int k = 0; k < nzc; k++) {
-        Bxc[i][nxc - 1][k] = Bxc[i][nxc - 1][k] * damp_1 + B0x * add_1;
-        Bxc[i][nxc - 2][k] = Bxc[i][nxc - 2][k] * damp_2 + B0x * add_2;
-        Bxc[i][nxc - 3][k] = Bxc[i][nxc - 3][k] * damp_3 + B0x * add_3;
-        Bxc[i][nxc - 4][k] = Bxc[i][nxc - 4][k] * damp_4 + B0x * add_4;
-        Bxc[i][nxc - 5][k] = Bxc[i][nxc - 5][k] * damp_5 + B0x * add_5;
-        Bxc[i][nxc - 6][k] = Bxc[i][nxc - 6][k] * damp_6 + B0x * add_6;
-        Byc[i][nyc - 1][k] = Byc[i][nyc - 1][k] * damp_1 + B0y * add_1;
-        Byc[i][nyc - 2][k] = Byc[i][nyc - 2][k] * damp_2 + B0y * add_2;
-        Byc[i][nyc - 3][k] = Byc[i][nyc - 3][k] * damp_3 + B0y * add_3;
-        Byc[i][nyc - 4][k] = Byc[i][nyc - 4][k] * damp_4 + B0y * add_4;
-        Byc[i][nyc - 5][k] = Byc[i][nyc - 5][k] * damp_5 + B0y * add_5;
-        Byc[i][nyc - 6][k] = Byc[i][nyc - 6][k] * damp_6 + B0y * add_6;
-        Bzc[i][nzc - 1][k] = Bzc[i][nzc - 1][k] * damp_1 + B0z * add_1;
-        Bzc[i][nzc - 2][k] = Bzc[i][nzc - 2][k] * damp_2 + B0z * add_2;
-        Bzc[i][nzc - 3][k] = Bzc[i][nzc - 3][k] * damp_3 + B0z * add_3;
-        Bzc[i][nzc - 4][k] = Bzc[i][nzc - 4][k] * damp_4 + B0z * add_4;
-        Bzc[i][nzc - 5][k] = Bzc[i][nzc - 5][k] * damp_5 + B0z * add_5;
-        Bzc[i][nzc - 6][k] = Bzc[i][nzc - 6][k] * damp_6 + B0z * add_6;
+      for (int l = 0; l < layers; l++) {
+        restore = add[l];
+        factor = damp[l];
+        for (int k = 0; k < nzc; k++) {
+          Bxc[i][nyc - l - 1][k] = Bxc[i][nyc - l - 1][k] * factor + B0x * restore;
+          Byc[i][nyc - l - 1][k] = Byc[i][nyc - l - 1][k] * factor + B0y * restore;
+          Bzc[i][nyc - l - 1][k] = Bzc[i][nyc - l - 1][k] * factor + B0z * restore;
+          Ex[i][nyc - l - 1][k] = Ex[i][nyc - l - 1][k] * factor;
+          Ey[i][nyc - l - 1][k] = Ey[i][nyc - l - 1][k] * factor;
+          Ez[i][nyc - l - 1][k] = Ez[i][nyc - l - 1][k] * factor;
+        }
       }
     }
   }
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++) {
-      for (int k = 0; k < nzc; k++) {
-        Bxc[i][0][k] = Bxc[i][0][k] * damp_1 + B0x * add_1;
-        Bxc[i][1][k] = Bxc[i][1][k] * damp_2 + B0x * add_2;
-        Bxc[i][2][k] = Bxc[i][2][k] * damp_3 + B0x * add_3;
-        Bxc[i][3][k] = Bxc[i][3][k] * damp_4 + B0x * add_4;
-        Bxc[i][4][k] = Bxc[i][4][k] * damp_5 + B0x * add_5;
-        Bxc[i][5][k] = Bxc[i][5][k] * damp_6 + B0x * add_6;
-        Byc[i][0][k] = Byc[i][0][k] * damp_1 + B0y * add_1;
-        Byc[i][1][k] = Byc[i][1][k] * damp_2 + B0y * add_2;
-        Byc[i][2][k] = Byc[i][2][k] * damp_3 + B0y * add_3;
-        Byc[i][3][k] = Byc[i][3][k] * damp_4 + B0y * add_4;
-        Byc[i][4][k] = Byc[i][4][k] * damp_5 + B0y * add_5;
-        Byc[i][5][k] = Byc[i][5][k] * damp_6 + B0y * add_6;
-        Bzc[i][0][k] = Bzc[i][0][k] * damp_1 + B0z * add_1;
-        Bzc[i][1][k] = Bzc[i][1][k] * damp_2 + B0z * add_2;
-        Bzc[i][2][k] = Bzc[i][2][k] * damp_3 + B0z * add_3;
-        Bzc[i][3][k] = Bzc[i][3][k] * damp_4 + B0z * add_4;
-        Bzc[i][4][k] = Bzc[i][4][k] * damp_5 + B0z * add_5;
-        Bzc[i][5][k] = Bzc[i][5][k] * damp_6 + B0z * add_6;
+      for (int l = 0; l < layers; l++) {
+        restore = add[l];
+        factor = damp[l];
+        for (int k = 0; k < nzc; k++) {
+          Bxc[i][l][k] = Bxc[i][l][k] * factor + B0x * restore;
+          Byc[i][l][k] = Byc[i][l][k] * factor + B0y * restore;
+          Bzc[i][l][k] = Bzc[i][l][k] * factor + B0z * restore;
+          Ex[i][l][k] = Ex[i][l][k] * factor;
+          Ey[i][l][k] = Ey[i][l][k] * factor;
+          Ez[i][l][k] = Ez[i][l][k] * factor;
+        }
       }
     }
   }
@@ -1077,8 +1018,8 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="GEMOriginal") ;
-  if (Case=="GEM-original") swamp_B_yz(grid, vct);
-  if (Case=="GEM-smallpert") swamp_B_yz(grid, vct);
+  if (Case=="GEM-original") swamp_EB_yz(grid, vct);
+  if (Case=="GEM-smallpert") swamp_EB_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:
