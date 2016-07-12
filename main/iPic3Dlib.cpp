@@ -69,6 +69,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+    else if (col->getCase()=="DoubleHarris")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -107,6 +108,7 @@ int c_Solver::Init(int argc, char **argv) {
       for (int i = 0; i < ns; i++)
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+        else if (col->getCase()=="DoubleHarris")    part[i].maxwellian_reversed(grid, EMf, vct);
         else                                  part[i].maxwellian(grid, EMf, vct);
 
     }

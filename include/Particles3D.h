@@ -36,6 +36,9 @@ class Particles3D:public Particles3Dcomm {
     void constantVelocity(double vel, int dim, Grid * grid, Field * EMf);
     /** Initial condition: uniform in space and maxwellian in velocity */
     void maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: uniform in space and maxwellian with reversal across Y in velocity */
+    void maxwellian_reversed(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+
     /** Initial condition: uniform in space and maxwellian in velocity */
     void MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Force Free initialization (JxB=0) for particles */

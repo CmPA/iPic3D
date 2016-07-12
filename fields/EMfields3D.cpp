@@ -1736,16 +1736,18 @@ void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTop
     for (int i = 0; i < nxn; i++)
       for (int j = 0; j < nyn; j++)
         for (int k = 0; k < nzn; k++) {
-          const double xM = grid->getXN(i, j, k) - .5 * Lx;
-          const double yB = grid->getYN(i, j, k) - .25 * Ly;
-          const double yT = grid->getYN(i, j, k) - .75 * Ly;
-          const double yBd = yB / delta;
-          const double yTd = yT / delta;
+           double xM = grid->getXN(i, j, k) - .25 * Lx;
+           double xMshift = grid->getXN(i, j, k) - .75 * Lx;
+
+           double yB = grid->getYN(i, j, k) - .25 * Ly;
+           double yT = grid->getYN(i, j, k) - .75 * Ly;
+           double yBd = yB / delta;
+           double yTd = yT / delta;
           // initialize the density for species
           for (int is = 0; is < ns; is++) {
             if (DriftSpecies[is]) {
-              const double sech_yBd = 1. / cosh(yBd);
-              const double sech_yTd = 1. / cosh(yTd);
+               double sech_yBd = 1. / cosh(yBd);
+               double sech_yTd = 1. / cosh(yTd);
               rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
               rhons[is][i][j][k] += rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
             }
@@ -1762,16 +1764,18 @@ void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTop
           Bxn[i][j][k] += 0.;
           Byn[i][j][k] = B0y;
           // add the initial X perturbation
-          const double xMdx = xM / deltax;
-          const double yBdy = yB / deltay;
-          const double yTdy = yT / deltay;
-          const double humpB = exp(-xMdx * xMdx - yBdy * yBdy);
-          Bxn[i][j][k] -= (B0x * pertX) * humpB * (2.0 * yBdy);
-          Byn[i][j][k] += (B0x * pertX) * humpB * (2.0 * xMdx);
+           double xMdx = xM / deltax;
+           double xMshiftdx = xMshift / deltax;
+           double yBdy = yB / deltay;
+           double yTdy = yT / deltay;
+           double humpB = exp(-xMdx * xMdx - yBdy * yBdy);
+          Bxn[i][j][k] -= (B0x * pertX) * humpB * cos(2 * M_PI * xM / Lx) * sin(M_PI * yB / Ly);
+          Byn[i][j][k] += (B0x * pertX) * humpB * sin(2 * M_PI * xM / Lx) * cos(M_PI * yB / Ly);
+
           // add the second initial X perturbation
-          const double humpT = exp(-xMdx * xMdx - yTdy * yTdy);
-          Bxn[i][j][k] += (B0x * pertX) * humpT * (2.0 * yTdy);
-          Byn[i][j][k] -= (B0x * pertX) * humpT * (2.0 * xMdx);
+           double humpT = exp(-xMshiftdx * xMshiftdx - yTdy * yTdy);
+          Bxn[i][j][k] += (B0x * pertX) * humpT * cos(2 * M_PI * xMshift / Lx) * sin(M_PI * yT / Ly);
+          Byn[i][j][k] -= (B0x * pertX) * humpT * sin(2 * M_PI * xMshift / Lx) * cos(M_PI * yT / Ly);
 
           // guide field
           Bzn[i][j][k] = B0z;
@@ -1781,32 +1785,10 @@ void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTop
     communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
     communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
     // initialize B on centers
-    for (int i = 0; i < nxc; i++)
-      for (int j = 0; j < nyc; j++)
-        for (int k = 0; k < nzc; k++) {
-          const double xM = grid->getXN(i, j, k) - .5 * Lx;
-          const double yB = grid->getYN(i, j, k) - .25 * Ly;
-          const double yT = grid->getYN(i, j, k) - .75 * Ly;
-          const double yBd = yB / delta;
-          const double yTd = yT / delta;
-          Bxc[i][j][k] = B0x * (-1.0 + tanh(yBd) - tanh(yTd));
-          // add the initial GEM perturbation
-          Bxc[i][j][k] += 0.;
-          Byc[i][j][k] = B0y;
-          // add the initial X perturbation
-          const double xMdx = xM / deltax;
-          const double yBdy = yB / deltay;
-          const double yTdy = yT / deltay;
-          const double humpB = exp(-xMdx * xMdx - yBdy * yBdy);
-          Bxc[i][j][k] -= (B0x * pertX) * humpB * (2.0 * yBdy);
-          Byc[i][j][k] += (B0x * pertX) * humpB * (2.0 * xMdx);
-          // add the second initial X perturbation
-          const double humpT = exp(-xMdx * xMdx - yTdy * yTdy);
-          Bxc[i][j][k] += (B0x * pertX) * humpT * (2.0 * yTdy);
-          Byc[i][j][k] -= (B0x * pertX) * humpT * (2.0 * xMdx);
-          // guide field
-          Bzc[i][j][k] = B0z;
-        }
+    // initialize B on centers
+	grid->interpN2C(Bxc,Bxn);
+	grid->interpN2C(Byc,Byn);
+	grid->interpN2C(Bzc,Bzn);
     // communicate ghost
     communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
     communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
