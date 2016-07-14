@@ -89,6 +89,15 @@ void Collective::ReadInput(string inputfile) {
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle");
     RestartOutputCycle = config.read < int >("RestartOutputCycle");
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
+
+    // MPI topology and periodicity
+    XLEN      = config.read < int > ("XLEN",1);
+    YLEN      = config.read < int > ("YLEN",1);
+    ZLEN      = config.read < int > ("ZLEN",1);
+    PERIODICX = config.read < bool >("PERIODICX");
+    PERIODICY = config.read < bool >("PERIODICY");
+    PERIODICZ = config.read < bool >("PERIODICZ");
+
   }
 
   SolInit = false;
@@ -272,14 +281,6 @@ void Collective::ReadInput(string inputfile) {
     }
 
     verbose = config.read < bool > ("verbose");
-
-    // MPI topology and periodicity
-    XLEN      = config.read < int > ("XLEN",1);
-    YLEN      = config.read < int > ("YLEN",1);
-    ZLEN      = config.read < int > ("ZLEN",1);
-    PERIODICX = config.read < bool >("PERIODICX");
-    PERIODICY = config.read < bool >("PERIODICY");
-    PERIODICZ = config.read < bool >("PERIODICZ");
 
     // PHI Electrostatic Potential 
     bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
