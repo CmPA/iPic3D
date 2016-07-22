@@ -10,6 +10,8 @@ developers: Stefano Markidis, Enrico Camporeale, Giovanni Lapenta, David Burgess
 #include "Particles3Dcomm.h"
 #include "TimeTasks.h"
 
+#include <exception>
+
 /**
  * 
  * Class for particles of the same species, in a 2D space and 3 component velocity
@@ -37,7 +39,9 @@ class Particles3D:public Particles3Dcomm {
     /** Initial condition: uniform in space and maxwellian in velocity */
     void maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
-    void MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    void MaxwellianUseExB(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: uniform in space and maxwellian in velocity */
+    void MaxwellianUseCurrents(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Force Free initialization (JxB=0) for particles */
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */

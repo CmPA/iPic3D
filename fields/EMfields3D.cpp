@@ -3590,6 +3590,19 @@ double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const {
   return (Jxs[is][indexX][indexY][indexZ]);
 }
 /*! get Magnetic Field component X array species is cell without the ghost cells */
+double EMfields3D::getJxsc(int i, int j, int k, int is) const {
+  double val = .125 * (Jxs[is][i][j][k]     +
+                       Jxs[is][i + 1][j][k] +
+                       Jxs[is][i][j + 1][k] +
+                       Jxs[is][i][j][k + 1] +
+                       Jxs[is][i + 1][j + 1][k] +
+                       Jxs[is][i + 1][j][k + 1] +
+                       Jxs[is][i][j + 1][k + 1] +
+                       Jxs[is][i + 1][j + 1][k + 1]);
+
+  return val;
+}
+/*! get Magnetic Field component X array species is cell without the ghost cells */
 double ***EMfields3D::getJxsc(int is) {
   for (int i = 0; i < nxc; i++)
     for (int j = 0; j < nyc; j++)
@@ -3615,6 +3628,19 @@ double ***& EMfields3D::getJys(int is) {
 /*! get Jxs(X,Y,Z,is) : density for species */
 double &EMfields3D::getJys(int indexX, int indexY, int indexZ, int is) const {
   return (Jys[is][indexX][indexY][indexZ]);
+}
+/*! get Magnetic Field component Y array species is cell without the ghost cells */
+double EMfields3D::getJysc(int i, int j, int k, int is) const {
+  double val = .125 * (Jys[is][i][j][k]     +
+                       Jys[is][i + 1][j][k] +
+                       Jys[is][i][j + 1][k] +
+                       Jys[is][i][j][k + 1] +
+                       Jys[is][i + 1][j + 1][k] +
+                       Jys[is][i + 1][j][k + 1] +
+                       Jys[is][i][j + 1][k + 1] +
+                       Jys[is][i + 1][j + 1][k + 1]);
+
+  return val;
 }
 /*! get current component Y array species is cell without the ghost cells */
 double ***EMfields3D::getJysc(int is) {
@@ -3642,6 +3668,19 @@ double ***& EMfields3D::getJzs(int is) {
 /*! get Jxs(X,Y,Z,is) : density for species */
 double &EMfields3D::getJzs(int indexX, int indexY, int indexZ, int is) const {
   return (Jzs[is][indexX][indexY][indexZ]);
+}
+/*! get Magnetic Field component Z array species is cell without the ghost cells */
+double EMfields3D::getJzsc(int i, int j, int k, int is) const {
+  double val = .125 * (Jzs[is][i][j][k]     +
+                       Jzs[is][i + 1][j][k] +
+                       Jzs[is][i][j + 1][k] +
+                       Jzs[is][i][j][k + 1] +
+                       Jzs[is][i + 1][j + 1][k] +
+                       Jzs[is][i + 1][j][k + 1] +
+                       Jzs[is][i][j + 1][k + 1] +
+                       Jzs[is][i + 1][j + 1][k + 1]);
+
+  return val;
 }
 /*! get current component Z array species is cell without the ghost cells */
 double ***EMfields3D::getJzsc(int is) {

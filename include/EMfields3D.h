@@ -428,6 +428,10 @@ class EMfields3D                // :public Field
     /*! SPECIES: get current Z component for species is in all cells except ghost */
     double ***getJzsc(int is);
 
+    double getJxsc(int i, int j, int k, int is) const;
+    double getJysc(int i, int j, int k, int is) const;
+    double getJzsc(int i, int j, int k, int is) const;
+
     double ***&getJxs(int is);
     double ***&getJys(int is);
     double ***&getJzs(int is);
