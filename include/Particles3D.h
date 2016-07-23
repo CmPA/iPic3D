@@ -37,7 +37,11 @@ class Particles3D:public Particles3Dcomm {
     /** Initial condition: uniform in space and maxwellian in velocity */
     void maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
-    void MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    void MaxwellianUseExB(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: particle drift velocities given by the currents in the initial file, thermal velocities from the input file */
+    void MaxwellianUseCurrents(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: Maxwellian distribution based on thermal velocities given in the initial file */
+    void MaxwellianUseVthXYZ(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Force Free initialization (JxB=0) for particles */
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */

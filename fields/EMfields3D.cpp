@@ -42,8 +42,17 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   CGtol = col->getCGtol();
   GMREStol = col->getGMREStol();
   qom = new double[ns];
-  for (int i = 0; i < ns; i++)
+  uth = new double[ns];
+  vth = new double[ns];
+  wth = new double[ns];
+  for (int i = 0; i < ns; i++){
     qom[i] = col->getQOM(i);
+    uth[i] = col->getUth(i);
+    vth[i] = col->getVth(i);
+    wth[i] = col->getWth(i);
+  }
+  // Set minimum density for the calculation of Vth
+  rhomin = 1e-4;
   // boundary conditions: PHI and EM fields
   bcPHIfaceXright = col->getBcPHIfaceXright();
   bcPHIfaceXleft = col->getBcPHIfaceXleft();
@@ -131,6 +140,13 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   pYYsn = newArr4(double, ns, nxn, nyn, nzn);
   pYZsn = newArr4(double, ns, nxn, nyn, nzn);
   pZZsn = newArr4(double, ns, nxn, nyn, nzn);
+  // Thermal velocities read from file
+  if (col->getPartInit()=="UseVthXYZ"){
+    VthX = newArr4(double, ns, nxn, nyn, nzn);
+    VthY = newArr4(double, ns, nxn, nyn, nzn);
+    VthZ = newArr4(double, ns, nxn, nyn, nzn);
+    Vth  = newArr4(double, ns, nxn, nyn, nzn);
+  }
   // arrays allocation: central points 
   PHI = newArr3(double, nxc, nyc, nzc);
   Bxc = newArr3(double, nxc, nyc, nzc);
@@ -1362,12 +1378,16 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
           for (int is = 0; is < ns; is++) {
             rhons[is][i][j][k] = rhoINIT[is] / FourPI;
           }
-          Ex[i][j][k] = 0.0;
-          Ey[i][j][k] = 0.0;
-          Ez[i][j][k] = 0.0;
           Bxn[i][j][k] = B0x;
           Byn[i][j][k] = B0y;
           Bzn[i][j][k] = B0z;
+          double u_0, v_0, w_0;
+          u_0=col->getU0(0);
+          v_0=col->getV0(0);
+          w_0=col->getW0(0);
+          Ex[i][j][k] = w_0*Byn[i][j][k]-v_0*Bzn[i][j][k];
+          Ey[i][j][k] = u_0*Bzn[i][j][k]-w_0*Bxn[i][j][k];
+          Ez[i][j][k] = v_0*Bxn[i][j][k]-u_0*Byn[i][j][k];
         }
       }
     }
@@ -2308,7 +2328,7 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
     }
   }
 
-  //UpdateRHOcs(grid);
+  UpdateRHOcs(grid);
 
 }
 
@@ -2382,9 +2402,9 @@ void EMfields3D::UpdateRHOcs(Grid * grid){
 
   double r = 1.0;
 
-  double xmin = 0.0;
+  double xmin = x_center;
   double xmax = Lx;
-  double rmin = 1.0;
+  double rmin = 0.9;
   double rmax = 1.0;
 
   for (int is = 0; is < ns; is++)
@@ -2397,10 +2417,18 @@ void EMfields3D::UpdateRHOcs(Grid * grid){
           if (r>xmax) r = rmin;
           rhocs[is][i][j][k] = (qom[is]/fabs(qom[is]))*(r/FourPI);
         }
-    //grid->interpN2C(rhocs, is, rhons);
 }
 
 void EMfields3D::SetLambda(Grid *grid){
+
+  /* -- NOTE: Hardcoded option -- */
+  enum {DAMPINGXLFT,DAMPINGXRGT,NODAMPING};
+  int rtype = DAMPINGXLFT;
+  double xmin_r = 20.0 * dx;
+  double xmax_r = 50.0 * dx;
+  double rmin   = 0.0;
+  double rmax   = 4.0 * M_PI / dx;
+  /* -- END NOTE -- */
 
   for (int i=0; i < nxn; i++){
     for (int j=0; j < nyn; j++){
@@ -2410,14 +2438,15 @@ void EMfields3D::SetLambda(Grid *grid){
         double y = grid->getYN(i,j,k);
         double z = grid->getZN(i,j,k);
 
-        double xmin_r = Lx - 75.0 * dx;
-        double xmax_r = Lx - 25.0  * dx;
+        Lambda[i][j][k] = rmin;
 
-        Lambda[i][j][k] = 0.0;
-
-        if (x > xmin_r) {
-          if (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * 4.0 * M_PI / dx;
-          else            Lambda[i][j][k] = 4.0 * M_PI / dx;
+        if (x < xmax_r && rtype==DAMPINGXLFT) {
+          if      (x > xmin_r) Lambda[i][j][k] = ((x - xmax_r) /  (xmin_r - xmax_r)) * rmax;
+          else                 Lambda[i][j][k] = rmax;
+        }
+        if (x > xmin_r && rtype==DAMPINGXRGT) {
+          if      (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * rmax;
+          else                 Lambda[i][j][k] = rmax;
         }
 
       }
@@ -3591,6 +3620,19 @@ double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const {
   return (Jxs[is][indexX][indexY][indexZ]);
 }
 /*! get Magnetic Field component X array species is cell without the ghost cells */
+double EMfields3D::getJxsc(int i, int j, int k, int is) const {
+  double val = .125 * (Jxs[is][i][j][k]     +
+                       Jxs[is][i + 1][j][k] +
+                       Jxs[is][i][j + 1][k] +
+                       Jxs[is][i][j][k + 1] +
+                       Jxs[is][i + 1][j + 1][k] +
+                       Jxs[is][i + 1][j][k + 1] +
+                       Jxs[is][i][j + 1][k + 1] +
+                       Jxs[is][i + 1][j + 1][k + 1]);
+
+  return val;
+}
+/*! get Magnetic Field component X array species is cell without the ghost cells */
 double ***EMfields3D::getJxsc(int is) {
   for (int i = 0; i < nxc; i++)
     for (int j = 0; j < nyc; j++)
@@ -3616,6 +3658,19 @@ double ***& EMfields3D::getJys(int is) {
 /*! get Jxs(X,Y,Z,is) : density for species */
 double &EMfields3D::getJys(int indexX, int indexY, int indexZ, int is) const {
   return (Jys[is][indexX][indexY][indexZ]);
+}
+/*! get Magnetic Field component Y array species is cell without the ghost cells */
+double EMfields3D::getJysc(int i, int j, int k, int is) const {
+  double val = .125 * (Jys[is][i][j][k]     +
+                       Jys[is][i + 1][j][k] +
+                       Jys[is][i][j + 1][k] +
+                       Jys[is][i][j][k + 1] +
+                       Jys[is][i + 1][j + 1][k] +
+                       Jys[is][i + 1][j][k + 1] +
+                       Jys[is][i][j + 1][k + 1] +
+                       Jys[is][i + 1][j + 1][k + 1]);
+
+  return val;
 }
 /*! get current component Y array species is cell without the ghost cells */
 double ***EMfields3D::getJysc(int is) {
@@ -3644,6 +3699,19 @@ double ***& EMfields3D::getJzs(int is) {
 double &EMfields3D::getJzs(int indexX, int indexY, int indexZ, int is) const {
   return (Jzs[is][indexX][indexY][indexZ]);
 }
+/*! get Magnetic Field component Z array species is cell without the ghost cells */
+double EMfields3D::getJzsc(int i, int j, int k, int is) const {
+  double val = .125 * (Jzs[is][i][j][k]     +
+                       Jzs[is][i + 1][j][k] +
+                       Jzs[is][i][j + 1][k] +
+                       Jzs[is][i][j][k + 1] +
+                       Jzs[is][i + 1][j + 1][k] +
+                       Jzs[is][i + 1][j][k + 1] +
+                       Jzs[is][i][j + 1][k + 1] +
+                       Jzs[is][i + 1][j + 1][k + 1]);
+
+  return val;
+}
 /*! get current component Z array species is cell without the ghost cells */
 double ***EMfields3D::getJzsc(int is) {
   for (int i = 0; i < nxc; i++)
@@ -3660,6 +3728,97 @@ double ***EMfields3D::getJzsc(int is) {
 
   return arr;
 }
+double ***& EMfields3D::getVthX(int is) {
+  return (VthX[is]);
+}
+double ***& EMfields3D::getVthY(int is) {
+  return (VthY[is]);
+}
+double ***& EMfields3D::getVthZ(int is) {
+  return (VthZ[is]);
+}
+double ***& EMfields3D::getVth(int is) {
+  return (Vth[is]);
+}
+
+double EMfields3D::getVthXsc(int i, int j, int k, int is){
+   double vthcs = .125 * (VthX[is][i][j][k]     +
+                          VthX[is][i + 1][j][k] +
+                          VthX[is][i][j + 1][k] +
+                          VthX[is][i][j][k + 1] +
+                          VthX[is][i + 1][j + 1][k] +
+                          VthX[is][i + 1][j][k + 1] +
+                          VthX[is][i][j + 1][k + 1] +
+                          VthX[is][i + 1][j + 1][k + 1]);
+  return vthcs;
+}
+double EMfields3D::getVthYsc(int i, int j, int k, int is){
+   double vthcs = .125 * (VthY[is][i][j][k]     +
+                          VthY[is][i + 1][j][k] +
+                          VthY[is][i][j + 1][k] +
+                          VthY[is][i][j][k + 1] +
+                          VthY[is][i + 1][j + 1][k] +
+                          VthY[is][i + 1][j][k + 1] +
+                          VthY[is][i][j + 1][k + 1] +
+                          VthY[is][i + 1][j + 1][k + 1]);
+  return vthcs;
+}
+double EMfields3D::getVthZsc(int i, int j, int k, int is){
+   double vthcs = .125 * (VthZ[is][i][j][k]     +
+                          VthZ[is][i + 1][j][k] +
+                          VthZ[is][i][j + 1][k] +
+                          VthZ[is][i][j][k + 1] +
+                          VthZ[is][i + 1][j + 1][k] +
+                          VthZ[is][i + 1][j][k + 1] +
+                          VthZ[is][i][j + 1][k + 1] +
+                          VthZ[is][i + 1][j + 1][k + 1]);
+  return vthcs;
+}
+/*! Calculate the velues of the thermal velocities */
+double ***&EMfields3D::getVthXns(int is){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
+        double pxx   = pXXsn[is][i][j][k] - Jxs[is][i][j][k]*Jxs[is][i][j][k]/rhons[is][i][j][k];
+        arr[i][j][k] = rhons[is][i][j][k] > rhomin ? sqrt(pxx / rhons[is][i][j][k]) : uth[is];
+      }
+
+  return arr;
+}
+double ***&EMfields3D::getVthYns(int is){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
+        double pyy   = pYYsn[is][i][j][k] - Jys[is][i][j][k]*Jys[is][i][j][k]/rhons[is][i][j][k];
+        arr[i][j][k] = rhons[is][i][j][k] > rhomin ? sqrt(pyy / rhons[is][i][j][k]) : vth[is];
+      }
+
+  return arr;
+}
+double ***&EMfields3D::getVthZns(int is){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
+        double pzz   = pZZsn[is][i][j][k] - Jzs[is][i][j][k]*Jzs[is][i][j][k]/rhons[is][i][j][k];
+        arr[i][j][k] = rhons[is][i][j][k] > rhomin ? sqrt(pzz / rhons[is][i][j][k]) : wth[is];
+      }
+
+  return arr;
+}
+double ***&EMfields3D::getVthns(int is){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
+        double pxx   = pXXsn[is][i][j][k] - Jxs[is][i][j][k]*Jxs[is][i][j][k]/rhons[is][i][j][k];
+        double pyy   = pYYsn[is][i][j][k] - Jys[is][i][j][k]*Jys[is][i][j][k]/rhons[is][i][j][k];
+        double pzz   = pZZsn[is][i][j][k] - Jzs[is][i][j][k]*Jzs[is][i][j][k]/rhons[is][i][j][k];
+        double p     = (1.0 / 3.0) * (pxx+pyy+pzz);
+        arr[i][j][k] = rhons[is][i][j][k] > rhomin ? sqrt(p / rhons[is][i][j][k]) : sqrt(uth[is]*uth[is] + vth[is]*vth[is] + wth[is]*wth[is]);
+      }
+
+  return arr;
+}
+
 /*! get the electric field energy */
 double EMfields3D::getEenergy(void) {
   double localEenergy = 0.0;

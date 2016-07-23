@@ -48,6 +48,12 @@ void Collective::ReadInput(string inputfile) {
     wmethod           = config.read<string>("WriteMethod");
     SimName           = config.read<string>("SimulationName");
     PoissonCorrection = config.read<string>("PoissonCorrection");
+    try   {SaveVthXYZ = config.read<bool>  ("SaveVthXYZ");}
+    catch (ConfigFile::key_not_found k) {
+      std::cout << " WARNING: the key " << k.key.c_str() << " was not found "<< std::endl;
+      std::cout << "          Using SaveVthXYZ = no " << std::endl;
+      SaveVthXYZ  = false;
+    }
 
     rhoINIT = new double[ns];
     array_double rhoINIT0 = config.read < array_double > ("rhoINIT");
@@ -649,8 +655,6 @@ Collective::Collective(int argc, char **argv) {
     npMax[i] = (long) (NpMaxNpRatio * np[i]);
   }
 
-
-
 }
 
 /*! destructor */
@@ -1060,6 +1064,10 @@ string Collective::getWriteMethod() {
 /*! get Poisson correction flag */
 string Collective::getPoissonCorrection() {
   return (PoissonCorrection);
+}
+/*! get SaveVthXYZ flag */
+bool Collective::getSaveVthXYZ() {
+  return (SaveVthXYZ);
 }
 /*! get initial solution flag */
 bool Collective::getSolInit() {
