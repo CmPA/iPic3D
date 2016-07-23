@@ -655,8 +655,6 @@ Collective::Collective(int argc, char **argv) {
     npMax[i] = (long) (NpMaxNpRatio * np[i]);
   }
 
-
-
 }
 
 /*! destructor */

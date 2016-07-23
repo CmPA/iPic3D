@@ -10,8 +10,6 @@ developers: Stefano Markidis, Enrico Camporeale, Giovanni Lapenta, David Burgess
 #include "Particles3Dcomm.h"
 #include "TimeTasks.h"
 
-#include <exception>
-
 /**
  * 
  * Class for particles of the same species, in a 2D space and 3 component velocity

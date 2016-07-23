@@ -356,7 +356,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
   long long counter = 0;
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
-      for (int k = 1; k < grid->getNZC() - 1; k++) {
+      for (int k = 1; k < grid->getNZC() - 1; k++)
         for (int ii = 0; ii < npcelx; ii++)
           for (int jj = 0; jj < npcely; jj++)
             for (int kk = 0; kk < npcelz; kk++) {
@@ -379,14 +379,14 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
               w[counter] = w0 + wth * prob * cos(theta);
-
               if (TrackParticleID)
                 ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
 
 
               counter++;
             }
-      }
+
+
 }
 
 /** Force Free initialization (JxB=0) for particles */
@@ -910,7 +910,9 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
 
   /* -- NOTE: Hardcoded option -- */
   enum {LINEAR,INITIAL,FFIELD};
-  int rtype = INITIAL;
+  int rtype = LINEAR;
+  float rmin = 0.97;
+  float rmax = 1.0 - rmin;
   /* -- END NOTE -- */
 
   if (vct->getCartesian_rank()==0){
@@ -957,7 +959,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==LINEAR)  rho = (rmin + rmax*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
@@ -1022,7 +1024,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==LINEAR)  rho = (rmin + rmax*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
@@ -1083,7 +1085,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==LINEAR)  rho = (rmin + rmax*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
@@ -1143,7 +1145,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==LINEAR)  rho = (rmin + rmax*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
@@ -1204,7 +1206,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==LINEAR)  rho = (rmin + rmax*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
@@ -1265,7 +1267,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==LINEAR)  rho = (rmin + rmax*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u

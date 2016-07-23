@@ -1378,12 +1378,16 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
           for (int is = 0; is < ns; is++) {
             rhons[is][i][j][k] = rhoINIT[is] / FourPI;
           }
-          Ex[i][j][k] = 0.0;
-          Ey[i][j][k] = 0.0;
-          Ez[i][j][k] = 0.0;
           Bxn[i][j][k] = B0x;
           Byn[i][j][k] = B0y;
           Bzn[i][j][k] = B0z;
+          double u_0, v_0, w_0;
+          u_0=col->getU0(0);
+          v_0=col->getV0(0);
+          w_0=col->getW0(0);
+          Ex[i][j][k] = w_0*Byn[i][j][k]-v_0*Bzn[i][j][k];
+          Ey[i][j][k] = u_0*Bzn[i][j][k]-w_0*Bxn[i][j][k];
+          Ez[i][j][k] = v_0*Bxn[i][j][k]-u_0*Byn[i][j][k];
         }
       }
     }
@@ -2181,7 +2185,7 @@ void EMfields3D::UpdateFext(int cycle){
 
   double t_beg = 500.0;
   double t_end = 4500.0;
-  double Fmin  = 0.1;
+  double Fmin  = 1.0;
   double Fmax  = 1.0;
 
   double m     = (Fmax - Fmin) / (t_end - t_beg);
@@ -2263,6 +2267,7 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
 
   /* -- NOTE: Hardcoded option */
   bool twodim = false;
+  double z_dec = 0.16;  // De-centering from z_center in planet radius
   /* -- END NOTE -- */
 
   for (int i=0; i < nxn; i++){
@@ -2273,7 +2278,7 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
 
         double xc=x_center;
         double yc=y_center;
-        double zc=z_center;
+        double zc=z_center + z_dec*delta;
 
         double x = grid->getXN(i,j,k);
         double y = grid->getYN(i,j,k);
@@ -2290,7 +2295,7 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
         double My = B1y;
         double Mz = B1z;
 
-        if (r < 1.0*a) {
+        if (r < a) {
           rz = sqrt(a*a - (rx*rx + ry*ry));
           double one_r3 = 1.0/(a*a*a);
           double rhx = rx/a;
@@ -2323,7 +2328,7 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
     }
   }
 
-  //UpdateRHOcs(grid);
+  UpdateRHOcs(grid);
 
 }
 
@@ -2397,9 +2402,9 @@ void EMfields3D::UpdateRHOcs(Grid * grid){
 
   double r = 1.0;
 
-  double xmin = 0.0;
+  double xmin = x_center;
   double xmax = Lx;
-  double rmin = 1.0;
+  double rmin = 0.9;
   double rmax = 1.0;
 
   for (int is = 0; is < ns; is++)
@@ -2412,10 +2417,18 @@ void EMfields3D::UpdateRHOcs(Grid * grid){
           if (r>xmax) r = rmin;
           rhocs[is][i][j][k] = (qom[is]/fabs(qom[is]))*(r/FourPI);
         }
-    //grid->interpN2C(rhocs, is, rhons);
 }
 
 void EMfields3D::SetLambda(Grid *grid){
+
+  /* -- NOTE: Hardcoded option -- */
+  enum {DAMPINGXLFT,DAMPINGXRGT,NODAMPING};
+  int rtype = DAMPINGXLFT;
+  double xmin_r = 20.0 * dx;
+  double xmax_r = 50.0 * dx;
+  double rmin   = 0.0;
+  double rmax   = 4.0 * M_PI / dx;
+  /* -- END NOTE -- */
 
   for (int i=0; i < nxn; i++){
     for (int j=0; j < nyn; j++){
@@ -2425,14 +2438,15 @@ void EMfields3D::SetLambda(Grid *grid){
         double y = grid->getYN(i,j,k);
         double z = grid->getZN(i,j,k);
 
-        double xmin_r = Lx - 75.0 * dx;
-        double xmax_r = Lx - 25.0  * dx;
+        Lambda[i][j][k] = rmin;
 
-        Lambda[i][j][k] = 0.0;
-
-        if (x > xmin_r) {
-          if (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * 4.0 * M_PI / dx;
-          else            Lambda[i][j][k] = 4.0 * M_PI / dx;
+        if (x < xmax_r && rtype==DAMPINGXLFT) {
+          if      (x > xmin_r) Lambda[i][j][k] = ((x - xmax_r) /  (xmin_r - xmax_r)) * rmax;
+          else                 Lambda[i][j][k] = rmax;
+        }
+        if (x > xmin_r && rtype==DAMPINGXRGT) {
+          if      (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * rmax;
+          else                 Lambda[i][j][k] = rmax;
         }
 
       }
