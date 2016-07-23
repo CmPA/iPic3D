@@ -295,6 +295,57 @@ void Particles3D::MaxwellianUseCurrents(Grid * grid, Field * EMf, VirtualTopolog
 }
 
 /** Maxellian random velocity and uniform spatial distribution */
+void Particles3D::MaxwellianUseVthXYZ(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++) {
+
+        double M_rho = fabs(EMf->getRHOcs(i, j, k, ns));
+        double M_u0  = EMf->getJxsc  (i,j,k,ns) / M_rho;
+        double M_v0  = EMf->getJysc  (i,j,k,ns) / M_rho;
+        double M_w0  = EMf->getJzsc  (i,j,k,ns) / M_rho;
+        double M_uth = EMf->getVthXsc(i,j,k,ns);
+        double M_vth = EMf->getVthYsc(i,j,k,ns);
+        double M_wth = EMf->getVthZsc(i,j,k,ns);
+
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (M_rho / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = M_u0 + M_uth * prob * cos(theta);
+              // v
+              v[counter] = M_v0 + M_vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = M_w0 + M_wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+              counter++;
+            }
+      }
+}
+
+/** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
   /* initialize random generator with different seed on different processor */

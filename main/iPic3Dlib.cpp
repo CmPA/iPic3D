@@ -88,37 +88,34 @@ int c_Solver::Init(int argc, char **argv) {
   if (col->getSolInit()) {
     if (col->getPartInit()=="File") ReadPartclH5hut(ns, part, col, vct, grid);
     else {
-      if (myrank==0) cout << "Allocating particles:" << endl;
-      for (int i = 0; i < ns; i++){
-        if (myrank==0) cout << "           species " << i << endl;
-        part[i].allocate(i, 0, col, vct, grid);
-      }
+      for (int i = 0; i < ns; i++) part[i].allocate(i, 0, col, vct, grid);
+
       if (myrank==0) cout << "Using the particle initialization method: " << col->getPartInit() << endl;
+
       for (int i = 0; i < ns; i++){
         if      (col->getPartInit()=="UseExB")      part[i].MaxwellianUseExB     (grid, EMf, vct);
         else if (col->getPartInit()=="UseCurrents") part[i].MaxwellianUseCurrents(grid, EMf, vct);
-        else    {if (myrank==0) cout << " WARNING: Particle initialisation method unknown. Using Maxwellian " << endl;
+        else if (col->getPartInit()=="UseVthXYZ")   part[i].MaxwellianUseVthXYZ  (grid, EMf, vct);
+        else    {if (myrank==0) cout << "WARNING: Particle initialisation method unknown. Using Maxwellian " << endl;
                  part[i].maxwellian(grid, EMf, vct);
         }
       }
     }
   }
   else {
-    if (myrank==0) cout << "Allocating particles:" << endl;
-    for (int i = 0; i < ns; i++){
-      if (myrank==0) cout << "           species " << i << endl;
-      part[i].allocate(i, 0, col, vct, grid);
-    }
+    for (int i = 0; i < ns; i++) part[i].allocate(i, 0, col, vct, grid);
 
     // Initial Condition for PARTICLES if you are not starting from RESTART
     if (restart == 0) {
       // wave = new Planewave(col, EMf, grid, vct);
       // wave->Wave_Rotated(part); // Single Plane Wave
+
       if (myrank==0) cout << "Using the particle initialization method: " << col->getPartInit() << endl;
+
       for (int i = 0; i < ns; i++)
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
-        else    {if (myrank==0) cout << " WARNING: Particle initialisation method unknown. Using Maxwellian " << endl;
+        else    {if (myrank==0) cout << "WARNING: Particle initialisation method unknown. Using Maxwellian " << endl;
                  part[i].maxwellian(grid, EMf, vct);
         }
     }

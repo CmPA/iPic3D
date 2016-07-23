@@ -397,6 +397,23 @@ class EMfields3D                // :public Field
     /*! get pressure tensor ZZ for species */
     double ****getpZZsn();
 
+    /* Thermal velocities routines */
+    double ***&getVthXns(int is);
+    double ***&getVthYns(int is);
+    double ***&getVthZns(int is);
+    double ***&getVthns (int is);
+
+    double getVthXsc    (int i, int j, int k, int is);
+    double getVthYsc    (int i, int j, int k, int is);
+    double getVthZsc    (int i, int j, int k, int is);
+    double getVthsc     (int i, int j, int k, int is);
+
+    double ***&getVthX  (int is);
+    double ***&getVthY  (int is);
+    double ***&getVthZ  (int is);
+    double ***&getVth   (int is);
+
+
     /*! get Jx(X,Y,Z) */
     double &getJx(int indexX, int indexY, int indexZ) const;
     /*! get current -Direction X */
@@ -470,6 +487,12 @@ class EMfields3D                // :public Field
     double B1x, B1y, B1z;
     /*! charge to mass ratio array for different species */
     double *qom;
+    /*! thermal velocities */
+    double *uth;
+    double *vth;
+    double *wth;
+    /*! Minimal value of rho */
+    double rhomin;
     /*! Boundary electron speed */
     double ue0, ve0, we0;
 
@@ -608,6 +631,12 @@ class EMfields3D                // :public Field
     double***  Jy_ext;
     /*! External current field component-Z, defined on nodes */
     double***  Jz_ext;
+
+    /*! Thermal velocities at the nodes for each component and total thermal velocity */
+    double ****VthX;
+    double ****VthY;
+    double ****VthZ;
+    double ****Vth;
 
     double Fext;
 

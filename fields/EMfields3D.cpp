@@ -42,8 +42,17 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   CGtol = col->getCGtol();
   GMREStol = col->getGMREStol();
   qom = new double[ns];
-  for (int i = 0; i < ns; i++)
+  uth = new double[ns];
+  vth = new double[ns];
+  wth = new double[ns];
+  for (int i = 0; i < ns; i++){
     qom[i] = col->getQOM(i);
+    uth[i] = col->getUth(i);
+    vth[i] = col->getVth(i);
+    wth[i] = col->getWth(i);
+  }
+  // Set minimum density for the calculation of Vth
+  rhomin = 1e-4;
   // boundary conditions: PHI and EM fields
   bcPHIfaceXright = col->getBcPHIfaceXright();
   bcPHIfaceXleft = col->getBcPHIfaceXleft();
@@ -131,6 +140,13 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   pYYsn = newArr4(double, ns, nxn, nyn, nzn);
   pYZsn = newArr4(double, ns, nxn, nyn, nzn);
   pZZsn = newArr4(double, ns, nxn, nyn, nzn);
+  // Thermal velocities read from file
+  if (col->getPartInit()=="UseVthXYZ"){
+    VthX = newArr4(double, ns, nxn, nyn, nzn);
+    VthY = newArr4(double, ns, nxn, nyn, nzn);
+    VthZ = newArr4(double, ns, nxn, nyn, nzn);
+    Vth  = newArr4(double, ns, nxn, nyn, nzn);
+  }
   // arrays allocation: central points 
   PHI = newArr3(double, nxc, nyc, nzc);
   Bxc = newArr3(double, nxc, nyc, nzc);
@@ -3698,6 +3714,97 @@ double ***EMfields3D::getJzsc(int is) {
 
   return arr;
 }
+double ***& EMfields3D::getVthX(int is) {
+  return (VthX[is]);
+}
+double ***& EMfields3D::getVthY(int is) {
+  return (VthY[is]);
+}
+double ***& EMfields3D::getVthZ(int is) {
+  return (VthZ[is]);
+}
+double ***& EMfields3D::getVth(int is) {
+  return (Vth[is]);
+}
+
+double EMfields3D::getVthXsc(int i, int j, int k, int is){
+   double vthcs = .125 * (VthX[is][i][j][k]     +
+                          VthX[is][i + 1][j][k] +
+                          VthX[is][i][j + 1][k] +
+                          VthX[is][i][j][k + 1] +
+                          VthX[is][i + 1][j + 1][k] +
+                          VthX[is][i + 1][j][k + 1] +
+                          VthX[is][i][j + 1][k + 1] +
+                          VthX[is][i + 1][j + 1][k + 1]);
+  return vthcs;
+}
+double EMfields3D::getVthYsc(int i, int j, int k, int is){
+   double vthcs = .125 * (VthY[is][i][j][k]     +
+                          VthY[is][i + 1][j][k] +
+                          VthY[is][i][j + 1][k] +
+                          VthY[is][i][j][k + 1] +
+                          VthY[is][i + 1][j + 1][k] +
+                          VthY[is][i + 1][j][k + 1] +
+                          VthY[is][i][j + 1][k + 1] +
+                          VthY[is][i + 1][j + 1][k + 1]);
+  return vthcs;
+}
+double EMfields3D::getVthZsc(int i, int j, int k, int is){
+   double vthcs = .125 * (VthZ[is][i][j][k]     +
+                          VthZ[is][i + 1][j][k] +
+                          VthZ[is][i][j + 1][k] +
+                          VthZ[is][i][j][k + 1] +
+                          VthZ[is][i + 1][j + 1][k] +
+                          VthZ[is][i + 1][j][k + 1] +
+                          VthZ[is][i][j + 1][k + 1] +
+                          VthZ[is][i + 1][j + 1][k + 1]);
+  return vthcs;
+}
+/*! Calculate the velues of the thermal velocities */
+double ***&EMfields3D::getVthXns(int is){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
+        double pxx   = pXXsn[is][i][j][k] - Jxs[is][i][j][k]*Jxs[is][i][j][k]/rhons[is][i][j][k];
+        arr[i][j][k] = rhons[is][i][j][k] > rhomin ? sqrt(pxx / rhons[is][i][j][k]) : uth[is];
+      }
+
+  return arr;
+}
+double ***&EMfields3D::getVthYns(int is){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
+        double pyy   = pYYsn[is][i][j][k] - Jys[is][i][j][k]*Jys[is][i][j][k]/rhons[is][i][j][k];
+        arr[i][j][k] = rhons[is][i][j][k] > rhomin ? sqrt(pyy / rhons[is][i][j][k]) : vth[is];
+      }
+
+  return arr;
+}
+double ***&EMfields3D::getVthZns(int is){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
+        double pzz   = pZZsn[is][i][j][k] - Jzs[is][i][j][k]*Jzs[is][i][j][k]/rhons[is][i][j][k];
+        arr[i][j][k] = rhons[is][i][j][k] > rhomin ? sqrt(pzz / rhons[is][i][j][k]) : wth[is];
+      }
+
+  return arr;
+}
+double ***&EMfields3D::getVthns(int is){
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
+        double pxx   = pXXsn[is][i][j][k] - Jxs[is][i][j][k]*Jxs[is][i][j][k]/rhons[is][i][j][k];
+        double pyy   = pYYsn[is][i][j][k] - Jys[is][i][j][k]*Jys[is][i][j][k]/rhons[is][i][j][k];
+        double pzz   = pZZsn[is][i][j][k] - Jzs[is][i][j][k]*Jzs[is][i][j][k]/rhons[is][i][j][k];
+        double p     = (1.0 / 3.0) * (pxx+pyy+pzz);
+        arr[i][j][k] = rhons[is][i][j][k] > rhomin ? sqrt(p / rhons[is][i][j][k]) : sqrt(uth[is]*uth[is] + vth[is]*vth[is] + wth[is]*wth[is]);
+      }
+
+  return arr;
+}
+
 /*! get the electric field energy */
 double EMfields3D::getEenergy(void) {
   double localEenergy = 0.0;

@@ -145,6 +145,8 @@ class Collective
     string getSimName();
     /*! get poisson correction flag */
     string getPoissonCorrection();
+    /*! get SaveVthXYZ flag */
+    bool getSaveVthXYZ();
 
     /*! get initial solution flag */
     bool getSolInit();
@@ -337,6 +339,8 @@ class Collective
     /*! Poisson correction flag */
     string PoissonCorrection;
 
+    /*! Save thermal velocity components flag */
+    bool SaveVthXYZ;
     /*! HDF5 initial solution flag */
     bool SolInit;
 

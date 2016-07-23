@@ -161,6 +161,11 @@ void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *co
     file.WriteFields(EMf->getJxs(is),   "Jx_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
     file.WriteFields(EMf->getJys(is),   "Jy_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
     file.WriteFields(EMf->getJzs(is),   "Jz_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    if (col->getSaveVthXYZ()){
+      file.WriteFields(EMf->getVthX(is),"Vthx_"+s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+      file.WriteFields(EMf->getVthY(is),"Vthy_"+s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+      file.WriteFields(EMf->getVthZ(is),"Vthz_"+s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    }
   }
 
   file.CloseFieldsFile();
@@ -320,6 +325,11 @@ void ReadFieldsH5hut(int nspec, bool readext, EMfields3D *EMf, Collective *col, 
     infile.ReadFields(EMf->getJxs(is),   "Jx_" +s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
     infile.ReadFields(EMf->getJys(is),   "Jy_" +s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
     infile.ReadFields(EMf->getJzs(is),   "Jz_" +s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    if (col->getPartInit()=="UseVthXYZ"){
+      infile.ReadFields(EMf->getVthX(is),   "Vthx_" +s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+      infile.ReadFields(EMf->getVthY(is),   "Vthy_" +s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+      infile.ReadFields(EMf->getVthZ(is),   "Vthz_" +s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    }
   }
 
   infile.CloseFieldsFile();
