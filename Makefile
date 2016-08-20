@@ -116,6 +116,5 @@ cleanio :
 	$(MAKE) -C $(IPIC_HOME)/H5hut-io clean
 
 %.o : %.cpp
-	echo " Compiling " $@
 	$(CXX) $(OPTIM) $(DEBUG) $(IPIC_FLAGS) $(INC_DIRS) -c $< -o $@
 
