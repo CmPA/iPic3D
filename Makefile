@@ -104,7 +104,7 @@ lib : $(ALL_OBJS)
 	ranlib $(IPIC_LIB)
 
 main : lib iPic3D.o
-	$(CXX) $(INC_DIRS) iPic3D.o -o $(IPIC_EXE) $(IPIC_LIB) $(LD_LIBS)
+	$(CXX) iPic3D.o -o $(IPIC_EXE) $(IPIC_LIB) $(LD_LIBS)
 
 clean : cleanio
 	$(RM) $(ALL_OBJS)
