@@ -574,7 +574,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
-//        npExitXleft++; // this particle was deleted!
       }
       else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
@@ -589,7 +588,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
-//        npExitXright++; // this particle was deleted!
       }
 
     } else if (y[np_current] < ystart || y[np_current] > yend){
@@ -608,7 +606,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       else if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL){
         // delete the particle and pack the particle array, the value of nplast changes
         del_pack(np_current,&nplast);
-//        npExitYleft++; // this particle was deleted!
       }
       else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
@@ -624,7 +621,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL){
         // delete the particle and pack the particle array, the value of nplast changes
         del_pack(np_current,&nplast);
-//        npExitYright++; // this particle was deleted!
       }
     } else if (z[np_current] < zstart || z[np_current] > zend){
       // communicate if they don't belong to the domain
@@ -642,7 +638,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
-//        npExitZleft++; // this particle was deleted!
       }
       else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
@@ -658,7 +653,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
-//        npExitZright++; // this particle was deleted!
       }
     }  else {
       // particle is still in the domain, procede with the next particle
