@@ -211,7 +211,6 @@ void BCpart(double *x, double *y, double *z, double *u, double *v, double *w, do
         break;
     }
   }
-  /*
   if (*z > Lz && vct->getZright_neighbor() == MPI_PROC_NULL) {
     switch (bcFaceZright) {
       case 1:                  // perfect mirror
@@ -263,5 +262,5 @@ void BCpart(double *x, double *y, double *z, double *u, double *v, double *w, do
         w = fabs(wt * prob * cos(theta));
         break;
     }
-  } */
+  }
 }
