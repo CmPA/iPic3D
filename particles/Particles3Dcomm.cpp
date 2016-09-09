@@ -76,7 +76,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   npcelz = col->getNpcelz(species);
 
   // This if is necessary to restart with H5hut-io
-  if (initnpmax==0){
+  if (initnpmax==0) {
     long ncproc = int(col->getNxc()/col->getXLEN()) *
                   int(col->getNyc()/col->getYLEN()) *
                   int(col->getNzc()/col->getZLEN());
@@ -296,7 +296,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 }
 
 /** Initialie arrays for velocity distributions in 3D */
-void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, int bk, double vR, double vFact, Collective * col, Grid * grid){
+void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, int bk, double vR, double vFact, Collective * col, Grid * grid) {
   vDistRad   = vR;
 
   dovDist3D = false;
@@ -331,7 +331,7 @@ void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, i
   }
 }
 
-void c_vDist::add(double x, double y, double z, double u, double v, double w){
+void c_vDist::add(double x, double y, double z, double u, double v, double w) {
 
   double r2 = (x-vDistLoc_x)*(x-vDistLoc_x) + (y-vDistLoc_y)*(y-vDistLoc_y) + (z-vDistLoc_z)*(z-vDistLoc_z);
   cout << " --+-- r2, vDistRad = " << r2 << " " << vDistRad << endl;
@@ -352,7 +352,7 @@ void c_vDist::add(double x, double y, double z, double u, double v, double w){
 }
 
 /** Add velocity distributions in 3D */
-void Particles3Dcomm::Add_vDist3D(){
+void Particles3Dcomm::Add_vDist3D() {
 
   for (int i=0; i<nvDistLoc; i++) {
 
@@ -367,7 +367,7 @@ void Particles3Dcomm::Add_vDist3D(){
 }
 
 /** Print velocity distributions in 3D */
-void Particles3Dcomm::Write_vDist3D(string SaveDirName){
+void Particles3Dcomm::Write_vDist3D(string SaveDirName) {
 
   for (int n=0; n<nvDistLoc; n++) {
 
@@ -542,7 +542,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   long long np_current = 0, nplast = nop - 1;
 
-  while (np_current < nplast+1){
+  while (np_current < nplast+1) {
 
     // apply boundary conditions on particles
     if (bcPfaceXleft && x[np_current] < 0 && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
@@ -561,11 +561,11 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       BCpart_right(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright);
 
     // if the particle exits, apply the boundary conditions add the particle to communication buffer
-    if (x[np_current] < xstart || x[np_current] > xend){
+    if (x[np_current] < xstart || x[np_current] > xend) {
       // communicate if they don't belong to the domain
-      if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
+      if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL) {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitXleft+1)*nVar)>=buffer_size){
+        if (((npExitXleft+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
@@ -574,12 +574,12 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitXleft++;
       }
-      else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL){
+      else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL) {
         del_pack(np_current,&nplast);
       }
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
+      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL) {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitXright+1)*nVar)>=buffer_size){
+        if(((npExitXright+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
@@ -588,15 +588,15 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitXright++;
       }
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL){
+      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL) {
         del_pack(np_current,&nplast);
       }
 
-    } else if (y[np_current] < ystart || y[np_current] > yend){
+    } else if (y[np_current] < ystart || y[np_current] > yend) {
       // communicate if they don't belong to the domain
-      if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
+      if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL) {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitYleft+1)*nVar)>=buffer_size){
+        if(((npExitYleft+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
@@ -605,13 +605,13 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitYleft++;
       }
-      else if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL){
+      else if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL) {
         // delete the particle and pack the particle array, the value of nplast changes
         del_pack(np_current,&nplast);
       }
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
+      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL) {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitYright+1)*nVar)>=buffer_size){
+        if(((npExitYright+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
@@ -620,15 +620,15 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitYright++;
       }
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL){
+      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL) {
         // delete the particle and pack the particle array, the value of nplast changes
         del_pack(np_current,&nplast);
       }
-    } else if (z[np_current] < zstart || z[np_current] > zend){
+    } else if (z[np_current] < zstart || z[np_current] > zend) {
       // communicate if they don't belong to the domain
-      if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
+      if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL) {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitZleft+1)*nVar)>=buffer_size){
+        if(((npExitZleft+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
@@ -638,12 +638,12 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
         npExitZleft++;
       }
-      else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL){
+      else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL) {
         del_pack(np_current,&nplast);
       }
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
+      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL) {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitZright+1)*nVar)>=buffer_size){
+        if(((npExitZright+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         }
         // put it in the communication buffer
@@ -653,7 +653,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
         npExitZright++;
       }
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL){
+      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) {
         del_pack(np_current,&nplast);
       }
     }  else {
