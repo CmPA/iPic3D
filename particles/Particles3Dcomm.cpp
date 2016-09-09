@@ -137,10 +137,6 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   bcPfaceXleft = col->getBcPfaceXleft();
   bcPfaceYright = col->getBcPfaceYright();
   bcPfaceYleft = col->getBcPfaceYleft();
-  bcPfaceXright = col->getBcPfaceXright();
-  bcPfaceXleft = col->getBcPfaceXleft();
-  bcPfaceYright = col->getBcPfaceYright();
-  bcPfaceYleft = col->getBcPfaceYleft();
   bcPfaceZright = col->getBcPfaceZright();
   bcPfaceZleft = col->getBcPfaceZleft();
   // //////////////////////////////////////////////////////////////
