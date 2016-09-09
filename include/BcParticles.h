@@ -17,8 +17,7 @@ email                : markidis@lanl.gov, lapenta@lanl.gov
 #include "VirtualTopology3D.h"
 #include "Basic.h"
 
-void BCpart(double *x, double *u, double Lx, double ut, int bcFaceXright, int bcFaceXleft);
-void BCpart(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt, int bcFaceXright, int bcFaceXleft);
-void BCpart(double *x, double *y, double *z, double *u, double *v, double *w, double Lx, double Ly, double Lz, double ut, double vt, double wt, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct);
+void BCpart_left(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt, int bcFaceXleft);
+void BCpart_right(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt, int bcFaceXright);
 
 #endif
