@@ -559,7 +559,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
 
     // if the particle exits, apply the boundary conditions add the particle to communication buffer
-    if (x[np_current] < xstart || x[np_current] >xend){
+    if (x[np_current] < xstart || x[np_current] > xend){
       // communicate if they don't belong to the domain
       if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
@@ -592,7 +592,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 //        npExitXright++; // this particle was deleted!
       }
 
-    } else  if (y[np_current] < ystart || y[np_current] >yend){
+    } else if (y[np_current] < ystart || y[np_current] > yend){
       // communicate if they don't belong to the domain
       if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
@@ -626,7 +626,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
 //        npExitYright++; // this particle was deleted!
       }
-    } else  if (z[np_current] < zstart || z[np_current] >zend){
+    } else if (z[np_current] < zstart || z[np_current] > zend){
       // communicate if they don't belong to the domain
       if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
         // check if there is enough space in the buffer before putting in the particle
