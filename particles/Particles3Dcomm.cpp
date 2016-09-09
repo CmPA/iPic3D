@@ -544,19 +544,21 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
   while (np_current < nplast+1){
 
-    // BC on particles
-    if (x[np_current] < 0 && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft);
-    else if (x[np_current] > Lx && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft); 
-    if (y[np_current] < 0 && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft);
-    else if (y[np_current] > Ly && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft); 
-    if (z[np_current] < 0 && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
-    else if (z[np_current] > Lz && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
+    // apply boundary conditions on particles
+    if (bcPfaceXleft && x[np_current] < 0 && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
+      BCpart_left(&x[np_current],&u[np_current],&v[np_current],&w[np_current],uth,vth,wth,bcPfaceXleft);
+    else if (bcPfaceXright && x[np_current] > Lx && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL)
+      BCpart_right(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright);
+
+    if (bcPfaceYleft && y[np_current] < 0 && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL)
+      BCpart_left(&y[np_current],&v[np_current],&u[np_current],&w[np_current],vth,uth,wth,bcPfaceYleft);
+    else if (bcPfaceYright && y[np_current] > Ly && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL)
+      BCpart_right(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright);
+
+    if (bcPfaceZleft && z[np_current] < 0 && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL)
+      BCpart_left(&z[np_current],&w[np_current],&u[np_current],&v[np_current],wth,uth,vth,bcPfaceZleft);
+    else if (bcPfaceZright && z[np_current] > Lz && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL)
+      BCpart_right(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright);
 
     // if the particle exits, apply the boundary conditions add the particle to communication buffer
     if (x[np_current] < xstart || x[np_current] > xend){
