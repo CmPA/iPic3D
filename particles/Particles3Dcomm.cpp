@@ -629,40 +629,40 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     // put particle in the communication buffer
     // delete the particle and pack the particle array
     if (x_out_left) {
-      if (((npExitXleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      npExitXleft++;
+      if ((npExitXleft*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
       bufferXleft(b_X_LEFT,np_current,ptVCT);
       del_pack(np_current,&nplast);
-      npExitXleft++;
     }
     else if (x_out_right) {
-      if (((npExitXright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      npExitXright++;
+      if ((npExitXright*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
       bufferXright(b_X_RIGHT,np_current,ptVCT);
       del_pack(np_current,&nplast);
-      npExitXright++;
     }
     else if (y_out_left) {
-      if (((npExitYleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      npExitYleft++;
+      if ((npExitYleft*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
       bufferYleft(b_Y_LEFT,np_current,ptVCT);
       del_pack(np_current,&nplast);
-      npExitYleft++;
     }
     else if (y_out_right) {
-      if (((npExitYright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      npExitYright++;
+      if ((npExitYright*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
       bufferYright(b_Y_RIGHT,np_current,ptVCT);
       del_pack(np_current,&nplast);
-      npExitYright++;
     }
     else if (z_out_left) {
-      if (((npExitZleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      npExitZleft++;
+      if ((npExitZleft*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
       bufferZleft(b_Z_LEFT,np_current,ptVCT);
       del_pack(np_current,&nplast);
-      npExitZleft++;
     }
     else if (z_out_right) {
-      if (((npExitZright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      npExitZright++;
+      if ((npExitZright*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
       bufferZright(b_Z_RIGHT,np_current,ptVCT);
       del_pack(np_current,&nplast);
-      npExitZright++;
     }
     else {
       // particle is still in the domain, proceed with the next particle
