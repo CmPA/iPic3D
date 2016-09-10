@@ -686,7 +686,8 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // resize buffers, if necessary
   new_buffer_size = npExitingMax * nVar + 1;
   if (new_buffer_size > buffer_size) {
-    cout << "resizing receiving buffer: " << buffer_size << " => " << new_buffer_size << endl;
+    if (ptVCT->getCartesian_rank() == 0)
+      cout << "resizing buffer: " << buffer_size << " => " << new_buffer_size << endl;
     resize_buffers(new_buffer_size);
   }
 
@@ -713,7 +714,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 /** resize the buffers */
 void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   double *temp = NULL;
-  cout << "resizing buffer: " << buffer_size << " => " << new_buffer_size << endl;
 
   // resize b_X_LEFT
   temp = new double[new_buffer_size];
