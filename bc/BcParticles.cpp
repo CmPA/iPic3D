@@ -17,7 +17,7 @@ void BCpart_right_mirror(double *x, double *u, double Lx) {
 
 /** apply left re-emission boundary condition for particles along one coordinate direction (here named 'x') */
 void BCpart_left_reemission(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt) {
-  // riemmission
+  // re-emission
   *x = -*x;
   double harvest, prob, theta;
   // u
@@ -38,7 +38,7 @@ void BCpart_left_reemission(double *x, double *u, double *v, double *w, double L
 
 /** apply right re-emission boundary condition for particles along one coordinate direction (here named 'x') */
 void BCpart_right_reemission(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt) {
-  // riemmission
+  // re-emission
   double harvest, prob, theta;
   *x = 2 * Lx - *x;
   // u
