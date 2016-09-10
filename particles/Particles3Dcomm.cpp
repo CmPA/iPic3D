@@ -527,10 +527,10 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   <ul>
   <li>bcFace = 0 : loose particles</li>
   <li>bcFace = 1 : perfect mirror</li>
-  <li>bcFace = 2 : riemission</li>
+  <li>bcFace = 2 : re-emission</li>
   <li>bcFace = 100 : loose particles, override field periodicity</li>
   <li>bcFace = 101 : perfect mirror, override field periodicity</li>
-  <li>bcFace = 102 : riemission, override field periodicity</li>
+  <li>bcFace = 102 : re-emission, override field periodicity</li>
   </ul> */
 int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // allocate buffers
@@ -558,9 +558,9 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   bool x_mirror = (bcPfaceXleft == 1) || (bcPfaceXright == 1) || (bcPfaceXleft == 101) || (bcPfaceXright == 101);
   bool y_mirror = (bcPfaceYleft == 1) || (bcPfaceYright == 1) || (bcPfaceYleft == 101) || (bcPfaceYright == 101);
   bool z_mirror = (bcPfaceZleft == 1) || (bcPfaceZright == 1) || (bcPfaceZleft == 101) || (bcPfaceZright == 101);
-  bool x_riemission = (bcPfaceXleft == 2) || (bcPfaceXright == 2) || (bcPfaceXleft == 102) || (bcPfaceXright == 102);
-  bool y_riemission = (bcPfaceYleft == 2) || (bcPfaceYright == 2) || (bcPfaceYleft == 102) || (bcPfaceYright == 102);
-  bool z_riemission = (bcPfaceZleft == 2) || (bcPfaceZright == 2) || (bcPfaceZleft == 102) || (bcPfaceZright == 102);
+  bool x_reemission = (bcPfaceXleft == 2) || (bcPfaceXright == 2) || (bcPfaceXleft == 102) || (bcPfaceXright == 102);
+  bool y_reemission = (bcPfaceYleft == 2) || (bcPfaceYright == 2) || (bcPfaceYleft == 102) || (bcPfaceYright == 102);
+  bool z_reemission = (bcPfaceZleft == 2) || (bcPfaceZright == 2) || (bcPfaceZleft == 102) || (bcPfaceZright == 102);
 
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   long long np_current = 0, nplast = nop - 1;
@@ -571,7 +571,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (no_x_left) {
         // check for boundary conditions
         if (x_mirror) BCpart_left_mirror(&x[np_current],&u[np_current],Lx);
-        else if (x_riemission) BCpart_left_riemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
+        else if (x_reemission) BCpart_left_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
         else del_pack(np_current,&nplast);
       }
       else {
@@ -588,7 +588,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (no_x_right) {
         // check for boundary conditions
         if (x_mirror) BCpart_right_mirror(&x[np_current],&u[np_current],Lx);
-        else if (x_riemission) BCpart_right_riemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
+        else if (x_reemission) BCpart_right_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
         else del_pack(np_current,&nplast);
       }
       else {
@@ -605,7 +605,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (no_y_left) {
         // check for boundary conditions
         if (y_mirror) BCpart_left_mirror(&y[np_current],&v[np_current],Ly);
-        else if (y_riemission) BCpart_left_riemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
+        else if (y_reemission) BCpart_left_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
         else del_pack(np_current,&nplast);
       }
       else {
@@ -622,7 +622,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (no_y_right) {
         // check for boundary conditions
         if (y_mirror) BCpart_right_mirror(&y[np_current],&v[np_current],Ly);
-        else if (y_riemission) BCpart_right_riemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
+        else if (y_reemission) BCpart_right_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
         else del_pack(np_current,&nplast);
       }
       else {
@@ -639,7 +639,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (no_z_left) {
         // check for boundary conditions
         if (z_mirror) BCpart_left_mirror(&z[np_current],&w[np_current],Lz);
-        else if (z_riemission) BCpart_left_riemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
+        else if (z_reemission) BCpart_left_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
         else del_pack(np_current,&nplast);
       }
       else {
@@ -656,7 +656,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (no_z_right) {
         // check for boundary conditions
         if (z_mirror) BCpart_right_mirror(&z[np_current],&w[np_current],Lz);
-        else if (z_riemission) BCpart_right_riemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
+        else if (z_reemission) BCpart_right_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
         else del_pack(np_current,&nplast);
       }
       else {

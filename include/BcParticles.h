@@ -20,7 +20,7 @@ email                : markidis@lanl.gov, lapenta@lanl.gov
 void BCpart_left_mirror(double *x, double *u, double Lx);
 void BCpart_right_mirror(double *x, double *u, double Lx);
 
-void BCpart_left_riemission(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt);
-void BCpart_right_riemission(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt);
+void BCpart_left_reemission(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt);
+void BCpart_right_reemission(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt);
 
 #endif
