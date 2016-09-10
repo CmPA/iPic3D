@@ -568,12 +568,12 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
   while (np_current < nplast+1) {
 
-    x_out_left = x[np_current] < xstart
-    x_out_right = x[np_current] > xend
-    y_out_left = y[np_current] < ystart
-    y_out_right = y[np_current] > yend
-    z_out_left = z[np_current] < zstart
-    z_out_right = z[np_current] > zend
+    x_out_left = x[np_current] < xstart;
+    x_out_right = x[np_current] > xend;
+    y_out_left = y[np_current] < ystart;
+    y_out_right = y[np_current] > yend;
+    z_out_left = z[np_current] < zstart;
+    z_out_right = z[np_current] > zend;
 
     // check for boundary conditions
     if (no_x_left) {
