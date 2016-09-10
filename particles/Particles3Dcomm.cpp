@@ -563,7 +563,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   bool z_reemission = (bcPfaceZleft == 2) || (bcPfaceZright == 2) || (bcPfaceZleft == 102) || (bcPfaceZright == 102);
 
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
-  bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right
+  bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right;
   long long np_current = 0, nplast = nop - 1;
 
   while (np_current < nplast+1) {
