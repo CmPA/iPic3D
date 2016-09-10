@@ -563,111 +563,106 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   bool z_reemission = (bcPfaceZleft == 2) || (bcPfaceZright == 2) || (bcPfaceZleft == 102) || (bcPfaceZright == 102);
 
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
+  bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right
   long long np_current = 0, nplast = nop - 1;
 
   while (np_current < nplast+1) {
 
-    if (x[np_current] < xstart) {
-      if (no_x_left) {
-        // check for boundary conditions
+    x_out_left = x[np_current] < xstart
+    x_out_right = x[np_current] > xend
+    y_out_left = y[np_current] < ystart
+    y_out_right = y[np_current] > yend
+    z_out_left = z[np_current] < zstart
+    z_out_right = z[np_current] > zend
+
+    // check for boundary conditions
+    if (no_x_left) {
+      if (x_out_left) {
         if (x_mirror) BCpart_left_mirror(&x[np_current],&u[np_current],Lx);
         else if (x_reemission) BCpart_left_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
         else del_pack(np_current,&nplast);
-      }
-      else {
-        // check if there is enough space in the buffer before putting in the particle
-        if (((npExitXleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        // put it in the communication buffer
-        bufferXleft(b_X_LEFT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitXleft++;
+        continue;
       }
     }
-    else if (x[np_current] > xend) {
-      if (no_x_right) {
-        // check for boundary conditions
+    if (no_x_right) {
+      if (x_out_right) {
         if (x_mirror) BCpart_right_mirror(&x[np_current],&u[np_current],Lx);
         else if (x_reemission) BCpart_right_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
         else del_pack(np_current,&nplast);
-      }
-      else {
-        // check if there is enough space in the buffer before putting in the particle
-        if (((npExitXright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        // put it in the communication buffer
-        bufferXright(b_X_RIGHT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitXright++;
+        continue;
       }
     }
-    else if (y[np_current] < ystart) {
-      if (no_y_left) {
-        // check for boundary conditions
+    if (no_y_left) {
+      if (y_out_left) {
         if (y_mirror) BCpart_left_mirror(&y[np_current],&v[np_current],Ly);
         else if (y_reemission) BCpart_left_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
         else del_pack(np_current,&nplast);
-      }
-      else {
-        // check if there is enough space in the buffer before putting in the particle
-        if (((npExitYleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        // put it in the communication buffer
-        bufferYleft(b_Y_LEFT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitYleft++;
+        continue;
       }
     }
-    else if (y[np_current] > yend) {
-      if (no_y_right) {
-        // check for boundary conditions
+    if (no_y_right) {
+      if (y_out_right) {
         if (y_mirror) BCpart_right_mirror(&y[np_current],&v[np_current],Ly);
         else if (y_reemission) BCpart_right_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
         else del_pack(np_current,&nplast);
-      }
-      else {
-        // check if there is enough space in the buffer before putting in the particle
-        if (((npExitYright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        // put it in the communication buffer
-        bufferYright(b_Y_RIGHT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitYright++;
+        continue;
       }
     }
-    else if (z[np_current] < zstart) {
-      if (no_z_left) {
-        // check for boundary conditions
+    if (no_z_left) {
+      if (z_out_left) {
         if (z_mirror) BCpart_left_mirror(&z[np_current],&w[np_current],Lz);
         else if (z_reemission) BCpart_left_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
         else del_pack(np_current,&nplast);
-      }
-      else {
-        // check if there is enough space in the buffer before putting in the particle
-        if (((npExitZleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        // put it in the communication buffer
-        bufferZleft(b_Z_LEFT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitZleft++;
+        continue;
       }
     }
-    else if (z[np_current] > zend) {
-      if (no_z_right) {
-        // check for boundary conditions
+    if (no_z_right) {
+      if (z_out_right) {
         if (z_mirror) BCpart_right_mirror(&z[np_current],&w[np_current],Lz);
         else if (z_reemission) BCpart_right_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
         else del_pack(np_current,&nplast);
+        continue;
       }
-      else {
-        // check if there is enough space in the buffer before putting in the particle
-        if (((npExitZright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        // put it in the communication buffer
-        bufferZright(b_Z_RIGHT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitZright++;
-      }
+    }
+
+    // check if there is enough space in the buffer
+    // put particle in the communication buffer
+    // delete the particle and pack the particle array
+    if (x_out_left) {
+      if (((npExitXleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      bufferXleft(b_X_LEFT,np_current,ptVCT);
+      del_pack(np_current,&nplast);
+      npExitXleft++;
+    }
+    else if (x_out_right) {
+      if (((npExitXright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      bufferXright(b_X_RIGHT,np_current,ptVCT);
+      del_pack(np_current,&nplast);
+      npExitXright++;
+    }
+    else if (y_out_left) {
+      if (((npExitYleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      bufferYleft(b_Y_LEFT,np_current,ptVCT);
+      del_pack(np_current,&nplast);
+      npExitYleft++;
+    }
+    else if (y_out_right) {
+      if (((npExitYright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      bufferYright(b_Y_RIGHT,np_current,ptVCT);
+      del_pack(np_current,&nplast);
+      npExitYright++;
+    }
+    else if (z_out_left) {
+      if (((npExitZleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      bufferZleft(b_Z_LEFT,np_current,ptVCT);
+      del_pack(np_current,&nplast);
+      npExitZleft++;
+    }
+    else if (z_out_right) {
+      if (((npExitZright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      bufferZright(b_Z_RIGHT,np_current,ptVCT);
+      del_pack(np_current,&nplast);
+      npExitZright++;
     }
     else {
       // particle is still in the domain, proceed with the next particle
