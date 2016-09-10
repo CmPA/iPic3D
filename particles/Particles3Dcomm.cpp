@@ -580,48 +580,48 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       if (x_out_left) {
         if (x_mirror) BCpart_left_mirror(&x[np_current],&u[np_current],Lx);
         else if (x_reemission) BCpart_left_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
-        else del_pack(np_current,&nplast);
-        continue;
+        else { del_pack(np_current,&nplast); continue; }
+        x_out_left = false;
       }
     }
     if (no_x_right) {
       if (x_out_right) {
         if (x_mirror) BCpart_right_mirror(&x[np_current],&u[np_current],Lx);
         else if (x_reemission) BCpart_right_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
-        else del_pack(np_current,&nplast);
-        continue;
+        else { del_pack(np_current,&nplast); continue; }
+        x_out_right = false;
       }
     }
     if (no_y_left) {
       if (y_out_left) {
         if (y_mirror) BCpart_left_mirror(&y[np_current],&v[np_current],Ly);
         else if (y_reemission) BCpart_left_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
-        else del_pack(np_current,&nplast);
-        continue;
+        else { del_pack(np_current,&nplast); continue; }
+        y_out_left = false;
       }
     }
     if (no_y_right) {
       if (y_out_right) {
         if (y_mirror) BCpart_right_mirror(&y[np_current],&v[np_current],Ly);
         else if (y_reemission) BCpart_right_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
-        else del_pack(np_current,&nplast);
-        continue;
+        else { del_pack(np_current,&nplast); continue; }
+        y_out_right = false;
       }
     }
     if (no_z_left) {
       if (z_out_left) {
         if (z_mirror) BCpart_left_mirror(&z[np_current],&w[np_current],Lz);
         else if (z_reemission) BCpart_left_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
-        else del_pack(np_current,&nplast);
-        continue;
+        else { del_pack(np_current,&nplast); continue; }
+        z_out_left = false;
       }
     }
     if (no_z_right) {
       if (z_out_right) {
         if (z_mirror) BCpart_right_mirror(&z[np_current],&w[np_current],Lz);
         else if (z_reemission) BCpart_right_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
-        else del_pack(np_current,&nplast);
-        continue;
+        else { del_pack(np_current,&nplast); continue; }
+        z_out_right = false;
       }
     }
 
