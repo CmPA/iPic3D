@@ -523,7 +523,15 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
 }
 
-/** communicate buffers */
+/** communicate buffers or apply boundary conditions for particles:
+  <ul>
+  <li>bcFace = 0 : loose particles</li>
+  <li>bcFace = 1 : perfect mirror</li>
+  <li>bcFace = 2 : riemission</li>
+  <li>bcFace = 100 : loose particles, override field periodicity</li>
+  <li>bcFace = 101 : perfect mirror, override field periodicity</li>
+  <li>bcFace = 102 : riemission, override field periodicity</li>
+  </ul> */
 int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // allocate buffers
   MPI_Status status;
@@ -532,38 +540,41 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // variable for memory availability of space for new particles
   int avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
   for (int i = 0; i < buffer_size; i++) {
-    b_X_RIGHT[i] = MIN_VAL;
     b_X_LEFT[i] = MIN_VAL;
-    b_Y_RIGHT[i] = MIN_VAL;
     b_Y_LEFT[i] = MIN_VAL;
-    b_Z_RIGHT[i] = MIN_VAL;
     b_Z_LEFT[i] = MIN_VAL;
+    b_X_RIGHT[i] = MIN_VAL;
+    b_Y_RIGHT[i] = MIN_VAL;
+    b_Z_RIGHT[i] = MIN_VAL;
   }
+
+  bool no_x_left = ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL;
+  bool no_y_left = ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL;
+  bool no_z_left = ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL;
+  bool no_x_right = ptVCT->getXright_neighbor_P() == MPI_PROC_NULL;
+  bool no_y_right = ptVCT->getYright_neighbor_P() == MPI_PROC_NULL;
+  bool no_z_right = ptVCT->getZright_neighbor_P() == MPI_PROC_NULL;
+
+  bool x_mirror = (bcPfaceXleft == 1) || (bcPfaceXright == 1) || (bcPfaceXleft == 101) || (bcPfaceXright == 101);
+  bool y_mirror = (bcPfaceYleft == 1) || (bcPfaceYright == 1) || (bcPfaceYleft == 101) || (bcPfaceYright == 101);
+  bool z_mirror = (bcPfaceZleft == 1) || (bcPfaceZright == 1) || (bcPfaceZleft == 101) || (bcPfaceZright == 101);
+  bool x_riemission = (bcPfaceXleft == 2) || (bcPfaceXright == 2) || (bcPfaceXleft == 102) || (bcPfaceXright == 102);
+  bool y_riemission = (bcPfaceYleft == 2) || (bcPfaceYright == 2) || (bcPfaceYleft == 102) || (bcPfaceYright == 102);
+  bool z_riemission = (bcPfaceZleft == 2) || (bcPfaceZright == 2) || (bcPfaceZleft == 102) || (bcPfaceZright == 102);
+
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   long long np_current = 0, nplast = nop - 1;
 
   while (np_current < nplast+1) {
 
-    // apply boundary conditions on particles
-    if (bcPfaceXleft && x[np_current] < 0)
-      BCpart_left(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXleft);
-    else if (bcPfaceXright && x[np_current] > Lx)
-      BCpart_right(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright);
-
-    if (bcPfaceYleft && y[np_current] < 0)
-      BCpart_left(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYleft);
-    else if (bcPfaceYright && y[np_current] > Ly)
-      BCpart_right(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright);
-
-    if (bcPfaceZleft && z[np_current] < 0)
-      BCpart_left(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZleft);
-    else if (bcPfaceZright && z[np_current] > Lz)
-      BCpart_right(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright);
-
-    // if the particle exits, apply the boundary conditions add the particle to communication buffer
-    if (x[np_current] < xstart || x[np_current] > xend) {
-      // communicate if they don't belong to the domain
-      if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL) {
+    if (x[np_current] < xstart) {
+      if (no_x_left) {
+        // check for boundary conditions
+        if (x_mirror) BCpart_left_mirror(&x[np_current],&u[np_current],Lx);
+        else if (x_riemission) BCpart_left_riemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
+        else del_pack(np_current,&nplast);
+      }
+      else {
         // check if there is enough space in the buffer before putting in the particle
         if (((npExitXleft+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
@@ -574,10 +585,15 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitXleft++;
       }
-      else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL) {
-        del_pack(np_current,&nplast);
+    }
+    else if (x[np_current] > xend) {
+      if (no_x_right) {
+        // check for boundary conditions
+        if (x_mirror) BCpart_right_mirror(&x[np_current],&u[np_current],Lx);
+        else if (x_riemission) BCpart_right_riemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
+        else del_pack(np_current,&nplast);
       }
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL) {
+      else {
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitXright+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
@@ -588,13 +604,15 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitXright++;
       }
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL) {
-        del_pack(np_current,&nplast);
+    }
+    else if (y[np_current] < ystart) {
+      if (no_y_left) {
+        // check for boundary conditions
+        if (y_mirror) BCpart_left_mirror(&y[np_current],&v[np_current],Ly);
+        else if (y_riemission) BCpart_left_riemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
+        else del_pack(np_current,&nplast);
       }
-
-    } else if (y[np_current] < ystart || y[np_current] > yend) {
-      // communicate if they don't belong to the domain
-      if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL) {
+      else {
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitYleft+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
@@ -605,11 +623,15 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitYleft++;
       }
-      else if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL) {
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
+    }
+    else if (y[np_current] > yend) {
+      if (no_y_right) {
+        // check for boundary conditions
+        if (y_mirror) BCpart_right_mirror(&y[np_current],&v[np_current],Ly);
+        else if (y_riemission) BCpart_right_riemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
+        else del_pack(np_current,&nplast);
       }
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL) {
+      else {
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitYright+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
@@ -620,13 +642,15 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitYright++;
       }
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL) {
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
+    }
+    else if (z[np_current] < zstart) {
+      if (no_z_left) {
+        // check for boundary conditions
+        if (z_mirror) BCpart_left_mirror(&z[np_current],&w[np_current],Lz);
+        else if (z_riemission) BCpart_left_riemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
+        else del_pack(np_current,&nplast);
       }
-    } else if (z[np_current] < zstart || z[np_current] > zend) {
-      // communicate if they don't belong to the domain
-      if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL) {
+      else {
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitZleft+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
@@ -635,13 +659,17 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         bufferZleft(b_Z_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
         del_pack(np_current,&nplast);
-
         npExitZleft++;
       }
-      else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL) {
-        del_pack(np_current,&nplast);
+    }
+    else if (z[np_current] > zend) {
+      if (no_z_right) {
+        // check for boundary conditions
+        if (z_mirror) BCpart_right_mirror(&z[np_current],&w[np_current],Lz);
+        else if (z_riemission) BCpart_right_riemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
+        else del_pack(np_current,&nplast);
       }
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL) {
+      else {
         // check if there is enough space in the buffer before putting in the particle
         if(((npExitZright+1)*nVar)>=buffer_size) {
           resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
@@ -650,17 +678,13 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         bufferZright(b_Z_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
         del_pack(np_current,&nplast);
-
         npExitZright++;
       }
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) {
-        del_pack(np_current,&nplast);
-      }
-    }  else {
-      // particle is still in the domain, procede with the next particle
+    }
+    else {
+      // particle is still in the domain, proceed with the next particle
       np_current++;
     }
-
   }
 
   nop = nplast + 1;
