@@ -15,9 +15,9 @@ VCtopology3D::VCtopology3D(Collective *col) {
   PERIODICY = col->getPERIODICY();
   PERIODICZ = col->getPERIODICZ();
   // here you have to set the topology for the Particles
-  PERIODICX_P = col->getPERIODICX();
-  PERIODICY_P = col->getPERIODICY();
-  PERIODICZ_P = col->getPERIODICZ();
+  PERIODICX_P = col->getPERIODICX_P();
+  PERIODICY_P = col->getPERIODICY_P();
+  PERIODICZ_P = col->getPERIODICZ_P();
   // *******************************************
   // *******************************************
   XDIR = 0;

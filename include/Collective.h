@@ -76,6 +76,10 @@ class Collective
     bool getPERIODICY() {return (PERIODICY);};
     bool getPERIODICZ() {return (PERIODICZ);};
 
+    bool getPERIODICX_P() {return (PERIODICX && (bcPfaceXleft < 100) && (bcPfaceXright < 100));};
+    bool getPERIODICY_P() {return (PERIODICY && (bcPfaceYleft < 100) && (bcPfaceYright < 100));};
+    bool getPERIODICZ_P() {return (PERIODICZ && (bcPfaceZleft < 100) && (bcPfaceZright < 100));};
+
     /*! Get the grid spacing - direction X */
     double getDx();
     /*! Get the grid spacing - direction Y */
