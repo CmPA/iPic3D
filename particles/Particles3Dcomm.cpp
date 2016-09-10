@@ -576,9 +576,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else {
         // check if there is enough space in the buffer before putting in the particle
-        if (((npExitXleft+1)*nVar)>=buffer_size) {
-          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        }
+        if (((npExitXleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         // put it in the communication buffer
         bufferXleft(b_X_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
@@ -595,9 +593,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitXright+1)*nVar)>=buffer_size) {
-          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        }
+        if (((npExitXright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         // put it in the communication buffer
         bufferXright(b_X_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
@@ -614,9 +610,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitYleft+1)*nVar)>=buffer_size) {
-          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        }
+        if (((npExitYleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         // put it in the communication buffer
         bufferYleft(b_Y_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
@@ -633,9 +627,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitYright+1)*nVar)>=buffer_size) {
-          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        }
+        if (((npExitYright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         // put it in the communication buffer
         bufferYright(b_Y_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
@@ -652,9 +644,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitZleft+1)*nVar)>=buffer_size) {
-          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        }
+        if (((npExitZleft+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         // put it in the communication buffer
         bufferZleft(b_Z_LEFT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
@@ -671,9 +661,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       }
       else {
         // check if there is enough space in the buffer before putting in the particle
-        if(((npExitZright+1)*nVar)>=buffer_size) {
-          resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
-        }
+        if (((npExitZright+1)*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
         // put it in the communication buffer
         bufferZright(b_Z_RIGHT,np_current,ptVCT);
         // delete the particle and pack the particle array, the value of nplast changes
@@ -698,7 +686,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // resize buffers, if necessary
   new_buffer_size = npExitingMax * nVar + 1;
   if (new_buffer_size > buffer_size) {
-    cout << "resizing the receiving buffer" << endl;
+    cout << "resizing receiving buffer: " << buffer_size << " => " << new_buffer_size << endl;
     resize_buffers(new_buffer_size);
   }
 
@@ -725,7 +713,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 /** resize the buffers */
 void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   double *temp = NULL;
-  cout << "RESIZING FROM " << buffer_size << " TO " << new_buffer_size << endl;
+  cout << "resizing buffer: " << buffer_size << " => " << new_buffer_size << endl;
 
   // resize b_X_LEFT
   temp = new double[new_buffer_size];
@@ -783,6 +771,7 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
 
   buffer_size = new_buffer_size;
 }
+
 /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
 void Particles3Dcomm::bufferXleft(double *b_, long long np_current, VirtualTopology3D * vct) {
   if (x[np_current] < 0)
