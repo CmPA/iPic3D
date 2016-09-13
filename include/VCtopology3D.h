@@ -135,11 +135,11 @@ private:
   bool PERIODICY;
   /** periodicity on boundaries - DIRECTION Z*/
   bool PERIODICZ;
-  /** periodicity on boundaries - DIRECTION X*/
+  /** periodicity on boundaries for particles - DIRECTION X*/
   bool PERIODICX_P;
-  /** periodicity on boundaries - DIRECTION Y*/
+  /** periodicity on boundaries for particles - DIRECTION Y*/
   bool PERIODICY_P;
-  /** periodicity on boundaries - DIRECTION Z*/
+  /** periodicity on boundaries for particles - DIRECTION Z*/
   bool PERIODICZ_P;
   /** rank may be reordered     */
   int reorder;

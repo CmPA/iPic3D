@@ -84,6 +84,11 @@ PERIODICX       = 1                  # In direction X (1=true, 0=false)
 PERIODICY       = 0                  # In direction Y (1=true, 0=false)
 PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
 
+# %%%%%%%%%%%% Periodicity for particles in each direction %%%%%%%%%%%%%%%
+PERIODICX_P     = 1                  # In direction X (1=true, 0=false)
+PERIODICY_P     = 0                  # In direction Y (1=true, 0=false)
+PERIODICZ_P     = 1                  # In direction Z (1=true, 0=false)
+
 # %%%%%%%%%%%% boundary conditions %%%%%%%%%%%%%%%
 # If the PERIODIC flag is active in the previous section
 # periodic boundary conditions will be imposed

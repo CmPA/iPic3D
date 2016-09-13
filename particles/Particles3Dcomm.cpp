@@ -528,9 +528,6 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   <li>bcFace = 0 : loose particles</li>
   <li>bcFace = 1 : perfect mirror</li>
   <li>bcFace = 2 : re-emission</li>
-  <li>bcFace = 100 : loose particles, override field periodicity</li>
-  <li>bcFace = 101 : perfect mirror, override field periodicity</li>
-  <li>bcFace = 102 : re-emission, override field periodicity</li>
   </ul> */
 int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // allocate buffers

@@ -76,9 +76,9 @@ class Collective
     bool getPERIODICY() {return (PERIODICY);};
     bool getPERIODICZ() {return (PERIODICZ);};
 
-    bool getPERIODICX_P() {return (PERIODICX && (bcPfaceXleft < 100) && (bcPfaceXright < 100));};
-    bool getPERIODICY_P() {return (PERIODICY && (bcPfaceYleft < 100) && (bcPfaceYright < 100));};
-    bool getPERIODICZ_P() {return (PERIODICZ && (bcPfaceZleft < 100) && (bcPfaceZright < 100));};
+    bool getPERIODICX_P() {return (PERIODICX_P);};
+    bool getPERIODICY_P() {return (PERIODICY_P);};
+    bool getPERIODICZ_P() {return (PERIODICZ_P);};
 
     /*! Get the grid spacing - direction X */
     double getDx();
@@ -292,6 +292,9 @@ class Collective
     bool PERIODICX;    /*! Periodicity in the X direction */
     bool PERIODICY;    /*! Periodicity in the Y direction */
     bool PERIODICZ;    /*! Periodicity in the Z direction */
+    bool PERIODICX_P;  /*! Periodicity for particles in the X direction */
+    bool PERIODICY_P;  /*! Periodicity for particles in the Y direction */
+    bool PERIODICZ_P;  /*! Periodicity for particles in the Z direction */
 
     /*! number of species */
     int ns;

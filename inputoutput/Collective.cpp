@@ -97,6 +97,9 @@ void Collective::ReadInput(string inputfile) {
     PERIODICX = config.read < bool >("PERIODICX");
     PERIODICY = config.read < bool >("PERIODICY");
     PERIODICZ = config.read < bool >("PERIODICZ");
+    PERIODICX_P = config.read < bool >("PERIODICX_P");
+    PERIODICY_P = config.read < bool >("PERIODICY_P");
+    PERIODICZ_P = config.read < bool >("PERIODICZ_P");
 
   }
 
