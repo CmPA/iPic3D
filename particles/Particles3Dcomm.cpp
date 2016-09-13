@@ -545,12 +545,16 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     b_Z_RIGHT[i] = MIN_VAL;
   }
 
-  bool no_x_left = ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL;
-  bool no_y_left = ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL;
-  bool no_z_left = ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL;
-  bool no_x_right = ptVCT->getXright_neighbor_P() == MPI_PROC_NULL;
-  bool no_y_right = ptVCT->getYright_neighbor_P() == MPI_PROC_NULL;
-  bool no_z_right = ptVCT->getZright_neighbor_P() == MPI_PROC_NULL;
+  bool x_degenerated = (ptVCT->getXleft_neighbor_P() == ptVCT->getCartesian_rank());
+  bool y_degenerated = (ptVCT->getYleft_neighbor_P() == ptVCT->getCartesian_rank());
+  bool z_degenerated = (ptVCT->getZleft_neighbor_P() == ptVCT->getCartesian_rank());
+
+  bool no_x_left = x_degenerated || (ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL);
+  bool no_y_left = y_degenerated || (ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL);
+  bool no_z_left = z_degenerated || (ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL);
+  bool no_x_right = x_degenerated || (ptVCT->getXright_neighbor_P() == MPI_PROC_NULL);
+  bool no_y_right = y_degenerated || (ptVCT->getYright_neighbor_P() == MPI_PROC_NULL);
+  bool no_z_right = z_degenerated || (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL);
 
   bool x_mirror = (bcPfaceXleft == 1) || (bcPfaceXright == 1) || (bcPfaceXleft == 101) || (bcPfaceXright == 101);
   bool y_mirror = (bcPfaceYleft == 1) || (bcPfaceYright == 1) || (bcPfaceYleft == 101) || (bcPfaceYright == 101);
@@ -565,61 +569,55 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
   while (np_current < nplast+1) {
 
-    x_out_left = x[np_current] < xstart;
-    x_out_right = x[np_current] > xend;
-    y_out_left = y[np_current] < ystart;
-    y_out_right = y[np_current] > yend;
-    z_out_left = z[np_current] < zstart;
-    z_out_right = z[np_current] > zend;
+    x_out_left = (x[np_current] < xstart);
+    x_out_right = (x[np_current] > xend);
+    y_out_left = (y[np_current] < ystart);
+    y_out_right = (y[np_current] > yend);
+    z_out_left = (z[np_current] < zstart);
+    z_out_right = (z[np_current] > zend);
 
     // check for boundary conditions
-    if (no_x_left) {
-      if (x_out_left) {
-        if (x_mirror) BCpart_left_mirror(&x[np_current],&u[np_current],Lx);
-        else if (x_reemission) BCpart_left_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
-        else { del_pack(np_current,&nplast); continue; }
-        x_out_left = false;
-      }
+    if (no_x_left && x_out_left) {
+      if (x_degenerated) BCpart_left_degenerated(&x[np_current],Lx);
+      else if (x_mirror) BCpart_left_mirror(&x[np_current],&u[np_current],Lx);
+      else if (x_reemission) BCpart_left_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
+      else { del_pack(np_current,&nplast); continue; }
+      x_out_left = false;
     }
-    if (no_x_right) {
-      if (x_out_right) {
-        if (x_mirror) BCpart_right_mirror(&x[np_current],&u[np_current],Lx);
-        else if (x_reemission) BCpart_right_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
-        else { del_pack(np_current,&nplast); continue; }
-        x_out_right = false;
-      }
+    else if (no_x_right && x_out_right) {
+      if (x_degenerated) BCpart_right_degenerated(&x[np_current],Lx);
+      else if (x_mirror) BCpart_right_mirror(&x[np_current],&u[np_current],Lx);
+      else if (x_reemission) BCpart_right_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
+      else { del_pack(np_current,&nplast); continue; }
+      x_out_right = false;
     }
-    if (no_y_left) {
-      if (y_out_left) {
-        if (y_mirror) BCpart_left_mirror(&y[np_current],&v[np_current],Ly);
-        else if (y_reemission) BCpart_left_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
-        else { del_pack(np_current,&nplast); continue; }
-        y_out_left = false;
-      }
+    if (no_y_left && y_out_left) {
+      if (y_degenerated) BCpart_left_degenerated(&y[np_current],Ly);
+      else if (y_mirror) BCpart_left_mirror(&y[np_current],&v[np_current],Ly);
+      else if (y_reemission) BCpart_left_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
+      else { del_pack(np_current,&nplast); continue; }
+      y_out_left = false;
     }
-    if (no_y_right) {
-      if (y_out_right) {
-        if (y_mirror) BCpart_right_mirror(&y[np_current],&v[np_current],Ly);
-        else if (y_reemission) BCpart_right_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
-        else { del_pack(np_current,&nplast); continue; }
-        y_out_right = false;
-      }
+    else if (no_y_right && y_out_right) {
+      if (y_degenerated) BCpart_right_degenerated(&y[np_current],Ly);
+      else if (y_mirror) BCpart_right_mirror(&y[np_current],&v[np_current],Ly);
+      else if (y_reemission) BCpart_right_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
+      else { del_pack(np_current,&nplast); continue; }
+      y_out_right = false;
     }
-    if (no_z_left) {
-      if (z_out_left) {
-        if (z_mirror) BCpart_left_mirror(&z[np_current],&w[np_current],Lz);
-        else if (z_reemission) BCpart_left_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
-        else { del_pack(np_current,&nplast); continue; }
-        z_out_left = false;
-      }
+    if (no_z_left && z_out_left) {
+      if (z_degenerated) BCpart_left_degenerated(&z[np_current],Lz);
+      else if (z_mirror) BCpart_left_mirror(&z[np_current],&w[np_current],Lz);
+      else if (z_reemission) BCpart_left_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
+      else { del_pack(np_current,&nplast); continue; }
+      z_out_left = false;
     }
-    if (no_z_right) {
-      if (z_out_right) {
-        if (z_mirror) BCpart_right_mirror(&z[np_current],&w[np_current],Lz);
-        else if (z_reemission) BCpart_right_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
-        else { del_pack(np_current,&nplast); continue; }
-        z_out_right = false;
-      }
+    else if (no_z_right && z_out_right) {
+      if (z_degenerated) BCpart_right_degenerated(&z[np_current],Lz);
+      else if (z_mirror) BCpart_right_mirror(&z[np_current],&w[np_current],Lz);
+      else if (z_reemission) BCpart_right_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
+      else { del_pack(np_current,&nplast); continue; }
+      z_out_right = false;
     }
 
     // check if there is enough space in the buffer

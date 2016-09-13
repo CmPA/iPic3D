@@ -17,6 +17,9 @@ email                : markidis@lanl.gov, lapenta@lanl.gov
 #include "VirtualTopology3D.h"
 #include "Basic.h"
 
+void BCpart_left_degenerated(double *x, double Lx);
+void BCpart_right_degenerated(double *x, double Lx);
+
 void BCpart_left_mirror(double *x, double *u, double Lx);
 void BCpart_right_mirror(double *x, double *u, double Lx);
 

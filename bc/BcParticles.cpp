@@ -1,6 +1,18 @@
 #include <mpi.h>
 #include "BcParticles.h"
 
+/** apply left degenerated boundary condition for particles along one coordinate direction (here named 'x') */
+void BCpart_left_degenerated(double *x, double Lx) {
+  // degenerated case
+  *x = *x + Lx;
+}
+
+/** apply right degenerated boundary condition for particles along one coordinate direction (here named 'x') */
+void BCpart_right_degenerated(double *x, double Lx) {
+  // degenerated case
+  *x = *x - Lx;
+}
+
 /** apply left mirror boundary condition for particles along one coordinate direction (here named 'x') */
 void BCpart_left_mirror(double *x, double *u, double Lx) {
   // perfect mirror
