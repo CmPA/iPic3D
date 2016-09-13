@@ -556,12 +556,12 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   bool no_y_right = y_degenerated || (ptVCT->getYright_neighbor_P() == MPI_PROC_NULL);
   bool no_z_right = z_degenerated || (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL);
 
-  bool x_mirror = (bcPfaceXleft == 1) || (bcPfaceXright == 1) || (bcPfaceXleft == 101) || (bcPfaceXright == 101);
-  bool y_mirror = (bcPfaceYleft == 1) || (bcPfaceYright == 1) || (bcPfaceYleft == 101) || (bcPfaceYright == 101);
-  bool z_mirror = (bcPfaceZleft == 1) || (bcPfaceZright == 1) || (bcPfaceZleft == 101) || (bcPfaceZright == 101);
-  bool x_reemission = (bcPfaceXleft == 2) || (bcPfaceXright == 2) || (bcPfaceXleft == 102) || (bcPfaceXright == 102);
-  bool y_reemission = (bcPfaceYleft == 2) || (bcPfaceYright == 2) || (bcPfaceYleft == 102) || (bcPfaceYright == 102);
-  bool z_reemission = (bcPfaceZleft == 2) || (bcPfaceZright == 2) || (bcPfaceZleft == 102) || (bcPfaceZright == 102);
+  bool x_mirror = !x_degenerated && ((bcPfaceXleft == 1) || (bcPfaceXright == 1));
+  bool y_mirror = !y_degenerated && ((bcPfaceYleft == 1) || (bcPfaceYright == 1));
+  bool z_mirror = !z_degenerated && ((bcPfaceZleft == 1) || (bcPfaceZright == 1));
+  bool x_reemission = !x_degenerated && ((bcPfaceXleft == 2) || (bcPfaceXright == 2));
+  bool y_reemission = !y_degenerated && ((bcPfaceYleft == 2) || (bcPfaceYright == 2));
+  bool z_reemission = !z_degenerated && ((bcPfaceZleft == 2) || (bcPfaceZright == 2));
 
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right;
