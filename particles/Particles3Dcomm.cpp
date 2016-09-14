@@ -700,69 +700,57 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
 
   // resize b_X_LEFT
   temp = new double[new_buffer_size];
-  if (buffer_size) {
-    for (int i = 0; i < buffer_size; i++)
-      temp[i] = b_X_LEFT[i];
+  if (b_X_LEFT) {
+    for (int i = 0; i < buffer_size; i++) temp[i] = b_X_LEFT[i];
     delete[]b_X_LEFT;
   }
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    temp[i] = MIN_VAL;
   b_X_LEFT = temp;
+  for (int i = buffer_size; i < new_buffer_size; i++) b_X_LEFT[i] = MIN_VAL;
 
   // resize b_X_RIGHT 
   temp = new double[new_buffer_size];
-  if (buffer_size) {
-    for (int i = 0; i < buffer_size; i++)
-      temp[i] = b_X_RIGHT[i];
+  if (b_X_RIGHT) {
+    for (int i = 0; i < buffer_size; i++) temp[i] = b_X_RIGHT[i];
     delete[]b_X_RIGHT;
   }
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    temp[i] = MIN_VAL;
   b_X_RIGHT = temp;
-
-  // resize b_Y_RIGHT
-  temp = new double[new_buffer_size];
-  if (buffer_size) {
-    for (int i = 0; i < buffer_size; i++)
-      temp[i] = b_Y_RIGHT[i];
-    delete[]b_Y_RIGHT;
-  }
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    temp[i] = MIN_VAL;
-  b_Y_RIGHT = temp;
+  for (int i = buffer_size; i < new_buffer_size; i++) b_X_RIGHT[i] = MIN_VAL;
 
   // resize b_Y_LEFT
   temp = new double[new_buffer_size];
-  if (buffer_size) {
-    for (int i = 0; i < buffer_size; i++)
-      temp[i] = b_Y_LEFT[i];
+  if (b_Y_LEFT) {
+    for (int i = 0; i < buffer_size; i++) temp[i] = b_Y_LEFT[i];
     delete[]b_Y_LEFT;
   }
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    temp[i] = MIN_VAL;
   b_Y_LEFT = temp;
+  for (int i = buffer_size; i < new_buffer_size; i++) b_Y_LEFT[i] = MIN_VAL;
 
-  // resize b_Z_RIGHT
+  // resize b_Y_RIGHT
   temp = new double[new_buffer_size];
-  if (buffer_size) {
-    for (int i = 0; i < buffer_size; i++)
-      temp[i] = b_Z_RIGHT[i];
-    delete[]b_Z_RIGHT;
+  if (b_Y_RIGHT) {
+    for (int i = 0; i < buffer_size; i++) temp[i] = b_Y_RIGHT[i];
+    delete[]b_Y_RIGHT;
   }
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    temp[i] = MIN_VAL;
-  b_Z_RIGHT = temp;
+  b_Y_RIGHT = temp;
+  for (int i = buffer_size; i < new_buffer_size; i++) b_Y_RIGHT[i] = MIN_VAL;
 
   // resize b_Z_LEFT
   temp = new double[new_buffer_size];
-  if (buffer_size) {
-    for (int i = 0; i < buffer_size; i++)
-      temp[i] = b_Z_LEFT[i];
+  if (b_Z_LEFT) {
+    for (int i = 0; i < buffer_size; i++) temp[i] = b_Z_LEFT[i];
     delete[]b_Z_LEFT;
   }
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    temp[i] = MIN_VAL;
   b_Z_LEFT = temp;
+  for (int i = buffer_size; i < new_buffer_size; i++) b_Z_LEFT[i] = MIN_VAL;
+
+  // resize b_Z_RIGHT
+  temp = new double[new_buffer_size];
+  if (b_Z_RIGHT) {
+    for (int i = 0; i < buffer_size; i++) temp[i] = b_Z_RIGHT[i];
+    delete[]b_Z_RIGHT;
+  }
+  b_Z_RIGHT = temp;
+  for (int i = buffer_size; i < new_buffer_size; i++) b_Z_RIGHT[i] = MIN_VAL;
 
   buffer_size = new_buffer_size;
 }
