@@ -174,7 +174,6 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   else
     nVar = 7;
   buffer_size = (int) (.05 * nop * nVar + 1); // max: 5% of the particles in the processors is going out
-  buffer_size_small = (int) (.01 * nop * nVar + 1); // max 1% not resizable 
 
   b_X_RIGHT = new double[buffer_size];
   b_X_LEFT = new double[buffer_size];
