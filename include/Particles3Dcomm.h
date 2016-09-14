@@ -281,7 +281,7 @@ protected:
   /** total number of particles exiting per cycle */
   int npExit;
   /** number of particles not in the right domain   */
-  int rightDomain;
+  int wrong_domain;
 
 
   /** bool for communication verbose */
