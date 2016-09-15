@@ -249,9 +249,15 @@ protected:
   double Lz;
   /** grid spacings */
   double dx, dy, dz;
-  /** number of grid 
-          nodes */
+  /** number of grid nodes */
   int nxn, nyn, nzn;
+
+  /** helpful booleans that are constant but requested for each particle */
+  bool x_degenerated, y_degenerated, z_degenerated;
+  bool x_leftmost, y_leftmost, z_leftmost, x_rightmost, y_rightmost, z_rightmost;
+  bool no_x_left, no_y_left, no_z_left, no_x_right, no_y_right, no_z_right;
+  bool x_mirror, y_mirror, z_mirror, x_reemission, y_reemission, z_reemission;
+
   /** buffers for communication */
   /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
   long long buffer_size_x, buffer_size_y, buffer_size_z;

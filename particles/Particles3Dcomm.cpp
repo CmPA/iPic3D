@@ -139,6 +139,32 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   bcPfaceYleft = col->getBcPfaceYleft();
   bcPfaceZright = col->getBcPfaceZright();
   bcPfaceZleft = col->getBcPfaceZleft();
+
+  x_degenerated = (ptVCT->getXleft_neighbor_P() == ptVCT->getCartesian_rank());
+  y_degenerated = (ptVCT->getYleft_neighbor_P() == ptVCT->getCartesian_rank());
+  z_degenerated = (ptVCT->getZleft_neighbor_P() == ptVCT->getCartesian_rank());
+
+  x_leftmost = x_degenerated || (ptVCT->getXleft_neighbor_P() > ptVCT->getCartesian_rank());
+  y_leftmost = y_degenerated || (ptVCT->getYleft_neighbor_P() > ptVCT->getCartesian_rank());
+  z_leftmost = z_degenerated || (ptVCT->getZleft_neighbor_P() > ptVCT->getCartesian_rank());
+  x_rightmost = x_degenerated || (ptVCT->getXright_neighbor_P() < ptVCT->getCartesian_rank());
+  y_rightmost = y_degenerated || (ptVCT->getYright_neighbor_P() < ptVCT->getCartesian_rank());
+  z_rightmost = z_degenerated || (ptVCT->getZright_neighbor_P() < ptVCT->getCartesian_rank());
+
+  no_x_left = x_leftmost || (ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL);
+  no_y_left = y_leftmost || (ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL);
+  no_z_left = z_leftmost || (ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL);
+  no_x_right = x_rightmost || (ptVCT->getXright_neighbor_P() == MPI_PROC_NULL);
+  no_y_right = y_rightmost || (ptVCT->getYright_neighbor_P() == MPI_PROC_NULL);
+  no_z_right = z_rightmost || (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL);
+
+  x_mirror = !x_degenerated && ((bcPfaceXleft == 1) || (bcPfaceXright == 1));
+  y_mirror = !y_degenerated && ((bcPfaceYleft == 1) || (bcPfaceYright == 1));
+  z_mirror = !z_degenerated && ((bcPfaceZleft == 1) || (bcPfaceZright == 1));
+  x_reemission = !x_degenerated && ((bcPfaceXleft == 2) || (bcPfaceXright == 2));
+  y_reemission = !y_degenerated && ((bcPfaceYleft == 2) || (bcPfaceYright == 2));
+  z_reemission = !z_degenerated && ((bcPfaceZleft == 2) || (bcPfaceZright == 2));
+
   // //////////////////////////////////////////////////////////////
   // ////////////// ALLOCATE ARRAYS /////////////////////////
   // //////////////////////////////////////////////////////////////
@@ -535,31 +561,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   MPI_Status status;
   // variable for memory availability of space for new particles
   long long avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
-
-  bool x_degenerated = (ptVCT->getXleft_neighbor_P() == ptVCT->getCartesian_rank());
-  bool y_degenerated = (ptVCT->getYleft_neighbor_P() == ptVCT->getCartesian_rank());
-  bool z_degenerated = (ptVCT->getZleft_neighbor_P() == ptVCT->getCartesian_rank());
-
-  bool x_leftmost = x_degenerated || (ptVCT->getXleft_neighbor_P() > ptVCT->getCartesian_rank());
-  bool y_leftmost = y_degenerated || (ptVCT->getYleft_neighbor_P() > ptVCT->getCartesian_rank());
-  bool z_leftmost = z_degenerated || (ptVCT->getZleft_neighbor_P() > ptVCT->getCartesian_rank());
-  bool x_rightmost = x_degenerated || (ptVCT->getXright_neighbor_P() < ptVCT->getCartesian_rank());
-  bool y_rightmost = y_degenerated || (ptVCT->getYright_neighbor_P() < ptVCT->getCartesian_rank());
-  bool z_rightmost = z_degenerated || (ptVCT->getZright_neighbor_P() < ptVCT->getCartesian_rank());
-
-  bool no_x_left = x_leftmost || (ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL);
-  bool no_y_left = y_leftmost || (ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL);
-  bool no_z_left = z_leftmost || (ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL);
-  bool no_x_right = x_rightmost || (ptVCT->getXright_neighbor_P() == MPI_PROC_NULL);
-  bool no_y_right = y_rightmost || (ptVCT->getYright_neighbor_P() == MPI_PROC_NULL);
-  bool no_z_right = z_rightmost || (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL);
-
-  bool x_mirror = !x_degenerated && ((bcPfaceXleft == 1) || (bcPfaceXright == 1));
-  bool y_mirror = !y_degenerated && ((bcPfaceYleft == 1) || (bcPfaceYright == 1));
-  bool z_mirror = !z_degenerated && ((bcPfaceZleft == 1) || (bcPfaceZright == 1));
-  bool x_reemission = !x_degenerated && ((bcPfaceXleft == 2) || (bcPfaceXright == 2));
-  bool y_reemission = !y_degenerated && ((bcPfaceYleft == 2) || (bcPfaceYright == 2));
-  bool z_reemission = !z_degenerated && ((bcPfaceZleft == 2) || (bcPfaceZright == 2));
 
   npExitXright = 0L, npExitXleft = 0L, npExitYright = 0L, npExitYleft = 0L, npExitZright = 0L, npExitZleft = 0L;
   npExit = 0L, wrong_domain_x = 0L, wrong_domain_y = 0L, wrong_domain_z = 0L;
