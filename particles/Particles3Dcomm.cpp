@@ -34,7 +34,7 @@ using std::endl;
 
 #define min(a,b) (((a)<(b))?(a):(b));
 #define max(a,b) (((a)>(b))?(a):(b));
-#define INVALID_PARTICLE   -4d32
+#define INVALID_PARTICLE   -4.0e32
 /**
  * 
  * Class for communication of particles of the same species in 3D
@@ -750,7 +750,7 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
 }
 
 /** put a leaving particle to the communication buffer */
-inline void Particles3Dcomm::buffer_leaving(double *b_, long long, pos, long long np_current, VirtualTopology3D * vct) {
+inline void Particles3Dcomm::buffer_leaving(double *b_, long long pos, long long np_current, VirtualTopology3D * vct) {
   b_[pos] = x[np_current];
   b_[pos+1] = y[np_current];
   b_[pos+2] = z[np_current];
