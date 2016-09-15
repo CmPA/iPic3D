@@ -82,18 +82,8 @@ public:
   void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct);
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   int communicate(VirtualTopology3D * ptVCT);
-  /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXleft(double *b_, long long np, VirtualTopology3D * vct, long long *nplast);
-  /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXright(double *b_, long long np, VirtualTopology3D * vct, long long *nplast);
-  /** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYleft(double *b_, long long np, VirtualTopology3D * vct, long long *nplast);
-  /** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYright(double *b_, long long np, VirtualTopology3D * vct, long long *nplast);
-  /** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZleft(double *b_, long long np, VirtualTopology3D * vct, long long *nplast);
-  /** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZright(double *b_, long long np, VirtualTopology3D * vct, long long *nplast);
+  /** put a leaving particle to the communication buffer */
+  inline void buffer_leaving(double *b_, long long np_current, VirtualTopology3D * vct, long long *nplast);
   /** Delete the a particle from a list(array) and pack the list(array) */
   void del_pack(long long np, long long *nplast);
 

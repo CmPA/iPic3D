@@ -554,12 +554,19 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   bool y_degenerated = (ptVCT->getYleft_neighbor_P() == ptVCT->getCartesian_rank());
   bool z_degenerated = (ptVCT->getZleft_neighbor_P() == ptVCT->getCartesian_rank());
 
-  bool no_x_left = x_degenerated || (ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL);
-  bool no_y_left = y_degenerated || (ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL);
-  bool no_z_left = z_degenerated || (ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL);
-  bool no_x_right = x_degenerated || (ptVCT->getXright_neighbor_P() == MPI_PROC_NULL);
-  bool no_y_right = y_degenerated || (ptVCT->getYright_neighbor_P() == MPI_PROC_NULL);
-  bool no_z_right = z_degenerated || (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL);
+  bool x_leftmost = x_degenerated || (ptVCT->getXleft_neighbor_P() > ptVCT->getCartesian_rank());
+  bool y_leftmost = y_degenerated || (ptVCT->getYleft_neighbor_P() > ptVCT->getCartesian_rank());
+  bool z_leftmost = z_degenerated || (ptVCT->getZleft_neighbor_P() > ptVCT->getCartesian_rank());
+  bool x_rightmost = x_degenerated || (ptVCT->getXright_neighbor_P() < ptVCT->getCartesian_rank());
+  bool y_rightmost = y_degenerated || (ptVCT->getYright_neighbor_P() < ptVCT->getCartesian_rank());
+  bool z_rightmost = z_degenerated || (ptVCT->getZright_neighbor_P() < ptVCT->getCartesian_rank());
+
+  bool no_x_left = x_leftmost || (ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL);
+  bool no_y_left = y_leftmost || (ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL);
+  bool no_z_left = z_leftmost || (ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL);
+  bool no_x_right = x_rightmost || (ptVCT->getXright_neighbor_P() == MPI_PROC_NULL);
+  bool no_y_right = y_rightmost || (ptVCT->getYright_neighbor_P() == MPI_PROC_NULL);
+  bool no_z_right = z_rightmost || (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL);
 
   bool x_mirror = !x_degenerated && ((bcPfaceXleft == 1) || (bcPfaceXright == 1));
   bool y_mirror = !y_degenerated && ((bcPfaceYleft == 1) || (bcPfaceYright == 1));
@@ -626,37 +633,42 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       z_out_right = false;
     }
 
-    // check if there is enough space in the buffer
-    // move particle into the communication buffer
+    // particle leaving the domain need to be communicated in a large enough buffer
     if (x_out_left) {
       npExitXleft++;
+      if (x_leftmost) x[np_current] += Lx;
       if (npExitXleft >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXleft);
-      bufferXleft(b_X_LEFT,np_current,ptVCT,&nplast);
+      buffer_leaving(b_X_LEFT, np_current, ptVCT, &nplast);
     }
     else if (x_out_right) {
       npExitXright++;
+      if (x_rightmost) x[np_current] -= Lx;
       if (npExitXright >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXright);
-      bufferXright(b_X_RIGHT,np_current,ptVCT,&nplast);
+      buffer_leaving(b_X_RIGHT, np_current, ptVCT, &nplast);
     }
     else if (y_out_left) {
       npExitYleft++;
+      if (y_leftmost) y[np_current] += Ly;
       if (npExitYleft >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYleft);
-      bufferYleft(b_Y_LEFT,np_current,ptVCT,&nplast);
+      buffer_leaving(b_Y_LEFT, np_current, ptVCT, &nplast);
     }
     else if (y_out_right) {
       npExitYright++;
+      if (y_rightmost) y[np_current] -= Ly;
       if (npExitYright >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYright);
-      bufferYright(b_Y_RIGHT,np_current,ptVCT,&nplast);
+      buffer_leaving(b_Y_RIGHT, np_current, ptVCT, &nplast);
     }
     else if (z_out_left) {
       npExitZleft++;
+      if (z_leftmost) z[np_current] += Lz;
       if (npExitZleft >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZleft);
-      bufferZleft(b_Z_LEFT,np_current,ptVCT,&nplast);
+      buffer_leaving(b_Z_LEFT, np_current, ptVCT, &nplast);
     }
     else if (z_out_right) {
       npExitZright++;
+      if (z_rightmost) z[np_current] -= Lz;
       if (npExitZright >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZright);
-      bufferZright(b_Z_RIGHT,np_current,ptVCT,&nplast);
+      buffer_leaving(b_Z_RIGHT, np_current, ptVCT, &nplast);
     }
     else {
       // particle is still in the domain, proceed with the next particle
@@ -665,12 +677,12 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   }
 
   nop = nplast + 1;
-  // calculate the maximum number of particles exiting from this domain
+  // calculate the maximum number of particles leaving from this domain
   max_x = 0L;
   max_y = 0L;
   max_z = 0L;
   npExitingMax = maxNpExiting(&max_x, &max_y, &max_z);
-  // broadcast the global maximum number of particles exiting
+  // broadcast the global maximum number of particles leaving
   npExitingMax = globalMaximum(npExitingMax);
   // return immediately, if no further communication is needed
   if (npExitingMax == 0) return (0);
@@ -738,102 +750,19 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
   for (long long i = old_size; i < new_size; i++) b_right[i] = MIN_VAL;
 }
 
-/** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
-void Particles3Dcomm::bufferXleft(double *b_, long long np_current, VirtualTopology3D * vct, long long *nplast) {
-  if (x[np_current] < 0)
-    b_[npExitXleft * nVar] = x[np_current] + Lx;  // this applies to the the leftmost processor
-  else
-    b_[npExitXleft * nVar] = x[np_current];
+/** put a leaving particle to the communication buffer */
+inline void Particles3Dcomm::buffer_leaving(double *b_, long long np_current, VirtualTopology3D * vct, long long *nplast) {
+  b_[npExitXleft * nVar] = x[np_current];
   b_[npExitXleft * nVar + 1] = y[np_current];
   b_[npExitXleft * nVar + 2] = z[np_current];
   b_[npExitXleft * nVar + 3] = u[np_current];
   b_[npExitXleft * nVar + 4] = v[np_current];
   b_[npExitXleft * nVar + 5] = w[np_current];
   b_[npExitXleft * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitXleft * nVar + 7] = ParticleID[np_current];
+  if (TrackParticleID) b_[npExitXleft * nVar + 7] = ParticleID[np_current];
   del_pack(np_current,nplast);
 }
-/** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
-void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopology3D * vct, long long *nplast) {
-  if (x[np_current] > Lx)
-    b_[npExitXright * nVar] = x[np_current] - Lx; // this applies to the right most processor
-  else
-    b_[npExitXright * nVar] = x[np_current];
-  b_[npExitXright * nVar + 1] = y[np_current];
-  b_[npExitXright * nVar + 2] = z[np_current];
-  b_[npExitXright * nVar + 3] = u[np_current];
-  b_[npExitXright * nVar + 4] = v[np_current];
-  b_[npExitXright * nVar + 5] = w[np_current];
-  b_[npExitXright * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitXright * nVar + 7] = ParticleID[np_current];
-  del_pack(np_current,nplast);
-}
-/** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, VirtualTopology3D * vct, long long *nplast) {
-  b_[npExitYleft * nVar] = x[np_current];
-  if (y[np_current] < 0)
-    b_[npExitYleft * nVar + 1] = y[np_current] + Ly;
-  else
-    b_[npExitYleft * nVar + 1] = y[np_current];
-  b_[npExitYleft * nVar + 2] = z[np_current];
-  b_[npExitYleft * nVar + 3] = u[np_current];
-  b_[npExitYleft * nVar + 4] = v[np_current];
-  b_[npExitYleft * nVar + 5] = w[np_current];
-  b_[npExitYleft * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitYleft * nVar + 7] = ParticleID[np_current];
-  del_pack(np_current,nplast);
-}
-/** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, VirtualTopology3D * vct, long long *nplast) {
-  b_[npExitYright * nVar] = x[np_current];
-  if (y[np_current] > Ly)
-    b_[npExitYright * nVar + 1] = y[np_current] - Ly;
-  else
-    b_[npExitYright * nVar + 1] = y[np_current];
-  b_[npExitYright * nVar + 2] = z[np_current];
-  b_[npExitYright * nVar + 3] = u[np_current];
-  b_[npExitYright * nVar + 4] = v[np_current];
-  b_[npExitYright * nVar + 5] = w[np_current];
-  b_[npExitYright * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitYright * nVar + 7] = ParticleID[np_current];
-  del_pack(np_current,nplast);
-}
-/** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, VirtualTopology3D * vct, long long *nplast) {
-  b_[npExitZleft * nVar] = x[np_current];
-  b_[npExitZleft * nVar + 1] = y[np_current];
-  if (z[np_current] < 0)
-    b_[npExitZleft * nVar + 2] = z[np_current] + Lz;
-  else
-    b_[npExitZleft * nVar + 2] = z[np_current];
-  b_[npExitZleft * nVar + 3] = u[np_current];
-  b_[npExitZleft * nVar + 4] = v[np_current];
-  b_[npExitZleft * nVar + 5] = w[np_current];
-  b_[npExitZleft * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitZleft * nVar + 7] = ParticleID[np_current];
-  del_pack(np_current,nplast);
-}
-/** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, VirtualTopology3D * vct, long long *nplast) {
-  b_[npExitZright * nVar] = x[np_current];
-  b_[npExitZright * nVar + 1] = y[np_current];
-  if (z[np_current] > Lz)
-    b_[npExitZright * nVar + 2] = z[np_current] - Lz;
-  else
-    b_[npExitZright * nVar + 2] = z[np_current];
-  b_[npExitZright * nVar + 3] = u[np_current];
-  b_[npExitZright * nVar + 4] = v[np_current];
-  b_[npExitZright * nVar + 5] = w[np_current];
-  b_[npExitZright * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitZright * nVar + 7] = ParticleID[np_current];
-  del_pack(np_current,nplast);
-}
+
 /** This unbuffer the last communication */
 int Particles3Dcomm::unbuffer(double *b_) {
   long long np_current = 0;
@@ -846,8 +775,7 @@ int Particles3Dcomm::unbuffer(double *b_) {
     v[nop] = b_[nVar * np_current + 4];
     w[nop] = b_[nVar * np_current + 5];
     q[nop] = b_[nVar * np_current + 6];
-    if (TrackParticleID)
-      ParticleID[nop] = (unsigned long) b_[nVar * np_current + 7];
+    if (TrackParticleID) ParticleID[nop] = (unsigned long) b_[nVar * np_current + 7];
     np_current++;
     // these particles need further communication
     if (x[nop] < xstart || x[nop] > xend) wrong_domain_x++;
@@ -863,7 +791,7 @@ int Particles3Dcomm::unbuffer(double *b_) {
   return (0);                   // everything was fine
 }
 /** Delete the a particle from the array and pack the array,
- * update the number of particles that are exiting.
+ * update the number of particles that are leaving.
  * For deleting the particle from the array take the last particle and
  * put it in the position of the particle you want to delete.
  * @param np = the index of the particle that must be deleted
@@ -891,7 +819,7 @@ int Particles3Dcomm::isMessagingDone(VirtualTopology3D * ptVCT) {
   return (result);
 
 }
-/** calculate the maximum number exiting from this domain */
+/** calculate the maximum number leaving from this domain */
 long long Particles3Dcomm::maxNpExiting(long long *max_x, long long *max_y, long long *max_z) {
   *max_x = max(npExitXleft, npExitXright);
   *max_y = max(npExitYleft, npExitYright);
