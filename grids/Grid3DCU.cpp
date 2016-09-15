@@ -76,9 +76,9 @@ Grid3DCU::~Grid3DCU() {
 }
 
 /** print the local grid info */
-void Grid3DCU::print(VirtualTopology3D * ptVCT) {
+void Grid3DCU::print(VirtualTopology3D * vct) {
   cout << endl;
-  cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
+  cout << "Subgrid (" << vct->getCoordinates(0) << "," << vct->getCoordinates(1) << "," << vct->getCoordinates(2) << ")" << endl;
   cout << "Number of cell: -X=" << nxc - 2 << " -Y=" << nyc - 2 << " -Z=" << nzc - 2 << endl;
   cout << "Xin = " << node_xcoord[1] << "; Xfin = " << node_xcoord[nxn - 2] << endl;
   cout << "Yin = " << node_ycoord[1] << "; Yfin = " << node_ycoord[nyn - 2] << endl;

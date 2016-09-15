@@ -140,23 +140,23 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   bcPfaceZright = col->getBcPfaceZright();
   bcPfaceZleft = col->getBcPfaceZleft();
 
-  x_degenerated = (ptVCT->getXleft_neighbor_P() == ptVCT->getCartesian_rank());
-  y_degenerated = (ptVCT->getYleft_neighbor_P() == ptVCT->getCartesian_rank());
-  z_degenerated = (ptVCT->getZleft_neighbor_P() == ptVCT->getCartesian_rank());
+  x_degenerated = (vct->getXleft_neighbor_P() == vct->getCartesian_rank());
+  y_degenerated = (vct->getYleft_neighbor_P() == vct->getCartesian_rank());
+  z_degenerated = (vct->getZleft_neighbor_P() == vct->getCartesian_rank());
 
-  x_leftmost = x_degenerated || (ptVCT->getXleft_neighbor_P() > ptVCT->getCartesian_rank());
-  y_leftmost = y_degenerated || (ptVCT->getYleft_neighbor_P() > ptVCT->getCartesian_rank());
-  z_leftmost = z_degenerated || (ptVCT->getZleft_neighbor_P() > ptVCT->getCartesian_rank());
-  x_rightmost = x_degenerated || (ptVCT->getXright_neighbor_P() < ptVCT->getCartesian_rank());
-  y_rightmost = y_degenerated || (ptVCT->getYright_neighbor_P() < ptVCT->getCartesian_rank());
-  z_rightmost = z_degenerated || (ptVCT->getZright_neighbor_P() < ptVCT->getCartesian_rank());
+  x_leftmost = x_degenerated || (vct->getXleft_neighbor_P() > vct->getCartesian_rank());
+  y_leftmost = y_degenerated || (vct->getYleft_neighbor_P() > vct->getCartesian_rank());
+  z_leftmost = z_degenerated || (vct->getZleft_neighbor_P() > vct->getCartesian_rank());
+  x_rightmost = x_degenerated || (vct->getXright_neighbor_P() < vct->getCartesian_rank());
+  y_rightmost = y_degenerated || (vct->getYright_neighbor_P() < vct->getCartesian_rank());
+  z_rightmost = z_degenerated || (vct->getZright_neighbor_P() < vct->getCartesian_rank());
 
-  no_x_left = x_leftmost || (ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL);
-  no_y_left = y_leftmost || (ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL);
-  no_z_left = z_leftmost || (ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL);
-  no_x_right = x_rightmost || (ptVCT->getXright_neighbor_P() == MPI_PROC_NULL);
-  no_y_right = y_rightmost || (ptVCT->getYright_neighbor_P() == MPI_PROC_NULL);
-  no_z_right = z_rightmost || (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL);
+  no_x_left = x_leftmost || (vct->getXleft_neighbor_P() == MPI_PROC_NULL);
+  no_y_left = y_leftmost || (vct->getYleft_neighbor_P() == MPI_PROC_NULL);
+  no_z_left = z_leftmost || (vct->getZleft_neighbor_P() == MPI_PROC_NULL);
+  no_x_right = x_rightmost || (vct->getXright_neighbor_P() == MPI_PROC_NULL);
+  no_y_right = y_rightmost || (vct->getYright_neighbor_P() == MPI_PROC_NULL);
+  no_z_right = z_rightmost || (vct->getZright_neighbor_P() == MPI_PROC_NULL);
 
   x_mirror = !x_degenerated && ((bcPfaceXleft == 1) || (bcPfaceXright == 1));
   y_mirror = !y_degenerated && ((bcPfaceYleft == 1) || (bcPfaceYright == 1));
@@ -556,7 +556,7 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   <li>bcFace = 1 : perfect mirror</li>
   <li>bcFace = 2 : re-emission</li>
   </ul> */
-int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
+int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
   // allocate buffers
   MPI_Status status;
   // variable for memory availability of space for new particles
@@ -625,37 +625,37 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitXleft++;
       if (x_leftmost) x[np_current] += Lx;
       if (npExitXleft >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXleft);
-      buffer_leaving(b_X_LEFT, (npExitXleft-1)*nVar, np_current, ptVCT);
+      buffer_leaving(b_X_LEFT, (npExitXleft-1)*nVar, np_current, vct);
     }
     else if (x_out_right) {
       npExitXright++;
       if (x_rightmost) x[np_current] -= Lx;
       if (npExitXright >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXright);
-      buffer_leaving(b_X_RIGHT, (npExitXright-1)*nVar, np_current, ptVCT);
+      buffer_leaving(b_X_RIGHT, (npExitXright-1)*nVar, np_current, vct);
     }
     else if (y_out_left) {
       npExitYleft++;
       if (y_leftmost) y[np_current] += Ly;
       if (npExitYleft >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYleft);
-      buffer_leaving(b_Y_LEFT, (npExitYleft-1)*nVar, np_current, ptVCT);
+      buffer_leaving(b_Y_LEFT, (npExitYleft-1)*nVar, np_current, vct);
     }
     else if (y_out_right) {
       npExitYright++;
       if (y_rightmost) y[np_current] -= Ly;
       if (npExitYright >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYright);
-      buffer_leaving(b_Y_RIGHT, (npExitYright-1)*nVar, np_current, ptVCT);
+      buffer_leaving(b_Y_RIGHT, (npExitYright-1)*nVar, np_current, vct);
     }
     else if (z_out_left) {
       npExitZleft++;
       if (z_leftmost) z[np_current] += Lz;
       if (npExitZleft >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZleft);
-      buffer_leaving(b_Z_LEFT, (npExitZleft-1)*nVar, np_current, ptVCT);
+      buffer_leaving(b_Z_LEFT, (npExitZleft-1)*nVar, np_current, vct);
     }
     else if (z_out_right) {
       npExitZright++;
       if (z_rightmost) z[np_current] -= Lz;
       if (npExitZright >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZright);
-      buffer_leaving(b_Z_RIGHT, (npExitZright-1)*nVar, np_current, ptVCT);
+      buffer_leaving(b_Z_RIGHT, (npExitZright-1)*nVar, np_current, vct);
     }
     else {
       // particle is still in the domain, proceed with the next particle
@@ -684,17 +684,17 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
   // resize buffers, if necessary
   if (max_x >= buffer_size_x) {
-    if (ptVCT->getCartesian_rank() == 0)
+    if (vct->getCartesian_rank() == 0)
       cout << "resizing X-buffer: " << buffer_size_x << " => " << max_x << " particles" << endl;
     resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, max_x, false);
   }
   if (max_y >= buffer_size_y) {
-    if (ptVCT->getCartesian_rank() == 0)
+    if (vct->getCartesian_rank() == 0)
       cout << "resizing Y-buffer: " << buffer_size_y << " => " << max_y << " particles" << endl;
     resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, max_y, false);
   }
   if (max_z >= buffer_size_z) {
-    if (ptVCT->getCartesian_rank() == 0)
+    if (vct->getCartesian_rank() == 0)
       cout << "resizing Z-buffer: " << buffer_size_z << " => " << max_z << " particles" << endl;
     resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, max_z, false);
   }
@@ -706,7 +706,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);
     }
-    communicateParticlesDIR((int) max_x*nVar, ptVCT->getCartesian_rank(), ptVCT->getXright_neighbor_P(), ptVCT->getXleft_neighbor_P(), 0, ptVCT->getXLEN(), ptVCT->getYLEN(), ptVCT->getZLEN(), b_X_RIGHT, b_X_LEFT);
+    communicateParticlesDIR((int) max_x*nVar, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_X_RIGHT, b_X_LEFT);
   }
 
   // communicate in the Y direction
@@ -716,7 +716,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);
     }
-    communicateParticlesDIR((int) max_y*nVar, ptVCT->getCartesian_rank(), ptVCT->getYright_neighbor_P(), ptVCT->getYleft_neighbor_P(), 1, ptVCT->getXLEN(), ptVCT->getYLEN(), ptVCT->getZLEN(), b_Y_RIGHT, b_Y_LEFT);
+    communicateParticlesDIR((int) max_y*nVar, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_Y_RIGHT, b_Y_LEFT);
   }
 
   // communicate in the Z direction
@@ -726,7 +726,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);
     }
-    communicateParticlesDIR((int) max_z*nVar, ptVCT->getCartesian_rank(), ptVCT->getZright_neighbor_P(), ptVCT->getZleft_neighbor_P(), 2, ptVCT->getXLEN(), ptVCT->getYLEN(), ptVCT->getZLEN(), b_Z_RIGHT, b_Z_LEFT);
+    communicateParticlesDIR((int) max_z*nVar, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_Z_RIGHT, b_Z_LEFT);
   }
 
   // put received particles in the local domain
@@ -831,10 +831,10 @@ void Particles3Dcomm::del_pack(long long np_current) {
   npExit++;
 }
 /** method to calculate how many particles are out of right domain */
-int Particles3Dcomm::isMessagingDone(VirtualTopology3D * ptVCT) {
+int Particles3Dcomm::isMessagingDone(VirtualTopology3D * vct) {
   int result = 0;
   result = globalSum(wrong_domain_x + wrong_domain_y + wrong_domain_z);
-  if (result > 0 && cVERBOSE && ptVCT->getCartesian_rank() == 0)
+  if (result > 0 && cVERBOSE && vct->getCartesian_rank() == 0)
     cout << "Further Comunication: " << result << " particles not in the right domain" << endl;
   return (result);
 
@@ -998,10 +998,10 @@ unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel
 
 
 /** print particles info */
-void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
+void Particles3Dcomm::Print(VirtualTopology3D * vct) const {
   cout << endl;
   cout << "Number of Particles: " << nop << endl;
-  cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
+  cout << "Subgrid (" << vct->getCoordinates(0) << "," << vct->getCoordinates(1) << "," << vct->getCoordinates(2) << ")" << endl;
   cout << "Xin = " << xstart << "; Xfin = " << xend << endl;
   cout << "Yin = " << ystart << "; Yfin = " << yend << endl;
   cout << "Zin = " << zstart << "; Zfin = " << zend << endl;
@@ -1011,9 +1011,9 @@ void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
   cout << endl;
 }
 /** print just the number of particles */
-void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
+void Particles3Dcomm::PrintNp(VirtualTopology3D * vct)  const {
   cout << endl;
   cout << "Number of Particles of species " << ns << ": " << nop << endl;
-  cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
+  cout << "Subgrid (" << vct->getCoordinates(0) << "," << vct->getCoordinates(1) << "," << vct->getCoordinates(2) << ")" << endl;
   cout << endl;
 }

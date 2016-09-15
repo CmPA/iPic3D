@@ -81,7 +81,7 @@ public:
   /** interpolation method GRID->PARTICLE order 1: CIC */
   void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct);
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
-  int communicate(VirtualTopology3D * ptVCT);
+  int communicate(VirtualTopology3D * vct);
   /** put a leaving particle to the communication buffer */
   inline void buffer_leaving(double *b_, long long pos, long long np_current, VirtualTopology3D * vct);
   /** Delete the a particle from a list(array) and pack the list(array) */
@@ -93,7 +93,7 @@ public:
   /** resize the receiving buffer */
   void resize_buffers(double *b_LEFT, double *b_RIGHT, long long *size, long long request_size, bool extend=true);
   /** a method to compute how many particles are not in the right domain */
-  int isMessagingDone(VirtualTopology3D * ptVCT);
+  int isMessagingDone(VirtualTopology3D * vct);
   /** calculate the maximum number exiting from this domain */
   long long maxNpExiting(long long *max_x, long long *max_y, long long *max_z);
   /** calculate the weights given the position of particles */
@@ -155,9 +155,9 @@ public:
   /** return the momentum */
   double getP();
   /** Print particles info: positions, velocities */
-  void Print(VirtualTopology3D * ptVCT) const;
+  void Print(VirtualTopology3D * vct) const;
   /** Print the number of particles of this subdomain */
-  void PrintNp(VirtualTopology3D * ptVCT) const;
+  void PrintNp(VirtualTopology3D * vct) const;
   /** Add distributions in this iteration to the total */
   void Add_vDist3D();
   void Write_vDist3D(string SaveDirName);

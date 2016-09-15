@@ -89,9 +89,9 @@ public:
   /** retturn the momentum */
   virtual double getP() = 0;
   /** Print particles info: positions, velocities */
-  virtual void Print(VirtualTopology3D * ptVCT) const = 0;
+  virtual void Print(VirtualTopology3D * vct) const = 0;
   /** Print the number of particles of this subdomain */
-  virtual void PrintNp(VirtualTopology3D * ptVCT) const = 0;
+  virtual void PrintNp(VirtualTopology3D * vct) const = 0;
 
 };
 #endif
