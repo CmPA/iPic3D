@@ -556,7 +556,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
   long long avail;
 
   npExitXright = 0L, npExitXleft = 0L, npExitYright = 0L, npExitYleft = 0L, npExitZright = 0L, npExitZleft = 0L;
-  npExit = 0L, wrong_domain_x = 0L, wrong_domain_y = 0L, wrong_domain_z = 0L;
   bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right;
   long long np_current = 0L;
 
@@ -723,6 +722,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
   }
 
   // put received particles in the local domain
+  wrong_domain_x = 0L, wrong_domain_y = 0L, wrong_domain_z = 0L;
   avail = unbuffer(b_X_RIGHT);
   avail += unbuffer(b_X_LEFT);
   avail += unbuffer(b_Y_RIGHT);
@@ -806,13 +806,12 @@ void Particles3Dcomm::del_pack(long long np_current) {
   w[np_current] = w[nop];
   q[np_current] = q[nop];
   if (TrackParticleID) ParticleID[np_current] = ParticleID[nop];
-  npExit++;
 }
 /** method to calculate how many particles are out of right domain */
 int Particles3Dcomm::isMessagingDone(VirtualTopology3D * vct) {
   int result = 0;
   result = globalSum(wrong_domain_x + wrong_domain_y + wrong_domain_z);
-  if (result > 0 && cVERBOSE && vct->getCartesian_rank() == 0)
+  if (cVERBOSE && result > 0 && vct->getCartesian_rank() == 0)
     cout << "Further Comunication: " << result << " particles not in the right domain" << endl;
   return (result);
 
