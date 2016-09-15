@@ -34,7 +34,7 @@ using std::endl;
 
 #define min(a,b) (((a)<(b))?(a):(b));
 #define max(a,b) (((a)>(b))?(a):(b));
-#define MIN_VAL   1E-32
+#define INVALID_PARTICLE   -4d32
 /**
  * 
  * Class for communication of particles of the same species in 3D
@@ -538,16 +538,16 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   long long avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
   long long max_x=buffer_size_x*nVar, max_y=buffer_size_y*nVar, max_z=buffer_size_z*nVar;
   for (long long i = 0L; i < max_x; i++) {
-    b_X_LEFT[i] = MIN_VAL;
-    b_X_RIGHT[i] = MIN_VAL;
+    b_X_LEFT[i] = INVALID_PARTICLE;
+    b_X_RIGHT[i] = INVALID_PARTICLE;
   }
   for (long long i = 0L; i < max_y; i++) {
-    b_Y_LEFT[i] = MIN_VAL;
-    b_Y_RIGHT[i] = MIN_VAL;
+    b_Y_LEFT[i] = INVALID_PARTICLE;
+    b_Y_RIGHT[i] = INVALID_PARTICLE;
   }
   for (long long i = 0L; i < max_z; i++) {
-    b_Z_LEFT[i] = MIN_VAL;
-    b_Z_RIGHT[i] = MIN_VAL;
+    b_Z_LEFT[i] = INVALID_PARTICLE;
+    b_Z_RIGHT[i] = INVALID_PARTICLE;
   }
 
   bool x_degenerated = (ptVCT->getXleft_neighbor_P() == ptVCT->getCartesian_rank());
@@ -738,7 +738,7 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
     delete[]b_left;
   }
   b_left = temp;
-  for (long long i = old_size; i < new_size; i++) b_left[i] = MIN_VAL;
+  for (long long i = old_size; i < new_size; i++) b_left[i] = INVALID_PARTICLE;
 
   // resize b_right
   temp = new double[new_size];
@@ -747,7 +747,7 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
     delete[]b_right;
   }
   b_right = temp;
-  for (long long i = old_size; i < new_size; i++) b_right[i] = MIN_VAL;
+  for (long long i = old_size; i < new_size; i++) b_right[i] = INVALID_PARTICLE;
 }
 
 /** put a leaving particle to the communication buffer */
@@ -767,7 +767,7 @@ inline void Particles3Dcomm::buffer_leaving(double *b_, long long, pos, long lon
 int Particles3Dcomm::unbuffer(double *b_) {
   long long np_current = 0;
   // put the new particles at the end of the array, and update the number of particles
-  while (b_[np_current * nVar] != MIN_VAL) {
+  while (b_[np_current * nVar] != INVALID_PARTICLE) {
     x[nop] = b_[nVar * np_current];
     y[nop] = b_[nVar * np_current + 1];
     z[nop] = b_[nVar * np_current + 2];
