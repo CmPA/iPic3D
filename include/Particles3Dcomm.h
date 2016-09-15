@@ -162,6 +162,20 @@ public:
   void Add_vDist3D();
   void Write_vDist3D(string SaveDirName);
 
+  /** communicate the global sum */
+  inline long long globalSum(long long value) {
+    long long sum = 0;
+    MPI_Allreduce(&value, &sum, 1, MPI_LONG_LONG_INT, MPI_SUM, MPI_COMM_WORLD);
+    return (sum);
+  }
+
+  /** communicate the global maximum */
+  inline long long globalMaximum(long long value) {
+    long long max = 0;
+    MPI_Allreduce(&value, &max, 1, MPI_LONG_LONG_INT, MPI_MAX, MPI_COMM_WORLD);
+    return (max);
+  }
+
 protected:
   /** number of species */
   int ns;

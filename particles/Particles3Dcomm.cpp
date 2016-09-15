@@ -13,7 +13,6 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
 #include "Collective.h"
-#include "ComParticles3D.h"
 #include "Alloc.h"
 #include "Basic.h"
 #include "BcParticles.h"
@@ -27,6 +26,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "hdf5.h"
 #include <vector>
 #include <complex>
+#include <climits>
 
 using std::cout;
 using std::cerr;
@@ -696,19 +696,44 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, max_z, false);
   }
 
-  /*****************************************************/
-  /* SEND AND RECEIVE MESSAGES */
-  /*****************************************************/
-  communicateParticles(max_x*nVar, max_z*nVar, max_z*nVar, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
+  // communicate in the X direction
+  if (max_x > 0L) {
+    if (max_x*nVar > INT_MAX) {
+      cout << "ERROR: X-buffer too large: " << max_x*nVar << " > " << INT_MAX << endl;
+      MPI_Abort(MPI_COMM_WORLD, -1);
+      return (-1);
+    }
+    communicateParticlesDIR((int) max_x*nVar, ptVCT->getCartesian_rank(), ptVCT->getXright_neighbor_P(), ptVCT->getXleft_neighbor_P(), 0, ptVCT->getXLEN(), ptVCT->getYLEN(), ptVCT->getZLEN(), b_X_RIGHT, b_X_LEFT);
+  }
 
-  // UNBUFFERING
-  // message from XLEFT
+  // communicate in the Y direction
+  if (max_y > 0L) {
+    if (max_y*nVar > INT_MAX) {
+      cout << "ERROR: Y-buffer too large: " << max_y*nVar << " > " << INT_MAX << endl;
+      MPI_Abort(MPI_COMM_WORLD, -1);
+      return (-1);
+    }
+    communicateParticlesDIR((int) max_y*nVar, ptVCT->getCartesian_rank(), ptVCT->getYright_neighbor_P(), ptVCT->getYleft_neighbor_P(), 1, ptVCT->getXLEN(), ptVCT->getYLEN(), ptVCT->getZLEN(), b_Y_RIGHT, b_Y_LEFT);
+  }
+
+  // communicate in the Z direction
+  if (max_z > 0L) {
+    if (max_z*nVar > INT_MAX) {
+      cout << "ERROR: Z-buffer too large: " << max_z*nVar << " > " << INT_MAX << endl;
+      MPI_Abort(MPI_COMM_WORLD, -1);
+      return (-1);
+    }
+    communicateParticlesDIR((int) max_z*nVar, ptVCT->getCartesian_rank(), ptVCT->getZright_neighbor_P(), ptVCT->getZleft_neighbor_P(), 2, ptVCT->getXLEN(), ptVCT->getYLEN(), ptVCT->getZLEN(), b_Z_RIGHT, b_Z_LEFT);
+  }
+
+  // put received particles in the local domain
   avail1 = unbuffer(b_X_RIGHT);
   avail2 = unbuffer(b_X_LEFT);
   avail3 = unbuffer(b_Y_RIGHT);
   avail4 = unbuffer(b_Y_LEFT);
   avail5 = unbuffer(b_Z_RIGHT);
   avail6 = unbuffer(b_Z_LEFT);
+
   // if one of these numbers is negative than there is not enough space for particles
   avail = avail1 + avail2 + avail3 + avail4 + avail5 + avail6;
   availALL = globalSum(avail);
