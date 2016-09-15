@@ -805,8 +805,7 @@ void Particles3Dcomm::del_pack(long long np_current, long long *nplast) {
   v[np_current] = v[*nplast];
   w[np_current] = w[*nplast];
   q[np_current] = q[*nplast];
-  if (TrackParticleID)
-    ParticleID[np_current] = ParticleID[*nplast];
+  if (TrackParticleID) ParticleID[np_current] = ParticleID[*nplast];
   npExit++;
   (*nplast)--;
 }
