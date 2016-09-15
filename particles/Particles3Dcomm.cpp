@@ -638,37 +638,37 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitXleft++;
       if (x_leftmost) x[np_current] += Lx;
       if (npExitXleft >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXleft);
-      buffer_leaving(b_X_LEFT, np_current, ptVCT, &nplast);
+      buffer_leaving(b_X_LEFT, npExitXleft*nVar, np_current, ptVCT, &nplast);
     }
     else if (x_out_right) {
       npExitXright++;
       if (x_rightmost) x[np_current] -= Lx;
       if (npExitXright >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXright);
-      buffer_leaving(b_X_RIGHT, np_current, ptVCT, &nplast);
+      buffer_leaving(b_X_RIGHT, npExitXright*nVar, np_current, ptVCT, &nplast);
     }
     else if (y_out_left) {
       npExitYleft++;
       if (y_leftmost) y[np_current] += Ly;
       if (npExitYleft >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYleft);
-      buffer_leaving(b_Y_LEFT, np_current, ptVCT, &nplast);
+      buffer_leaving(b_Y_LEFT, npExitYleft*nVar, np_current, ptVCT, &nplast);
     }
     else if (y_out_right) {
       npExitYright++;
       if (y_rightmost) y[np_current] -= Ly;
       if (npExitYright >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYright);
-      buffer_leaving(b_Y_RIGHT, np_current, ptVCT, &nplast);
+      buffer_leaving(b_Y_RIGHT, npExitYright*nVar, np_current, ptVCT, &nplast);
     }
     else if (z_out_left) {
       npExitZleft++;
       if (z_leftmost) z[np_current] += Lz;
       if (npExitZleft >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZleft);
-      buffer_leaving(b_Z_LEFT, np_current, ptVCT, &nplast);
+      buffer_leaving(b_Z_LEFT, npExitZleft*nVar, np_current, ptVCT, &nplast);
     }
     else if (z_out_right) {
       npExitZright++;
       if (z_rightmost) z[np_current] -= Lz;
       if (npExitZright >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZright);
-      buffer_leaving(b_Z_RIGHT, np_current, ptVCT, &nplast);
+      buffer_leaving(b_Z_RIGHT, npExitZright*nVar, np_current, ptVCT, &nplast);
     }
     else {
       // particle is still in the domain, proceed with the next particle
@@ -751,15 +751,15 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
 }
 
 /** put a leaving particle to the communication buffer */
-inline void Particles3Dcomm::buffer_leaving(double *b_, long long np_current, VirtualTopology3D * vct, long long *nplast) {
-  b_[npExitXleft * nVar] = x[np_current];
-  b_[npExitXleft * nVar + 1] = y[np_current];
-  b_[npExitXleft * nVar + 2] = z[np_current];
-  b_[npExitXleft * nVar + 3] = u[np_current];
-  b_[npExitXleft * nVar + 4] = v[np_current];
-  b_[npExitXleft * nVar + 5] = w[np_current];
-  b_[npExitXleft * nVar + 6] = q[np_current];
-  if (TrackParticleID) b_[npExitXleft * nVar + 7] = ParticleID[np_current];
+inline void Particles3Dcomm::buffer_leaving(double *b_, long long, pos, long long np_current, VirtualTopology3D * vct, long long *nplast) {
+  b_[pos] = x[np_current];
+  b_[pos+1] = y[np_current];
+  b_[pos+2] = z[np_current];
+  b_[pos+3] = u[np_current];
+  b_[pos+4] = v[np_current];
+  b_[pos+5] = w[np_current];
+  b_[pos+6] = q[np_current];
+  if (TrackParticleID) b_[pos+7] = ParticleID[np_current];
   del_pack(np_current,nplast);
 }
 
