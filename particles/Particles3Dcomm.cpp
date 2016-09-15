@@ -533,7 +533,6 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
 int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // allocate buffers
   MPI_Status status;
-  long long npExitingMax;
   // variable for memory availability of space for new particles
   long long avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
 
@@ -671,13 +670,13 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   b_Y_RIGHT[npExitYright * nVar] = INVALID_PARTICLE;
   b_Z_RIGHT[npExitZright * nVar] = INVALID_PARTICLE;
 
-  // calculate the maximum number of particles leaving from this domain
-  long long max_x = 0L, max_y = 0L, max_z = 0L;
-  npExitingMax = maxNpExiting(&max_x, &max_y, &max_z);
-  // broadcast the global maximum number of particles leaving
-  npExitingMax = globalMaximum(npExitingMax);
+  // calculate the maximum number of particles communicated in each direction
+  long long max_x = globalMaximum(max (npExitXleft, npExitXright));
+  long long max_y = globalMaximum(max (npExitYleft, npExitYright));
+  long long max_z = globalMaximum(max (npExitZleft, npExitZright));
+
   // return immediately, if no further communication is needed
-  if (npExitingMax == 0) return (0);
+  if ((max_x == 0L) && (max_y == 0L) && (max_z == 0L)) return (0);
 
   // resize buffers, if necessary
   if (max_x >= buffer_size_x) {
