@@ -683,17 +683,17 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   if (max_x >= buffer_size_x) {
     if (ptVCT->getCartesian_rank() == 0)
       cout << "resizing X-buffer: " << buffer_size_x << " => " << max_x << " particles" << endl;
-    resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, max_x);
+    resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, max_x, false);
   }
   if (max_y >= buffer_size_y) {
     if (ptVCT->getCartesian_rank() == 0)
       cout << "resizing Y-buffer: " << buffer_size_y << " => " << max_y << " particles" << endl;
-    resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, max_y);
+    resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, max_y, false);
   }
   if (max_z >= buffer_size_z) {
     if (ptVCT->getCartesian_rank() == 0)
       cout << "resizing Z-buffer: " << buffer_size_z << " => " << max_z << " particles" << endl;
-    resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, max_z);
+    resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, max_z, false);
   }
 
   /*****************************************************/
@@ -717,10 +717,11 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 }
 
 /** resize the buffers */
-void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long *size, long long request_size) {
+void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long *size, long long request_size, bool extend) {
   double *temp = NULL;
   long long old_size = *size * nVar;
-  *size = ((long long) (request_size*1.1 + 0.01*nop + 100));
+  *size = request_size + 1;
+  if (extend) *size += ((long long) (request_size*0.1 + 0.025*nop)) + 100;
   long long new_size = *size * nVar;
 
   // resize b_left
@@ -730,6 +731,7 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
     delete[]b_left;
   }
   b_left = temp;
+  b_left[old_size] = INVALID_PARTICLE;
 
   // resize b_right
   temp = new double[new_size];
@@ -738,6 +740,7 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
     delete[]b_right;
   }
   b_right = temp;
+  b_right[old_size] = INVALID_PARTICLE;
 }
 
 /** put a leaving particle to the communication buffer */

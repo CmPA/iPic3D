@@ -91,7 +91,7 @@ public:
   int unbuffer(double *b_);
 
   /** resize the receiving buffer */
-  void resize_buffers(double *b_LEFT, double *b_RIGHT, long long *size, long long request_size);
+  void resize_buffers(double *b_LEFT, double *b_RIGHT, long long *size, long long request_size, bool extend=true);
   /** a method to compute how many particles are not in the right domain */
   int isMessagingDone(VirtualTopology3D * ptVCT);
   /** calculate the maximum number exiting from this domain */
