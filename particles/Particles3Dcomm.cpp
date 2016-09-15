@@ -817,6 +817,7 @@ long long Particles3Dcomm::maxNpExiting(long long *max_x, long long *max_y, long
   *max_z = max(npExitZleft, npExitZright);
   long long max_xyz = max(*max_x, *max_y);
   max_xyz = max(max_xyz, *max_z);
+  return (max_xyz);
 }
 /** return X-coordinate of particle array */
 double *Particles3Dcomm::getXall()  const {
