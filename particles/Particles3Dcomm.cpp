@@ -173,14 +173,16 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     nVar = 8;
   else
     nVar = 7;
-  buffer_size = (int) (.05 * nop * nVar + 1); // max: 5% of the particles in the processors is going out
+  buffer_size_x = (int) (.05 * nop); // max: 5% of the particles in the processors is going out
+  buffer_size_y = buffer_size_x;
+  buffer_size_z = buffer_size_x;
 
-  b_X_RIGHT = new double[buffer_size];
-  b_X_LEFT = new double[buffer_size];
-  b_Y_RIGHT = new double[buffer_size];
-  b_Y_LEFT = new double[buffer_size];
-  b_Z_RIGHT = new double[buffer_size];
-  b_Z_LEFT = new double[buffer_size];
+  b_X_RIGHT = new double[buffer_size_x*nVar];
+  b_X_LEFT = new double[buffer_size_x*nVar];
+  b_Y_RIGHT = new double[buffer_size_y*nVar];
+  b_Y_LEFT = new double[buffer_size_y*nVar];
+  b_Z_RIGHT = new double[buffer_size_z*nVar];
+  b_Z_LEFT = new double[buffer_size_z*nVar];
 
   // if RESTART is true initialize the particle in allocate method
   restart = col->getRestart_status();
@@ -531,16 +533,20 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
 int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // allocate buffers
   MPI_Status status;
-  int new_buffer_size;
-  int npExitingMax;
+  long long npExitingMax;
   // variable for memory availability of space for new particles
-  int avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
-  for (int i = 0; i < buffer_size; i++) {
+  long long avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
+  long long max_x=buffer_size_x*nVar, max_y=buffer_size_y*nVar, max_z=buffer_size_z*nVar;
+  for (long long i = 0L; i < max_x; i++) {
     b_X_LEFT[i] = MIN_VAL;
-    b_Y_LEFT[i] = MIN_VAL;
-    b_Z_LEFT[i] = MIN_VAL;
     b_X_RIGHT[i] = MIN_VAL;
+  }
+  for (long long i = 0L; i < max_y; i++) {
+    b_Y_LEFT[i] = MIN_VAL;
     b_Y_RIGHT[i] = MIN_VAL;
+  }
+  for (long long i = 0L; i < max_z; i++) {
+    b_Z_LEFT[i] = MIN_VAL;
     b_Z_RIGHT[i] = MIN_VAL;
   }
 
@@ -562,9 +568,10 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   bool y_reemission = !y_degenerated && ((bcPfaceYleft == 2) || (bcPfaceYright == 2));
   bool z_reemission = !z_degenerated && ((bcPfaceZleft == 2) || (bcPfaceZright == 2));
 
-  npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, wrong_domain = 0;
+  npExitXright = 0L, npExitXleft = 0L, npExitYright = 0L, npExitYleft = 0L, npExitZright = 0L, npExitZleft = 0L;
+  npExit = 0L, wrong_domain = 0L;
   bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right;
-  long long np_current = 0, nplast = nop - 1;
+  long long np_current = 0L, nplast = nop - 1;
 
   while (np_current < nplast+1) {
 
@@ -623,32 +630,32 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     // move particle into the communication buffer
     if (x_out_left) {
       npExitXleft++;
-      if ((npExitXleft*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      if (npExitXleft >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXleft);
       bufferXleft(b_X_LEFT,np_current,ptVCT,&nplast);
     }
     else if (x_out_right) {
       npExitXright++;
-      if ((npExitXright*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      if (npExitXright >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXright);
       bufferXright(b_X_RIGHT,np_current,ptVCT,&nplast);
     }
     else if (y_out_left) {
       npExitYleft++;
-      if ((npExitYleft*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      if (npExitYleft >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYleft);
       bufferYleft(b_Y_LEFT,np_current,ptVCT,&nplast);
     }
     else if (y_out_right) {
       npExitYright++;
-      if ((npExitYright*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      if (npExitYright >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYright);
       bufferYright(b_Y_RIGHT,np_current,ptVCT,&nplast);
     }
     else if (z_out_left) {
       npExitZleft++;
-      if ((npExitZleft*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      if (npExitZleft >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZleft);
       bufferZleft(b_Z_LEFT,np_current,ptVCT,&nplast);
     }
     else if (z_out_right) {
       npExitZright++;
-      if ((npExitZright*nVar)>=buffer_size) resize_buffers((int) (buffer_size*1.1+0.025*nop*nVar));
+      if (npExitZright >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZright);
       bufferZright(b_Z_RIGHT,np_current,ptVCT,&nplast);
     }
     else {
@@ -659,24 +666,36 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
   nop = nplast + 1;
   // calculate the maximum number of particles exiting from this domain
-  npExitingMax = maxNpExiting();
+  max_x = 0L;
+  max_y = 0L;
+  max_z = 0L;
+  npExitingMax = maxNpExiting(&max_x, &max_y, &max_z);
   // broadcast the global maximum number of particles exiting
   npExitingMax = globalMaximum(npExitingMax);
   // return immediately, if no further communication is needed
   if (npExitingMax == 0) return (0);
 
   // resize buffers, if necessary
-  new_buffer_size = npExitingMax * nVar + 1;
-  if (new_buffer_size > buffer_size) {
+  if (max_x >= buffer_size_x) {
     if (ptVCT->getCartesian_rank() == 0)
-      cout << "resizing buffer: " << buffer_size << " => " << new_buffer_size << endl;
-    resize_buffers(new_buffer_size);
+      cout << "resizing X-buffer: " << buffer_size_x << " => " << max_x << " particles" << endl;
+    resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, max_x);
+  }
+  if (max_y >= buffer_size_y) {
+    if (ptVCT->getCartesian_rank() == 0)
+      cout << "resizing Y-buffer: " << buffer_size_y << " => " << max_y << " particles" << endl;
+    resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, max_y);
+  }
+  if (max_z >= buffer_size_z) {
+    if (ptVCT->getCartesian_rank() == 0)
+      cout << "resizing Z-buffer: " << buffer_size_z << " => " << max_z << " particles" << endl;
+    resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, max_z);
   }
 
   /*****************************************************/
   /* SEND AND RECEIVE MESSAGES */
   /*****************************************************/
-  communicateParticles(new_buffer_size, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
+  communicateParticles(max_x, max_z, max_z, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
 
   // UNBUFFERING
   // message from XLEFT
@@ -694,64 +713,29 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 }
 
 /** resize the buffers */
-void Particles3Dcomm::resize_buffers(int new_buffer_size) {
+void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long *size, long long request_size) {
   double *temp = NULL;
+  long long old_size = *size * nVar;
+  *size = ((long long) (request_size*1.1 + 0.01*nop + 100));
+  long long new_size = *size * nVar;
 
-  // resize b_X_LEFT
-  temp = new double[new_buffer_size];
-  if (b_X_LEFT) {
-    for (int i = 0; i < buffer_size; i++) temp[i] = b_X_LEFT[i];
-    delete[]b_X_LEFT;
+  // resize b_left
+  temp = new double[new_size];
+  if (b_left) {
+    for (long long i = 0L; i < old_size; i++) temp[i] = b_left[i];
+    delete[]b_left;
   }
-  b_X_LEFT = temp;
-  for (int i = buffer_size; i < new_buffer_size; i++) b_X_LEFT[i] = MIN_VAL;
+  b_left = temp;
+  for (long long i = old_size; i < new_size; i++) b_left[i] = MIN_VAL;
 
-  // resize b_X_RIGHT 
-  temp = new double[new_buffer_size];
-  if (b_X_RIGHT) {
-    for (int i = 0; i < buffer_size; i++) temp[i] = b_X_RIGHT[i];
-    delete[]b_X_RIGHT;
+  // resize b_right
+  temp = new double[new_size];
+  if (b_right) {
+    for (long long i = 0L; i < old_size; i++) temp[i] = b_right[i];
+    delete[]b_right;
   }
-  b_X_RIGHT = temp;
-  for (int i = buffer_size; i < new_buffer_size; i++) b_X_RIGHT[i] = MIN_VAL;
-
-  // resize b_Y_LEFT
-  temp = new double[new_buffer_size];
-  if (b_Y_LEFT) {
-    for (int i = 0; i < buffer_size; i++) temp[i] = b_Y_LEFT[i];
-    delete[]b_Y_LEFT;
-  }
-  b_Y_LEFT = temp;
-  for (int i = buffer_size; i < new_buffer_size; i++) b_Y_LEFT[i] = MIN_VAL;
-
-  // resize b_Y_RIGHT
-  temp = new double[new_buffer_size];
-  if (b_Y_RIGHT) {
-    for (int i = 0; i < buffer_size; i++) temp[i] = b_Y_RIGHT[i];
-    delete[]b_Y_RIGHT;
-  }
-  b_Y_RIGHT = temp;
-  for (int i = buffer_size; i < new_buffer_size; i++) b_Y_RIGHT[i] = MIN_VAL;
-
-  // resize b_Z_LEFT
-  temp = new double[new_buffer_size];
-  if (b_Z_LEFT) {
-    for (int i = 0; i < buffer_size; i++) temp[i] = b_Z_LEFT[i];
-    delete[]b_Z_LEFT;
-  }
-  b_Z_LEFT = temp;
-  for (int i = buffer_size; i < new_buffer_size; i++) b_Z_LEFT[i] = MIN_VAL;
-
-  // resize b_Z_RIGHT
-  temp = new double[new_buffer_size];
-  if (b_Z_RIGHT) {
-    for (int i = 0; i < buffer_size; i++) temp[i] = b_Z_RIGHT[i];
-    delete[]b_Z_RIGHT;
-  }
-  b_Z_RIGHT = temp;
-  for (int i = buffer_size; i < new_buffer_size; i++) b_Z_RIGHT[i] = MIN_VAL;
-
-  buffer_size = new_buffer_size;
+  b_right = temp;
+  for (long long i = old_size; i < new_size; i++) b_right[i] = MIN_VAL;
 }
 
 /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
@@ -907,21 +891,16 @@ int Particles3Dcomm::isMessagingDone(VirtualTopology3D * ptVCT) {
 
 }
 /** calculate the maximum number exiting from this domain */
-int Particles3Dcomm::maxNpExiting() {
-  int maxNp = 0;
-  if (npExitXright > maxNp)
-    maxNp = npExitXright;
-  if (npExitXleft > maxNp)
-    maxNp = npExitXleft;
-  if (npExitYright > maxNp)
-    maxNp = npExitYright;
-  if (npExitYleft > maxNp)
-    maxNp = npExitYleft;
-  if (npExitZright > maxNp)
-    maxNp = npExitZright;
-  if (npExitZleft > maxNp)
-    maxNp = npExitZleft;
-  return (maxNp);
+long long Particles3Dcomm::maxNpExiting(long long *max_x, long long *max_y, long long *max_z) {
+  *max_x = npExitXleft;
+  if (npExitXright > *max_x) *max_x = npExitXright;
+  *max_y = npExitYleft;
+  if (npExitYright > *max_y) *max_y = npExitYright;
+  *max_z = npExitZleft;
+  if (npExitZright > *max_z) *max_z = npExitZright;
+  long long max = *max_x;
+  if (max < *max_y) max = *max_y;
+  if (max < *max_z) max = *max_z;
 }
 /** return X-coordinate of particle array */
 double *Particles3Dcomm::getXall()  const {

@@ -13,7 +13,7 @@ developers           : Stefano Markidis, Giovanni Lapenta
 #include "ComBasic3D.h"
 
 /** comunicate particles and receive particles to and from 6 processors */
-void communicateParticles(int buffer_size, double *b_Xleft, double *b_Xright, double *b_Yleft, double *b_Yright, double *b_Zleft, double *b_Zright, VirtualTopology3D * vct);
+void communicateParticles(long long buffer_size_x, long long buffer_size_y, long long buffer_size_z, double *b_Xleft, double *b_Xright, double *b_Yleft, double *b_Yright, double *b_Zleft, double *b_Zright, VirtualTopology3D * vct);
 
 /** communicate the global sum */
 inline int globalSum(int value) {

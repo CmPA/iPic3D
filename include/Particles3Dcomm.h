@@ -101,11 +101,11 @@ public:
   int unbuffer(double *b_);
 
   /** resize the receiving buffer */
-  void resize_buffers(int new_buffer_size);
+  void resize_buffers(double *b_LEFT, double *b_RIGHT, long long *size, long long request_size);
   /** a method to compute how many particles are not in the right domain */
   int isMessagingDone(VirtualTopology3D * ptVCT);
   /** calculate the maximum number exiting from this domain */
-  int maxNpExiting();
+  long long maxNpExiting(long long *max_x, long long *max_y, long long *max_z);
   /** calculate the weights given the position of particles */
   // void calculateWeights(double*** weight, double xp, double yp, double zp,int ix, int iy, int iz, Grid* grid);
   /** get X-position array for all the particles */
@@ -250,7 +250,7 @@ protected:
   int nxn, nyn, nzn;
   /** buffers for communication */
   /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
-  int buffer_size;
+  long long buffer_size_x, buffer_size_y, buffer_size_z;
   /** buffer with particles going to the right processor - Direction X */
   double *b_X_RIGHT;
   /** buffer with particles going to the left processor - Direction X */
@@ -265,21 +265,21 @@ protected:
   double *b_Z_LEFT;
 
   /** number of particles exiting per cycle*/
-  int npExitXright;
+  long long npExitXright;
   /** number of particles exiting to X-LEFT per cycle*/
-  int npExitXleft;
+  long long npExitXleft;
   /** number of particles exiting to Y-RIGHT per cycle*/
-  int npExitYright;
+  long long npExitYright;
   /** number of particles exiting to Y-LEFT per cycle*/
-  int npExitYleft;
+  long long npExitYleft;
   /** number of particles exiting to Z-RIGHT per cycle*/
-  int npExitZright;
+  long long npExitZright;
   /** number of particles exiting to Z-LEFT per cycle*/
-  int npExitZleft;
+  long long npExitZleft;
   /** total number of particles exiting per cycle */
-  int npExit;
+  long long npExit;
   /** number of particles not in the right domain   */
-  int wrong_domain;
+  long long wrong_domain;
 
 
   /** bool for communication verbose */
