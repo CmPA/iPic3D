@@ -892,15 +892,11 @@ int Particles3Dcomm::isMessagingDone(VirtualTopology3D * ptVCT) {
 }
 /** calculate the maximum number exiting from this domain */
 long long Particles3Dcomm::maxNpExiting(long long *max_x, long long *max_y, long long *max_z) {
-  *max_x = npExitXleft;
-  if (npExitXright > *max_x) *max_x = npExitXright;
-  *max_y = npExitYleft;
-  if (npExitYright > *max_y) *max_y = npExitYright;
-  *max_z = npExitZleft;
-  if (npExitZright > *max_z) *max_z = npExitZright;
-  long long max = *max_x;
-  if (max < *max_y) max = *max_y;
-  if (max < *max_z) max = *max_z;
+  *max_x = max(npExitXleft, npExitXright);
+  *max_y = max(npExitYleft, npExitYright);
+  *max_z = max(npExitZleft, npExitZright);
+  long long max_xyz = max(*max_x, *max_y);
+  max_xyz = max(max_xyz, *max_z);
 }
 /** return X-coordinate of particle array */
 double *Particles3Dcomm::getXall()  const {
