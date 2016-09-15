@@ -638,43 +638,51 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitXleft++;
       if (x_leftmost) x[np_current] += Lx;
       if (npExitXleft >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXleft);
-      buffer_leaving(b_X_LEFT, npExitXleft*nVar, np_current, ptVCT);
+      buffer_leaving(b_X_LEFT, (npExitXleft-1)*nVar, np_current, ptVCT);
     }
     else if (x_out_right) {
       npExitXright++;
       if (x_rightmost) x[np_current] -= Lx;
       if (npExitXright >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXright);
-      buffer_leaving(b_X_RIGHT, npExitXright*nVar, np_current, ptVCT);
+      buffer_leaving(b_X_RIGHT, (npExitXright-1)*nVar, np_current, ptVCT);
     }
     else if (y_out_left) {
       npExitYleft++;
       if (y_leftmost) y[np_current] += Ly;
       if (npExitYleft >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYleft);
-      buffer_leaving(b_Y_LEFT, npExitYleft*nVar, np_current, ptVCT);
+      buffer_leaving(b_Y_LEFT, (npExitYleft-1)*nVar, np_current, ptVCT);
     }
     else if (y_out_right) {
       npExitYright++;
       if (y_rightmost) y[np_current] -= Ly;
       if (npExitYright >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYright);
-      buffer_leaving(b_Y_RIGHT, npExitYright*nVar, np_current, ptVCT);
+      buffer_leaving(b_Y_RIGHT, (npExitYright-1)*nVar, np_current, ptVCT);
     }
     else if (z_out_left) {
       npExitZleft++;
       if (z_leftmost) z[np_current] += Lz;
       if (npExitZleft >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZleft);
-      buffer_leaving(b_Z_LEFT, npExitZleft*nVar, np_current, ptVCT);
+      buffer_leaving(b_Z_LEFT, (npExitZleft-1)*nVar, np_current, ptVCT);
     }
     else if (z_out_right) {
       npExitZright++;
       if (z_rightmost) z[np_current] -= Lz;
       if (npExitZright >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZright);
-      buffer_leaving(b_Z_RIGHT, npExitZright*nVar, np_current, ptVCT);
+      buffer_leaving(b_Z_RIGHT, (npExitZright-1)*nVar, np_current, ptVCT);
     }
     else {
       // particle is still in the domain, proceed with the next particle
       np_current++;
     }
   }
+
+  // put end markers into buffers
+  b_X_LEFT[npExitXleft * nVar] = INVALID_PARTICLE;
+  b_Y_LEFT[npExitYleft * nVar] = INVALID_PARTICLE;
+  b_Z_LEFT[npExitZleft * nVar] = INVALID_PARTICLE;
+  b_X_RIGHT[npExitXright * nVar] = INVALID_PARTICLE;
+  b_Y_RIGHT[npExitYright * nVar] = INVALID_PARTICLE;
+  b_Z_RIGHT[npExitZright * nVar] = INVALID_PARTICLE;
 
   // calculate the maximum number of particles leaving from this domain
   max_x = 0L;
