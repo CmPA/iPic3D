@@ -192,16 +192,16 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     nVar = 8;
   else
     nVar = 7;
-  buffer_size_x = (int) (0.025 * nop); // assume 2.5% of the particles in the processors are leaving
+  buffer_size_x = (long long) (0.025 * nop) + 10; // assume 2.5% of the particles in the processors are leaving
   buffer_size_y = buffer_size_x;
   buffer_size_z = buffer_size_x;
 
-  b_X_RIGHT.reserve (buffer_size_x*nVar);
-  b_X_LEFT.reserve (buffer_size_x*nVar);
-  b_Y_RIGHT.reserve (buffer_size_y*nVar);
-  b_Y_LEFT.reserve (buffer_size_y*nVar);
-  b_Z_RIGHT.reserve (buffer_size_z*nVar);
-  b_Z_LEFT.reserve (buffer_size_z*nVar);
+  b_X_RIGHT.resize (buffer_size_x*nVar, INVALID_PARTICLE);
+  b_X_LEFT.resize (buffer_size_x*nVar, INVALID_PARTICLE);
+  b_Y_RIGHT.resize (buffer_size_y*nVar, INVALID_PARTICLE);
+  b_Y_LEFT.resize (buffer_size_y*nVar, INVALID_PARTICLE);
+  b_Z_RIGHT.resize (buffer_size_z*nVar, INVALID_PARTICLE);
+  b_Z_LEFT.resize (buffer_size_z*nVar, INVALID_PARTICLE);
 
   // if RESTART is true initialize the particle in allocate method
   restart = col->getRestart_status();
@@ -744,13 +744,9 @@ void Particles3Dcomm::resize_buffers(std::vector<double>& b_left, std::vector<do
   if (extend) *size += ((long long) (request_size*0.1 + 0.025*nop)) + 100;
   long long new_size = *size * nVar;
 
-  // resize b_left
-  b_left.resize(new_size);
-  b_left[old_size] = INVALID_PARTICLE;
-
-  // resize b_right
-  b_right.resize(new_size);
-  b_right[old_size] = INVALID_PARTICLE;
+  // resize and initialize
+  b_left.resize(new_size, INVALID_PARTICLE);
+  b_right.resize(new_size, INVALID_PARTICLE);
 }
 
 /** put a leaving particle to the communication buffer */
