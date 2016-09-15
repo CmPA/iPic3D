@@ -736,10 +736,10 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   avail5 = unbuffer(b_Z_RIGHT);
   avail6 = unbuffer(b_Z_LEFT);
 
-  // if one of these numbers is negative than there is not enough space for particles
+  // if any of these numbers is negative there is not enough space to store the incoming particles
   avail = avail1 + avail2 + avail3 + avail4 + avail5 + avail6;
   availALL = globalSum(avail);
-  if (availALL < 0) return (-1); // too many particles coming, save data and stop simulation
+  if (availALL < 0) return (-1); // save data and stop simulation
   return (0);
 }
 
