@@ -699,7 +699,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);
     }
-    communicateParticlesDIR((int) max_x*nVar, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), &(b_X_RIGHT[0]), &(b_X_LEFT[0]));
+    communicateParticlesDIR((int) max_x*nVar, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_X_RIGHT.data(), b_X_LEFT.data());
   }
 
   // communicate in the Y direction
@@ -709,7 +709,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);
     }
-    communicateParticlesDIR((int) max_y*nVar, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), &b_Y_RIGHT[0], &b_Y_LEFT[0]);
+    communicateParticlesDIR((int) max_y*nVar, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_Y_RIGHT.data(), b_Y_LEFT.data());
   }
 
   // communicate in the Z direction
@@ -719,7 +719,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);
     }
-    communicateParticlesDIR((int) max_z*nVar, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), &b_Z_RIGHT[0], &b_Z_LEFT[0]);
+    communicateParticlesDIR((int) max_z*nVar, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_Z_RIGHT.data(), b_Z_LEFT.data());
   }
 
   // put received particles in the local domain
