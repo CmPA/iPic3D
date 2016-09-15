@@ -8,6 +8,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #define Part3DCOMM_H
 
 #include "Particles.h"
+#include <vector>
 
 /** Class for particle distribution calculation in 3D */
 class c_vDist {
@@ -83,15 +84,15 @@ public:
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   int communicate(VirtualTopology3D * vct);
   /** put a leaving particle to the communication buffer */
-  inline void buffer_leaving(double *b_, long long pos, long long np_current, VirtualTopology3D * vct);
+  inline void buffer_leaving(std::vector<double>& buffer, long long pos, long long np_current, VirtualTopology3D * vct);
   /** Delete the a particle from a list(array) and pack the list(array) */
   void del_pack(long long np);
 
   /** method to debuild the buffer received */
-  int unbuffer(double *b_);
+  int unbuffer(std::vector<double>& buffer);
 
   /** resize the receiving buffer */
-  void resize_buffers(double *b_LEFT, double *b_RIGHT, long long *size, long long request_size, bool extend=true);
+  void resize_buffers(std::vector<double>& b_LEFT, std::vector<double>& b_RIGHT, long long *size, long long request_size, bool extend=true);
   /** a method to compute how many particles are not in the right domain */
   int isMessagingDone(VirtualTopology3D * vct);
   /** calculate the maximum number exiting from this domain */
@@ -262,17 +263,17 @@ protected:
   /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
   long long buffer_size_x, buffer_size_y, buffer_size_z;
   /** buffer with particles going to the right processor - Direction X */
-  double *b_X_RIGHT;
+  std::vector<double> b_X_RIGHT;
   /** buffer with particles going to the left processor - Direction X */
-  double *b_X_LEFT;
+  std::vector<double> b_X_LEFT;
   /** buffer with particles going to the right processor - Direction Y */
-  double *b_Y_RIGHT;
+  std::vector<double> b_Y_RIGHT;
   /** buffer with particles going to the left processor - Direction Y */
-  double *b_Y_LEFT;
+  std::vector<double> b_Y_LEFT;
   /** buffer with particles going to the right processor - Direction Z */
-  double *b_Z_RIGHT;
+  std::vector<double> b_Z_RIGHT;
   /** buffer with particles going to the left processor - Direction Z */
-  double *b_Z_LEFT;
+  std::vector<double> b_Z_LEFT;
 
   /** number of particles exiting per cycle*/
   long long npExitXright;

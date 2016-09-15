@@ -58,13 +58,6 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]v;
   delete[]w;
   delete[]q;
-  // deallocate buffers
-  delete[]b_X_RIGHT;
-  delete[]b_X_LEFT;
-  delete[]b_Y_RIGHT;
-  delete[]b_Y_LEFT;
-  delete[]b_Z_RIGHT;
-  delete[]b_Z_LEFT;
 }
 /** constructors fo a single species*/
 void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
@@ -199,16 +192,16 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     nVar = 8;
   else
     nVar = 7;
-  buffer_size_x = (int) (0.05 * nop); // max: 5% of the particles in the processors is going out
+  buffer_size_x = (int) (0.025 * nop); // assume 2.5% of the particles in the processors are leaving
   buffer_size_y = buffer_size_x;
   buffer_size_z = buffer_size_x;
 
-  b_X_RIGHT = new double[buffer_size_x*nVar];
-  b_X_LEFT = new double[buffer_size_x*nVar];
-  b_Y_RIGHT = new double[buffer_size_y*nVar];
-  b_Y_LEFT = new double[buffer_size_y*nVar];
-  b_Z_RIGHT = new double[buffer_size_z*nVar];
-  b_Z_LEFT = new double[buffer_size_z*nVar];
+  b_X_RIGHT.reserve (buffer_size_x*nVar);
+  b_X_LEFT.reserve (buffer_size_x*nVar);
+  b_Y_RIGHT.reserve (buffer_size_y*nVar);
+  b_Y_LEFT.reserve (buffer_size_y*nVar);
+  b_Z_RIGHT.reserve (buffer_size_z*nVar);
+  b_Z_LEFT.reserve (buffer_size_z*nVar);
 
   // if RESTART is true initialize the particle in allocate method
   restart = col->getRestart_status();
@@ -560,7 +553,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
   // allocate buffers
   MPI_Status status;
   // variable for memory availability of space for new particles
-  long long avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
+  long long avail;
 
   npExitXright = 0L, npExitXleft = 0L, npExitYright = 0L, npExitYleft = 0L, npExitZright = 0L, npExitZleft = 0L;
   npExit = 0L, wrong_domain_x = 0L, wrong_domain_y = 0L, wrong_domain_z = 0L;
@@ -706,7 +699,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);
     }
-    communicateParticlesDIR((int) max_x*nVar, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_X_RIGHT, b_X_LEFT);
+    communicateParticlesDIR((int) max_x*nVar, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), &(b_X_RIGHT[0]), &(b_X_LEFT[0]));
   }
 
   // communicate in the Y direction
@@ -716,7 +709,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);
     }
-    communicateParticlesDIR((int) max_y*nVar, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_Y_RIGHT, b_Y_LEFT);
+    communicateParticlesDIR((int) max_y*nVar, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), &b_Y_RIGHT[0], &b_Y_LEFT[0]);
   }
 
   // communicate in the Z direction
@@ -726,26 +719,25 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);
     }
-    communicateParticlesDIR((int) max_z*nVar, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_Z_RIGHT, b_Z_LEFT);
+    communicateParticlesDIR((int) max_z*nVar, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), &b_Z_RIGHT[0], &b_Z_LEFT[0]);
   }
 
   // put received particles in the local domain
-  avail1 = unbuffer(b_X_RIGHT);
-  avail2 = unbuffer(b_X_LEFT);
-  avail3 = unbuffer(b_Y_RIGHT);
-  avail4 = unbuffer(b_Y_LEFT);
-  avail5 = unbuffer(b_Z_RIGHT);
-  avail6 = unbuffer(b_Z_LEFT);
+  avail = unbuffer(b_X_RIGHT);
+  avail += unbuffer(b_X_LEFT);
+  avail += unbuffer(b_Y_RIGHT);
+  avail += unbuffer(b_Y_LEFT);
+  avail += unbuffer(b_Z_RIGHT);
+  avail += unbuffer(b_Z_LEFT);
 
   // if any of these numbers is negative there is not enough space to store the incoming particles
-  avail = avail1 + avail2 + avail3 + avail4 + avail5 + avail6;
-  availALL = globalSum(avail);
-  if (availALL < 0) return (-1); // save data and stop simulation
+  avail = globalSum(avail);
+  if (avail < 0) return (-1); // save data and stop simulation
   return (0);
 }
 
-/** resize the buffers */
-void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long *size, long long request_size, bool extend) {
+/** resize a buffer */
+void Particles3Dcomm::resize_buffers(std::vector<double>& b_left, std::vector<double>& b_right, long long *size, long long request_size, bool extend) {
   double *temp = NULL;
   long long old_size = *size * nVar;
   *size = request_size + 1;
@@ -753,50 +745,40 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
   long long new_size = *size * nVar;
 
   // resize b_left
-  temp = new double[new_size];
-  if (b_left) {
-    for (register long long i = 0L; i < old_size; i++) temp[i] = b_left[i];
-    delete[]b_left;
-  }
-  b_left = temp;
+  b_left.resize(new_size);
   b_left[old_size] = INVALID_PARTICLE;
 
   // resize b_right
-  temp = new double[new_size];
-  if (b_right) {
-    for (register long long i = 0L; i < old_size; i++) temp[i] = b_right[i];
-    delete[]b_right;
-  }
-  b_right = temp;
+  b_right.resize(new_size);
   b_right[old_size] = INVALID_PARTICLE;
 }
 
 /** put a leaving particle to the communication buffer */
-inline void Particles3Dcomm::buffer_leaving(double *b_, long long pos, long long np_current, VirtualTopology3D * vct) {
-  b_[pos] = x[np_current];
-  b_[pos+1] = y[np_current];
-  b_[pos+2] = z[np_current];
-  b_[pos+3] = u[np_current];
-  b_[pos+4] = v[np_current];
-  b_[pos+5] = w[np_current];
-  b_[pos+6] = q[np_current];
-  if (TrackParticleID) b_[pos+7] = ParticleID[np_current];
+inline void Particles3Dcomm::buffer_leaving(std::vector<double>& buffer, long long pos, long long np_current, VirtualTopology3D * vct) {
+  buffer[pos] = x[np_current];
+  buffer[pos+1] = y[np_current];
+  buffer[pos+2] = z[np_current];
+  buffer[pos+3] = u[np_current];
+  buffer[pos+4] = v[np_current];
+  buffer[pos+5] = w[np_current];
+  buffer[pos+6] = q[np_current];
+  if (TrackParticleID) buffer[pos+7] = ParticleID[np_current];
   del_pack(np_current);
 }
 
 /** This unbuffer the last communication */
-int Particles3Dcomm::unbuffer(double *b_) {
+int Particles3Dcomm::unbuffer(std::vector<double>& buffer) {
   long long np_current = 0L;
   // put the new particles at the end of the array, and update the number of particles
-  while (b_[np_current * nVar] != INVALID_PARTICLE) {
-    x[nop] = b_[nVar * np_current];
-    y[nop] = b_[nVar * np_current + 1];
-    z[nop] = b_[nVar * np_current + 2];
-    u[nop] = b_[nVar * np_current + 3];
-    v[nop] = b_[nVar * np_current + 4];
-    w[nop] = b_[nVar * np_current + 5];
-    q[nop] = b_[nVar * np_current + 6];
-    if (TrackParticleID) ParticleID[nop] = (unsigned long) b_[nVar * np_current + 7];
+  while (buffer[np_current * nVar] != INVALID_PARTICLE) {
+    x[nop] = buffer[nVar * np_current];
+    y[nop] = buffer[nVar * np_current + 1];
+    z[nop] = buffer[nVar * np_current + 2];
+    u[nop] = buffer[nVar * np_current + 3];
+    v[nop] = buffer[nVar * np_current + 4];
+    w[nop] = buffer[nVar * np_current + 5];
+    q[nop] = buffer[nVar * np_current + 6];
+    if (TrackParticleID) ParticleID[nop] = (unsigned long) buffer[nVar * np_current + 7];
     np_current++;
     // these particles need further communication
     if (x[nop] < xstart || x[nop] > xend) wrong_domain_x++;
@@ -809,7 +791,7 @@ int Particles3Dcomm::unbuffer(double *b_) {
       return (-1);              // end the simulation because you dont have enough space on the array
     }
   }
-  b_[0] = INVALID_PARTICLE;
+  buffer[0] = INVALID_PARTICLE;
   return (0);                   // everything was fine
 }
 /** Delete the a particle from the array and pack the array,
