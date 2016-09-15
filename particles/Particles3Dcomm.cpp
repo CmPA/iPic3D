@@ -671,9 +671,12 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   b_Z_RIGHT[npExitZright * nVar] = INVALID_PARTICLE;
 
   // calculate the maximum number of particles communicated in each direction
-  long long max_x = globalMaximum(max (npExitXleft, npExitXright));
-  long long max_y = globalMaximum(max (npExitYleft, npExitYright));
-  long long max_z = globalMaximum(max (npExitZleft, npExitZright));
+  long long max_x = max (npExitXleft, npExitXright);
+  long long max_y = max (npExitYleft, npExitYright);
+  long long max_z = max (npExitZleft, npExitZright);
+  max_x = globalMaximum(max_x);
+  max_y = globalMaximum(max_y);
+  max_z = globalMaximum(max_z);
 
   // return immediately, if no further communication is needed
   if ((max_x == 0L) && (max_y == 0L) && (max_z == 0L)) return (0);
