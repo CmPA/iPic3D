@@ -83,9 +83,9 @@ public:
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   int communicate(VirtualTopology3D * ptVCT);
   /** put a leaving particle to the communication buffer */
-  inline void buffer_leaving(double *b_, long long pos, long long np_current, VirtualTopology3D * vct, long long *nplast);
+  inline void buffer_leaving(double *b_, long long pos, long long np_current, VirtualTopology3D * vct);
   /** Delete the a particle from a list(array) and pack the list(array) */
-  void del_pack(long long np, long long *nplast);
+  void del_pack(long long np);
 
   /** method to debuild the buffer received */
   int unbuffer(double *b_);
