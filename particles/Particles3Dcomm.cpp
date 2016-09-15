@@ -536,7 +536,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   long long npExitingMax;
   // variable for memory availability of space for new particles
   long long avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
-  long long max_x=buffer_size_x*nVar, max_y=buffer_size_y*nVar, max_z=buffer_size_z*nVar;
 
   bool x_degenerated = (ptVCT->getXleft_neighbor_P() == ptVCT->getCartesian_rank());
   bool y_degenerated = (ptVCT->getYleft_neighbor_P() == ptVCT->getCartesian_rank());
@@ -673,9 +672,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   b_Z_RIGHT[npExitZright * nVar] = INVALID_PARTICLE;
 
   // calculate the maximum number of particles leaving from this domain
-  max_x = 0L;
-  max_y = 0L;
-  max_z = 0L;
+  long long max_x = 0L, max_y = 0L, max_z = 0L;
   npExitingMax = maxNpExiting(&max_x, &max_y, &max_z);
   // broadcast the global maximum number of particles leaving
   npExitingMax = globalMaximum(npExitingMax);
@@ -702,7 +699,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   /*****************************************************/
   /* SEND AND RECEIVE MESSAGES */
   /*****************************************************/
-  communicateParticles(max_x, max_z, max_z, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
+  communicateParticles(max_x*nVar, max_z*nVar, max_z*nVar, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
 
   // UNBUFFERING
   // message from XLEFT
