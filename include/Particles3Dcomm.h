@@ -279,7 +279,7 @@ protected:
   /** total number of particles exiting per cycle */
   long long npExit;
   /** number of particles not in the right domain   */
-  long long wrong_domain;
+  long long wrong_domain_x, wrong_domain_y, wrong_domain_z;
 
 
   /** bool for communication verbose */

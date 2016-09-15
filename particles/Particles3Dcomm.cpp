@@ -569,7 +569,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   bool z_reemission = !z_degenerated && ((bcPfaceZleft == 2) || (bcPfaceZright == 2));
 
   npExitXright = 0L, npExitXleft = 0L, npExitYright = 0L, npExitYleft = 0L, npExitZright = 0L, npExitZleft = 0L;
-  npExit = 0L, wrong_domain = 0L;
+  npExit = 0L, wrong_domain_x = 0L, wrong_domain_y = 0L, wrong_domain_z = 0L;
   bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right;
   long long np_current = 0L, nplast = nop - 1;
 
@@ -850,8 +850,9 @@ int Particles3Dcomm::unbuffer(double *b_) {
       ParticleID[nop] = (unsigned long) b_[nVar * np_current + 7];
     np_current++;
     // these particles need further communication
-    if (x[nop] < xstart || x[nop] > xend || y[nop] < ystart || y[nop] > yend || z[nop] < zstart || z[nop] > zend)
-      wrong_domain++;            // the particle is not in the domain
+    if (x[nop] < xstart || x[nop] > xend) wrong_domain_x++;
+    if (y[nop] < ystart || y[nop] > yend) wrong_domain_y++;
+    if (z[nop] < zstart || z[nop] > zend) wrong_domain_z++;
     nop++;
     if (nop > npmax) {
       cout << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
@@ -884,7 +885,7 @@ void Particles3Dcomm::del_pack(long long np_current, long long *nplast) {
 /** method to calculate how many particles are out of right domain */
 int Particles3Dcomm::isMessagingDone(VirtualTopology3D * ptVCT) {
   int result = 0;
-  result = globalSum(wrong_domain);
+  result = globalSum(wrong_domain_x + wrong_domain_y + wrong_domain_z);
   if (result > 0 && cVERBOSE && ptVCT->getCartesian_rank() == 0)
     cout << "Further Comunication: " << result << " particles not in the right domain" << endl;
   return (result);
