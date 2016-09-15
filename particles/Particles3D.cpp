@@ -810,17 +810,15 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcPfaceXleft == 2) {
     // use Field topology in this case
     long long particles_index=0;
-    long long nplast = nop-1;
 
-    while (particles_index < nplast+1) {
+    while (particles_index < nop) {
       if (x[particles_index] < 3.0*dx) {
-        del_pack(particles_index,&nplast);
+        del_pack(particles_index);
       } else {
         particles_index++;
       }
     }
 
-    nop = nplast+1;
     particles_index = nop;
     double harvest;
     double prob, theta, sign;
@@ -874,15 +872,13 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcPfaceYleft == 2)
   {
     long long particles_index=0;
-    long long nplast = nop-1;
-    while (particles_index < nplast+1) {
+    while (particles_index < nop) {
       if (y[particles_index] < 3.0*dy) {
-        del_pack(particles_index,&nplast);
+        del_pack(particles_index);
       } else {
         particles_index++;
       }
     }
-    nop = nplast+1;
     particles_index = nop;
     double harvest;
     double prob, theta, sign;
@@ -934,15 +930,13 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcPfaceZleft == 2)
   {
     long long particles_index=0;
-    long long nplast = nop-1;
-    while (particles_index < nplast+1) {
+    while (particles_index < nop) {
       if (z[particles_index] < 3.0*dz) {
-        del_pack(particles_index,&nplast);
+        del_pack(particles_index);
       } else {
         particles_index++;
       }
     }
-    nop = nplast+1;
     particles_index = nop;
     double harvest;
     double prob, theta, sign;
@@ -993,15 +987,13 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
   if (vct->getXright_neighbor() == MPI_PROC_NULL && bcPfaceXright == 2) {
     long long particles_index=0;
-    long long nplast = nop-1;
-    while (particles_index < nplast+1) {
+    while (particles_index < nop) {
       if (x[particles_index] > (Lx-3.0*dx)) {
-        del_pack(particles_index,&nplast);
+        del_pack(particles_index);
       } else {
         particles_index++;
       }
     }
-    nop = nplast+1;
     particles_index = nop;
     double harvest;
     double prob, theta, sign;
@@ -1053,15 +1045,13 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   if (vct->getYright_neighbor() == MPI_PROC_NULL && bcPfaceYright == 2)
   {
     long long particles_index=0;
-    long long nplast = nop-1;
-    while (particles_index < nplast+1) {
+    while (particles_index < nop) {
       if (y[particles_index] > (Ly-3.0*dy)) {
-        del_pack(particles_index,&nplast);
+        del_pack(particles_index);
       } else {
         particles_index++;
       }
     }
-    nop = nplast+1;
     particles_index = nop;
     double harvest;
     double prob, theta, sign;
@@ -1113,15 +1103,13 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   if (vct->getZright_neighbor() == MPI_PROC_NULL && bcPfaceZright == 2)
   {
     long long particles_index=0;
-    long long nplast = nop-1;
-    while (particles_index < nplast+1) {
+    while (particles_index < nop) {
       if (z[particles_index] > (Lz-3.0*dz)) {
-        del_pack(particles_index,&nplast);
+        del_pack(particles_index);
       } else {
         particles_index++;
       }
     }
-    nop = nplast+1;
     particles_index = nop;
     double harvest;
     double prob, theta, sign;
@@ -1444,9 +1432,8 @@ void Particles3D::RotatePlaneXY(double theta) {
 double Particles3D::deleteParticlesInsideSphere(double R, double x_center, double y_center, double z_center) {
 
   long long np_current = 0;
-  long long nplast     = nop-1;
 
-  while (np_current < nplast+1) {
+  while (np_current < nop) {
 
     double xd = x[np_current] - x_center;
     double yd = y[np_current] - y_center;
@@ -1454,12 +1441,11 @@ double Particles3D::deleteParticlesInsideSphere(double R, double x_center, doubl
 
     if ((xd*xd+yd*yd+zd*zd) < R*R) {
       Q_removed += q[np_current];
-      del_pack(np_current,&nplast);
+      del_pack(np_current);
     } else {
       np_current++;
     }
   }
-  nop = nplast + 1;
   return(Q_removed);
 }
 
