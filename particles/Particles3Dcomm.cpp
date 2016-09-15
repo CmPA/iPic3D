@@ -781,6 +781,7 @@ int Particles3Dcomm::unbuffer(double *b_) {
       return (-1);              // end the simulation because you dont have enough space on the array
     }
   }
+  b_[0] = INVALID_PARTICLE;
   return (0);                   // everything was fine
 }
 /** Delete the a particle from the array and pack the array,
