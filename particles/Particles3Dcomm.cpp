@@ -755,7 +755,7 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
   // resize b_left
   temp = new double[new_size];
   if (b_left) {
-    for (long long i = 0L; i < old_size; i++) temp[i] = b_left[i];
+    for (register long long i = 0L; i < old_size; i++) temp[i] = b_left[i];
     delete[]b_left;
   }
   b_left = temp;
@@ -764,7 +764,7 @@ void Particles3Dcomm::resize_buffers(double *b_left, double *b_right, long long 
   // resize b_right
   temp = new double[new_size];
   if (b_right) {
-    for (long long i = 0L; i < old_size; i++) temp[i] = b_right[i];
+    for (register long long i = 0L; i < old_size; i++) temp[i] = b_right[i];
     delete[]b_right;
   }
   b_right = temp;
