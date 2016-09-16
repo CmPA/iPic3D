@@ -543,111 +543,57 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
 }
 
-/** communicate buffers or apply boundary conditions for particles:
-  <ul>
-  <li>bcFace = 0 : loose particles</li>
-  <li>bcFace = 1 : perfect mirror</li>
-  <li>bcFace = 2 : re-emission</li>
-  </ul> */
-int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
-  // allocate buffers
-  MPI_Status status;
-  // variable for memory availability of space for new particles
-  long long avail;
+/** communicate buffers or apply boundary conditions for particles: */
+void Particles3Dcomm::communicate(VirtualTopology3D * vct) {
+  // number of particles in the wrong domain
+  long long comm_x, comm_y, comm_z;
 
   npExitXright = 0L, npExitXleft = 0L, npExitYright = 0L, npExitYleft = 0L, npExitZright = 0L, npExitZleft = 0L;
-  bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right;
   long long np_current = 0L;
+  int result;
 
   while (np_current < nop) {
 
-    x_out_left = (x[np_current] < xstart);
-    x_out_right = (x[np_current] > xend);
-    y_out_left = (y[np_current] < ystart);
-    y_out_right = (y[np_current] > yend);
-    z_out_left = (z[np_current] < zstart);
-    z_out_right = (z[np_current] > zend);
-
     // check for boundary conditions
-    if (no_x_left && x_out_left) {
-      if (x_degenerated) BCpart_left_degenerated(&x[np_current],Lx);
-      else if (x_mirror) BCpart_left_mirror(&x[np_current],&u[np_current],Lx);
-      else if (x_reemission) BCpart_left_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
-      else { del_pack(np_current); continue; }
-      x_out_left = false;
-    }
-    else if (no_x_right && x_out_right) {
-      if (x_degenerated) BCpart_right_degenerated(&x[np_current],Lx);
-      else if (x_mirror) BCpart_right_mirror(&x[np_current],&u[np_current],Lx);
-      else if (x_reemission) BCpart_right_reemission(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth);
-      else { del_pack(np_current); continue; }
-      x_out_right = false;
-    }
-    if (no_y_left && y_out_left) {
-      if (y_degenerated) BCpart_left_degenerated(&y[np_current],Ly);
-      else if (y_mirror) BCpart_left_mirror(&y[np_current],&v[np_current],Ly);
-      else if (y_reemission) BCpart_left_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
-      else { del_pack(np_current); continue; }
-      y_out_left = false;
-    }
-    else if (no_y_right && y_out_right) {
-      if (y_degenerated) BCpart_right_degenerated(&y[np_current],Ly);
-      else if (y_mirror) BCpart_right_mirror(&y[np_current],&v[np_current],Ly);
-      else if (y_reemission) BCpart_right_reemission(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth);
-      else { del_pack(np_current); continue; }
-      y_out_right = false;
-    }
-    if (no_z_left && z_out_left) {
-      if (z_degenerated) BCpart_left_degenerated(&z[np_current],Lz);
-      else if (z_mirror) BCpart_left_mirror(&z[np_current],&w[np_current],Lz);
-      else if (z_reemission) BCpart_left_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
-      else { del_pack(np_current); continue; }
-      z_out_left = false;
-    }
-    else if (no_z_right && z_out_right) {
-      if (z_degenerated) BCpart_right_degenerated(&z[np_current],Lz);
-      else if (z_mirror) BCpart_right_mirror(&z[np_current],&w[np_current],Lz);
-      else if (z_reemission) BCpart_right_reemission(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth);
-      else { del_pack(np_current); continue; }
-      z_out_right = false;
-    }
+    result = bc_apply (&x[np_current], &y[np_current], &z[np_current], &u[np_current], &v[np_current], &w[np_current]);
+    if (result == -1) { del_pack(np_current); continue; }
 
     // particle leaving the domain need to be communicated in a large enough buffer
     if (x_out_left) {
       npExitXleft++;
       if (x_leftmost) x[np_current] += Lx;
-      if (npExitXleft >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXleft);
-      buffer_leaving(b_X_LEFT, (npExitXleft-1)*nVar, np_current, vct);
+      if (npExitXleft >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, buffer_size_x, npExitXleft);
+      buffer_leaving(b_X_LEFT, (npExitXleft-1)*nVar, np_current);
     }
     else if (x_out_right) {
       npExitXright++;
       if (x_rightmost) x[np_current] -= Lx;
-      if (npExitXright >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, npExitXright);
-      buffer_leaving(b_X_RIGHT, (npExitXright-1)*nVar, np_current, vct);
+      if (npExitXright >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, buffer_size_x, npExitXright);
+      buffer_leaving(b_X_RIGHT, (npExitXright-1)*nVar, np_current);
     }
     else if (y_out_left) {
       npExitYleft++;
       if (y_leftmost) y[np_current] += Ly;
-      if (npExitYleft >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYleft);
-      buffer_leaving(b_Y_LEFT, (npExitYleft-1)*nVar, np_current, vct);
+      if (npExitYleft >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, buffer_size_y, npExitYleft);
+      buffer_leaving(b_Y_LEFT, (npExitYleft-1)*nVar, np_current);
     }
     else if (y_out_right) {
       npExitYright++;
       if (y_rightmost) y[np_current] -= Ly;
-      if (npExitYright >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, npExitYright);
-      buffer_leaving(b_Y_RIGHT, (npExitYright-1)*nVar, np_current, vct);
+      if (npExitYright >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, buffer_size_y, npExitYright);
+      buffer_leaving(b_Y_RIGHT, (npExitYright-1)*nVar, np_current);
     }
     else if (z_out_left) {
       npExitZleft++;
       if (z_leftmost) z[np_current] += Lz;
-      if (npExitZleft >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZleft);
-      buffer_leaving(b_Z_LEFT, (npExitZleft-1)*nVar, np_current, vct);
+      if (npExitZleft >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, buffer_size_z, npExitZleft);
+      buffer_leaving(b_Z_LEFT, (npExitZleft-1)*nVar, np_current);
     }
     else if (z_out_right) {
       npExitZright++;
       if (z_rightmost) z[np_current] -= Lz;
-      if (npExitZright >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, npExitZright);
-      buffer_leaving(b_Z_RIGHT, (npExitZright-1)*nVar, np_current, vct);
+      if (npExitZright >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, buffer_size_z, npExitZright);
+      buffer_leaving(b_Z_RIGHT, (npExitZright-1)*nVar, np_current);
     }
     else {
       // particle is still in the domain, proceed with the next particle
@@ -663,86 +609,165 @@ int Particles3Dcomm::communicate(VirtualTopology3D * vct) {
   b_Y_RIGHT[npExitYright * nVar] = INVALID_PARTICLE;
   b_Z_RIGHT[npExitZright * nVar] = INVALID_PARTICLE;
 
-  // calculate the maximum number of particles communicated in each direction
-  long long max_x = max (npExitXleft, npExitXright);
-  long long max_y = max (npExitYleft, npExitYright);
-  long long max_z = max (npExitZleft, npExitZright);
-  max_x = globalMaximum(max_x);
-  max_y = globalMaximum(max_y);
-  max_z = globalMaximum(max_z);
+  // local maximum number of particles communicated in each direction
+  comm_x = max(npExitXleft, npExitXright);
+  comm_y = max(npExitYleft, npExitYright);
+  comm_z = max(npExitZleft, npExitZright);
 
-  // return immediately, if no further communication is needed
-  if ((max_x == 0L) && (max_y == 0L) && (max_z == 0L)) return (0);
+  iterate_communication (b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, comm_x, comm_y, comm_z, buffer_size_x, buffer_size_y, buffer_size_z, vct);
+}
 
-  // resize buffers, if necessary
-  if (max_x >= buffer_size_x) {
-    if (vct->getCartesian_rank() == 0)
-      cout << "resizing X-buffer: " << buffer_size_x << " => " << max_x << " particles" << endl;
-    resize_buffers(b_X_LEFT, b_X_RIGHT, &buffer_size_x, max_x, false);
-  }
-  if (max_y >= buffer_size_y) {
-    if (vct->getCartesian_rank() == 0)
-      cout << "resizing Y-buffer: " << buffer_size_y << " => " << max_y << " particles" << endl;
-    resize_buffers(b_Y_LEFT, b_Y_RIGHT, &buffer_size_y, max_y, false);
-  }
-  if (max_z >= buffer_size_z) {
-    if (vct->getCartesian_rank() == 0)
-      cout << "resizing Z-buffer: " << buffer_size_z << " => " << max_z << " particles" << endl;
-    resize_buffers(b_Z_LEFT, b_Z_RIGHT, &buffer_size_z, max_z, false);
-  }
+/** iterate communication of buffers and unbuffer received buffers to local domain: */
+int Particles3Dcomm::iterate_communication(std::vector<double>& bxl, std::vector<double>& bxr, std::vector<double>& byl, std::vector<double>& byr, std::vector<double>& bzl, std::vector<double>& bzr, long long& num_x, long long& num_y, long long& num_z, long long& size_x, long long& size_y, long long& size_z, VirtualTopology3D * vct, int add_size) {
 
-  // communicate in the X direction
-  if (max_x > 0L) {
-    if (max_x*nVar > INT_MAX) {
-      cout << "ERROR: X-buffer too large: " << max_x*nVar << " > " << INT_MAX << endl;
-      MPI_Abort(MPI_COMM_WORLD, -1);
-      return (-1);
+  // number of particles still in the wrong domain
+  long long wrong_x = 0L, wrong_y = 0L, wrong_z = 0L;
+  // vector of particles in the wrong domain
+  std::vector<double> wxl, wxr, wyl, wyr, wzl, wzr;
+  // variable for memory availability of space for new particles
+  long long avail;
+
+  // global maximum number of particles communicated in each direction
+  num_x = globalMaximum(num_x);
+  num_y = globalMaximum(num_y);
+  num_z = globalMaximum(num_z);
+
+  if (num_x + num_y + num_z > 0L) {
+
+    // resize buffers, if necessary
+    if (num_x+add_size > size_x) {
+      if (vct->getCartesian_rank() == 0)
+        cout << "resizing X-buffer: " << size_x << " => " << num_x << " particles" << endl;
+      resize_buffers(bxl, bxr, size_x, num_x, false);
     }
-    communicateParticlesDIR((int) max_x*nVar, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_X_RIGHT.data(), b_X_LEFT.data());
-  }
-
-  // communicate in the Y direction
-  if (max_y > 0L) {
-    if (max_y*nVar > INT_MAX) {
-      cout << "ERROR: Y-buffer too large: " << max_y*nVar << " > " << INT_MAX << endl;
-      MPI_Abort(MPI_COMM_WORLD, -1);
-      return (-1);
+    if (num_y+add_size > size_y) {
+      if (vct->getCartesian_rank() == 0)
+        cout << "resizing Y-buffer: " << size_y << " => " << num_y << " particles" << endl;
+      resize_buffers(byl, byr, size_y, num_y, false);
     }
-    communicateParticlesDIR((int) max_y*nVar, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_Y_RIGHT.data(), b_Y_LEFT.data());
-  }
-
-  // communicate in the Z direction
-  if (max_z > 0L) {
-    if (max_z*nVar > INT_MAX) {
-      cout << "ERROR: Z-buffer too large: " << max_z*nVar << " > " << INT_MAX << endl;
-      MPI_Abort(MPI_COMM_WORLD, -1);
-      return (-1);
+    if (num_z+add_size > size_z) {
+      if (vct->getCartesian_rank() == 0)
+        cout << "resizing Z-buffer: " << size_z << " => " << num_z << " particles" << endl;
+      resize_buffers(bzl, bzr, size_z, num_z, false);
     }
-    communicateParticlesDIR((int) max_z*nVar, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), b_Z_RIGHT.data(), b_Z_LEFT.data());
+
+    // communicate in the X direction
+    if (num_x > 0L) {
+      if (num_x*nVar > INT_MAX) {
+        cout << "ERROR: X-buffer too large: " << num_x*nVar << " > " << INT_MAX << endl;
+        MPI_Abort(MPI_COMM_WORLD, -1);
+        return (-1);
+      }
+      communicateParticlesDIR((int) num_x*nVar, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), bxr.data(), bxl.data());
+    }
+
+    // communicate in the Y direction
+    if (num_y > 0L) {
+      if (num_y*nVar > INT_MAX) {
+        cout << "ERROR: Y-buffer too large: " << num_y*nVar << " > " << INT_MAX << endl;
+        MPI_Abort(MPI_COMM_WORLD, -1);
+        return (-1);
+      }
+      communicateParticlesDIR((int) num_y*nVar, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), byr.data(), byl.data());
+    }
+
+    // communicate in the Z direction
+    if (num_z > 0L) {
+      if (num_z*nVar > INT_MAX) {
+        cout << "ERROR: Z-buffer too large: " << num_z*nVar << " > " << INT_MAX << endl;
+        MPI_Abort(MPI_COMM_WORLD, -1);
+        return (-1);
+      }
+      communicateParticlesDIR((int) num_z*nVar, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), bzr.data(), bzl.data());
+    }
+
+    // put received particles in the local domain
+    wxl.reserve(100);
+    wxr.reserve(100);
+    wyl.reserve(100);
+    wyr.reserve(100);
+    wzl.reserve(100);
+    wzr.reserve(100);
+    avail  = unbuffer(bxr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
+    avail += unbuffer(bxl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
+    avail += unbuffer(byr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
+    avail += unbuffer(byl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
+    avail += unbuffer(bzr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
+    avail += unbuffer(bzl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
+
+    // if any of these numbers is negative there is not enough space to store the incoming particles
+    avail = globalSum(avail);
+    if (avail < 0) return (-1); // save data and stop simulation
+
+    // recursive call to treat and more particles that are in the wrong domain
+    iterate_communication (wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z, wrong_x, wrong_y, wrong_z, vct, 0);
   }
+  return (0);
+}
 
-  // put received particles in the local domain
-  wrong_domain_x = 0L, wrong_domain_y = 0L, wrong_domain_z = 0L;
-  avail = unbuffer(b_X_RIGHT);
-  avail += unbuffer(b_X_LEFT);
-  avail += unbuffer(b_Y_RIGHT);
-  avail += unbuffer(b_Y_LEFT);
-  avail += unbuffer(b_Z_RIGHT);
-  avail += unbuffer(b_Z_LEFT);
+/** apply boundary conditions */
+inline int Particles3Dcomm::bc_apply(double* x, double* y, double* z, double* u, double* v, double* w) {
 
-  // if any of these numbers is negative there is not enough space to store the incoming particles
-  avail = globalSum(avail);
-  if (avail < 0) return (-1); // save data and stop simulation
+    x_out_left = (*x < xstart);
+    x_out_right = (*x > xend);
+    y_out_left = (*y < ystart);
+    y_out_right = (*y > yend);
+    z_out_left = (*z < zstart);
+    z_out_right = (*z > zend);
+
+    if (no_x_left && x_out_left) {
+      if (x_degenerated) BCpart_left_degenerated(x,Lx);
+      else if (x_mirror) BCpart_left_mirror(x,u,Lx);
+      else if (x_reemission) BCpart_left_reemission(x,u,v,w,Lx,uth,vth,wth);
+      else { return (-1); }
+      x_out_left = false;
+    }
+    else if (no_x_right && x_out_right) {
+      if (x_degenerated) BCpart_right_degenerated(x,Lx);
+      else if (x_mirror) BCpart_right_mirror(x,u,Lx);
+      else if (x_reemission) BCpart_right_reemission(x,u,v,w,Lx,uth,vth,wth);
+      else { return (-1); }
+      x_out_right = false;
+    }
+    if (no_y_left && y_out_left) {
+      if (y_degenerated) BCpart_left_degenerated(y,Ly);
+      else if (y_mirror) BCpart_left_mirror(y,v,Ly);
+      else if (y_reemission) BCpart_left_reemission(y,v,u,w,Ly,vth,uth,wth);
+      else { return (-1); }
+      y_out_left = false;
+    }
+    else if (no_y_right && y_out_right) {
+      if (y_degenerated) BCpart_right_degenerated(y,Ly);
+      else if (y_mirror) BCpart_right_mirror(y,v,Ly);
+      else if (y_reemission) BCpart_right_reemission(y,v,u,w,Ly,vth,uth,wth);
+      else { return (-1); }
+      y_out_right = false;
+    }
+    if (no_z_left && z_out_left) {
+      if (z_degenerated) BCpart_left_degenerated(z,Lz);
+      else if (z_mirror) BCpart_left_mirror(z,w,Lz);
+      else if (z_reemission) BCpart_left_reemission(z,w,u,v,Lz,wth,uth,vth);
+      else { return (-1); }
+      z_out_left = false;
+    }
+    else if (no_z_right && z_out_right) {
+      if (z_degenerated) BCpart_right_degenerated(z,Lz);
+      else if (z_mirror) BCpart_right_mirror(z,w,Lz);
+      else if (z_reemission) BCpart_right_reemission(z,w,u,v,Lz,wth,uth,vth);
+      else { return (-1); }
+      z_out_right = false;
+    }
+
   return (0);
 }
 
 /** resize a buffer */
-void Particles3Dcomm::resize_buffers(std::vector<double>& b_left, std::vector<double>& b_right, long long *size, long long request_size, bool extend) {
+void Particles3Dcomm::resize_buffers(std::vector<double>& b_left, std::vector<double>& b_right, long long& size, long long request_size, bool extend) {
   double *temp = NULL;
-  long long old_size = *size * nVar;
-  *size = request_size + 1;
-  if (extend) *size += ((long long) (request_size*0.1 + 0.025*nop)) + 100;
-  long long new_size = *size * nVar;
+  long long old_size = size * nVar;
+  size = request_size + 1;
+  if (extend) size += ((long long) (request_size*0.1 + 0.025*nop)) + 100;
+  long long new_size = size * nVar;
 
   // resize and initialize
   b_left.resize(new_size, INVALID_PARTICLE);
@@ -750,7 +775,7 @@ void Particles3Dcomm::resize_buffers(std::vector<double>& b_left, std::vector<do
 }
 
 /** put a leaving particle to the communication buffer */
-inline void Particles3Dcomm::buffer_leaving(std::vector<double>& buffer, long long pos, long long np_current, VirtualTopology3D * vct) {
+inline void Particles3Dcomm::buffer_leaving(std::vector<double>& buffer, long long pos, long long& np_current) {
   buffer[pos] = x[np_current];
   buffer[pos+1] = y[np_current];
   buffer[pos+2] = z[np_current];
@@ -762,34 +787,74 @@ inline void Particles3Dcomm::buffer_leaving(std::vector<double>& buffer, long lo
   del_pack(np_current);
 }
 
-/** This unbuffer the last communication */
-int Particles3Dcomm::unbuffer(std::vector<double>& buffer) {
-  long long np_current = 0L;
+/** Unbuffer the last communication */
+int Particles3Dcomm::unbuffer(std::vector<double>& buffer, std::vector<double>& wxl, std::vector<double>& wxr, std::vector<double>& wyl, std::vector<double>& wyr, std::vector<double>& wzl, std::vector<double>& wzr, long long& wrong_x, long long& wrong_y, long long& wrong_z) {
+  double *start;
+  long long pos = 0L, size;
+  int result;
   // put the new particles at the end of the array, and update the number of particles
-  while (buffer[np_current * nVar] != INVALID_PARTICLE) {
-    x[nop] = buffer[nVar * np_current];
-    y[nop] = buffer[nVar * np_current + 1];
-    z[nop] = buffer[nVar * np_current + 2];
-    u[nop] = buffer[nVar * np_current + 3];
-    v[nop] = buffer[nVar * np_current + 4];
-    w[nop] = buffer[nVar * np_current + 5];
-    q[nop] = buffer[nVar * np_current + 6];
-    if (TrackParticleID) ParticleID[nop] = (unsigned long) buffer[nVar * np_current + 7];
-    np_current++;
-    // these particles need further communication
-    if (x[nop] < xstart || x[nop] > xend) wrong_domain_x++;
-    if (y[nop] < ystart || y[nop] > yend) wrong_domain_y++;
-    if (z[nop] < zstart || z[nop] > zend) wrong_domain_z++;
-    nop++;
-    if (nop > npmax) {
-      cout << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
-      MPI_Abort(MPI_COMM_WORLD, -1);
-      return (-1);              // end the simulation because you dont have enough space on the array
+  start = buffer.data();
+  size = buffer.size();
+  while ((*start != INVALID_PARTICLE) && (pos < size)) {
+
+    result = bc_apply (start, start+1, start+2, start+3, start+4, start+5);
+    if (result == 0) {
+      // these particles need further communication
+      if (x_out_left) {
+        rebuffer(start, wxl, wrong_x);
+      }
+      else if (x_out_right) {
+        rebuffer(start, wxr, wrong_x);
+      }
+      else if (y_out_left) {
+        rebuffer(start, wyl, wrong_y);
+      }
+      else if (y_out_right) {
+        rebuffer(start, wyr, wrong_y);
+      }
+      else if (z_out_left) {
+        rebuffer(start, wzl, wrong_z);
+      }
+      else if (z_out_right) {
+        rebuffer(start, wzr, wrong_z);
+      }
+      else {
+        x[nop] = start[0];
+        y[nop] = start[1];
+        z[nop] = start[2];
+        u[nop] = start[3];
+        v[nop] = start[4];
+        w[nop] = start[5];
+        q[nop] = start[6];
+        if (TrackParticleID) ParticleID[nop] = (unsigned long) start[7];
+        nop++;
+        if (nop > npmax) {
+          cout << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
+          MPI_Abort(MPI_COMM_WORLD, -1);
+          return (-1);              // end the simulation because you dont have enough space on the array
+        }
+      }
     }
+    start += nVar;
+    pos += nVar;
   }
   buffer[0] = INVALID_PARTICLE;
   return (0);                   // everything was fine
 }
+
+/** This unbuffer the last communication */
+inline void Particles3Dcomm::rebuffer(double *start, std::vector<double>& buffer, long long& wrong) {
+  buffer.push_back (start[0]);
+  buffer.push_back (start[1]);
+  buffer.push_back (start[2]);
+  buffer.push_back (start[3]);
+  buffer.push_back (start[4]);
+  buffer.push_back (start[5]);
+  buffer.push_back (start[6]);
+  if (TrackParticleID) buffer.push_back (start[7]);
+  wrong++;
+}
+
 /** Delete the a particle from the array and pack the array,
  * update the number of particles that are leaving.
  * For deleting the particle from the array take the last particle and
@@ -807,15 +872,7 @@ void Particles3Dcomm::del_pack(long long np_current) {
   q[np_current] = q[nop];
   if (TrackParticleID) ParticleID[np_current] = ParticleID[nop];
 }
-/** method to calculate how many particles are out of right domain */
-int Particles3Dcomm::isMessagingDone(VirtualTopology3D * vct) {
-  int result = 0;
-  result = globalSum(wrong_domain_x + wrong_domain_y + wrong_domain_z);
-  if (cVERBOSE && result > 0 && vct->getCartesian_rank() == 0)
-    cout << "Further Comunication: " << result << " particles not in the right domain" << endl;
-  return (result);
 
-}
 /** calculate the maximum number leaving from this domain */
 long long Particles3Dcomm::maxNpExiting(long long *max_x, long long *max_y, long long *max_z) {
   *max_x = max(npExitXleft, npExitXright);

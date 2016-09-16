@@ -82,19 +82,26 @@ public:
   /** interpolation method GRID->PARTICLE order 1: CIC */
   void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct);
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
-  int communicate(VirtualTopology3D * vct);
+  void communicate(VirtualTopology3D * vct);
   /** put a leaving particle to the communication buffer */
-  inline void buffer_leaving(std::vector<double>& buffer, long long pos, long long np_current, VirtualTopology3D * vct);
+  inline void buffer_leaving(std::vector<double>& buffer, long long pos, long long& np_current);
   /** Delete the a particle from a list(array) and pack the list(array) */
   void del_pack(long long np);
 
+  /** apply boundary conditions */
+  inline int bc_apply(double* x, double* y, double* z, double* u, double* v, double* w);
+  /** booleans to indicate if a particle is outside of the local domain */
+  bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right;
+
   /** method to debuild the buffer received */
-  int unbuffer(std::vector<double>& buffer);
+  int unbuffer(std::vector<double>& buffer, std::vector<double>& wxl, std::vector<double>& wxr, std::vector<double>& wyl, std::vector<double>& wyr, std::vector<double>& wzl, std::vector<double>& wzr, long long& wrong_x, long long& wrong_y, long long& wrong_z);
+  /** put particles back into a buffer that are in the wrong domain */
+  inline void rebuffer(double *start, std::vector<double>& buffer, long long& wrong);
+
+  int iterate_communication(std::vector<double>& bxl, std::vector<double>& bxr, std::vector<double>& byl, std::vector<double>& byr, std::vector<double>& bzl, std::vector<double>& bzr, long long& num_x, long long& num_y, long long& num_z, long long& size_x, long long& size_y, long long& size_z, VirtualTopology3D * vct, int add_size=1);
 
   /** resize the receiving buffer */
-  void resize_buffers(std::vector<double>& b_LEFT, std::vector<double>& b_RIGHT, long long *size, long long request_size, bool extend=true);
-  /** a method to compute how many particles are not in the right domain */
-  int isMessagingDone(VirtualTopology3D * vct);
+  void resize_buffers(std::vector<double>& b_LEFT, std::vector<double>& b_RIGHT, long long& size, long long request_size, bool extend=true);
   /** calculate the maximum number exiting from this domain */
   long long maxNpExiting(long long *max_x, long long *max_y, long long *max_z);
   /** calculate the weights given the position of particles */
@@ -275,21 +282,18 @@ protected:
   /** buffer with particles going to the left processor - Direction Z */
   std::vector<double> b_Z_LEFT;
 
-  /** number of particles exiting per cycle*/
+  /** number of particles exiting to X-RIGHT */
   long long npExitXright;
-  /** number of particles exiting to X-LEFT per cycle*/
+  /** number of particles exiting to X-LEFT */
   long long npExitXleft;
-  /** number of particles exiting to Y-RIGHT per cycle*/
+  /** number of particles exiting to Y-RIGHT */
   long long npExitYright;
-  /** number of particles exiting to Y-LEFT per cycle*/
+  /** number of particles exiting to Y-LEFT */
   long long npExitYleft;
-  /** number of particles exiting to Z-RIGHT per cycle*/
+  /** number of particles exiting to Z-RIGHT */
   long long npExitZright;
-  /** number of particles exiting to Z-LEFT per cycle*/
+  /** number of particles exiting to Z-LEFT */
   long long npExitZleft;
-  /** number of particles not in the right domain   */
-  long long wrong_domain_x, wrong_domain_y, wrong_domain_z;
-
 
   /** bool for communication verbose */
   bool cVERBOSE;
@@ -298,7 +302,6 @@ protected:
           <li>0 = exit</li>
           <li>1 = perfect mirror</li>
           <li>2 = riemission</li>
-          <li>3 = periodic condition </li>
           </ul>
           */
   /** Boundary Condition Particles: FaceXright */

@@ -633,16 +633,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // COMMUNICATION 
   // *******************//
   // timeTasks.start_communicate();
-  const int avail = communicate(vct);
-  if (avail < 0) return (-1);
-//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
-  // communicate again if particles are not in the correct domain
-  while (isMessagingDone(vct) > 0) {
-    // COMMUNICATION
-    const int avail = communicate(vct);
-    if (avail < 0) return (-1);
-  //  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
-  }
+  communicate(vct);
   // timeTasks.addto_communicate();
   // return with succcess
   return (0);
@@ -768,16 +759,7 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   // COMMUNICATION 
   // *******************//
   // timeTasks.start_communicate();
-  const int avail = communicate(vct);
-  if (avail < 0) return (-1);
-//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
-  // communicate again if particles are not in the correct domain
-  while (isMessagingDone(vct) > 0) {
-    // COMMUNICATION
-    const int avail = communicate(vct);
-    if (avail < 0) return (-1);
-  //  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
-  }
+  communicate(vct);
   // timeTasks.addto_communicate();
   // return with succcess
   return (0);
@@ -800,7 +782,6 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
     cout << "*** Repopulator species " << ns << " ***" << endl;
   }
   double  FourPI =16*atan(1.0);
-  int avail;
   long long store_nop=nop;
 
   ////////////////////////
@@ -1161,18 +1142,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   //********************//
   // COMMUNICATION
   // *******************//
-  avail = communicate(vct);
-  if (avail < 0) return(-1);
-
-//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
-
-  // communicate again if particles are not in the correct domain
-  while(isMessagingDone(vct) > 0) {
-    // COMMUNICATION
-    avail = communicate(vct);
-    if (avail < 0) return(-1);
-  //  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
-  }
+  communicate(vct);
   // return with succcess
   return(0);
 }

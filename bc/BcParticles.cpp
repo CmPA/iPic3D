@@ -1,6 +1,13 @@
 #include <mpi.h>
 #include "BcParticles.h"
 
+/** available boundary conditions:
+  <ul>
+  <li>bcFace = 0 : loose particles</li>
+  <li>bcFace = 1 : perfect mirror</li>
+  <li>bcFace = 2 : re-emission</li>
+  </ul> */
+
 /** apply left degenerated boundary condition for particles along one coordinate direction (here named 'x') */
 void BCpart_left_degenerated(double *x, double Lx) {
   // degenerated case
