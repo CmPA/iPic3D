@@ -701,6 +701,13 @@ int Particles3Dcomm::iterate_communication(std::vector<double>& bxl, std::vector
 
     // recursive call to treat and more particles that are in the wrong domain
     iterate_communication (wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z, wrong_x, wrong_y, wrong_z, vct, 0);
+
+    wxl.clear();
+    wxr.clear();
+    wyl.clear();
+    wyr.clear();
+    wzl.clear();
+    wzr.clear();
   }
   return (0);
 }
