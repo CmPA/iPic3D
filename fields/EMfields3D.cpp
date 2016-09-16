@@ -1720,6 +1720,13 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col, 
     for (int i = 0; i < nxc; i++)
       for (int j = 0; j < nyc; j++)
         for (int k = 0; k < nzc; k++) {
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is])
+              rhocs[is][i][j][k] = ((rhoINIT[is] / (cosh((grid->getYC(i, j, k) - Ly / 2) / delta) * cosh((grid->getYC(i, j, k) - Ly / 2) / delta)))) / FourPI;
+            else
+              rhocs[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
           // Magnetic field
           Bxc[i][j][k] = B0x * tanh((grid->getYC(i, j, k) - Ly / 2) / delta);
           // add the initial GEM perturbation
@@ -1733,10 +1740,7 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col, 
           Byc[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
           // guide field
           Bzc[i][j][k] = B0z;
-
         }
-    for (int is = 0; is < ns; is++)
-      grid->interpN2C(rhocs, is, rhons);
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
