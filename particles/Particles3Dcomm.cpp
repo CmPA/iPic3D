@@ -682,12 +682,12 @@ int Particles3Dcomm::iterate_communication(std::vector<double>& bxl, std::vector
     }
 
     // put received particles in the local domain
-    wxl.reserve(100);
-    wxr.reserve(100);
-    wyl.reserve(100);
-    wyr.reserve(100);
-    wzl.reserve(100);
-    wzr.reserve(100);
+    wxl.reserve(100*nVar);
+    wxr.reserve(100*nVar);
+    wyl.reserve(100*nVar);
+    wyr.reserve(100*nVar);
+    wzl.reserve(100*nVar);
+    wzr.reserve(100*nVar);
     avail  = unbuffer(bxr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
     avail += unbuffer(bxl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
     avail += unbuffer(byr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
