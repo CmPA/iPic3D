@@ -802,7 +802,8 @@ int Particles3Dcomm::unbuffer(std::vector<double>& buffer, std::vector<double>& 
   // put the new particles at the end of the array, and update the number of particles
   start = buffer.data();
   size = buffer.size();
-  while ((*start != INVALID_PARTICLE) && (pos < size)) {
+  while (pos < size) {
+    if (*start != INVALID_PARTICLE) break;
 
     result = bc_apply (start, start+1, start+2, start+3, start+4, start+5);
     if (result == 0) {
