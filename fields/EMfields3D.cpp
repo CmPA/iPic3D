@@ -117,6 +117,15 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Bx_ext = newArr3(double,nxn,nyn,nzn);
   By_ext = newArr3(double,nxn,nyn,nzn);
   Bz_ext = newArr3(double,nxn,nyn,nzn);
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++) {
+      for (int k = 0; k < nzn; k++) {
+        Bx_ext[i][j][k] = 0.0;
+        By_ext[i][j][k] = 0.0;
+        Bz_ext[i][j][k] = 0.0;
+      }
+    }
+  }
   // Jx_ext = newArr3(double,nxn,nyn,nzn);
   // Jy_ext = newArr3(double,nxn,nyn,nzn);
   // Jz_ext = newArr3(double,nxn,nyn,nzn);
