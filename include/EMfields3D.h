@@ -508,6 +508,9 @@ class EMfields3D                // :public Field
     /** Characteristic length */
     double L_square;
 
+    int layers;
+    double *damp;
+
     /*! PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes */
     double ***PHI;
     /*! Ex: electric field X-component (indexX, indexY, indexZ), defined on nodes */
