@@ -34,7 +34,6 @@ using std::endl;
 
 #define min(a,b) (((a)<(b))?(a):(b));
 #define max(a,b) (((a)>(b))?(a):(b));
-#define INVALID_PARTICLE   -4.0e32
 /**
  * 
  * Class for communication of particles of the same species in 3D
@@ -196,12 +195,12 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   buffer_size_y = buffer_size_x;
   buffer_size_z = buffer_size_x;
 
-  b_X_RIGHT.resize (buffer_size_x*nVar, INVALID_PARTICLE);
-  b_X_LEFT.resize (buffer_size_x*nVar, INVALID_PARTICLE);
-  b_Y_RIGHT.resize (buffer_size_y*nVar, INVALID_PARTICLE);
-  b_Y_LEFT.resize (buffer_size_y*nVar, INVALID_PARTICLE);
-  b_Z_RIGHT.resize (buffer_size_z*nVar, INVALID_PARTICLE);
-  b_Z_LEFT.resize (buffer_size_z*nVar, INVALID_PARTICLE);
+  b_X_LEFT.resize (1 + buffer_size_x * nVar);
+  b_X_RIGHT.resize (1 + buffer_size_x * nVar);
+  b_Y_LEFT.resize (1 + buffer_size_y * nVar);
+  b_Y_RIGHT.resize (1 + buffer_size_y * nVar);
+  b_Z_LEFT.resize (1 + buffer_size_z * nVar);
+  b_Z_RIGHT.resize (1 + buffer_size_z * nVar);
 
   // if RESTART is true initialize the particle in allocate method
   restart = col->getRestart_status();
@@ -560,40 +559,34 @@ void Particles3Dcomm::communicate(VirtualTopology3D * vct) {
 
     // particle leaving the domain need to be communicated in a large enough buffer
     if (x_out_left) {
-      npExitXleft++;
       if (x_leftmost) x[np_current] += Lx;
       if (npExitXleft >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, buffer_size_x, npExitXleft);
-      buffer_leaving(b_X_LEFT, (npExitXleft-1)*nVar, np_current);
+      buffer_leaving(b_X_LEFT, npExitXleft, np_current);
     }
     else if (x_out_right) {
-      npExitXright++;
       if (x_rightmost) x[np_current] -= Lx;
       if (npExitXright >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, buffer_size_x, npExitXright);
-      buffer_leaving(b_X_RIGHT, (npExitXright-1)*nVar, np_current);
+      buffer_leaving(b_X_RIGHT, npExitXright, np_current);
     }
     else if (y_out_left) {
-      npExitYleft++;
       if (y_leftmost) y[np_current] += Ly;
       if (npExitYleft >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, buffer_size_y, npExitYleft);
-      buffer_leaving(b_Y_LEFT, (npExitYleft-1)*nVar, np_current);
+      buffer_leaving(b_Y_LEFT, npExitYleft, np_current);
     }
     else if (y_out_right) {
-      npExitYright++;
       if (y_rightmost) y[np_current] -= Ly;
       if (npExitYright >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, buffer_size_y, npExitYright);
-      buffer_leaving(b_Y_RIGHT, (npExitYright-1)*nVar, np_current);
+      buffer_leaving(b_Y_RIGHT, npExitYright, np_current);
     }
     else if (z_out_left) {
-      npExitZleft++;
       if (z_leftmost) z[np_current] += Lz;
       if (npExitZleft >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, buffer_size_z, npExitZleft);
-      buffer_leaving(b_Z_LEFT, (npExitZleft-1)*nVar, np_current);
+      buffer_leaving(b_Z_LEFT, npExitZleft, np_current);
     }
     else if (z_out_right) {
-      npExitZright++;
       if (z_rightmost) z[np_current] -= Lz;
       if (npExitZright >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, buffer_size_z, npExitZright);
-      buffer_leaving(b_Z_RIGHT, (npExitZright-1)*nVar, np_current);
+      buffer_leaving(b_Z_RIGHT, npExitZright, np_current);
     }
     else {
       // particle is still in the domain, proceed with the next particle
@@ -601,13 +594,13 @@ void Particles3Dcomm::communicate(VirtualTopology3D * vct) {
     }
   }
 
-  // put end markers into buffers
-  b_X_LEFT[npExitXleft * nVar] = INVALID_PARTICLE;
-  b_Y_LEFT[npExitYleft * nVar] = INVALID_PARTICLE;
-  b_Z_LEFT[npExitZleft * nVar] = INVALID_PARTICLE;
-  b_X_RIGHT[npExitXright * nVar] = INVALID_PARTICLE;
-  b_Y_RIGHT[npExitYright * nVar] = INVALID_PARTICLE;
-  b_Z_RIGHT[npExitZright * nVar] = INVALID_PARTICLE;
+  // put number of particles to buffers
+  b_X_LEFT[0] = *((double *) &npExitXleft);
+  b_Y_LEFT[0] = *((double *) &npExitYleft);
+  b_Z_LEFT[0] = *((double *) &npExitZleft);
+  b_X_RIGHT[0] = *((double *) &npExitXright);
+  b_Y_RIGHT[0] = *((double *) &npExitYright);
+  b_Z_RIGHT[0] = *((double *) &npExitZright);
 
   // local maximum number of particles communicated in each direction
   comm_x = max(npExitXleft, npExitXright);
@@ -617,15 +610,15 @@ void Particles3Dcomm::communicate(VirtualTopology3D * vct) {
   iterate_communication (b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, comm_x, comm_y, comm_z, buffer_size_x, buffer_size_y, buffer_size_z, vct);
 }
 
-/** iterate communication of buffers and unbuffer received buffers to local domain: */
-int Particles3Dcomm::iterate_communication(std::vector<double>& bxl, std::vector<double>& bxr, std::vector<double>& byl, std::vector<double>& byr, std::vector<double>& bzl, std::vector<double>& bzr, long long& num_x, long long& num_y, long long& num_z, long long& size_x, long long& size_y, long long& size_z, VirtualTopology3D * vct, int add_size) {
+/** iterate communication of buffers and insert received particles to local domain: */
+int Particles3Dcomm::iterate_communication(std::vector<double>& bxl, std::vector<double>& bxr, std::vector<double>& byl, std::vector<double>& byr, std::vector<double>& bzl, std::vector<double>& bzr, long long num_x, long long num_y, long long num_z, long long& size_x, long long& size_y, long long& size_z, VirtualTopology3D * vct) {
 
   // number of particles still in the wrong domain
-  long long wrong_x = 0L, wrong_y = 0L, wrong_z = 0L;
+  long long wrong_x_left = 0L, wrong_x_right = 0L, wrong_y_left = 0L, wrong_y_right = 0L, wrong_z_left = 0L, wrong_z_right = 0L;
   // vector of particles in the wrong domain
   std::vector<double> wxl, wxr, wyl, wyr, wzl, wzr;
-  // variable for memory availability of space for new particles
-  long long avail;
+  // communication helper variables
+  long long error, comm_x, comm_y, comm_z;
 
   // global maximum number of particles communicated in each direction
   num_x = globalMaximum(num_x);
@@ -635,17 +628,17 @@ int Particles3Dcomm::iterate_communication(std::vector<double>& bxl, std::vector
   if (num_x + num_y + num_z > 0L) {
 
     // resize buffers, if necessary
-    if (num_x+add_size > size_x) {
+    if (num_x > size_x) {
       if (vct->getCartesian_rank() == 0)
         cout << "resizing X-buffer: " << size_x << " => " << num_x << " particles" << endl;
       resize_buffers(bxl, bxr, size_x, num_x, false);
     }
-    if (num_y+add_size > size_y) {
+    if (num_y > size_y) {
       if (vct->getCartesian_rank() == 0)
         cout << "resizing Y-buffer: " << size_y << " => " << num_y << " particles" << endl;
       resize_buffers(byl, byr, size_y, num_y, false);
     }
-    if (num_z+add_size > size_z) {
+    if (num_z > size_z) {
       if (vct->getCartesian_rank() == 0)
         cout << "resizing Z-buffer: " << size_z << " => " << num_z << " particles" << endl;
       resize_buffers(bzl, bzr, size_z, num_z, false);
@@ -688,19 +681,30 @@ int Particles3Dcomm::iterate_communication(std::vector<double>& bxl, std::vector
     wyr.reserve(100*nVar);
     wzl.reserve(100*nVar);
     wzr.reserve(100*nVar);
-    avail  = unbuffer(bxr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
-    avail += unbuffer(bxl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
-    avail += unbuffer(byr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
-    avail += unbuffer(byl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
-    avail += unbuffer(bzr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
-    avail += unbuffer(bzl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z);
+    error  = unbuffer(bxr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(bxl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(byr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(byl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(bzr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(bzl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    wxl.data()[0] = wrong_x_left;
+    wxr.data()[0] = wrong_x_right;
+    wyl.data()[0] = wrong_y_left;
+    wyr.data()[0] = wrong_y_right;
+    wzl.data()[0] = wrong_z_left;
+    wzr.data()[0] = wrong_z_right;
 
-    // if any of these numbers is negative there is not enough space to store the incoming particles
-    avail = globalSum(avail);
-    if (avail < 0) return (-1); // save data and stop simulation
+    // if any of these numbers is negative there was not enough space to store the incoming particles
+    error = globalSum(error);
+    if (error < 0) return (-1); // save data and stop simulation
+
+    // local maximum number of particles communicated in each direction
+    comm_x = max(wrong_x_left, wrong_x_right);
+    comm_y = max(wrong_y_left, wrong_y_right);
+    comm_z = max(wrong_z_left, wrong_z_right);
 
     // recursive call to treat and more particles that are in the wrong domain
-    iterate_communication (wxl, wxr, wyl, wyr, wzl, wzr, wrong_x, wrong_y, wrong_z, wrong_x, wrong_y, wrong_z, vct, 0);
+    iterate_communication (wxl, wxr, wyl, wyr, wzl, wzr, comm_x, comm_y, comm_z, comm_x, comm_y, comm_z, vct);
 
     wxl.clear();
     wxr.clear();
@@ -771,18 +775,19 @@ inline int Particles3Dcomm::bc_apply(double* x, double* y, double* z, double* u,
 /** resize a buffer */
 void Particles3Dcomm::resize_buffers(std::vector<double>& b_left, std::vector<double>& b_right, long long& size, long long request_size, bool extend) {
   double *temp = NULL;
-  long long old_size = size * nVar;
   size = request_size + 1;
-  if (extend) size += ((long long) (request_size*0.1 + 0.025*nop)) + 100;
-  long long new_size = size * nVar;
+  if (extend) size += ((long long) (request_size*0.1 + 0.01*nop)) + 100;
+  long long new_size = 1 + size * nVar;
 
   // resize and initialize
-  b_left.resize(new_size, INVALID_PARTICLE);
-  b_right.resize(new_size, INVALID_PARTICLE);
+  b_left.reserve(new_size);
+  b_right.reserve(new_size);
 }
 
 /** put a leaving particle to the communication buffer */
-inline void Particles3Dcomm::buffer_leaving(std::vector<double>& buffer, long long pos, long long& np_current) {
+inline void Particles3Dcomm::buffer_leaving(std::vector<double>& buffer, long long& part_pos, long long& np_current) {
+  long long pos = 1 + part_pos * nVar;
+  buffer.resize (pos + nVar);
   buffer[pos] = x[np_current];
   buffer[pos+1] = y[np_current];
   buffer[pos+2] = z[np_current];
@@ -791,40 +796,40 @@ inline void Particles3Dcomm::buffer_leaving(std::vector<double>& buffer, long lo
   buffer[pos+5] = w[np_current];
   buffer[pos+6] = q[np_current];
   if (TrackParticleID) buffer[pos+7] = ParticleID[np_current];
+  part_pos++;
   del_pack(np_current);
 }
 
 /** Unbuffer the last communication */
-int Particles3Dcomm::unbuffer(std::vector<double>& buffer, std::vector<double>& wxl, std::vector<double>& wxr, std::vector<double>& wyl, std::vector<double>& wyr, std::vector<double>& wzl, std::vector<double>& wzr, long long& wrong_x, long long& wrong_y, long long& wrong_z) {
+int Particles3Dcomm::unbuffer(std::vector<double>& buffer, std::vector<double>& wxl, std::vector<double>& wxr, std::vector<double>& wyl, std::vector<double>& wyr, std::vector<double>& wzl, std::vector<double>& wzr, long long& wrong_x_left, long long& wrong_x_right, long long& wrong_y_left, long long& wrong_y_right, long long& wrong_z_left, long long& wrong_z_right) {
   double *start;
-  long long pos = 0L, size;
+  long long pos, size;
   int result;
   // put the new particles at the end of the array, and update the number of particles
   start = buffer.data();
-  size = buffer.size();
-  while (pos < size) {
-    if (*start != INVALID_PARTICLE) break;
-
+  size = *((long long *) start);
+  start++;
+  for (pos = 0L; pos < size; pos++) {
     result = bc_apply (start, start+1, start+2, start+3, start+4, start+5);
     if (result == 0) {
       // these particles need further communication
       if (x_out_left) {
-        rebuffer(start, wxl, wrong_x);
+        rebuffer(start, wxl, wrong_x_left);
       }
       else if (x_out_right) {
-        rebuffer(start, wxr, wrong_x);
+        rebuffer(start, wxr, wrong_x_right);
       }
       else if (y_out_left) {
-        rebuffer(start, wyl, wrong_y);
+        rebuffer(start, wyl, wrong_y_left);
       }
       else if (y_out_right) {
-        rebuffer(start, wyr, wrong_y);
+        rebuffer(start, wyr, wrong_y_right);
       }
       else if (z_out_left) {
-        rebuffer(start, wzl, wrong_z);
+        rebuffer(start, wzl, wrong_z_left);
       }
       else if (z_out_right) {
-        rebuffer(start, wzr, wrong_z);
+        rebuffer(start, wzr, wrong_z_right);
       }
       else {
         x[nop] = start[0];
@@ -844,23 +849,23 @@ int Particles3Dcomm::unbuffer(std::vector<double>& buffer, std::vector<double>& 
       }
     }
     start += nVar;
-    pos += nVar;
   }
-  buffer[0] = INVALID_PARTICLE;
   return (0);                   // everything was fine
 }
 
-/** This unbuffer the last communication */
-inline void Particles3Dcomm::rebuffer(double *start, std::vector<double>& buffer, long long& wrong) {
-  buffer.push_back (start[0]);
-  buffer.push_back (start[1]);
-  buffer.push_back (start[2]);
-  buffer.push_back (start[3]);
-  buffer.push_back (start[4]);
-  buffer.push_back (start[5]);
-  buffer.push_back (start[6]);
-  if (TrackParticleID) buffer.push_back (start[7]);
-  wrong++;
+/** Rebuffer particles still in the wrong domain after the last communication */
+inline void Particles3Dcomm::rebuffer(double *start, std::vector<double>& buffer, long long& part_pos) {
+  long long pos = 1 + part_pos * nVar;
+  buffer.resize (pos + nVar);
+  buffer[pos] = start[0];
+  buffer[pos+1] = start[1];
+  buffer[pos+2] = start[2];
+  buffer[pos+3] = start[3];
+  buffer[pos+4] = start[4];
+  buffer[pos+5] = start[5];
+  buffer[pos+6] = start[6];
+  if (TrackParticleID) buffer[pos+7] = start[7];
+  part_pos++;
 }
 
 /** Delete the a particle from the array and pack the array,

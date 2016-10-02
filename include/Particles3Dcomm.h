@@ -84,7 +84,7 @@ public:
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   void communicate(VirtualTopology3D * vct);
   /** put a leaving particle to the communication buffer */
-  inline void buffer_leaving(std::vector<double>& buffer, long long pos, long long& np_current);
+  inline void buffer_leaving(std::vector<double>& buffer, long long& part_pos, long long& np_current);
   /** Delete the a particle from a list(array) and pack the list(array) */
   void del_pack(long long np);
 
@@ -94,11 +94,12 @@ public:
   bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right;
 
   /** method to debuild the buffer received */
-  int unbuffer(std::vector<double>& buffer, std::vector<double>& wxl, std::vector<double>& wxr, std::vector<double>& wyl, std::vector<double>& wyr, std::vector<double>& wzl, std::vector<double>& wzr, long long& wrong_x, long long& wrong_y, long long& wrong_z);
+  int unbuffer(std::vector<double>& buffer, std::vector<double>& wxl, std::vector<double>& wxr, std::vector<double>& wyl, std::vector<double>& wyr, std::vector<double>& wzl, std::vector<double>& wzr, long long& wrong_x_left, long long& wrong_x_right, long long& wrong_y_left, long long& wrong_y_right, long long& wrong_z_left, long long& wrong_z_right);
   /** put particles back into a buffer that are in the wrong domain */
   inline void rebuffer(double *start, std::vector<double>& buffer, long long& wrong);
 
-  int iterate_communication(std::vector<double>& bxl, std::vector<double>& bxr, std::vector<double>& byl, std::vector<double>& byr, std::vector<double>& bzl, std::vector<double>& bzr, long long& num_x, long long& num_y, long long& num_z, long long& size_x, long long& size_y, long long& size_z, VirtualTopology3D * vct, int add_size=1);
+  /** iterate communication of particles that are in the wrong domain */
+  int iterate_communication(std::vector<double>& bxl, std::vector<double>& bxr, std::vector<double>& byl, std::vector<double>& byr, std::vector<double>& bzl, std::vector<double>& bzr, long long num_x, long long num_y, long long num_z, long long& size_x, long long& size_y, long long& size_z, VirtualTopology3D * vct);
 
   /** resize the receiving buffer */
   void resize_buffers(std::vector<double>& b_LEFT, std::vector<double>& b_RIGHT, long long& size, long long request_size, bool extend=true);
