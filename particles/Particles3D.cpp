@@ -252,6 +252,8 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
   /* initialize random generator with different seed on different processor */
   srand(vct->getCartesian_rank() + 2);
 
+  double FourPI = 16 * atan(1.0);
+
   double harvest;
   double prob, theta, sign;
   long long counter = 0;
@@ -261,9 +263,17 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
         for (int ii = 0; ii < npcelx; ii++)
           for (int jj = 0; jj < npcely; jj++)
             for (int kk = 0; kk < npcelz; kk++) {
+	      
               x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
               y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
               z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+
+	      ///!!!!
+	      double W=w0;;
+	      /*if (y[counter] < Ly/2.0 - 2*EMf->getDelta() or y[counter] > Ly/2.0 + 2*EMf->getDelta()  )
+		{W=0.0;}*/
+	      ///!!!
+
               // q = charge
               q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
               // u
@@ -279,7 +289,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              w[counter] = w0 + wth * prob * cos(theta);
+              w[counter] = W + wth * prob * cos(theta);
               if (TrackParticleID)
                 ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
 
@@ -617,6 +627,9 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       Ezl += weight110 * Ez[ix - 1][iy - 1][iz];
       Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
 
+      //
+
+
       // end interpolation
       const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
       const double denom = 1.0 / (1.0 + omdtsq);
@@ -810,9 +823,11 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
 int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is){
 
   /* -- NOTE: Hardcoded option -- */
-  enum {LINEAR,INITIAL,FFIELD};
-  int rtype = INITIAL;
+  enum {LINEAR,INITIAL,FFIELD, GEM};
+  int rtype = FFIELD;
   /* -- END NOTE -- */
+  double U=u0; double V= v0; double W= w0;
+  if (EMf->getCase() == "GEM") {rtype= GEM;}
 
   if (vct->getCartesian_rank()==0){
     cout << "*** Repopulator species " << ns << " ***" << endl;
@@ -860,6 +875,14 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
                    if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+		   if (rtype==GEM) {
+		     if (EMf->getDriftSpecies(is))
+		       {rho = ((rhoINJECT / (cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta()) * cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta())))) / FourPI;
+			 U=0; V=0; W=0;
+		       }
+		     else
+		       {rho = rhoINJECT / FourPI; U=u0; V= v0; W=w0; }
+		   }
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
@@ -925,21 +948,29 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
                    if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+		   if (rtype==GEM) {
+		     if (EMf->getDriftSpecies(is))
+		       {rho = ((rhoINJECT / (cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta()) * cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta())))) / FourPI;
+			 U=0; V=0; W=0;
+		       }
+		     else
+		       {rho = rhoINJECT / FourPI; U=u0; V= v0; W=w0; }
+		   }
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                u[particles_index] = u0 + uth*prob*cos(theta);
+                u[particles_index] = U + uth*prob*cos(theta);
                 // v
-                v[particles_index] = v0 + vth*prob*sin(theta);
+                v[particles_index] = V + vth*prob*sin(theta);
                 // w
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                w[particles_index] = w0 + wth*prob*cos(theta);
+                w[particles_index] = W + wth*prob*cos(theta);
                 if (TrackParticleID)
                   ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
 
@@ -986,6 +1017,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
                    if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
@@ -1046,6 +1078,13 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
                    if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+		   if (rtype==GEM) {
+		     if (EMf->getDriftSpecies(is))
+		       {rho = ((rhoINJECT / (cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta()) * cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta())))) / FourPI;
+			 U=0.0; V=0.0; W=0.0;}
+		     else {
+		       rho = rhoINJECT / FourPI; U=u0; V=v0; W=w0; }}
+
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
@@ -1107,21 +1146,28 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                    if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
                    if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
                    if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+		   if (rtype==GEM) {
+		     if (EMf->getDriftSpecies(is))
+		       {rho = ((rhoINJECT / (cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta()) * cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta())))) / FourPI;
+			 U=0.0; V=0.0; W=0.0;}
+		     else {
+		       rho = rhoINJECT / FourPI; U=u0; V=v0; W=w0; }
+		   }
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                u[particles_index] = u0 + uth*prob*cos(theta);
+                u[particles_index] = U + uth*prob*cos(theta);
                 // v
-                v[particles_index] = v0 + vth*prob*sin(theta);
+                v[particles_index] = V + vth*prob*sin(theta);
                 // w
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                w[particles_index] = w0 + wth*prob*cos(theta);
+                w[particles_index] = W + wth*prob*cos(theta);
                 if (TrackParticleID)
                   ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
 
@@ -1190,6 +1236,521 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
               }
     nop = particles_index;
   }
+
+ 
+
+  // open Daughton-like BC -- 3
+  double UTH, VTH, WTH;
+  bool GC= false;
+
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL  && bcPfaceYleft == 3)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+            if (y[particles_index] < 3.0*dy ) {
+           del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=1; j< 4;j++) // no ghost
+      //for (int j=0; j<4; j++) // also ghost
+        for (int k=1; k< grid->getNZC()-1;k++)
+	  {// parameters for particle generation
+		
+	    // I need this intense average otherwise I pick up a lot of noise which damages the repopulation
+	    double rho_AVE=0.0; double Jx_AVE=0.0; double Jy_AVE=0.0; double Jz_AVE=0.0; 
+	    double pXX_AVE=0.0; double pYY_AVE=0.0; double pZZ_AVE=0.0;
+	    int count=0;
+	    for (int II=1; II<nxn-1; II++){
+	      /*for (int II=i-1; II<i+2; II++){
+	      if ((II ==0 and vct->getXleft_neighbor() == MPI_PROC_NULL) or (II ==nxn-1 and vct->getXright_neighbor() == MPI_PROC_NULL) )
+	      continue;*/
+		
+	      for (int J=j; J<j+2; J++){
+		rho_AVE += EMf->getRHOns(II,J,k,is);
+		Jx_AVE += EMf->getJxs(II,J,k,is);
+		Jy_AVE += EMf->getJys(II,J,k,is);
+		Jz_AVE += EMf->getJzs(II,J,k,is);
+		pXX_AVE += EMf->getpXXsn(II,J,k,is);
+		pYY_AVE += EMf->getpYYsn(II,J,k,is);
+		pZZ_AVE += EMf->getpZZsn(II,J,k,is);
+		count++;
+	      }
+	    }
+	    rho_AVE= rho_AVE/count;
+	    Jx_AVE= Jx_AVE/count; Jy_AVE=Jy_AVE/count; Jz_AVE=Jz_AVE/count;
+	    pXX_AVE= pXX_AVE/count; pYY_AVE= pYY_AVE/count; pZZ_AVE= pZZ_AVE/count;
+	    
+	    
+	    U= Jx_AVE/ rho_AVE; V= Jy_AVE/ rho_AVE; W= Jz_AVE/ rho_AVE;
+	    double PTH_X= (pXX_AVE- Jx_AVE*Jx_AVE/ rho_AVE  )/qom;
+	    double PTH_Y= (pYY_AVE- Jy_AVE*Jy_AVE/ rho_AVE  )/qom;
+	    double PTH_Z= (pZZ_AVE- Jz_AVE*Jz_AVE/ rho_AVE  )/qom;
+	    
+	    UTH= sqrt(abs(PTH_X/ rho_AVE *qom));
+	    VTH= sqrt(abs(PTH_Y/ rho_AVE *qom));
+	    WTH= sqrt(abs(PTH_Z/ rho_AVE *qom));
+	    
+	    double rho= rho_AVE;
+
+	    
+	    for (int ii=0; ii < npcelx; ii++)
+	      for (int jj=0; jj < npcely; jj++)
+		for (int kk=0; kk < npcelz; kk++){
+		  harvest =   rand()/(double)RAND_MAX ;
+		  x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+		  harvest =   rand()/(double)RAND_MAX ;
+		  y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+		  harvest =   rand()/(double)RAND_MAX ;
+		  z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+		
+		  q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
+		  // u
+		  harvest =   rand()/(double)RAND_MAX;
+		  prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+		  harvest =   rand()/(double)RAND_MAX;
+		  theta = 2.0*M_PI*harvest;
+		  //u[particles_index] = U + uth*prob*cos(theta); // they all were like this
+		  u[particles_index] = U + UTH*prob*cos(theta);
+		  // v
+		  v[particles_index] = V + VTH*prob*sin(theta);
+		  // w
+		  harvest =   rand()/(double)RAND_MAX;
+		  prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+		  harvest =   rand()/(double)RAND_MAX;
+		  theta = 2.0*M_PI*harvest;
+		  w[particles_index] = W + WTH*prob*cos(theta);
+		  if (TrackParticleID)
+		    ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+		  
+		  particles_index++ ;
+		}// closes the kk for
+	  } // closes the { opened before starting generating particles
+    nop = particles_index;
+  }// closes the MPI_PROC_NULL
+  
+   
+  ///////////////////////
+  // INJECTION FROM YRIGHT
+  ////////////////////////
+
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getYright_neighbor() == MPI_PROC_NULL  && bcPfaceYright == 3)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (y[particles_index] > (Ly-3.0*dy) ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=(grid->getNYC()-4); j< grid->getNYC()-1;j++)
+        for (int k=1; k< grid->getNZC()-1;k++)
+	  {// parameters for particle generation
+		
+	    // I need this intense average otherwise I pick up a lot of noise which damages the repopulation
+	    double rho_AVE=0.0; double Jx_AVE=0.0; double Jy_AVE=0.0; double Jz_AVE=0.0; 
+	    double pXX_AVE=0.0; double pYY_AVE=0.0; double pZZ_AVE=0.0;
+	    int count=0;
+	    for (int II=1; II<nxn-1; II++){
+	      /*for (int II=i-1; II<i+2; II++){
+              if ((II ==0 and vct->getXleft_neighbor() == MPI_PROC_NULL) or (II ==nxn-1 and vct->getXright_neighbor() == MPI_PROC_NULL) )
+	      continue;*/
+	      for (int J=j; J<j+2; J++){
+		rho_AVE += EMf->getRHOns(II,J,k,is);
+		Jx_AVE += EMf->getJxs(II,J,k,is);
+		Jy_AVE += EMf->getJys(II,J,k,is);
+		Jz_AVE += EMf->getJzs(II,J,k,is);
+		pXX_AVE += EMf->getpXXsn(II,J,k,is);
+		pYY_AVE += EMf->getpYYsn(II,J,k,is);
+		pZZ_AVE += EMf->getpZZsn(II,J,k,is);
+		count++;
+	      }
+	    }
+	    rho_AVE= rho_AVE/count;
+	    Jx_AVE= Jx_AVE/count; Jy_AVE=Jy_AVE/count; Jz_AVE=Jz_AVE/count;
+	    pXX_AVE= pXX_AVE/count; pYY_AVE= pYY_AVE/count; pZZ_AVE= pZZ_AVE/count;
+	    
+	    
+	    U= Jx_AVE/ rho_AVE; V= Jy_AVE/ rho_AVE; W= Jz_AVE/ rho_AVE;
+	    double PTH_X= (pXX_AVE- Jx_AVE*Jx_AVE/ rho_AVE  )/qom;
+	    double PTH_Y= (pYY_AVE- Jy_AVE*Jy_AVE/ rho_AVE  )/qom;
+	    double PTH_Z= (pZZ_AVE- Jz_AVE*Jz_AVE/ rho_AVE  )/qom;
+	    
+	    UTH= sqrt(abs(PTH_X/ rho_AVE *qom));
+	    VTH= sqrt(abs(PTH_Y/ rho_AVE *qom));
+	    WTH= sqrt(abs(PTH_Z/ rho_AVE *qom));
+	    
+	    double rho= rho_AVE;
+	    
+	    for (int ii=0; ii < npcelx; ii++)
+	      for (int jj=0; jj < npcely; jj++)
+		for (int kk=0; kk < npcelz; kk++){
+		  harvest =   rand()/(double)RAND_MAX ;
+		  x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+		  harvest =   rand()/(double)RAND_MAX ;
+		  y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+		  harvest =   rand()/(double)RAND_MAX ;
+		  z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+		  q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
+		  // u
+		  harvest =   rand()/(double)RAND_MAX;
+		  prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+		  harvest =   rand()/(double)RAND_MAX;
+		  theta = 2.0*M_PI*harvest;
+		  //u[particles_index] = U + uth*prob*cos(theta); // they all were like this
+		  u[particles_index] = U + UTH*prob*cos(theta);
+		  // v
+		  v[particles_index] = V + VTH*prob*sin(theta);
+		  // w
+		  harvest =   rand()/(double)RAND_MAX;
+		  prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+		  harvest =   rand()/(double)RAND_MAX;
+		  theta = 2.0*M_PI*harvest;
+		  w[particles_index] = W + WTH*prob*cos(theta);
+		  if (TrackParticleID)
+		    ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+		  
+		  particles_index++ ;
+		}// closes the kk for
+	  } // closes the { opened before starting generating particles
+    nop = particles_index;
+  }// closes the MPI_PROC_NULL
+  
+  
+  
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcPfaceXleft == 3){ // use Field topology in this case
+    long long particles_index=0;
+    long long nplast = nop-1;
+
+    int NC=3;
+    
+    if (!GC){
+      // no particles in GC
+      while (particles_index < nplast+1) {
+	if (x[particles_index] < NC*dx){ //2 *dx ) {
+	  del_pack(particles_index,&nplast);
+	} else {
+	  particles_index++;
+	}
+      }
+      nop = nplast+1;
+      int nop_old= nop;
+      for (int p=0; p< nop_old; p++){
+	
+        if (x[p] > 2*dx and x[p]< 4*dx ){
+	//if (x[p] > NC*dx and x[p]< 2*NC*dx ){
+	  [nop]= x[p]-NC*dx; //2*dx;
+	  y[nop]= y[p];
+	  z[nop]= z[p];
+	  //QUI
+	  /*// with -1, the lower node; without, the upper
+	  const int ix = 2 + int (floor((x[p] - xstart) * 1.0/dx))  -1;
+	  const int iy = 2 + int (floor((y[p] - ystart) * 1.0/dy))  -1;
+	  const int iz = 2 + int (floor((z[p] - zstart) * 1.0/dz))  -1;
+
+	  //cout << "BEF x[p]: " << x[p] <<", dx: " << dx <<", ix: " << ix;
+	  
+	  double r1 = ((double) rand() / (RAND_MAX));
+	  double r2 = ((double) rand() / (RAND_MAX));
+	  double r3 = ((double) rand() / (RAND_MAX));
+
+	  x[nop] = r1 * dx + grid->getXN(ix - NC, iy, iz);
+	  y[nop] = r2 * dy + grid->getYN(ix, iy, iz);
+	  z[nop] = r3 * dz + grid->getZN(ix, iy, iz);
+	  //cout << ", AF x[p]: " << x[nop] <<", ix: " << 2 + int (floor((x[nop] - xstart) * 1.0/dx)) << endl;*/
+
+	  // with -1, the lower node; without, the upper
+	  /*const int ix = 2 + int (floor((x[p] - xstart) * 1.0/dx))  -1;
+	  const int iy = 2 + int (floor((y[p] - ystart) * 1.0/dy))  -1;
+	  const int iz = 2 + int (floor((z[p] - zstart) * 1.0/dz))  -1;
+
+	  double r1 = ((double) rand() / (RAND_MAX));
+	  double r2 = ((double) rand() / (RAND_MAX));
+	  double r3 = ((double) rand() / (RAND_MAX));
+
+	  x[nop] = grid->getXN(1, iy, iz) + r1*NC*dx;
+	  y[nop] = grid->getYN(1, iy, iz) + r2*dy;
+	  z[nop] = grid->getZN(1, iy, iz) + r3*dz;*/
+
+	  u[nop]= u[p];
+	  v[nop]= v[p];
+	  w[nop]= w[p];
+	  q[nop]= q[p];	
+	  nop= nop+1;
+	}// end if	
+      }// end old particles*/
+    }else{
+      // particles in GC
+      int start=5; int cells=6;
+      while (particles_index < nplast+1) {
+	if (x[particles_index] <start* dx ) {
+	  //cout << "I am here " << endl;
+	  del_pack(particles_index,&nplast);
+	} else {
+	  particles_index++;
+	}
+      }
+      //cout << "nop bef upd: " << nop ;
+      nop = nplast+1;
+      //cout << ", after: " << nop <<endl;
+      //return 0;
+      int nop_old= nop;
+      for (int p=0; p< nop_old; p++){
+	
+        if (x[p] > start*dx and x[p]< (start+cells)*dx){
+	  x[nop]= x[p]-cells*dx;
+	  y[nop]= y[p];
+	  z[nop]= z[p];
+	  u[nop]= u[p];
+	  v[nop]= v[p];
+	  w[nop]= w[p];
+	  q[nop]= q[p];	
+	  nop= nop+1;
+	}// end if
+	
+	
+      }// end old particles*/
+      
+    }// end ghost cell choice
+  }
+
+  if (vct->getXright_neighbor() == MPI_PROC_NULL  && bcPfaceXright == 3){
+    long long particles_index=0;
+    long long nplast = nop-1;
+
+    int NC=3;
+
+    if (!GC)
+      {
+	// no particles in ghost cells
+	while (particles_index < nplast+1) {
+	  if (x[particles_index] > (Lx- NC*dx)){ //2.0*dx) ) {
+	    del_pack(particles_index,&nplast);
+	  } else {
+	    particles_index++;
+	  }
+	}
+	nop = nplast+1;
+	
+	
+	int nop_old= nop;
+	for (int p=0; p< nop_old; p++){
+	  
+	  if (x[p] > Lx-4*dx and x[p]<Lx-2*dx){
+	  //if (x[p] > Lx-2*NC*dx and x[p]<Lx-NC*dx){
+	    x[nop]= x[p]+NC*dx;//2*dx;
+	    y[nop]= y[p];
+	    z[nop]= z[p];
+
+	    // with -1, the first node
+	    /*const int ix = 2 + int (floor((x[p] - xstart) * 1.0/dx))  -1;
+	    const int iy = 2 + int (floor((y[p] - ystart) * 1.0/dy))  -1;
+	    const int iz = 2 + int (floor((z[p] - zstart) * 1.0/dz))  -1;
+	    
+	    //cout << "BEF x[p]: " << x[p] <<", dx: " << dx <<", ix: " << ix;
+	    
+	    double r1 = ((double) rand() / (RAND_MAX));
+	    double r2 = ((double) rand() / (RAND_MAX));
+	    double r3 = ((double) rand() / (RAND_MAX));
+	    
+	    /*x[nop] = r1 * dx + grid->getXN(ix + NC, iy, iz);
+	    y[nop] = r2 * dy + grid->getYN(ix, iy, iz);
+	    z[nop] = r3 * dz + grid->getZN(ix, iy, iz);
+	    //cout << ", AF x[p]: " << x[nop] <<", ix: " << 2 + int (floor((x[nop] - xstart) * 1.0/dx)) << endl;*/
+
+	    /*x[nop] = grid->getXN(nxn-2, iy, iz) - r1*NC*dx;
+	    y[nop] = grid->getYN(1, iy, iz) + r2*dy;
+	    z[nop] = grid->getZN(1, iy, iz) + r3*dz;*/
+
+	    u[nop]= u[p];
+	    v[nop]= v[p];
+	    w[nop]= w[p];
+	    q[nop]= q[p];
+	    
+	    nop= nop+1;
+	  }// end if	  	  
+	}// end old particles*/
+      }
+    else {
+      cout <<"NOT correct" <<endl;
+      // particles in ghost cells
+      while (particles_index < nplast+1) {
+	if (x[particles_index] > (Lx-dx) ) {
+	  del_pack(particles_index,&nplast);
+	} else {
+	  particles_index++;
+	}
+      }
+      nop = nplast+1;
+
+      int nop_old= nop;
+      for (int p=0; p< nop_old; p++){
+	
+	if (x[p] > Lx-3*dx and x[p]<Lx-dx){
+	  
+	  x[nop]= x[p]+2*dx;
+	  y[nop]= y[p];
+	  z[nop]= z[p];
+	  u[nop]= u[p];
+	  v[nop]= v[p];
+	  w[nop]= w[p];
+	  q[nop]= q[p];
+	  
+	  nop= nop+1;
+	}// end if
+				
+      }// end olf particles*/
+    } // end GC choice
+
+    
+  }
+
+  /////
+
+  ////////////////////////
+  // INJECTION FROM ZLEFT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL  && bcPfaceZleft == 3)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+
+
+    while (particles_index < nplast+1) {
+      if (z[particles_index] < 3.0*dz ) {
+	del_pack(particles_index,&nplast);
+      } else {
+	particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=1; k< 4;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
+                   double rho = 1.0/FourPI;
+                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
+                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+                   q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }
+  
+
+  ////////////////////////
+  // INJECTION FROM ZRIGHT
+  ////////////////////////
+  srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
+  if (vct->getZright_neighbor() == MPI_PROC_NULL  && bcPfaceZright == 3)
+  {
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (z[particles_index] > (Lz-3.0*dz) ) {
+        del_pack(particles_index,&nplast);
+      } else {
+        particles_index++;
+      }
+    }
+    nop = nplast+1;
+    particles_index = nop;
+    double harvest;
+    double prob, theta, sign;
+    //particles_index;
+    for (int i=1; i< grid->getNXC()-1;i++)
+      for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=(grid->getNZC()-4); k< grid->getNZC()-1;k++)
+          for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+              for (int kk=0; kk < npcelz; kk++){
+                harvest =   rand()/(double)RAND_MAX ;
+                x[particles_index] = (ii + harvest)*(dx/npcelx) + grid->getXN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                y[particles_index] = (jj + harvest)*(dy/npcely) + grid->getYN(i,j,k);
+                harvest =   rand()/(double)RAND_MAX ;
+                z[particles_index] = (kk + harvest)*(dz/npcelz) + grid->getZN(i,j,k);
+                // q = charge
+                /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
+                   double rho = 1.0/FourPI;
+                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
+                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
+                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+                   q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
+                // u
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                u[particles_index] = u0 + uth*prob*cos(theta);
+                // v
+                v[particles_index] = v0 + vth*prob*sin(theta);
+                // w
+                harvest =   rand()/(double)RAND_MAX;
+                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                harvest =   rand()/(double)RAND_MAX;
+                theta = 2.0*M_PI*harvest;
+                w[particles_index] = w0 + wth*prob*cos(theta);
+                if (TrackParticleID)
+                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+                particles_index++ ;
+              }
+    nop = particles_index;
+  }                                   
+  // end open Daughton-like BC -- 3
 
   if (vct->getCartesian_rank()==0){
     cout << "*** number of particles " << nop << " ***" << endl;
@@ -1492,5 +2053,57 @@ double Particles3D::deleteParticlesInsideSphere(double R, double x_center, doubl
   }
   nop = nplast +1;
   return(Q_removed);
+}
+
+/** Maxellian random velocity and uniform spatial distribution, goes with Double GEM */
+void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+  const double coarsedy= grid->getDY();
+  double globaly;
+  double shaperz;
+  
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+	      
+	      globaly= grid->getYN(i,j,k)+ coarsedy;
+	      shaperz= -tanh((globaly - Ly/2)/delta) ;
+	      
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = w0*shaperz + wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+
+              counter++;
+            }
+
+
 }
 

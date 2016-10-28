@@ -69,6 +69,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+    else if (col->getCase()=="DoubleGEM") EMf->initDoubleGEM(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -107,6 +108,7 @@ int c_Solver::Init(int argc, char **argv) {
       for (int i = 0; i < ns; i++)
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+	else if (col->getCase()=="DoubleGEM") part[i].MaxwellianDoubleGEM(grid,EMf,vct);
         else                                  part[i].maxwellian(grid, EMf, vct);
 
     }
@@ -213,7 +215,6 @@ void c_Solver::UpdateCycleInfo(int cycle) {
     }
   }
 
-
 }
 
 void c_Solver::CalculateField() {
@@ -257,7 +258,7 @@ bool c_Solver::ParticlesMover() {
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-    mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
+        mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
   // timeTasks.end(TimeTasks::PARTICLES);
 

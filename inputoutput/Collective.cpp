@@ -328,6 +328,32 @@ void Collective::ReadInput(string inputfile) {
     bcEz[4] = bcEMfaceZright == 0 ? 2 : 1;   bcBz[4] = bcEMfaceZright == 0 ? 1 : 2;
     bcEz[5] = bcEMfaceZleft  == 0 ? 2 : 1;   bcBz[5] = bcEMfaceZleft  == 0 ? 1 : 2;
 
+
+    // open Daughton-like BCs; not implemented in z
+        
+    if (bcEMfaceXright == 3) {
+      bcEx[0] = 1;   bcBx[0] = 2;
+      bcEy[0] = 2;   bcBy[0] = 2;
+      bcEz[0] = 2;   bcBz[0] = 1;
+    }
+    if (bcEMfaceXleft == 3) {
+      bcEx[1] = 1;   bcBx[1] = 2;
+      bcEy[1] = 2;   bcBy[1] = 2;
+      bcEz[1] = 2;   bcBz[1] = 1;
+    }
+    if (bcEMfaceYright == 3) {
+      bcEx[2] = 2;   bcBx[2] = 1;
+      bcEy[2] = 2;   bcBy[2] = 2;
+      bcEz[2] = 2;   bcBz[2] = 1;
+    }
+    if (bcEMfaceYleft == 3) {
+      bcEx[3] = 2;   bcBx[3] = 1;
+      bcEy[3] = 2;   bcBy[3] = 2;
+      bcEz[3] = 2;   bcBz[3] = 1;
+    }
+    
+    // end open Daughton-like BCs
+
     // Particles Boundary condition
     bcPfaceXright = config.read < int >("bcPfaceXright");
     bcPfaceXleft  = config.read < int >("bcPfaceXleft");

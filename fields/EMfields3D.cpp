@@ -234,8 +234,8 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
 
   // apply to smooth to electric field 3 times
   smoothE(Smooth, vct, col);
-  //smoothE(Smooth, vct, col);
-  //smoothE(Smooth, vct, col);
+  smoothE(Smooth, vct, col);
+  smoothE(Smooth, vct, col);
 
   // communicate so the interpolation can have good values
   communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
@@ -344,6 +344,28 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   // boundary condition: Zright
   if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
     perfectConductorRightS(tempX, tempY, tempZ, 2);
+  
+  // open Daughton-like BC
+  // boundary condition: Xleft                                               
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 3)  // open
+    OpenLeftS(grid, tempX, tempY, tempZ, 0);
+  // boundary condition: Xright                                           
+  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 3)  // open
+    OpenRightS(grid, tempX, tempY, tempZ, 0);
+  // boundary condition: Yleft                                                
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 3)  // open  
+    OpenLeftS(grid, tempX, tempY, tempZ, 1);
+  // boundary condition: Yright                                              
+  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 3)  // open
+    OpenRightS(grid, tempX, tempY, tempZ, 1);
+  // boundary condition: Zleft                                              
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 3)  // open 
+    OpenLeftS(grid, tempX, tempY, tempZ, 2);
+  // boundary condition: Zright                                             
+  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 3)  // open
+    OpenRightS(grid, tempX, tempY, tempZ, 2);
+  // end open Daughton-like BC
+
 
   // physical space -> Krylov space
   phys2solver(bkrylov, tempX, tempY, tempZ, nxn, nyn, nzn);
@@ -402,6 +424,13 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sumscalprod(imageY, delt, vectY, Lambda, nxn, nyn, nzn);
   sumscalprod(imageZ, delt, vectZ, Lambda, nxn, nyn, nzn);
 
+  /*cout <<"Lambda: " <<endl;
+  for (int i=0; i<nxn; i++)
+    for (int j=0; j<nyn; j++)
+      for (int k=0; k<nzn; k++)
+	cout << Lambda[i][j][k]<<" " ;
+	cout << endl;*/
+
   // boundary condition: Xleft
   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
@@ -423,6 +452,25 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 
   // OpenBC
   BoundaryConditionsEImage(imageX, imageY, imageZ, vectX, vectY, vectZ, nxn, nyn, nzn, vct, grid);
+
+  // open Daughton-like BC
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 3)  // open
+    OpenLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid, vct);
+  // boundary condition: Xright                                                 
+  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 3)
+    OpenRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid, vct);
+  // boundary condition: Yleft                                                  
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 3)
+    OpenLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid, vct);
+  // boundary condition: Yright                                                 
+  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 3)
+    OpenRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid, vct);
+  // boundary condition: Zleft                                                  
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 3)
+    OpenLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid, vct);
+  // boundary condition: Zright                                                 
+  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 3)
+    OpenRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid, vct);
 
   // move from physical space to krylov space
   phys2solver(im, imageX, imageY, imageZ, nxn, nyn, nzn);
@@ -581,31 +629,84 @@ void EMfields3D::smooth(double value, double ****vector, int is, int type, Grid 
 
 /*! fix the B boundary when running gem */
 void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
+
+
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++)
       for (int k = 0; k < nzc; k++) {
-        Bxc[i][nyc - 1][k] = B0x * tanh((grid->getYC(i, nyc - 1, k) - Ly / 2) / delta);
-        Bxc[i][nyc - 2][k] = Bxc[i][nyc - 1][k];
-        Bxc[i][nyc - 3][k] = Bxc[i][nyc - 1][k];
-        Byc[i][nyc - 1][k] = B0y;
-        Bzc[i][nyc - 1][k] = B0z;
-        Bzc[i][nyc - 2][k] = B0z;
-        Bzc[i][nyc - 3][k] = B0z;
+  
+	Bxc[i][nyc-1][k] = B0x*(tanh((grid->getYC(i,nyc-1,k) - Ly/2)/delta)+0.5*0.0);
+        Bxc[i][nyc-2][k] = B0x*(tanh((grid->getYC(i,nyc-2,k) - Ly/2)/delta)+0.5*0.0);
+        Bxc[i][nyc-3][k] = (4.0* Bxc[i][nyc-4][k]-Bxc[i][nyc-5][k])/3.0;
+
+        Bzc[i][nyc-1][k] = B0z;
+        Bzc[i][nyc-2][k] = B0z;
+        Bzc[i][nyc-3][k] = B0z;
+
+        Byc[i][nyc-3][k] = (4.0* Byc[i][nyc-4][k]-Byc[i][nyc-5][k])/3.0;
+        Byc[i][nyc-2][k] = (4.0* Byc[i][nyc-3][k]-Byc[i][nyc-4][k])/3.0;
+        Byc[i][nyc-1][k] = (4.0* Byc[i][nyc-2][k]-Byc[i][nyc-3][k])/3.0;
       }
   }
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
     for (int i = 0; i < nxc; i++)
       for (int k = 0; k < nzc; k++) {
-        Bxc[i][0][k] = B0x * tanh((grid->getYC(i, 0, k) - Ly / 2) / delta);
-        Bxc[i][1][k] = Bxc[i][0][k];
-        Bxc[i][2][k] = Bxc[i][0][k];
-        Byc[i][0][k] = B0y;
+
+	Bxc[i][0][k] = B0x*(tanh((grid->getYC(i,0,k) - Ly/2)/delta)+0.5*0.0);
+        Bxc[i][1][k] = B0x*(tanh((grid->getYC(i,1,k) - Ly/2)/delta)+0.5*0.0);
+        Bxc[i][2][k] = (4.0* Bxc[i][3][k]-Bxc[i][4][k])/3.0;
+
+        Byc[i][2][k] = (4.0* Byc[i][3][k]-Byc[i][4][k])/3.0;
+        Byc[i][1][k] = (4.0* Byc[i][2][k]-Byc[i][3][k])/3.0;
+        Byc[i][0][k] = (4.0* Byc[i][1][k]-Byc[i][2][k])/3.0;
+
         Bzc[i][0][k] = B0z;
         Bzc[i][1][k] = B0z;
         Bzc[i][2][k] = B0z;
       }
   }
+  if (vct->getXright_neighbor()==MPI_PROC_NULL){
 
+    for (int j=0; j < nyc;j++)
+      for (int k=0; k < nzc;k++){
+
+	// interp + abs
+	Bzc[nxc-3][j][k] = (4.0*Bzc[nxc-4][j][k]- Bzc[nxc-5][j][k])/3.0 *0.66;      
+        Bzc[nxc-2][j][k] = (4.0*Bzc[nxc-3][j][k]- Bzc[nxc-4][j][k])/3.0 *0.33;        
+        Bzc[nxc-1][j][k] = (4.0*Bzc[nxc-2][j][k]- Bzc[nxc-3][j][k])/3.0 *0.0;
+
+	Byc[nxc-3][j][k] = (4.0*Byc[nxc-4][j][k]- Byc[nxc-5][j][k])/3.0 *0.66;      
+        Byc[nxc-2][j][k] = (4.0*Byc[nxc-3][j][k]- Byc[nxc-4][j][k])/3.0 *0.33;        
+        Byc[nxc-1][j][k] = (4.0*Byc[nxc-2][j][k]- Byc[nxc-3][j][k])/3.0 *0.0;
+
+	// interp
+	Bxc[nxc-3][j][k] = (4.0*Bxc[nxc-4][j][k]- Bxc[nxc-5][j][k])/3.0;      
+        Bxc[nxc-2][j][k] = (4.0*Bxc[nxc-3][j][k]- Bxc[nxc-4][j][k])/3.0;        
+        Bxc[nxc-1][j][k] = (4.0*Bxc[nxc-2][j][k]- Bxc[nxc-3][j][k])/3.0;
+      }
+  }
+  if (vct->getXleft_neighbor()==MPI_PROC_NULL){
+    
+    for (int j=0; j < nyc;j++)
+      for (int k=0; k < nzc;k++){
+
+	// interp
+	Bxc[2][j][k] = (4.0* Bxc[3][j][k]-Bxc[4][j][k])/3.0;
+        Bxc[1][j][k] = (4.0* Bxc[2][j][k]-Bxc[3][j][k])/3.0;
+        Bxc[0][j][k] = (4.0* Bxc[1][j][k]-Bxc[2][j][k])/3.0;
+
+	// interp + abs
+	Byc[2][j][k] = (4.0* Byc[3][j][k]-Byc[4][j][k])/3.0 *0.66;
+        Byc[1][j][k] = (4.0* Byc[2][j][k]-Byc[3][j][k])/3.0 *0.33;
+        Byc[0][j][k] = (4.0* Byc[1][j][k]-Byc[2][j][k])/3.0 *0.0;
+
+	Bzc[2][j][k] = (4.0* Bzc[3][j][k]-Bzc[4][j][k])/3.0 *0.66;
+        Bzc[1][j][k] = (4.0* Bzc[2][j][k]-Bzc[3][j][k])/3.0 *0.33;
+        Bzc[0][j][k] = (4.0* Bzc[1][j][k]-Bzc[2][j][k])/3.0 *0.0;
+
+	
+      }
+  }
 }
 
 /*! fix the B boundary when running forcefree */
@@ -1638,6 +1739,20 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
         }
     for (int is = 0; is < ns; is++)
       grid->interpN2C(rhocs, is, rhons);
+
+    ;
+    for (int i=0; i < nxn; i++)                   
+      for (int j=0; j < nyn; j++)                               
+	for (int k=0; k < nzn; k++){                              
+	  Lambda[i][j][k]  = 0.0;    
+	  //if (grid->getYN(i,j,k)< Ly/2-1.5 or grid->getYN(i,j,k)> Ly/2+1.5 ){ Lambda[i][j][k]=2.0 * M_PI / dx;}
+
+	  double d= abs(grid->getYN(i,j,k) -Ly/2)/dy;
+	  Lambda[i][j][k]= 2.0 * M_PI / dy *d/(nyn/2);
+	  
+	  }  
+    if (vct->getCartesian_rank() == 0)
+      {cout << "Lambda linarly increasing for Ly/2 to boundaries " << endl;}
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
@@ -2158,6 +2273,8 @@ void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col,
 
 void EMfields3D::UpdateFext(int cycle){
 
+
+  if (Case== "GEM" or Case == "DoubleGEM") return;
   /* -- NOTE: Hardcoded option -- */
   enum   {LINEAR,STAIRCASE};
   int    utype = STAIRCASE;
@@ -2559,7 +2676,7 @@ void EMfields3D::sustensorX(double **susxx, double **susxy, double **susxz, int 
         omcx = beta * (Bxn[N][j][k] + Fext*Bx_ext[N][j][k]);
         omcy = beta * (Byn[N][j][k] + Fext*By_ext[N][j][k]);
         omcz = beta * (Bzn[N][j][k] + Fext*Bz_ext[N][j][k]);
-        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][1][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][N][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         susxx[j][k] += (  1.0 + omcx * omcx) * denom;
         susxy[j][k] += ( omcz + omcx * omcy) * denom;
         susxz[j][k] += (-omcy + omcx * omcz) * denom;
@@ -2585,7 +2702,7 @@ void EMfields3D::sustensorY(double **susyx, double **susyy, double **susyz, int 
         omcx = beta * (Bxn[i][N][k] + Fext*Bx_ext[i][N][k]);
         omcy = beta * (Byn[i][N][k] + Fext*By_ext[i][N][k]);
         omcz = beta * (Bzn[i][N][k] + Fext*Bz_ext[i][N][k]);
-        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][1][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][N][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         susyx[i][k] += (-omcz + omcx * omcy) * denom;
         susyy[i][k] += (  1.0 + omcy * omcy) * denom;
         susyz[i][k] += (+omcx + omcy * omcz) * denom;
@@ -2610,7 +2727,7 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
         omcx = beta * (Bxn[i][j][N] + Fext*Bx_ext[i][j][N]);
         omcy = beta * (Byn[i][j][N] + Fext*By_ext[i][j][N]);
         omcz = beta * (Bzn[i][j][N] + Fext*Bz_ext[i][j][N]);
-        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][1] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][N] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         suszx[i][j] += ( omcy + omcx * omcz) * denom;
         suszy[i][j] += (-omcx + omcy * omcz) * denom;
         suszz[i][j] += (  1.0 + omcz * omcz) * denom;
@@ -2742,9 +2859,7 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
 
 /*! Perfect conductor boundary conditions for source: LEFT WALL */
 void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
-
   double ebc[3];
-
   // Assuming E = - ve x B
   cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
   scale(ebc,-1.0,3);
@@ -2845,6 +2960,8 @@ injInfoFields* EMfields3D::get_InfoFieldsRear() {return injFieldsRear;}
 // Open Boundary conditions implementation
 
 void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col){
+
+  if (Case=="GEM" or Case == "DoubleGEM") return;
 
   /* -- NOTE: Hardcoded option -- */
   bool XRightOutflow = false;
@@ -3520,6 +3637,15 @@ double ***& EMfields3D::getJxs(int is) {
 double &EMfields3D::getJxs(int indexX, int indexY, int indexZ, int is) const {
   return (Jxs[is][indexX][indexY][indexZ]);
 }
+double &EMfields3D::getpXXsn(int indexX, int indexY, int indexZ, int is) const {
+  return (pXXsn[is][indexX][indexY][indexZ]);
+}
+double &EMfields3D::getpYYsn(int indexX, int indexY, int indexZ, int is) const {
+  return (pYYsn[is][indexX][indexY][indexZ]);
+}
+double &EMfields3D::getpZZsn(int indexX, int indexY, int indexZ, int is) const {
+  return (pZZsn[is][indexX][indexY][indexZ]);
+}
 /*! get Magnetic Field component X array species is cell without the ghost cells */
 double ***EMfields3D::getJxsc(int is) {
   for (int i = 0; i < nxc; i++)
@@ -3689,4 +3815,501 @@ EMfields3D::~EMfields3D() {
   delArr3(vectY, nxn, nyn);
   delArr3(vectZ, nxn, nyn);
   delArr3(divC, nxc, nyc);
+}
+
+/** Open boundary conditions for source: LEFT WALL*/
+inline  void EMfields3D::OpenLeftS(Grid *grid, double ***vectorX, double ***vectorY, double ***vectorZ,int dir){
+  /*We assume that the electric field on the boundary is given by the ohm's law with electron velocity used                       
+    E= - ve x B where the electron veloity is taken from the input file with electrons assumed to be the species 0*/
+  double ebc[3];
+  cross_product(ue0,ve0,we0,B1x,B1y,B1z,ebc);
+  scale(ebc,-1.0,3);
+
+  switch(dir){
+  case 0: // boundary condition on X-DIRECTION LEFT                              
+    for (int i=1; i < nyn-1;i++)
+      for (int j=1; j < nzn-1;j++){
+        vectorX[1][i][j] = 0.0;
+        vectorY[1][i][j] = ebc[1];
+        vectorZ[1][i][j] = ebc[2];
+      } 
+    break;
+  case 1: // boundary condition on Y-DIRECTION LEFT                          
+    for (int i=1; i < nxn-1;i++)
+      for (int j=1; j < nzn-1;j++){
+        vectorX[i][1][j] = ebc[0];
+        vectorY[i][1][j] = 0.0;
+        vectorZ[i][1][j] = ebc[2];// - Vinj* B0x* exp(-pow(grid->getXN(i,1,j)-Lx/2.0,2)/pow(Lx/5.0,2));
+      }
+    break;
+  case 2: // boundary condition on Z-DIRECTION LEFT                              
+    for (int i=1; i < nxn-1;i++)
+      for (int j=1; j <  nyn-1;j++){
+        vectorX[i][j][1] = ebc[0];
+        vectorY[i][j][1] = ebc[1];
+        vectorZ[i][j][1] = 0.0;
+      }
+    break;
+  }
+}
+/** Open boundary conditions for source: RIGHT WALL*/
+inline  void EMfields3D::OpenRightS(Grid *grid, double ***vectorX, double ***vectorY, double ***vectorZ,int dir){
+  /*We assume that the electric field on the boundary is given by the ohm's law with electron velocity used     
+    E= - ve x B   where the electron velocity is taken from the input file with electrons assumed to be the species 0*/
+  double ebc[3];
+  cross_product(ue0,ve0,we0,B1x,B1y,B1z,ebc);
+  scale(ebc,-1.0,3);
+  switch(dir){
+  case 0: // boundary condition on X-DIRECTION RIGHT                    
+    for (int i=1; i < nyn-1;i++)
+      for (int j=1; j < nzn-1;j++){
+        vectorX[nxn-2][i][j] = 0.0;
+        vectorY[nxn-2][i][j] = ebc[1];
+        vectorZ[nxn-2][i][j] = ebc[2];
+      }
+    break;
+  case 1: // boundary condition on Y-DIRECTION RIGHT                             
+    for (int i=1; i < nxn-1;i++)
+      for (int j=1; j < nzn-1;j++){
+        vectorX[i][nyn-2][j] = ebc[0];
+        vectorY[i][nyn-2][j] = 0.0;
+        vectorZ[i][nyn-2][j] = ebc[2];// - Vinj* B0x* exp(-pow(grid->getXN(i,nyn-2,j)-Lx/2.0,2)/pow(Lx/5.0,2));
+      }
+    break;
+  case 2:
+    for (int i=1; i <  nxn-1;i++)
+      for (int j=1; j <  nyn-1;j++){
+        vectorX[i][j][nzn-2] = ebc[0];
+        vectorY[i][j][nzn-2] = ebc[1];
+        vectorZ[i][j][nzn-2] = 0.0;
+      }
+    break;
+  }
+}
+
+inline  void EMfields3D::OpenLeft(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int dir,Grid *grid, VirtualTopology3D *vct){
+  double** susxy;
+  double** susyy;
+  double** suszy;
+  double** susxx;
+  double** susyx;
+  double** suszx;
+  double** susxz;
+  double** susyz;
+  double** suszz;
+
+  int istart = 1;
+  if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==3)
+    istart=2;
+  int iend = nxn-1;
+  if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==3)
+    iend=nxn-2;
+  int jstart =1;
+  if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==3)
+    jstart=2;
+  int jend = nyn-1;
+  if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==3)
+    jend=nyn-2;
+  switch(dir){
+  case 0:  // boundary condition on X-DIRECTION                                  
+    susxx = newArr2(double,nyn,nzn);
+    susxy = newArr2(double,nyn,nzn);
+    susxz = newArr2(double,nyn,nzn);
+    susyx = newArr2(double,nyn,nzn);
+    susyy = newArr2(double,nyn,nzn);
+    susyz = newArr2(double,nyn,nzn);
+    suszx = newArr2(double,nyn,nzn);
+    suszy = newArr2(double,nyn,nzn);
+    suszz = newArr2(double,nyn,nzn);
+
+    sustensorAllX(susxx, susxy, susxz, susyx, susyy, susyz, suszx, suszy, suszz, 1);
+
+    for (int i=jstart; i <  jend;i++)
+      for (int j=1; j <  nzn-1;j++){
+        int zz= 1;
+	// charge conservation - Brackbill 2008
+        imageX[zz][i][j]= vectorX[zz][i][j] - (Ex[zz][i][j] - susxy[i][j]*vectorY[zz][i][j] - susxz[i][j]*vectorZ[zz][i][j]  -  Jxh[zz][i][j]*dt*th*FourPI)/susxx[i][j]; 
+	// J^{n+theta} =0                                           
+	imageY[zz][i][j]= vectorY[zz][i][j] - (- FourPI * th *dt* Jyh[zz][i][j]- susyx[i][j]* vectorX[zz][i][j] - susyz[i][j]* vectorZ[zz][i][j])/(susyy[i][j]-1);
+	// interpolation
+	imageZ[zz][i][j]= vectorZ[zz][i][j] - (4.0* vectorZ[zz+1][i][j]- vectorZ[zz+2][i][j])/3.0 ; 
+	
+      }
+    delArr2(susxx,nyn);
+    delArr2(susxy,nyn);
+    delArr2(susxz,nyn);
+
+    delArr2(susyx,nyn);
+    delArr2(susyy,nyn);
+    delArr2(susyz,nyn);
+
+    delArr2(suszx,nyn);
+    delArr2(suszy,nyn);
+    delArr2(suszz,nyn);
+    break;
+  case 1: // boundary condition on Y-DIRECTION RIGHT                  
+    susxx = newArr2(double,nxn,nzn);
+    susxy = newArr2(double,nxn,nzn);
+    susxz = newArr2(double,nxn,nzn);
+    susyx = newArr2(double,nxn,nzn);
+    susyy = newArr2(double,nxn,nzn);
+    susyz = newArr2(double,nxn,nzn);
+    suszx = newArr2(double,nxn,nzn);
+    suszy = newArr2(double,nxn,nzn);
+    suszz = newArr2(double,nxn,nzn);
+    sustensorAllY(susxx, susxy, susxz, susyx, susyy, susyz, suszx, suszy, suszz, 1);
+    for (int i=istart; i < iend;i++) //2 to avoid corners if it is open also in x               
+      for (int j=1; j <  nzn-1;j++){
+        int zz=1;
+        imageX[i][zz][j] = vectorX[i][zz][j] - (- FourPI * th *dt* Jxh[i][zz][j]- susxy[i][j]* vectorY[i][zz][j] - susxz[i][j]* vectorZ[i][zz][j])/(susxx[i][j]-1);
+        imageY[i][zz][j] = vectorY[i][zz][j] - (Ey[i][zz][j] - susyx[i][j]*vectorX[i][zz][j] - susyz[i][j]*vectorZ[i][zz][j] - Jyh[i][zz][j]*dt*th*FourPI)/susyy[i][j];
+        imageZ[i][zz][j] = vectorZ[i][zz][j] - (4.0* vectorZ[i][zz+1][j]- vectorZ[i][zz+2][j])/3.0 ;
+	
+      }
+    delArr2(susxx,nxn);
+    delArr2(susxy,nxn);
+    delArr2(susxz,nxn);
+
+    delArr2(susyx,nxn);
+    delArr2(susyy,nxn);
+    delArr2(susyz,nxn);
+
+    delArr2(suszx,nxn);
+    delArr2(suszy,nxn);
+    delArr2(suszz,nxn);
+
+    break;
+  case 2: // boundary condition on Z-DIRECTION RIGHT                            
+    for (int i=1; i < nxn-1;i++)
+      for (int j=1; j < nyn-1;j++){
+        imageX[i][j][1] = vectorX[i][j][1];
+        imageY[i][j][1] = vectorY[i][j][1];
+        imageZ[i][j][1] = vectorZ[i][j][1];
+      }
+    break;
+  }
+}
+
+/** Perfect conductor boundary conditions: RIGHT wall */
+inline  void EMfields3D::OpenRight(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ, int dir,Grid *grid, VirtualTopology3D*vct){
+  double beta, omcx, omcy, omcz, denom;
+  double** susxy;
+  double** susyy;
+  double** suszy;
+  double** susxx;
+  double** susyx;
+  double** suszx;
+  double** susyz;
+  double** susxz;
+  double** suszz;
+  int istart = 1;
+  if(vct->getXleft_neighbor()==MPI_PROC_NULL && bcEMfaceXleft ==3)
+    istart=2;
+  int iend = nxn-1;
+  if(vct->getXright_neighbor()==MPI_PROC_NULL && bcEMfaceXright ==3)
+    iend=nxn-2;
+  int jstart = 1;
+  if(vct->getYleft_neighbor()==MPI_PROC_NULL && bcEMfaceYleft ==3)
+    jstart=2;
+  int jend = nyn-1;
+  if(vct->getYright_neighbor()==MPI_PROC_NULL && bcEMfaceYright ==3)
+    jend=nyn-2;
+  switch(dir){
+  case 0: // boundary condition on X-DIRECTION RIGHT  
+    susxx = newArr2(double,nyn,nzn);
+    susxy = newArr2(double,nyn,nzn);
+    susxz = newArr2(double,nyn,nzn);
+    susyx = newArr2(double,nyn,nzn);
+    susyy = newArr2(double,nyn,nzn);
+    susyz = newArr2(double,nyn,nzn);
+    suszx = newArr2(double,nyn,nzn);
+    suszy = newArr2(double,nyn,nzn);
+    suszz = newArr2(double,nyn,nzn);
+
+    sustensorAllX(susxx, susxy, susxz, susyx, susyy, susyz, suszx, suszy, suszz, nxn-2);
+    for (int i=jstart; i < jend;i++)
+      for (int j=1; j <  nzn-1;j++){
+        int zz= nxn-2;
+
+        imageX[zz][i][j]= vectorX[zz][i][j] - (Ex[zz][i][j] - susxy[i][j]*vectorY[zz][i][j] - susxz[i][j]*vectorZ[zz][i][j]  -  Jxh[zz][i][j]*dt*th*FourPI)/susxx[i][j]; 
+	imageY[zz][i][j]= vectorY[zz][i][j] - (- FourPI * th *dt* Jyh[zz][i][j]- susyx[i][j]* vectorX[zz][i][j] - susyz[i][j]* vectorZ[zz][i][j])/(susyy[i][j]-1);
+	imageZ[zz][i][j]= vectorZ[zz][i][j] - (4.0* vectorZ[zz-1][i][j]- vectorZ[zz-2][i][j])/3.0; 
+
+      } 
+    delArr2(susxx,nyn);
+    delArr2(susxy,nyn);
+    delArr2(susxz,nyn);
+
+    delArr2(susyx,nyn);
+    delArr2(susyy,nyn);
+    delArr2(susyz,nyn);
+
+    delArr2(suszx,nyn);
+    delArr2(suszy,nyn);
+    delArr2(suszz,nyn);
+    break;
+  case 1: // boundary condition on Y-DIRECTION RIGHT                    
+    susxx = newArr2(double,nxn,nzn);
+    susxy = newArr2(double,nxn,nzn);
+    susxz = newArr2(double,nxn,nzn);
+    susyx = newArr2(double,nxn,nzn);
+    susyy = newArr2(double,nxn,nzn);
+    susyz = newArr2(double,nxn,nzn);
+    suszx = newArr2(double,nxn,nzn);
+    suszy = newArr2(double,nxn,nzn);
+    suszz = newArr2(double,nxn,nzn);
+
+    sustensorAllY(susxx, susxy, susxz, susyx, susyy, susyz, suszx, suszy, suszz, nyn-2);
+
+    for (int i=istart; i < iend;i++) //2 to avoid corners if it is open also in x
+      for (int j=1; j <  nzn-1;j++){
+	int zz=nyn-2;
+	imageX[i][zz][j] = vectorX[i][zz][j] - (- FourPI * th *dt* Jxh[i][zz][j]- susxy[i][j]* vectorY[i][zz][j] - susxz[i][j]* vectorZ[i][zz][j])/(susxx[i][j]-1);
+        imageY[i][zz][j] = vectorY[i][zz][j] - (Ey[i][zz][j] - susyx[i][j]*vectorX[i][zz][j] - susyz[i][j]*vectorZ[i][zz][j] - Jyh[i][zz][j]*dt*th*FourPI)/susyy[i][j];
+        imageZ[i][zz][j] = vectorZ[i][zz][j] - (4.0* vectorZ[i][zz-1][j]- vectorZ[i][zz-2][j])/3.0 ;
+
+
+      } 
+    delArr2(susxx,nxn);
+    delArr2(susxy,nxn);
+    delArr2(susxz,nxn);
+
+    delArr2(susyx,nxn);
+    delArr2(susyy,nxn);
+    delArr2(susyz,nxn);
+
+    delArr2(suszx,nxn);
+    delArr2(suszy,nxn);
+    delArr2(suszz,nxn);
+    break;
+  case 2: // boundary condition on Z-DIRECTION RIGHT                     
+    for (int i=1; i < nxn-1;i++)
+      for (int j=1; j < nyn-1;j++){
+        imageX[i][j][nzn-2] = vectorX[i][j][nzn-2];
+        imageY[i][j][nzn-2] = vectorY[i][j][nzn-2];
+        imageZ[i][j][nzn-2] = vectorZ[i][j][nzn-2];
+      }
+    break;
+  }
+}
+
+void EMfields3D::sustensorAllX(double **susxx, double **susxy, double **susxz, double **susyx, double **susyy, double **susyz, double ** suszx, double **suszy, double **suszz, int N){
+   double beta, omcx, omcy, omcz, denom;
+  for (int j = 0; j < nyn; j++)
+    for (int k = 0; k < nzn; k++) {
+      susxx[j][k] = 1.0;
+      susxy[j][k] = 0.0;
+      susxz[j][k] = 0.0;
+      susyx[j][k] = 0.0;
+      susyy[j][k] = 1.0;
+      susyz[j][k] = 0.0;
+      suszx[j][k] = 0.0;
+      suszy[j][k] = 0.0;
+      suszz[j][k] = 1.0;
+    }
+  for (int is = 0; is < ns; is++) {
+    beta = .5 * qom[is] * dt / c;
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
+        omcx = beta * (Bxn[N][j][k] + Fext*Bx_ext[N][j][k]);
+        omcy = beta * (Byn[N][j][k] + Fext*By_ext[N][j][k]);
+        omcz = beta * (Bzn[N][j][k] + Fext*Bz_ext[N][j][k]);
+        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][N][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+        susxx[j][k] += (  1.0 + omcx * omcx) * denom;
+        susxy[j][k] += ( omcz + omcx * omcy) * denom;
+        susxz[j][k] += (-omcy + omcx * omcz) * denom;
+
+        susyx[j][k] += (-omcz + omcx * omcy) * denom;
+        susyy[j][k] += (  1.0 + omcy * omcy) * denom;
+        susyz[j][k] += ( omcx + omcy * omcz) * denom;
+
+        suszx[j][k] += ( omcy + omcx * omcz) * denom;
+        suszy[j][k] += (-omcx + omcy * omcz) * denom;
+        suszz[j][k] += (  1.0 + omcz * omcz) * denom;
+      }
+  }
+}
+void EMfields3D::sustensorAllY(double **susxx, double **susxy, double **susxz, double **susyx, double **susyy, double **susyz, double ** suszx, double **suszy, double **suszz, int N){
+  double beta, omcx, omcy, omcz, denom;
+  for (int j = 0; j < nxn; j++)
+    for (int k = 0; k < nzn; k++) {
+      susxx[j][k] = 1.0;
+      susxy[j][k] = 0.0;
+      susxz[j][k] = 0.0;
+      susyx[j][k] = 0.0;
+      susyy[j][k] = 1.0;
+      susyz[j][k] = 0.0;
+      suszx[j][k] = 0.0;
+      suszy[j][k] = 0.0;
+      suszz[j][k] = 1.0;
+    }
+  for (int is = 0; is < ns; is++) {
+    beta = .5 * qom[is] * dt / c;
+    for (int j = 0; j < nxn; j++)
+      for (int k = 0; k < nzn; k++) {
+	omcx = beta * (Bxn[j][N][k] + Fext*Bx_ext[j][N][k]);
+        omcy = beta * (Byn[j][N][k] + Fext*By_ext[j][N][k]);
+        omcz = beta * (Bzn[j][N][k] + Fext*Bz_ext[j][N][k]);
+        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][j][N][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+        susxx[j][k] += (  1.0 + omcx * omcx) * denom;
+        susxy[j][k] += ( omcz + omcx * omcy) * denom;
+        susxz[j][k] += (-omcy + omcx * omcz) * denom;
+
+        susyx[j][k] += (-omcz + omcx * omcy) * denom;
+        susyy[j][k] += (  1.0 + omcy * omcy) * denom;
+        susyz[j][k] += ( omcx + omcy * omcz) * denom;
+
+        suszx[j][k] += ( omcy + omcx * omcz) * denom;
+        suszy[j][k] += (-omcx + omcy * omcz) * denom;
+        suszz[j][k] += (  1.0 + omcz * omcz) * denom;
+      }
+  }
+}
+
+void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  const double pertX = 0.4;
+  const double pertGEM = 0.0;
+
+  double globalx;
+  double globaly;
+  double globalz;
+
+  const double coarsedx= grid->getDX();
+  const double coarsedy= grid->getDY();  
+  const double coarsedz= grid->getDZ();
+
+  const double deltax= Lx/2.0;
+  const double deltay= Ly/2.0;
+ 
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize DOUBLE GEM Challenge with Pertubation" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+	  globalx= grid->getXN(i, j, k) + coarsedx;
+	  globaly= grid->getYN(i, j, k) + coarsedy;
+	  globalz= grid->getZN(i, j, k) + coarsedz;
+         
+          double yB = globaly - .25 * Ly;
+	  double yT = globaly - .75 * Ly;
+          double yBd = yB / delta;
+          double yTd = yT / delta;
+
+	  double xB = globalx - .25 * Lx;
+	  double xT = globalx - .75 * Lx;
+	  double xBd = xB / delta;
+	  double xTd = xT / delta;
+	  
+	  double xpert;
+	  double ypert;
+	  
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is]) {
+              double sech_yBd = 1. / cosh(yBd);
+              double sech_yTd = 1. / cosh(yTd);
+              rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
+              rhons[is][i][j][k] += rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
+            }
+            else
+              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          Bxn[i][j][k] = B0x * (-1.0 + tanh(yBd) + tanh(-yTd));
+          // add the initial GEM perturbation
+          Bxn[i][j][k] += 0.;
+          Byn[i][j][k] = B0y;
+          // add the initial X perturbation
+          
+	  xpert = globalx- Lx/4;
+	  ypert = globaly- Ly/4;
+	  double deltax= Lx/2.0;
+	  double deltay= Ly/2.0;
+	  if (xpert < Lx/2 and ypert < Ly/2)
+	    {
+	      Bxn[i][j][k] +=(B0x*pertGEM)*(M_PI/deltay)*cos(2*M_PI*xpert/deltax)*sin(M_PI*ypert/deltay  );
+	      Byn[i][j][k] = B0y -(B0x*pertGEM)*(2*M_PI/deltax)*sin(2*M_PI*xpert/deltax)*cos(M_PI*ypert/deltay);
+	    }
+	  // add the second initial GEM perturbation                                                                     
+	  xpert = globalx- 3*Lx/4;
+	  ypert = globaly- 3*Ly/4;
+	  if (xpert > Lx/2 and ypert > Ly/2)
+	    {
+	      Bxn[i][j][k] +=(B0x*pertGEM)*(M_PI/deltay)*cos(2*M_PI*xpert/deltax)*sin(M_PI*ypert/deltay  );
+	      Byn[i][j][k] = B0y -(B0x*pertGEM)*(2*M_PI/deltax)*sin(2*M_PI*xpert/deltax)*cos(M_PI*ypert/deltay);
+	    }
+	  double exp_pert;
+	  // add the initial X perturbation                                                                              
+	  xpert = globalx- Lx/4;
+	  ypert = globaly- Ly/4;
+	  exp_pert = exp(-(xpert/delta)*(xpert/delta)-(ypert/delta)*(ypert/delta));
+
+	  Bxn[i][j][k] +=(B0x*pertX)*exp_pert*(
+					       -cos(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*2.0*ypert/delta
+					       -cos(M_PI*xpert/10.0/delta)*sin(M_PI*ypert/10.0/delta)*M_PI/10.0
+					       );
+
+	  Byn[i][j][k] +=(B0x*pertX)*exp_pert*(
+					       cos(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*2.0*xpert/delta
+					       +sin(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*M_PI/10.0
+					       );
+	  // add the second initial X perturbation                                                                       
+	  xpert = globalx- 3*Lx/4;
+	  ypert = globaly- 3*Ly/4;
+	  exp_pert = exp(-(xpert/delta)*(xpert/delta)-(ypert/delta)*(ypert/delta));
+
+	  Bxn[i][j][k] +=(-B0x*pertX)*exp_pert*(
+						-cos(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*2.0*ypert/delta
+						-cos(M_PI*xpert/10.0/delta)*sin(M_PI*ypert/10.0/delta)*M_PI/10.0
+						);
+
+	  Byn[i][j][k] +=(-B0x*pertX)*exp_pert*(
+						cos(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*2.0*xpert/delta
+						+sin(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*M_PI/10.0
+						);
+	  // guide field                                                                                                 
+	  Bzn[i][j][k] = B0z;
+        }
+    // communicate ghost
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    // initialize B on centers; same thing as on nodes but on centers
+
+    grid->interpN2C(Bxc, Bxn);
+    grid->interpN2C(Byc, Byn);
+    grid->interpN2C(Bzc, Bzn);
+     
+    // end initialize B on centers 
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
 }

@@ -54,6 +54,7 @@ class Moments {
     int ny;
     int nz;
   public:
+    
     int get_nx() const {
       return nx;
     }
@@ -181,6 +182,7 @@ class EMfields3D                // :public Field
     void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with dipole-like tail without perturbation */
     void initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with no Perturbation */
@@ -289,10 +291,27 @@ class EMfields3D                // :public Field
     /*! Perfect conductor boundary conditions for source RIGHT wall */
     void perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
 
+    // open Daughton-like BC  
+    /*! Open boundary conditions LEFT wall */
+    void OpenLeftS(Grid * grid, double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
+    /*! Open boundary conditions RIGH wall */
+    void OpenRightS(Grid * grid, double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
+
+    /*! Perfect conductor boundary conditions LEFT wall */
+    void OpenLeft(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid, VirtualTopology3D *vct);
+    /*! Perfect conductor boundary conditions RIGHT wall */
+    void OpenRight(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid, VirtualTopology3D *vct);
+    // open Daughton-like BC
+
     /*! Calculate the sysceptibility tensor on the boundary */
     void sustensorX(double **susxx, double **susxy, double **susxz, int N);
     void sustensorY (double **susyx, double **susyy, double **susyz, int N);
     void sustensorZ(double **suszx, double **suszy, double **suszz, int N);
+
+    /*! all components of susceptibility */
+    void sustensorAllX(double **susxx, double **susxy, double **susxz, double **susyx, double **susyy, double **susyz, double ** suszx, double **suszy, double **suszz, int N);
+    void sustensorAllY(double **susxx, double **susxy, double **susxz, double **susyx, double **susyy, double **susyz, double ** suszx, double **suszy, double **suszz, int N);
+
 
     /*! get Potential array */
     double ***getPHI();
@@ -394,6 +413,10 @@ class EMfields3D                // :public Field
     /*! get pressure tensor ZZ for species */
     double ****getpZZsn();
 
+    double &getpXXsn(int indexX, int indexY, int indexZ, int is) const;
+    double &getpYYsn(int indexX, int indexY, int indexZ, int is) const;
+    double &getpZZsn(int indexX, int indexY, int indexZ, int is) const;
+
     /*! get Jx(X,Y,Z) */
     double &getJx(int indexX, int indexY, int indexZ) const;
     /*! get current -Direction X */
@@ -441,6 +464,16 @@ class EMfields3D                // :public Field
     // OpenBC
     void updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col);
 
+
+    bool getDriftSpecies(int is){
+      return DriftSpecies[is];
+    }
+    double getDelta(){
+      return delta;
+    }
+    string getCase(){
+      return Case;
+    }
     /* ********************************* // VARIABLES ********************************* */
   private:
     /*! light speed */
