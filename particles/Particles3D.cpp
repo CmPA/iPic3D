@@ -1458,7 +1458,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
 	
         if (x[p] > 2*dx and x[p]< 4*dx ){
 	//if (x[p] > NC*dx and x[p]< 2*NC*dx ){
-	  [nop]= x[p]-NC*dx; //2*dx;
+	  x[nop]= x[p]-NC*dx; //2*dx;
 	  y[nop]= y[p];
 	  z[nop]= z[p];
 	  //QUI

@@ -1747,7 +1747,7 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
 	  Lambda[i][j][k]  = 0.0;    
 	  //if (grid->getYN(i,j,k)< Ly/2-1.5 or grid->getYN(i,j,k)> Ly/2+1.5 ){ Lambda[i][j][k]=2.0 * M_PI / dx;}
 
-	  double d= abs(grid->getYN(i,j,k) -Ly/2)/dy;
+	  double d= fabs(grid->getYN(i,j,k) -Ly/2)/dy;
 	  Lambda[i][j][k]= 2.0 * M_PI / dy *d/(nyn/2);
 	  
 	  }  
