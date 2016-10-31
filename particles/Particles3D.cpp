@@ -47,18 +47,18 @@ using std::endl;
 
 /** constructor */
 Particles3D::Particles3D() {
-  // see allocate(int species, Collective* col, VirtualTopology3D* vct, Grid* grid)
+  // see allocate
 
 }
 /** deallocate particles */
 Particles3D::~Particles3D() {
-  delete[]x;
-  delete[]y;
-  delete[]z;
-  delete[]u;
-  delete[]v;
-  delete[]w;
-  delete[]q;
+  x.resize(0);
+  y.resize(0);
+  z.resize(0);
+  u.resize(0);
+  v.resize(0);
+  w.resize(0);
+  q.resize(0);
 }
 
 /** particles are uniformly distributed with zero velocity   */

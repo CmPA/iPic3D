@@ -109,10 +109,6 @@ class Collective
     /*! get the number of particles per cell - direction Z */
     int getNpcelz(int nspecies);
     /*! get maximum number of particles for different species */
-    long getNpMax(int nspecies);
-    /*! NpMax/Np is the ratio between the maximum number of particles allowed on a processor and the number of particles */
-    double getNpMaxNpRatio();
-    /*! get charge to mass ratio for different species */
     double getQOM(int nspecies);
     /*! get background charge for GEM challenge */
     double getRHOinit(int nspecies);
@@ -308,10 +304,6 @@ class Collective
     int *npcelz;
     /*! number of particles array for different species */
     long *np;
-    /*! maximum number of particles array for different species */
-    long *npMax;
-    /*! max number of particles */
-    double NpMaxNpRatio;
     /*! charge to mass ratio array for different species */
     double *qom;
     /*! charge to mass ratio array for different species */

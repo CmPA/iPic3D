@@ -68,7 +68,6 @@ TrackParticleID = 0    0    0    0   # TrackParticleID[species] = 1=true, 0=fals
 npcelx          = 32   32   32   32  # Particles per cell in X
 npcely          = 32   32   32   32  # Particles per cell in Y
 npcelz          = 16   16   16   16  # Particles per cell in Z
-NpMaxNpRatio    = 128.0              # Maximum number of particles allocated
 
 qom             = -25.0     1.0        -25.0     1.0        # Charge/mass ratio
 uth             = 0.0721688 0.03227488 0.0721688 0.03227488 # Thermal velocity in X

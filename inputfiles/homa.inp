@@ -11,9 +11,6 @@ RestartDirName = "/cfs/scratch/users/smarkid2/homa";
 //SaveDirName = "/data/home/u0052182/stefano/results";
 //RestartDirName = "/data/home/u0052182/stefano/results";
 
-// set the maximum number of particles allocated  
-NpMaxNpRatio = 1.5;
-
 //  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
 B0x = 0.0195;
 B0y = 0.0;

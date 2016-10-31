@@ -75,7 +75,7 @@ public:
   /** destructor */
   ~Particles3Dcomm();
   /** allocate particles */
-  void allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid);
+  void allocate(int species, long long nop_init, Collective * col, VirtualTopology3D * vct, Grid * grid);
 
   /** calculate the weights given the position of particles */
   void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);
@@ -108,33 +108,21 @@ public:
   /** calculate the weights given the position of particles */
   // void calculateWeights(double*** weight, double xp, double yp, double zp,int ix, int iy, int iz, Grid* grid);
   /** get X-position array for all the particles */
-  double *getXall() const;
+  const double *getXall() const;
   /** get Y-position array for all the particles */
-  double *getYall() const;
+  const double *getYall() const;
   /** get Z-position array for all the particles */
-  double *getZall() const;
+  const double *getZall() const;
   /** get u (X-velocity) array for all the particles */
-  double *getUall() const;
+  const double *getUall() const;
   /** get v (Y-velocity) array for all the particles */
-  double *getVall() const;
+  const double *getVall() const;
   /** get w (Z-velocity) array for all the particles */
-  double *getWall() const;
-  /** get X-position array for all the particles by reference */
-  double *& getXref();
-  /** get Y-position array for all the particles by reference */
-  double *& getYref();
-  /** get Z-position array for all the particles by reference */
-  double *& getZref();
-  /** get u (X-velocity) array for all the particles by reference */
-  double *& getUref();
-  /** get v (Y-velocity) array for all the particles by reference */
-  double *& getVref();
-  /** get w (Z-velocity) array for all the particles by reference */
-  double *& getWref();
-  /** get q array for all the particles by reference */
-  double *& getQref();
-  /** get the ID array   */
-  unsigned long *getParticleIDall() const;
+  const double *getWall() const;
+  /** get q (charge) array for all the particles */
+  const double *getQall() const;
+  /** get the ParticleID array */
+  const unsigned long long *getParticleIDall() const;
   /** get X-position of particle with label indexPart */
   double getX(long long indexPart) const;
   /** get Y-position of particle with label indexPart */
@@ -147,12 +135,10 @@ public:
   double getV(long long indexPart) const;
   /** get w (Z-velocity) of particle with label indexPart */
   double getW(long long indexPart) const;
-  /** get ID of particle with label indexPart */
-  unsigned long getParticleID(long long indexPart) const;
-  /**get charge of particle with label indexPart */
+  /**get q (charge) of particle with label indexPart */
   double getQ(long long indexPart) const;
-  /** get charge of array for ID particles */
-  double *getQall() const;
+  /** get ID of particle with label indexPart */
+  unsigned long long getParticleID(long long indexPart) const;
   /** get the number of particles of this subdomain */
   long long getNOP() const;
   /** return the Kinetic energy */
@@ -188,8 +174,6 @@ public:
 protected:
   /** number of species */
   int ns;
-  /** maximum number of particles of this species on this domain. used for memory allocation */
-  long long npmax;
   /** number of particles of this species on this domain */
   long long nop;
   /** total number of particles */
@@ -218,28 +202,28 @@ protected:
   double v0;
   /** w0 Drift velocity - Direction Z */
   double w0;
-  /** Positions arra - X component */
-  double *x;
+  /** Positions array - X component */
+  std::vector<double> x;
   /** Positions array - Y component */
-  double *y;
+  std::vector<double> y;
   /** Positions array - Z component */
-  double *z;
+  std::vector<double> z;
   /** Velocities array - X component */
-  double *u;
+  std::vector<double> u;
   /** Velocities array - Y component */
-  double *v;
+  std::vector<double> v;
   /** Velocities array - Z component */
-  double *w;
+  std::vector<double> w;
   /** TrackParticleID */
   bool TrackParticleID;
   /** ParticleID */
-  unsigned long *ParticleID;
+  std::vector<unsigned long long> ParticleID;
   /** rank of processor in which particle is created (for ID) */
   int BirthRank[2];
   /** number of variables to be stored in buffer for communication for each particle  */
   int nVar;
   /** Charge array */
-  double *q;
+  std::vector<double> q;
 
   /** Initial charge density */
   double rhoINIT;

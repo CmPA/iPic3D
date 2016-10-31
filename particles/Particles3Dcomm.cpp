@@ -45,21 +45,22 @@ using std::endl;
 
 /** constructor */
 Particles3Dcomm::Particles3Dcomm() {
-  // see allocate(int species, Collective* col, VirtualTopology3D* vct, Grid* grid)
+  // see allocate
 
 }
 /** deallocate particles */
 Particles3Dcomm::~Particles3Dcomm() {
-  delete[]x;
-  delete[]y;
-  delete[]z;
-  delete[]u;
-  delete[]v;
-  delete[]w;
-  delete[]q;
+  x.resize(0);
+  y.resize(0);
+  z.resize(0);
+  u.resize(0);
+  v.resize(0);
+  w.resize(0);
+  q.resize(0);
+  if (TrackParticleID) ParticleID.resize(0);
 }
 /** constructors fo a single species*/
-void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
+void Particles3Dcomm::allocate(int species, long long nop_init, Collective * col, VirtualTopology3D * vct, Grid * grid) {
   // info from collectiveIO
   ns = species;
   npcel = col->getNpcel(species);
@@ -67,18 +68,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   npcely = col->getNpcely(species);
   npcelz = col->getNpcelz(species);
 
-  // This if is necessary to restart with H5hut-io
-  if (initnpmax==0) {
-    long ncproc = int(col->getNxc()/col->getXLEN()) *
-                  int(col->getNyc()/col->getYLEN()) *
-                  int(col->getNzc()/col->getZLEN());
-    nop   = ncproc * npcel;
-    npmax = nop * col->getNpMaxNpRatio();
-  }
-  else {
-    npmax = initnpmax*col->getNpMaxNpRatio();
-    nop   = initnpmax;
-  }
+  nop = npcel * col->getNxc()/col->getXLEN() * col->getNyc()/col->getYLEN() * col->getNzc()/col->getZLEN();
 
   rhoINIT   = col->getRHOinit(species);
   rhoINJECT = col->getRHOinject(species);
@@ -157,40 +147,34 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   y_reemission = !y_degenerated && ((bcPfaceYleft == 2) || (bcPfaceYright == 2));
   z_reemission = !z_degenerated && ((bcPfaceZleft == 2) || (bcPfaceZright == 2));
 
-  // //////////////////////////////////////////////////////////////
-  // ////////////// ALLOCATE ARRAYS /////////////////////////
-  // //////////////////////////////////////////////////////////////
+  // ALLOCATE PARTICLE ARRAYS
+  if (nop_init == 0) nop_init = nop;
+  nop_init += (long long) (nop * 0.025) + 10;
   // positions
-  x = new double[npmax];
-  y = new double[npmax];
-  z = new double[npmax];
+  x.reserve(nop_init);
+  y.reserve(nop_init);
+  z.reserve(nop_init);
   // velocities
-  u = new double[npmax];
-  v = new double[npmax];
-  w = new double[npmax];
+  u.reserve(nop_init);
+  v.reserve(nop_init);
+  w.reserve(nop_init);
   // charge
-  q = new double[npmax];
-  // ID
+  q.reserve(nop_init);
+  // ParticleID
   if (TrackParticleID) {
-    ParticleID = new unsigned long[npmax];
+    ParticleID.reserve(nop_init);
     BirthRank[0] = vct->getCartesian_rank();
     if (vct->getNprocs() > 1)
       BirthRank[1] = (int) ceil(log10((double) (vct->getNprocs())));  // Number of digits needed for # of process in ID
     else
       BirthRank[1] = 1;
-    if (BirthRank[1] + (int) ceil(log10((double) (npmax))) > 10 && BirthRank[0] == 0) {
-      cerr << "Error: can't Track particles in Particles3Dcomm::allocate" << endl;
-      cerr << "Unsigned long 'ParticleID' cannot store all the particles" << endl;
-      return;
-    }
   }
+
   // BUFFERS
   // the buffer size should be decided depending on number of particles
-  // the buffer size should be decided depending on number of particles
-  if (TrackParticleID)
-    nVar = 8;
-  else
-    nVar = 7;
+  nVar = 7;
+  if (TrackParticleID) nVar++;
+
   buffer_size_x = (long long) (0.025 * nop) + 10; // assume 2.5% of the particles in the processors are leaving
   buffer_size_y = buffer_size_x;
   buffer_size_z = buffer_size_x;
@@ -237,63 +221,75 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
     // get how many particles there are on this processor for this species
     status_n = H5Sget_simple_extent_dims(dataspace, dims_out, NULL);
-    nop = dims_out[0];          // this the number of particles on the processor!
+    nop = dims_out[0];   // this the number of particles on the processor!
+
+    // prepare actual data arrays for reading
+    x.resize(nop);
+    y.resize(nop);
+    z.resize(nop);
+    u.resize(nop);
+    v.resize(nop);
+    w.resize(nop);
+    q.resize(nop);
+    if (TrackParticleID) ParticleID.resize(nop);
+
     // get x
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, x);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, x.data());
     // close the data set
     status = H5Dclose(dataset_id);
 
     // get y
     name_dataset = "/particles/species_" + species_name.str() + "/y/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, y);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, y.data());
     status = H5Dclose(dataset_id);
 
     // get z
     name_dataset = "/particles/species_" + species_name.str() + "/z/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, z);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, z.data());
     status = H5Dclose(dataset_id);
 
     // get u
     name_dataset = "/particles/species_" + species_name.str() + "/u/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, u);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, u.data());
     status = H5Dclose(dataset_id);
+
     // get v
     name_dataset = "/particles/species_" + species_name.str() + "/v/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, v.data());
     status = H5Dclose(dataset_id);
+
     // get w
     name_dataset = "/particles/species_" + species_name.str() + "/w/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, w);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, w.data());
     status = H5Dclose(dataset_id);
+
     // get q
     name_dataset = "/particles/species_" + species_name.str() + "/q/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, q);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, q.data());
     status = H5Dclose(dataset_id);
+
     // ID 
     if (TrackParticleID) {
-      // herr_t (*old_func)(void*); // HDF 1.6
-      H5E_auto2_t old_func;      // HDF 1.8.8
+      H5E_auto2_t old_func; // HDF 1.8.8
       void *old_client_data;
-      H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8.8
+      H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data); // HDF 1.8.8
       /* Turn off error handling */
-      // H5Eset_auto(NULL, NULL); // HDF 1.6
       H5Eset_auto2(H5E_DEFAULT, 0, 0); // HDF 1.8
       name_dataset = "/particles/species_" + species_name.str() + "/ID/cycle_0";
       dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
 
-      // H5Eset_auto(old_func, old_client_data); // HDF 1.6
       H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data);
       if (dataset_id > 0)
-        status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID);
+        status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID.data());
       else {
         for (register long long counter = 0; counter < nop; counter++)
-          ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+          ParticleID[counter] = counter * (unsigned long long) pow(10.0, BirthRank[1]) + BirthRank[0];
       }
     }
     // close the hdf file
@@ -316,13 +312,12 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
 /** Initialie arrays for velocity distributions in 3D */
 void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, int bk, double vR, double vFact, Collective * col, Grid * grid) {
-  vDistRad   = vR;
+  vDistRad = vR;
 
   dovDist3D = false;
-  if (vX > grid->getXstart() && vX < grid->getXend())
-  if (vY > grid->getYstart() && vY < grid->getYend())
-  if (vZ > grid->getZstart() && vZ < grid->getZend())
-    dovDist3D = true;
+  if (vX > grid->getXstart() && vX < grid->getXend() &&
+      vY > grid->getYstart() && vY < grid->getYend() &&
+      vZ > grid->getZstart() && vZ < grid->getZend()) dovDist3D = true;
 
   if (dovDist3D) {
     vDistLoc_x = vX;
@@ -344,9 +339,9 @@ void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, i
     vBinEnd_j = col->getV0(ispec) + vFact * col->getVth(ispec);
     vBinBeg_k = col->getW0(ispec) - vFact * col->getWth(ispec);
     vBinEnd_k = col->getW0(ispec) + vFact * col->getWth(ispec);
-    dv_i      = (vBinEnd_i - vBinBeg_i) / double(nBins_i);
-    dv_j      = (vBinEnd_j - vBinBeg_j) / double(nBins_j);
-    dv_k      = (vBinEnd_k - vBinBeg_k) / double(nBins_k);
+    dv_i = (vBinEnd_i - vBinBeg_i) / double(nBins_i);
+    dv_j = (vBinEnd_j - vBinBeg_j) / double(nBins_j);
+    dv_k = (vBinEnd_k - vBinBeg_k) / double(nBins_k);
   }
 }
 
@@ -376,7 +371,7 @@ void Particles3Dcomm::Add_vDist3D() {
   for (int i=0; i<nvDistLoc; i++) {
 
     if (vDist[i].get_doVdist()) {
-      for (long long p=0; p<nop ;p++) {
+      for (long long p=0; p<nop; p++) {
         cout << p << "/" << nop;
         vDist[i].add(x[p], y[p], z[p], u[p], v[p], w[p]);
       }
@@ -703,7 +698,7 @@ int Particles3Dcomm::iterate_communication(std::vector<double>& bxl, std::vector
     comm_y = max(wrong_y_left, wrong_y_right);
     comm_z = max(wrong_z_left, wrong_z_right);
 
-    // recursive call to treat and more particles that are in the wrong domain
+    // recursive call to treat those particles that are still in the wrong domain
     iterate_communication (wxl, wxr, wyl, wyr, wzl, wzr, comm_x, comm_y, comm_z, comm_x, comm_y, comm_z, vct);
 
     wxl.clear();
@@ -812,7 +807,7 @@ int Particles3Dcomm::unbuffer(std::vector<double>& buffer, std::vector<double>& 
   for (pos = 0L; pos < size; pos++) {
     result = bc_apply (start, start+1, start+2, start+3, start+4, start+5);
     if (result == 0) {
-      // these particles need further communication
+      // outside particles need further communication
       if (x_out_left) {
         rebuffer(start, wxl, wrong_x_left);
       }
@@ -832,25 +827,21 @@ int Particles3Dcomm::unbuffer(std::vector<double>& buffer, std::vector<double>& 
         rebuffer(start, wzr, wrong_z_right);
       }
       else {
-        x[nop] = start[0];
-        y[nop] = start[1];
-        z[nop] = start[2];
-        u[nop] = start[3];
-        v[nop] = start[4];
-        w[nop] = start[5];
-        q[nop] = start[6];
-        if (TrackParticleID) ParticleID[nop] = (unsigned long) start[7];
+        // particle arrived at the right domain
+        x.push_back(start[0]);
+        y.push_back(start[1]);
+        z.push_back(start[2]);
+        u.push_back(start[3]);
+        v.push_back(start[4]);
+        w.push_back(start[5]);
+        q.push_back(start[6]);
+        if (TrackParticleID) ParticleID.push_back(start[7]);
         nop++;
-        if (nop > npmax) {
-          cout << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
-          MPI_Abort(MPI_COMM_WORLD, -1);
-          return (-1);              // end the simulation because you dont have enough space on the array
-        }
       }
     }
     start += nVar;
   }
-  return (0);                   // everything was fine
+  return (0);
 }
 
 /** Rebuffer particles still in the wrong domain after the last communication */
@@ -876,14 +867,16 @@ inline void Particles3Dcomm::rebuffer(double *start, std::vector<double>& buffer
  */
 void Particles3Dcomm::del_pack(long long np_current) {
   nop--;
-  x[np_current] = x[nop];
-  y[np_current] = y[nop];
-  z[np_current] = z[nop];
-  u[np_current] = u[nop];
-  v[np_current] = v[nop];
-  w[np_current] = w[nop];
-  q[np_current] = q[nop];
-  if (TrackParticleID) ParticleID[np_current] = ParticleID[nop];
+  x[np_current] = x.back(); x.pop_back();
+  y[np_current] = y.back(); y.pop_back();
+  z[np_current] = z.back(); z.pop_back();
+  u[np_current] = u.back(); u.pop_back();
+  v[np_current] = v.back(); v.pop_back();
+  w[np_current] = w.back(); w.pop_back();
+  q[np_current] = q.back(); q.pop_back();
+  if (TrackParticleID) {
+    ParticleID[np_current] = ParticleID.back(); ParticleID.pop_back();
+  }
 }
 
 /** calculate the maximum number leaving from this domain */
@@ -896,64 +889,36 @@ long long Particles3Dcomm::maxNpExiting(long long *max_x, long long *max_y, long
   return (max_xyz);
 }
 /** return X-coordinate of particle array */
-double *Particles3Dcomm::getXall()  const {
-  return (x);
+const double *Particles3Dcomm::getXall()  const {
+  return (x.data());
 }
 /** return Y-coordinate  of particle array */
-double *Particles3Dcomm::getYall()  const {
-  return (y);
+const double *Particles3Dcomm::getYall()  const {
+  return (y.data());
 }
 /** return Z-coordinate  of particle array*/
-double *Particles3Dcomm::getZall()  const {
-  return (z);
+const double *Particles3Dcomm::getZall()  const {
+  return (z.data());
 }
 /** get X-velocity of particle with label indexPart */
-double *Particles3Dcomm::getUall()  const {
-  return (u);
+const double *Particles3Dcomm::getUall()  const {
+  return (u.data());
 }
 /** get Y-velocity of particle with label indexPart */
-double *Particles3Dcomm::getVall()  const {
-  return (v);
+const double *Particles3Dcomm::getVall()  const {
+  return (v.data());
 }
 /**get Z-velocity of particle with label indexPart */
-double *Particles3Dcomm::getWall()  const {
-  return (w);
-}
-/**get ID of particle with label indexPart */
-unsigned long *Particles3Dcomm::getParticleIDall()  const {
-  return (ParticleID);
+const double *Particles3Dcomm::getWall()  const {
+  return (w.data());
 }
 /**get charge of particle with label indexPart */
-double *Particles3Dcomm::getQall()  const {
-  return (q);
+const double *Particles3Dcomm::getQall()  const {
+  return (q.data());
 }
-/** return X-coordinate of particle array as reference */
-double *& Particles3Dcomm::getXref() {
-  return (x);
-}
-/** return Y-coordinate  of particle array as reference */
-double *& Particles3Dcomm::getYref() {
-  return (y);
-}
-/** return Z-coordinate  of particle array as reference */
-double *& Particles3Dcomm::getZref() {
-  return (z);
-}
-/** get X-velocity of particle with label indexPart as reference */
-double *& Particles3Dcomm::getUref() {
-  return (u);
-}
-/** get Y-velocity of particle with label indexPart as reference */
-double *& Particles3Dcomm::getVref() {
-  return (v);
-}
-/**get Z-velocity of particle with label indexPart as reference */
-double *& Particles3Dcomm::getWref() {
-  return (w);
-}
-/**get charge of particle with label indexPart as reference */
-double *& Particles3Dcomm::getQref() {
-  return (q);
+/**get ID of particle with label indexPart */
+const unsigned long long *Particles3Dcomm::getParticleIDall()  const {
+  return (ParticleID.data());
 }
 /** return X-coordinate of particle with index indexPart */
 double Particles3Dcomm::getX(long long indexPart)  const {
@@ -979,13 +944,13 @@ double Particles3Dcomm::getV(long long indexPart)  const {
 double Particles3Dcomm::getW(long long indexPart)  const {
   return (w[indexPart]);
 }
-/**get ID of particle with label indexPart */
-unsigned long Particles3Dcomm::getParticleID(long long indexPart)  const {
-  return (ParticleID[indexPart]);
-}
 /**get charge of particle with label indexPart */
 double Particles3Dcomm::getQ(long long indexPart)  const {
   return (q[indexPart]);
+}
+/**get ID of particle with label indexPart */
+unsigned long long Particles3Dcomm::getParticleID(long long indexPart)  const {
+  return (ParticleID[indexPart]);
 }
 /** return the number of particles */
 long long Particles3Dcomm::getNOP()  const {
