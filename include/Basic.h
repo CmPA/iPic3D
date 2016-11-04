@@ -606,4 +606,42 @@ inline void loopZ(double *b, double x, double y, double z, double a, double xc, 
   b[2] = Bz;
 }
 
+// added for MC
+/** method to set a vector to a Value */
+inline void eqValue(double value, double ****vect, int ns, int nx, int ny, int nz) {
+  for (register int is=0; is < ns; is ++)
+    for (register int i = 0; i < nx; i++)
+      for (register int j = 0; j < ny; j++)
+	for (register int k = 0; k < nz; k++)
+	  vect[is][i][j][k] = value;
+
+}
+
+inline void divPBP(double ***res, double ***v1, double ***v2, int nx, int ny, int nz) {
+
+  for (register int i = 0; i < nx; i++)
+    for (register int j = 0; j < ny; j++)
+      for (register int k = 0; k < nz; k++)
+	res[i][j][k] = v1[i][j][k] / v2[i][j][k];
+
+}
+
+inline void cross(double ***resX, double ***resY, double ***resZ, double *** vect1X, double ***vect1Y, double *** vect1Z, double ***vect2X,double ***vect2Y, double ***vect2Z, int nx, int ny, int nz) {
+  for (int i=0; i<nx; i++)
+    for (int j=0; j<ny; j++)
+      for (int k=0; k<nz; k++){
+        resX[i][j][k] = vect1Y[i][j][k]*vect2Z[i][j][k]- vect1Z[i][j][k]*vect2Y[i][j][k];
+        resY[i][j][k] =-vect1X[i][j][k]*vect2Z[i][j][k]+ vect1Z[i][j][k]*vect2X[i][j][k];
+        resZ[i][j][k] = vect1X[i][j][k]*vect2Y[i][j][k]- vect1Y[i][j][k]*vect2X[i][j][k];
+      }
+}
+
+// simple moving average
+inline void SMA(double *** res, double *** newV, double *** oldV, int DOI, int nx, int ny, int nz){
+  for (int i=0; i<nx; i++)
+    for (int j=0; j<ny; j++)
+      for (int k=0; k<nz; k++){
+	res[i][j][k] = res[i][j][k] + newV[i][j][k]/DOI - oldV[i][j][k]/ DOI; }
+}
+
 #endif

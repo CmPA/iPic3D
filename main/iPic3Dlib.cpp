@@ -182,10 +182,12 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
-void c_Solver::GatherMoments(){
+void c_Solver::GatherMoments(int cycle){
   // timeTasks.resetCycle();
   // interpolation
   // timeTasks.start(TimeTasks::MOMENTS);
+
+  EMf->setDT_counter(cycle );
 
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
@@ -201,6 +203,9 @@ void c_Solver::GatherMoments(){
   }
 
   // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
+
+  // generalised Ohm's law  
+  EMf->Ohm_Law(vct, grid);
 
 }
 
@@ -382,7 +387,7 @@ void c_Solver::WriteOutput(int cycle) {
     // OUTPUT to large file, called proc**
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
+      output_mgr.output("Eall + Ball + rhos + Jsall + pressure + inertia", cycle);
       // Pressure tensor is available
       hdf5_agent.close();
     }

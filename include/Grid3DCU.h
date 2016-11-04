@@ -59,6 +59,8 @@ public:
   /** calculate divergence on central points, given a Tensor field defined on nodes  */
   void divSymmTensorN2C(double ***divCX, double ***divCY, double ***divCZ, double ****pXX, double ****pXY, double ****pXZ, double ****pYY, double ****pYZ, double ****pZZ, int ns);
 
+  void divSymmTensorN2C(double ***divCX, double ***divCY, double ***divCZ, double ***pXX, double ***pXY, double ***pXZ, double ***pYY, double ***pYZ, double ***pZZ);
+
   /** calculate laplacian on nodes, given a scalar field defined on nodes */
   void lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vct);
   /** calculate laplacian on central points, given a scalar field defined on central points for Poisson */

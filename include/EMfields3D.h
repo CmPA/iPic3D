@@ -457,6 +457,38 @@ class EMfields3D                // :public Field
     /*! get the magnetic field energy */
     double getBenergy();
 
+    // for output, moving average
+
+    double ***getT1_MA_x();
+    double ***getT1_MA_y();
+    double ***getT1_MA_z();
+    
+    double ***getT2_MA_x();
+    double ***getT2_MA_y();
+    double ***getT2_MA_z();
+    
+    double ***getT3_MA_x();
+    double ***getT3_MA_y();
+    double ***getT3_MA_z();
+    
+    double ***getT4_MA_x();
+    double ***getT4_MA_y();
+    double ***getT4_MA_z();
+    
+    double ***getJe_MA_x();
+    double ***getJe_MA_y();
+    double ***getJe_MA_z();
+
+    double ***getE_MA_x();
+    double ***getE_MA_y();
+    double ***getE_MA_z();
+
+    double ***getB_MA_x();
+    double ***getB_MA_y();
+    double ***getB_MA_z();
+   
+    double ***getRhoe_MA();
+
 
     /*! print electromagnetic fields info */
     void print(void) const;
@@ -474,6 +506,10 @@ class EMfields3D                // :public Field
     string getCase(){
       return Case;
     }
+
+    // for Ohm's law
+    void setDT_counter(int cc);
+    void Ohm_Law(VirtualTopology3D * vct, Grid * grid);
     /* ********************************* // VARIABLES ********************************* */
   private:
     /*! light speed */
@@ -530,6 +566,9 @@ class EMfields3D                // :public Field
     double z_center;
     /** Characteristic length */
     double L_square;
+
+    // to decide where to average for dt
+    int DT_counter;
 
     /*! PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes */
     double ***PHI;
@@ -634,6 +673,109 @@ class EMfields3D                // :public Field
     double***  Jy_ext;
     /*! External current field component-Z, defined on nodes */
     double***  Jz_ext;
+
+    // added for the intertial term in Ohm's law
+
+    // Moving Average for Ohm
+
+    // E= me/e dVe/dt [T1] + (ve \dot \nabla) ve [T2] + div Pe/ (en)  - ve x B/c [T4] -Je \eta [T5; i am saving only Je]
+    // divP
+    // here the 'new' value
+    
+    double *** dVex_dt_ACC;
+    double *** dVey_dt_ACC;
+    double *** dVez_dt_ACC;
+
+    double ***T1_NV_x;
+    double ***T1_NV_y;
+    double ***T1_NV_z;
+
+    double ***T2_NV_x;
+    double ***T2_NV_y;
+    double ***T2_NV_z;
+
+    double ***T3_NV_x;
+    double ***T3_NV_y;
+    double ***T3_NV_z;
+
+    double ***T4_NV_x;
+    double ***T4_NV_y;
+    double ***T4_NV_z;
+
+    double ***Je_NV_x;
+    double ***Je_NV_y;
+    double ***Je_NV_z;
+
+    double ***rhoe_NV;
+
+    // here the moving average, to save
+    double ***T1_MA_x;
+    double ***T1_MA_y;
+    double ***T1_MA_z;
+
+    double ***T2_MA_x;
+    double ***T2_MA_y;
+    double ***T2_MA_z;
+
+    double ***T3_MA_x;
+    double ***T3_MA_y;
+    double ***T3_MA_z;
+
+    double ***T4_MA_x;
+    double ***T4_MA_y;
+    double ***T4_MA_z;
+
+    double ***Je_MA_x;
+    double ***Je_MA_y;
+    double ***Je_MA_z;
+
+    double ***E_MA_x;
+    double ***E_MA_y;
+    double ***E_MA_z;
+
+    double ***B_MA_x;
+    double ***B_MA_y;
+    double ***B_MA_z;
+
+    double ***rhoe_MA;
+    
+    // for simple moving average, I need to save the values that drops out
+    // one dimension more (DOI)
+
+    int DOI; // how far ago the filter goes
+
+    double ****T1_DO_x;
+    double ****T1_DO_y;
+    double ****T1_DO_z;
+
+    double ****T2_DO_x;
+    double ****T2_DO_y;
+    double ****T2_DO_z;
+
+    double ****T3_DO_x;
+    double ****T3_DO_y;
+    double ****T3_DO_z;
+
+    double ****T4_DO_x;
+    double ****T4_DO_y;
+    double ****T4_DO_z;
+
+    double ****Je_DO_x;
+    double ****Je_DO_y;
+    double ****Je_DO_z;
+
+    double ****rhoe_DO;
+
+    double ****E_DO_x;
+    double ****E_DO_y;
+    double ****E_DO_z;
+
+    double ****B_DO_x;
+    double ****B_DO_y;
+    double ****B_DO_z;
+    
+    // here the moving average
+    
 
     double Fext;
 

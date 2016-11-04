@@ -1446,7 +1446,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
     if (!GC){
       // no particles in GC
       while (particles_index < nplast+1) {
-	if (x[particles_index] < NC*dx){ //2 *dx ) {
+	if (x[particles_index] < 2 *dx ) {
 	  del_pack(particles_index,&nplast);
 	} else {
 	  particles_index++;
@@ -1458,7 +1458,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
 	
         if (x[p] > 2*dx and x[p]< 4*dx ){
 	//if (x[p] > NC*dx and x[p]< 2*NC*dx ){
-	  x[nop]= x[p]-NC*dx; //2*dx;
+	  x[nop]= x[p]-2*dx;
 	  y[nop]= y[p];
 	  z[nop]= z[p];
 	  //QUI
@@ -1543,7 +1543,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
       {
 	// no particles in ghost cells
 	while (particles_index < nplast+1) {
-	  if (x[particles_index] > (Lx- NC*dx)){ //2.0*dx) ) {
+	  if (x[particles_index] > (Lx-2.0*dx) ) {
 	    del_pack(particles_index,&nplast);
 	  } else {
 	    particles_index++;
@@ -1557,7 +1557,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
 	  
 	  if (x[p] > Lx-4*dx and x[p]<Lx-2*dx){
 	  //if (x[p] > Lx-2*NC*dx and x[p]<Lx-NC*dx){
-	    x[nop]= x[p]+NC*dx;//2*dx;
+	    x[nop]= x[p]+2*dx;
 	    y[nop]= y[p];
 	    z[nop]= z[p];
 

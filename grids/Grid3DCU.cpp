@@ -495,3 +495,36 @@ double Grid3DCU::getZend() {
 double Grid3DCU::getInvVOL() {
   return (invVOL);
 }
+
+void Grid3DCU::divSymmTensorN2C(double ***divCX, double ***divCY, double ***divCZ, double ***pXX, double ***pXY, double ***pXZ, double ***pYY, double ***pYZ, double ***pZZ) {
+
+  double comp1X, comp2X, comp3X;
+  double comp1Y, comp2Y, comp3Y;
+  double comp1Z, comp2Z, comp3Z;
+  for (register int i = 1; i < nxc - 1; i++)
+    for (register int j = 1; j < nyc - 1; j++)
+      for (register int k = 1; k < nzc - 1; k++) {
+        comp1X = .25 * (pXX[i + 1][j][k] - pXX[i][j][k]) * invdx + .25 * (pXX[i + 1][j][k + 1] - pXX[i][j][k + 1]) * invdx + .25 * (pXX[i + 1][j + 1][k] - pXX[i][j + 1][k]) * invdx + .25 * (pXX[i + 1][j + 1][k + 1] - pXX[i][j + 1][k + 1]) * invdx;
+        comp2X = .25 * (pXY[i + 1][j][k] - pXY[i][j][k]) * invdx + .25 * (pXY[i + 1][j][k + 1] - pXY[i][j][k + 1]) * invdx + .25 * (pXY[i + 1][j + 1][k] - pXY[i][j + 1][k]) * invdx + .25 * (pXY[i + 1][j + 1][k + 1] - pXY[i][j + 1][k + 1]) * invdx;
+        comp3X = .25 * (pXZ[i + 1][j][k] - pXZ[i][j][k]) * invdx + .25 * (pXZ[i + 1][j][k + 1] - pXZ[i][j][k + 1]) * invdx + .25 * (pXZ[i + 1][j + 1][k] - pXZ[i][j + 1][k]) * invdx + .25 * (pXZ[i + 1][j + 1][k + 1] - pXZ[i][j + 1][k + 1]) * invdx;
+        comp1Y = .25 * (pXY[i][j + 1][k] - pXY[i][j][k]) * invdy + .25 * (pXY[i][j + 1][k + 1] - pXY[i][j][k + 1]) * invdy + .25 * (pXY[i + 1][j + 1][k] - pXY[i + 1][j][k]) * invdy + .25 * (pXY[i + 1][j + 1][k + 1] - pXY[i + 1][j][k + 1]) * invdy;
+        comp2Y = .25 * (pYY[i][j + 1][k] - pYY[i][j][k]) * invdy + .25 * (pYY[i][j + 1][k + 1] - pYY[i][j][k + 1]) * invdy + .25 * (pYY[i + 1][j + 1][k] - pYY[i + 1][j][k]) * invdy + .25 * (pYY[i + 1][j + 1][k + 1] - pYY[i + 1][j][k + 1]) * invdy;
+        comp3Y = .25 * (pYZ[i][j + 1][k] - pYZ[i][j][k]) * invdy + .25 * (pYZ[i][j + 1][k + 1] - pYZ[i][j][k + 1]) * invdy + .25 * (pYZ[i + 1][j + 1][k] - pYZ[i + 1][j][k]) * invdy + .25 * (pYZ[i + 1][j + 1][k + 1] - pYZ[i + 1][j][k + 1]) * invdy;
+        comp1Z = .25 * (pXZ[i][j][k + 1] - pXZ[i][j][k]) * invdz + .25 * (pXZ[i + 1][j][k + 1] - pXZ[i + 1][j][k]) * invdz + .25 * (pXZ[i][j + 1][k + 1] - pXZ[i][j + 1][k]) * invdz + .25 * (pXZ[i + 1][j + 1][k + 1] - pXZ[i + 1][j + 1][k]) * invdz;
+        comp2Z = .25 * (pYZ[i][j][k + 1] - pYZ[i][j][k]) * invdz + .25 * (pYZ[i + 1][j][k + 1] - pYZ[i + 1][j][k]) * invdz + .25 * (pYZ[i][j + 1][k + 1] - pYZ[i][j + 1][k]) * invdz + .25 * (pYZ[i + 1][j + 1][k + 1] - pYZ[i + 1][j + 1][k]) * invdz;
+        comp3Z = .25 * (pZZ[i][j][k + 1] - pZZ[i][j][k]) * invdz + .25 * (pZZ[i + 1][j][k + 1] - pZZ[i + 1][j][k]) * invdz + .25 * (pZZ[i][j + 1][k + 1] - pZZ[i][j + 1][k]) * invdz + .25 * (pZZ[i + 1][j + 1][k + 1] - pZZ[i + 1][j + 1][k]) * invdz;
+
+	// ME: this is wrong: corrected
+        /*divCX[i][j][k] = comp1X + comp2X + comp3X;
+        divCY[i][j][k] = comp1Y + comp2Y + comp3Y;
+        divCZ[i][j][k] = comp1Z + comp2Z + comp3Z;*/
+
+
+	divCX[i][j][k] = comp1X + comp1Y + comp1Z;
+        divCY[i][j][k] = comp2X + comp2Y + comp2Z;
+        divCZ[i][j][k] = comp3X + comp3Y + comp3Z;
+
+      }
+
+
+}

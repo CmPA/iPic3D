@@ -131,6 +131,100 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   pYYsn = newArr4(double, ns, nxn, nyn, nzn);
   pYZsn = newArr4(double, ns, nxn, nyn, nzn);
   pZZsn = newArr4(double, ns, nxn, nyn, nzn);
+  
+   // for inertial term in Ohm's law
+  // Moving Average
+  // 'new value'
+  dVex_dt_ACC = newArr3(double, nxn, nyn, nzn);
+  dVey_dt_ACC = newArr3(double, nxn, nyn, nzn);
+  dVez_dt_ACC = newArr3(double, nxn, nyn, nzn);
+
+  T1_NV_x = newArr3(double, nxn, nyn, nzn);
+  T1_NV_y = newArr3(double, nxn, nyn, nzn);
+  T1_NV_z = newArr3(double, nxn, nyn, nzn);
+
+  T2_NV_x = newArr3(double, nxn, nyn, nzn);
+  T2_NV_y = newArr3(double, nxn, nyn, nzn);
+  T2_NV_z = newArr3(double, nxn, nyn, nzn);
+
+  T3_NV_x = newArr3(double, nxn, nyn, nzn);
+  T3_NV_y = newArr3(double, nxn, nyn, nzn);
+  T3_NV_z = newArr3(double, nxn, nyn, nzn);
+
+  T4_NV_x = newArr3(double, nxn, nyn, nzn);
+  T4_NV_y = newArr3(double, nxn, nyn, nzn);
+  T4_NV_z = newArr3(double, nxn, nyn, nzn);
+
+  Je_NV_x = newArr3(double, nxn, nyn, nzn);
+  Je_NV_y = newArr3(double, nxn, nyn, nzn);
+  Je_NV_z = newArr3(double, nxn, nyn, nzn);
+
+  rhoe_NV = newArr3(double, nxn, nyn, nzn);
+
+  // MA 
+  T1_MA_x = newArr3(double, nxn, nyn, nzn);
+  T1_MA_y = newArr3(double, nxn, nyn, nzn);
+  T1_MA_z = newArr3(double, nxn, nyn, nzn);
+
+  T2_MA_x = newArr3(double, nxn, nyn, nzn);
+  T2_MA_y = newArr3(double, nxn, nyn, nzn);
+  T2_MA_z = newArr3(double, nxn, nyn, nzn);
+
+  T3_MA_x = newArr3(double, nxn, nyn, nzn);
+  T3_MA_y = newArr3(double, nxn, nyn, nzn);
+  T3_MA_z = newArr3(double, nxn, nyn, nzn);
+
+  T4_MA_x = newArr3(double, nxn, nyn, nzn);
+  T4_MA_y = newArr3(double, nxn, nyn, nzn);
+  T4_MA_z = newArr3(double, nxn, nyn, nzn);
+
+  Je_MA_x = newArr3(double, nxn, nyn, nzn);
+  Je_MA_y = newArr3(double, nxn, nyn, nzn);
+  Je_MA_z = newArr3(double, nxn, nyn, nzn);
+
+  E_MA_x = newArr3(double, nxn, nyn, nzn);
+  E_MA_y = newArr3(double, nxn, nyn, nzn);
+  E_MA_z = newArr3(double, nxn, nyn, nzn);
+
+  B_MA_x = newArr3(double, nxn, nyn, nzn);
+  B_MA_y = newArr3(double, nxn, nyn, nzn);
+  B_MA_z = newArr3(double, nxn, nyn, nzn);
+
+  rhoe_MA = newArr3(double, nxn, nyn, nzn);
+  
+  // DO values
+  DOI= 50;
+
+  T1_DO_x = newArr4(double, DOI, nxn, nyn, nzn);
+  T1_DO_y = newArr4(double, DOI, nxn, nyn, nzn);
+  T1_DO_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  T2_DO_x = newArr4(double, DOI, nxn, nyn, nzn);
+  T2_DO_y = newArr4(double, DOI, nxn, nyn, nzn);
+  T2_DO_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  T3_DO_x = newArr4(double, DOI, nxn, nyn, nzn);
+  T3_DO_y = newArr4(double, DOI, nxn, nyn, nzn);
+  T3_DO_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  T4_DO_x = newArr4(double, DOI, nxn, nyn, nzn);
+  T4_DO_y = newArr4(double, DOI, nxn, nyn, nzn);
+  T4_DO_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  Je_DO_x = newArr4(double, DOI, nxn, nyn, nzn);
+  Je_DO_y = newArr4(double, DOI, nxn, nyn, nzn);
+  Je_DO_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  E_DO_x = newArr4(double, DOI, nxn, nyn, nzn);
+  E_DO_y = newArr4(double, DOI, nxn, nyn, nzn);
+  E_DO_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  B_DO_x = newArr4(double, DOI, nxn, nyn, nzn);
+  B_DO_y = newArr4(double, DOI, nxn, nyn, nzn);
+  B_DO_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  rhoe_DO = newArr4(double, DOI, nxn, nyn, nzn); // for inertial term in Ohm's law
+    
   // arrays allocation: central points 
   PHI = newArr3(double, nxc, nyc, nzc);
   Bxc = newArr3(double, nxc, nyc, nzc);
@@ -167,6 +261,42 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   arr = newArr3(double,nxn,nyn,nzn);
 
   Lambda = newArr3(double, nxn, nyn, nzn);
+  
+  // for Ohm
+  eqValue(0.0, dVex_dt_ACC, nxn, nyn, nzn);
+  eqValue(0.0, dVey_dt_ACC, nxn, nyn, nzn);
+  eqValue(0.0, dVez_dt_ACC, nxn, nyn, nzn);
+
+  eqValue(0.0, T1_MA_x, nxn, nyn, nzn);
+  eqValue(0.0, T1_MA_y, nxn, nyn, nzn);
+  eqValue(0.0, T1_MA_z, nxn, nyn, nzn);
+
+  eqValue(0.0, T2_MA_x, nxn, nyn, nzn);
+  eqValue(0.0, T2_MA_y, nxn, nyn, nzn);
+  eqValue(0.0, T2_MA_z, nxn, nyn, nzn);
+
+  eqValue(0.0, T3_MA_x, nxn, nyn, nzn);
+  eqValue(0.0, T3_MA_y, nxn, nyn, nzn);
+  eqValue(0.0, T3_MA_z, nxn, nyn, nzn);
+
+  eqValue(0.0, T4_MA_x, nxn, nyn, nzn);
+  eqValue(0.0, T4_MA_y, nxn, nyn, nzn);
+  eqValue(0.0, T4_MA_z, nxn, nyn, nzn);
+
+  eqValue(0.0, Je_MA_x, nxn, nyn, nzn);
+  eqValue(0.0, Je_MA_y, nxn, nyn, nzn);
+  eqValue(0.0, Je_MA_z, nxn, nyn, nzn);
+
+  eqValue(0.0, rhoe_MA, nxn, nyn, nzn);
+
+  eqValue(0.0, E_MA_x, nxn, nyn, nzn);
+  eqValue(0.0, E_MA_y, nxn, nyn, nzn);
+  eqValue(0.0, E_MA_z, nxn, nyn, nzn);
+
+  eqValue(0.0, B_MA_x, nxn, nyn, nzn);
+  eqValue(0.0, B_MA_y, nxn, nyn, nzn);
+  eqValue(0.0, B_MA_z, nxn, nyn, nzn);
+
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -234,8 +364,8 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
 
   // apply to smooth to electric field 3 times
   smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
+  //smoothE(Smooth, vct, col);
+  //smoothE(Smooth, vct, col);
 
   // communicate so the interpolation can have good values
   communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
@@ -1740,19 +1870,17 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
     for (int is = 0; is < ns; is++)
       grid->interpN2C(rhocs, is, rhons);
 
-    ;
+    
     for (int i=0; i < nxn; i++)                   
       for (int j=0; j < nyn; j++)                               
-	for (int k=0; k < nzn; k++){                              
-	  Lambda[i][j][k]  = 0.0;    
-	  //if (grid->getYN(i,j,k)< Ly/2-1.5 or grid->getYN(i,j,k)> Ly/2+1.5 ){ Lambda[i][j][k]=2.0 * M_PI / dx;}
-
-	  double d= fabs(grid->getYN(i,j,k) -Ly/2)/dy;
-	  Lambda[i][j][k]= 2.0 * M_PI / dy *d/(nyn/2);
-	  
-	  }  
+	for (int k=0; k < nzn; k++){                          
+	  //double yC= (grid->getYN(i, j, k) - Ly / 2)/ (Ly/2); Lambda[i][j][k]= 2.0 * M_PI / dy * yC*yC*yC;
+	  double yC=  (grid->getYN(i, j, k) - Ly / 2)/ (10*delta); Lambda[i][j][k]=2.0 * M_PI / dy* fabs(tanh(yC));
+	  if (i==1 and k==1){ cout << "grid->getYN(i, j, k): " << grid->getYN(i, j, k) << ", Lambda: " << Lambda[i][j][k]<< endl; }
+	}  
     if (vct->getCartesian_rank() == 0)
-      {cout << "Lambda linarly increasing for Ly/2 to boundaries " << endl;}
+      //{cout << "Lambda as y^3" <<", 2.0 * M_PI / dy=" << 2.0 * M_PI / dy << endl;}
+      {cout << "Lambda as abs(tanh), with 3 delta" <<", 2.0 * M_PI / dy=" << 2.0 * M_PI / dy << endl;} 
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
@@ -3630,6 +3758,80 @@ double ***EMfields3D::getJz() {
 double ****EMfields3D::getJxs() {
   return (Jxs);
 }
+
+//
+double ***EMfields3D::getT1_MA_x() {
+  return (T1_MA_x);
+}
+double ***EMfields3D::getT1_MA_y() {
+  return (T1_MA_y);
+}
+double ***EMfields3D::getT1_MA_z() {
+  return (T1_MA_z);
+}
+
+double ***EMfields3D::getT2_MA_x() {
+  return (T2_MA_x);
+}
+double ***EMfields3D::getT2_MA_y() {
+  return (T2_MA_y);
+}
+double ***EMfields3D::getT2_MA_z() {
+  return (T2_MA_z);
+}
+
+double ***EMfields3D::getT3_MA_x() {
+  return (T3_MA_x);
+}
+double ***EMfields3D::getT3_MA_y() {
+  return (T3_MA_y);
+}
+double ***EMfields3D::getT3_MA_z() {
+  return (T3_MA_z);
+}
+
+double ***EMfields3D::getT4_MA_x() {
+  return (T4_MA_x);
+}
+double ***EMfields3D::getT4_MA_y() {
+  return (T4_MA_y);
+}
+double ***EMfields3D::getT4_MA_z() {
+  return (T4_MA_z);
+}
+
+double ***EMfields3D::getJe_MA_x() {
+  return (Je_MA_x);
+}
+double ***EMfields3D::getJe_MA_y() {
+  return (Je_MA_y);
+}
+double ***EMfields3D::getJe_MA_z() {
+  return (Je_MA_z);
+}
+double ***EMfields3D::getRhoe_MA() {
+  return (rhoe_MA);
+}
+double ***EMfields3D::getE_MA_x() {
+  return (E_MA_x);
+}
+double ***EMfields3D::getE_MA_y() {
+  return (E_MA_y);
+}
+double ***EMfields3D::getE_MA_z() {
+  return (E_MA_z);
+}
+double ***EMfields3D::getB_MA_x() {
+  return (B_MA_x);
+}
+double ***EMfields3D::getB_MA_y() {
+  return (B_MA_y);
+}
+double ***EMfields3D::getB_MA_z() {
+  return (B_MA_z);
+}
+//
+
 double ***& EMfields3D::getJxs(int is) {
   return (Jxs[is]);
 }
@@ -4312,4 +4514,321 @@ void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective 
   else {
     init(vct, grid, col);            // use the fields from restart file
   }
+}
+
+void EMfields3D::setDT_counter(int cc){
+  DT_counter=cc;
+}
+
+void EMfields3D::Ohm_Law(VirtualTopology3D * vct, Grid * grid){
+  if (DT_counter <0) return;
+  // the next part to be done only while cycling, NOT at first Gatehr moment
+  
+  if(vct->getCartesian_rank() == 0 ){
+    cout << "DT_counter: " << DT_counter << endl;
+    cout << "DOI: "<< DOI << endl;
+    cout << "DT_counter% DOI: " << DT_counter% DOI << endl;
+
+  }
+
+  // I need V interpolated on the center
+  double ***VxC=  newArr3(double,  nxc, nyc, nzc);
+  double ***VyC=  newArr3(double,  nxc, nyc, nzc);
+  double ***VzC=  newArr3(double,  nxc, nyc, nzc);
+
+  double ***Vex= newArr3(double,  nxn, nyn, nzn);
+  double ***Vey= newArr3(double,  nxn, nyn, nzn);
+  double ***Vez= newArr3(double,  nxn, nyn, nzn);
+
+  double ***dVx_dx= newArr3(double,  nxc, nyc, nzc);
+  double ***dVy_dx= newArr3(double,  nxc, nyc, nzc);
+  double ***dVz_dx= newArr3(double,  nxc, nyc, nzc);
+
+  double ***dVx_dy= newArr3(double,  nxc, nyc, nzc);
+  double ***dVy_dy= newArr3(double,  nxc, nyc, nzc);
+  double ***dVz_dy= newArr3(double,  nxc, nyc, nzc);
+
+  double ***dVx_dz= newArr3(double,  nxc, nyc, nzc);
+  double ***dVy_dz= newArr3(double,  nxc, nyc, nzc);
+  double ***dVz_dz= newArr3(double,  nxc, nyc, nzc);
+
+  double ***T2_xC= newArr3(double,  nxc, nyc, nzc);
+  double ***T2_yC= newArr3(double,  nxc, nyc, nzc);
+  double ***T2_zC= newArr3(double,  nxc, nyc, nzc); 
+
+  // total electron pressure
+  double ***Pexx= newArr3(double,  nxn, nyn, nzn);
+  double ***Pexy= newArr3(double,  nxn, nyn, nzn);
+  double ***Pexz= newArr3(double,  nxn, nyn, nzn);
+  double ***Peyy= newArr3(double,  nxn, nyn, nzn);
+  double ***Peyz= newArr3(double,  nxn, nyn, nzn);
+  double ***Pezz= newArr3(double,  nxn, nyn, nzn);
+
+  // Je
+  eqValue(0.0, Je_NV_x, nxn, nyn, nzn);
+  eqValue(0.0, Je_NV_y, nxn, nyn, nzn);
+  eqValue(0.0, Je_NV_z, nxn, nyn, nzn);
+
+  // rhoe
+  eqValue(0.0, rhoe_NV, nxn, nyn, nzn);
+  
+  for (int is=0; is<ns; is++){
+    if (qom[is]>0 ) continue; // do not accumulate ions
+
+    /*if (vct->getCartesian_rank() == 0)
+      cout << "Summing electron moments, is= " << is <<", qom= " << qom[is]  << endl;*/
+    
+    sum(Je_NV_x, Jxs[is], nxn, nyn, nzn);
+    sum(Je_NV_y, Jys[is], nxn, nyn, nzn);
+    sum(Je_NV_z, Jzs[is], nxn, nyn, nzn);
+
+    sum(rhoe_NV, rhons[is], nxn, nyn, nzn);
+
+  }
+
+  
+  // division point by point
+  divPBP(Vex, Je_NV_x, rhoe_NV, nxn, nyn, nzn);
+  divPBP(Vey, Je_NV_y, rhoe_NV, nxn, nyn, nzn);
+  divPBP(Vez, Je_NV_z, rhoe_NV, nxn, nyn, nzn);
+
+  
+  // Ve, N2C
+  grid->interpN2C(VxC, Vex);
+  grid->interpN2C(VyC, Vey);
+  grid->interpN2C(VzC, Vez);
+
+  grid->gradN2C(dVx_dx, dVx_dy, dVx_dz, Vex);
+  grid->gradN2C(dVy_dx, dVy_dy, dVy_dz, Vey);
+  grid->gradN2C(dVz_dx, dVz_dy, dVz_dz, Vez);
+
+  
+  double qom_E;
+  for (int is=0; is <ns; is ++){
+    if (qom[is]<0){
+      qom_E= qom[is];
+      break;
+    }
+  }
+
+  /*if (vct->getCartesian_rank() == 0)
+    cout  <<"qom_E= " << qom_E  << endl;*/
+
+  for (int i=1; i< nxc-1; i++)
+    for (int j=1; j< nyc-1; j++)
+      for (int k=1; k<nzc-1; k++){
+        T2_xC[i][j][k]=1./qom_E* (VxC[i][j][k]*dVx_dx[i][j][k] + VyC[i][j][k]*dVx_dy[i][j][k] + VzC[i][j][k]*dVx_dz[i][j][k]);
+        T2_yC[i][j][k]=1./qom_E* (VxC[i][j][k]*dVy_dx[i][j][k] + VyC[i][j][k]*dVy_dy[i][j][k] + VzC[i][j][k]*dVy_dz[i][j][k]);
+        T2_zC[i][j][k]=1./qom_E* (VxC[i][j][k]*dVz_dx[i][j][k] + VyC[i][j][k]*dVz_dy[i][j][k] + VzC[i][j][k]*dVz_dz[i][j][k]);
+      }
+
+  
+  communicateCenterBC_P(nxc, nyc, nzc, T2_xC, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC_P(nxc, nyc, nzc, T2_yC, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC_P(nxc, nyc, nzc, T2_zC, 2, 2, 2, 2, 2, 2, vct);
+
+  grid->interpC2N(T2_NV_x, T2_xC);
+  grid->interpC2N(T2_NV_y, T2_yC);
+  grid->interpC2N(T2_NV_z, T2_zC);
+
+  // I need the total electron pressure
+  eqValue(0.0, Pexx, nxn, nyn, nzn);
+  eqValue(0.0, Pexy, nxn, nyn, nzn);
+  eqValue(0.0, Pexz, nxn, nyn, nzn);
+  eqValue(0.0, Peyy, nxn, nyn, nzn);
+  eqValue(0.0, Peyz, nxn, nyn, nzn);
+  eqValue(0.0, Pezz, nxn, nyn, nzn);
+
+  for (int is=0; is< ns; is++){
+    if (qom[is]>0 ) continue; // accumulate only electrons
+
+    sum(Pexx, pXXsn[is], nxn, nyn, nzn);
+    sum(Pexy, pXYsn[is], nxn, nyn, nzn);
+    sum(Pexz, pXZsn[is], nxn, nyn, nzn);
+    sum(Peyy, pYYsn[is], nxn, nyn, nzn);
+    sum(Peyz, pYZsn[is], nxn, nyn, nzn);
+    sum(Pezz, pZZsn[is], nxn, nyn, nzn);
+  }
+
+  //// REMOVE THE DRIFT TERM  
+  //cout << "removing drift " << endl;
+  for (int i=0; i< nxn; i++)
+    for (int j=0; j< nyn; j++)
+      for (int k=0; k<nzn; k++){
+	Pexx[i][j][k]= (Pexx[i][j][k]- Je_NV_x[i][j][k]*Je_NV_x[i][j][k]/ rhoe_NV[i][j][k])/qom_E;
+	Pexy[i][j][k]= (Pexy[i][j][k]- Je_NV_x[i][j][k]*Je_NV_y[i][j][k]/ rhoe_NV[i][j][k])/qom_E;
+	Pexz[i][j][k]= (Pexz[i][j][k]- Je_NV_x[i][j][k]*Je_NV_z[i][j][k]/ rhoe_NV[i][j][k])/qom_E;
+	Peyy[i][j][k]= (Peyy[i][j][k]- Je_NV_y[i][j][k]*Je_NV_y[i][j][k]/ rhoe_NV[i][j][k])/qom_E;
+	Peyz[i][j][k]= (Peyz[i][j][k]- Je_NV_y[i][j][k]*Je_NV_z[i][j][k]/ rhoe_NV[i][j][k])/qom_E;
+	Pezz[i][j][k]= (Pezz[i][j][k]- Je_NV_z[i][j][k]*Je_NV_z[i][j][k]/ rhoe_NV[i][j][k])/qom_E;
+      }
+  
+  
+  grid->divSymmTensorN2C(tempXC, tempYC, tempZC, Pexx, Pexy, Pexz, Peyy, Peyz, Pezz);
+
+
+  // copied from J hat
+  communicateCenterBC_P(nxc, nyc, nzc, tempXC, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC_P(nxc, nyc, nzc, tempYC, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC_P(nxc, nyc, nzc, tempZC, 2, 2, 2, 2, 2, 2, vct);
+
+  grid->interpC2N(T3_NV_x, tempXC); // after _GC, now first/ last active node is good             
+  grid->interpC2N(T3_NV_y, tempYC);
+  grid->interpC2N(T3_NV_z, tempZC);
+
+  // end copied from J hat
+
+  divPBP(T3_NV_x, T3_NV_x, rhoe_NV, nxn, nyn, nzn);
+  divPBP(T3_NV_y, T3_NV_y, rhoe_NV, nxn, nyn, nzn);
+  divPBP(T3_NV_z, T3_NV_z, rhoe_NV, nxn, nyn, nzn);
+
+  // NB: after extraction of the thermal pressure, Pe is positive, so the - is in the density
+  // - is not needed anymore
+
+  for (register int i = 0; i < nxn; i++)
+    for (register int j = 0; j < nyn; j++)
+      for (register int k = 0; k < nzn; k++) {
+	// first calculate time derivative
+	T1_NV_x[i][j][k]= (Vex[i][j][k]- dVex_dt_ACC[i][j][k])/dt;
+	T1_NV_y[i][j][k]= (Vey[i][j][k]- dVey_dt_ACC[i][j][k])/dt;
+	T1_NV_z[i][j][k]= (Vez[i][j][k]- dVez_dt_ACC[i][j][k])/dt;
+
+	// then accumulate old value for next cycle
+	dVex_dt_ACC[i][j][k] = Vex[i][j][k];
+	dVey_dt_ACC[i][j][k] = Vey[i][j][k];
+	dVez_dt_ACC[i][j][k] = Vez[i][j][k];
+      }
+
+  scale(T1_NV_x, (1./qom_E), nxn, nyn, nzn);
+  scale(T1_NV_y, (1./qom_E), nxn, nyn, nzn);
+  scale(T1_NV_z, (1./qom_E), nxn, nyn, nzn);
+
+  // T4
+  // - Ve x B = B x Ve
+  cross(T4_NV_x, T4_NV_y, T4_NV_z, Bxn, Byn, Bzn, Vex, Vey, Vez, nxn, nyn, nzn);
+
+  /// SMOOTH THE NEW VALUE
+  smooth(Smooth, T1_NV_x, 1, grid, vct); 
+  smooth(Smooth, T1_NV_y, 1, grid, vct);
+  smooth(Smooth, T1_NV_z, 1, grid, vct);
+
+  smooth(Smooth, T2_NV_x, 1, grid, vct); 
+  smooth(Smooth, T2_NV_y, 1, grid, vct);
+  smooth(Smooth, T2_NV_z, 1, grid, vct);
+
+  smooth(Smooth, T3_NV_x, 1, grid, vct); 
+  smooth(Smooth, T3_NV_y, 1, grid, vct);
+  smooth(Smooth, T3_NV_z, 1, grid, vct);
+
+  smooth(Smooth, T4_NV_x, 1, grid, vct); 
+  smooth(Smooth, T4_NV_y, 1, grid, vct);
+  smooth(Smooth, T4_NV_z, 1, grid, vct);
+
+  smooth(Smooth, rhoe_NV, 1, grid, vct);
+
+  smooth(Smooth, Je_NV_x, 1, grid, vct);
+  smooth(Smooth, Je_NV_y, 1, grid, vct);
+  smooth(Smooth, Je_NV_z, 1, grid, vct);
+
+  // I do not need to smooth E, B usually is already smooth enough
+
+  /// END SMOOTH THE NEW VALUE 
+
+  
+  // Simple Moving Aeverage
+  int nn= DT_counter% DOI;
+
+  SMA(T1_MA_x, T1_NV_x, T1_DO_x[nn], DOI, nxn, nyn, nzn);
+  SMA(T1_MA_y, T1_NV_y, T1_DO_y[nn], DOI, nxn, nyn, nzn);
+  SMA(T1_MA_z, T1_NV_z, T1_DO_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(T2_MA_x, T2_NV_x, T2_DO_x[nn], DOI, nxn, nyn, nzn);
+  SMA(T2_MA_y, T2_NV_y, T2_DO_y[nn], DOI, nxn, nyn, nzn);
+  SMA(T2_MA_z, T2_NV_z, T2_DO_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(T3_MA_x, T3_NV_x, T3_DO_x[nn], DOI, nxn, nyn, nzn);
+  SMA(T3_MA_y, T3_NV_y, T3_DO_y[nn], DOI, nxn, nyn, nzn);
+  SMA(T3_MA_z, T3_NV_z, T3_DO_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(T4_MA_x, T4_NV_x, T4_DO_x[nn], DOI, nxn, nyn, nzn);
+  SMA(T4_MA_y, T4_NV_y, T4_DO_y[nn], DOI, nxn, nyn, nzn);
+  SMA(T4_MA_z, T4_NV_z, T4_DO_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(Je_MA_x, Je_NV_x, Je_DO_x[nn], DOI, nxn, nyn, nzn);
+  SMA(Je_MA_y, Je_NV_y, Je_DO_y[nn], DOI, nxn, nyn, nzn);
+  SMA(Je_MA_z, Je_NV_z, Je_DO_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(rhoe_MA, rhoe_NV, rhoe_DO[nn], DOI, nxn, nyn, nzn);
+
+  SMA(E_MA_x, Ex, E_DO_x[nn], DOI, nxn, nyn, nzn);
+  SMA(E_MA_y, Ey, E_DO_y[nn], DOI, nxn, nyn, nzn);
+  SMA(E_MA_z, Ez, E_DO_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(B_MA_x, Bxn, B_DO_x[nn], DOI, nxn, nyn, nzn);
+  SMA(B_MA_y, Byn, B_DO_y[nn], DOI, nxn, nyn, nzn);
+  SMA(B_MA_z, Bzn, B_DO_z[nn], DOI, nxn, nyn, nzn);
+  
+  // set DO
+  eq(T1_DO_x[nn], T1_NV_x, nxn, nyn, nzn);
+  eq(T1_DO_y[nn], T1_NV_y, nxn, nyn, nzn);
+  eq(T1_DO_z[nn], T1_NV_z, nxn, nyn, nzn);
+
+  eq(T2_DO_x[nn], T2_NV_x, nxn, nyn, nzn);
+  eq(T2_DO_y[nn], T2_NV_y, nxn, nyn, nzn);
+  eq(T2_DO_z[nn], T2_NV_z, nxn, nyn, nzn);
+
+  eq(T3_DO_x[nn], T3_NV_x, nxn, nyn, nzn);
+  eq(T3_DO_y[nn], T3_NV_y, nxn, nyn, nzn);
+  eq(T3_DO_z[nn], T3_NV_z, nxn, nyn, nzn);
+  
+  eq(T4_DO_x[nn], T4_NV_x, nxn, nyn, nzn);
+  eq(T4_DO_y[nn], T4_NV_y, nxn, nyn, nzn);
+  eq(T4_DO_z[nn], T4_NV_z, nxn, nyn, nzn);
+
+  eq(Je_DO_x[nn], Je_NV_x, nxn, nyn, nzn);
+  eq(Je_DO_y[nn], Je_NV_y, nxn, nyn, nzn);
+  eq(Je_DO_z[nn], Je_NV_z, nxn, nyn, nzn);
+
+  eq(rhoe_DO[nn], rhoe_NV, nxn, nyn, nzn);
+
+  eq(E_DO_x[nn], Ex, nxn, nyn, nzn);
+  eq(E_DO_y[nn], Ey, nxn, nyn, nzn);
+  eq(E_DO_z[nn], Ez, nxn, nyn, nzn);
+
+  eq(B_DO_x[nn], Bxn, nxn, nyn, nzn);
+  eq(B_DO_y[nn], Byn, nxn, nyn, nzn);
+  eq(B_DO_z[nn], Bzn, nxn, nyn, nzn);
+
+  delArr3(Vex, nxn, nyn);
+  delArr3(Vey, nxn, nyn);
+  delArr3(Vez, nxn, nyn);
+
+  delArr3(VxC, nxc, nyc);
+  delArr3(VyC, nxc, nyc);
+  delArr3(VzC, nxc, nyc);
+
+  delArr3(dVx_dx, nxc, nyc);
+  delArr3(dVx_dy, nxc, nyc);
+  delArr3(dVx_dz, nxc, nyc);
+
+  delArr3(dVy_dx, nxc, nyc);
+  delArr3(dVy_dy, nxc, nyc);
+  delArr3(dVy_dz, nxc, nyc);
+
+  delArr3(dVz_dx, nxc, nyc);
+  delArr3(dVz_dy, nxc, nyc);
+  delArr3(dVz_dz, nxc, nyc);
+
+  delArr3(T2_xC, nxc, nyc);
+  delArr3(T2_yC, nxc, nyc);
+  delArr3(T2_zC, nxc, nyc);
+
+  delArr3(Pexx, nxn, nyn);
+  delArr3(Pexy, nxn, nyn);
+  delArr3(Pexz, nxn, nyn);
+  delArr3(Peyy, nxn, nyn);
+  delArr3(Peyz, nxn, nyn);
+  delArr3(Pezz, nxn, nyn);
+
+  return;
 }
