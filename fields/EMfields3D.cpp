@@ -1880,7 +1880,7 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
 	}  
     if (vct->getCartesian_rank() == 0)
       //{cout << "Lambda as y^3" <<", 2.0 * M_PI / dy=" << 2.0 * M_PI / dy << endl;}
-      {cout << "Lambda as abs(tanh), with 3 delta" <<", 2.0 * M_PI / dy=" << 2.0 * M_PI / dy << endl;} 
+      {cout << "Lambda as abs(tanh), with 10 delta" <<", 2.0 * M_PI / dy=" << 2.0 * M_PI / dy << endl;} 
   }
   else {
     init(vct, grid, col);            // use the fields from restart file

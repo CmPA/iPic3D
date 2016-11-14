@@ -145,6 +145,7 @@ void Grid3DCU::divSymmTensorN2C(double ***divCX, double ***divCY, double ***divC
         divCY[i][j][k] = comp2X + comp2Y + comp2Z;
         divCZ[i][j][k] = comp3X + comp3Y + comp3Z;
       }
+  
 }
 
 /** calculate divergence on nodes, given a vector field defined on central points  */

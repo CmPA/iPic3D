@@ -655,9 +655,9 @@ Collective::Collective(int argc, char **argv) {
 
   ReadInput(inputfile);
 
-  if (nzc == 1) {Lz= 1.0;}
-  if (nyc == 1) {Ly= 1.0;}
-  if (nxc == 1) {Lx= 1.0;}
+  //if (nzc == 1) {Lz= 1.0;}
+  //if (nyc == 1) {Ly= 1.0;}
+  //if (nxc == 1) {Lx= 1.0;}
 
   /*! fourpi = 4 greek pi */
   fourpi = 16.0 * atan(1.0);
