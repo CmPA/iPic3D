@@ -37,6 +37,7 @@ file(
 file(
         GLOB
         src_files
+	${IPIC_HOME}/MonteCarloWrapper/*.f90
         ${IPIC_HOME}/ConfigFile/src/*.cpp
         ${IPIC_HOME}/PSKOutput3D/*.cpp
         ${IPIC_HOME}/bc/*.cpp
@@ -52,6 +53,7 @@ file(
         ${IPIC_HOME}/solvers/*.cpp
         ${IPIC_HOME}/utility/*.cpp
         ${IPIC_HOME}/main/iPic3Dlib.cpp
+	${IPIC_HOME}/MonteCarloWrapper/*.cpp	
 )
 
 #

@@ -12,6 +12,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "Grid.h"
 #include "Field.h"
 
+#include "MonteCarlo.h"
 /**
  * 
  * Abstract class for particles of the same species
@@ -23,12 +24,13 @@ developers: Stefano Markidis, Giovanni Lapenta
 
 
 class Particles {
+  friend class MonteCarlo;
 public:
   /** allocate particles */
   virtual void allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) = 0;
   /** interpolation Particle -> grid */
   virtual void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) = 0;
-
+  virtual void interpCollisions2G(MonteCarlo *MCC, Grid * grid, VirtualTopology3D * vct, int LatCheck, int cycle) = 0;
 
   /** get X-position array for all the particles */
   virtual double *getXall() const = 0;

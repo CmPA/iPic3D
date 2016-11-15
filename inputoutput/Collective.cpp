@@ -42,6 +42,8 @@ void Collective::ReadInput(string inputfile) {
 
     delta = config.read < double >("delta");
 
+    Collisions        = config.read<string>("Collisions");
+
     Case              = config.read<string>("Case");
     FieldsInit        = config.read<string>("FieldsInit");
     PartInit          = config.read<string>("PartInit");
@@ -280,6 +282,18 @@ void Collective::ReadInput(string inputfile) {
       w0[1] = w00.f;
     }
 
+    Gas= config.read < string > ("Gas");
+    GasT = config.read < double > ("GasT");
+    GasN = config.read < double > ("GasN");
+    DensityRatio = config.read < double > ("DensityRatio");
+    if (Collisions == "yes"){
+
+      if (DensityRatio >1.0){
+        cout << "DensityRatio must be <1.0, aborting ..." << endl;
+        abort();
+      }
+    }
+
     verbose = config.read < bool > ("verbose");
 
     // PHI Electrostatic Potential 
@@ -379,6 +393,13 @@ void Collective::ReadInput(string inputfile) {
     TrackParticleID[4] = TrackParticleID0.e;
   if (ns > 5)
     TrackParticleID[5] = TrackParticleID0.f;
+
+  if (Collisions== "yes"){
+    for (int is=0; is<ns; is++){
+      TrackParticleID[is]= 1;
+    }
+  }
+
 
   } catch (ConfigFile::key_not_found k) {
     std::cout << " ERROR: Key not found = " << k.key.c_str() << std::endl;
@@ -1131,4 +1152,24 @@ int Collective::getRestartOutputCycle() {
 /*! output of fields */
 int Collective::getDiagnosticsOutputCycle() {
   return (DiagnosticsOutputCycle);
+}
+
+/*! Collisions or not */
+string Collective::getCollisions() {
+  return (Collisions);
+}
+/*! which background Gas */
+string Collective::getGas() {
+  return (Gas);
+}
+/*! gas density in m-3*/
+double Collective::getGasN(){
+  return (GasN);
+}
+/*! gas temperature in K*/
+double Collective::getGasT(){
+  return (GasT);
+}
+double Collective::getDensityRatio(){
+  return (DensityRatio);
 }

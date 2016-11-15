@@ -1,8 +1,6 @@
 
 #include "iPic3D.h"
 
-using namespace iPic3D;
-
 int c_Solver::Init(int argc, char **argv) {
   // initialize MPI environment
   // nprocs = number of processors
@@ -368,7 +366,7 @@ void c_Solver::WriteConserved(int cycle) {
   //}
 }
 
-void c_Solver::WriteOutput(int cycle) {
+void c_Solver::WriteOutput(int cycle, MonteCarlo *MC) {
 
   if (col->getWriteMethod() == "h5hut") {
 
@@ -387,7 +385,12 @@ void c_Solver::WriteOutput(int cycle) {
     // OUTPUT to large file, called proc**
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("Eall + Ball + rhos + Jsall + pressure + inertia", cycle);
+
+      if (MC->getMonteCarloPlugIn()== "yes"){
+        output_mgr.output("Eall + Ball + rhos + Jsall + pressure + inertia +MC", cycle);
+      } else{
+        output_mgr.output("Eall + Ball + rhos + Jsall + pressure + inertia", cycle);
+      }
       // Pressure tensor is available
       hdf5_agent.close();
     }
@@ -434,4 +437,15 @@ void c_Solver::Finalize() {
   delete[]momentum;
   // close MPI
   mpi->finalize_mpi();
+}
+
+void c_Solver::WriteCollisionDiagnostics(MonteCarlo *MCC, int cycle){
+  if ( cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+
+    MCC->setZeroMCCDiagnostics();
+
+    for (int i = 0; i < ns; i++){
+      part[i].interpCollisions2G(MCC, grid, vct, cycle- col->getFieldOutputCycle(), cycle);
+    }
+  } // end check on cycle                                         
 }

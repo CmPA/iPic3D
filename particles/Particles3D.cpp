@@ -1753,7 +1753,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   // end open Daughton-like BC -- 3
 
   if (vct->getCartesian_rank()==0){
-    cout << "*** number of particles " << nop << " ***" << endl;
+    cout << "*** number of particles (core 0)" << nop << " ***" << endl;
   }
 
   //********************//

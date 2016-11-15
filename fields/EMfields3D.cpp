@@ -1876,11 +1876,11 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
 	for (int k=0; k < nzn; k++){                          
 	  //double yC= (grid->getYN(i, j, k) - Ly / 2)/ (Ly/2); Lambda[i][j][k]= 2.0 * M_PI / dy * yC*yC*yC;
 	  double yC=  (grid->getYN(i, j, k) - Ly / 2)/ (10*delta); Lambda[i][j][k]=2.0 * M_PI / dy* fabs(tanh(yC));
-	  if (i==1 and k==1){ cout << "grid->getYN(i, j, k): " << grid->getYN(i, j, k) << ", Lambda: " << Lambda[i][j][k]<< endl; }
+	  //if (i==1 and k==1){ cout << "grid->getYN(i, j, k): " << grid->getYN(i, j, k) << ", Lambda: " << Lambda[i][j][k]<< endl; }
 	}  
-    if (vct->getCartesian_rank() == 0)
+    /*if (vct->getCartesian_rank() == 0)
       //{cout << "Lambda as y^3" <<", 2.0 * M_PI / dy=" << 2.0 * M_PI / dy << endl;}
-      {cout << "Lambda as abs(tanh), with 10 delta" <<", 2.0 * M_PI / dy=" << 2.0 * M_PI / dy << endl;} 
+      {cout << "Lambda as abs(tanh), with 10 delta" <<", 2.0 * M_PI / dy=" << 2.0 * M_PI / dy << endl;} */
   }
   else {
     init(vct, grid, col);            // use the fields from restart file

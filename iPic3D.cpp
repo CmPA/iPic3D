@@ -2,11 +2,11 @@
 #include <iomanip>
 #include "iPic3D.h"
 
-using namespace iPic3D;
+#include "MonteCarlo.h"
 
 int main(int argc, char **argv) {
 
-  iPic3D::c_Solver KCode;
+  c_Solver KCode;
   bool b_err = false;
 
   /* ------------------------------ */
@@ -16,6 +16,8 @@ int main(int argc, char **argv) {
   KCode.Init(argc, argv);
   KCode.InjectBoundaryParticles();
   KCode.GatherMoments(-1);
+
+  MonteCarlo *MC= new MonteCarlo(&KCode);
 
   /* ------------ */
   /* 1- Main loop */
@@ -35,6 +37,11 @@ int main(int argc, char **argv) {
 
     b_err = KCode.ParticlesMover();
 
+    if (MC->getMonteCarloPlugIn()== "yes"){
+      MC->SelectCollidingParticles(&KCode);
+      MC->MCWrapper(&KCode, i);
+    }
+
     if (!b_err) KCode.CalculateBField();
     if (!b_err) KCode.GatherMoments(i);
     if ( b_err) i = KCode.LastCycle() + 1;
@@ -43,7 +50,12 @@ int main(int argc, char **argv) {
     /* 3- Output files */
     /* --------------- */
 
-    KCode.WriteOutput(i);
+    // MonteCarlo diagnostics - do this BEFORE printing                    
+    if (MC->getMonteCarloPlugIn()== "yes"){
+      KCode.WriteCollisionDiagnostics(MC, i);
+    }
+
+    KCode.WriteOutput(i, MC);
     KCode.WriteConserved(i);
     KCode.WriteRestart(i);
 

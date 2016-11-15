@@ -4,6 +4,85 @@
 
 #include <stdlib.h>
 
+/* ME: allocator for 5D arrays -
+   I need it for simple moving average for Ohm */
+
+template < class type > type ***** _new_5_array(int sz1, int sz2, int sz3, int sz4, int sz5) {
+
+  type *****all_x;
+  type ****all_y;
+  type ***all_z;
+  type **all_r;
+  type *all_b;
+
+  all_x = new type ****[sz1];
+  all_y = new type ***[sz1 * sz2];
+  all_z = new type **[sz1 * sz2 * sz3];
+  all_r = new type *[sz1 * sz2 * sz3 * sz4];
+  all_b = new type [sz1 * sz2 * sz3 * sz4 * sz5];
+
+  type *****result = all_x;
+
+  for (int i = 0; i < sz1; i++, all_y += sz2) {
+    result[i] = all_y;
+    for (int j = 0; j < sz2; j++, all_z += sz3) {
+      result[i][j] = all_z;
+      for (int k = 0; k < sz3; k++, all_r += sz4) {
+        result[i][j][k] = all_r;
+	for (int b = 0; b < sz4; b++, all_b += sz5) {
+	  result[i][j][k][b] = all_b;
+	}
+      }
+    }
+  }
+
+  return result;
+}
+
+/*! The assigment for 5D array */
+template < class type > type ***** _assign_4_array(int sz1, int sz2, int sz3, int sz4, int sz5, type ***** org) {
+
+  type *****all_x;
+  type ****all_y;
+  type ***all_z;
+  type **all_r;
+  type *all_b;
+
+  all_x = org;
+  all_y = org[0];
+  all_z = org[0][0];
+  all_r = org[0][0][0];
+  all_b = org[0][0][0][0];
+
+  type *****result = all_x;
+
+  for (int i = 0; i < sz1; i++, all_y += sz2) {
+    result[i] = all_y;
+    for (int j = 0; j < sz2; j++, all_z += sz3) {
+      result[i][j] = all_z;
+      for (int k = 0; k < sz3; k++, all_r += sz4) {
+        result[i][j][k] = all_r;
+	for (int b = 0; b < sz4; b++, all_b += sz5) {
+	  result[i][j][k][b] = all_b;
+	}
+      }
+    }
+  }
+
+  return result;
+}
+
+
+/*! Deallocator for 5D arrays */
+template < class type > void delArr5(type ***** arr, int dummyx, int dummyy, int dummyz, int dummyb) {
+  delete[]arr[0][0][0][0];
+  delete[]arr[0][0][0];
+  delete[]arr[0][0];
+  delete[]arr[0];
+  delete[]arr;
+}
+/////////////////////
+
 /*! The allocator for 4D array */
 template < class type > type **** _new_4_array(int sz1, int sz2, int sz3, int sz4) {
 
@@ -165,6 +244,7 @@ template < class type > void delArr2(type ** arr, int dummyx) {
   delete[]arr;
 }
 
+#define newArr5(type,sz1,sz2,sz3,sz4,sz5) _new_5_array<type>((sz1),(sz2),(sz3),(sz4),(sz5))
 #define newArr4(type,sz1,sz2,sz3,sz4) _new_4_array<type>((sz1),(sz2),(sz3),(sz4))
 #define newArr3(type,sz1,sz2,sz3) _new_3_array<type>((sz1),(sz2),(sz3))
 #define newArr2(type,sz1,sz2) _new_2_array<type>((sz1),(sz2))
@@ -172,5 +252,6 @@ template < class type > void delArr2(type ** arr, int dummyx) {
 #define asgArr2(type,sz1,sz2,org) _assign_2_array<type>((sz1),(sz2),(org))
 #define asgArr3(type,sz1,sz2,sz3,org) _assign_3_array<type>((sz1),(sz2),(sz3),(org))
 #define asgArr4(type,sz1,sz2,sz3,sz4,org) _assign_4_array<type>((sz1),(sz2),(sz3),(sz4),(org))
+#define asgArr5(type,sz1,sz2,sz3,sz4,sz5,org) _assign_5_array<type>((sz1),(sz2),(sz3),(sz4),(sz5),(org))
 
 #endif

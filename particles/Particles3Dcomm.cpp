@@ -1133,3 +1133,119 @@ void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
   cout << endl;
 }
+
+/** to calculate Collisional frequencies for the different types of collisions **/
+void Particles3Dcomm::interpCollisions2G(MonteCarlo *MCC, Grid * grid, VirtualTopology3D * vct, int LastCheck, int CurrentCycle){
+
+  const double inv_dx = 1.0 / dx;
+  const double inv_dy = 1.0 / dy;
+  const double inv_dz = 1.0 / dz;
+  const double nxn = grid->getNXN();
+  const double nyn = grid->getNYN();
+  const double nzn = grid->getNZN();
+  //#pragma omp parallel
+  {
+    //Moments speciesMoments(nxn,nyn,nzn,invVOL);
+    //speciesMoments.set_to_zero();
+    //#pragma omp for
+    for (register long long i = 0; i < nop; i++)
+    {
+      const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
+      const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
+      const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
+      double temp[2][2][2];
+      double xi[2], eta[2], zeta[2];
+      xi[0] = x[i] - grid->getXN(ix - 1, iy, iz);
+      eta[0] = y[i] - grid->getYN(ix, iy - 1, iz);
+      zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
+      xi[1] = grid->getXN(ix, iy, iz) - x[i];
+      eta[1] = grid->getYN(ix, iy, iz) - y[i];
+      zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+      double weight[2][2][2];
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++) {
+            weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+          }
+      
+      /* for electrons */
+      double v2= u[i]*u[i] + v[i]*v[i] + w[i]*w[i];
+      // 
+      double CS_m2;
+      double CS_CU2;
+
+      // for both ions and electrons, check if affected by MC since the last output
+
+      if (ParticleID[i] >LastCheck and ParticleID[i] <=CurrentCycle ){
+	MCC->addCF_affected(weight, ix, iy, iz, ns);
+      }
+
+
+      if (qom < 0.0) { // ions or electrons
+	// electrons
+	// eIonsigmaElastic
+	MCC->eIonsigmaElastic(v2, &CS_m2, &CS_CU2);
+
+
+	for (int ii = 0; ii < 2; ii++)
+	  for (int jj = 0; jj < 2; jj++)
+	    for (int kk = 0; kk < 2; kk++)
+	      temp[ii][jj][kk] = sqrt(v2) *CS_m2 * weight[ii][jj][kk];
+
+	MCC->addCF_eIonElastic(temp, ix, iy, iz, ns);
+
+	// eIonigmaExc
+	MCC->eIonigmaExc(v2, &CS_m2, &CS_CU2);
+
+	for (int ii = 0; ii < 2; ii++)
+	  for (int jj = 0; jj < 2; jj++)
+	    for (int kk = 0; kk < 2; kk++)
+	      temp[ii][jj][kk] = sqrt(v2) *CS_m2 * weight[ii][jj][kk];
+
+	MCC->addCF_eIonExc(temp, ix, iy, iz, ns);
+
+	// eIonIz
+	MCC->eIonsigmaIz(v2, &CS_m2, &CS_CU2);
+
+	for (int ii = 0; ii < 2; ii++)
+	  for (int jj = 0; jj < 2; jj++)
+	    for (int kk = 0; kk < 2; kk++)
+	      temp[ii][jj][kk] = sqrt(v2) *CS_m2 * weight[ii][jj][kk];
+
+	MCC->addCF_eIonIz(temp, ix, iy, iz, ns);
+
+	
+      }else{
+	// ions
+	// IonIonCX
+	MCC->IonIonsigmaCX(v2, &CS_m2, &CS_CU2);
+
+	for (int ii = 0; ii < 2; ii++)
+	  for (int jj = 0; jj < 2; jj++)
+	    for (int kk = 0; kk < 2; kk++)
+	      temp[ii][jj][kk] = sqrt(v2) *CS_m2 * weight[ii][jj][kk];
+
+	MCC->addCF_IonIonCX(temp, ix, iy, iz, ns);
+
+	// IonIonElastic
+	MCC->IonIonsigmaElastic(v2, &CS_m2, &CS_CU2);
+
+	for (int ii = 0; ii < 2; ii++)
+	  for (int jj = 0; jj < 2; jj++)
+	    for (int kk = 0; kk < 2; kk++)
+	      temp[ii][jj][kk] = sqrt(v2) *CS_m2 * weight[ii][jj][kk];
+
+	MCC->addCF_IonIonElastic(temp, ix, iy, iz, ns);
+	
+      } // ions or electrons
+
+    } // cycle on particles
+
+  } // the first {
+
+
+  // communicate contribution from ghost cells 
+  MCC->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
+
+}
+

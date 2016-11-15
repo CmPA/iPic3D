@@ -4,8 +4,22 @@ cmake_minimum_required(VERSION 2.8.5)
 # Set project name
 #
 
-project(iPic3D)
+project(iPic3D CXX Fortran)
 
+set (FFLAGS -std="f2003" -fbounds-check -Wall) #not sure this is enough for f03; may be needed to un-comment the line down as well
+#set (CMAKE_Fortran_FLAGS -std="f2003") #to have it compile for f2003
+set (CMAKE_Fortran_FLAGS -std="f2003" -fbounds-check -Wall)
+
+if (CMAKE_Fortran_COMPILER MATCHES "gfortran.*") #for same reason, ${Fortran_COMPILER_NAME} is empty
+  # gfortran
+  #set (CMAKE_Fortran_FLAGS "-Wtabs -ffree-form -ffree-line-length-none") #-Wtabs: to disable annoying tab warnings # -ffree-form to eliminate line length limit
+  set (CMAKE_Fortran_FLAGS " -ffree-form -ffree-line-length-none") #-Wtabs: to disable annoying tab warnings # -ffree-form to eliminate line length limit 
+  set (CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -Wall")
+endif (CMAKE_Fortran_COMPILER MATCHES "gfortran.*")
+
+
+message ("CMAKE _Fortran _FLAGS_RELEASE: " ${CMAKE_Fortran_FLAGS_RELEASE})
+message ("CMAKE_Fortran_FLAGS: " ${CMAKE_Fortran_FLAGS})
 #
 # Find packages (already managed by CMake)
 #
@@ -29,6 +43,10 @@ endif()
 #
 
 add_subdirectory(main)
+
+# to see comments
+#add_definitions ("-Wall")
+
 
 include_directories(
     include

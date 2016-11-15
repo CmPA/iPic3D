@@ -20,6 +20,7 @@ developers: Stefano Markidis, Enrico Camporeale, Giovanni Lapenta, David Burgess
  *
  */
 class Particles3D:public Particles3Dcomm {
+  friend class MonteCarlo;
   public:
     /** constructor */
     Particles3D();

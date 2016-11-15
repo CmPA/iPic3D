@@ -68,6 +68,7 @@ private:
  *
  */
 class Particles3Dcomm:public Particles {
+  friend class MonteCarlo;
 public:
   /** constructor */
   Particles3Dcomm();
@@ -80,6 +81,8 @@ public:
   void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);
   /** interpolation method GRID->PARTICLE order 1: CIC */
   void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct);
+  /** MonteCarlo **/
+  void interpCollisions2G(MonteCarlo *MCC, Grid * grid, VirtualTopology3D * vct, int LastCheck, int CurrentCycle);
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   int communicate(VirtualTopology3D * ptVCT);
   /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/

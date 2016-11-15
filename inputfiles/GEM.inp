@@ -2,10 +2,10 @@
 # 2 Species
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
-SaveDirName    = GEM_dt0_25_Lambda10 #T14_Ohm_Lambda10    # Output directory
-RestartDirName = GEM_dt0_25_Lambda10 #T14_Ohm_Lambda10   # Restart directory (for WriteMethod=default)
+SaveDirName    = GEM_dt0_25_Lambda10_COLL #T14_Ohm_Lambda10    # Output directory
+RestartDirName = GEM_dt0_25_Lambda10_COLL #T14_Ohm_Lambda10   # Restart directory (for WriteMethod=default)
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
-
+Collisions        = yes
 Case              = GEM                             # Case [ GEM | Dipole | ... ]
 FieldsInit        = ./data/Initial-Fields_000000.h5 # Initial fields h5 file
 PartInit          = Maxwell                         # Initial particles [ Maxwell | File ]
@@ -68,7 +68,7 @@ TrackParticleID = 0    0  0 0           # TrackParticleID[species] = 1=true, 0=f
 npcelx          = 8    8     8 8        # Particles per cell in X
 npcely          = 8    8     8 8       # Particles per cell in Y
 npcelz          = 1    1     1 1       # Particles per cell in Z
-NpMaxNpRatio    = 3.0                # Maximum number of particles allocated
+NpMaxNpRatio    = 10.0  # increase a lot for MC #3.0                # Maximum number of particles allocated
 
 qom             = -256.0  1.0   -256.0  1.0      # Charge/mass ratio
 uth             = 0.045   0.0063 0.045   0.0063    # Thermal velocity in X
@@ -77,6 +77,12 @@ wth             = 0.045   0.0063 0.045   0.0063    # Thermal velocity in Z
 u0              = 0.0     0.0 0.0     0.0       # Drift velocity in X
 v0              = 0.0     0.0 0.0     0.0       # Drift velocity in X
 w0              = 0.00325 -0.01624 0.0     0.0  # Drift velocity in X
+
+# %%%%%%%%%%%% Monte Carlo %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Gas             = Hydrogen
+GasT            = 55719698.3399    # K; temperature of the gas in Kelvin
+GasN            = 8.8e20    # m-3; density of the gas in m-3
+DensityRatio = 0.075    # the ratio of the plasma (ne= ni) vs gas ratio; must be < 1!!!
 
 # %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
 PERIODICX       = 0                  # In direction X (1=true, 0=false)
