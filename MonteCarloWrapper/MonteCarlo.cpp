@@ -188,17 +188,17 @@ MonteCarlo::MonteCarlo(c_Solver* C) {
   // with DoubleGEM, only the upper cores will be collisional
   // so check YLEN%2 ==0, otherwise exits
 
-  if (C->col->getCase()== "DoubleGEM"){
+  /*if (C->col->getCase()== "DoubleGEM"){
     if (! (C->col->getYLEN() % 2)){
       cout << "For some internal reasons, with collisions and DoubleGEM, i need even YLEN" <<endl;
       cout << "Aborting now... " <<endl;
       abort();
     }
-  }
+    }
 
   if (C->col->getCase()== "DoubleGEM" and C->vct->getCoordinates(1)<  C->vct->getYLEN()/2){
     return;
-  }
+    }*/
 
 
   CollPerc= new double[ns];
@@ -308,9 +308,9 @@ void MonteCarlo::SelectCollidingParticles(c_Solver *C){
   
   //cout << "Inside SelectCollidingParticles" <<endl;
   
-  if (C->col->getCase()== "DoubleGEM" and C->vct->getCoordinates(1)<  C->vct->getYLEN()/2){
+  /*if (C->col->getCase()== "DoubleGEM" and C->vct->getCoordinates(1)<  C->vct->getYLEN()/2){
     return;
-  }
+    }*/
 
   // debug
   if (1){
@@ -443,9 +443,9 @@ void MonteCarlo::MCWrapper(c_Solver *C, int cycle){
   // this for the MA
   DT_counter= cycle;
 
-  if (C->col->getCase()== "DoubleGEM" and C->vct->getCoordinates(1)<  C->vct->getYLEN()/2){
+  /*if (C->col->getCase()== "DoubleGEM" and C->vct->getCoordinates(1)<  C->vct->getYLEN()/2){
     return;
-  }
+    }*/
   
   // there may be problms casting to int
   int int_MAX_MC= int(MAX_MC);

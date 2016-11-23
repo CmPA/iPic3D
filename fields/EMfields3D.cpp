@@ -4510,6 +4510,19 @@ void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective 
     communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
     for (int is = 0; is < ns; is++)
       grid->interpN2C(rhocs, is, rhons);
+
+    // Lambda
+    
+    for (int i=0; i < nxn; i++)                   
+      for (int j=0; j < nyn; j++)                               
+	for (int k=0; k < nzn; k++){                          
+
+	  double yC1=  (grid->getYN(i, j, k) - 1./4.*Ly)/ (10*delta); //Lambda[i][j][k]=2.0 * M_PI / dy* fabs(tanh(yC));
+	  double yC2=  (grid->getYN(i, j, k) - 3./4.*Ly)/ (10*delta);
+	  Lambda[i][j][k]=2.0 * M_PI / dy* (-1 + fabs(tanh(yC1)) + fabs(tanh(yC2)) );
+	  
+	} 
+    
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
