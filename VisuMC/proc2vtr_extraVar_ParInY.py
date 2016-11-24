@@ -46,12 +46,13 @@ except:
 #directory= '/mnt/Pause_SIMS/MC/GEM_NewGasPars_2_BC2/'
 #directory= '/mnt/Pause_SIMS/MC/DoubleGEM_NoColl/'
 directory= '/data/leuven/300/vsc30068/MC/DoubleGEM_NoColl/'
+directory= '/data/leuven/300/vsc30068/MC/MRX_NoColl/'
 out_directory = directory
 
 # Which quantities to process
 # Inertia: vector components for Ohm's law
 # Inertia_SC: scalar components for Ohm's law - related studies
-data_read = {'Fields': 1, 'Currents': 1, 'Rho': 1, 'Pressure': 1, 'Inertia': 1, 'Inertia_SC': 0, 'MC': 1}  #NB: rhoe_MA is still missing
+data_read = {'Fields': 1, 'Currents': 1, 'Rho': 1, 'Pressure': 1, 'Inertia': 1, 'Inertia_SC': 0, 'MC': 0}  #NB: rhoe_MA is still missing
 #data_read = {'Fields': 0, 'Currents': 0, 'Rho': 0, 'Pressure': 0, 'Inertia_1': 0, 'Inertia_2':0, 'T1':0, 'T2':0, 'T3':0, 'T4':0, 'T5':0, 'T6':1} 
 # Which cycles to process
 first_cycle = 0
