@@ -86,6 +86,7 @@ struct MC_struct{
   // when entering MC: value does not matter  
   double dE;
 
+
 };
 
 
@@ -198,6 +199,8 @@ class MonteCarlo {
 
   double **** C_dE_MA;
   // ---
+
+
   
   /// end for moving averages of dP, dE
 
@@ -329,6 +332,8 @@ class MonteCarlo {
   double factor_i;
   /* end variables for diagnostics */
 
+  double ReducedC; // the value of the speed of light to pass to the MC module; not necessarily the real one; real from inputfile
+  double ReducedEps0;
  
 };
 

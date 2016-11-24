@@ -243,6 +243,7 @@ class Collective
     double getGasT();
     double getGasN();
     double getDensityRatio();
+    double getReducedC();
 
   private:
     /*! inputfile */
@@ -448,6 +449,7 @@ class Collective
     double GasT;
     double GasN;
     double DensityRatio;  // density plasma / density gas
+    double ReducedC;
 };
 
 #endif

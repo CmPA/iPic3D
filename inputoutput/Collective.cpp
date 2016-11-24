@@ -286,6 +286,7 @@ void Collective::ReadInput(string inputfile) {
     GasT = config.read < double > ("GasT");
     GasN = config.read < double > ("GasN");
     DensityRatio = config.read < double > ("DensityRatio");
+    ReducedC = config.read < double > ("ReducedC");
     if (Collisions == "yes"){
 
       if (DensityRatio >1.0){
@@ -1173,3 +1174,7 @@ double Collective::getGasT(){
 double Collective::getDensityRatio(){
   return (DensityRatio);
 }
+double Collective::getReducedC(){
+  return (ReducedC);
+}
+

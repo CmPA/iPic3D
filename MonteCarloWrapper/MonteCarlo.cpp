@@ -84,6 +84,15 @@ MonteCarlo::MonteCarlo(c_Solver* C) {
   GasN=    C->col->getGasN();
   GasT=    C->col->getGasT();
   PlasmaN= GasN* C->col->getDensityRatio();
+  ReducedC = C->col->getReducedC();
+  ReducedEps0 = Realeps0;
+
+  if (myrank==0 and fabs(ReducedC-Realc)/Realc > 0.01){
+    cout << "We are using a reduced speed of light of c= " << ReducedC << ", reduced of a factor " << Realc/ReducedC << endl;
+    cout << "I still have to decide what to do with eps0, at the moment it is the real valus eps0= " << ReducedEps0 << endl;
+    
+  }
+  
   Z=1; // charge state can be only 1
   mr=      fabs(C->col->getQOM(0));
 
@@ -97,19 +106,21 @@ MonteCarlo::MonteCarlo(c_Solver* C) {
     }
   }
   
-  omega_pi_IS= sqrt(PlasmaN* Z*Z *e*e/ eps0 /(mP*IonRAM) ) ;
+  omega_pi_IS= sqrt(PlasmaN* Z*Z *e*e/ Realeps0 /(mP*IonRAM) ) ;
   // s
   // checked with Gianni, no 2 PI
   dt_MC= C->col->getDt()/ omega_pi_IS;
   // m
-  di_IS= c/omega_pi_IS;
+  di_IS= ReducedC/omega_pi_IS;
 
   // init for diagnostic
   
   // from v^2 in code units to energy in eV for ELECTRONS
-  factor_e= (mP/mr)*c*c*JtoeV/2.0;
+  //factor_e= (mP/mr)*c*c*JtoeV/2.0;
+  factor_e= (mP/mr)*ReducedC*ReducedC*JtoeV/2.0;
   // from v^2 in code units to energy in eV for IONS
-  factor_i= mP*IonRAM*c*c*JtoeV/2.0;
+  //factor_i= mP*IonRAM*c*c*JtoeV/2.0;
+  factor_i= mP*IonRAM*ReducedC*ReducedC*JtoeV/2.0; 
   // end init for diagnostic
 
   
@@ -136,17 +147,17 @@ MonteCarlo::MonteCarlo(c_Solver* C) {
     my_file << "!!! Index Last Species" << endl;
     for (int is=0; is < ns; is++){
       if (C->col->getQOM(is) < 0) {//(is%2==0){ // electrons
-	my_file << is%2 << "   " << mP/mr <<"   " << c <<endl; 
+	my_file << is%2 << "   " << mP/mr <<"   " << ReducedC <<endl; 
 	my_file << "!!! Electron mass - normalisation for electron velocities (c)" << endl;
       }
       else{// ions
-	my_file << is%2 << "   " << mP*IonRAM <<"   "<< c <<endl;
+	my_file << is%2 << "   " << mP*IonRAM <<"   "<< ReducedC <<endl;
 	my_file<< "!!! Ion mass - normalisation for ion velocities (c)" << endl;
       }
     }
-    my_file << (mP*IonRAM)*c << endl;
+    my_file << (mP*IonRAM)*ReducedC << endl;
     my_file << "!!! normalisation for moments (ion mass *c)"<<endl;
-    my_file << (mP*IonRAM)*c*c << endl;
+    my_file << (mP*IonRAM)*ReducedC*ReducedC << endl;
     my_file << "!!! normalisation for energy (ion mass *c *c )"<<endl;
     
     my_file.close();
@@ -162,17 +173,17 @@ MonteCarlo::MonteCarlo(c_Solver* C) {
     //my_file << "!!! Index Last Species" << endl;
     for (int is=0; is < ns; is++){
       if (C->col->getQOM(is) < 0) {//(is%2==0){ // electrons
-	my_file << is%2 << "   " << mP/mr <<"   " << c <<endl; 
+	my_file << is%2 << "   " << mP/mr <<"   " << ReducedC <<endl; 
 	//my_file << "!!! Electron mass - normalisation for electron velocities (c)" << endl;
       }
       else{// ions
-	my_file << is%2 << "   " << mP*IonRAM <<"   "<< c <<endl;
+	my_file << is%2 << "   " << mP*IonRAM <<"   "<< ReducedC <<endl;
 	//my_file<< "!!! Ion mass - normalisation for ion velocities (c)" << endl;
       }
     }
-    my_file << (mP*IonRAM)*c << endl;
+    my_file << (mP*IonRAM)*ReducedC << endl;
     //my_file << "!!! normalisation for moments (ion mass *c)"<<endl;
-    my_file << (mP*IonRAM)*c*c << endl;
+    my_file << (mP*IonRAM)*ReducedC*ReducedC << endl;
     //my_file << "!!! normalisation for energy (ion mass *c *c )"<<endl;
     
     my_file.close();
@@ -721,7 +732,7 @@ void MonteCarlo::addCF_affected(double weight[][2][2], int X, int Y, int Z, int 
 
 void MonteCarlo::addCF_eIonElastic(double weight[][2][2], int X, int Y, int Z, int is) {
 
-  double factor= c*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
+  double factor= ReducedC*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
@@ -731,7 +742,7 @@ void MonteCarlo::addCF_eIonElastic(double weight[][2][2], int X, int Y, int Z, i
 
 void MonteCarlo::addCF_eIonExc(double weight[][2][2], int X, int Y, int Z, int is) {
 
-  double factor= c*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
+  double factor= ReducedC*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
@@ -741,7 +752,7 @@ void MonteCarlo::addCF_eIonExc(double weight[][2][2], int X, int Y, int Z, int i
 
 void MonteCarlo::addCF_eIonIz(double weight[][2][2], int X, int Y, int Z, int is) {
 
-  double factor= c*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
+  double factor= ReducedC*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
@@ -751,7 +762,7 @@ void MonteCarlo::addCF_eIonIz(double weight[][2][2], int X, int Y, int Z, int is
 
 void MonteCarlo::addCF_IonIonCX(double weight[][2][2], int X, int Y, int Z, int is) {
 
-  double factor= c*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
+  double factor= ReducedC*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
@@ -761,7 +772,7 @@ void MonteCarlo::addCF_IonIonCX(double weight[][2][2], int X, int Y, int Z, int 
 
 void MonteCarlo::addCF_IonIonElastic(double weight[][2][2], int X, int Y, int Z, int is) {
 
-  double factor= c*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
+  double factor= ReducedC*GasN; // the c is to de-normalise the sqrt(v2), which at the moment is still in code units
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
