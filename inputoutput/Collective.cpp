@@ -96,6 +96,195 @@ void Collective::ReadInput(string inputfile) {
     cout << " WARNING: Performing a restart with the classic files. " << endl;
 
     RestartDirName = config.read < string > ("RestartDirName");
+    
+    if (!SOLINIT1) last_cycle = -1;
+    restart_status = 0;
+    c = config.read < double >("c");
+
+#ifdef BATSRUS
+    // set grid size and resolution based on the initial file from fluid code
+    Lx =  getFluidLx();
+    Ly =  getFluidLy();
+    Lz =  getFluidLz();
+    nxc = getFluidNxc();
+    nyc = getFluidNyc();
+    nzc = getFluidNzc();
+#else
+    Lx = config.read < double >("Lx");
+    Ly = config.read < double >("Ly");
+    Lz = config.read < double >("Lz");
+    nxc = config.read < int >("nxc");
+    nyc = config.read < int >("nyc");
+    nzc = config.read < int >("nzc");
+#endif
+
+    x_center = config.read < double >("x_center");
+    y_center = config.read < double >("y_center");
+    z_center = config.read < double >("z_center");
+    L_square = config.read < double >("L_square");
+
+    npcelx = new int[ns];
+    npcely = new int[ns];
+    npcelz = new int[ns];
+    qom = new double[ns];
+    uth = new double[ns];
+    vth = new double[ns];
+    wth = new double[ns];
+    u0 = new double[ns];
+    v0 = new double[ns];
+    w0 = new double[ns];
+
+    array_int npcelx0 = config.read < array_int > ("npcelx");
+    array_int npcely0 = config.read < array_int > ("npcely");
+    array_int npcelz0 = config.read < array_int > ("npcelz");
+    array_double qom0 = config.read < array_double > ("qom");
+    array_double uth0 = config.read < array_double > ("uth");
+    array_double vth0 = config.read < array_double > ("vth");
+    array_double wth0 = config.read < array_double > ("wth");
+    array_double u00 = config.read < array_double > ("u0");
+    array_double v00 = config.read < array_double > ("v0");
+    array_double w00 = config.read < array_double > ("w0");
+
+    npcelx[0] = npcelx0.a;
+    npcely[0] = npcely0.a;
+    npcelz[0] = npcelz0.a;
+    qom[0] = qom0.a;
+    uth[0] = uth0.a;
+    vth[0] = vth0.a;
+    wth[0] = wth0.a;
+    u0[0] = u00.a;
+    v0[0] = v00.a;
+    w0[0] = w00.a;
+
+    if (ns > 1) {
+      npcelx[1] = npcelx0.b;
+      npcely[1] = npcely0.b;
+      npcelz[1] = npcelz0.b;
+      qom[1] = qom0.b;
+      uth[1] = uth0.b;
+      vth[1] = vth0.b;
+      wth[1] = wth0.b;
+      u0[1] = u00.b;
+      v0[1] = v00.b;
+      w0[1] = w00.b;
+    }
+    if (ns > 2) {
+      npcelx[2] = npcelx0.c;
+      npcely[2] = npcely0.c;
+      npcelz[2] = npcelz0.c;
+      qom[2] = qom0.c;
+      uth[2] = uth0.c;
+      vth[2] = vth0.c;
+      wth[2] = wth0.c;
+      u0[2] = u00.c;
+      v0[2] = v00.c;
+      w0[2] = w00.c;
+    }
+    if (ns > 3) {
+      npcelx[3] = npcelx0.d;
+      npcely[3] = npcely0.d;
+      npcelz[3] = npcelz0.d;
+      qom[3] = qom0.d;
+      uth[3] = uth0.d;
+      vth[3] = vth0.d;
+      wth[3] = wth0.d;
+      u0[3] = u00.d;
+      v0[3] = v00.d;
+      w0[3] = w00.d;
+    }
+    if (ns > 4) {
+      npcelx[4] = npcelx0.e;
+      npcely[4] = npcely0.e;
+      npcelz[4] = npcelz0.e;
+      qom[4] = qom0.e;
+      uth[4] = uth0.e;
+      vth[4] = vth0.e;
+      wth[4] = wth0.e;
+      u0[4] = u00.e;
+      v0[4] = v00.e;
+      w0[4] = w00.e;
+    }
+    if (ns > 5) {
+      npcelx[5] = npcelx0.f;
+      npcely[5] = npcely0.f;
+      npcelz[5] = npcelz0.f;
+      qom[5] = qom0.f;
+      uth[5] = uth0.f;
+      vth[5] = vth0.f;
+      wth[5] = wth0.f;
+      u0[5] = u00.f;
+      v0[5] = v00.f;
+      w0[1] = w00.f;
+    }
+
+    verbose = config.read < bool > ("verbose");
+
+    // MPI topology and periodicity
+    XLEN      = config.read < int > ("XLEN",1);
+    YLEN      = config.read < int > ("YLEN",1);
+    ZLEN      = config.read < int > ("ZLEN",1);
+    PERIODICX = config.read < bool >("PERIODICX");
+    PERIODICY = config.read < bool >("PERIODICY");
+    PERIODICZ = config.read < bool >("PERIODICZ");
+
+    // PHI Electrostatic Potential 
+    bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
+    bcPHIfaceXleft  = config.read < int >("bcPHIfaceXleft");
+    bcPHIfaceYright = config.read < int >("bcPHIfaceYright");
+    bcPHIfaceYleft  = config.read < int >("bcPHIfaceYleft");
+    bcPHIfaceZright = config.read < int >("bcPHIfaceZright");
+    bcPHIfaceZleft  = config.read < int >("bcPHIfaceZleft");
+
+    // EM field boundary condition
+    bcEMfaceXright = config.read < int >("bcEMfaceXright");
+    bcEMfaceXleft  = config.read < int >("bcEMfaceXleft");
+    bcEMfaceYright = config.read < int >("bcEMfaceYright");
+    bcEMfaceYleft  = config.read < int >("bcEMfaceYleft");
+    bcEMfaceZright = config.read < int >("bcEMfaceZright");
+    bcEMfaceZleft  = config.read < int >("bcEMfaceZleft");
+
+    /*  ---------------------------------------------------------- */
+    /*  Electric and Magnetic field boundary conditions for BCface */
+    /*  ---------------------------------------------------------- */
+    // if bcEM* is 0: perfect conductor, if bcEM* is not 0: perfect mirror
+    // perfect conductor: normal = free, perpendicular = 0   
+    // perfect mirror   : normal = 0,    perpendicular = free
+    /*  ---------------------------------------------------------- */
+
+    /* X component in faces Xright, Xleft, Yright, Yleft, Zright and Zleft (0, 1, 2, 3, 4, 5) */
+    bcEx[0] = bcEMfaceXright == 0 ? 2 : 1;   bcBx[0] = bcEMfaceXright == 0 ? 1 : 2;
+    bcEx[1] = bcEMfaceXleft  == 0 ? 2 : 1;   bcBx[1] = bcEMfaceXleft  == 0 ? 1 : 2;
+    bcEx[2] = bcEMfaceYright == 0 ? 1 : 2;   bcBx[2] = bcEMfaceYright == 0 ? 2 : 1;
+    bcEx[3] = bcEMfaceYleft  == 0 ? 1 : 2;   bcBx[3] = bcEMfaceYleft  == 0 ? 2 : 1;
+    bcEx[4] = bcEMfaceZright == 0 ? 1 : 2;   bcBx[4] = bcEMfaceZright == 0 ? 2 : 1;
+    bcEx[5] = bcEMfaceZleft  == 0 ? 1 : 2;   bcBx[5] = bcEMfaceZleft  == 0 ? 2 : 1;
+    /* Y component */
+    bcEy[0] = bcEMfaceXright == 0 ? 1 : 2;   bcBy[0] = bcEMfaceXright == 0 ? 2 : 1;
+    bcEy[1] = bcEMfaceXleft  == 0 ? 1 : 2;   bcBy[1] = bcEMfaceXleft  == 0 ? 2 : 1;
+    bcEy[2] = bcEMfaceYright == 0 ? 2 : 1;   bcBy[2] = bcEMfaceYright == 0 ? 1 : 2;
+    bcEy[3] = bcEMfaceYleft  == 0 ? 2 : 1;   bcBy[3] = bcEMfaceYleft  == 0 ? 1 : 2;
+    bcEy[4] = bcEMfaceZright == 0 ? 1 : 2;   bcBy[4] = bcEMfaceZright == 0 ? 2 : 1;
+    bcEy[5] = bcEMfaceZleft  == 0 ? 1 : 2;   bcBy[5] = bcEMfaceZleft  == 0 ? 2 : 1;
+    /* Z component */
+    bcEz[0] = bcEMfaceXright == 0 ? 1 : 2;   bcBz[0] = bcEMfaceXright == 0 ? 2 : 1;
+    bcEz[1] = bcEMfaceXleft  == 0 ? 1 : 2;   bcBz[1] = bcEMfaceXleft  == 0 ? 2 : 1;
+    bcEz[2] = bcEMfaceYright == 0 ? 1 : 1;   bcBz[2] = bcEMfaceYright == 0 ? 2 : 1;
+    bcEz[3] = bcEMfaceYleft  == 0 ? 1 : 1;   bcBz[3] = bcEMfaceYleft  == 0 ? 2 : 1;
+    bcEz[4] = bcEMfaceZright == 0 ? 2 : 1;   bcBz[4] = bcEMfaceZright == 0 ? 1 : 2;
+    bcEz[5] = bcEMfaceZleft  == 0 ? 2 : 1;   bcBz[5] = bcEMfaceZleft  == 0 ? 1 : 2;
+
+    // Particles Boundary condition
+    bcPfaceXright = config.read < int >("bcPfaceXright");
+    bcPfaceXleft  = config.read < int >("bcPfaceXleft");
+    bcPfaceYright = config.read < int >("bcPfaceYright");
+    bcPfaceYleft  = config.read < int >("bcPfaceYleft");
+    bcPfaceZright = config.read < int >("bcPfaceZright");
+    bcPfaceZleft  = config.read < int >("bcPfaceZleft");
+
+
+
+
+    
     ReadRestart(RestartDirName);
   }
   else if (SOLINIT1) {
@@ -338,7 +527,7 @@ void Collective::ReadInput(string inputfile) {
 
 
 
-  }
+}
   TrackParticleID = new bool[ns];
   array_bool TrackParticleID0 = config.read < array_bool > ("TrackParticleID");
   TrackParticleID[0] = TrackParticleID0.a;

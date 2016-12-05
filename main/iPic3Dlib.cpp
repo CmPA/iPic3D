@@ -22,13 +22,16 @@ int c_Solver::Init(int argc, char **argv) {
   // initialize the virtual cartesian topology 
   vct = new VCtopology3D(col);
   // Check if we can map the processes into a matrix ordering defined in Collective.cpp
+  
+    
   if (nprocs != vct->getNprocs()) {
     if (myrank == 0) {
       cerr << "Error: " << nprocs << " processes cant be mapped into " << vct->getXLEN() << "x" << vct->getYLEN() << "x" << vct->getZLEN() << " matrix: Change XLEN,YLEN, ZLEN in method VCtopology3D.init()" << endl;
       mpi->finalize_mpi();
       return (1);
     }
-  }
+  }      
+
   // We create a new communicator with a 3D virtual Cartesian topology
   vct->setup_vctopology(MPI_COMM_WORLD);
   // initialize the central cell index
@@ -61,6 +64,7 @@ int c_Solver::Init(int argc, char **argv) {
 
   }
   else {
+
     /* --------------------------------------------------------- */
     /* If using 'default' IO initialize fields depending on case */
     /* --------------------------------------------------------- */
@@ -70,6 +74,8 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
     else if (col->getCase()=="DoubleHarris")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
+    else if (col->getCase()=="Whistler")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
+    else if (col->getCase()=="WhistlerKappa")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -109,7 +115,9 @@ int c_Solver::Init(int argc, char **argv) {
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
         else if (col->getCase()=="DoubleHarris")    part[i].maxwellian_reversed(grid, EMf, vct);
-        else                                  part[i].maxwellian(grid, EMf, vct);
+        else if (col->getCase()=="Whistler")    part[i].maxwellian_whistler(grid, EMf, vct);
+        else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
+       else                                  part[i].maxwellian(grid, EMf, vct);
 
     }
   }
@@ -396,8 +404,8 @@ void c_Solver::WriteOutput(int cycle) {
 
     if (ns > 2) {
       ofstream my_file(cqsat.c_str(), fstream::app);
-      for (int isat = 0; isat < nsat; isat++) {
-        for (int jsat = 0; jsat < nsat; jsat++) {
+      for (int isat = 0; isat < nsat; isat++)
+        for (int jsat = 0; jsat < nsat; jsat++)
           for (int ksat = 0; ksat < nsat; ksat++) {
             int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
             int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
@@ -408,7 +416,26 @@ void c_Solver::WriteOutput(int cycle) {
             my_file << EMf->getJxs(index1, index2, index3, 1) + EMf->getJxs(index1, index2, index3, 3) << "\t" << EMf->getJys(index1, index2, index3, 1) + EMf->getJys(index1, index2, index3, 3) << "\t" << EMf->getJzs(index1, index2, index3, 1) + EMf->getJzs(index1, index2, index3, 3) << "\t";
             my_file << EMf->getRHOns(index1, index2, index3, 0) + EMf->getRHOns(index1, index2, index3, 2) << "\t";
             my_file << EMf->getRHOns(index1, index2, index3, 1) + EMf->getRHOns(index1, index2, index3, 3) << "\t";
-          }}}
+          }
+          my_file << endl;
+          my_file.close();
+        }
+      if (ns == 2) {
+              ofstream my_file(cqsat.c_str(), fstream::app);
+              for (int isat = 0; isat < nsat; isat++)
+                for (int jsat = 0; jsat < nsat; jsat++)
+                  for (int ksat = 0; ksat < nsat; ksat++) {
+                    int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
+                    int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
+                    int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
+                    my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
+                    my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
+                    my_file << EMf->getJxs(index1, index2, index3, 0)  << "\t" << EMf->getJys(index1, index2, index3, 0)  << "\t" << EMf->getJzs(index1, index2, index3, 0)  << "\t";
+                    my_file << EMf->getJxs(index1, index2, index3, 1)  << "\t" << EMf->getJys(index1, index2, index3, 1)  << "\t" << EMf->getJzs(index1, index2, index3, 1)  << "\t";
+                    my_file << EMf->getRHOns(index1, index2, index3, 0)  << "\t";
+                    my_file << EMf->getRHOns(index1, index2, index3, 1)  << "\t";
+                  }
+
       my_file << endl;
       my_file.close();
     }
