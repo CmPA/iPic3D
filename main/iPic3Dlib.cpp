@@ -202,9 +202,10 @@ void c_Solver::GatherMoments(int cycle){
 
   // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
 
-  // generalised Ohm's law  
+  // generalised Ohm's law - electrons
   EMf->Ohm_Law(vct, grid);
-
+  // generalised Ohm's law - ions
+  EMf->Ohm_Law_Ions(vct, grid);
 }
 
 void c_Solver::UpdateCycleInfo(int cycle) {

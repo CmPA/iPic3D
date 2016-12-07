@@ -458,7 +458,6 @@ class EMfields3D                // :public Field
     double getBenergy();
 
     // for output, moving average
-
     double ***getT1_MA_x();
     double ***getT1_MA_y();
     double ***getT1_MA_z();
@@ -489,7 +488,29 @@ class EMfields3D                // :public Field
    
     double ***getRhoe_MA();
 
+    // MA; for ions
+    double ***getT1_MA_I_x();
+    double ***getT1_MA_I_y();
+    double ***getT1_MA_I_z();
+    
+    double ***getT2_MA_I_x();
+    double ***getT2_MA_I_y();
+    double ***getT2_MA_I_z();
+    
+    double ***getT3_MA_I_x();
+    double ***getT3_MA_I_y();
+    double ***getT3_MA_I_z();
+    
+    double ***getT4_MA_I_x();
+    double ***getT4_MA_I_y();
+    double ***getT4_MA_I_z();
+    
+    double ***getJi_MA_x();
+    double ***getJi_MA_y();
+    double ***getJi_MA_z();
 
+    double ***getRhoi_MA();
+    
     /*! print electromagnetic fields info */
     void print(void) const;
 
@@ -509,7 +530,10 @@ class EMfields3D                // :public Field
 
     // for Ohm's law
     void setDT_counter(int cc);
+    // for electrons
     void Ohm_Law(VirtualTopology3D * vct, Grid * grid);
+    // for ions
+    void Ohm_Law_Ions(VirtualTopology3D * vct, Grid * grid);
     /* ********************************* // VARIABLES ********************************* */
   private:
     /*! light speed */
@@ -708,6 +732,33 @@ class EMfields3D                // :public Field
 
     double ***rhoe_NV;
 
+    // for ions
+    double *** dVix_dt_ACC;
+    double *** dViy_dt_ACC;
+    double *** dViz_dt_ACC;
+
+    double ***T1_NV_I_x;
+    double ***T1_NV_I_y;
+    double ***T1_NV_I_z;
+
+    double ***T2_NV_I_x;
+    double ***T2_NV_I_y;
+    double ***T2_NV_I_z;
+
+    double ***T3_NV_I_x;
+    double ***T3_NV_I_y;
+    double ***T3_NV_I_z;
+
+    double ***T4_NV_I_x;
+    double ***T4_NV_I_y;
+    double ***T4_NV_I_z;
+
+    double ***Ji_NV_x;
+    double ***Ji_NV_y;
+    double ***Ji_NV_z;
+
+    double ***rhoi_NV;
+    
     // here the moving average, to save
     double ***T1_MA_x;
     double ***T1_MA_y;
@@ -738,6 +789,29 @@ class EMfields3D                // :public Field
     double ***B_MA_z;
 
     double ***rhoe_MA;
+
+    // for ions
+    double ***T1_MA_I_x;
+    double ***T1_MA_I_y;
+    double ***T1_MA_I_z;
+
+    double ***T2_MA_I_x;
+    double ***T2_MA_I_y;
+    double ***T2_MA_I_z;
+
+    double ***T3_MA_I_x;
+    double ***T3_MA_I_y;
+    double ***T3_MA_I_z;
+
+    double ***T4_MA_I_x;
+    double ***T4_MA_I_y;
+    double ***T4_MA_I_z;
+
+    double ***Ji_MA_x;
+    double ***Ji_MA_y;
+    double ***Ji_MA_z;
+
+    double ***rhoi_MA;
     
     // for simple moving average, I need to save the values that drops out
     // one dimension more (DOI)
@@ -773,6 +847,30 @@ class EMfields3D                // :public Field
     double ****B_DO_x;
     double ****B_DO_y;
     double ****B_DO_z;
+
+    // ions
+    double ****T1_DO_I_x;
+    double ****T1_DO_I_y;
+    double ****T1_DO_I_z;
+
+    double ****T2_DO_I_x;
+    double ****T2_DO_I_y;
+    double ****T2_DO_I_z;
+
+    double ****T3_DO_I_x;
+    double ****T3_DO_I_y;
+    double ****T3_DO_I_z;
+
+    double ****T4_DO_I_x;
+    double ****T4_DO_I_y;
+    double ****T4_DO_I_z;
+
+    double ****Ji_DO_x;
+    double ****Ji_DO_y;
+    double ****Ji_DO_z;
+
+    double ****rhoi_DO;
+    // end ions
     
     // here the moving average
     

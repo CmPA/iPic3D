@@ -161,6 +161,33 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
 
   rhoe_NV = newArr3(double, nxn, nyn, nzn);
 
+  // for ions
+  dVix_dt_ACC = newArr3(double, nxn, nyn, nzn);
+  dViy_dt_ACC = newArr3(double, nxn, nyn, nzn);
+  dViz_dt_ACC = newArr3(double, nxn, nyn, nzn);
+
+  T1_NV_I_x = newArr3(double, nxn, nyn, nzn);
+  T1_NV_I_y = newArr3(double, nxn, nyn, nzn);
+  T1_NV_I_z = newArr3(double, nxn, nyn, nzn);
+
+  T2_NV_I_x = newArr3(double, nxn, nyn, nzn);
+  T2_NV_I_y = newArr3(double, nxn, nyn, nzn);
+  T2_NV_I_z = newArr3(double, nxn, nyn, nzn);
+
+  T3_NV_I_x = newArr3(double, nxn, nyn, nzn);
+  T3_NV_I_y = newArr3(double, nxn, nyn, nzn);
+  T3_NV_I_z = newArr3(double, nxn, nyn, nzn);
+
+  T4_NV_I_x = newArr3(double, nxn, nyn, nzn);
+  T4_NV_I_y = newArr3(double, nxn, nyn, nzn);
+  T4_NV_I_z = newArr3(double, nxn, nyn, nzn);
+
+  Ji_NV_x = newArr3(double, nxn, nyn, nzn);
+  Ji_NV_y = newArr3(double, nxn, nyn, nzn);
+  Ji_NV_z = newArr3(double, nxn, nyn, nzn);
+
+  rhoi_NV = newArr3(double, nxn, nyn, nzn);
+  
   // MA 
   T1_MA_x = newArr3(double, nxn, nyn, nzn);
   T1_MA_y = newArr3(double, nxn, nyn, nzn);
@@ -191,6 +218,30 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   B_MA_z = newArr3(double, nxn, nyn, nzn);
 
   rhoe_MA = newArr3(double, nxn, nyn, nzn);
+
+  // ions, MA 
+  T1_MA_I_x = newArr3(double, nxn, nyn, nzn);
+  T1_MA_I_y = newArr3(double, nxn, nyn, nzn);
+  T1_MA_I_z = newArr3(double, nxn, nyn, nzn);
+
+  T2_MA_I_x = newArr3(double, nxn, nyn, nzn);
+  T2_MA_I_y = newArr3(double, nxn, nyn, nzn);
+  T2_MA_I_z = newArr3(double, nxn, nyn, nzn);
+
+  T3_MA_I_x = newArr3(double, nxn, nyn, nzn);
+  T3_MA_I_y = newArr3(double, nxn, nyn, nzn);
+  T3_MA_I_z = newArr3(double, nxn, nyn, nzn);
+
+  T4_MA_I_x = newArr3(double, nxn, nyn, nzn);
+  T4_MA_I_y = newArr3(double, nxn, nyn, nzn);
+  T4_MA_I_z = newArr3(double, nxn, nyn, nzn);
+
+  Ji_MA_x = newArr3(double, nxn, nyn, nzn);
+  Ji_MA_y = newArr3(double, nxn, nyn, nzn);
+  Ji_MA_z = newArr3(double, nxn, nyn, nzn);
+
+  rhoi_MA = newArr3(double, nxn, nyn, nzn);
+  // end ions
   
   // DO values
   DOI= 50;
@@ -224,7 +275,31 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   B_DO_z = newArr4(double, DOI, nxn, nyn, nzn);
 
   rhoe_DO = newArr4(double, DOI, nxn, nyn, nzn); // for inertial term in Ohm's law
-    
+
+  // DO, ions
+  T1_DO_I_x = newArr4(double, DOI, nxn, nyn, nzn);
+  T1_DO_I_y = newArr4(double, DOI, nxn, nyn, nzn);
+  T1_DO_I_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  T2_DO_I_x = newArr4(double, DOI, nxn, nyn, nzn);
+  T2_DO_I_y = newArr4(double, DOI, nxn, nyn, nzn);
+  T2_DO_I_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  T3_DO_I_x = newArr4(double, DOI, nxn, nyn, nzn);
+  T3_DO_I_y = newArr4(double, DOI, nxn, nyn, nzn);
+  T3_DO_I_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  T4_DO_I_x = newArr4(double, DOI, nxn, nyn, nzn);
+  T4_DO_I_y = newArr4(double, DOI, nxn, nyn, nzn);
+  T4_DO_I_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  Ji_DO_x = newArr4(double, DOI, nxn, nyn, nzn);
+  Ji_DO_y = newArr4(double, DOI, nxn, nyn, nzn);
+  Ji_DO_z = newArr4(double, DOI, nxn, nyn, nzn);
+
+  rhoi_DO = newArr4(double, DOI, nxn, nyn, nzn); // for inertial term in Ohm's law
+  // end DO, ions
+  
   // arrays allocation: central points 
   PHI = newArr3(double, nxc, nyc, nzc);
   Bxc = newArr3(double, nxc, nyc, nzc);
@@ -289,6 +364,34 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
 
   eqValue(0.0, rhoe_MA, nxn, nyn, nzn);
 
+  // ions
+  eqValue(0.0, dVix_dt_ACC, nxn, nyn, nzn);
+  eqValue(0.0, dViy_dt_ACC, nxn, nyn, nzn);
+  eqValue(0.0, dViz_dt_ACC, nxn, nyn, nzn);
+
+  eqValue(0.0, T1_MA_I_x, nxn, nyn, nzn);
+  eqValue(0.0, T1_MA_I_y, nxn, nyn, nzn);
+  eqValue(0.0, T1_MA_I_z, nxn, nyn, nzn);
+
+  eqValue(0.0, T2_MA_I_x, nxn, nyn, nzn);
+  eqValue(0.0, T2_MA_I_y, nxn, nyn, nzn);
+  eqValue(0.0, T2_MA_I_z, nxn, nyn, nzn);
+
+  eqValue(0.0, T3_MA_I_x, nxn, nyn, nzn);
+  eqValue(0.0, T3_MA_I_y, nxn, nyn, nzn);
+  eqValue(0.0, T3_MA_I_z, nxn, nyn, nzn);
+
+  eqValue(0.0, T4_MA_I_x, nxn, nyn, nzn);
+  eqValue(0.0, T4_MA_I_y, nxn, nyn, nzn);
+  eqValue(0.0, T4_MA_I_z, nxn, nyn, nzn);
+
+  eqValue(0.0, Ji_MA_x, nxn, nyn, nzn);
+  eqValue(0.0, Ji_MA_y, nxn, nyn, nzn);
+  eqValue(0.0, Ji_MA_z, nxn, nyn, nzn);
+
+  eqValue(0.0, rhoi_MA, nxn, nyn, nzn);
+  // end ions
+  
   eqValue(0.0, E_MA_x, nxn, nyn, nzn);
   eqValue(0.0, E_MA_y, nxn, nyn, nzn);
   eqValue(0.0, E_MA_z, nxn, nyn, nzn);
@@ -3830,6 +3933,63 @@ double ***EMfields3D::getB_MA_y() {
 double ***EMfields3D::getB_MA_z() {
   return (B_MA_z);
 }
+
+// for ions, MA
+double ***EMfields3D::getT1_MA_I_x() {
+  return (T1_MA_I_x);
+}
+double ***EMfields3D::getT1_MA_I_y() {
+  return (T1_MA_I_y);
+}
+double ***EMfields3D::getT1_MA_I_z() {
+  return (T1_MA_I_z);
+}
+
+double ***EMfields3D::getT2_MA_I_x() {
+  return (T2_MA_I_x);
+}
+double ***EMfields3D::getT2_MA_I_y() {
+  return (T2_MA_I_y);
+}
+double ***EMfields3D::getT2_MA_I_z() {
+  return (T2_MA_I_z);
+}
+
+double ***EMfields3D::getT3_MA_I_x() {
+  return (T3_MA_I_x);
+}
+double ***EMfields3D::getT3_MA_I_y() {
+  return (T3_MA_I_y);
+}
+double ***EMfields3D::getT3_MA_I_z() {
+  return (T3_MA_I_z);
+}
+
+double ***EMfields3D::getT4_MA_I_x() {
+  return (T4_MA_I_x);
+}
+double ***EMfields3D::getT4_MA_I_y() {
+  return (T4_MA_I_y);
+}
+double ***EMfields3D::getT4_MA_I_z() {
+  return (T4_MA_I_z);
+}
+
+double ***EMfields3D::getJi_MA_x() {
+  return (Ji_MA_x);
+}
+double ***EMfields3D::getJi_MA_y() {
+  return (Ji_MA_y);
+}
+double ***EMfields3D::getJi_MA_z() {
+  return (Ji_MA_z);
+}
+double ***EMfields3D::getRhoi_MA() {
+  return (rhoi_MA);
+}
+
+// end for ions, MA
+
 //
 
 double ***& EMfields3D::getJxs(int is) {
@@ -4842,6 +5002,295 @@ void EMfields3D::Ohm_Law(VirtualTopology3D * vct, Grid * grid){
   delArr3(Peyy, nxn, nyn);
   delArr3(Peyz, nxn, nyn);
   delArr3(Pezz, nxn, nyn);
+
+  return;
+}
+// this is the ion point of view - 
+void EMfields3D::Ohm_Law_Ions(VirtualTopology3D * vct, Grid * grid){
+  if (DT_counter <0) return;
+  // the next part to be done only while cycling, NOT at first Gatehr moment
+  
+  if(vct->getCartesian_rank() == 0 ){
+    cout << "Ohm's law: ion POV" << endl;
+    cout << "DT_counter: " << DT_counter << endl;
+
+  }
+
+  // I need V interpolated on the center
+  double ***VxC=  newArr3(double,  nxc, nyc, nzc);
+  double ***VyC=  newArr3(double,  nxc, nyc, nzc);
+  double ***VzC=  newArr3(double,  nxc, nyc, nzc);
+
+  double ***Vix= newArr3(double,  nxn, nyn, nzn);
+  double ***Viy= newArr3(double,  nxn, nyn, nzn);
+  double ***Viz= newArr3(double,  nxn, nyn, nzn);
+  
+  double ***dVx_dx= newArr3(double,  nxc, nyc, nzc);
+  double ***dVy_dx= newArr3(double,  nxc, nyc, nzc);
+  double ***dVz_dx= newArr3(double,  nxc, nyc, nzc);
+
+  double ***dVx_dy= newArr3(double,  nxc, nyc, nzc);
+  double ***dVy_dy= newArr3(double,  nxc, nyc, nzc);
+  double ***dVz_dy= newArr3(double,  nxc, nyc, nzc);
+
+  double ***dVx_dz= newArr3(double,  nxc, nyc, nzc);
+  double ***dVy_dz= newArr3(double,  nxc, nyc, nzc);
+  double ***dVz_dz= newArr3(double,  nxc, nyc, nzc);
+
+  double ***T2_xC= newArr3(double,  nxc, nyc, nzc);
+  double ***T2_yC= newArr3(double,  nxc, nyc, nzc);
+  double ***T2_zC= newArr3(double,  nxc, nyc, nzc); 
+
+  // total ion pressure
+  double ***Pixx= newArr3(double,  nxn, nyn, nzn);
+  double ***Pixy= newArr3(double,  nxn, nyn, nzn);
+  double ***Pixz= newArr3(double,  nxn, nyn, nzn);
+  double ***Piyy= newArr3(double,  nxn, nyn, nzn);
+  double ***Piyz= newArr3(double,  nxn, nyn, nzn);
+  double ***Pizz= newArr3(double,  nxn, nyn, nzn);
+
+  // Ji
+  eqValue(0.0, Ji_NV_x, nxn, nyn, nzn);
+  eqValue(0.0, Ji_NV_y, nxn, nyn, nzn);
+  eqValue(0.0, Ji_NV_z, nxn, nyn, nzn);
+
+  // rhoe
+  eqValue(0.0, rhoi_NV, nxn, nyn, nzn);
+  
+  for (int is=0; is<ns; is++){
+    if (qom[is]<0 ) continue; // do not accumulate electrons
+    
+    sum(Ji_NV_x, Jxs[is], nxn, nyn, nzn);
+    sum(Ji_NV_y, Jys[is], nxn, nyn, nzn);
+    sum(Ji_NV_z, Jzs[is], nxn, nyn, nzn);
+
+    sum(rhoi_NV, rhons[is], nxn, nyn, nzn);
+
+  }
+
+  
+  // division point by point
+  divPBP(Vix, Ji_NV_x, rhoi_NV, nxn, nyn, nzn);
+  divPBP(Viy, Ji_NV_y, rhoi_NV, nxn, nyn, nzn);
+  divPBP(Viz, Ji_NV_z, rhoi_NV, nxn, nyn, nzn);
+
+  
+  // Vi, N2C
+  grid->interpN2C(VxC, Vix);
+  grid->interpN2C(VyC, Viy);
+  grid->interpN2C(VzC, Viz);
+
+  grid->gradN2C(dVx_dx, dVx_dy, dVx_dz, Vix);
+  grid->gradN2C(dVy_dx, dVy_dy, dVy_dz, Viy);
+  grid->gradN2C(dVz_dx, dVz_dy, dVz_dz, Viz);
+
+  
+  double qom_I;
+  for (int is=0; is <ns; is ++){
+    if (qom[is]>0){
+      qom_I= qom[is];
+      break;
+    }
+  }
+
+
+  for (int i=1; i< nxc-1; i++)
+    for (int j=1; j< nyc-1; j++)
+      for (int k=1; k<nzc-1; k++){
+        T2_xC[i][j][k]=1./qom_I* (VxC[i][j][k]*dVx_dx[i][j][k] + VyC[i][j][k]*dVx_dy[i][j][k] + VzC[i][j][k]*dVx_dz[i][j][k]);
+        T2_yC[i][j][k]=1./qom_I* (VxC[i][j][k]*dVy_dx[i][j][k] + VyC[i][j][k]*dVy_dy[i][j][k] + VzC[i][j][k]*dVy_dz[i][j][k]);
+        T2_zC[i][j][k]=1./qom_I* (VxC[i][j][k]*dVz_dx[i][j][k] + VyC[i][j][k]*dVz_dy[i][j][k] + VzC[i][j][k]*dVz_dz[i][j][k]);
+      }
+
+  
+  communicateCenterBC_P(nxc, nyc, nzc, T2_xC, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC_P(nxc, nyc, nzc, T2_yC, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC_P(nxc, nyc, nzc, T2_zC, 2, 2, 2, 2, 2, 2, vct);
+
+  grid->interpC2N(T2_NV_I_x, T2_xC);
+  grid->interpC2N(T2_NV_I_y, T2_yC);
+  grid->interpC2N(T2_NV_I_z, T2_zC);
+
+  // I need the total ion pressure
+  eqValue(0.0, Pixx, nxn, nyn, nzn);
+  eqValue(0.0, Pixy, nxn, nyn, nzn);
+  eqValue(0.0, Pixz, nxn, nyn, nzn);
+  eqValue(0.0, Piyy, nxn, nyn, nzn);
+  eqValue(0.0, Piyz, nxn, nyn, nzn);
+  eqValue(0.0, Pizz, nxn, nyn, nzn);
+
+  for (int is=0; is< ns; is++){
+    if (qom[is]<0 ) continue; // accumulate only electrons
+
+    sum(Pixx, pXXsn[is], nxn, nyn, nzn);
+    sum(Pixy, pXYsn[is], nxn, nyn, nzn);
+    sum(Pixz, pXZsn[is], nxn, nyn, nzn);
+    sum(Piyy, pYYsn[is], nxn, nyn, nzn);
+    sum(Piyz, pYZsn[is], nxn, nyn, nzn);
+    sum(Pizz, pZZsn[is], nxn, nyn, nzn);
+  }
+
+  //// REMOVE THE DRIFT TERM  
+  //cout << "removing drift " << endl;
+  for (int i=0; i< nxn; i++)
+    for (int j=0; j< nyn; j++)
+      for (int k=0; k<nzn; k++){
+	Pixx[i][j][k]= (Pixx[i][j][k]- Ji_NV_x[i][j][k]*Ji_NV_x[i][j][k]/ rhoi_NV[i][j][k])/qom_I;
+	Pixy[i][j][k]= (Pixy[i][j][k]- Ji_NV_x[i][j][k]*Ji_NV_y[i][j][k]/ rhoi_NV[i][j][k])/qom_I;
+	Pixz[i][j][k]= (Pixz[i][j][k]- Ji_NV_x[i][j][k]*Ji_NV_z[i][j][k]/ rhoi_NV[i][j][k])/qom_I;
+	Piyy[i][j][k]= (Piyy[i][j][k]- Ji_NV_y[i][j][k]*Ji_NV_y[i][j][k]/ rhoi_NV[i][j][k])/qom_I;
+	Piyz[i][j][k]= (Piyz[i][j][k]- Ji_NV_y[i][j][k]*Ji_NV_z[i][j][k]/ rhoi_NV[i][j][k])/qom_I;
+	Pizz[i][j][k]= (Pizz[i][j][k]- Ji_NV_z[i][j][k]*Ji_NV_z[i][j][k]/ rhoi_NV[i][j][k])/qom_I;
+      }
+  
+  
+  grid->divSymmTensorN2C(tempXC, tempYC, tempZC, Pixx, Pixy, Pixz, Piyy, Piyz, Pizz);
+
+
+  // copied from J hat
+  communicateCenterBC_P(nxc, nyc, nzc, tempXC, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC_P(nxc, nyc, nzc, tempYC, 2, 2, 2, 2, 2, 2, vct);
+  communicateCenterBC_P(nxc, nyc, nzc, tempZC, 2, 2, 2, 2, 2, 2, vct);
+
+  grid->interpC2N(T3_NV_I_x, tempXC); // after _GC, now first/ last active node is good             
+  grid->interpC2N(T3_NV_I_y, tempYC);
+  grid->interpC2N(T3_NV_I_z, tempZC);
+
+  // end copied from J hat
+
+  divPBP(T3_NV_I_x, T3_NV_I_x, rhoi_NV, nxn, nyn, nzn);
+  divPBP(T3_NV_I_y, T3_NV_I_y, rhoi_NV, nxn, nyn, nzn);
+  divPBP(T3_NV_I_z, T3_NV_I_z, rhoi_NV, nxn, nyn, nzn);
+
+
+  for (register int i = 0; i < nxn; i++)
+    for (register int j = 0; j < nyn; j++)
+      for (register int k = 0; k < nzn; k++) {
+	// first calculate time derivative
+	T1_NV_I_x[i][j][k]= (Vix[i][j][k]- dVix_dt_ACC[i][j][k])/dt;
+	T1_NV_I_y[i][j][k]= (Viy[i][j][k]- dViy_dt_ACC[i][j][k])/dt;
+	T1_NV_I_z[i][j][k]= (Viz[i][j][k]- dViz_dt_ACC[i][j][k])/dt;
+
+	// then accumulate old value for next cycle
+	dVix_dt_ACC[i][j][k] = Vix[i][j][k];
+	dViy_dt_ACC[i][j][k] = Viy[i][j][k];
+	dViz_dt_ACC[i][j][k] = Viz[i][j][k];
+      }
+
+  scale(T1_NV_I_x, (1./qom_I), nxn, nyn, nzn);
+  scale(T1_NV_I_y, (1./qom_I), nxn, nyn, nzn);
+  scale(T1_NV_I_z, (1./qom_I), nxn, nyn, nzn);
+
+  // T4
+  // - Vi x B = B x Vi
+  cross(T4_NV_I_x, T4_NV_I_y, T4_NV_I_z, Bxn, Byn, Bzn, Vix, Viy, Viz, nxn, nyn, nzn);
+
+  /// SMOOTH THE NEW VALUE
+  smooth(Smooth, T1_NV_I_x, 1, grid, vct); 
+  smooth(Smooth, T1_NV_I_y, 1, grid, vct);
+  smooth(Smooth, T1_NV_I_z, 1, grid, vct);
+
+  smooth(Smooth, T2_NV_I_x, 1, grid, vct); 
+  smooth(Smooth, T2_NV_I_y, 1, grid, vct);
+  smooth(Smooth, T2_NV_I_z, 1, grid, vct);
+
+  smooth(Smooth, T3_NV_I_x, 1, grid, vct); 
+  smooth(Smooth, T3_NV_I_y, 1, grid, vct);
+  smooth(Smooth, T3_NV_I_z, 1, grid, vct);
+
+  smooth(Smooth, T4_NV_I_x, 1, grid, vct); 
+  smooth(Smooth, T4_NV_I_y, 1, grid, vct);
+  smooth(Smooth, T4_NV_I_z, 1, grid, vct);
+
+  smooth(Smooth, rhoi_NV, 1, grid, vct);
+
+  smooth(Smooth, Ji_NV_x, 1, grid, vct);
+  smooth(Smooth, Ji_NV_y, 1, grid, vct);
+  smooth(Smooth, Ji_NV_z, 1, grid, vct);
+
+
+  /// END SMOOTH THE NEW VALUE 
+
+  
+  // Simple Moving Aeverage
+  int nn= DT_counter% DOI;
+
+  
+  SMA(T1_MA_I_x, T1_NV_I_x, T1_DO_I_x[nn], DOI, nxn, nyn, nzn);
+  SMA(T1_MA_I_y, T1_NV_I_y, T1_DO_I_y[nn], DOI, nxn, nyn, nzn);
+  SMA(T1_MA_I_z, T1_NV_I_z, T1_DO_I_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(T2_MA_I_x, T2_NV_I_x, T2_DO_I_x[nn], DOI, nxn, nyn, nzn);
+  SMA(T2_MA_I_y, T2_NV_I_y, T2_DO_I_y[nn], DOI, nxn, nyn, nzn);
+  SMA(T2_MA_I_z, T2_NV_I_z, T2_DO_I_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(T3_MA_I_x, T3_NV_I_x, T3_DO_I_x[nn], DOI, nxn, nyn, nzn);
+  SMA(T3_MA_I_y, T3_NV_I_y, T3_DO_I_y[nn], DOI, nxn, nyn, nzn);
+  SMA(T3_MA_I_z, T3_NV_I_z, T3_DO_I_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(T4_MA_I_x, T4_NV_I_x, T4_DO_I_x[nn], DOI, nxn, nyn, nzn);
+  SMA(T4_MA_I_y, T4_NV_I_y, T4_DO_I_y[nn], DOI, nxn, nyn, nzn);
+  SMA(T4_MA_I_z, T4_NV_I_z, T4_DO_I_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(Ji_MA_x, Ji_NV_x, Ji_DO_x[nn], DOI, nxn, nyn, nzn);
+  SMA(Ji_MA_y, Ji_NV_y, Ji_DO_y[nn], DOI, nxn, nyn, nzn);
+  SMA(Ji_MA_z, Ji_NV_z, Ji_DO_z[nn], DOI, nxn, nyn, nzn);
+
+  SMA(rhoi_MA, rhoi_NV, rhoi_DO[nn], DOI, nxn, nyn, nzn);
+  
+  // set DO
+  eq(T1_DO_I_x[nn], T1_NV_I_x, nxn, nyn, nzn);
+  eq(T1_DO_I_y[nn], T1_NV_I_y, nxn, nyn, nzn);
+  eq(T1_DO_I_z[nn], T1_NV_I_z, nxn, nyn, nzn);
+
+  eq(T2_DO_I_x[nn], T2_NV_I_x, nxn, nyn, nzn);
+  eq(T2_DO_I_y[nn], T2_NV_I_y, nxn, nyn, nzn);
+  eq(T2_DO_I_z[nn], T2_NV_I_z, nxn, nyn, nzn);
+
+  eq(T3_DO_I_x[nn], T3_NV_I_x, nxn, nyn, nzn);
+  eq(T3_DO_I_y[nn], T3_NV_I_y, nxn, nyn, nzn);
+  eq(T3_DO_I_z[nn], T3_NV_I_z, nxn, nyn, nzn);
+  
+  eq(T4_DO_I_x[nn], T4_NV_I_x, nxn, nyn, nzn);
+  eq(T4_DO_I_y[nn], T4_NV_I_y, nxn, nyn, nzn);
+  eq(T4_DO_I_z[nn], T4_NV_I_z, nxn, nyn, nzn);
+
+  eq(Ji_DO_x[nn], Ji_NV_x, nxn, nyn, nzn);
+  eq(Ji_DO_y[nn], Ji_NV_y, nxn, nyn, nzn);
+  eq(Ji_DO_z[nn], Ji_NV_z, nxn, nyn, nzn);
+
+  eq(rhoi_DO[nn], rhoi_NV, nxn, nyn, nzn);
+
+  delArr3(Vix, nxn, nyn);
+  delArr3(Viy, nxn, nyn);
+  delArr3(Viz, nxn, nyn);
+
+  delArr3(VxC, nxc, nyc);
+  delArr3(VyC, nxc, nyc);
+  delArr3(VzC, nxc, nyc);
+
+  delArr3(dVx_dx, nxc, nyc);
+  delArr3(dVx_dy, nxc, nyc);
+  delArr3(dVx_dz, nxc, nyc);
+
+  delArr3(dVy_dx, nxc, nyc);
+  delArr3(dVy_dy, nxc, nyc);
+  delArr3(dVy_dz, nxc, nyc);
+
+  delArr3(dVz_dx, nxc, nyc);
+  delArr3(dVz_dy, nxc, nyc);
+  delArr3(dVz_dz, nxc, nyc);
+
+  delArr3(T2_xC, nxc, nyc);
+  delArr3(T2_yC, nxc, nyc);
+  delArr3(T2_zC, nxc, nyc);
+
+  delArr3(Pixx, nxn, nyn);
+  delArr3(Pixy, nxn, nyn);
+  delArr3(Pixz, nxn, nyn);
+  delArr3(Piyy, nxn, nyn);
+  delArr3(Piyz, nxn, nyn);
+  delArr3(Pizz, nxn, nyn);
 
   return;
 }
