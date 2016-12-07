@@ -1,0 +1,136 @@
+# INPUT FILE for GEM challenge case
+# 2 Species
+
+#  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
+SaveDirName    = /scratch/leuven/300/vsc30068/MC/ReducedC/MRX_NoColl_OI
+RestartDirName = /scratch/leuven/300/vsc30068/MC/ReducedC/MRX_NoColl_OI
+#  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
+Collisions        = no
+Case              = DoubleGEM                             # Case [ GEM | Dipole | ... ]
+FieldsInit        = ./data/Initial-Fields_000000.h5 # Initial fields h5 file
+PartInit          = Maxwell                         # Initial particles [ Maxwell | File ]
+WriteMethod       = default                         # Output method [ default | Parallel ]
+PoissonCorrection = no                             # Poisson correction [ yes | no ]
+SimulationName    = DoubleGEM                             # Simulation name for the output
+
+#  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
+B0x = 0.0145
+B0y = 0.00
+B0z = 0.00
+
+# External magnetic field parameters:
+B1x = 0.000
+B1y = 0.000
+B1z = 0.000
+
+delta = 0.5 # 0.5 #Harris with 0.5
+
+#  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
+dt =  0.1               # dt = time step  
+ncycles = 15001          # cycles
+th = 1.0               # th =   decentering parameter
+c = 1.0                # c = light speed 
+
+#  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
+Smooth = 0.5           # Smoothing value (5-points stencil)
+
+
+# %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
+Lx =   60.0            # Lx = simulation box length - x direction   
+Ly =   40.0            # Ly = simulation box length - y direction
+Lz =   1.0             # Lz = simulation box length - z direction   
+
+x_center =   1.        # Lx = simulation box length - x direction in m  
+y_center =   1.        # Ly 20.= simulation box length - y direction in m
+z_center =   1.        # Lz = simulation box length - z direction in m  
+L_square =   .1
+
+nxc =  1024 #512              # nxc = number of cells - x direction        
+nyc =  512 #256             # nyc = number of cells - y direction
+nzc =  1               # nzc = number of cells - z direction        
+
+# %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
+XLEN = 32               # Number of subdomains in the X direction
+YLEN = 16               # Number of subdomains in the X direction
+ZLEN = 1               # Number of subdomains in the X direction
+
+# %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+#    0 = electrons
+#    1 = protons
+#    2,3,4,5,... = ions
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ns = 4                               # Number of particles
+rhoINIT         = 1.0  1.0 0.1  0.1           # Initial density (make sure you are neutral)
+rhoINJECT       = 1.0  1.0 0.1  0.1          # Injection density (make sure you are neutral)
+TrackParticleID = 0    0  0 0           # TrackParticleID[species] = 1=true, 0=false 
+
+npcelx          = 8    8     8 8        # Particles per cell in X
+npcely          = 8    8     8 8       # Particles per cell in Y
+npcelz          = 1    1     1 1       # Particles per cell in Z
+NpMaxNpRatio    = 40.0  # increase a lot for MC #3.0                # Maximum number of particles allocated
+
+qom             = -256.0  1.0   -256.0  1.0      # Charge/mass ratio
+uth             = 0.136   0.00565 0.136   0.00565    # Thermal velocity in X
+vth             = 0.136   0.00565 0.136   0.00565    # Thermal velocity in Y
+wth             = 0.136   0.00565 0.136   0.00565    # Thermal velocity in Z
+u0              = 0.0     0.0 0.0     0.0       # Drift velocity in X
+v0              = 0.0     0.0 0.0     0.0       # Drift velocity in X
+w0              = 0.0201 -0.00883 0.0     0.0  # Drift velocity in X
+
+# %%%%%%%%%%%% Monte Carlo %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Gas             = Hydrogen
+GasT            = 2012196.49412    # K; temperature of the gas in Kelvin
+GasN            = 4.4e+20 #1.1e20    # m-3; density of the gas in m-3
+DensityRatio = 0.075 #0.3    # the ratio of the plasma (ne= ni) vs gas ratio; must be < 1!!!
+ReducedC        = 2.99792458e+6 # reduced light speed, for the MC module; eps0 is managed internally
+# %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
+PERIODICX       = 1                  # In direction X (1=true, 0=false)
+PERIODICY       = 1                  # In direction Y (1=true, 0=false)
+PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
+
+# %%%%%%%%%%%% boundary conditions %%%%%%%%%%%%%%%
+# If the PERIODIC flag is active in the previous section
+# periodic boundary conditions will be imposed
+#
+# PHI Electrostatic Potential     
+# 0,1 = Dirichilet boundary condition ;     
+# 2   = Neumann boundary condition
+    bcPHIfaceXright = 1
+    bcPHIfaceXleft  = 1
+    bcPHIfaceYright = 1
+    bcPHIfaceYleft  = 1
+    bcPHIfaceZright = 1
+    bcPHIfaceZleft  = 1
+    
+#    EM field boundary condition
+#    0 = perfect conductor
+#    1 = magnetic mirror
+    bcEMfaceXright = 2 #3
+    bcEMfaceXleft =  2 #3
+    bcEMfaceYright = 2 #3
+    bcEMfaceYleft =  2 #3
+    bcEMfaceZright = 3
+    bcEMfaceZleft =  3
+    
+#    Particles Boundary condition
+#    0 = exit
+#    1 = perfect mirror
+#    2 = riemission
+    bcPfaceXright = 2 #2 
+    bcPfaceXleft =  2 #2 
+    bcPfaceYright = 2 #2 !!
+    bcPfaceYleft =  2 #2 !!
+    bcPfaceZright = 3 #2
+    bcPfaceZleft =  3 #2
+
+# %%%%%%%%%%%% Numerics options %%%%%%%%%%%%%%%
+verbose                = 1        # Print to video results
+Vinj                   = 0.0      # Velocity of the injection from the wall
+CGtol                  = 1E-3     # CG solver stopping criterium tolerance
+GMREStol               = 1E-3     # GMRES solver stopping criterium tolerance
+NiterMover             = 3        # mover predictor corrector iteration
+FieldOutputCycle       = 400      # Output for field
+ParticlesOutputCycle   = 10000      # Output for particles if 1 it doesnt save particles data
+RestartOutputCycle     = 5000     # restart cycle
+DiagnosticsOutputCycle = 1        # Diagnostics cycle
