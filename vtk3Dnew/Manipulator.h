@@ -1948,7 +1948,7 @@ void vet2mat(int n, double** mat, double* vet, double* b, double* dot){
 		mat[i][j] =  vet[counter];
 		counter++;
 	}
-
+// compute the dot product of the eigenvectors with b
 	for (int j=0; j<n; j++){
 		dot[j] = 0.0;
 	    double tmp = 0.0;
@@ -1956,6 +1956,9 @@ void vet2mat(int n, double** mat, double* vet, double* b, double* dot){
 				dot[j] += mat[i][j] *b[i];
 				tmp += mat[i][j] * mat[i][j];
 			}
+        //now it normalizes the dot product of the eigenvectors
+        //with b using the norm of teh eigenvectors
+        //(in case LAPACK does not give unit egenvectors)
 		dot[j] = dot[j]/sqrt(tmp);
 	}
 
