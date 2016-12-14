@@ -61,6 +61,13 @@ class Collective
     double getz_center();
     /*! Get object size - cubic box */
     double getL_square();
+
+    /** getgeometry coild - Coil Diameter */
+    double getcoilD();
+    /** getgeometry coild - Coil Spacing */
+    double getcoilSpacing();
+
+
     /*! Get the number of cells - direction X */
     int getNxc();
     /*! Get the number of cells - direction Y */
@@ -90,6 +97,8 @@ class Collective
     double getTh();
     /*! get the Smoothing value */
     double getSmooth();
+	/** get the Nvolte value*/
+    int getNvolte();
     /*! get the number of time cycles */
     int getNcycles();
     /*! get the number of species */
@@ -251,6 +260,8 @@ class Collective
     double th;
     /*! Smoothing value */
     double Smooth;
+    /** Smoothing times*/
+    int Nvolte;
     /*! number of time cycles */
     int ncycles;
     /*! physical space dimensions */
@@ -269,6 +280,13 @@ class Collective
     double z_center;
     /*! object size - assuming a cubic box */
     double L_square;
+
+    /** geometry coil - Coil Diameter */
+    double coilD;
+    /** geometry coil - Coil Spacing */
+    double coilSpacing;
+
+
     /*! number of cells - X direction */
     int nxc;
     /*! number of cells - Y direction */

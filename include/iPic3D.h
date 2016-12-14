@@ -61,6 +61,11 @@ namespace iPic3D {
     double        *Qremoved;
     unsigned long *VelocityDist;
     Timing        *my_clock;
+    double 		  *Qtot;
+    int           *totParticles;
+    int           *globalTotParticles;
+    double        *speciesTemp;
+    double        *qom;
 
     PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
     myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent;  // Create an Output Agent for HDF5 output
@@ -70,6 +75,7 @@ namespace iPic3D {
     string RestartDirName;
     string cqsat;
     string cq;
+    string cq2;
     string ds;
     stringstream num_proc;
     int restart_cycle;
@@ -88,6 +94,10 @@ namespace iPic3D {
     double Benergy;
     double TOTenergy;
     double TOTmomentum;
+    double x_center;
+    double y_center;
+    double z_center;
+    double L_square;
   };
 
   inline int c_Solver::FirstCycle() {

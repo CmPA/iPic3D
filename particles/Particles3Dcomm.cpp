@@ -102,6 +102,11 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   Lx = col->getLx();
   Ly = col->getLy();
   Lz = col->getLz();
+  x_center     = col->getx_center();
+  y_center   = col->gety_center();
+  z_center     = col->getz_center();
+  L_square = col->getL_square();
+
   dx = grid->getDX();
   dy = grid->getDY();
   dz = grid->getDZ();
@@ -221,6 +226,11 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     // the cycle of the last restart is set to 0
     string name_dataset = "/particles/species_" + species_name.str() + "/x/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+	if (dataset_id < 0){
+		 nop = 0 ;
+	}
+	else
+	{
     datatype = H5Dget_type(dataset_id);
     size = H5Tget_size(datatype);
     dataspace = H5Dget_space(dataset_id); /* dataspace handle */
@@ -287,6 +297,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
           ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
       }
     }
+	}
     // close the hdf file
     status = H5Fclose(file_id);
   }
@@ -1069,6 +1080,32 @@ double Particles3Dcomm::getKe() {
   MPI_Allreduce(&localKe, &totalKe, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalKe);
 }
+/** return the total charge */
+double Particles3Dcomm::getTotalQ(){
+    double localQ = 0.0;
+	double totalQ = 0.0;
+	for (register int i=0; i < nop; i++)
+	       localQ += q[i];
+	//cout << "My q is: " << localQ << endl;
+    MPI_Allreduce(&localQ, &totalQ, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	return(totalQ);
+}
+/** return the total charge inside prescribed core region */
+double Particles3Dcomm::getCoreQ(double radius){
+    double localQ = 0.0;
+	double totalQ = 0.0;
+	for (register int i=0; i < nop; i++)
+		if (pow(x[i] - x_center, 2) +
+			pow(y[i] - y_center, 2) +
+			pow(z[i] - z_center, 2) <=
+			pow(radius, 2) ) {
+	       localQ += q[i];
+		}
+	//cout << "My q is: " << localQ << endl;
+    MPI_Allreduce(&localQ, &totalQ, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+	return(totalQ);
+}
+
 /** return the total momentum */
 double Particles3Dcomm::getP() {
   double localP = 0.0;

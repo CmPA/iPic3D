@@ -191,6 +191,8 @@ class EMfields3D                // :public Field
     void initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! Init Force Free (JxB=0) */
     void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /**  Init WB8 */
+    void initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col);
     /*! initialized with rotated magnetic field */
     void initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta);
     /*! add a perturbattion to charge density */
@@ -223,6 +225,8 @@ class EMfields3D                // :public Field
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for gem challange */
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
+    /*! fix B on the boundary to zero */
+    void fixBzero(Grid * grid, VirtualTopology3D * vct);
 
     /*! Calculate the three components of Pi(implicit pressure) cross image vector */
     void PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid);
@@ -453,6 +457,8 @@ class EMfields3D                // :public Field
     double th;
     /*! Smoothing value */
     double Smooth;
+    /** Nvolte value*/
+    int Nvolte;
     /*! delt = c*th*dt */
     double delt;
     /*! number of particles species */
@@ -497,6 +503,10 @@ class EMfields3D                // :public Field
     double z_center;
     /** Characteristic length */
     double L_square;
+    /** Coil Parameter: magnetic coil diameter    */
+    double coilD;
+    /** Coil Parameter: magnetic coil spacing   */
+    double coilSpacing;
 
     /*! PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes */
     double ***PHI;

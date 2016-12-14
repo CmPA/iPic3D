@@ -33,6 +33,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   y_center = col->gety_center();
   z_center = col->getz_center();
   L_square = col->getL_square();
+  coilD = col->getcoilD();
+  coilSpacing = col->getcoilSpacing();
+
 
   Fext = 0.0;
 
@@ -68,6 +71,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   B1z = col->getB1z();
   delta = col->getDelta();
   Smooth = col->getSmooth();
+  Nvolte = col->getNvolte();
+
   // get the density background for the gem Challange
   rhoINIT   = new double[ns];
   rhoINJECT = new double[ns];
@@ -116,9 +121,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Bx_ext = newArr3(double,nxn,nyn,nzn);
   By_ext = newArr3(double,nxn,nyn,nzn);
   Bz_ext = newArr3(double,nxn,nyn,nzn);
-  // Jx_ext = newArr3(double,nxn,nyn,nzn);
-  // Jy_ext = newArr3(double,nxn,nyn,nzn);
-  // Jz_ext = newArr3(double,nxn,nyn,nzn);
+  Jx_ext = newArr3(double,nxn,nyn,nzn);
+  Jy_ext = newArr3(double,nxn,nyn,nzn);
+  Jz_ext = newArr3(double,nxn,nyn,nzn);
   // involving species
   rhons = newArr4(double, ns, nxn, nyn, nzn);
   rhocs = newArr4(double, ns, nxc, nyc, nzc);
@@ -281,6 +286,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
+  if (Case=="Coils") fixBzero(grid, vct);
 
   // OpenBC:
   BoundaryConditionsB(Bxc,Byc,Bzc,nxc,nyc,nzc,grid,vct);
@@ -292,9 +298,10 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   scale(temp2Z, Jzh, -FourPI / c, nxn, nyn, nzn);
 
   // -- dipole SOURCE version using J_ext
-  // addscale(-FourPI/c,temp2X,Jx_ext,nxn,nyn,nzn);
-  // addscale(-FourPI/c,temp2Y,Jy_ext,nxn,nyn,nzn);
-  // addscale(-FourPI/c,temp2Z,Jz_ext,nxn,nyn,nzn);
+  // needed also for the Coils
+  addscale(-FourPI/c,temp2X,Jx_ext,nxn,nyn,nzn);
+  addscale(-FourPI/c,temp2Y,Jy_ext,nxn,nyn,nzn);
+  addscale(-FourPI/c,temp2Z,Jz_ext,nxn,nyn,nzn);
   // -- end of dipole SOURCE version using J_ext
 
   // curl(B) - 4pi J_hat
@@ -605,6 +612,28 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
         Bzc[i][2][k] = B0z;
       }
   }
+
+}
+
+/** fix the B boundary at zero*/
+inline void EMfields3D::fixBzero(Grid *grid, VirtualTopology3D *vct){
+   if (vct->getYright_neighbor()==MPI_PROC_NULL){
+      for (int i=0; i < nxc;i++)
+	    for (int k=0; k < nzc;k++){
+			Bxc[i][nyc-1][k] = 0.0;
+			Byc[i][nyc-1][k] = 0.0;
+			Bzc[i][nyc-1][k] = 0.0;
+
+		}
+	}
+	if (vct->getYleft_neighbor()==MPI_PROC_NULL){
+      for (int i=0; i < nxc;i++)
+	    for (int k=0; k < nzc;k++){
+			Bxc[i][0][k] = 0.0;
+			Byc[i][0][k] = 0.0;
+			Bzc[i][0][k] = 0.0;
+		}
+	}
 
 }
 
@@ -921,6 +950,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
+  if (Case=="Coils") fixBzero(grid, vct);
 
   // OpenBC:
   BoundaryConditionsB(Bxc,Byc,Bzc,nxc,nyc,nzc,grid,vct);
@@ -1893,6 +1923,7 @@ void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * gri
 
 }
 
+
 /*! initialize GEM challenge with no Perturbation */
 void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   if (restart1 == 0) {
@@ -1952,6 +1983,137 @@ void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective 
   else {
     init(vct, grid, col);            // use the fields from restart file
   }
+}
+//Initializes the vacuum fields for EMC2.
+void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
+        double distance;
+
+	//char BlogName[256];
+	//sprintf(BlogName, "/home/aws/VacuumB.%d.csv", vct->getCartesian_rank());
+	//FILE *Blog = fopen(BlogName, "w");
+	//fprintf(Blog, "x,y,z,Bx,By,Bz\n");
+
+           for (int i=0; i < nxn; i++){
+            for (int j=0; j < nyn; j++){
+              for (int k=0; k < nzn; k++){
+                for (int is=0; is < ns; is++){
+        		  rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+        		}
+        		Ex[i][j][k] = 0.0;
+                Ey[i][j][k] = 0.0;
+                Ez[i][j][k] = 0.0;
+                double blp[3];
+                double a=coilD/2.0;
+                double xc=Lx/2.0;
+                double yc=Ly/2.0;
+                double zc=Lz/2.0;
+                double deltax=coilSpacing/2.0;
+                double deltay=coilSpacing/2.0;
+                double deltaz=coilSpacing/2.0;
+                double x = grid->getXN(i,j,k);
+                double y = grid->getYN(i,j,k);
+                double z = grid->getZN(i,j,k);
+                /*
+                loopZ(blp, x, y, z, a, xc, yc, zc+deltaz, -B0z);
+                Bxn[i][j][k] = blp[0];
+                Byn[i][j][k] = blp[1];
+                Bzn[i][j][k] = blp[2];
+                loopZ(blp, x, y, z, a, xc, yc, zc-deltaz, B0z);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+                loopX(blp, x, y, z, a, xc+deltax, yc, zc, -B0x);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+                loopX(blp, x, y, z, a, xc-deltax, yc, zc, B0x);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+                */
+                loopY(blp, x, y, z, a, xc, yc+deltay, zc, -B0y);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+                loopY(blp, x, y, z, a, xc, yc-deltay, zc, B0y);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+
+		//fprintf(Blog, "%f,%f,%f,%E,%E,%E\n", x, y, z, Bxn[i][j][k], Byn[i][j][k], Bzn[i][j][k]);
+              }
+            }
+           }
+
+           // initialize B on centers
+            grid->interpN2C(Bxc,Bxn);
+        	grid->interpN2C(Byc,Byn);
+        	grid->interpN2C(Bzc,Bzn);
+            for (int i=0; i < nxc; i++){
+             for (int j=0; j < nyc; j++){
+               for (int k=0; k < nzc; k++){
+                 double blp[3];
+                 double a=coilD/2.0;
+                 double xc=Lx/2.0;
+                 double yc=Ly/2.0;
+                 double zc=Lz/2.0;
+                 double deltax=coilSpacing/2.0;
+                 double deltay=coilSpacing/2.0;
+                 double deltaz=coilSpacing/2.0;
+                 double x = grid->getXC(i,j,k);
+                 double y = grid->getYC(i,j,k);
+                 double z = grid->getZC(i,j,k);
+                 /*
+                 loopZ(blp, x, y, z, a, xc, yc, zc+deltaz, -B0z);
+                 //cout << blp[0] << "   " << x << "   " << xc << "   " << m << endl;
+                 Bxc[i][j][k] = blp[0];
+                 Byc[i][j][k] = blp[1];
+                 Bzc[i][j][k] = blp[2];
+                 loopZ(blp, x, y, z, a, xc, yc, zc-deltaz, B0z);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+                 loopX(blp, x, y, z, a, xc+deltax, yc, zc, -B0x);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+                 loopX(blp, x, y, z, a, xc-deltax, yc, zc, B0x);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+                 */
+                 loopY(blp, x, y, z, a, xc, yc+deltay, zc, -B0y);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+                 loopY(blp, x, y, z, a, xc, yc-deltay, zc, B0y);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+
+		//fprintf(Blog, "%f,%f,%f,%E,%E,%E\n", x, y, z, Bxc[i][j][k], Byc[i][j][k], Bzc[i][j][k]);
+               }
+             }
+            }
+		//fclose(Blog);
+
+        	communicateCenterBC_P(nxc,nyc,nzc,Bxc,2,2,2,2,2,2,vct);
+        	communicateCenterBC_P(nxc,nyc,nzc,Byc,2,2,2,2,2,2,vct);
+        	communicateCenterBC_P(nxc,nyc,nzc,Bzc,2,2,2,2,2,2,vct);
+            // initialize J on nodes
+        	grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc);
+        	scale(Jx_ext,tempXN,c/FourPI,nxn,nyn,nzn);
+        	scale(Jy_ext,tempYN,c/FourPI,nxn,nyn,nzn);
+        	scale(Jz_ext,tempZN,c/FourPI,nxn,nyn,nzn);
+
+                for (int is=0 ; is<ns; is++)
+                 grid->interpN2C(rhocs,is,rhons);
+         if (restart1 ==0){
+//  do nothing
+        } else { // EM initialization from RESTART
+                init(vct,grid,col);  // use the fields from restart file
+        }
+
 }
 
 void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col) {

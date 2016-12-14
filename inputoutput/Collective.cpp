@@ -23,6 +23,7 @@ void Collective::ReadInput(string inputfile) {
     ncycles = config.read < int >("ncycles");
     th = config.read < double >("th");
     config.readInto(Smooth, "Smooth");
+	Nvolte = config.read<int>( "Nvolte" );
     SaveDirName = config.read < string > ("SaveDirName");
     RestartDirName = config.read < string > ("RestartDirName");
     ns = config.read < int >("ns");
@@ -131,6 +132,8 @@ void Collective::ReadInput(string inputfile) {
     y_center = config.read < double >("y_center");
     z_center = config.read < double >("z_center");
     L_square = config.read < double >("L_square");
+	coilD = config.read<double>( "CoilD" );
+	coilSpacing = config.read<double>( "CoilSpacing" );
 
     npcelx = new int[ns];
     npcely = new int[ns];
@@ -764,6 +767,10 @@ int Collective::ReadRestart(string inputfile) {
     dataset_id = H5Dopen2(file_id, "/collective/Smooth", H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &Smooth);
     status = H5Dclose(dataset_id);
+	// read Nvolte
+	dataset_id = H5Dopen(file_id, "/collective/Nvolte", H5P_DEFAULT);  // HDF 1.8.8
+	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&Nvolte);
+	status = H5Dclose(dataset_id);
   }
 
   status = H5Fclose(file_id);
@@ -954,6 +961,7 @@ void Collective::save() {
   my_file << "B0z                      = " << B0z << endl;
   my_file << "---------------------------" << endl;
   my_file << "Smooth                   = " << Smooth << endl;
+  my_file  << "Nvolte                   = " << Nvolte  << endl;
   my_file << "GMRES error tolerance    = " << GMREStol << endl;
   my_file << "CG error tolerance       = " << CGtol << endl;
   my_file << "Mover error tolerance    = " << NiterMover << endl;
@@ -997,6 +1005,14 @@ double Collective::getz_center() {
 double Collective::getL_square() {
   return (L_square);
 }
+/** get CoilD */
+double Collective::getcoilD(){
+	return(coilD);
+}
+/** get CoilSpacing */
+double Collective::getcoilSpacing(){
+	return(coilSpacing);
+}
 /*! get nxc */
 int Collective::getNxc() {
   return (nxc);
@@ -1036,6 +1052,11 @@ double Collective::getTh() {
 /*! get the smooth parameter */
 double Collective::getSmooth() {
   return (Smooth);
+}
+
+/** get the Nvolte parameter */
+int Collective::getNvolte(){
+	return(Nvolte);
 }
 
 /*! get the number of time cycles */

@@ -60,6 +60,10 @@ Particles3D::~Particles3D() {
   delete[]w;
   delete[]q;
 }
+/** Empty particle distribution */
+void Particles3D::empty(Grid* grid,Field* EMf,VirtualTopology3D* vct){
+	nop = 0;
+}
 
 /** particles are uniformly distributed with zero velocity   */
 void Particles3D::uniform_background(Grid * grid, Field * EMf) {
@@ -530,6 +534,236 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
             }
 
 }
+
+/** Maxellian random velocity and uniform spatial distribution */
+int Particles3D::maxwell_box(Grid* grid,Field* EMf,VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center, double multiple){
+
+/* initialize random generator with different seed on different processor */
+ srand(vct->getCartesian_rank()+2);
+
+	double harvest;
+	double prob, theta, sign;
+	long long counter=0;
+	for (int i=1; i< grid->getNXC()-1;i++)
+		for (int j=1; j< grid->getNYC()-1;j++)
+			for (int k=1; k< grid->getNZC()-1;k++)
+				for (int ii=0; ii < npcelx; ii++)
+					for (int jj=0; jj < npcely; jj++)
+						for (int kk=0; kk < npcelz; kk++){
+							x[counter] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);   // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+							y[counter] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+							z[counter] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+							if (fabs(x[counter] - x_center) < L_square/2 && fabs(y[counter] - y_center) < L_square/2 && fabs(z[counter] - z_center) < L_square/2){
+							// q = charg
+							q[counter] =  (qom/fabs(qom))*(EMf->getRHOcs(i,j,k,ns)/npcel)*(1.0/grid->getInvVOL());
+							if (ii == 0 && jj == 0 && kk == 0 && i == 1 && j == 1 && k == 1)
+								cout << "Q at ("<< i<<","<<j<<","<<k<<") = "<<q[counter]<<endl;
+							// u
+							harvest =   rand()/(double)RAND_MAX;
+							prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+							harvest =   rand()/(double)RAND_MAX;
+							theta = 2.0*M_PI*harvest;
+							u[counter] = multiple*u0 + uth*prob*cos(theta);
+							// v
+							v[counter] = multiple*v0 + vth*prob*sin(theta);
+							// w
+							harvest =   rand()/(double)RAND_MAX;
+							prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+							harvest =   rand()/(double)RAND_MAX;
+							theta = 2.0*M_PI*harvest;
+							w[counter] = multiple*w0 + wth*prob*cos(theta);
+							if (TrackParticleID)
+								ParticleID[counter]= counter*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+
+							counter++ ;
+							}
+						}
+
+	nop = counter - 1;
+	return nop;
+}
+
+/** Maxellian random velocity and uniform spatial distribution */
+int Particles3D::maxwell_box_thin(Grid* grid,Field* EMf,VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center, double multiple){
+
+/* initialize random generator with different seed on different processor */
+ srand(vct->getCartesian_rank()+2);
+
+	double harvest;
+	double prob, theta, sign;
+	long long counter=0;
+	for (int i=1; i< grid->getNXC()-1;i++)
+		for (int j=1; j< grid->getNYC()-1;j++)
+			for (int k=1; k< grid->getNZC()-1;k++)
+				for (int ii=0; ii < npcelx; ii++)
+					for (int jj=0; jj < npcely; jj++)
+						for (int kk=0; kk < npcelz; kk++){
+							x[counter] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);   // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+							y[counter] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+							z[counter] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+							if (fabs(x[counter] - x_center) < L_square/4 && fabs(y[counter] - y_center) < L_square/2 && fabs(z[counter] - z_center) < L_square/2){
+							// q = charg
+							q[counter] =  (qom/fabs(qom))*(EMf->getRHOcs(i,j,k,ns)/npcel)*(1.0/grid->getInvVOL());
+							if (ii == 0 && jj == 0 && kk == 0 && i == 1 && j == 1 && k == 1)
+								cout << "Q at ("<< i<<","<<j<<","<<k<<") = "<<q[counter]<<endl;
+							// u
+							harvest =   rand()/(double)RAND_MAX;
+							prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+							harvest =   rand()/(double)RAND_MAX;
+							theta = 2.0*M_PI*harvest;
+							u[counter] = multiple*u0 + uth*prob*cos(theta);
+							// v
+							v[counter] = multiple*v0 + vth*prob*sin(theta);
+							// w
+							harvest =   rand()/(double)RAND_MAX;
+							prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+							harvest =   rand()/(double)RAND_MAX;
+							theta = 2.0*M_PI*harvest;
+							w[counter] = multiple*w0 + wth*prob*cos(theta);
+							if (TrackParticleID)
+								ParticleID[counter]= counter*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+
+							counter++ ;
+							}
+						}
+
+	nop = counter - 1;
+	return nop;
+}
+
+/** Maxellian random velocity and uniform spatial distribution */
+void Particles3D::dual_spark_plug(Grid* grid,Field* EMf,VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center){
+	long long storeNop = 0;
+	nop = 0;
+
+	maxwell_box_thin(grid, EMf, vct, L_square, L_square*(3.0/4.0), y_center, z_center);
+	storeNop = nop;
+	storeNop += maxwell_box_thin(grid, EMf, vct, L_square, Lx-(L_square*(3.0/4.0)), y_center, z_center, -1.0);
+	nop = storeNop;
+}
+
+
+
+
+int Particles3D::getGlobalFlux(int i){
+    int glob = 0;
+
+    //we should check that i is not greater than nFluxLoops
+    if (i > 1)
+        return -1;
+
+    MPI_Allreduce(&fluxCounter[i], &glob, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    return(glob);
+}
+
+double Particles3D::getGlobalFluxEnergy(int i){
+    double glob = 0;
+
+    //we should check that i is not greater than nFluxLoops
+    if (i > 1)
+        return -1;
+
+    MPI_Allreduce(&fluxEnergy[i], &glob, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    return(glob);
+}
+
+void Particles3D::recordFlux(double oldX, double oldY, double oldZ, double newX, double newY, double newZ, int ptcl)
+{
+	double interpX, interpY, interpZ, centerX, centerY, centerZ;
+	centerX = Lx/2.0;
+	centerY = Ly/2.0;
+	centerZ = Lz/2.0;
+
+	int nFluxLoops = 1;
+	int fluxPlane[1] = {1};
+	double fluxCenterX[1], fluxCenterY[1], fluxCenterZ[1];
+	fluxCenterY[0] = fluxCenterZ[0] = centerY;
+	fluxCenterX[0] = centerX+30;
+	double fluxRadius[1] = {12};
+
+	for (int i = 0; i < nFluxLoops; i++)
+	{
+
+			switch(fluxPlane[i]){
+				case 1:				//the case where the fluxLoop is normal to the x-plane
+
+					//interpolate the coordinates up to the position of the flux-loop
+					interpY = oldY + (newY-oldY)*(fluxCenterX[i]-oldX)/(newX-oldX);
+					interpZ = oldZ + (newZ-oldZ)*(fluxCenterX[i]-oldX)/(newX-oldX);
+
+					//check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
+					if (oldX-centerX < fluxCenterX[i]-centerX && newX-centerX > fluxCenterX[i]-centerX &&
+						pow(interpY-fluxCenterY[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
+					{
+						fluxCounter[i]++;
+						fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+					}
+
+					//check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
+					else if (oldX-centerX > fluxCenterX[i]-centerX && newX-centerX < fluxCenterX[i]-centerX &&
+						pow(interpY-fluxCenterY[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
+					{
+						fluxCounter[i]--;
+						fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+					}
+				break;
+
+				case 2:				//the case where the fluxLoop is normal to the y-plane
+
+					//interpolate the coordinates up to the position of the flux-loop
+					interpX = oldX + (newX-oldX)*(fluxCenterY[i]-oldY)/(newY-oldY);
+					interpZ = oldZ + (newZ-oldZ)*(fluxCenterY[i]-oldY)/(newY-oldY);
+
+					//check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
+					if (oldY-centerY < fluxCenterY[i]-centerY && newY-centerY > fluxCenterY[i]-centerY &&
+						pow(interpX-fluxCenterX[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
+					{
+						fluxCounter[i]++;
+						fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+					}
+
+					//check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
+					else if (oldY-centerY > fluxCenterY[i]-centerY && newY-centerY < fluxCenterY[i]-centerY &&
+						pow(interpX-fluxCenterX[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
+					{
+						fluxCounter[i]--;
+						fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+					}
+				break;
+
+				case 3:				//the case where the fluxLoop is normal to the z-plane
+
+					//interpolate the coordinates up to the position of the flux-loop
+					interpX = oldX + (newX-oldX)*(fluxCenterY[i]-oldY)/(newY-oldY);
+					interpY = oldZ + (newZ-oldZ)*(fluxCenterY[i]-oldY)/(newY-oldY);
+
+					//check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
+					if (oldZ-centerZ < fluxCenterZ[i]-centerZ && newZ-centerZ > fluxCenterZ[i]-centerZ &&
+						pow(interpX-fluxCenterX[i], 2.0) + pow(interpY-fluxCenterY[i], 2.0) < pow(fluxRadius[i], 2.0) )
+					{
+						fluxCounter[i]++;
+						fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+					}
+
+					//check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
+					else if (oldZ-centerZ > fluxCenterZ[i]-centerZ && newZ-centerZ < fluxCenterZ[i]-centerZ &&
+						pow(interpX-fluxCenterX[i], 2.0) + pow(interpY-fluxCenterY[i], 2.0) < pow(fluxRadius[i], 2.0) )
+					{
+						fluxCounter[i]--;
+						fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+					}
+				break;
+
+				default:
+				break;
+		}
+	}
+
+}
+
+
 
 /**Add a periodic perturbation in J exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
 void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double jx_mod, double jx_phase, double jy_mod, double jy_phase, double jz_mod, double jz_phase, double B0, Grid * grid) {
@@ -1675,4 +1909,251 @@ double Particles3D::deleteParticlesInsideSphere(double R, double x_center, doubl
   nop = nplast +1;
   return(Q_removed);
 }
+
+
+/** Delete the particles outer multx*dx, multy*dy, multz*dz celles */
+double Particles3D::deleteParticlesOuterFrame(double multx, double multy, double multz){
+	// calculate accumulated charge on the spacecraft
+	long long np_current = 0, nplast = nop-1;
+	while (np_current < nplast+1) {
+		if (x[np_current] < multx*dx || x[np_current] > (Lx-multx*dx) ||
+		    y[np_current] < multy*dy || y[np_current] > (Ly-multy*dx) ||
+		    z[np_current] < multz*dz || z[np_current] > (Lz-multz*dx)) {
+			Q_removed += q[np_current];
+			del_pack(np_current,&nplast);
+		} else {
+			np_current++;
+		}
+	}
+
+	nop = nplast +1;
+	return(Q_removed);
+}
+
+/** Delete the particles inside the sphere with radius R and center x_center y_center */
+double Particles3D::deleteParticlesOutsideSphere(double R, double x_center, double y_center, double z_center){
+	// calculate accumulated charge on the spacecraft
+	long long np_current = 0, nplast = nop-1;
+	while (np_current < nplast+1){
+		if (sqrt( pow(x[np_current] - x_center,2) + pow(y[np_current] - y_center,2) + pow(z[np_current] - z_center,2) ) > R){
+			// delete the particle and pack the particle array, the value of nplast changes
+			Q_removed += q[np_current];
+			del_pack(np_current,&nplast);
+
+		} else {
+			// particle is still in the domain, procede with the next particle
+			np_current++;
+		}
+	}
+	nop = nplast +1;
+	return(Q_removed);
+}
+
+//** Delete the particles outside the cube with dimension L */
+double Particles3D::deleteParticlesOutsideBox(double L){
+	// calculate accumulated charge on the spacecraft
+	long long np_current = 0, nplast = nop-1;
+	while (np_current < nplast+1){
+		if (x[np_current] > L || x[np_current] < 0 ||
+			y[np_current] > L || y[np_current] < 0 ||
+			z[np_current] > L || z[np_current] < 0){
+			// delete the particle and pack the particle array, the value of nplast changes
+			Q_removed += q[np_current];
+			del_pack(np_current,&nplast);
+
+		} else {
+			// particle is still in the domain, procede with the next particle
+			np_current++;
+		}
+	}
+	nop = nplast +1;
+	return(Q_removed);
+}
+
+int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf)
+{
+	double harvest;
+	double prob, theta, sign;
+	int avail;
+	long long store_nop=nop;
+	long long counter=nop;
+
+	//double Iinj=0.002;
+	double Iinj=Vinj;
+	long long npinject=1;
+	if (Iinj > 1)
+		npinject = (int)floor(Iinj);
+
+	if (vct->getCartesian_rank() == 0){
+			cout << "*** Injector Rand Box species " << ns << " ***" << NiterMover <<" ITERATIONS : INJECTING " << npinject << " particles, each with a charge of " << (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*(1.0/grid->getInvVOL()) << " C  ****" << endl;
+
+
+		for (int inject = 0; inject < npinject; inject++)
+		{
+			harvest =   rand()/(double)RAND_MAX ;
+			x[nop] = x_center+(harvest-0.5)*L_square;
+			harvest =   rand()/(double)RAND_MAX ;
+			y[nop] = y_center+(harvest-0.5)*L_square;
+			harvest =   rand()/(double)RAND_MAX ;
+			z[nop] = z_center+(harvest-0.5)*L_square;
+			//cout << "x=" <<x[nop] << "y=" << y[nop]<< "z=" << z[nop] <<endl;
+			//this assigns charge the same as does maxwell_box
+			q[nop] =  (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*(1.0/grid->getInvVOL());
+
+			// random numbers for Maxwellian
+			harvest =   rand()/(double)RAND_MAX;
+			prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+			harvest =   rand()/(double)RAND_MAX;
+			theta = 2.0*M_PI*harvest;
+
+			//u
+			u[nop] = u0 + uth*prob*cos(theta);
+
+			// v
+			v[nop] = v0 + vth*prob*sin(theta);
+
+			// w
+			harvest =   rand()/(double)RAND_MAX;
+			prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+			harvest =   rand()/(double)RAND_MAX;
+			theta = 2.0*M_PI*harvest;
+			w[nop] = w0 + wth*prob*cos(theta);
+
+			if (TrackParticleID)
+				ParticleID[nop]= nop*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+			//printf("*** DEBUG: Added a particle at (x,y,z) = (%f,%f,%f) with (vx,vy,vz) = (%f,%f,%f)\n", x[nop], y[nop], z[nop], u[nop], v[nop], w[nop]);
+
+			nop++;
+		}
+
+
+		// move particles inside the sim box
+		for (int i=store_nop; i < nop; i++){
+			x[i] += u[i]*dt;
+			y[i] += v[i]*dt;
+			z[i] += w[i]*dt;
+		}
+	}
+
+		// ******************** //
+		// COMMUNICATION
+		// ******************* //
+	    avail = communicate(vct);
+	    if (avail < 0){
+		cout <<"Cannot communicate! Failing!!!!\n";
+		return(-1);
+	    }
+	    MPI_Barrier(MPI_COMM_WORLD);
+//	    cout << "Past barrier...\n";
+	    // communicate again if particles are not in the correct domain
+	    while(isMessagingDone(vct) >0){
+			// COMMUNICATION
+			avail = communicate(vct);
+
+			if (avail < 0)
+		        return(-1);
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+
+
+//	cout << "Communicated!!\n";
+
+	return(0); // exit succcesfully (hopefully)
+
+}
+
+
+
+int Particles3D::injector_rand_box_mono(Grid* grid,VirtualTopology3D* vct, Field* EMf)
+{
+	double harvest;
+	double prob, theta, sign, fi;
+	int avail;
+	long long store_nop=nop;
+	long long counter=nop;
+
+	//double Iinj=0.002;
+	double Iinj=Vinj;
+	long long npinject=1;
+	if (Iinj > 1)
+		npinject = (int)floor(Iinj);
+
+	if (vct->getCartesian_rank() == 0){
+			cout << "*** Injector Rand Box species " << ns << " ***" << NiterMover <<" ITERATIONS : INJECTING " << npinject << " particles, each with a charge of " << (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*(1.0/grid->getInvVOL()) << " C  ****" << endl;
+
+
+		for (long long inject = 0; inject < npinject; inject++)
+		{
+			harvest =   rand()/(double)RAND_MAX ;
+			x[nop] = x_center+(harvest-0.5)*L_square;
+			harvest =   rand()/(double)RAND_MAX ;
+			y[nop] = y_center+(harvest-0.5)*L_square;
+			harvest =   rand()/(double)RAND_MAX ;
+			z[nop] = z_center; //z_center+(harvest-0.5)*L_square;
+			//cout << "x=" <<x[nop] << "y=" << y[nop]<< "z=" << z[nop] <<endl;
+			//this assigns charge the same as does maxwell_box
+			q[nop] =  (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*pow(L_square,3);
+
+			// random numbers for Maxwellian
+			harvest =   rand()/(double)RAND_MAX;
+			fi  = M_PI*harvest;
+			harvest =   rand()/(double)RAND_MAX;
+			theta = 2.0*M_PI*harvest;
+
+			//u
+			u[nop] = u0 + uth*cos(fi)*cos(theta);
+
+			// v
+			v[nop] = v0 + vth*cos(fi)*sin(theta);
+
+			// w
+			w[nop] = w0 + wth*sin(fi);
+
+			if (TrackParticleID)
+				ParticleID[nop]= nop*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+			//printf("*** DEBUG: Added a particle at (x,y,z) = (%f,%f,%f) with (vx,vy,vz) = (%f,%f,%f)\n", x[nop], y[nop], z[nop], u[nop], v[nop], w[nop]);
+
+			nop++;
+		}
+
+
+		// move particles inside the sim box
+		for (long long i=store_nop; i < nop; i++){
+			x[i] += u[i]*dt;
+			y[i] += v[i]*dt;
+			z[i] += w[i]*dt;
+		}
+	}
+
+		// ******************** //
+		// COMMUNICATION
+		// ******************* //
+	    avail = communicate(vct);
+	    if (avail < 0){
+		cout <<"Cannot communicate! Failing!!!!\n";
+		return(-1);
+	    }
+	    MPI_Barrier(MPI_COMM_WORLD);
+//	    cout << "Past barrier...\n";
+	    // communicate again if particles are not in the correct domain
+	    while(isMessagingDone(vct) >0){
+			// COMMUNICATION
+			avail = communicate(vct);
+
+			if (avail < 0)
+		        return(-1);
+			MPI_Barrier(MPI_COMM_WORLD);
+		}
+
+
+//	cout << "Communicated!!\n";
+
+	return(0); // exit succcesfully (hopefully)
+
+}
+
+
+
 

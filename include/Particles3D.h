@@ -25,6 +25,8 @@ class Particles3D:public Particles3Dcomm {
     Particles3D();
     /** destructor */
     ~Particles3D();
+    /** Initial condition: empty system */
+    void empty(Grid* grid,Field* EMf, VirtualTopology3D* vct);
     /** Initial condition: uniform in space and motionless */
     void uniform_background(Grid * grid, Field * EMf);
     /** Initialize particles with a constant velocity in dim direction. Depending on the value of dim:
@@ -48,12 +50,20 @@ class Particles3D:public Particles3Dcomm {
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
     void alt_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: localised in a box and maxwellian in velocity */
+    int maxwell_box(Grid* grid,Field* EMf, VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center, double multiple=1.0);
+    /** Initial condition: localised in a box and maxwellian in velocity */
+    int maxwell_box_thin(Grid* grid,Field* EMf, VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center, double multiple=1.0);
     /** Linear_perturbation */
     void linear_perturbation(double deltaBX, double kx, double ky, double theta, double omega_r, double omega_i, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /**Add a periodic perturbation in velocity exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
     void AddPerturbationJ(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double jx_mod, double jx_phase, double jy_mod, double jy_phase, double jz_mod, double jz_phase, double B0, Grid * grid);
     /** Linear delta f for bi-maxwellian plasma */
     double delta_f(double u, double v, double w, double x, double y, double kx, double ky, double omega_re, double omega_i, double Ex_ampl, double Ex_phase, double Ey_ampl, double Ey_phase, double Ez_ampl, double Ez_phase, double theta, Field * EMf);
+	 /** particle injector */
+    int injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf);
+    /** particle injector monoenergetic*/
+    int injector_rand_box_mono(Grid* grid,VirtualTopology3D* vct, Field* EMf);
     /** Derivative of f0 wrt vpar */
     double df0_dvpar(double vpar, double vperp);
     /** Derivative of f0 wrt vperp */
@@ -81,7 +91,21 @@ class Particles3D:public Particles3Dcomm {
     void interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * vct);
     /*! Delete the particles inside the sphere with radius R and center x_center y_center and return the total charge removed */
     double deleteParticlesInsideSphere(double R, double x_center, double y_center, double z_center);
+	 /** Delete the particles outside the sphere with radius R and center x_center y_center */
+	 double deleteParticlesOutsideSphere(double R, double x_center, double y_center, double z_center);
+	/** Delete the particles outside the cube with dimension L */
+	 double deleteParticlesOutsideBox(double L);
 
+	double deleteParticlesOuterFrame(double multx, double multy, double multz);
+
+	/** Initial condition: localised in a box and maxwellian in velocity */
+    void dual_spark_plug(Grid* grid,Field* EMf, VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center);
+	 /** record the Flux through the FluxLoops **/
+	 void recordFlux(double oldX, double oldY, double oldZ, double newX, double newY, double newZ, int ptcl);
+	double getGlobalFluxEnergy(int i);
+	int getGlobalFlux(int i);
+	 double fluxCounter[1];
+	 double fluxEnergy[1];
     /*! Initial condition: given a fluid model (BATSRUS) */
     void MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* vct,Collective *col, int is);
     /*! Initiate dist. func. for a single cell form a fluid model (BATSRUS) */
