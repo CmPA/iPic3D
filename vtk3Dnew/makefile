@@ -36,9 +36,9 @@ endif
 ifeq ($(SYSTEM),mac)
 #MAC
 # include files
-INC_HDF5 = -I/Users/gianni/Downloads/hdf5-1.8.15-patch1/hdf5/include
+INC_HDF5 = -I/Users/gianni/Downloads/hdf5serial1.8.11/hdf5/include
 # libs
-LIB_HDF5 = -L/Users/gianni/Downloads/hdf5-1.8.15-patch1/hdf5/lib 
+LIB_HDF5 = -L/Users/gianni/Downloads/hdf5serial1.8.11/hdf5/lib 
 endif
 
 ifeq ($(SYSTEM),mac-uff)

@@ -102,10 +102,6 @@ class Particles3D:public Particles3Dcomm {
     void dual_spark_plug(Grid* grid,Field* EMf, VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center);
 	 /** record the Flux through the FluxLoops **/
 	 void recordFlux(double oldX, double oldY, double oldZ, double newX, double newY, double newZ, int ptcl);
-	double getGlobalFluxEnergy(int i);
-	int getGlobalFlux(int i);
-	 double fluxCounter[1];
-	 double fluxEnergy[1];
     /*! Initial condition: given a fluid model (BATSRUS) */
     void MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* vct,Collective *col, int is);
     /*! Initiate dist. func. for a single cell form a fluid model (BATSRUS) */

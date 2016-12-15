@@ -42,17 +42,11 @@ void writeRESTART(string SaveDirName, int myrank, int cycle, int ns, MPIdata * m
   // Print Collective informations
   stringstream ss;
   ss << myrank;
-cout << "HERE" <<endl;
   hdf5_agent.open(SaveDirName + "/restart" + ss.str() + ".hdf");
-  cout << "HERE after" <<endl;
   output_mgr.output("proc_topology ", 0);
-  cout << "HERE after output" <<endl;
   output_mgr.output("Eall + Ball + rhos", 0);
-  cout << "HERE after Eall" <<endl;
   output_mgr.output("position + velocity + q ", 0, 0);
-  cout << "HERE after position" <<endl;
   output_mgr.output("last_cycle", cycle);
-  cout << "HERE after last" <<endl;
   hdf5_agent.close();
 
 }

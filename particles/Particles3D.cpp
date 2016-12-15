@@ -646,7 +646,7 @@ void Particles3D::dual_spark_plug(Grid* grid,Field* EMf,VirtualTopology3D* vct, 
 
 
 
-
+/*
 int Particles3D::getGlobalFlux(int i){
     int glob = 0;
 
@@ -669,6 +669,11 @@ double Particles3D::getGlobalFluxEnergy(int i){
     return(glob);
 }
 
+
+double getGlobalFluxEnergy(int i);
+int getGlobalFlux(int i);
+ double fluxCounter[1];
+ double fluxEnergy[1];
 void Particles3D::recordFlux(double oldX, double oldY, double oldZ, double newX, double newY, double newZ, int ptcl)
 {
 	double interpX, interpY, interpZ, centerX, centerY, centerZ;
@@ -763,7 +768,7 @@ void Particles3D::recordFlux(double oldX, double oldY, double oldZ, double newX,
 
 }
 
-
+*/
 
 /**Add a periodic perturbation in J exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
 void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double jx_mod, double jx_phase, double jy_mod, double jy_phase, double jz_mod, double jz_phase, double B0, Grid * grid) {
