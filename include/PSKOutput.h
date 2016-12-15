@@ -321,7 +321,7 @@ public:
     rho -> number density
     rhos -> number densities for each species
     pressure -> pressure tensor for each species
-    position -> particle position (x,y)
+    position -> particle position (x,y,z)
     velocity -> particle velocity (u,v,w)
     q -> particle charge
     ID -> particle ID (note: TrackParticleID has to be set true in Collective)
@@ -615,7 +615,6 @@ public:
     ss << _mpi->rank;
     cc << cycle;
     const int ns = _col->getNs();
-
     // Particle position
     if (tag.find("position", 0) != string::npos & sample == 0) {
       for (int i = 0; i < ns; ++i) {

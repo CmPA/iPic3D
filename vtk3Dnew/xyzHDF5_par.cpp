@@ -163,7 +163,7 @@ int main (int argc, char **argv) {
     int Nsmooth = 3;
     smooth(Nsmooth, nongyro_swisdak, smoothed, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     writeVTKscalar_binary(it, "nongyro_swisdak", "", smoothed);
-    int Nsmooth = 3;
+
     smooth(Nsmooth, align, smoothed, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     writeVTKscalar_binary(it, "align", "", smoothed);
 
