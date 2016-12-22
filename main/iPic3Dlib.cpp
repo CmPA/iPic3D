@@ -386,7 +386,7 @@ void c_Solver::WriteConserved(int cycle) {
 
       MPI_Allreduce(&totParticles[is], &globalTotParticles[is], 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
       Qtot[is] = part[is].getTotalQ();
-      speciesTemp[is] = (double)((double)Ke[is]/(Qtot[is])/qom[is]);
+      speciesTemp[is] = (double)((double)Ke[is]/(Qtot[is]/qom[is]));
 
     }
     if (myrank == 0) {
