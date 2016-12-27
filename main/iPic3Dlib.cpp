@@ -395,7 +395,7 @@ void c_Solver::WriteConserved(int cycle) {
       my_file.close();
       ofstream my_file2(cq2.c_str(),fstream::app);
 
-               my_file2 << cycle << "\t";
+               my_file2 << cycle << "\t" <<setprecision(15);
      		for (int i = 0; i < ns; i++)
      			my_file2 << Ke[i] << "\t";
      		for (int i = 0; i < ns; i++)
