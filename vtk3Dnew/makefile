@@ -2,7 +2,15 @@
 CPP=	mpicxx
 OPTFLAGS=  -O2 
 
-SYSTEM = mac
+SYSTEM = discover
+
+ifeq ($(SYSTEM),discover)
+CPP = mpiicpc
+# include files
+INC_HDF5 = -I$(NOBACKUP)/hdf5-1.8.11serial/include
+# libs
+LIB_HDF5 = -L$(NOBACKUP)/hdf5-1.8.11serial/lib
+endif
 
 ifeq ($(SYSTEM),pleiades)
 CPP=icc
@@ -36,9 +44,9 @@ endif
 ifeq ($(SYSTEM),mac)
 #MAC
 # include files
-INC_HDF5 = -I/Users/gianni/Downloads/hdf5serial1.8.11/hdf5/include
+INC_HDF5 = -I/Users/gianni/Downloads/hdf5-1.8.15-patch1/hdf5/include
 # libs
-LIB_HDF5 = -L/Users/gianni/Downloads/hdf5serial1.8.11/hdf5/lib 
+LIB_HDF5 = -L/Users/gianni/Downloads/hdf5-1.8.15-patch1/hdf5/lib
 endif
 
 ifeq ($(SYSTEM),mac-uff)
@@ -69,7 +77,7 @@ endif
 
 
 
-HDF5LIBS =  -lhdf5 -lhdf5_hl  -llapack -lblas
+HDF5LIBS = -lhdf5 -lhdf5_hl -mkl # -llapack -lblas
 
 xyzGDA_par: xyzGDA_par.cpp
 	${CPP}  ${OPTFLAGS} -o  xyzGDA_par ${INC_HDF5} \
