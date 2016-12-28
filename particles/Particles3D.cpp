@@ -644,6 +644,50 @@ void Particles3D::dual_spark_plug(Grid* grid,Field* EMf,VirtualTopology3D* vct, 
 	nop = storeNop;
 }
 
+/** Monoenergetic random velocity and uniform spatial distribution */
+int Particles3D::monoenergetic_box(Grid* grid,Field* EMf,VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center, double multiple){
+
+/* initialize random generator with different seed on different processor */
+ srand(vct->getCartesian_rank()+2);
+
+	double harvest;
+	double prob, theta, sign;
+	long long counter=0;
+	for (int i=1; i< grid->getNXC()-1;i++)
+		for (int j=1; j< grid->getNYC()-1;j++)
+			for (int k=1; k< grid->getNZC()-1;k++)
+				for (int ii=0; ii < npcelx; ii++)
+					for (int jj=0; jj < npcely; jj++)
+						for (int kk=0; kk < npcelz; kk++){
+							x[counter] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);   // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+							y[counter] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+							z[counter] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+							if (fabs(x[counter] - x_center) < L_square/2 && fabs(y[counter] - y_center) < L_square/2 && fabs(z[counter] - z_center) < L_square/2){
+							// q = charg
+							q[counter] =  (qom/fabs(qom))*(EMf->getRHOcs(i,j,k,ns)/npcel)*(1.0/grid->getInvVOL());
+							if (ii == 0 && jj == 0 && kk == 0 && i == 1 && j == 1 && k == 1)
+								cout << "Q at ("<< i<<","<<j<<","<<k<<") = "<<q[counter]<<endl;
+							// u
+							harvest =   rand()/(double)RAND_MAX;
+							theta = 2.0*M_PI*harvest;
+							u[counter] = multiple*u0 + uth*cos(theta);
+							// v
+							v[counter] = multiple*v0 + vth*sin(theta);
+							// w
+							harvest =   rand()/(double)RAND_MAX;
+							theta = 2.0*M_PI*harvest;
+							w[counter] = multiple*w0 + wth*cos(theta);
+							if (TrackParticleID)
+								ParticleID[counter]= counter*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+
+							counter++ ;
+							}
+						}
+
+	nop = counter - 1;
+	return nop;
+}
 
 
 /*

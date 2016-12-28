@@ -2,7 +2,11 @@
 CPP=	mpicxx
 OPTFLAGS=  -O2 
 
-SYSTEM = discover
+SYSTEM = mac
+
+# Libraties needed for intel compiler
+HDF5LIBS = -lhdf5 -lhdf5_hl -mkl 
+
 
 ifeq ($(SYSTEM),discover)
 CPP = mpiicpc
@@ -24,6 +28,7 @@ ifeq ($(SYSTEM),mms)
 INC_HDF5 = -I/shared/hdf5-1.8.9/hdf5/include
 # libs
 LIB_HDF5 = -L/shared/hdf5-1.8.9/hdf5/lib
+HDF5LIBS = -lhdf5 -lhdf5_hl  -llapack -lblas
 endif
 ifeq ($(SYSTEM),ubuntu-home)
 # UBUNTU 
@@ -31,6 +36,7 @@ ifeq ($(SYSTEM),ubuntu-home)
 INC_HDF5 = -I/home/gianni/Downloads/hdf5-1.6.10/hdf5/include
 # libs
 LIB_HDF5 = -L/home/gianni/Downloads/hdf5-1.6.10/hdf5/lib
+HDF5LIBS = -lhdf5 -lhdf5_hl  -llapack -lblas
 endif
 
 ifeq ($(SYSTEM),ubuntu)
@@ -39,6 +45,7 @@ ifeq ($(SYSTEM),ubuntu)
 INC_HDF5 = -I/home/gianni/computer-stuff/hdf5-1.6.10/hdf5/include
 # libs
 LIB_HDF5 = -L/home/gianni/computer-stuff/hdf5-1.6.10/hdf5/lib
+HDF5LIBS = -lhdf5 -lhdf5_hl  -llapack -lblas
 endif
 
 ifeq ($(SYSTEM),mac)
@@ -47,6 +54,7 @@ ifeq ($(SYSTEM),mac)
 INC_HDF5 = -I/Users/gianni/Downloads/hdf5-1.8.15-patch1/hdf5/include
 # libs
 LIB_HDF5 = -L/Users/gianni/Downloads/hdf5-1.8.15-patch1/hdf5/lib
+HDF5LIBS = -lhdf5 -lhdf5_hl  -llapack -lblas
 endif
 
 ifeq ($(SYSTEM),mac-uff)
@@ -55,6 +63,7 @@ ifeq ($(SYSTEM),mac-uff)
 INC_HDF5 = -I/Users/giovannilapenta/Downloads/hdf5-1.8.14/hdf5/include
 # libs
 LIB_HDF5 = -L/Users/giovannilapenta/Downloads/hdf5-1.8.14/hdf5/lib
+HDF5LIBS = -lhdf5 -lhdf5_hl  -llapack -lblas
 endif
 
 ifeq ($(SYSTEM),curie)
@@ -73,11 +82,10 @@ INC_HDF5 = -I/Users/Gianni/Downloads/hdf5-1.8.9/hdf5/include
 
 # libs
 LIB_HDF5 = -L/Users/Gianni/Downloads/hdf5-1.8.9/hdf5/lib
+HDF5LIBS = -lhdf5 -lhdf5_hl  -llapack -lblas
 endif
 
 
-
-HDF5LIBS = -lhdf5 -lhdf5_hl -mkl # -llapack -lblas
 
 xyzGDA_par: xyzGDA_par.cpp
 	${CPP}  ${OPTFLAGS} -o  xyzGDA_par ${INC_HDF5} \

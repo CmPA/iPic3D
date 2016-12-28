@@ -1784,8 +1784,8 @@ void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
 
     for (int kk=0; kk < nz;kk++)
         for (int jj=0; jj < ny;jj++){
-        	C[0][jj][kk] = B[0][jj][kk];
-         	C[nx-1][jj][kk] = B[nx-1][jj][kk];
+        	C[0][jj][kk] = .25 * (2*B[0][jj][kk] + B[1][jj][kk] + B[2][jj][kk]);
+         	C[nx-1][jj][kk]= .25*(2*B[nx-1][jj][kk]+B[nx-2][jj][kk]+B[nx-3][jj][kk]);
             for (int ii=1; ii < nx-1;ii++){
             C[ii][jj][kk] = .25 *(B[ii+1][jj][kk] + B[ii-1][jj][kk] +2.0 * B[ii][jj][kk]) ;
             }}
@@ -1794,8 +1794,8 @@ void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
 
     for (int kk=0; kk < nz;kk++)
     	for (int ii=0; ii < nx;ii++){
-        	C[ii][0][kk] = B[ii][0][kk];
-         	C[ii][ny-1][kk] = B[ii][ny-1][kk];
+        	C[ii][0][kk] = .25*(2*B[ii][0][kk]+B[ii][1][kk]+B[ii][2][kk]);
+         	C[ii][ny-1][kk] = .25*(2*B[ii][ny-1][kk]+B[ii][ny-2][kk]+B[ii][ny-3][kk]);
          	for (int jj=1; jj < ny-1;jj++){
             C[ii][jj][kk] = .25 *(B[ii][jj+1][kk] + B[ii][jj-1][kk] +2.0 * B[ii][jj][kk]) ;
             }}
@@ -1803,8 +1803,8 @@ void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
 
         for (int jj=0; jj < ny;jj++)
             for (int ii=0; ii < nx;ii++) {
-            	C[ii][jj][0] = B[ii][jj][0];
-             	C[ii][jj][nz-1] = B[ii][jj][nz-1];
+            	C[ii][jj][0] = .25*(2*B[ii][jj][0]+B[ii][jj][1]+B[ii][jj][2]);
+             	C[ii][jj][nz-1] = .25*(2*B[ii][jj][nz-1]+B[ii][jj][nz-2]+B[ii][jj][nz-3]);
             	for (int kk=1; kk < nz-1;kk++){
             C[ii][jj][kk] = .25 *(B[ii][jj][kk+1] + B[ii][jj][kk-1] +2.0 * B[ii][jj][kk]) ;
             }}

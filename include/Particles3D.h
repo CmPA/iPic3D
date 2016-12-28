@@ -50,6 +50,8 @@ class Particles3D:public Particles3Dcomm {
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
     void alt_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: localised in a box and monoenergetic in velocity */
+    int monoenergetic_box(Grid* grid,Field* EMf, VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center, double multiple=1.0);
     /** Initial condition: localised in a box and maxwellian in velocity */
     int maxwell_box(Grid* grid,Field* EMf, VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center, double multiple=1.0);
     /** Initial condition: localised in a box and maxwellian in velocity */

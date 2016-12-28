@@ -129,7 +129,7 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
         else if (col->getCase()=="Coils"){
            	if (col->getRHOinject(i) == 0.0)
-           			part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0);  // generated maxwellian in a box
+           			part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0);  // generated maxwellian in a box
        	    else
        	    		part[i].empty(grid, EMf, vct);
         								  }
