@@ -46,6 +46,8 @@ void eq(double ***vect1, double ***vect2, int nx, int ny, int nz);
 
 void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz);
 
+void smooth(int Nvolte, double*** B, int nx, int ny, int nz);
+
 void average(double** EXB, double*** EX);
 
 void averageSTD(double** EXB, double** EXSTD, double*** EX);
@@ -1773,6 +1775,47 @@ void divmult(double*** A, double*** B, double*** C){
             }
 }
 
+void smooth(int Nvolte, double*** B, int nx, int ny, int nz){
+
+	double*** C = newArr3(double,nx, ny, nz);
+
+	for (int ivolte=0; ivolte<Nvolte; ivolte++){
+
+    if(nx>2){
+    for (int kk=0; kk < nz;kk++)
+        for (int jj=0; jj < ny;jj++){
+        	C[0][jj][kk] = .25 * (2*B[0][jj][kk] + B[1][jj][kk] + B[2][jj][kk]);
+         	C[nx-1][jj][kk]= .25*(2*B[nx-1][jj][kk]+B[nx-2][jj][kk]+B[nx-3][jj][kk]);
+            for (int ii=1; ii < nx-1;ii++){
+            C[ii][jj][kk] = .25 *(B[ii+1][jj][kk] + B[ii-1][jj][kk] +2.0 * B[ii][jj][kk]) ;
+            }}
+    }
+    eq(B, C, nx, ny, nz);
+    if(ny>2){
+    for (int kk=0; kk < nz;kk++)
+    	for (int ii=0; ii < nx;ii++){
+        	C[ii][0][kk] = .25*(2*B[ii][0][kk]+B[ii][1][kk]+B[ii][2][kk]);
+         	C[ii][ny-1][kk] = .25*(2*B[ii][ny-1][kk]+B[ii][ny-2][kk]+B[ii][ny-3][kk]);
+         	for (int jj=1; jj < ny-1;jj++){
+            C[ii][jj][kk] = .25 *(B[ii][jj+1][kk] + B[ii][jj-1][kk] +2.0 * B[ii][jj][kk]) ;
+            }}
+    }
+    eq(B, C, nx, ny, nz);
+    if(nz>2){
+        for (int jj=0; jj < ny;jj++)
+            for (int ii=0; ii < nx;ii++) {
+            	C[ii][jj][0] = .25*(2*B[ii][jj][0]+B[ii][jj][1]+B[ii][jj][2]);
+             	C[ii][jj][nz-1] = .25*(2*B[ii][jj][nz-1]+B[ii][jj][nz-2]+B[ii][jj][nz-3]);
+            	for (int kk=1; kk < nz-1;kk++){
+            C[ii][jj][kk] = .25 *(B[ii][jj][kk+1] + B[ii][jj][kk-1] +2.0 * B[ii][jj][kk]) ;
+            }}
+    }
+    eq(B, C, nx, ny, nz);
+
+	}
+    delArr3(C,nx,ny);
+}
+
 void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
 
 	double*** C = newArr3(double,nx, ny, nz);
@@ -1781,7 +1824,7 @@ void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
 
 
     eq(B, A, nx, ny, nz);
-
+    if(nx>2){
     for (int kk=0; kk < nz;kk++)
         for (int jj=0; jj < ny;jj++){
         	C[0][jj][kk] = .25 * (2*B[0][jj][kk] + B[1][jj][kk] + B[2][jj][kk]);
@@ -1789,9 +1832,9 @@ void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
             for (int ii=1; ii < nx-1;ii++){
             C[ii][jj][kk] = .25 *(B[ii+1][jj][kk] + B[ii-1][jj][kk] +2.0 * B[ii][jj][kk]) ;
             }}
-
+    }
     eq(B, C, nx, ny, nz);
-
+    if(ny>2){
     for (int kk=0; kk < nz;kk++)
     	for (int ii=0; ii < nx;ii++){
         	C[ii][0][kk] = .25*(2*B[ii][0][kk]+B[ii][1][kk]+B[ii][2][kk]);
@@ -1799,8 +1842,9 @@ void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
          	for (int jj=1; jj < ny-1;jj++){
             C[ii][jj][kk] = .25 *(B[ii][jj+1][kk] + B[ii][jj-1][kk] +2.0 * B[ii][jj][kk]) ;
             }}
+    }
     eq(B, C, nx, ny, nz);
-
+    if(nz>2){
         for (int jj=0; jj < ny;jj++)
             for (int ii=0; ii < nx;ii++) {
             	C[ii][jj][0] = .25*(2*B[ii][jj][0]+B[ii][jj][1]+B[ii][jj][2]);
@@ -1808,6 +1852,7 @@ void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
             	for (int kk=1; kk < nz-1;kk++){
             C[ii][jj][kk] = .25 *(B[ii][jj][kk+1] + B[ii][jj][kk-1] +2.0 * B[ii][jj][kk]) ;
             }}
+    }
     eq(B, C, nx, ny, nz);
 
 	}
@@ -1843,12 +1888,12 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
 	 for (int kk=0; kk < nzn*ZLEN;kk++)
 		for (int jj=0; jj < nyn*YLEN;jj++)
 			for (int ii=0; ii < nxn*XLEN;ii++){
-				p[0][0] = pXX[ii][jj][kk];
+				p[0][0] = pXX[ii][jj][kk]+1e-10;
 				p[0][1] = pXY[ii][jj][kk];
 				p[0][2] = pXZ[ii][jj][kk];
-				p[1][1] = pYY[ii][jj][kk];
+				p[1][1] = pYY[ii][jj][kk]+1e-10;
 				p[1][2] = pYZ[ii][jj][kk];
-				p[2][2] = pZZ[ii][jj][kk];
+				p[2][2] = pZZ[ii][jj][kk]+1e-10;
 				p[1][0] = p[0][1];
 				p[2][0] = p[0][2];
 				p[2][1] = p[1][2];
@@ -1894,31 +1939,32 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
      work, &lwork, &info );
 
     vet2mat(n, p2, vr, b, dot);
-    sort(n, dot);
+    sort(n, dot); //put the minimum first, maximum last
+
     align[ii][jj][kk] = -log(1.0-.9999*fabs(dot[2]));
 
 
     // Aunai Agyro
     double p_par = ppar(n, p, b);
     double Tr = p[0][0] + p[1][1] + p[2][2];
-    double Pper = (Tr-p_par)/2.0;
+    double p_per = (Tr-p_par)/2.0;
 
     for (int i=0; i<n; i++)
     	for (int j=0; j<n; j++){
-    		p2[i][j] = (p_par-Pper) * b[i]*b[j];
-    		if(i==j) p2[i][j] += Pper;
+    		p2[i][j] = (p_par-p_per) * b[i]*b[j];
+    		if(i==j) p2[i][j] += p_per;
     		p1[i][j] = p[i][j] - p2[i][j];
     	}
 
-    agyro_aunai[ii][jj][kk] = norm(n, p1)/(Tr );
+    agyro_aunai[ii][jj][kk] = norm(n, p1)/Tr;
 
     // Swisdak Nongyro
 
     double I2=p[0][0]*p[1][1]+p[0][0]*p[2][2]+p[1][1]*p[2][2];
     I2=I2-(p[0][1]*p[0][1] + p[0][2]*p[0][2] + p[1][2] * p[1][2]);
     double Q=1.0-4.0*I2/((Tr-p_par)*(Tr+3.0*p_par));
-    nongyro_swisdak[ii][jj][kk] = sqrt(Q);
-			}
+    nongyro_swisdak[ii][jj][kk] = sqrt(fabs(Q));
+}
 	delArr2(p,3);
 	delArr2(p1,3);
 	delArr2(p2,3);

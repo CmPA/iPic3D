@@ -155,17 +155,19 @@ int main (int argc, char **argv) {
           TXX, TXY, TXZ, TYY, TYZ, TZZ, TPAR, TPER1, TPER2, EPS);
     writeVTKtensor_binary(it, "P", "e", TXX, TXY, TXZ, TYY, TYZ, TZZ,
     	  TPAR, TPER1, TPER2, EPS);
-
+    int Nsmooth = 0;
+    smooth(Nsmooth, TXX, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
+    smooth(Nsmooth, TXY, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
+    smooth(Nsmooth, TXZ, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
+    smooth(Nsmooth, TYY, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
+    smooth(Nsmooth, TYZ, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
+    smooth(Nsmooth, TZZ, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     agyro(agyro_scudder, agyro_aunai, nongyro_swisdak, align,
     	BX, BY, BZ, TXX, TXY, TXZ, TYY, TYZ, TZZ);
     writeVTKscalar_binary(it, "agyro_scudder", "", agyro_scudder);
     writeVTKscalar_binary(it, "agyro_aunai", "", agyro_aunai);
-    int Nsmooth = 3;
-    smooth(Nsmooth, nongyro_swisdak, smoothed, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
-    writeVTKscalar_binary(it, "nongyro_swisdak", "", smoothed);
-
-    smooth(Nsmooth, align, smoothed, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
-    writeVTKscalar_binary(it, "align", "", smoothed);
+    writeVTKscalar_binary(it, "nongyro_swisdak", "", nongyro_swisdak);
+    writeVTKscalar_binary(it, "align", "", align);
 
 
     //Currents species1
