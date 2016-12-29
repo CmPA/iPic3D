@@ -155,7 +155,7 @@ int main (int argc, char **argv) {
           TXX, TXY, TXZ, TYY, TYZ, TZZ, TPAR, TPER1, TPER2, EPS);
     writeVTKtensor_binary(it, "P", "e", TXX, TXY, TXZ, TYY, TYZ, TZZ,
     	  TPAR, TPER1, TPER2, EPS);
-    int Nsmooth = 0;
+    int Nsmooth = 5;
     smooth(Nsmooth, TXX, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     smooth(Nsmooth, TXY, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     smooth(Nsmooth, TXZ, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
