@@ -17,7 +17,7 @@
 #include <string>
 #include <sstream>
 
-extern "C" void dgeev( char* jobvl, char* jobvr, int* n, double* a,
+extern "C" void dgeev_( char* jobvl, char* jobvr, int* n, double* a,
                 int* lda, double* wr, double* wi, double* vl, int* ldvl,
                 double* vr, int* ldvr, double* work, int* lwork, int* info );
 
@@ -1868,12 +1868,12 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
     mat2vet(n,p2,a);
 
     lwork = -1;
-    dgeev( "N", "N", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    dgeev_( "N", "N", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
      &wkopt, &lwork, &info );
     lwork = (int)wkopt;
     work = new double[lwork];
     /* Solve eigenproblem */
-    dgeev( "N", "N", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    dgeev_( "N", "N", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
      work, &lwork, &info );
 
     sort(n,wr);
@@ -1885,12 +1885,12 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
 	delete[] work;
 
     lwork = -1;
-    dgeev( "N", "V", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    dgeev_( "N", "V", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
      &wkopt, &lwork, &info );
     lwork = (int)wkopt;
     work = new double[lwork];
     /* Solve eigenproblem */
-    dgeev( "N", "V", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    dgeev_( "N", "V", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
      work, &lwork, &info );
 
     vet2mat(n, p2, vr, b, dot);
