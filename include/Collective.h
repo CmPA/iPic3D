@@ -82,6 +82,8 @@ class Collective
     bool getPERIODICY() {return (PERIODICY);};
     bool getPERIODICZ() {return (PERIODICZ);};
 
+    bool getcylindrical() {return (cylindrical);};
+
     /*! Get the grid spacing - direction X */
     double getDx();
     /*! Get the grid spacing - direction Y */
@@ -304,6 +306,7 @@ class Collective
     bool PERIODICX;    /*! Periodicity in the X direction */
     bool PERIODICY;    /*! Periodicity in the Y direction */
     bool PERIODICZ;    /*! Periodicity in the Z direction */
+    bool cylindrical;  /*! Cylindrical 2D geometry */
 
     /*! number of species */
     int ns;

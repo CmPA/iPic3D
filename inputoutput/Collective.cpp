@@ -98,6 +98,7 @@ void Collective::ReadInput(string inputfile) {
     PERIODICX = config.read < bool >("PERIODICX");
     PERIODICY = config.read < bool >("PERIODICY");
     PERIODICZ = config.read < bool >("PERIODICZ");
+    cylindrical = config.read < bool >("cylindrical");
 
   }
 
@@ -238,6 +239,7 @@ void Collective::ReadInput(string inputfile) {
     PERIODICX = config.read < bool >("PERIODICX");
     PERIODICY = config.read < bool >("PERIODICY");
     PERIODICZ = config.read < bool >("PERIODICZ");
+    cylindrical = config.read < bool >("cylindrical");
 
     // PHI Electrostatic Potential 
     bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
@@ -377,9 +379,8 @@ void Collective::ReadInput(string inputfile) {
     y_center = config.read < double >("y_center");
     z_center = config.read < double >("z_center");
     L_square = config.read < double >("L_square");
-      coilD = config.read<double>( "CoilD" );
-      coilSpacing = config.read<double>( "CoilSpacing" );
-
+    coilD = config.read<double>( "CoilD" );
+    coilSpacing = config.read<double>( "CoilSpacing" );
 
 
     npcelx = new int[ns];
@@ -587,6 +588,10 @@ int Collective::ReadRestart(string inputfile) {
   dataset_id = H5Dopen2(file_id, "/collective/Lz", H5P_DEFAULT); // HDF 1.8.8
   status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &Lz);
   status = H5Dclose(dataset_id);
+  // read cylindrical
+  dataset_id = H5Dopen2(file_id, "/collective/cylindrical", H5P_DEFAULT); // HDF 1.8.8
+  status = H5Dread(dataset_id, H5T_NATIVE_HBOOL, H5S_ALL, H5S_ALL, H5P_DEFAULT, &cylindrical);
+  status = H5Dclose(dataset_id);
   // read x_center
   dataset_id = H5Dopen2(file_id, "/collective/x_center", H5P_DEFAULT); // HDF 1.8.8
   status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &x_center);
@@ -603,7 +608,7 @@ int Collective::ReadRestart(string inputfile) {
   dataset_id = H5Dopen2(file_id, "/collective/L_square", H5P_DEFAULT); // HDF 1.8.8
   status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &L_square);
   status = H5Dclose(dataset_id);
-  // read nxc
+    // read nxc
   dataset_id = H5Dopen2(file_id, "/collective/Nxc", H5P_DEFAULT);  // HDF 1.8.8
   status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &nxc);
   status = H5Dclose(dataset_id);

@@ -418,6 +418,8 @@ public:
       this->output_adaptor.write("/topology/periodicX", _vct->getPERIODICX());
       this->output_adaptor.write("/topology/periodicY", _vct->getPERIODICY());
       this->output_adaptor.write("/topology/periodicZ", _vct->getPERIODICZ());
+      this->output_adaptor.write("/topology/cylindrical", _col->getcylindrical());
+
 
     }
 

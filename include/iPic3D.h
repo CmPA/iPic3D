@@ -90,6 +90,7 @@ namespace iPic3D {
     int ny0;
     int nz0;
     int nDistributionBins;
+    bool cylindrical;
     double Eenergy;
     double Benergy;
     double TOTenergy;

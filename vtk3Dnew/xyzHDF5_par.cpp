@@ -86,7 +86,6 @@ int main (int argc, char **argv) {
 	double*** agyro_aunai = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** nongyro_swisdak = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** align = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
-	double*** smoothed = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 
 	string temp;
 
@@ -225,7 +224,6 @@ int main (int argc, char **argv) {
 	delArr3(agyro_aunai,nxn*XLEN,nyn*YLEN);
 	delArr3(nongyro_swisdak,nxn*XLEN,nyn*YLEN);
 	delArr3(align,nxn*XLEN,nyn*YLEN);
-	delArr3(smoothed,nxn*XLEN,nyn*YLEN);
 
 	delete[] temp_storageX;
 	delete[] temp_storageY;

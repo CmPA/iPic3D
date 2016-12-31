@@ -1965,13 +1965,17 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
     double Q=1.0-4.0*I2/((Tr-p_par)*(Tr+3.0*p_par));
     nongyro_swisdak[ii][jj][kk] = sqrt(fabs(Q));
 }
-	delArr2(p,3);
-	delArr2(p1,3);
-	delArr2(p2,3);
+	delArr2(p,n);
+	delArr2(p1,n);
+	delArr2(p2,n);
 	delete[] a;
 	delete[] b;
 	delete[] dot;
 	delete[] work;
+	delete[] wr;
+	delete[] wi;
+	delete[] vl;
+	delete[] vr;
 }
 void mat2vet(int n, double** mat, double* vet){
 	int counter =0;

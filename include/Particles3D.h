@@ -83,6 +83,8 @@ class Particles3D:public Particles3Dcomm {
     /** mover with a Predictor-Corrector Scheme */
     int mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     int mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /** mover with a Predictor-Corrector Scheme for 2D cylindrical symmetry*/
+    int mover_PC_sub_cyl(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** relativistic mover with a Predictor-Corrector scheme */
     int mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** particle repopulator */

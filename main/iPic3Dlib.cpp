@@ -27,6 +27,7 @@ int c_Solver::Init(int argc, char **argv) {
   y_center = col->gety_center();
   z_center = col->getz_center();
   L_square = col->getL_square();
+  cylindrical = col->getcylindrical();
 
   // initialize the virtual cartesian topology 
   vct = new VCtopology3D(col);
@@ -180,9 +181,9 @@ int c_Solver::Init(int argc, char **argv) {
   cq2 = SaveDirName + "/SummaryQuantities.txt";
 
   if (myrank == 0) {
-    ofstream my_file(cq.c_str());
+    ofstream my_file(cq.c_str(), fstream::app);
     my_file.close();
-    ofstream my_file2(cq2.c_str());
+    ofstream my_file2(cq2.c_str(), fstream::app);
     my_file2.close();
 
   }
@@ -292,8 +293,14 @@ bool c_Solver::ParticlesMover() {
   // timeTasks.start(TimeTasks::PARTICLES);
   for (int i = 0; i < ns; i++)  // move each species
   {
-    // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-    mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
+	  if(cylindrical){
+		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+		  mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
+	  }
+	  else{
+		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+		  mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
+	  }
   }
   // timeTasks.end(TimeTasks::PARTICLES);
 
