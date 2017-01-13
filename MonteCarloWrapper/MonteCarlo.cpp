@@ -191,10 +191,12 @@ MonteCarlo::MonteCarlo(c_Solver* C) {
   /// end the file MCC.txt that the fortran part reads
 
 
+  MPI_Barrier(MPI_COMM_WORLD);
+
   /* end physical init */
 
 
-  /* instantiation and stuff */
+  /* instantiation and suff */
 
   // with DoubleGEM, only the upper cores will be collisional
   // so check YLEN%2 ==0, otherwise exits
