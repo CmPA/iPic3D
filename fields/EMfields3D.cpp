@@ -4703,6 +4703,11 @@ void EMfields3D::Ohm_Law(VirtualTopology3D * vct, Grid * grid){
     cout << "DT_counter% DOI: " << DT_counter% DOI << endl;
 
   }
+  // if ES=1, Je_NV, rhoe_NV, P are smoothed when calculated, rather than when added up in the end
+  // this way, all derived quantities will be smooth
+  // with ES=false, calculated ion values very noist at the X point, where ion J small; this done for consistency
+  // but ES= false reconstructs Ez better for electrons, so keep it this way
+  bool ES=false;
 
   // I need V interpolated on the center
   double ***VxC=  newArr3(double,  nxc, nyc, nzc);
@@ -4759,6 +4764,13 @@ void EMfields3D::Ohm_Law(VirtualTopology3D * vct, Grid * grid){
 
   }
 
+  if (ES==true){
+    smooth(Smooth, Je_NV_x, 1, grid, vct);
+    smooth(Smooth, Je_NV_y, 1, grid, vct);
+    smooth(Smooth, Je_NV_z, 1, grid, vct);
+
+    smooth(Smooth, rhoe_NV, 1, grid, vct);
+  }
   
   // division point by point
   divPBP(Vex, Je_NV_x, rhoe_NV, nxn, nyn, nzn);
@@ -4822,6 +4834,16 @@ void EMfields3D::Ohm_Law(VirtualTopology3D * vct, Grid * grid){
     sum(Peyz, pYZsn[is], nxn, nyn, nzn);
     sum(Pezz, pZZsn[is], nxn, nyn, nzn);
   }
+
+  if (ES==true){
+    smooth(Smooth, Pexx, 1, grid, vct);
+    smooth(Smooth, Pexy, 1, grid, vct);
+    smooth(Smooth, Pexz, 1, grid, vct);
+    smooth(Smooth, Peyy, 1, grid, vct);
+    smooth(Smooth, Peyz, 1, grid, vct);
+    smooth(Smooth, Pezz, 1, grid, vct);
+  }
+  
 
   //// REMOVE THE DRIFT TERM  
   //cout << "removing drift " << endl;
@@ -4897,12 +4919,13 @@ void EMfields3D::Ohm_Law(VirtualTopology3D * vct, Grid * grid){
   smooth(Smooth, T4_NV_y, 1, grid, vct);
   smooth(Smooth, T4_NV_z, 1, grid, vct);
 
-  smooth(Smooth, rhoe_NV, 1, grid, vct);
-
-  smooth(Smooth, Je_NV_x, 1, grid, vct);
-  smooth(Smooth, Je_NV_y, 1, grid, vct);
-  smooth(Smooth, Je_NV_z, 1, grid, vct);
-
+  if (ES==false){
+    smooth(Smooth, rhoe_NV, 1, grid, vct);
+    
+    smooth(Smooth, Je_NV_x, 1, grid, vct);
+    smooth(Smooth, Je_NV_y, 1, grid, vct);
+    smooth(Smooth, Je_NV_z, 1, grid, vct);
+  }
   // I do not need to smooth E, B usually is already smooth enough
 
   /// END SMOOTH THE NEW VALUE 
@@ -5016,6 +5039,11 @@ void EMfields3D::Ohm_Law_Ions(VirtualTopology3D * vct, Grid * grid){
 
   }
 
+  // if ES=1, Ji_NV, rhoi_NV, P are smoothed when calculated, rather than when added up in the end
+  // this way, all derived quantities will be smooth
+  // with ES=false, calculated ion values very noist at the X point, where ion J small
+  bool ES=true;
+
   // I need V interpolated on the center
   double ***VxC=  newArr3(double,  nxc, nyc, nzc);
   double ***VyC=  newArr3(double,  nxc, nyc, nzc);
@@ -5054,7 +5082,7 @@ void EMfields3D::Ohm_Law_Ions(VirtualTopology3D * vct, Grid * grid){
   eqValue(0.0, Ji_NV_y, nxn, nyn, nzn);
   eqValue(0.0, Ji_NV_z, nxn, nyn, nzn);
 
-  // rhoe
+  // rhoi
   eqValue(0.0, rhoi_NV, nxn, nyn, nzn);
   
   for (int is=0; is<ns; is++){
@@ -5068,6 +5096,13 @@ void EMfields3D::Ohm_Law_Ions(VirtualTopology3D * vct, Grid * grid){
 
   }
 
+  if (ES==true){
+    smooth(Smooth, Ji_NV_x, 1, grid, vct);
+    smooth(Smooth, Ji_NV_y, 1, grid, vct);
+    smooth(Smooth, Ji_NV_z, 1, grid, vct);
+
+    smooth(Smooth, rhoi_NV, 1, grid, vct);
+  }
   
   // division point by point
   divPBP(Vix, Ji_NV_x, rhoi_NV, nxn, nyn, nzn);
@@ -5130,6 +5165,16 @@ void EMfields3D::Ohm_Law_Ions(VirtualTopology3D * vct, Grid * grid){
     sum(Pizz, pZZsn[is], nxn, nyn, nzn);
   }
 
+  if (ES==true){
+    smooth(Smooth, Pixx, 1, grid, vct);
+    smooth(Smooth, Pixy, 1, grid, vct);
+    smooth(Smooth, Pixz, 1, grid, vct);
+    smooth(Smooth, Piyy, 1, grid, vct);
+    smooth(Smooth, Piyz, 1, grid, vct);
+    smooth(Smooth, Pizz, 1, grid, vct);
+  }
+
+  
   //// REMOVE THE DRIFT TERM  
   //cout << "removing drift " << endl;
   for (int i=0; i< nxn; i++)
@@ -5186,6 +5231,7 @@ void EMfields3D::Ohm_Law_Ions(VirtualTopology3D * vct, Grid * grid){
   cross(T4_NV_I_x, T4_NV_I_y, T4_NV_I_z, Bxn, Byn, Bzn, Vix, Viy, Viz, nxn, nyn, nzn);
 
   /// SMOOTH THE NEW VALUE
+
   smooth(Smooth, T1_NV_I_x, 1, grid, vct); 
   smooth(Smooth, T1_NV_I_y, 1, grid, vct);
   smooth(Smooth, T1_NV_I_z, 1, grid, vct);
@@ -5202,12 +5248,13 @@ void EMfields3D::Ohm_Law_Ions(VirtualTopology3D * vct, Grid * grid){
   smooth(Smooth, T4_NV_I_y, 1, grid, vct);
   smooth(Smooth, T4_NV_I_z, 1, grid, vct);
 
-  smooth(Smooth, rhoi_NV, 1, grid, vct);
+  if (ES==false){ // these have been already smoothed
+    smooth(Smooth, rhoi_NV, 1, grid, vct);
 
-  smooth(Smooth, Ji_NV_x, 1, grid, vct);
-  smooth(Smooth, Ji_NV_y, 1, grid, vct);
-  smooth(Smooth, Ji_NV_z, 1, grid, vct);
-
+    smooth(Smooth, Ji_NV_x, 1, grid, vct);
+    smooth(Smooth, Ji_NV_y, 1, grid, vct);
+    smooth(Smooth, Ji_NV_z, 1, grid, vct);
+  }
 
   /// END SMOOTH THE NEW VALUE 
 
