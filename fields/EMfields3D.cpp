@@ -1698,7 +1698,7 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col, 
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -1778,7 +1778,7 @@ void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collectiv
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -1846,7 +1846,7 @@ void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTop
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -1967,7 +1967,7 @@ void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * gri
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -2046,7 +2046,7 @@ void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective 
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -2106,7 +2106,7 @@ void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid, Collectiv
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -2190,7 +2190,7 @@ void EMfields3D::initForceFree(VirtualTopology3D * vct, Grid * grid, Collective 
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
       }
       cout << "Smoothing Factor = " << Smooth << endl;
       cout << "-------------------------" << endl;
