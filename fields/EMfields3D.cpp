@@ -186,6 +186,13 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   arr = newArr3(double,nxn,nyn,nzn);
 
   Lambda = newArr3(double, nxn, nyn, nzn);
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++) {
+      for (int k = 0; k < nzn; k++) {
+        Lambda[i][j][k] = 0.0;
+      }
+    }
+  }
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
