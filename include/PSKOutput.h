@@ -335,6 +335,9 @@ public:
     stringstream ss;
     stringstream cc;
     stringstream ii;
+
+    int gridNUM= _grid->getNumGrid();  //mlmd
+
     ss << _mpi->rank;
     cc << cycle;
     const int ns = _col->getNs();
@@ -342,9 +345,28 @@ public:
       this->output_adaptor.write("/last_cycle", cycle);
     if (tag.find("collective", 0) != string::npos) {
 
+      /*! mlmd: added */
+      this->output_adaptor.write("/collective/RF", _col->getRF(gridNUM));
+      this->output_adaptor.write("/collective/Ox", _col->getOx_SW(gridNUM)); // in terms of the coarsest grid
+      this->output_adaptor.write("/collective/Oy", _col->getOy_SW(gridNUM));
+      this->output_adaptor.write("/collective/Oz", _col->getOz_SW(gridNUM));
+      /*! notice the difference between gridLevel and gridNumber
+	gridLevel: how far you are from the coarsest grid
+	gridNumber: number of the grid in the mlmd hierarchy
+	parentGrid: number of the parent grid */
+      this->output_adaptor.write("/collective/gridLevel", _col->getgridLevel(gridNUM));
+      this->output_adaptor.write("/collective/gridNumber", _grid->getNumGrid());
+      this->output_adaptor.write("/collective/parentGrid", _col->getparentGrid(gridNUM));
+      /*! end mlmd: added */
+      /*! pre -mlmd
       this->output_adaptor.write("/collective/Lx", _col->getLx());
       this->output_adaptor.write("/collective/Ly", _col->getLy());
-      this->output_adaptor.write("/collective/Lz", _col->getLz());
+      this->output_adaptor.write("/collective/Lz", _col->getLz()); */
+      /*! mlmd: local grid values using grid number from _grid object */
+      this->output_adaptor.write("/collective/Lx", _col->getLx_mlmd(gridNUM));
+      this->output_adaptor.write("/collective/Ly", _col->getLy_mlmd(gridNUM));
+      this->output_adaptor.write("/collective/Lz", _col->getLz_mlmd(gridNUM));
+      /*! end mlmd: local grid values from _grid object */
       this->output_adaptor.write("/collective/x_center", _col->getx_center());
       this->output_adaptor.write("/collective/y_center", _col->gety_center());
       this->output_adaptor.write("/collective/z_center", _col->getz_center());
@@ -352,12 +374,21 @@ public:
       this->output_adaptor.write("/collective/Bx0", _col->getB0x());
       this->output_adaptor.write("/collective/By0", _col->getB0y());
       this->output_adaptor.write("/collective/Bz0", _col->getB0z());
+      /*! pre-mlmd
       this->output_adaptor.write("/collective/Nxc", _col->getNxc());
       this->output_adaptor.write("/collective/Nyc", _col->getNyc());
       this->output_adaptor.write("/collective/Nzc", _col->getNzc());
       this->output_adaptor.write("/collective/Dx", _col->getDx());
       this->output_adaptor.write("/collective/Dy", _col->getDy());
-      this->output_adaptor.write("/collective/Dz", _col->getDz());
+      this->output_adaptor.write("/collective/Dz", _col->getDz()); */
+      /*! mlmd: local grid values using grid number form _grid objetc */
+      this->output_adaptor.write("/collective/Nxc", _col->getNxc_mlmd(gridNUM));
+      this->output_adaptor.write("/collective/Nyc", _col->getNyc_mlmd(gridNUM));
+      this->output_adaptor.write("/collective/Nzc", _col->getNzc_mlmd(gridNUM));
+      this->output_adaptor.write("/collective/Dx", _col->getDx_mlmd(gridNUM));
+      this->output_adaptor.write("/collective/Dy", _col->getDy_mlmd(gridNUM));
+      this->output_adaptor.write("/collective/Dz", _col->getDz_mlmd(gridNUM));
+      /*! end mlmd: local grid values using grid number form _grid objetc */
       this->output_adaptor.write("/collective/Dt", _col->getDt());
       this->output_adaptor.write("/collective/Th", _col->getTh());
       this->output_adaptor.write("/collective/Ncycles", _col->getNcycles());
@@ -411,6 +442,8 @@ public:
     }
 
     if (tag.find("total_topology", 0) != string::npos) {
+      /*! mlmd: XLEN, YLEN, ZLEN is corrently the same for all grids
+	Nprocs is the number of procs per grid */
       this->output_adaptor.write("/topology/XLEN", _vct->getXLEN());
       this->output_adaptor.write("/topology/YLEN", _vct->getYLEN());
       this->output_adaptor.write("/topology/ZLEN", _vct->getZLEN());
@@ -428,6 +461,7 @@ public:
       coord[2] = _vct->getCoordinates(2);
       this->output_adaptor.write("/topology/cartesian_coord", PSK::Dimens(3), coord);
       this->output_adaptor.write("/topology/cartesian_rank", _vct->getCartesian_rank());
+      this->output_adaptor.write("/topology/systemWide_rank", _vct->getSystemWide_rank()  );
       this->output_adaptor.write("/topology/Xleft_neighbor", _vct->getXleft_neighbor());
       this->output_adaptor.write("/topology/Xright_neighbor", _vct->getXright_neighbor());
       this->output_adaptor.write("/topology/Yleft_neighbor", _vct->getYleft_neighbor());

@@ -11,13 +11,19 @@
 
 
 /** communicate particles along a direction **/
-void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *b_right, double *b_left);
+/*! mlmd: I need to pass the communicator also */
+//void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *b_right, double *b_left);
+void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *b_right, double *b_left, MPI_Comm Comm);
 
 /** communicate ghost along a direction **/
-void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightFace, double *ghostLeftFace);
+/*! mlmd: I need to pass the communicator also */
+//void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightFace, double *ghostLeftFace);
+void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightFace, double *ghostLeftFace, MPI_Comm Comm);
 
 /** communicate ghost along a direction **/
-void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightFace, double *ghostLeftFace);
+/*! mlmd: i need to pass the communicator also */
+//void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightFace, double *ghostLeftFace);
+void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightFace, double *ghostLeftFace, MPI_Comm Comm);
 
 /** communicate ghost edge along a direction; there are 6 Diagonal directions through which we exchange Ghost Edges :
   0 = from   XrightYrightZsame to YleftZleftZsame; we exchange Z edge
@@ -27,7 +33,9 @@ void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_ne
   4 = from   XsameYrightZright to XsameYleftZleft; we exchange X edge
   5 = from   XsameYrightZleft to XsameYleftZright; we exchange X edge
   */
-void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int left_neighborD, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightEdge, double *ghostLeftEdge);
+/*! mlmd: i need to pass the communicator also */
+//void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int left_neighborD, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightEdge, double *ghostLeftEdge);
+void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int left_neighborD, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightEdge, double *ghostLeftEdge, MPI_Comm Comm);
 
 /** Communicate ghost corners along a direction; there are 4 Diagonal directions through which we exchange Ghost Corners:
   0 =  from XrightYrightZright to XleftYleftZleft
@@ -35,6 +43,8 @@ void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int left_n
   2 =  from XleftYrightZright  to XrightYleftZleft
   3 =  from XleftYleftZright   to XrightYrightZleft
   */
-void communicateGhostCorner(int myrank, int right_neighborC, int left_neighborC, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightCorner, double *ghostLeftCorner);
+/*! mlmd: i need the commuicator also */
+//void communicateGhostCorner(int myrank, int right_neighborC, int left_neighborC, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightCorner, double *ghostLeftCorner);
+void communicateGhostCorner(int myrank, int right_neighborC, int left_neighborC, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightCorner, double *ghostLeftCorner, MPI_Comm Comm);
 
 #endif

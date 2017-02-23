@@ -81,13 +81,17 @@ public:
   /** get the number of particles of this subdomain */
   virtual long long getNOP() const = 0;
   /** return the Kinetic energy */
-  virtual double getKe() = 0;
+  //virtual double getKe() = 0;
+  virtual double getKe(MPI_Comm Comm) = 0;
   /** return the maximum kinetic energy */
-  virtual double getMaxVelocity() = 0;
+  //virtual double getMaxVelocity() = 0;
+  virtual double getMaxVelocity(MPI_Comm Comm) = 0; 
   /** return energy distribution*/
-  virtual unsigned long *getVelocityDistribution(int nBins, double maxVel) = 0;
+  //virtual unsigned long *getVelocityDistribution(int nBins, double maxVel) = 0;
+  virtual unsigned long *getVelocityDistribution(int nBins, double maxVel, MPI_Comm Comm) = 0;
   /** retturn the momentum */
-  virtual double getP() = 0;
+  //virtual double getP() = 0;
+  virtual double getP(MPI_Comm Comm) = 0;
   /** Print particles info: positions, velocities */
   virtual void Print(VirtualTopology3D * ptVCT) const = 0;
   /** Print the number of particles of this subdomain */

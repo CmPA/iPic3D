@@ -98,7 +98,9 @@ public:
   void del_pack(long long np, long long *nplast);
 
   /** method to debuild the buffer received */
-  int unbuffer(double *b_);
+  /*! mlmd: i also need the communicator */
+  //int unbuffer(double *b_);
+  int unbuffer(double *b_, MPI_Comm Comm);
 
   /** resize the receiving buffer */
   void resize_buffers(int new_buffer_size);
@@ -157,13 +159,21 @@ public:
   /** get the number of particles of this subdomain */
   long long getNOP() const;
   /** return the Kinetic energy */
-  double getKe();
+  /*! mlmd: now i need the communicator also */
+  //double getKe();
+  double getKe(MPI_Comm Comm);
   /** return the maximum kinetic energy */
-  double getMaxVelocity();
+  /*! mlmd: now i need the communicator also */
+  //double getMaxVelocity();
+  double getMaxVelocity(MPI_Comm Comm); 
   /** return energy distribution */
-  unsigned long *getVelocityDistribution(int nBins, double maxVel);
+  /*! mlmd: now i need the communicator also */
+  //unsigned long *getVelocityDistribution(int nBins, double maxVel);
+  unsigned long *getVelocityDistribution(int nBins, double maxVel, MPI_Comm Comm);
   /** return the momentum */
-  double getP();
+  /*! mlmd: now I need the communicator also */
+  //double getP();
+  double getP(MPI_Comm Comm);
   /** Print particles info: positions, velocities */
   void Print(VirtualTopology3D * ptVCT) const;
   /** Print the number of particles of this subdomain */
@@ -174,6 +184,7 @@ public:
 
 protected:
   /** number of species */
+  /*! comment: the number of THIS species, not the total number of particle species */
   int ns;
   /** maximum number of particles of this species on this domain. used for memory allocation */
   long long npmax;
@@ -334,6 +345,14 @@ protected:
   int nvDistLoc;
   c_vDist* vDist;
 
+  /*! mlmd specific variables */
+  /*! if true, mlmd related output */
+  bool MLMDVerbose;
+  /*! rank0 in MPI_COMM_WORLD, for system-wide output */
+  int SpokePerson;
+  /*! number of the current grid in the mlmd hierarchy */
+  int numGrid;
+  /*! end mlmd specific variables */
 };
 
 #endif

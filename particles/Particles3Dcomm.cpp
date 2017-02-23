@@ -68,6 +68,16 @@ Particles3Dcomm::~Particles3Dcomm() {
 }
 /** constructors fo a single species*/
 void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
+
+  /*! use this for system-wide mlmd output */
+  MLMDVerbose= col->getMLMDVerbose();
+  MPI_Comm_rank(MPI_COMM_WORLD, &SpokePerson);
+  /*! end use this for system-wide mlmd output */
+  
+  /*! mlmd */
+  numGrid = grid->getNumGrid();
+  /*! end mlmd */
+  
   // info from collectiveIO
   ns = species;
   npcel = col->getNpcel(species);
@@ -77,9 +87,15 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   // This if is necessary to restart with H5hut-io
   if (initnpmax==0){
+    /*! pre-mlmd
     long ncproc = int(col->getNxc()/col->getXLEN()) *
                   int(col->getNyc()/col->getYLEN()) *
-                  int(col->getNzc()/col->getZLEN());
+                  int(col->getNzc()/col->getZLEN()); */
+    
+    long ncproc = int(col->getNxc_mlmd(numGrid)/col->getXLEN()) *
+      int(col->getNyc_mlmd(numGrid)/col->getYLEN()) *
+      int(col->getNzc_mlmd(numGrid)/col->getZLEN());
+
     nop   = ncproc * npcel;
     npmax = nop * col->getNpMaxNpRatio();
   }
@@ -99,12 +115,20 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   v0 = col->getV0(species);
   w0 = col->getW0(species);
   dt = col->getDt();
+  /*! pre-mlmd
   Lx = col->getLx();
   Ly = col->getLy();
   Lz = col->getLz();
   dx = grid->getDX();
   dy = grid->getDY();
+  dz = grid->getDZ(); */
+  Lx = col->getLx_mlmd(numGrid);
+  Ly = col->getLy_mlmd(numGrid);
+  Lz = col->getLz_mlmd(numGrid);
+  dx = grid->getDX();  /*! already local to mlmd*/
+  dy = grid->getDY();
   dz = grid->getDZ();
+
   delta = col->getDelta();
   TrackParticleID = col->getTrackParticleID(species);
   c = col->getC();
@@ -121,9 +145,10 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   zstart = grid->getZstart();
   zend = grid->getZend();
 
+  /*! dunno why it was repeated
   dx = grid->getDX();
   dy = grid->getDY();
-  dz = grid->getDZ();
+  dz = grid->getDZ(); */
 
   nxn = grid->getNXN();
   nyn = grid->getNYN();
@@ -436,6 +461,8 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
+
+
   //#pragma omp parallel
   {
     //Moments speciesMoments(nxn,nyn,nzn,invVOL);
@@ -530,6 +557,7 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
     //EMf->addToSpeciesMoments(speciesMoments,ns);
   }
   // communicate contribution from ghost cells 
+
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
 }
 
@@ -684,7 +712,9 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   // and to resize the buffer
   npExitingMax = maxNpExiting();
   // broadcast the maximum number of particles exiting for sizing the buffer and to check if communication is really needed
-  npExitingMax = reduceMaxNpExiting(npExitingMax);
+  /*! mlmd: i need the communicator also */
+  //npExitingMax = reduceMaxNpExiting(npExitingMax);
+  npExitingMax = reduceMaxNpExiting(npExitingMax, ptVCT->getCommGrid()); 
 
   /*****************************************************/
   /* SEND AND RECEIVE MESSAGES */
@@ -702,15 +732,25 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
     // UNBUFFERING
     // message from XLEFT
-    avail1 = unbuffer(b_X_RIGHT);
+    /*! mlmd: need the communicator also */
+    /*avail1 = unbuffer(b_X_RIGHT);
     avail2 = unbuffer(b_X_LEFT);
     avail3 = unbuffer(b_Y_RIGHT);
     avail4 = unbuffer(b_Y_LEFT);
     avail5 = unbuffer(b_Z_RIGHT);
-    avail6 = unbuffer(b_Z_LEFT);
+    avail6 = unbuffer(b_Z_LEFT);*/
+    avail1 = unbuffer(b_X_RIGHT, ptVCT->getCommGrid());
+    avail2 = unbuffer(b_X_LEFT, ptVCT->getCommGrid());
+    avail3 = unbuffer(b_Y_RIGHT, ptVCT->getCommGrid());
+    avail4 = unbuffer(b_Y_LEFT, ptVCT->getCommGrid());
+    avail5 = unbuffer(b_Z_RIGHT, ptVCT->getCommGrid());
+    avail6 = unbuffer(b_Z_LEFT, ptVCT->getCommGrid());
+
     // if one of these numbers is negative than there is not enough space for particles
     avail = avail1 + avail2 + avail3 + avail4 + avail5 + avail6;
-    availALL = reduceNumberParticles(avail);
+    /*! mlmd: i need the communicator also */
+    //availALL = reduceNumberParticles(avail);
+    availALL = reduceNumberParticles(avail, ptVCT->getCommGrid());
     if (availALL < 0)
       return (-1);              // too many particles coming, save data nad stop simulation
   }
@@ -892,7 +932,9 @@ inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, Virt
     b_[npExitZright * nVar + 7] = ParticleID[np_current];
 }
 /** This unbuffer the last communication */
-int Particles3Dcomm::unbuffer(double *b_) {
+/*! mlmd: i need the communicator also */
+/*!int Particles3Dcomm::unbuffer(double *b_) { */
+int Particles3Dcomm::unbuffer(double *b_, MPI_Comm Comm) {
   long long np_current = 0;
   // put the new particles at the end of the array, and update the number of particles
   while (b_[np_current * nVar] != MIN_VAL) {
@@ -912,7 +954,7 @@ int Particles3Dcomm::unbuffer(double *b_) {
     nop++;
     if (nop > npmax) {
       cout << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
-      MPI_Abort(MPI_COMM_WORLD, -1);
+      MPI_Abort(Comm, -1);
       return (-1);              // end the simulation because you dont have enough space on the array
     }
   }
@@ -941,7 +983,9 @@ void Particles3Dcomm::del_pack(long long np_current, long long *nplast) {
 /** method to calculate how many particles are out of right domain */
 int Particles3Dcomm::isMessagingDone(VirtualTopology3D * ptVCT) {
   int result = 0;
-  result = reduceNumberParticles(rightDomain);
+  /*! mlmd: i need the communicator also */
+  //result = reduceNumberParticles(rightDomain);
+  result = reduceNumberParticles(rightDomain, ptVCT->getCommGrid());
   if (result > 0 && cVERBOSE && ptVCT->getCartesian_rank() == 0)
     cout << "Further Comunication: " << result << " particles not in the right domain" << endl;
   return (result);
@@ -1061,37 +1105,45 @@ long long Particles3Dcomm::getNOP()  const {
   return (nop);
 }
 /** return the Kinetic energy */
-double Particles3Dcomm::getKe() {
+/*! mlmd: i need communicator also */
+//double Particles3Dcomm::getKe() {
+double Particles3Dcomm::getKe(MPI_Comm Comm) {
   double localKe = 0.0;
   double totalKe = 0.0;
   for (register long long i = 0; i < nop; i++)
     localKe += .5 * (q[i] / qom) * (u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
-  MPI_Allreduce(&localKe, &totalKe, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&localKe, &totalKe, 1, MPI_DOUBLE, MPI_SUM, Comm);
   return (totalKe);
 }
 /** return the total momentum */
-double Particles3Dcomm::getP() {
+/*! mlmd: i need communicator also */
+//double Particles3Dcomm::getP() {
+double Particles3Dcomm::getP(MPI_Comm Comm) {
   double localP = 0.0;
   double totalP = 0.0;
   for (register long long i = 0; i < nop; i++)
     localP += (q[i] / qom) * sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
-  MPI_Allreduce(&localP, &totalP, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&localP, &totalP, 1, MPI_DOUBLE, MPI_SUM, Comm);
   return (totalP);
 }
 
 /** return the highest kinetic energy */
-double Particles3Dcomm::getMaxVelocity() {
+/*! mlmd: i need communicator also */
+//double Particles3Dcomm::getMaxVelocity() {
+double Particles3Dcomm::getMaxVelocity(MPI_Comm Comm) { 
   double localVel = 0.0;
   double maxVel = 0.0;
   for (long long i = 0; i < nop; i++)
     localVel = max(localVel, sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]));
-  MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, Comm);
   return (maxVel);
 }
 
 
 /** get energy spectrum */
-unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel) {
+/*! mlmd: i need the communicator also */
+//unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel) {
+unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel, MPI_Comm Comm) {
   unsigned long *f = new unsigned long[nBins];
   for (int i = 0; i < nBins; i++)
     f[i] = 0;
@@ -1107,7 +1159,7 @@ unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel
       f[bin] += 1;
   }
 
-  MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_LONG, MPI_SUM, Comm);
 
   return f;
 }

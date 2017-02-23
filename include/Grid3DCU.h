@@ -124,6 +124,11 @@ public:
   /** get the inverse of volume */
   double getInvVOL();
 
+  /*! mlmd specific functions */
+  /*! return the number of the current grid in the mlmd hierarchy */
+  int getNumGrid() {return numGrid;}
+  /*! end mlmd specific functions */
+
   // /////////// PRIVATE VARIABLES //////////////
 private:
   /** number of cells - X direction, including + 2 (guard cells) */
@@ -164,6 +169,10 @@ private:
   /** local grid boundaries coordinate  */
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
 
+  /*! mlmd specific variables */
+  /*! number of the grid in the mlmd grid hierarchy */
+  int numGrid;
+  /*! end mlmd specific variables */
 };
 
 typedef Grid3DCU Grid;

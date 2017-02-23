@@ -32,7 +32,10 @@ bool CG(double *xkrylov, int xkrylovlen, double *b, int maxit, double tol, FIELD
   sub(r, b, im, xkrylovlen);
   // v = r
   eq(v, r, xkrylovlen);
-  c = dotP(r, r, xkrylovlen);
+  /*! pre-mlmd: it used to be in Basic
+    mlmd: i had to move it to Topology, to have grid level communicator */
+  //c = dotP(r, r, xkrylovlen);  
+  c = dotP(r, r, xkrylovlen, vct->getCommGrid());
   initial_error = sqrt(c);
   if (vct->getCartesian_rank() == 0)
     cout << "CG Initial error: " << initial_error << endl;
@@ -40,12 +43,18 @@ bool CG(double *xkrylov, int xkrylovlen, double *b, int maxit, double tol, FIELD
     return (true);
   while (i < maxit) {
     (field->*FunctionImage) (z, v, grid, vct);
-    t = c / dotP(v, z, xkrylovlen);
+    /*! pre-mlmd: it used to be in Basic   
+      mlmd: i had to move it to Topology, to have grid level communicator */
+    //t = c / dotP(v, z, xkrylovlen);
+    t = c / dotP(v, z, xkrylovlen, vct->getCommGrid());
     // x(i+1) = x + t*v
     addscale(t, xkrylov, v, xkrylovlen);
     // r(i+1) = r - t*z
     addscale(-t, r, z, xkrylovlen);
-    d = dotP(r, r, xkrylovlen);
+    /*! pre-mlmd: it used to be in Basic 
+      mlmd: i had to move it to Topology, to have grid level communicator */
+    //d = dotP(r, r, xkrylovlen);
+    d = dotP(r, r, xkrylovlen, vct->getCommGrid());
     if (CGVERBOSE && vct->getCartesian_rank() == 0)
       cout << "Iteration # " << i << " - norm of residual relative to initial error " << sqrt(d) / initial_error << endl;
     if (sqrt(d) < tol * initial_error) {
@@ -102,7 +111,10 @@ bool CG(double *xkrylov, int xkrylovlen, double *b, int maxit, double tol, GENER
   sub(r, b, im, xkrylovlen);
   // v = r
   eq(v, r, xkrylovlen);
-  c = dotP(r, r, xkrylovlen);
+  /*! pre-mlmd: it used to be in Basic    
+    mlmd: i had to move it to Topology, to have grid level communicator */
+  //c = dotP(r, r, xkrylovlen);
+  c = dotP(r, r, xkrylovlen, vct->getCommGrid());
   initial_error = sqrt(c);
   if (vct->getCartesian_rank() == 0)
     cout << "Initial error: " << initial_error << endl;
@@ -116,12 +128,18 @@ bool CG(double *xkrylov, int xkrylovlen, double *b, int maxit, double tol, GENER
   while (i < maxit) {
     (*FunctionImage) (z, v, grid, vct);
 
-    t = c / dotP(v, z, xkrylovlen);
+    /*! pre-mlmd: it used to be in Basic 
+      mlmd: i had to move it to Topology, to have grid level communicator */
+    //t = c / dotP(v, z, xkrylovlen);
+    t = c / dotP(v, z, xkrylovlen, vct->getCommGrid());
     // x(i+1) = x + t*v
     addscale(t, xkrylov, v, xkrylovlen);
     // r(i+1) = r - t*z
     addscale(-t, r, z, xkrylovlen);
-    d = dotP(r, r, xkrylovlen);
+    /*! pre-mlmd: it used to be in Basic  
+      mlmd: i had to move it to Topology, to have grid level communicator */
+    //d = dotP(r, r, xkrylovlen);
+    d = dotP(r, r, xkrylovlen, vct->getCommGrid());
 
     if (CGVERBOSE && vct->getCartesian_rank() == 0)
       cout << "Iteration # " << i << " - norm of residual relative to initial error " << sqrt(d) / initial_error << endl;

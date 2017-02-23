@@ -21,22 +21,39 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   // bool error = xerror||yerror||zerror;
   // if(error) exit(1);
   // }
+
+  /*! mlmd: know your grid number */
+  numGrid = vct->getNumGrid();
+
   // add 2 for the guard cells
+  /*! this pre-mlmd 
   nxc = (col->getNxc()) / (vct->getXLEN()) + 2;
   nyc = (col->getNyc()) / (vct->getYLEN()) + 2;
-  nzc = (col->getNzc()) / (vct->getZLEN()) + 2;
+  nzc = (col->getNzc()) / (vct->getZLEN()) + 2; */
+
+  nxc = (col->getNxc_mlmd(numGrid)) / (vct->getXLEN()) + 2;
+  nyc = (col->getNyc_mlmd(numGrid)) / (vct->getYLEN()) + 2;
+  nzc = (col->getNzc_mlmd(numGrid)) / (vct->getZLEN()) + 2;
+  
   nxn = nxc + 1;
   nyn = nyc + 1;
   nzn = nzc + 1;
+  /*! this pre-mlmd
   dx = col->getLx() / col->getNxc();
   dy = col->getLy() / col->getNyc();
-  dz = col->getLz() / col->getNzc();
+  dz = col->getLz() / col->getNzc(); */
+
+  dx = col->getDx_mlmd(numGrid);
+  dy = col->getDy_mlmd(numGrid);
+  dz = col->getDz_mlmd(numGrid);
+  
   invVOL = 1.0 / (dx * dy * dz);
   invdx = 1.0 / dx;
   invdy = 1.0 / dy;
   invdz = 1.0 / dz;
 
   // local grid dimensions and boundaries of active nodes
+  /*! pre-mlmd
   xStart = vct->getCoordinates(0) * (col->getLx() / (double) vct->getXLEN());
 
   xEnd = xStart + (col->getLx() / (double) vct->getXLEN());
@@ -47,7 +64,19 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
 
   zStart = vct->getCoordinates(2) * (col->getLz() / (double) vct->getZLEN());
 
-  zEnd = zStart + (col->getLz() / (double) vct->getZLEN());
+  zEnd = zStart + (col->getLz() / (double) vct->getZLEN()); */
+
+  xStart = vct->getCoordinates(0) * (col->getLx_mlmd(numGrid) / (double) vct->getXLEN());
+  
+  xEnd = xStart + (col->getLx_mlmd(numGrid) / (double) vct->getXLEN());
+
+  yStart = vct->getCoordinates(1) * (col->getLy_mlmd(numGrid) / (double) vct->getYLEN());
+
+  yEnd = yStart + (col->getLy_mlmd(numGrid) / (double) vct->getYLEN());
+
+  zStart = vct->getCoordinates(2) * (col->getLz_mlmd(numGrid) / (double) vct->getZLEN());
+
+  zEnd = zStart + (col->getLz_mlmd(numGrid) / (double) vct->getZLEN());
 
   // arrays allocation: nodes ---> the first node has index 1, the last has index nxn-2!
   node_xcoord = new double[nxn];
@@ -78,6 +107,7 @@ Grid3DCU::~Grid3DCU() {
 /** print the local grid info */
 void Grid3DCU::print(VirtualTopology3D * ptVCT) {
   cout << endl;
+  cout << "Grid number: " << numGrid << endl;
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
   cout << "Number of cell: -X=" << nxc - 2 << " -Y=" << nyc - 2 << " -Z=" << nzc - 2 << endl;
   cout << "Xin = " << node_xcoord[1] << "; Xfin = " << node_xcoord[nxn - 2] << endl;
@@ -140,9 +170,10 @@ void Grid3DCU::divSymmTensorN2C(double ***divCX, double ***divCY, double ***divC
         comp1Z = .25 * (pXZ[ns][i][j][k + 1] - pXZ[ns][i][j][k]) * invdz + .25 * (pXZ[ns][i + 1][j][k + 1] - pXZ[ns][i + 1][j][k]) * invdz + .25 * (pXZ[ns][i][j + 1][k + 1] - pXZ[ns][i][j + 1][k]) * invdz + .25 * (pXZ[ns][i + 1][j + 1][k + 1] - pXZ[ns][i + 1][j + 1][k]) * invdz;
         comp2Z = .25 * (pYZ[ns][i][j][k + 1] - pYZ[ns][i][j][k]) * invdz + .25 * (pYZ[ns][i + 1][j][k + 1] - pYZ[ns][i + 1][j][k]) * invdz + .25 * (pYZ[ns][i][j + 1][k + 1] - pYZ[ns][i][j + 1][k]) * invdz + .25 * (pYZ[ns][i + 1][j + 1][k + 1] - pYZ[ns][i + 1][j + 1][k]) * invdz;
         comp3Z = .25 * (pZZ[ns][i][j][k + 1] - pZZ[ns][i][j][k]) * invdz + .25 * (pZZ[ns][i + 1][j][k + 1] - pZZ[ns][i + 1][j][k]) * invdz + .25 * (pZZ[ns][i][j + 1][k + 1] - pZZ[ns][i][j + 1][k]) * invdz + .25 * (pZZ[ns][i + 1][j + 1][k + 1] - pZZ[ns][i + 1][j + 1][k]) * invdz;
+        
 	divCX[i][j][k] = comp1X + comp1Y + comp1Z;
-        divCY[i][j][k] = comp2X + comp2Y + comp2Z;
-        divCZ[i][j][k] = comp3X + comp3Y + comp3Z;
+	divCY[i][j][k] = comp2X + comp2Y + comp2Z;
+	divCZ[i][j][k] = comp3X + comp3Y + comp3Z;
       }
 }
 

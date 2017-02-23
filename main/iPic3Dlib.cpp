@@ -1,15 +1,18 @@
-
 #include "iPic3D.h"
 
 using namespace iPic3D;
 
 int c_Solver::Init(int argc, char **argv) {
+  
+  MlmdVerbose= true;
+
   // initialize MPI environment
   // nprocs = number of processors
   // myrank = rank of tha process*/
   mpi = new MPIdata(&argc, &argv);
-  nprocs = mpi->nprocs;
-  myrank = mpi->rank;
+  // mlmd: i need the rank at grid level, not on MPI_COMM_WORLD -> use vct rather than mpi
+  //nprocs = mpi->nprocs;
+  //myrank = mpi->rank;
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
   verbose = col->getVerbose();
@@ -19,9 +22,32 @@ int c_Solver::Init(int argc, char **argv) {
   restart = col->getRestart_status();
   ns = col->getNs();            // get the number of particle species involved in simulation
   first_cycle = col->getLast_cycle() + 1; // get the last cycle from the restart
+
+  /* mlmd: to decide whether to perform mlmd ops */
+  MLMD_BC = col->getMLMD_BC();
+  MLMD_PROJECTION = col->getMLMD_PROJECTION();
+  MLMD_ParticleREPOPULATION = col->getMLMD_ParticleREPOPULATION();
+  /* end mlmd: to decide whether to perform mlmd ops */
+  
   // initialize the virtual cartesian topology 
   vct = new VCtopology3D(col);
+  /* pre-mlmd: We create a new communicator with a 3D virtual Cartesian topology
+     vct->setup_vctopology(MPI_COMM_WORLD);
+     mlmd: severely modified */
+  vct->setup_vctopology(MPI_COMM_WORLD, col);
+  if (MlmdVerbose){
+    vct->testMlmdCommunicators();
+  }
+  // initialize the central cell index
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  nprocs = vct->getNprocs();  // @gridLevel
+  myrank = vct->getCartesian_rank(); // @gridLevel
+  numGrid = vct->getNumGrid(); // added, mlmd
+  
   // Check if we can map the processes into a matrix ordering defined in Collective.cpp
+ 
   if (nprocs != vct->getNprocs()) {
     if (myrank == 0) {
       cerr << "Error: " << nprocs << " processes cant be mapped into " << vct->getXLEN() << "x" << vct->getYLEN() << "x" << vct->getZLEN() << " matrix: Change XLEN,YLEN, ZLEN in method VCtopology3D.init()" << endl;
@@ -29,18 +55,24 @@ int c_Solver::Init(int argc, char **argv) {
       return (1);
     }
   }
-  // We create a new communicator with a 3D virtual Cartesian topology
-  vct->setup_vctopology(MPI_COMM_WORLD);
-  // initialize the central cell index
 
 #ifdef BATSRUS
   // set index offset for each processor
   col->setGlobalStartIndex(vct);
 #endif
 
-  nx0 = col->getNxc() / vct->getXLEN(); // get the number of cells in x for each processor
-  ny0 = col->getNyc() / vct->getYLEN(); // get the number of cells in y for each processor
-  nz0 = col->getNzc() / vct->getZLEN(); // get the number of cells in z for each processor
+ 
+  // Create the local grid
+  MPI_Barrier(MPI_COMM_WORLD);
+  grid = new Grid3DCU(col, vct);  // Create the local grid
+  /*! pre-mlmd: no topology needed in the fields constructor
+    mlmd: now i need the topology also*/
+  //EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
+  EMf = new EMfields3D(col, grid, vct);  // Create Electromagnetic Fields Object
+
+  nx0 = col->getNxc_mlmd(numGrid) / vct->getXLEN(); // get the number of cells in x for each processor
+  ny0 = col->getNyc_mlmd(numGrid) / vct->getYLEN(); // get the number of cells in y for each processor
+  nz0 = col->getNzc_mlmd(numGrid) / vct->getZLEN(); // get the number of cells in z for each processor
   // Print the initial settings to stdout and a file
   if (myrank == 0) {
     mpi->Print();
@@ -48,10 +80,7 @@ int c_Solver::Init(int argc, char **argv) {
     col->Print();
     col->save();
   }
-  // Create the local grid
-  MPI_Barrier(MPI_COMM_WORLD);
-  grid = new Grid3DCU(col, vct);  // Create the local grid
-  EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
+
 
   if (col->getSolInit()) {
     /* -------------------------------------------- */
@@ -79,6 +108,10 @@ int c_Solver::Init(int argc, char **argv) {
       EMf->init(vct,grid,col);
     }
   }
+
+  // mlmd BC init
+  EMf->initWeightBC(grid, vct);
+
 
   // OpenBC
   EMf->updateInfoFields(grid,vct,col);
@@ -112,6 +145,9 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
+  num_grid_STR << numGrid;  //mlmd  
+  num_proc << myrank; // mlmd: @grid level 
+  
   if (col->getWriteMethod() == "default") {
     // Initialize the output (simulation results and restart file)
     // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
@@ -121,31 +157,42 @@ int c_Solver::Init(int argc, char **argv) {
       hdf5_agent.set_simulation_pointers_part(&part[i]);
     output_mgr.push_back(&hdf5_agent);  // Add the HDF5 output agent to the Output Manager's list
     if (myrank == 0 & restart < 2) {
-      hdf5_agent.open(SaveDirName + "/settings.hdf");
+      /* pre-mlmd
+	 hdf5_agent.open(SaveDirName + "/settings.hdf"); */
+      hdf5_agent.open(SaveDirName + "/settings_G" + num_grid_STR.str() +".hdf");
       output_mgr.output("collective + total_topology + proc_topology", 0);
       hdf5_agent.close();
-      hdf5_agent.open(RestartDirName + "/settings.hdf");
+      /* pre-mlmd
+	 hdf5_agent.open(RestartDirName + "/settings.hdf"); */
+      hdf5_agent.open(RestartDirName + "/settings_G" + num_grid_STR.str() + ".hdf");
       output_mgr.output("collective + total_topology + proc_topology", 0);
       hdf5_agent.close();
     }
     // Restart
-    num_proc << myrank;
+  
     if (restart == 0) {           // new simulation from input file
-      hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+      /*! pre-mlmd
+	hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() + ".hdf"); */
+      hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() +"_G" +  num_grid_STR.str() + ".hdf");
       output_mgr.output("proc_topology ", 0);
       hdf5_agent.close();
     }
     else {                        // restart append the results to the previous simulation 
-      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+      /*! pre-mlmd
+	hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf"); */
+      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + "_G" + num_grid_STR.str() + ".hdf");
       output_mgr.output("proc_topology ", 0);
       hdf5_agent.close();
     }
   }
+  
 
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
   momentum = new double[ns];
-  cq = SaveDirName + "/ConservedQuantities.txt";
+  /*! pre-mlmd
+    cq = SaveDirName + "/ConservedQuantities.txt"; */
+  cq = SaveDirName + "/ConservedQuantities_G" + num_grid_STR.str() + ".txt";
   if (myrank == 0) {
     ofstream my_file(cq.c_str());
     my_file.close();
@@ -159,7 +206,9 @@ int c_Solver::Init(int argc, char **argv) {
   //   ofstream my_file(ds.c_str());
   //   my_file.close();
   // }
-  cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
+  /*! pre_mlmd
+    cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt"; */
+  cqsat = SaveDirName + "/VirtualSatelliteTraces_G" +num_grid_STR.str() +"_" + num_proc.str() + ".txt";
   // if(myrank==0){
   ofstream my_file(cqsat.c_str(), fstream::binary);
   nsat = 3;
@@ -173,6 +222,7 @@ int c_Solver::Init(int argc, char **argv) {
       }}}
   my_file.close();
 
+
   Qremoved = new double[ns];
 
   my_clock = new Timing(myrank);
@@ -185,11 +235,13 @@ void c_Solver::GatherMoments(){
   // interpolation
   // timeTasks.start(TimeTasks::MOMENTS);
 
+
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
-
+  
   for (int i = 0; i < ns; i++)
     part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
+
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
   //
@@ -224,14 +276,40 @@ void c_Solver::CalculateField() {
 
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
-  MPI_Barrier(MPI_COMM_WORLD);
+  /*! pre-mlmd: used to be a barrier on MPI_COMM_WORLD
+    mlmd: I need a barrier on the local grid */
+  //MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(vct->getCommGrid()); 
   // timeTasks.end(TimeTasks::MOMENTS);
+
+  /* mlmd: BC */
+  if (MLMD_BC) {EMf->receiveBC(grid, vct);}
+  /* end mlmd: BC */
 
   // MAXWELL'S SOLVER
   // timeTasks.start(TimeTasks::FIELDS);
   EMf->calculateE(grid, vct, col);               // calculate the E field
   // timeTasks.end(TimeTasks::FIELDS);
 
+  /* mlmd: BC */
+  if (MLMD_BC) {EMf->sendBC(grid, vct);}
+  /* end mlmd: BC */
+
+  /* some mlmd debug */
+  MPI_Comm localComm= vct->getCommGrid();
+  MPI_Barrier(localComm);
+  int localRank;
+  MPI_Comm_rank(localComm, &localRank);
+  if (localRank==0){
+    cout << "Grid " << vct->getNumGrid() << " after the grid barrier at the end of calculateE" << endl;
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  int CommWorldRank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &CommWorldRank);
+  if (CommWorldRank==0){
+    cout << "All grids have finished calculateE" << endl;
+  }
+  /* some mlmd debug */
 }
 
 void c_Solver::CalculateBField() {
@@ -324,14 +402,21 @@ void c_Solver::WriteRestart(int cycle) {
 void c_Solver::WriteConserved(int cycle) {
   // write the conserved quantities
   if (cycle % col->getDiagnosticsOutputCycle() == 0) {
+    /*! mlmd: i need the communicator also
     Eenergy = EMf->getEenergy();
     Benergy = EMf->getBenergy();
+    */
+    Eenergy = EMf->getEenergy(vct->getCommGrid());
+    Benergy = EMf->getBenergy(vct->getCommGrid());
     TOTenergy = 0.0;
     TOTmomentum = 0.0;
     for (int is = 0; is < ns; is++) {
-      Ke[is] = part[is].getKe();
+      // mlmd
+      //Ke[is] = part[is].getKe();
+      Ke[is] = part[is].getKe(vct->getCommGrid()); 
       TOTenergy += Ke[is];
-      momentum[is] = part[is].getP();
+      //momentum[is] = part[is].getP();
+      momentum[is] = part[is].getP(vct->getCommGrid());
       TOTmomentum += momentum[is];
     }
     if (myrank == 0) {
@@ -364,6 +449,8 @@ void c_Solver::WriteConserved(int cycle) {
 
 void c_Solver::WriteOutput(int cycle) {
 
+  /*! NB: num_proc is my_rank, hence local to the grid */
+
   if (col->getWriteMethod() == "h5hut") {
 
     /* -------------------------------------------- */
@@ -380,18 +467,23 @@ void c_Solver::WriteOutput(int cycle) {
 
     // OUTPUT to large file, called proc**
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
-      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+      /*! pre-mlmd
+	hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf"); */
+      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() +"_G"+ num_grid_STR.str() + ".hdf");
       output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
       // Pressure tensor is available
       hdf5_agent.close();
     }
     if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
-      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+      /*! pre-mlmd
+	hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf"); */
+      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() +"_G"+ num_grid_STR.str() + ".hdf");
       output_mgr.output("position + velocity + q ", cycle, 1);
       hdf5_agent.close();
     }
     // write the virtual satellite traces
 
+    
     if (ns > 2) {
       ofstream my_file(cqsat.c_str(), fstream::app);
       for (int isat = 0; isat < nsat; isat++) {
@@ -409,7 +501,7 @@ void c_Solver::WriteOutput(int cycle) {
           }}}
       my_file << endl;
       my_file.close();
-    }
+      }
   }
 }
 

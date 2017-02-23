@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
     }
   }
   // We create a new communicator with a 3D virtual Cartesian topology
-  vct->setup_vctopology(MPI_COMM_WORLD);
+  vct->setup_vctopology(MPI_COMM_GRID);
   // Print the initial settings to stdout and a file
   if (myrank == 0) {
     mpi->Print();
@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
     col->save();
   }
   // Create the local grid
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_GRID);
   Grid3DCU *grid = new Grid3DCU(col, vct);  // Create the local grid
   EMfields3D *EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
   // EMf->initGEMnoPert(vct,grid);
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
     output_mgr.output("proc_topology ", 0);
     hdf5_agent.close();
   }
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_GRID);
   double Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   double *Ke = new double[ns];
   double *momentum = new double[ns];
@@ -156,10 +156,10 @@ int main(int argc, char **argv) {
     for (int i = 0; i < ns; i++)
       part[i].interpP2G(EMf, grid, vct);  // interpolate Particles to Grid(Nodes)
     EMf->sumOverSpecies(vct);   // sum all over the species
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_GRID);
     EMf->interpDensitiesN2C(vct, grid); // calculate densities on centers from nodes
     EMf->calculateHatFunctions(grid, vct);  // calculate the hat quantities for the implicit method
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_GRID);
 
     // OUTPUT to large file, called proc**
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
       }
       cycle = col->getNcycles() + first_cycle;  // exit from the time loop
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_GRID);
 
     // write the conserved quantities
     if (cycle % col->getFieldOutputCycle() == 0) {

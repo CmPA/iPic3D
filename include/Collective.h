@@ -18,6 +18,8 @@
 #include "input_array.h"
 #include "hdf5.h"
 
+#include "Basic.h" /*! included for some basic mlmd ops */
+
 #ifdef BATSRUS
 #include "InterfaceFluid.h"
 #endif
@@ -47,12 +49,14 @@ class Collective
     void save();
     /*! get the physical space dimensions */
     int getDim();
+    /*! mlmd: use getLx_mlmd instead
     /*! Get length of the system - direction X */
-    double getLx();
+    //double getLx();
     /*! Get length of the system - direction Y */
-    double getLy();
+    //double getLy();
     /*! Get length of the system - direction Z */
-    double getLz();
+    //double getLz();
+    /*! end mlmd: use getLx_mlmd instead */
     /*! Get object center - direction X */
     double getx_center();
     /*! Get object center - direction Y */
@@ -61,12 +65,14 @@ class Collective
     double getz_center();
     /*! Get object size - cubic box */
     double getL_square();
+    /*! mlmd: use getNXC_mlmd insead */
     /*! Get the number of cells - direction X */
-    int getNxc();
+    //int getNxc();
     /*! Get the number of cells - direction Y */
-    int getNyc();
+    //int getNyc();
     /*! Get the number of cells - direction Z */
-    int getNzc();
+    //int getNzc();
+    /*! end mlmd: use getNXC_mlmd instead */
 
     int  getXLEN()      {return (XLEN);};
     int  getYLEN()      {return (YLEN);};
@@ -76,12 +82,13 @@ class Collective
     bool getPERIODICY() {return (PERIODICY);};
     bool getPERIODICZ() {return (PERIODICZ);};
 
+    /*! mlmd: use getDx_mlmd instead */
     /*! Get the grid spacing - direction X */
-    double getDx();
+    //double getDx();
     /*! Get the grid spacing - direction Y */
-    double getDy();
+    //double getDy();
     /*! Get the grid spacing - direction Z */
-    double getDz();
+    //double getDz();
     /*! get the light speed */
     double getC();
     /*! get the time step */
@@ -235,6 +242,58 @@ class Collective
 
     /*! get initfile */
     string getinitfile();
+    /*! MLMD specific function */
+    /*! MLMD gets */
+    int getNgrids();
+    int getgridLevel(int numgrid);
+    int getRF(int numgrid);
+    int getparentGrid(int numgrid);
+    /*! in terms of the PARENT grid */
+    double getOx_P(int numgrid);
+    double getOy_P(int numgrid);
+    double getOz_P(int numgrid);
+    /*! end: in terms of the PARENT grid */
+
+    /*! in terms of the COARSEST grid */
+    double getOx_SW(int numgrid);
+    double getOy_SW(int numgrid);
+    double getOz_SW(int numgrid);
+    /*! end: in terms of the COARSEST grid */
+
+    double getDx_mlmd(int numgrid);
+    double getDy_mlmd(int numgrid);
+    double getDz_mlmd(int numgrid);
+    int getNxc_mlmd(int numgrid);
+    int getNyc_mlmd(int numgrid);
+    int getNzc_mlmd(int numgrid);
+    double getLx_mlmd(int numgrid);
+    double getLy_mlmd(int numgrid);
+    double getLz_mlmd(int numgrid);
+
+    /*! get the number of children of grid 'numgrid' */
+    int getChildrenNum(int numgrid);
+
+    /*! get the child number 'childnum' of the grid 'numgrid' 
+      prints warning if childnum > ChildrenNum[ng]-1, to speed up debugging*/
+    int getChildrenGrids(int numgrid, int childnum);
+
+    /*! get the parent of grid 'numgrid'
+      prints warning if numgrid=0, to speed up debugging */
+    int getParentGrid(int numgrid);
+
+    int getTopologyType();
+    
+    /*! get whether to perform mlmd operations */
+    int getMLMD_BC();
+    int getMLMD_PROJECTION();
+    int getMLMD_ParticleREPOPULATION();
+
+    /*! returns MLMDVerbose */
+    bool getMLMDVerbose();
+    /*! end MLMD gets */
+    /*! a first sanity check on MLMD inputs, called at the end of the constructor */
+    void checkMLMDinputs();
+    /*! end MLMD specific function */
 
   private:
     /*! inputfile */
@@ -433,6 +492,55 @@ class Collective
     int RestartOutputCycle;
     /*! Output for diagnostics */
     int DiagnosticsOutputCycle;
+
+    // MLMD variables
+    int Ngrids;
+    int *gridLevel;
+    int *RF;
+    /*! number of the mlmd parent grid */
+    int *parentGrid;
+    /*! number of Children each mlmd grid has*/
+    int *childrenNum;
+    /*! children of each mlmd grid; each grid can have more than one child;
+      row: mlmd grids
+      columns: number of the children grid; use ChildrenNum here */
+    int **childrenGrids;
+    
+    double *Ox_P; // in terms of the PARENT grid, not of the COARSEST grid
+    double *Oy_P;
+    double *Oz_P;
+    
+    double *Ox_SW; // in terms of the COARSEST grid, at the moment used only for output
+    double *Oy_SW;
+    double *Oz_SW;
+
+    int *nxc_mlmd;
+    int *nyc_mlmd;
+    int *nzc_mlmd;
+    double *dx_mlmd;
+    double *dy_mlmd;
+    double *dz_mlmd;
+    double *Lx_mlmd;
+    double *Ly_mlmd;
+    double *Lz_mlmd;
+
+    /*! how the grids are distributed in the cores:
+      0: one piece of each grid per core
+      1: each core hosts a part of a single grid only 
+      --- unused at the moment */
+    int TopologyType; 
+
+    /*! picked up by other classes, true for mlmd related output */
+    bool MLMDVerbose;
+
+    /* wether to perform mlmd operations - 
+       NB: the infrastructure will be built anyway;
+       this is mostly for debugging purposes */
+    int MLMD_BC;
+    int MLMD_PROJECTION;
+    int MLMD_ParticleREPOPULATION;
+    
+    // end MLMD variables
 };
 
 #endif

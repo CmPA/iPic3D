@@ -10,6 +10,9 @@ developers           : Stefano Markidis, Giovanni Lapenta
 #define VirtualTopology3D_H
 
 #include "mpi.h"
+/* mlmd: need to include Collective.h for new setup_vctopology */
+#include "Collective.h"
+
 /**
  *  Abstract base class for virtual process topologies
  *
@@ -22,7 +25,9 @@ developers           : Stefano Markidis, Giovanni Lapenta
 class VirtualTopology3D {
 public:
   /** Find the neighbors in the new communicator  */
-  virtual void setup_vctopology(MPI_Comm comm_old) = 0;
+  /* pre-mlmd
+     virtual void setup_vctopology(MPI_Comm comm_old) = 0; */
+  virtual void setup_vctopology(MPI_Comm comm_old, Collective *col) = 0;
   /** Print topology info */
   virtual void Print() = 0;
   /** Print the mapping of topology */
@@ -80,6 +85,21 @@ public:
   /** if cVERBOSE == true, print to the screen all the comunication */
   virtual bool getcVERBOSE() = 0;
   /** get the MPI communicator */
-  virtual inline MPI_Comm getComm() = 0;
+  virtual MPI_Comm getComm() = 0;
+
+  /*! mlmd specific functions */
+  /*! returns the non cartesian communicator at grid level */
+  virtual MPI_Comm getCommGrid() = 0;
+  /*! returns the number of the current grid */
+  virtual int getNumGrid() = 0;
+  /*! returns the communicator to the parent grid */
+  virtual MPI_Comm getCommToParent() = 0;
+  /*! returns the number of children of a grid */ 
+  virtual int getNumChildren() =0;
+  /* return the communicator to the child grid n in the mlmd hierarchy */
+  virtual MPI_Comm getCommToChild(int n) =0;
+  /*! end mlmd specific functions */
+
+
 };
 #endif

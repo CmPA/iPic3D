@@ -9,7 +9,13 @@
 begin                : May 2008
 copyright            : (C) 2008 KUL Luveun
 developers           : Stefano Markidis, Giovanni Lapenta
- ***************************************************************************/
+***************************************************************************/
+
+/*! the mlmd communicator system:
+  MPI_COMM_WORLD: non cartesian communicator for the entire system 
+  MPI_COMM_GRID: non cartesian communicator for the grid
+  MPI_COMM: cartesian communicator for the grid */
+
 
 #ifndef VCtopology3D_H
 #define VCtopology3D_H
@@ -41,8 +47,10 @@ public:
   VCtopology3D(Collective *col);
   /** destructor */
   ~VCtopology3D();
-  /** Find the neighbors in the new communicator  */
-  void setup_vctopology(MPI_Comm comm_old);
+  /** pre-mlmd: Find the neighbors in the new communicator 
+      void setup_vctopology(MPI_Comm comm_old);
+      mlmd: build all communicators here */
+  void setup_vctopology(MPI_Comm comm_old, Collective *col);
   /** Print topology info */
   void Print();
   /** Print the mapping of topology */
@@ -53,7 +61,8 @@ public:
   int getYLEN() {return(YLEN);};
   /** get ZLEN */
   int getZLEN() {return(ZLEN);};
-  /** get nprocs */
+  /** get nprocs 
+      mlmd: @ grid level */
   int getNprocs() {return(nprocs);};
   /** get periodicity on boundaries - DIRECTION X*/
   bool getPERIODICX() {return(PERIODICX);};
@@ -100,13 +109,42 @@ public:
   /** if cVERBOSE == true, print to the screen all the comunication */
   bool getcVERBOSE() {return(cVERBOSE);};
   /** get the MPI communicator */
-  MPI_Comm getComm() {return(CART_COMM);};
+  MPI_Comm getComm() {return(CART_COMM);};    /*! pre-mlmd: cartesian communicator for the entire system
+						mlmd: cartesian communicator per grid level */
+
+  /*! specific MLMD functions */
+  /*! mlmd gets */
+  /*! returns the non cartesian communicator per grid;
+    to have the cartesian comm per grid, use getComm()*/
+  MPI_Comm getCommGrid() {return(MPI_COMM_GRID);}; 
+  /*! return the number of the current grid in the mlmd hierarchy 
+   NB: the number is not necessarely the same as the level */
+  int getNumGrid() {return(numGrid); };
+  /*! return the rank of the process in the system-wide communicator, MPI_COMM_WORLD */
+  int getSystemWide_rank() {return(systemWide_rank); };
+  /*! return the communicator to the parent; it's MPI_COMM_NULL for the coarse grid */
+  MPI_Comm getCommToParent() {return CommToParent; }
+  /* returns the number of children in the mlmd hierarchy */
+  int getNumChildren() {return (numChildren);}
+  /* returns the n-th communicator to child form CommToChildren */
+  MPI_Comm getCommToChild(int n) {return CommToChildren[n];}
+
+  /*! end mlmd gets */
+
+  /*! mlmd test functions */
+  /*! tries some basic communication on parent-child inter-communicators and communicators */
+  void testMlmdCommunicators();
+  /*! end mlmd test functions */
+
+  /*! end specific MLMD functions */
 
 private:
   /** New communicator with virtual cartesian topology */
-  MPI_Comm CART_COMM;
+  MPI_Comm CART_COMM;    /*! pre-mlmd: field cartesian communicator for the entire system;
+                           mlmd: field cartesian communicator per grid */
   /** New communicator with virtual cartesian topology for Particles*/
-  MPI_Comm CART_COMM_P;
+  MPI_Comm CART_COMM_P;  /*! pre-mlmd: particle cartesian communicator for the entire system;
+			   mlmd: particle cartesian communicator per grid */
   /** MPI status during sending and receiving communication */
   MPI_Status status;
   /** Direction X for shift MPI_Cart_Shift*/
@@ -127,7 +165,8 @@ private:
   int YLEN;
   /** number of subdomains - Direction Z */
   int ZLEN;
-  /** nprocs = number of processors */
+  /** nprocs = number of processors
+   mlmd: on the local grid*/
   int nprocs;
   /** periodicity on boundaries - DIRECTION X*/
   bool PERIODICX;
@@ -150,7 +189,8 @@ private:
   int periods_P[3];
   /** coordinates on processors grid */
   int coordinates[3];
-  /** cartesian rank */
+  /** cartesian rank 
+   mlmd: cartesian rank on the grid cartesian communicator*/
   int cartesian_rank;
   /** Number of processors requested at running time */
   int nproc;
@@ -181,6 +221,45 @@ private:
 
   /** if cVERBOSE == true, print to the screen all the comunication */
   bool cVERBOSE;
+  bool verboseMLMD;
+
+  /*! mlmd specific variables */
+  /*! non cartesian communicator at grid level */
+  MPI_Comm MPI_COMM_GRID;
+  /*! number of mlmd grids */
+  int Ngrids;
+  /*! number of the current grid
+    possible values: 0 -> Ngrids -1 */
+  int numGrid;
+
+  /* mlmd specific ranks 
+   - see also cartesian_rank*/
+  /*! rank in the system-wide communicator - MPI_COMM_WORLD */
+  int systemWide_rank;
+  /* rank in CommToParent communicator */
+  int rank_CommToParent;
+  /* rank in CommToChildren communicator */
+  int *rank_CommToChildren;
+  /* end ranks */
+  
+  /* number of children of the current grid */
+  int numChildren;
+
+  /* communicator to parent */
+  MPI_Comm CommToParent;
+
+  /* communicator to children */
+  MPI_Comm *CommToChildren;
+
+  /*! TAGS 
+    as an experiment, let's start a system of tags to mark the different kind of mlmd communication
+    TagsFor*_Parent will be used for communication with the parent
+    TagsFor*_Children will be used for communication with the children */
+    int TagsForInit_Parent;
+    int *TagsForInit_Children;
+      
+  /*TagsForFieldBC_, TagsForParticleBC_, TagsForProjection ... */
+  
 };
 
 #endif

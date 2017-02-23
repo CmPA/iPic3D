@@ -54,6 +54,7 @@ target_link_libraries(
     iPic3Dlib
     ${MPI_LIBRARIES}
     ${HDF5_LIBRARIES}
+    ${HDF5_HL_LIBRARIES}	
 )
 
 #

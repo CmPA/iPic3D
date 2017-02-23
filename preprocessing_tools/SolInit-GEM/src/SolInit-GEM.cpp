@@ -67,10 +67,10 @@ int main (int argc, char *argv[])
   std::cout << " Call MPI..." << std::endl;
 
   MPI_Init (&argc, &argv);
-  MPI_Comm_size  (MPI_COMM_WORLD, &size);
+  MPI_Comm_size  (MPI_COMM_GRID, &size);
   if (MPI_ndim==3) MPI_Dims_create(size, 3, dimns);
   else       { MPI_Dims_create(size, 2, dimns); dimns[2]=1;}
-  MPI_Cart_create(MPI_COMM_WORLD, MPI_ndim, dimns, perio, reorder, &CART_COMM);
+  MPI_Cart_create(MPI_COMM_GRID, MPI_ndim, dimns, perio, reorder, &CART_COMM);
   MPI_Comm_rank  (CART_COMM,&rank);
   MPI_Cart_coords(CART_COMM, rank, MPI_ndim, coord);
 

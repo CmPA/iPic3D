@@ -1,5 +1,7 @@
 
 #include "Collective.h"
+#include "Alloc.h"   // mlmd: added for some mlmd vectors
+
 
 /*! Read the input file from text file and put the data in a collective wrapper: if it's a restart read from input file basic sim data and load particles and EM field from restart file */
 void Collective::ReadInput(string inputfile) {
@@ -89,7 +91,7 @@ void Collective::ReadInput(string inputfile) {
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle");
     RestartOutputCycle = config.read < int >("RestartOutputCycle");
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
-
+    
     // MPI topology and periodicity
     XLEN      = config.read < int > ("XLEN",1);
     YLEN      = config.read < int > ("YLEN",1);
@@ -98,6 +100,111 @@ void Collective::ReadInput(string inputfile) {
     PERIODICY = config.read < bool >("PERIODICY");
     PERIODICZ = config.read < bool >("PERIODICZ");
 
+    // MLMD reads; always read from inputfile
+    
+    Ngrids = config.read < int >("Ngrids");
+    array_int gridLevel0 = config.read < array_int > ("gridLevel");
+    array_int RF0 = config.read < array_int > ("RF");
+    array_int parentGrid0 = config.read < array_int > ("parentGrid");
+    
+    array_int nxc_mlmd0 = config.read < array_int > ("nxc_mlmd");
+    array_int nyc_mlmd0 = config.read < array_int > ("nyc_mlmd");
+    array_int nzc_mlmd0 = config.read < array_int > ("nzc_mlmd");
+    
+    array_double Ox0 = config.read < array_double > ("Ox_SW");
+    array_double Oy0 = config.read < array_double > ("Oy_SW");
+    array_double Oz0 = config.read < array_double > ("Oz_SW");
+
+    gridLevel = new int[Ngrids];
+    RF = new int[Ngrids];
+    parentGrid = new int[Ngrids];
+
+    nxc_mlmd = new int[Ngrids];
+    nyc_mlmd = new int[Ngrids];
+    nzc_mlmd = new int[Ngrids];
+
+    Ox_SW = new double[Ngrids];
+    Oy_SW = new double[Ngrids];
+    Oz_SW = new double[Ngrids];
+
+    gridLevel[0] = gridLevel0.a;
+    RF[0] = RF0.a;
+    parentGrid[0] = parentGrid0.a;
+        
+    nxc_mlmd[0] = nxc_mlmd0.a;
+    nyc_mlmd[0] = nyc_mlmd0.a;
+    nzc_mlmd[0] = nzc_mlmd0.a;
+    
+    Ox_SW[0] = Ox0.a;
+    Oy_SW[0] = Oy0.a;
+    Oz_SW[0] = Oz0.a;
+    
+    if (Ngrids >1) {
+      gridLevel[1] = gridLevel0.b;
+      RF[1]= RF0.b;
+      parentGrid[1]= parentGrid0.b;
+      
+      nxc_mlmd[1] =nxc_mlmd0.b;
+      nyc_mlmd[1] = nyc_mlmd0.b;
+      nzc_mlmd[1] = nzc_mlmd0.b;
+      
+      Ox_SW[1]= Ox0.b;
+      Oy_SW[1]= Oy0.b;
+      Oz_SW[1]= Oz0.b;
+    }
+    
+    if (Ngrids >2) {
+      gridLevel[2] = gridLevel0.c;
+      RF[2]= RF0.c;
+      parentGrid[2]= parentGrid0.c;
+      
+      nxc_mlmd[2] =nxc_mlmd0.c;
+      nyc_mlmd[2] = nyc_mlmd0.c;
+      nzc_mlmd[2] = nzc_mlmd0.c;
+      
+      Ox_SW[2]= Ox0.c;
+      Oy_SW[2]= Oy0.c;
+      Oz_SW[2]= Oz0.c;
+    }
+    
+    if (Ngrids >3) {
+      gridLevel[3] = gridLevel0.d;
+      RF[3]= RF0.d;
+      parentGrid[3]= parentGrid0.d;
+      
+      nxc_mlmd[3] =nxc_mlmd0.d;
+      nyc_mlmd[3] = nyc_mlmd0.d;
+      nzc_mlmd[3] = nzc_mlmd0.d;
+      
+      Ox_SW[3]= Ox0.d;
+      Oy_SW[3]= Oy0.d;
+      Oz_SW[3]= Oz0.d;
+    }
+    
+    if (Ngrids >4) {
+      gridLevel[4] = gridLevel0.e;
+      RF[4]= RF0.e;
+      parentGrid[4]= parentGrid0.e;
+      
+      nxc_mlmd[4] =nxc_mlmd0.e;
+      nyc_mlmd[4] = nyc_mlmd0.e;
+      nzc_mlmd[4] = nzc_mlmd0.e;
+      
+      Ox_SW[4]= Ox0.e;
+      Oy_SW[4]= Oy0.e;
+      Oz_SW[4]= Oz0.e;
+    }
+    
+    TopologyType = config.read < int > ("TopologyType");
+    
+    /* whether to perform mlmd operations */
+    MLMD_BC = config.read < int > ("MLMD_BC");
+    MLMD_PROJECTION = config.read < int > ("MLMD_PROJECTION");
+    MLMD_ParticleREPOPULATION = config.read < int > ("MLMD_ParticleREPOPULATION");
+
+    //cout << "MLMD_BC: " << MLMD_BC <<endl;
+    
+    // end MLMD reads
   }
 
   SolInit = false;
@@ -173,13 +280,15 @@ void Collective::ReadInput(string inputfile) {
     nyc = getFluidNyc();
     nzc = getFluidNzc();
 #else
-    Lx = config.read < double >("Lx");
+    Lx = config.read < double >("Lx");  // I need this read for the MLMD also
     Ly = config.read < double >("Ly");
     Lz = config.read < double >("Lz");
     nxc = config.read < int >("nxc");
     nyc = config.read < int >("nyc");
     nzc = config.read < int >("nzc");
 #endif
+
+    
 
     x_center = config.read < double >("x_center");
     y_center = config.read < double >("y_center");
@@ -359,9 +468,21 @@ void Collective::ReadInput(string inputfile) {
     abort();
   }
 
+  /*! this will be eventually in inputfile */
+  MLMDVerbose = true; 
+
 }
 /*! Read the collective information from the RESTART file in HDF5 format There are three restart status: restart_status = 0 ---> new inputfile restart_status = 1 ---> RESTART and restart and result directories does not coincide restart_status = 2 ---> RESTART and restart and result directories coincide */
+
+
+
 int Collective::ReadRestart(string inputfile) {
+
+  if (Ngrids > 1) {
+    cout<<" The MLMD version cannot handle RESTART yet, aborting...\n"<<flush;
+    abort();
+  }
+
   restart_status = 1;
   // hdf stuff 
   hid_t file_id;
@@ -636,6 +757,50 @@ Collective::Collective(int argc, char **argv) {
   dy = Ly / (double) nyc;
   /*! dz = space step - Z direction */
   dz = Lz / (double) nzc;
+
+  /*! MLMD:  dx_mlmd, dy_mlmd, dz_mlmd : resolution at grid level */
+
+  dx_mlmd = new double[Ngrids];
+  dy_mlmd = new double[Ngrids];
+  dz_mlmd = new double[Ngrids];
+
+  Lx_mlmd = new double[Ngrids];
+  Ly_mlmd = new double[Ngrids];
+  Lz_mlmd = new double[Ngrids];
+
+  Ox_P = new double[Ngrids];
+  Oy_P = new double[Ngrids];
+  Oz_P = new double[Ngrids];
+  
+  Lx_mlmd[0] = Lx;
+  Ly_mlmd[0] = Ly;
+  Lz_mlmd[0] = Lz;
+
+  for (int ng=1; ng < Ngrids; ng++) { // NB: RF is given with respect to the PARENT grid
+    Lx_mlmd[ng]= Lx_mlmd[parentGrid[ng]]/RF[ng];
+    Ly_mlmd[ng]= Ly_mlmd[parentGrid[ng]]/RF[ng];
+    Lz_mlmd[ng]= Lz_mlmd[parentGrid[ng]]/RF[ng];
+  }
+
+  for (int ng=0; ng < Ngrids; ng++) { // NB: RF is given with respect to the PARENT grid 
+    dx_mlmd[ng]= Lx_mlmd[ng]/ (double) nxc_mlmd[ng];
+    dy_mlmd[ng]= Ly_mlmd[ng]/ (double) nyc_mlmd[ng];
+    dz_mlmd[ng]= Lz_mlmd[ng]/ (double) nzc_mlmd[ng];
+  }
+
+  /*! Ox_P, Oy_P, Oz_P are in terms of the PARENT grid */
+  Ox_P[0]= Ox_SW[0];
+  Oy_P[0]= Oy_SW[0];
+  Oz_P[0]= Oz_SW[0];
+  for (int ng=1; ng< Ngrids; ng++) {
+    Ox_P[ng]= Ox_SW[ng]- Ox_SW[parentGrid[ng]];
+    Oy_P[ng]= Oy_SW[ng]- Oy_SW[parentGrid[ng]];
+    Oz_P[ng]= Oz_SW[ng]- Oz_SW[parentGrid[ng]];
+  }
+  
+  /* MLMD:  dx_mlmd, dy_mlmd, dz_mlmd : resolution at grid level */
+  
+
   /*! npcel = number of particles per cell */
   npcel = new int[ns];
   /*! np = number of particles of different species */
@@ -643,13 +808,55 @@ Collective::Collective(int argc, char **argv) {
   /*! npMax = maximum number of particles of different species */
   npMax = new long[ns];
 
+  // MLMD: maybe np should be had per grid as well
   for (int i = 0; i < ns; i++) {
     npcel[i] = npcelx[i] * npcely[i] * npcelz[i];
     np[i] = npcel[i] * (nxc/XLEN) * (nyc/YLEN) * (nzc/ZLEN);
     npMax[i] = (long) (NpMaxNpRatio * np[i]);
   }
 
+  /*! building the list of the children grids */
+  childrenNum = new int[Ngrids];
+  childrenGrids = newArr2(int, Ngrids, Ngrids);
 
+  /*! this to trigger segFault in case of errors */
+  for (int i=0; i< Ngrids; i++)
+    for (int j=0; j< Ngrids; j++)
+      childrenGrids[i][j]= -1;
+  
+  parentGrid[0] = -1;  
+  /*! end this to trigger segFault in case of errors */
+
+  for (int ng=0; ng< Ngrids; ng++){
+    childrenNum[ng]=0;
+  }
+  for (int ng=1; ng< Ngrids; ng++){ // cycle on the children; we skip Grid 0
+    int parent= parentGrid[ng];
+    childrenGrids[parent][childrenNum[parent]]= ng;
+    childrenNum[parent]++; 
+    }
+
+  /*! debug */
+  int SpokePerson;
+  MPI_Comm_rank(MPI_COMM_WORLD, &SpokePerson);
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (0 && SpokePerson==0){
+    for (int ng=0; ng<Ngrids; ng++) {
+      cout << "Grid " << ng << " has " << childrenNum[ng] << " child(ren)" << endl;
+      if (childrenNum[ng]>0){
+	for (int c=0; c<childrenNum[ng]; c++)
+	  cout << "Child grid " << childrenGrids[ng][c] << endl;
+      }
+    }
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  /*! end debug */
+
+  /*! end building the list of the children grids */
+
+  /*! a first sanity check on MLMD inputs, called at the end of the constructor; may abort internally */
+  checkMLMDinputs();
 
 }
 
@@ -676,6 +883,23 @@ Collective::~Collective() {
   delete[]rhoINIT;
   delete[]rhoINJECT;
 
+  // MLMD variables
+  delete[]gridLevel;
+  delete[]RF;
+  delete[]parentGrid;
+  delete[]nxc_mlmd;
+  delete[]nyc_mlmd;
+  delete[]nzc_mlmd;
+  delete[]Ox_SW;
+  delete[]Oy_SW;
+  delete[]Oz_SW;
+  delete[]Ox_P;
+  delete[]Oy_P;
+  delete[]Oz_P;
+  delete[]dx_mlmd;
+  delete[]dy_mlmd;
+  delete[]dz_mlmd;
+  // MLMD variables
 }
 /*! Print Simulation Parameters */
 void Collective::Print() {
@@ -729,7 +953,54 @@ void Collective::Print() {
       cout << "WARNING. v_th*dt/dy (species " << is << ") = " << vth[is] * dt / dy << " < .1"  << endl;
 
   }
+  cout << "---------------------" << endl;
+  cout << "MLMD variables" << endl;
 
+  cout << "Number of MLMD grids          : " << Ngrids << endl;
+
+  cout << "Grid levels:                  : " << endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      cout << gridLevel[ng] << "\t";
+    }
+  cout <<endl;
+
+  cout << "Refinement factors            : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      cout << RF[ng] << "\t";
+    }
+  cout <<endl;
+  
+  cout << "Parent grid                   : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      cout << parentGrid[ng] << "\t";
+    }
+  cout <<endl;
+
+  cout << "Grid origin, x y z direction (with respect to the COARSEST grid)      : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      cout <<"grid " << ng <<":\t"<< Ox_SW[ng] <<"\t" <<Oy_SW[ng] << "\t" <<Oz_SW[ng] <<endl;
+    }
+  cout <<endl;
+
+  cout << "Spatial resolution, x y z direction      : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      cout <<"grid " << ng <<":\t"<< dx_mlmd[ng] <<"\t" <<dy_mlmd[ng] << "\t" <<dz_mlmd[ng] <<endl;
+    }
+  cout <<endl;
+  
+  cout << "Number of cells, x y z direction      : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      cout <<"grid " << ng <<":\t"<< nxc_mlmd[ng] <<"\t" <<nyc_mlmd[ng] << "\t" <<nzc_mlmd[ng] <<endl;
+    }
+  cout <<endl;
+
+  cout << "---------------------" << endl;
 
 }
 /*! Print Simulation Parameters */
@@ -772,6 +1043,57 @@ void Collective::save() {
   my_file << "Results saved in: " << SaveDirName << endl;
   my_file << "Restart saved in: " << RestartDirName << endl;
   my_file << "---------------------" << endl;
+
+  my_file << "---------------------" << endl;
+  my_file << "MLMD variables" << endl;
+
+  my_file << "Number of MLMD grids          : " << Ngrids << endl;
+
+  my_file << "Grid levels:                  : " << endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      my_file << gridLevel[ng] << "\t";
+    }
+  my_file <<endl;
+
+  my_file << "Refinement factors            : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      my_file << RF[ng] << "\t";
+    }
+  my_file <<endl;
+  
+  my_file << "Parent grid                   : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      my_file << parentGrid[ng] << "\t";
+    }
+  my_file <<endl;
+
+  my_file << "Grid origin, x y z direction (with respect to the COARSEST grid)     : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      my_file <<"grid " << ng <<":\t"<< Ox_SW[ng] <<"\t" <<Oy_SW[ng] << "\t" <<Oz_SW[ng] <<endl;
+    }
+  my_file <<endl;
+
+  my_file << "Spatial resolution, x y z direction      : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      my_file <<"grid " << ng <<":\t"<< dx_mlmd[ng] <<"\t" <<dy_mlmd[ng] << "\t" <<dz_mlmd[ng] <<endl;
+    }
+  my_file <<endl;
+  
+  my_file << "Number of cells, x y z direction      : " <<endl;
+  for (int ng=0; ng < Ngrids; ng++)
+    {
+      my_file <<"grid " << ng <<":\t"<< nxc_mlmd[ng] <<"\t" <<nyc_mlmd[ng] << "\t" <<nzc_mlmd[ng] <<endl;
+    }
+  my_file <<endl;
+
+  my_file << "---------------------" << endl;
+
+
   my_file.close();
 
 }
@@ -780,18 +1102,20 @@ void Collective::save() {
 int Collective::getDim() {
   return (dim);
 }
+/*! mlmd: use getLx_mlmd instead */
 /*! get Lx */
-double Collective::getLx() {
+/*double Collective::getLx() {
   return (Lx);
-}
+}*/
 /*! get Ly */
-double Collective::getLy() {
+/*double Collective::getLy() {
   return (Ly);
-}
+}*/
 /*! get Lz */
-double Collective::getLz() {
+/*double Collective::getLz() {
   return (Lz);
-}
+}*/
+/*! end mlmd: use getLx_mlmd instead */ 
 /*! get x_center */
 double Collective::getx_center() {
   return (x_center);
@@ -808,30 +1132,32 @@ double Collective::getz_center() {
 double Collective::getL_square() {
   return (L_square);
 }
+/*! mlmd: use getNxc_mlmd instead */
 /*! get nxc */
-int Collective::getNxc() {
+/*int Collective::getNxc() {
   return (nxc);
-}
+}*/
 /*! get nyx */
-int Collective::getNyc() {
+/*int Collective::getNyc() {
   return (nyc);
-}
+}*/
 /*! get nzc */
-int Collective::getNzc() {
+/*!int Collective::getNzc() {
   return (nzc);
-}
+}*/
 /*! get dx */
-double Collective::getDx() {
+/*! mlmd: use getDx_mlmd instead*/
+/*!double Collective::getDx() {
   return (dx);
 }
 /*! get dy */
-double Collective::getDy() {
+/*double Collective::getDy() {
   return (dy);
-}
+}*/
 /*! get dz */
-double Collective::getDz() {
+/*double Collective::getDz() {
   return (dz);
-}
+}*/
 /*! get the light speed */
 double Collective::getC() {
   return (c);
@@ -1101,3 +1427,186 @@ int Collective::getRestartOutputCycle() {
 int Collective::getDiagnosticsOutputCycle() {
   return (DiagnosticsOutputCycle);
 }
+
+
+/*! MLMD specific function */
+
+/*! MLMD gets */
+int Collective::getNgrids() {
+  return Ngrids;
+}
+int Collective::getgridLevel(int numgrid) {
+  return gridLevel[numgrid];
+}
+int Collective::getRF(int numgrid) {
+  return RF[numgrid];
+}
+int Collective::getparentGrid(int numgrid) {
+  return parentGrid[numgrid];
+}
+double Collective::getOx_SW(int numgrid) {
+  return Ox_SW[numgrid];
+}
+double Collective::getOy_SW(int numgrid) {
+  return Oy_SW[numgrid];
+}
+double Collective::getOz_SW(int numgrid) {
+  return Oz_SW[numgrid];
+}
+double Collective::getOx_P(int numgrid) {
+  return Ox_P[numgrid];
+}
+double Collective::getOy_P(int numgrid) {
+  return Oy_P[numgrid];
+}
+double Collective::getOz_P(int numgrid) {
+  return Oz_P[numgrid];
+}
+double Collective::getDx_mlmd(int numgrid) {
+  return dx_mlmd[numgrid];
+}
+double Collective::getDy_mlmd(int numgrid) {
+  return dy_mlmd[numgrid];
+}
+double Collective::getDz_mlmd(int numgrid) {
+  return dz_mlmd[numgrid];
+}
+int Collective::getNxc_mlmd(int numgrid) {
+  return nxc_mlmd[numgrid];
+}
+int Collective::getNyc_mlmd(int numgrid) {
+  return nyc_mlmd[numgrid];
+}
+int Collective::getNzc_mlmd(int numgrid) {
+  return nzc_mlmd[numgrid];
+}
+double Collective::getLx_mlmd(int numgrid) {
+  return Lx_mlmd[numgrid];
+}
+double Collective::getLy_mlmd(int numgrid) {
+  return Ly_mlmd[numgrid];
+}
+double Collective::getLz_mlmd(int numgrid) {
+  return Lz_mlmd[numgrid];
+}
+int Collective::getTopologyType() {
+  return TopologyType;
+}
+bool Collective::getMLMDVerbose() {
+  return MLMDVerbose;
+}
+int Collective::getChildrenNum(int numgrid) {
+  return childrenNum[numgrid];
+}
+int Collective::getChildrenGrids(int numgrid, int childnum) {
+  if (childnum > childrenNum[numgrid] -1){
+    cout << "WARNING!!! Collective::getChildrenGrids asked for a child grid which does not exists! WARNING!!" << endl;
+    // end: later: manage this better //
+  } else {
+    return childrenGrids[numgrid][childnum];
+  }
+}
+int Collective::getParentGrid(int numgrid) {
+  if (numgrid==0){
+    cout << "WARNING!!!!   Collective::getParentGrid(0)   WARNING!!!" <<endl;  
+  }
+  return parentGrid[numgrid];
+}
+int Collective::getMLMD_BC() {return MLMD_BC;}
+int Collective::getMLMD_PROJECTION() {return MLMD_PROJECTION;}
+int Collective::getMLMD_ParticleREPOPULATION() {return MLMD_ParticleREPOPULATION;}
+
+/*! end MLMD gets */
+/*! a first sanity check on MLMD inputs, called at the end of the constructor */
+void Collective::checkMLMDinputs() {
+
+  int rank; 
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  
+  /*! check that the grids hierarchy is in increasing order in the inputfile; 
+    it's just easier to process things that way  */
+  for (int ng=1; ng< Ngrids; ng++) {
+    if (gridLevel[ng] < gridLevel[ng-1]) { 
+      if (rank ==0)
+	cout<<" Please order the grid levels in increasing order in the inputfile, aborting...\n"<<flush;
+      abort(); 
+    } 
+  } // end for grids
+
+  /*! check that the refined grid is included in the parent grid  */
+  bool ok, inBetween;
+  double tol= 2*DBL_EPSILON;
+  for (int ng=1; ng< Ngrids; ng++) {
+    
+    /*! x dir */
+    // NB: Ox_P is in terms of the parent grid, not of the coarsest grid: hence we check it the Ox_P is between 0 and the length of the parent grid
+    inBetween = isInBetween(Ox_P[ng], 0.0, Lx_mlmd[parentGrid[ng]], tol, &ok);
+    if ((! (ok && inBetween)) or (Ox_P[ng] < dx_mlmd[parentGrid[ng]])) {	
+      if (rank==0)
+	{
+	  cout<<" Problem with x-position of grid " << ng <<":" <<endl <<"Lx parent= " << Lx_mlmd[parentGrid[ng]] << ", Ox_P=" << Ox_P[ng] <<", Ox_P+Lx=" << Ox_P[ng] + Lx_mlmd[ng] << ", keep Ox_P>" <<dx_mlmd[parentGrid[ng]]<< ", ok: " << ok << ",inBetween:" <<inBetween << ", aborting" << flush;
+	}
+      abort(); }
+    
+    inBetween = isInBetween(Ox_P[ng]+ Lx_mlmd[ng], 0.0, Lx_mlmd[parentGrid[ng]], tol, &ok);
+    if ((! (ok && inBetween)) or (Ox_P[ng] + Lx_mlmd[ng] > Lx_mlmd[parentGrid[ng]] - dx_mlmd[parentGrid[ng]]    )) {
+      if (rank==0)
+	{
+	  cout<<" Problem with x-position of grid " << ng <<":" <<endl <<"Lx parent= " << Lx_mlmd[parentGrid[ng]] << ", Ox_P=" << Ox_P[ng] <<", Ox_P+Lx=" << Ox_P[ng] + Lx_mlmd[ng] << ", keep Ox_P + Lx<" <<Lx_mlmd[parentGrid[ng]]- dx_mlmd[parentGrid[ng]] << ", ok: " << ok << ", inBetween: " << inBetween << ", aborting" << flush;
+	}
+      abort(); }
+    /*! y dir */
+    inBetween = isInBetween(Oy_P[ng], 0.0, Ly_mlmd[parentGrid[ng]], tol, &ok);
+    if ((! (ok && inBetween)) or (Oy_P[ng] < dy_mlmd[parentGrid[ng]])) {
+      if (rank==0)
+	cout<<" Problem with y-position of grid " << ng <<":" <<endl <<"Ly parent= " << Ly_mlmd[parentGrid[ng]] << ", Oy_P=" << Oy_P[ng] <<", Oy_P+Ly=" << Oy_P[ng] + Ly_mlmd[ng] << ", keep Oy_P>" <<dy_mlmd[parentGrid[ng]]<< ", aborting" << flush;
+      abort(); }
+
+    inBetween = isInBetween(Oy_P[ng]+ Ly_mlmd[ng], 0.0, Ly_mlmd[parentGrid[ng]], tol, &ok);
+    if ((! (ok && inBetween)) or (Oy_P[ng] + Ly_mlmd[ng] > Ly_mlmd[parentGrid[ng]] - dy_mlmd[parentGrid[ng]]    )) {
+      cout<<" Problem with y-position of grid " << ng <<":" <<endl <<"Ly parent= " << Ly_mlmd[parentGrid[ng]] << ", Oy_P=" << Oy_P[ng] <<", Oy_P+Ly=" << Oy_P[ng] + Ly_mlmd[ng] << ", keep Oy_P + Ly<" <<Ly_mlmd[parentGrid[ng]]- dy_mlmd[parentGrid[ng]]<< ", aborting" << flush;
+      abort(); }
+    
+    /*! z dir */
+    inBetween = isInBetween(Oz_P[ng], 0.0, Lz_mlmd[parentGrid[ng]], tol, &ok);
+    if ((! (ok && inBetween)) or (Oz_P[ng] < dz_mlmd[parentGrid[ng]])) {
+      if (rank==0)
+	cout<<" Problem with z-position of grid " << ng <<":" <<endl <<"Lz parent= " << Lz_mlmd[parentGrid[ng]] << ", Oz_P=" << Oz_P[ng] <<", Oz_P+Lz=" << Oz_P[ng] + Lz_mlmd[ng] << ", keep Oz_P>" <<dz_mlmd[parentGrid[ng]] <<", aborting" << flush;
+      abort(); }
+
+    inBetween = isInBetween(Oz_P[ng]+ Lz_mlmd[ng], 0.0, Lz_mlmd[parentGrid[ng]], tol, &ok);
+    if ((! (ok && inBetween)) or (Oz_P[ng] + Lz_mlmd[ng] > Lz_mlmd[parentGrid[ng]] - dz_mlmd[parentGrid[ng]]    )) {
+      if (rank==0)
+	cout<<" Problem with z-position of grid " << ng <<":" <<endl <<"Lz parent= " << Lz_mlmd[parentGrid[ng]] << ", Oz_P=" << Oz_P[ng] <<", Oz_P+Lz=" << Oz_P[ng] + Lz_mlmd[ng] << ", keep Oz_P + Lz <" <<Lz_mlmd[parentGrid[ng]]- dz_mlmd[parentGrid[ng]]<< ", aborting" << flush;
+      abort(); }
+  } // end for grids
+
+  /*! check that nxc/XLEN, nyc/YLEN, nzc/ZLEN are integer for all grids  */
+  for (int ng=1; ng< Ngrids; ng++) {
+    bool rem;
+    if (nxc_mlmd[ng]%XLEN) 
+      { if (rank==0)
+	  cout << " Please check the # of cells in the x-dir of grid " <<ng <<", aborting ..." << flush; 
+	abort(); }
+    
+    if (nyc_mlmd[ng]%YLEN) 
+      { if (rank==0)
+	  cout << " Please check the # of cells in the x-dir of grid " <<ng <<", aborting ..." << flush; 
+	abort(); }
+    
+    if (nzc_mlmd[ng]%ZLEN) 
+      { if (rank==0)
+	  cout << " Please check the # of cells in the x-dir of grid " <<ng <<", aborting ..." << flush; 
+	abort(); }
+  } // end for grids
+  
+  /*! check that the requested topology type has been implemented */
+  if (TopologyType)
+    {
+      if (rank==0){
+	cout << "You requested TopologyType= " << TopologyType << endl;
+	cout << "Only TopologyType = 0 is implemented, aborting ..." << flush;}
+      abort();
+    }
+}
+/*! end MLMD specific function */

@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     }
   }
   // We create a new communicator with a 3D virtual Cartesian topology
-  vct->setup_vctopology(MPI_COMM_WORLD);
+  vct->setup_vctopology(MPI_COMM_GRID);
   // Print the initial settings from the INPUT file 
   if (myrank == 0) {
     mpi->Print();
@@ -85,17 +85,17 @@ int main(int argc, char **argv) {
   }
   if (myrank == 0)
     vct->PrintMapping();
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_GRID);
   if (myrank == 1)
     vct->PrintMapping();
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_GRID);
   if (myrank == 4)
     vct->PrintMapping();
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_GRID);
 
 
   // Create the local grid
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_GRID);
   Grid3DCU *grid = new Grid3DCU(col, vct);  // Create the local grid
   EMfields3D *EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
   EMf->initBEAM(vct, grid, 0.12713296, 0.12713296, 0.25426593, 0.04237765);
@@ -138,7 +138,7 @@ int main(int argc, char **argv) {
     output_mgr.output("proc_topology ", 0);
     hdf5_agent.close();
   }
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_GRID);
   // *******************************************//
   // **** Start the Simulation! ***//
   // *******************************************//
@@ -155,11 +155,11 @@ int main(int argc, char **argv) {
     for (int i = 0; i < ns; i++)
       part[i].interpP2G(EMf, grid, vct);  // interpolate Particles to Grid(Nodes)
     EMf->sumOverSpecies(vct);   // sum all over the species
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_GRID);
     EMf->interpDensitiesN2C(vct, grid); // calculate densities on centers from nodes
     EMf->calculateHatFunctions(grid, vct);  // calculate the hat quantities for the implicit method
     // my_clock->stop_interpP2G(); // for profiling
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_GRID);
     // done with output // solve Maxwell equations
     // my_clock->start_field(); // for profiling
     EMf->calculateField(grid, vct); // calculate the EM fields
@@ -190,11 +190,11 @@ int main(int argc, char **argv) {
       cycle = col->getNcycles() + first_cycle;  // exit from the time loop
     }
     // my_clock->stop_mover(); // for profiling
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(MPI_COMM_GRID);
     // Output save a file for the RESTART
     if (cycle % restart_cycle == 0 && cycle != first_cycle)
       writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0); // without ,0 add to restart file
-    // MPI_Barrier(MPI_COMM_WORLD); 
+    // MPI_Barrier(MPI_COMM_GRID); 
 
 
   }

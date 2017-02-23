@@ -48,6 +48,9 @@ namespace iPic3D {
     inline int FirstCycle();
     inline int LastCycle();
     inline int get_myrank();
+    /*! mlmd */
+    inline int get_numGrid();
+    /*! end mlmd */
 
   private:
     MPIdata       * mpi;
@@ -71,7 +74,7 @@ namespace iPic3D {
     string cqsat;
     string cq;
     string ds;
-    stringstream num_proc;
+    stringstream num_proc; // mlmd: my_rank, hence local to the grid
     int restart_cycle;
     int restart;
     int first_cycle;
@@ -88,6 +91,24 @@ namespace iPic3D {
     double Benergy;
     double TOTenergy;
     double TOTmomentum;
+
+    /*! mlmd variables */
+    /*! number of the current grid in the mlmd hierarchy */
+    int numGrid;
+    /*! stringstream with grid number, for output-related ops 
+     analogous to stringstream num_proc*/
+    stringstream num_grid_STR;
+    
+    bool MlmdVerbose;
+
+    /* whether to perform mlmd operations; 0 or 1 -
+       the structure is set in place anyway; 
+       this is mostly for debugging purposes */
+    int MLMD_BC;
+    int MLMD_PROJECTION;
+    int MLMD_ParticleREPOPULATION;
+
+    /*! end mlmd variables */
   };
 
   inline int c_Solver::FirstCycle() {
@@ -99,7 +120,11 @@ namespace iPic3D {
   inline int c_Solver::get_myrank() {
     return (myrank);
   }
-
+  /*! mlmd gets*/
+  inline int c_Solver::get_numGrid() {
+    return (numGrid);
+  }
+  /*! end mlmd gets */
 }
 
 #endif

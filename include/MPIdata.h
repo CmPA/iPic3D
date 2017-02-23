@@ -45,9 +45,9 @@ public:
   /** MPI status during the communication */
   MPI_Status status;
   /** rank of the process */
-  int rank;
+  int rank;    /*! in MPI_COMM_WORLD */
   /** number of processes */
-  int nprocs;
+  int nprocs;  /*! in MPI_COMM_WORLD */ 
 
   char *buffer;
   int buffer_size;
@@ -56,12 +56,14 @@ inline MPIdata::MPIdata(int *argc, char ***argv) {
   /* Initialize the MPI API */
   MPI_Init(argc, argv);
 
-  /* Set rank */
+  /* Set rank, in MPI_COMM_WORLD */
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
-  /* Set total number of processors */
+  /* Set total number of processors, in MPI_COMM_WORLD */
   MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
+  /*! mlmd: this is used in PSKOutput: decide wether MPI_COMM_WORLD or MPI_COMM_GRID
+    is better here; at the moment, MPI_COMM_WORLD */
 }
 
 inline MPIdata::~MPIdata() {
@@ -73,7 +75,7 @@ inline void MPIdata::finalize_mpi() {
 
 inline void MPIdata::Print(void) {
   cout << endl;
-  cout << "Number of processes = " << nprocs << endl;
+  //cout << "Number of processes = " << nprocs << endl;
   cout << "-------------------------" << endl;
   cout << endl;
 }

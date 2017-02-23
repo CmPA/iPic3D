@@ -249,6 +249,7 @@ void Particles3D::MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology
 /** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
+
   /* initialize random generator with different seed on different processor */
   srand(vct->getCartesian_rank() + 2);
 
@@ -286,6 +287,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
               counter++;
             }
+  
 
 
 }
@@ -451,7 +453,8 @@ void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, 
 /** mover with a Predictor-Corrector scheme */
 int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   if (vct->getCartesian_rank() == 0) {
-    cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+    //cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+    cout << "*** G" <<numGrid <<":  MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
   }
   double start_mover_PC = MPI_Wtime();
   double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
@@ -656,14 +659,18 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   const int avail = communicate(vct);
   if (avail < 0)
     return (-1);
-  MPI_Barrier(MPI_COMM_WORLD);
+  /*! mlmd: barrier at grid level */
+  //MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(vct->getCommGrid());
   // communicate again if particles are not in the correct domain
   while (isMessagingDone(vct) > 0) {
     // COMMUNICATION
     const int avail = communicate(vct);
     if (avail < 0)
       return (-1);
-    MPI_Barrier(MPI_COMM_WORLD);
+    /*! mlmd: barrier at grid level */
+    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(vct->getCommGrid()); 
   }
   // timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
@@ -672,7 +679,8 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 /** mover with a Predictor-Corrector scheme */
 int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   if (vct->getCartesian_rank() == 0) {
-    cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+    //cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+    cout << "*** G" << numGrid <<": MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
   }
   double start_mover_PC = MPI_Wtime();
   double weights[2][2][2];
@@ -789,14 +797,18 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   const int avail = communicate(vct);
   if (avail < 0)
     return (-1);
-  MPI_Barrier(MPI_COMM_WORLD);
+  /*! mlmd: barrier at grid level */
+  //MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(vct->getCommGrid()); 
   // communicate again if particles are not in the correct domain
   while (isMessagingDone(vct) > 0) {
     // COMMUNICATION
     const int avail = communicate(vct);
     if (avail < 0)
       return (-1);
-    MPI_Barrier(MPI_COMM_WORLD);
+    /*! mlmd: barrier at grid level */
+    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(vct->getCommGrid());
   }
   // timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
@@ -1201,7 +1213,9 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   avail = communicate(vct);
   if (avail < 0) return(-1);
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  /*! mlmd: barrier at grid level*/
+  //MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(vct->getCommGrid());
 
   // communicate again if particles are not in the correct domain
   while(isMessagingDone(vct) >0){
@@ -1209,7 +1223,9 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
     avail = communicate(vct);
     if (avail < 0)
       return(-1);
-    MPI_Barrier(MPI_COMM_WORLD);
+    /*! mlmd: barrier at grid level */
+    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(vct->getCommGrid()); 
   }
 
   return(0); // exit succcesfully (hopefully)

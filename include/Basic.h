@@ -37,13 +37,18 @@ using std::endl;
  */
 
 
+/*! pre-mlmd: the relevant communicator is MPI_COMM_WORLD
+  mlmd: the relevant communicator is the grid level communicator,
+  passed as input */
+
 /** method to calculate the parallel dot product with vect1, vect2 having the ghost cells*/
-inline double dotP(double *vect1, double *vect2, int n) {
+//inline double dotP(double *vect1, double *vect2, int n) {
+inline double dotP(double *vect1, double *vect2, int n, MPI_Comm Comm) {
   double result = 0;
   double local_result = 0;
   for (register int i = 0; i < n; i++)
     local_result += vect1[i] * vect2[i];
-  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, Comm);
   return (result);
 
 }
@@ -81,7 +86,8 @@ inline double norm2(double *vect, int nx) {
 
 
 /** method to calculate the parallel dot product */
-inline double norm2P(double ***vect, int nx, int ny, int nz) {
+//inline double norm2P(double ***vect, int nx, int ny, int nz) {
+inline double norm2P(double ***vect, int nx, int ny, int nz, MPI_Comm Comm) {
   double result = 0;
   double local_result = 0;
   for (int i = 0; i < nx; i++)
@@ -89,27 +95,29 @@ inline double norm2P(double ***vect, int nx, int ny, int nz) {
       for (int k = 0; k < nz; k++)
         local_result += vect[i][j][k] * vect[i][j][k];
 
-  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, Comm);
   return (result);
 }
 /** method to calculate the parallel norm of a vector on different processors with the ghost cell */
-inline double norm2P(double *vect, int n) {
+//inline double norm2P(double *vect, int n) {
+inline double norm2P(double *vect, int n, MPI_Comm Comm) { 
   double result = 0;
   double local_result = 0;
   for (int i = 0; i < n; i++)
     local_result += vect[i] * vect[i];
-  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, Comm);
   return (result);
 }
 /** method to calculate the parallel norm of a vector on different processors with the gost cell*/
-inline double normP(double *vect, int n) {
+//inline double normP(double *vect, int n) {
+inline double normP(double *vect, int n, MPI_Comm Comm) { 
   double result = 0.0;
   double local_result = 0.0;
   for (register int i = 0; i < n; i++)
     local_result += vect[i] * vect[i];
 
 
-  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&local_result, &result, 1, MPI_DOUBLE, MPI_SUM, Comm);
 
   return (sqrt(result));
 
@@ -605,5 +613,20 @@ inline void loopZ(double *b, double x, double y, double z, double a, double xc, 
   b[1] = By;
   b[2] = Bz;
 }
+
+/*! some geometry-related operations needed for MLMD */
+
+/*! check if a is between b and c, with tolerance tol; 
+  c must be > b, otherwise error */
+inline bool isInBetween(double a, double b, double c, double tol, bool *ok) {
+  
+  if (c<b) { *ok= 0; return 0;}
+  
+  *ok=1;
+  if (a > b+ tol && a< c- tol) { return 1;}
+  else {return 0;}
+}
+
+/*! end some geometry-related operations needed for MLMD */
 
 #endif

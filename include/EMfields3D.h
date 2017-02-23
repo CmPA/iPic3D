@@ -31,6 +31,45 @@ using std::endl;
 
 /*! Electromagnetic fields and sources defined for each local grid, and for an implicit maxwell's solver @date May 2008 @par Copyright: (C) 2008 KUL @author Stefano Markidis, Giovanni Lapenta. @version 3.0 */
 
+
+// mlmd-related structs
+/* RG BCs */
+struct RGBC_struct {  // when changing this, change MPI_RGBC_struct_commit also
+  /* indices, local to the CG core, of the first point of the message*/
+  int ix_first;
+  int iy_first;
+  int iz_first;
+  // this message refers to bottom, top, left, right, front, back face?
+  int BCside; 
+  // number of point in the x, y, z direction
+  int np_x;
+  int np_y;
+  int np_z;
+
+   // CG coordinates corresponding to indices RGBC_i.._first
+  double CG_x_first;
+  double CG_y_first;
+  double CG_z_first;
+
+   /* CG core which sends this set of BCs
+     important: one core per message;
+     the rank is the one on the PARENT-CHILD communicator
+  */
+  int CG_core;
+  /* RG core involved in the communication;
+     i need it because i plan to have one RG core collecting all the info and 
+     sending it to one CG core, to minimise CG-RG communication;
+     the rank is on the PARENT-CHILD communicator*/
+  int RG_core;
+
+  
+}; // end structure
+
+/* MPI Datatype associated to RGBC_struct; init in MPI_RGBC_struct_commit  */
+//MPI_Datatype MPI_RGBC_struct;
+
+/* end mlmd-related structs */
+
 // class to accumulate node-centered species moments
 // 
 class Moments {
@@ -169,7 +208,10 @@ class EMfields3D                // :public Field
 {
   public:
     /*! constructor */
-    EMfields3D(Collective * col, Grid * grid);
+  /*! pre-mlmd:
+    EMfields3D(Collective * col, Grid * grid); */
+  /* mlmd: I need the topology in the constructore*/
+  EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct); 
     /*! destructor */
     ~EMfields3D();
 
@@ -430,10 +472,13 @@ class EMfields3D                // :public Field
     double ***&getJzs(int is);
 
     /*! get the electric field energy */
-    double getEenergy();
+    /*! mlmd: i need the communicator also
+      double getEenergy(); */
+    double getEenergy(MPI_Comm Comm);
     /*! get the magnetic field energy */
-    double getBenergy();
-
+    /*! mlmd: i need the communicator also
+      double getBenergy(); */
+    double getBenergy(MPI_Comm Comm); 
 
     /*! print electromagnetic fields info */
     void print(void) const;
@@ -441,6 +486,57 @@ class EMfields3D                // :public Field
     // OpenBC
     void updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col);
 
+    /*! mlmd specific functions */
+    /* children: calculate which points they need to communicate to which parent core
+       parent grid: recceives the info
+       here, fieldBC communication is set up */
+    void initWeightBC(Grid *grid, VirtualTopology3D *vct);
+    
+    /* to create the MPI_Datatype associate to RGBC_struct */
+    void MPI_RGBC_struct_commit();
+    /* to assign values to RGBC_struct, only for testing purposes */
+    void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp );
+
+    /* mlmd test functions */
+    /* to test communication when the RG communicates to the CG info regarding BC -
+       this before the big re-structuring; keep tmp but then delete */
+    void TEST__Assign_RG_BC_Values(VirtualTopology3D *vct);
+    /* to test communication when the RG communicates to the CG regarding BC - for ghost nodes */
+    void TEST__Assign_RG_BC_Values(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which);
+    /* end mlmd test functions */
+
+    /* different phases of initWeightBC */
+    /* performs the real BC calculations; to be reused for ghost (which =-1, *_Ghost)
+       and active nodes (which= 0; *Active) */
+    void initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int* RG_numBCMessages, int which);
+
+    /* phase 2a of initWeightBC:                                                                          
+   core 0 of each child grid receives all the messages to send to the corresponding coarse grid           
+   a level-wide message structure is built */
+    void initWeightBC_Phase2a(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info_LevelWide, int * RG_numBCMessages_LevelWide, RGBC_struct *RGBC_Info, int RG_numBCMessages, int which);
+
+    /* phase 2b of initWeightBC:
+       core 0 of the child grid assembles & sends messages for all CG cores*/
+    void initWeightBC_Phase2b(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info_LevelWide,int RG_numBCMessages_LevelWide, int which);
+
+    /* phase 2c, only for the parent     
+       each CG core will receive a message per child grid  */
+    void initWeightBC_Phase2c(Grid *grid, VirtualTopology3D *vct, RGBC_struct ** CG_Info, int* CG_numBCMessages, int which);
+    /* end different phases of initWeightBC */
+
+    /* Trim functions: RGBC_Info_** and CG_Info_** are initially allocated very large for
+       internal reasons;
+       once initWeightBC has finished, we want to free to unused memory */
+    void Trim_RGBC_Vectors(VirtualTopology3D *vct);
+    
+    /* mlmd: BC related functions */
+    /* sendBC: coarse grids sends BCs to the refined grids */
+    void sendBC(Grid *grid, VirtualTopology3D *vct);
+    /* receiveBC: refined grids receive BCs from the coarse grids */
+    void receiveBC(Grid *grid, VirtualTopology3D *vct);
+    /* end mlmd: BC related fucntions */
+
+    /*! end mlmd specific functions */
     /* ********************************* // VARIABLES ********************************* */
   private:
     /*! light speed */
@@ -467,6 +563,8 @@ class EMfields3D                // :public Field
     double ue0, ve0, we0;
 
     // KEEP IN MEMORY GUARD CELLS ARE INCLUDED
+    /*! mlmd: these values are for the local grid */
+
     /*! number of cells - X direction, including + 2 (guard cells) */
     int nxc;
     /*! number of nodes - X direction, including + 2 extra nodes for guard cells */
@@ -489,6 +587,9 @@ class EMfields3D                // :public Field
     double Ly;
     /*! simulation box length - Z direction */
     double Lz;
+
+    /*! end mlmd: these values are for the local grid */
+
     /** source center - X direction   */
     double x_center;
     /** source center - Y direction   */
@@ -686,6 +787,53 @@ class EMfields3D                // :public Field
     void BoundaryConditionsE(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
     void BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
 
+    /*! mlmd specific variables */
+    /*! MLMDVerbose: when true, MLMD-related output */
+    bool MLMDVerbose;
+    /*! grid number in the mlmd grid hierarchy */
+    int numGrid;
+
+    /*! number of children in the mlmd hierarchy */ 
+    int numChildren;
+    /*! end mlmd specidic variables */
+
+    /* Number of BC messages for the RG core -
+       size of the local RGBC_struct; valid only for RGs;
+       set in initWeightBC 
+       vectors repeated for ghost nodes and for the one after that, 
+       with different names
+    */
+    RGBC_struct * RGBC_Info_Ghost;
+    int RG_numBCMessages_Ghost;
+
+    RGBC_struct * RGBC_Info_Active;
+    int RG_numBCMessages_Active;
+
+    /* Number of BC messages for the CG core - 
+       the rows are the children, in the same order as the communicators in the
+       CommToChildren communicator in vct;
+       in columns, the number of messages to the cores of that grid
+       each elements is a RGBC_struct -
+       int *CG_numBCMessages_*** gives the number of message for each child grid -
+       
+       structure repeated for the ghost nodes and for the active ones just following */
+
+    RGBC_struct ** CG_Info_Ghost;
+    int *CG_numBCMessages_Ghost;
+
+    RGBC_struct ** CG_Info_Active;
+    int *CG_numBCMessages_Active;
+
+    /* MPI Datatype associated to RGBC_struct; init in MPI_RGBC_struct_commit  */
+    MPI_Datatype MPI_RGBC_struct;
+    
+    /* tags for send/receive of BCs*/
+    int TAG_BC_GHOST;
+    int TAG_BC_ACTIVE;
+
+    /* max vector dimensions */
+    int MAX_RG_numBCMessages;
+    int MAX_size_LevelWide;
 };
 
 typedef EMfields3D Field;

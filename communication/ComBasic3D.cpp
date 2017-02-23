@@ -2,7 +2,9 @@
 #include "ComBasic3D.h"
 
 /** communicate particles along a direction **/
-void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *b_right, double *b_left) {
+/*! mlmd: the communicator is needed as well */
+//void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *b_right, double *b_left) {
+void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *b_right, double *b_left, MPI_Comm Comm) {
   MPI_Status status;
   double *LEN = new double[3];
   LEN[0] = XLEN, LEN[1] = YLEN, LEN[2] = ZLEN;
@@ -18,7 +20,7 @@ void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, in
     // On the boundaries send e receive only if you have periodic condition: send to X-RIGHT
     if (right_neighbor != MPI_PROC_NULL) {
       if (LEN[DIR] > 1)
-        MPI_Sendrecv_replace(&b_right[0], buffer_size, MPI_DOUBLE, right_neighbor, 1, right_neighbor, 1, MPI_COMM_WORLD, &status);
+        MPI_Sendrecv_replace(&b_right[0], buffer_size, MPI_DOUBLE, right_neighbor, 1, right_neighbor, 1, Comm, &status);
       else
         swapBuffer(buffer_size, b_left, b_right);
     }
@@ -27,7 +29,7 @@ void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, in
     // On the boundaries send e receive only if you have periodic condition: send to X-LEFT
     if (left_neighbor != MPI_PROC_NULL) {
       if (LEN[DIR] > 1)
-        MPI_Sendrecv_replace(&b_left[0], buffer_size, MPI_DOUBLE, left_neighbor, 1, left_neighbor, 1, MPI_COMM_WORLD, &status);
+        MPI_Sendrecv_replace(&b_left[0], buffer_size, MPI_DOUBLE, left_neighbor, 1, left_neighbor, 1, Comm, &status);
       else
         swapBuffer(buffer_size, b_left, b_right);
     }
@@ -36,7 +38,7 @@ void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, in
     // On the boundaries send e receive only if you have periodic condition: send to X-RIGHT
     if (right_neighbor != MPI_PROC_NULL) {
       if (LEN[DIR] > 1)
-        MPI_Sendrecv_replace(&b_right[0], buffer_size, MPI_DOUBLE, right_neighbor, 1, right_neighbor, 1, MPI_COMM_WORLD, &status);
+        MPI_Sendrecv_replace(&b_right[0], buffer_size, MPI_DOUBLE, right_neighbor, 1, right_neighbor, 1, Comm, &status);
 
     }
   }
@@ -44,15 +46,16 @@ void communicateParticlesDIR(int buffer_size, int myrank, int right_neighbor, in
     // On the boundaries send e receive only if you have periodic condition: send to X-LEFT
     if (left_neighbor != MPI_PROC_NULL) {
       if (LEN[DIR] > 1)
-        MPI_Sendrecv_replace(&b_left[0], buffer_size, MPI_DOUBLE, left_neighbor, 1, left_neighbor, 1, MPI_COMM_WORLD, &status);
+        MPI_Sendrecv_replace(&b_left[0], buffer_size, MPI_DOUBLE, left_neighbor, 1, left_neighbor, 1, Comm, &status);
     }
   }
   delete[]LEN;
 }
 
 /** communicate ghost along a direction **/
-void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightFace, double *ghostLeftFace) {
-
+/*! mlmd: i need to pass the communicator as well */
+//void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightFace, double *ghostLeftFace) {
+void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_neighbor, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightFace, double *ghostLeftFace, MPI_Comm Comm) { 
   MPI_Status status;
   double *LEN = new double[3];
   int rankF;
@@ -69,14 +72,14 @@ void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_ne
       break;
   }
   if (rankF % 2 == 0 && right_neighbor != MPI_PROC_NULL && LEN[DIR] > 1)  // 
-    MPI_Sendrecv_replace(&ghostRightFace[0], b_len, MPI_DOUBLE, right_neighbor, 1, right_neighbor, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(&ghostRightFace[0], b_len, MPI_DOUBLE, right_neighbor, 1, right_neighbor, 1, Comm, &status);
   else if (rankF % 2 == 1 && left_neighbor != MPI_PROC_NULL && LEN[DIR] > 1)  // 
-    MPI_Sendrecv_replace(&ghostLeftFace[0], b_len, MPI_DOUBLE, left_neighbor, 1, left_neighbor, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(&ghostLeftFace[0], b_len, MPI_DOUBLE, left_neighbor, 1, left_neighbor, 1, Comm, &status);
 
   if (rankF % 2 == 1 && right_neighbor != MPI_PROC_NULL && LEN[DIR] > 1)  // 
-    MPI_Sendrecv_replace(&ghostRightFace[0], b_len, MPI_DOUBLE, right_neighbor, 1, right_neighbor, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(&ghostRightFace[0], b_len, MPI_DOUBLE, right_neighbor, 1, right_neighbor, 1, Comm, &status);
   else if (rankF % 2 == 0 && left_neighbor != MPI_PROC_NULL && LEN[DIR] > 1)  // 
-    MPI_Sendrecv_replace(&ghostLeftFace[0], b_len, MPI_DOUBLE, left_neighbor, 1, left_neighbor, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(&ghostLeftFace[0], b_len, MPI_DOUBLE, left_neighbor, 1, left_neighbor, 1, Comm, &status);
   // just swap the buffer if you have just a1 processor in 1 direction
   if (LEN[DIR] == 1 && right_neighbor != MPI_PROC_NULL && left_neighbor != MPI_PROC_NULL)
     swapBuffer(b_len, ghostLeftFace, ghostRightFace);
@@ -92,7 +95,9 @@ void communicateGhostFace(int b_len, int myrank, int right_neighbor, int left_ne
   4 = from   XsameYrightZright to XsameYleftZleft; we exchange X edge
   5 = from   XsameYrightZleft to XsameYleftZright; we exchange X edge
   */
-void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int left_neighborD, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightEdge, double *ghostLeftEdge) {
+/*! mlmd: i need to pass the communicator as well */
+//void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int left_neighborD, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightEdge, double *ghostLeftEdge) {
+void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int left_neighborD, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightEdge, double *ghostLeftEdge, MPI_Comm Comm) {
   MPI_Status status;
   int rankE;
   bool comNotDone = true;
@@ -140,18 +145,18 @@ void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int left_n
   }
   // If processors are available in diagonal comunicate in Diagonal: use rankE to avoid deadlocks
   if (rankE % 2 == 0 && right_neighborD != MPI_PROC_NULL && comNotDone) { // 
-    MPI_Sendrecv_replace(&ghostRightEdge[0], b_len, MPI_DOUBLE, right_neighborD, 1, right_neighborD, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(&ghostRightEdge[0], b_len, MPI_DOUBLE, right_neighborD, 1, right_neighborD, 1, Comm, &status);
   }
   else if (rankE % 2 == 1 && left_neighborD != MPI_PROC_NULL && comNotDone) { // 
-    MPI_Sendrecv_replace(&ghostLeftEdge[0], b_len, MPI_DOUBLE, left_neighborD, 1, left_neighborD, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(&ghostLeftEdge[0], b_len, MPI_DOUBLE, left_neighborD, 1, left_neighborD, 1, Comm, &status);
   }
 
   if (rankE % 2 == 1 && right_neighborD != MPI_PROC_NULL && comNotDone) { // 
-    MPI_Sendrecv_replace(&ghostRightEdge[0], b_len, MPI_DOUBLE, right_neighborD, 1, right_neighborD, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(&ghostRightEdge[0], b_len, MPI_DOUBLE, right_neighborD, 1, right_neighborD, 1, Comm, &status);
 
   }
   else if (rankE % 2 == 0 && left_neighborD != MPI_PROC_NULL && comNotDone) {
-    MPI_Sendrecv_replace(&ghostLeftEdge[0], b_len, MPI_DOUBLE, left_neighborD, 1, left_neighborD, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(&ghostLeftEdge[0], b_len, MPI_DOUBLE, left_neighborD, 1, left_neighborD, 1, Comm, &status);
 
   }
 
@@ -163,7 +168,9 @@ void communicateGhostEdge(int b_len, int myrank, int right_neighborD, int left_n
   2 =  from XleftYrightZright  to XrightYleftZleft
   3 =  from XleftYleftZright   to XrightYrightZleft
   */
-void communicateGhostCorner(int myrank, int right_neighborC, int left_neighborC, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightCorner, double *ghostLeftCorner) {
+/*! mlmd: i need the communicator also */
+//void communicateGhostCorner(int myrank, int right_neighborC, int left_neighborC, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightCorner, double *ghostLeftCorner) {
+void communicateGhostCorner(int myrank, int right_neighborC, int left_neighborC, int DIR, int XLEN, int YLEN, int ZLEN, double *ghostRightCorner, double *ghostLeftCorner, MPI_Comm Comm) { 
   MPI_Status status;
   int rankC;
   bool comNotDone = true;
@@ -191,20 +198,20 @@ void communicateGhostCorner(int myrank, int right_neighborC, int left_neighborC,
   }
   // if it's possible communicate corners
   if (rankC % 2 == 0 && right_neighborC != MPI_PROC_NULL && comNotDone) { // 
-    MPI_Sendrecv_replace(ghostRightCorner, 1, MPI_DOUBLE, right_neighborC, 1, right_neighborC, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(ghostRightCorner, 1, MPI_DOUBLE, right_neighborC, 1, right_neighborC, 1, Comm, &status);
 
   }
   else if (rankC % 2 == 1 && left_neighborC != MPI_PROC_NULL && comNotDone) { // 
-    MPI_Sendrecv_replace(ghostLeftCorner, 1, MPI_DOUBLE, left_neighborC, 1, left_neighborC, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(ghostLeftCorner, 1, MPI_DOUBLE, left_neighborC, 1, left_neighborC, 1, Comm, &status);
 
   }
 
   if (rankC % 2 == 1 && right_neighborC != MPI_PROC_NULL && comNotDone) { // 
-    MPI_Sendrecv_replace(ghostRightCorner, 1, MPI_DOUBLE, right_neighborC, 1, right_neighborC, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(ghostRightCorner, 1, MPI_DOUBLE, right_neighborC, 1, right_neighborC, 1, Comm, &status);
 
   }
   else if (rankC % 2 == 0 && left_neighborC != MPI_PROC_NULL && comNotDone) { // 
-    MPI_Sendrecv_replace(ghostLeftCorner, 1, MPI_DOUBLE, left_neighborC, 1, left_neighborC, 1, MPI_COMM_WORLD, &status);
+    MPI_Sendrecv_replace(ghostLeftCorner, 1, MPI_DOUBLE, left_neighborC, 1, left_neighborC, 1, Comm, &status);
 
   }
 

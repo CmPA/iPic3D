@@ -140,8 +140,13 @@ void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *co
 
   file.SetNameCycle(filename, cycle);
 
-  file.OpenFieldsFile("Node", nspec, col->getNxc()+1, col->getNyc()+1, col->getNzc()+1, vct->getCoordinates(), vct->getDivisions(), vct->getComm());
-
+  /*! pre-mlmd
+    file.OpenFieldsFile("Node", nspec, col->getNxc()+1, col->getNyc()+1, col->getNzc()+1, vct->getCoordinates(), vct->getDivisions(), vct->getComm()); */
+  /*! mlmd */
+  int numGRID = grid->getNumGrid();
+  file.OpenFieldsFile("Node", nspec, col->getNxc_mlmd(numGRID)+1, col->getNyc_mlmd(numGRID)+1, col->getNzc_mlmd(numGRID)+1, vct->getCoordinates(), vct->getDivisions(), vct->getComm());
+  /*! end mlmd */
+  
   file.WriteFields(EMf->getEx(),    "Ex",  grid->getNXN(), grid->getNYN(), grid->getNZN());
   file.WriteFields(EMf->getEy(),    "Ey",  grid->getNXN(), grid->getNYN(), grid->getNZN());
   file.WriteFields(EMf->getEz(),    "Ez",  grid->getNXN(), grid->getNYN(), grid->getNZN());
@@ -235,8 +240,12 @@ void WritePartclH5hut(int nspec, Grid3DCU *grid, Particles3Dcomm *part, Collecti
 void ReadPartclH5hut(int nspec, Particles3Dcomm *part, Collective *col, VCtopology3D *vct, Grid3DCU *grid){
 #ifdef USEH5HUT
 
+  int numGRID= grid->getNumGrid(); 
+
   H5input infile;
-  double L[3] = {col->getLx(), col->getLy(), col->getLz()};
+  /*! pre-mlmd 
+    double L[3] = {col->getLx(), col->getLy(), col->getLz()}; */
+  double L[3] = {col->getLx_mlmd(numGRID), col->getLy_mlmd(numGRID), col->getLz_mlmd(numGRID)};
 
   infile.SetNameCycle(col->getinitfile(), col->getLast_cycle());
   infile.OpenPartclFile(nspec, vct->getCartesian_rank(), vct->getNproc(), vct->getComm());
@@ -290,11 +299,21 @@ void ReadFieldsH5hut(int nspec, bool readext, EMfields3D *EMf, Collective *col, 
 
   H5input infile;
 
+  int numGRID = grid->getNumGrid();
+
   infile.SetNameCycle(col->getinitfile(), col->getLast_cycle());
 
+  /*! pre-mlmd
   infile.OpenFieldsFile("Node", nspec, col->getNxc()+1,
                                        col->getNyc()+1,
                                        col->getNzc()+1,
+                                       vct->getCoordinates(),
+                                       vct->getDivisions(),
+                                       vct->getComm()); */
+  
+  infile.OpenFieldsFile("Node", nspec, col->getNxc_mlmd(numGRID)+1,
+                                       col->getNyc_mlmd(numGRID)+1,
+                                       col->getNzc_mlmd(numGRID)+1,
                                        vct->getCoordinates(),
                                        vct->getDivisions(),
                                        vct->getComm());
@@ -322,7 +341,8 @@ void ReadFieldsH5hut(int nspec, bool readext, EMfields3D *EMf, Collective *col, 
   infile.CloseFieldsFile();
 
   // initialize B on centers
-  MPI_Barrier(MPI_COMM_WORLD);
+  //MPI_Barrier(MPI_COMM_WORLD); // pre-mlmd
+  MPI_Barrier(vct->getCommGrid());
 
   // Comm ghost nodes for B-field
   communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx(), col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
