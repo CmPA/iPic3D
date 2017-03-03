@@ -109,6 +109,12 @@ public:
   const double &getYC(int X, int Y, int Z) { return center_ycoord[Y];}
   const double &getZC(int X, int Y, int Z) { return center_zcoord[Z];}
 
+  /* mlmd: coordinate on your parent grid */
+  double getXN_P(int X, int Y, int Z) { return node_xcoord[X]+ Ox;}
+  double getYN_P(int X, int Y, int Z) { return node_ycoord[Y]+ Oy;}
+  double getZN_P(int X, int Y, int Z) { return node_zcoord[Z]+ Oz;}
+  /* end mlmd: coordinate on your parent grid */
+
   /** get Xstart */
   double getXstart();
   /** get Xend */
@@ -127,6 +133,9 @@ public:
   /*! mlmd specific functions */
   /*! return the number of the current grid in the mlmd hierarchy */
   int getNumGrid() {return numGrid;}
+
+  /*! return your coordinates of origin on the parent grid */
+  int getOx(){return Ox;} int getOy(){return Oy;} int getOz(){return Oz;}
   /*! end mlmd specific functions */
 
   // /////////// PRIVATE VARIABLES //////////////
@@ -172,6 +181,8 @@ private:
   /*! mlmd specific variables */
   /*! number of the grid in the mlmd grid hierarchy */
   int numGrid;
+  /* coordinates of the origin on the PARENT grid */
+  double Ox, Oy, Oz;
   /*! end mlmd specific variables */
 };
 

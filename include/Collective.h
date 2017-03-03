@@ -49,14 +49,6 @@ class Collective
     void save();
     /*! get the physical space dimensions */
     int getDim();
-    /*! mlmd: use getLx_mlmd instead
-    /*! Get length of the system - direction X */
-    //double getLx();
-    /*! Get length of the system - direction Y */
-    //double getLy();
-    /*! Get length of the system - direction Z */
-    //double getLz();
-    /*! end mlmd: use getLx_mlmd instead */
     /*! Get object center - direction X */
     double getx_center();
     /*! Get object center - direction Y */
@@ -73,10 +65,6 @@ class Collective
     /*! Get the number of cells - direction Z */
     //int getNzc();
     /*! end mlmd: use getNXC_mlmd instead */
-
-    int  getXLEN()      {return (XLEN);};
-    int  getYLEN()      {return (YLEN);};
-    int  getZLEN()      {return (ZLEN);};
 
     bool getPERIODICX() {return (PERIODICX);};
     bool getPERIODICY() {return (PERIODICY);};
@@ -270,6 +258,7 @@ class Collective
     double getLy_mlmd(int numgrid);
     double getLz_mlmd(int numgrid);
 
+
     /*! get the number of children of grid 'numgrid' */
     int getChildrenNum(int numgrid);
 
@@ -283,6 +272,20 @@ class Collective
 
     int getTopologyType();
     
+    /* get the topology per grid */
+    int getXLEN_mlmd(int N);
+    int getYLEN_mlmd(int N);
+    int getZLEN_mlmd(int N);
+
+    /* to use only when creating topology, for comparison
+       with the numGrid obtained there -
+       should be the same, problems if it's not */
+    int getnumGrid_clt();
+
+    /* the rank in MPI_COMM_WORLD of the lowest-ranker core in grid n
+       needed to create parent-child communicators */
+    int getLowestRankOfGrid(int n);
+
     /*! get whether to perform mlmd operations */
     int getMLMD_BC();
     int getMLMD_PROJECTION();
@@ -341,9 +344,6 @@ class Collective
     /*! grid spacing - Z direction */
     double dz;
 
-    int XLEN;          /*! Number of subdomains in the X direction */
-    int YLEN;          /*! Number of subdomains in the Y direction */
-    int ZLEN;          /*! Number of subdomains in the Z direction */
     bool PERIODICX;    /*! Periodicity in the X direction */
     bool PERIODICY;    /*! Periodicity in the Y direction */
     bool PERIODICZ;    /*! Periodicity in the Z direction */
@@ -505,7 +505,11 @@ class Collective
       row: mlmd grids
       columns: number of the children grid; use ChildrenNum here */
     int **childrenGrids;
-    
+    // for when i need the numgrid BEFORE the topology is created; 
+    // compared with the num created in topology
+    // that number is to one to propagate
+    int numGrid_clt;
+
     double *Ox_P; // in terms of the PARENT grid, not of the COARSEST grid
     double *Oy_P;
     double *Oz_P;
@@ -523,6 +527,14 @@ class Collective
     double *Lx_mlmd;
     double *Ly_mlmd;
     double *Lz_mlmd;
+
+    int *XLEN_mlmd;
+    int *YLEN_mlmd;
+    int *ZLEN_mlmd;
+
+    // here, the lowest rank in MPI_COMM_WORLD for the different grids
+    // used to create the parent/ child communicator
+    int *LowestRankOfGrid;
 
     /*! how the grids are distributed in the cores:
       0: one piece of each grid per core

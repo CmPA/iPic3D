@@ -92,10 +92,7 @@ void Collective::ReadInput(string inputfile) {
     RestartOutputCycle = config.read < int >("RestartOutputCycle");
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
     
-    // MPI topology and periodicity
-    XLEN      = config.read < int > ("XLEN",1);
-    YLEN      = config.read < int > ("YLEN",1);
-    ZLEN      = config.read < int > ("ZLEN",1);
+    // MPI  periodicity
     PERIODICX = config.read < bool >("PERIODICX");
     PERIODICY = config.read < bool >("PERIODICY");
     PERIODICZ = config.read < bool >("PERIODICZ");
@@ -115,6 +112,12 @@ void Collective::ReadInput(string inputfile) {
     array_double Oy0 = config.read < array_double > ("Oy_SW");
     array_double Oz0 = config.read < array_double > ("Oz_SW");
 
+    // mlmd topology
+    array_int XLEN_mlmd0 = config.read < array_int > ("XLEN_mlmd");
+    array_int YLEN_mlmd0 = config.read < array_int > ("YLEN_mlmd");
+    array_int ZLEN_mlmd0 = config.read < array_int > ("ZLEN_mlmd");
+
+
     gridLevel = new int[Ngrids];
     RF = new int[Ngrids];
     parentGrid = new int[Ngrids];
@@ -127,6 +130,10 @@ void Collective::ReadInput(string inputfile) {
     Oy_SW = new double[Ngrids];
     Oz_SW = new double[Ngrids];
 
+    XLEN_mlmd = new int[Ngrids];
+    YLEN_mlmd = new int[Ngrids];
+    ZLEN_mlmd = new int[Ngrids];
+
     gridLevel[0] = gridLevel0.a;
     RF[0] = RF0.a;
     parentGrid[0] = parentGrid0.a;
@@ -138,6 +145,10 @@ void Collective::ReadInput(string inputfile) {
     Ox_SW[0] = Ox0.a;
     Oy_SW[0] = Oy0.a;
     Oz_SW[0] = Oz0.a;
+
+    XLEN_mlmd[0] = XLEN_mlmd0.a;
+    YLEN_mlmd[0] = YLEN_mlmd0.a;
+    ZLEN_mlmd[0] = ZLEN_mlmd0.a;
     
     if (Ngrids >1) {
       gridLevel[1] = gridLevel0.b;
@@ -151,6 +162,10 @@ void Collective::ReadInput(string inputfile) {
       Ox_SW[1]= Ox0.b;
       Oy_SW[1]= Oy0.b;
       Oz_SW[1]= Oz0.b;
+
+      XLEN_mlmd[1] = XLEN_mlmd0.b;
+      YLEN_mlmd[1] = YLEN_mlmd0.b;
+      ZLEN_mlmd[1] = ZLEN_mlmd0.b;
     }
     
     if (Ngrids >2) {
@@ -165,6 +180,10 @@ void Collective::ReadInput(string inputfile) {
       Ox_SW[2]= Ox0.c;
       Oy_SW[2]= Oy0.c;
       Oz_SW[2]= Oz0.c;
+
+      XLEN_mlmd[2] = XLEN_mlmd0.c;
+      YLEN_mlmd[2] = YLEN_mlmd0.c;
+      ZLEN_mlmd[2] = ZLEN_mlmd0.c;
     }
     
     if (Ngrids >3) {
@@ -179,6 +198,10 @@ void Collective::ReadInput(string inputfile) {
       Ox_SW[3]= Ox0.d;
       Oy_SW[3]= Oy0.d;
       Oz_SW[3]= Oz0.d;
+
+      XLEN_mlmd[3] = XLEN_mlmd0.d;
+      YLEN_mlmd[3] = YLEN_mlmd0.d;
+      ZLEN_mlmd[3] = ZLEN_mlmd0.d;
     }
     
     if (Ngrids >4) {
@@ -193,6 +216,10 @@ void Collective::ReadInput(string inputfile) {
       Ox_SW[4]= Ox0.e;
       Oy_SW[4]= Oy0.e;
       Oz_SW[4]= Oz0.e;
+
+      XLEN_mlmd[4] = XLEN_mlmd0.e;
+      YLEN_mlmd[4] = YLEN_mlmd0.e;
+      ZLEN_mlmd[4] = ZLEN_mlmd0.e;
     }
     
     TopologyType = config.read < int > ("TopologyType");
@@ -760,6 +787,39 @@ Collective::Collective(int argc, char **argv) {
 
   /*! MLMD:  dx_mlmd, dy_mlmd, dz_mlmd : resolution at grid level */
 
+  /* to have the grid number, before topology is set
+     should be the same as in VCtopology */
+  int systemWide_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &systemWide_rank);
+  
+  // here, I calculate the grid number (in a rather crude way, by rank)
+  // and then I propagate it to VCtolopoly
+
+  // QUI
+  int * comulativeSize= new int[Ngrids];
+  LowestRankOfGrid= new int[Ngrids];
+
+  LowestRankOfGrid[0]=0;
+  int TotalSize=0;
+  for (int g=0; g<Ngrids; g++){
+    TotalSize+= XLEN_mlmd[g]*YLEN_mlmd[g]*ZLEN_mlmd[g];
+    for (int j=0; j< Ngrids; j++){
+      if (j==g) comulativeSize[j]=TotalSize;
+      if (j>0) {LowestRankOfGrid[j] = comulativeSize[j-1];}
+    }
+  }
+
+  for (int i=0; i< Ngrids; i++){
+    if (systemWide_rank < comulativeSize[i] ){ numGrid_clt= i; break;} }
+
+  /*if (systemWide_rank==0){
+    for (int i=0; i<Ngrids; i++){
+      cout << "grid " <<i <<": comulative Size: " << comulativeSize[i]  <<", LowestRankOfGrid: " << LowestRankOfGrid[i] << endl;
+    }
+    } */
+
+  delete[] comulativeSize;
+
   dx_mlmd = new double[Ngrids];
   dy_mlmd = new double[Ngrids];
   dz_mlmd = new double[Ngrids];
@@ -811,7 +871,7 @@ Collective::Collective(int argc, char **argv) {
   // MLMD: maybe np should be had per grid as well
   for (int i = 0; i < ns; i++) {
     npcel[i] = npcelx[i] * npcely[i] * npcelz[i];
-    np[i] = npcel[i] * (nxc/XLEN) * (nyc/YLEN) * (nzc/ZLEN);
+    np[i] = npcel[i] * (nxc/XLEN_mlmd[numGrid_clt]) * (nyc/YLEN_mlmd[numGrid_clt]) * (nzc/ZLEN_mlmd[numGrid_clt]);
     npMax[i] = (long) (NpMaxNpRatio * np[i]);
   }
 
@@ -840,7 +900,7 @@ Collective::Collective(int argc, char **argv) {
   int SpokePerson;
   MPI_Comm_rank(MPI_COMM_WORLD, &SpokePerson);
   MPI_Barrier(MPI_COMM_WORLD);
-  if (0 && SpokePerson==0){
+  if (SpokePerson==0){
     for (int ng=0; ng<Ngrids; ng++) {
       cout << "Grid " << ng << " has " << childrenNum[ng] << " child(ren)" << endl;
       if (childrenNum[ng]>0){
@@ -856,7 +916,7 @@ Collective::Collective(int argc, char **argv) {
   /*! end building the list of the children grids */
 
   /*! a first sanity check on MLMD inputs, called at the end of the constructor; may abort internally */
-  checkMLMDinputs();
+  //  checkMLMDinputs();
 
 }
 
@@ -899,6 +959,10 @@ Collective::~Collective() {
   delete[]dx_mlmd;
   delete[]dy_mlmd;
   delete[]dz_mlmd;
+  delete[]LowestRankOfGrid;
+  delete[]XLEN_mlmd;
+  delete[]YLEN_mlmd;
+  delete[]ZLEN_mlmd;
   // MLMD variables
 }
 /*! Print Simulation Parameters */
@@ -1500,7 +1564,7 @@ int Collective::getChildrenNum(int numgrid) {
 }
 int Collective::getChildrenGrids(int numgrid, int childnum) {
   if (childnum > childrenNum[numgrid] -1){
-    cout << "WARNING!!! Collective::getChildrenGrids asked for a child grid which does not exists! WARNING!!" << endl;
+    //cout << "WARNING!!! Collective::getChildrenGrids asked for a child grid which does not exists! WARNING!!" << endl;
     // end: later: manage this better //
   } else {
     return childrenGrids[numgrid][childnum];
@@ -1508,10 +1572,17 @@ int Collective::getChildrenGrids(int numgrid, int childnum) {
 }
 int Collective::getParentGrid(int numgrid) {
   if (numgrid==0){
-    cout << "WARNING!!!!   Collective::getParentGrid(0)   WARNING!!!" <<endl;  
+    //cout << "WARNING!!!!   Collective::getParentGrid(0)   WARNING!!!" <<endl;  
   }
   return parentGrid[numgrid];
 }
+int Collective::getXLEN_mlmd(int N){ return XLEN_mlmd[N];}
+int Collective::getYLEN_mlmd(int N){ return YLEN_mlmd[N];}
+int Collective::getZLEN_mlmd(int N){ return ZLEN_mlmd[N];}
+
+int Collective::getnumGrid_clt(){return numGrid_clt;}
+int Collective::getLowestRankOfGrid(int n) {return LowestRankOfGrid[n];}
+
 int Collective::getMLMD_BC() {return MLMD_BC;}
 int Collective::getMLMD_PROJECTION() {return MLMD_PROJECTION;}
 int Collective::getMLMD_ParticleREPOPULATION() {return MLMD_ParticleREPOPULATION;}
@@ -1584,17 +1655,17 @@ void Collective::checkMLMDinputs() {
   /*! check that nxc/XLEN, nyc/YLEN, nzc/ZLEN are integer for all grids  */
   for (int ng=1; ng< Ngrids; ng++) {
     bool rem;
-    if (nxc_mlmd[ng]%XLEN) 
+    if (nxc_mlmd[ng]%XLEN_mlmd[ng]) 
       { if (rank==0)
 	  cout << " Please check the # of cells in the x-dir of grid " <<ng <<", aborting ..." << flush; 
 	abort(); }
     
-    if (nyc_mlmd[ng]%YLEN) 
+    if (nyc_mlmd[ng]%YLEN_mlmd[ng]) 
       { if (rank==0)
 	  cout << " Please check the # of cells in the x-dir of grid " <<ng <<", aborting ..." << flush; 
 	abort(); }
     
-    if (nzc_mlmd[ng]%ZLEN) 
+    if (nzc_mlmd[ng]%ZLEN_mlmd[ng]) 
       { if (rank==0)
 	  cout << " Please check the # of cells in the x-dir of grid " <<ng <<", aborting ..." << flush; 
 	abort(); }

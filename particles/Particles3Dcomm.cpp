@@ -92,9 +92,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
                   int(col->getNyc()/col->getYLEN()) *
                   int(col->getNzc()/col->getZLEN()); */
     
-    long ncproc = int(col->getNxc_mlmd(numGrid)/col->getXLEN()) *
-      int(col->getNyc_mlmd(numGrid)/col->getYLEN()) *
-      int(col->getNzc_mlmd(numGrid)/col->getZLEN());
+    long ncproc = int(col->getNxc_mlmd(numGrid)/vct->getXLEN()) *
+      int(col->getNyc_mlmd(numGrid)/vct->getYLEN()) *
+      int(col->getNzc_mlmd(numGrid)/vct->getZLEN());
 
     nop   = ncproc * npcel;
     npmax = nop * col->getNpMaxNpRatio();

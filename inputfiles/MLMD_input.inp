@@ -77,9 +77,9 @@ MLMD_PROJECTION = 1		# whether to perform field projection with multiple grids; 
 MLMD_ParticleREPOPULATION = 1	# whether to repopulate particles with multiple grids; 0 or 1
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
-XLEN = 1               # Number of subdomains in the X direction
-YLEN = 2               # Number of subdomains in the X direction
-ZLEN = 2               # Number of subdomains in the X direction
+XLEN_mlmd = 1 1 1 1 # 1 2 1 4 #1 1 1 1             # Number of subdomains in the X direction
+YLEN_mlmd = 2 2 2 2 #1 2 2 1 #2 2 2 2             # Number of subdomains in the X direction
+ZLEN_mlmd = 2 2 2 2 #1 2 1 1 #2 2 2 2 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
 #    0 = electrons
 #    1 = protons

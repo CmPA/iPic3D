@@ -501,8 +501,12 @@ class EMfields3D                // :public Field
     /* to test communication when the RG communicates to the CG info regarding BC -
        this before the big re-structuring; keep tmp but then delete */
     void TEST__Assign_RG_BC_Values(VirtualTopology3D *vct);
-    /* to test communication when the RG communicates to the CG regarding BC - for ghost nodes */
+    /* to test communication when the RG communicates to the CG regarding BC - valid only wiht specific inputs
+     and when same number of cores in all grids*/
     void TEST__Assign_RG_BC_Values(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which);
+    /*  test communication when the RG communicates to the CG regarding BC - valid only wiht specific inputs
+     the number of cores per grid is different */
+    void TEST__Assign_RG_BC_Values_DNC(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which);
     /* end mlmd test functions */
 
     /* different phases of initWeightBC */
@@ -792,6 +796,9 @@ class EMfields3D                // :public Field
     bool MLMDVerbose;
     /*! grid number in the mlmd grid hierarchy */
     int numGrid;
+
+    /* coordinates of the origin on the PARENT grid */
+    //    double Ox, Oy, Oz;
 
     /*! number of children in the mlmd hierarchy */ 
     int numChildren;

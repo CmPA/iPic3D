@@ -5,11 +5,6 @@
 VCtopology3D::VCtopology3D(Collective *col) {
   // *******************************************
   // *******************************************
-  // change these values to change the topology
-  XLEN = col->getXLEN();
-  YLEN = col->getYLEN();
-  ZLEN = col->getZLEN();
-  nprocs = XLEN * YLEN * ZLEN;  // mlmd: @grid level
   // here you have to set the topology for the fields
   PERIODICX = col->getPERIODICX();
   PERIODICY = col->getPERIODICY();
@@ -28,9 +23,9 @@ VCtopology3D::VCtopology3D(Collective *col) {
 
   reorder = 1;
 
-  divisions[0] = XLEN;
+  /*divisions[0] = XLEN;
   divisions[1] = YLEN;
-  divisions[2] = ZLEN;
+  divisions[2] = ZLEN;*/
 
   periods[0] = PERIODICX;
   periods[1] = PERIODICY;
@@ -69,7 +64,28 @@ VCtopology3D::VCtopology3D(Collective *col) {
   for (int t=0; t< Ngrids; t++){
     TagsForInit_Children[t]= -2;
   }
+
+  /** mlmd: XLEN, YLEN, ZLEN different per grids **/
+  XLEN_mlmd= new int[Ngrids];
+  YLEN_mlmd= new int[Ngrids];
+  ZLEN_mlmd= new int[Ngrids];
   
+  MaxGridCoreN= 0;
+  for (int g=0; g< Ngrids; g++){
+    XLEN_mlmd[g]= col->getXLEN_mlmd(g);
+    YLEN_mlmd[g]= col->getYLEN_mlmd(g);
+    ZLEN_mlmd[g]= col->getZLEN_mlmd(g);
+
+    if (XLEN_mlmd[g]*YLEN_mlmd[g]*ZLEN_mlmd[g] > MaxGridCoreN) 
+      MaxGridCoreN= XLEN_mlmd[g]*YLEN_mlmd[g]*ZLEN_mlmd[g];
+  }
+
+  int rr;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rr);
+  if (rr==0){
+    cout <<"Inside VCtopology3D, MaxGridCoreN= " << MaxGridCoreN << endl;
+  }
+
 }
 
 /** Destructor */
@@ -82,6 +98,10 @@ VCtopology3D::~VCtopology3D(){
   /* TAGS */
   delete[]TagsForInit_Children;
   
+  /* topology lists */
+  delete[]XLEN_mlmd;
+  delete[]YLEN_mlmd;
+  delete[]ZLEN_mlmd;
 }
 
 /** Within CART_COMM, processes find about their new rank numbers, their cartesian coordinates,
@@ -96,15 +116,39 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   MPI_Comm_size(MPI_COMM_WORLD, &size_CW);
   MPI_Comm_rank(MPI_COMM_WORLD, &systemWide_rank);
 
-  if (size_CW != XLEN*YLEN*ZLEN*Ngrids) {
+  int TotalSize=0;
+  for (int g=0; g<Ngrids; g++){
+    TotalSize+= XLEN_mlmd[g]*YLEN_mlmd[g]*ZLEN_mlmd[g];  }
+
+
+  if (size_CW != TotalSize) {
     if (systemWide_rank==0){
-      cout << "The number of MPI processes must be XLEN*YLEN*ZLEN*Ngrids= " << XLEN*YLEN*ZLEN*Ngrids << ", aborting ..." << flush;
+      cout << "The number of MPI processes must be " << TotalSize << ", aborting ..." << flush;
       abort();
     }
   }
 
-  numGrid = systemWide_rank % Ngrids;  /*! this is the ID of the current grid  */
-  
+  numGrid= col->getnumGrid_clt() ;
+
+  /*for (int i=0; i< Ngrids; i++){
+    cout << "I am rank " << systemWide_rank << " in VCtopology, I belong to grid " << numGrid << endl;
+    }*/
+
+  /*MPI_Barrier(MPI_COMM_WORLD);                                                             
+  cout << "exiting now..."<< endl;                                                        
+  MPI_Finalize; exit(EXIT_SUCCESS);*/
+
+
+  // now i knwo my XLEN, YLEN, XLEN and can update the divisions
+  XLEN= XLEN_mlmd[numGrid]; 
+  YLEN= YLEN_mlmd[numGrid];
+  ZLEN= ZLEN_mlmd[numGrid];
+  nprocs = XLEN*YLEN*ZLEN;
+
+  divisions[0] = XLEN;
+  divisions[1] = YLEN;
+  divisions[2] = ZLEN;
+
   /*! MPI_COMM_GRID is the non cartesian communicator per grid */
   MPI_Comm_split(MPI_COMM_WORLD, numGrid, systemWide_rank, &MPI_COMM_GRID); 
 			
@@ -141,6 +185,10 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
     // EXCEPTION
     cout << "A process is trown away from the new topology for Particles. VCtopology3D.h" << endl;
   }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (systemWide_rank==0) cout << "Before creating children" << endl;
+
   /*! end: this entire chunk is lifted from the non-mlmd version, with MPI_COMM_GRID instead of old_comm */
   /* end build cartesian communicators for the grids */
   
@@ -179,6 +227,22 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   }
   /* end parent- children list, tmp */
   
+                                                                                           
+  /*cout << "I am rank " << systemWide_rank << " in VCtopology, I belong to grid " << numGrid << endl;           
+  cout << "My parent is " << parentList[numGrid] <<endl;
+  cout << "My children are " ;
+  for (int j=0;j< childrenNum[numGrid]; j++){ cout << childrenList[numGrid][j] <<" " <<endl; }*/
+      
+  // i set up my parent and my children
+  parentGrid= parentList[numGrid];
+  childrenGrid= new int[Ngrids];
+  for (int i=0; i<Ngrids; i++) childrenGrid[i]= -1;// to provoke segm fault when i make mistakes
+  for (int i=0; i<childrenNum[numGrid]; i++) {childrenGrid[i]= childrenList[numGrid][i];}
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (systemWide_rank==0) cout << "Before creating children comm" << endl;
+
+
   /*! tmp communicators arrays */
   ChildParentInterComm= new MPI_Comm[Ngrids];
   ChildParentComm= new MPI_Comm[Ngrids];
@@ -192,26 +256,31 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
 
   // as a child
   if (numGrid>0){ //gridNum=0 is not a child
-    /*if (cartesian_rank==0){
-      cout << "Grid " << numGrid << ", as a child" << endl; }*/
-    // this value for the remote leader depends on the MPI_Comm_Split
-    MPI_Intercomm_create(CART_COMM, 0, MPI_COMM_WORLD, parentList[numGrid], numGrid, ChildParentInterComm+numGrid);
+    int LowestRankParent= col->getLowestRankOfGrid(parentGrid);
+    if (cartesian_rank==0){
+      cout << "Grid " << numGrid << ", as a child, LRP: " <<LowestRankParent << endl; }
+    // as remote leader, I have to put the lowest rank in the common communicator, MPI_COMM_WORLD
+    MPI_Intercomm_create(CART_COMM, 0, MPI_COMM_WORLD, LowestRankParent, numGrid, ChildParentInterComm+numGrid); 
     MPI_Intercomm_merge(ChildParentInterComm[numGrid], true, ChildParentComm + numGrid);
   }
 
   // as a parent
   for (int nc=0; nc< childrenNum[numGrid]; nc++){
-    int child= childrenList[numGrid][nc];
-    /*if (cartesian_rank==0){
-      cout << "Grid " <<numGrid <<", as a parent, tag " << child <<endl;
-      }*/
-    // this value for the remote leader depends on the MPI_Comm_Split
-    MPI_Intercomm_create(CART_COMM, 0, MPI_COMM_WORLD, child, child, ChildParentInterComm + child);
+    int child= childrenGrid[nc];
+    int LowestRankChild= col->getLowestRankOfGrid(child);
+    if (cartesian_rank==0){
+      cout << "Grid " <<numGrid <<", as a parent, tag " << child << ", LowestRankParent: " << LowestRankChild<<endl;
+    }
+    MPI_Intercomm_create(CART_COMM, 0, MPI_COMM_WORLD, LowestRankChild, child, ChildParentInterComm + child);
     MPI_Intercomm_merge(ChildParentInterComm[child], false, ChildParentComm + child);
   }  
   
   /*! end tmp communicators array */
   
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (systemWide_rank==0) cout << "after creating children comm" << endl;
+
   /* assign value to permanent variables */
   for (int ng=0; ng< Ngrids; ng++){
     // number of children of the current grid
@@ -246,6 +315,7 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
 	cout <<"Rank in MPI_COMM_WORLD: " << systemWide_rank << endl;
 	cout <<"grid number: " << numGrid << endl;
 	cout <<"Rank in local communicator: " <<  cartesian_rank << endl;
+	cout <<"XLEN=" << XLEN << ", YLEN= " << YLEN << ", ZLEN= " << ZLEN << endl;
 	cout <<"Intercomms: " << endl; 
 	for (int ng=0; ng< Ngrids; ng++){
 	  cout << "# " << ng <<" : " << ((ChildParentInterComm[ng] == MPI_COMM_NULL)? "No" : "Yes") << ": " << ChildParentInterComm[ng] << endl;	
@@ -321,6 +391,9 @@ inline void VCtopology3D::PrintMapping() {
 /* mlmd test functions */
 void VCtopology3D::testMlmdCommunicators(){
     
+  //  cout << "killing the test... " << endl;
+  //return;
+
   int *FromParent= new int[2];
   MPI_Status statusS, statusR;
   MPI_Request requestS, requestR;
@@ -336,15 +409,15 @@ void VCtopology3D::testMlmdCommunicators(){
       tag= TagsForInit_Children[c];
       MPI_Isend(FromParent, 2, MPI_INT, XLEN*YLEN*ZLEN, tag, CommToChildren[c], &requestS );
       MPI_Wait(&requestS, &status);
-      cout << "I am grid "<< numGrid << " in testMlmdCommunicator "<< endl;
+      //cout << "I am grid "<< numGrid << " in testMlmdCommunicator "<< endl;
     }
   }
 
   // rank XLEN*YLEN*ZLEN of children receives
-  if (rank_CommToParent == XLEN*YLEN*ZLEN){
+  if (rank_CommToParent == XLEN_mlmd[parentGrid]*YLEN_mlmd[parentGrid]*ZLEN_mlmd[parentGrid]){
     tag= TagsForInit_Parent;
     MPI_Recv(FromParent, 2, MPI_INT, 0, tag, CommToParent, &statusR);
-    cout << "Grid " << numGrid << ", child " << FromParent[1] << " of ParentGrid " << FromParent[0] << "has received a message on the ParentChild communicator, tag " << tag << endl;
+    cout << "testMlmdCommunicators: Grid " << numGrid << ", child " << FromParent[1] << " of ParentGrid " << FromParent[0] << "has received a message on the ParentChild communicator, tag " << tag << endl;
   }
 
   MPI_Barrier(CART_COMM);
@@ -358,5 +431,18 @@ void VCtopology3D::testMlmdCommunicators(){
 
   
 }
+
+/** get XLEN */
+int VCtopology3D::getXLEN() {return(XLEN);};
+/** get YLEN */
+int VCtopology3D::getYLEN() {return(YLEN);};
+/** get ZLEN */
+int VCtopology3D::getZLEN() {return(ZLEN);};
+/** end values local to the grid **/
+/* mlmd: access XLEN, YLEN, ZLEN @ grid level */
+int VCtopology3D::getXLEN(int N) {return XLEN_mlmd[N]; }
+int VCtopology3D::getYLEN(int N) {return YLEN_mlmd[N]; }
+int VCtopology3D::getZLEN(int N) {return ZLEN_mlmd[N]; }
+
 /* end mlmd test functions */
 /*! end MLMD specific functions */

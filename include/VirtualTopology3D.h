@@ -32,12 +32,20 @@ public:
   virtual void Print() = 0;
   /** Print the mapping of topology */
   virtual void PrintMapping() = 0;
+  /** these give info on the current grid **/
   /** get XLEN */
   virtual int getXLEN() = 0;
   /** get YLEN */
   virtual int getYLEN() = 0;
   /** get ZLEN */
   virtual int getZLEN() = 0;
+  /** these give info on thr grid system **/
+  /** get XLEN */
+  virtual int getXLEN(int N) = 0;
+  /** get YLEN */
+  virtual int getYLEN(int N) = 0;
+  /** get ZLEN */
+  virtual int getZLEN(int N) = 0;
   /** get nprocs */
   virtual int getNprocs() = 0;
   /** get periodicity on boundaries - DIRECTION X*/
@@ -98,6 +106,14 @@ public:
   virtual int getNumChildren() =0;
   /* return the communicator to the child grid n in the mlmd hierarchy */
   virtual MPI_Comm getCommToChild(int n) =0;
+
+  virtual int getSystemWide_rank()=0;
+  virtual int getRank_CommToParent()=0;
+
+  virtual int getParentGridNum()=0;
+  virtual int getChildGridNum(int n) =0;
+  
+  virtual int getMaxGridCoreN()=0;
   /*! end mlmd specific functions */
 
 

@@ -15,6 +15,14 @@ int c_Solver::Init(int argc, char **argv) {
   //myrank = mpi->rank;
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
+
+  /*MPI_Barrier(MPI_COMM_WORLD);
+  cout << "after the collective init" << endl;
+  cout << "exiting now..."<< endl;
+  mpi->finalize_mpi(); exit(EXIT_SUCCESS);*/
+  
+
+
   verbose = col->getVerbose();
   restart_cycle = col->getRestartOutputCycle();
   SaveDirName = col->getSaveDirName();
@@ -34,18 +42,23 @@ int c_Solver::Init(int argc, char **argv) {
   /* pre-mlmd: We create a new communicator with a 3D virtual Cartesian topology
      vct->setup_vctopology(MPI_COMM_WORLD);
      mlmd: severely modified */
+
   vct->setup_vctopology(MPI_COMM_WORLD, col);
+
   if (MlmdVerbose){
     vct->testMlmdCommunicators();
   }
-  // initialize the central cell index
 
   MPI_Barrier(MPI_COMM_WORLD);
+  cout << "after the communicator test" << endl;
 
   nprocs = vct->getNprocs();  // @gridLevel
   myrank = vct->getCartesian_rank(); // @gridLevel
   numGrid = vct->getNumGrid(); // added, mlmd
   
+  if (myrank==0){
+    cout << "I am grid " << numGrid << ", running on " << nprocs << "cores" << endl; }
+
   // Check if we can map the processes into a matrix ordering defined in Collective.cpp
  
   if (nprocs != vct->getNprocs()) {
@@ -110,9 +123,16 @@ int c_Solver::Init(int argc, char **argv) {
   }
 
   // mlmd BC init
-  EMf->initWeightBC(grid, vct);
+  if (MLMD_BC)
+    EMf->initWeightBC(grid, vct);
+  
+  // to remove
+  /*cout << "R"<< myrank <<", grid " << numGrid <<":"<<endl;
+  for (int j=0; j<grid->getNYN(); j++){
+    cout << "R" << myrank <<"G" <<numGrid << ", j= " <<j <<", coord= " << grid->getYN(0,j,0) << endl;
+    }*/
 
-
+    
   // OpenBC
   EMf->updateInfoFields(grid,vct,col);
 

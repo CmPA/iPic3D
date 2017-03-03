@@ -34,6 +34,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
  
   /*! grid number in the mlmd grid hierarchy */
   numGrid= grid->getNumGrid(); 
+  /* coordinates of origin on the parent grid */
+  //Ox= grid->getOx(); Oy= grid->getOy(); Oz= grid->getOz();
 
   /*! number of children in the mlmd grid hierarchy */
   numChildren= vct->getNumChildren();
@@ -202,9 +204,18 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   TAG_BC_GHOST= 2;
   TAG_BC_ACTIVE= 3;
 
-  /* stuff that it's convenient not to pass arounf */
-  MAX_RG_numBCMessages= (int) (vct->getXLEN()*vct->getYLEN()*vct->getZLEN()*4); //CHANGE THE MAX SIZE
-  MAX_size_LevelWide= MAX_RG_numBCMessages*vct->getXLEN()*vct->getYLEN()*vct->getZLEN()*2;
+  /* stuff that it's convenient not to pass around */
+  // since the number of core per grid may vary wildly and give problems
+  // size message buffer on the max size
+  int MaxGridCoreN= vct->getMaxGridCoreN(); // NB: this is only local
+
+  if (vct->getCartesian_rank() == 0)
+    cout << "In EMfields3D.cpp, grid " << numGrid << ", MaxGridCoreN is " << MaxGridCoreN << endl;
+
+  MAX_RG_numBCMessages= (int) (MaxGridCoreN*4); //CHANGE THE MAX SIZE
+  MAX_size_LevelWide= MaxGridCoreN*2;
+
+  
  }
 
  /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -3743,6 +3754,8 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 
  void EMfields3D::initWeightBC(Grid *grid, VirtualTopology3D *vct){
 
+   bool VerboseCheck= true;
+
    /* what I am doing here
       phase 1: the refined grids calculates:
       -- how many points they need from the CGs
@@ -3780,9 +3793,6 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
       on the right communicatore */
    int rank_As_Parent;
 
-
-   /* max size of the RGBC_Info vector; for resize */
-   //int MAX_RG_numBCMessages= (int) (XLEN*YLEN*ZLEN); //CHANGE THE MAX SIZES
    RG_numBCMessages_Ghost= 0;
    RG_numBCMessages_Active= 0;
 
@@ -3817,6 +3827,8 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 	 cout <<"ACTIVE: grid " << numGrid << ", Coarse: " <<RGBC_Info_Active[i].CG_core << ", Refined: " << RGBC_Info_Active[i].RG_core << endl;
 	 }*/
      
+     
+
    } // end if (numGrid>0)
    /* end phase 1 */
 
@@ -3837,7 +3849,7 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 
        for (int m=0; m< RG_numBCMessages_Ghost+1 ; m++){
 	 cout <<"Rank local " << rank_local << ", grid " <<numGrid << ", m: " << m <<", RGBC_Info_Ghost[m].RG_core: " << RGBC_Info_Ghost[m].RG_core << ", RGBC_Info_Ghost[m].CG_core: " << RGBC_Info_Ghost[m].CG_core<< endl;
-	 }*/
+	 } */
        //active
        MPI_Send(RGBC_Info_Active, RG_numBCMessages_Active+1, MPI_RGBC_struct, 0, TAG_BC_ACTIVE, vct->getComm());
 
@@ -3845,8 +3857,9 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 
        for (int m=0; m< RG_numBCMessages_Active+1 ; m++){
 	 cout <<"ACTIVE: Rank local " << rank_local << ", grid " <<numGrid << ", m: " << m <<", RGBC_Info_Active[m].RG_core: " << RGBC_Info_Active[m].RG_core << ", RGBC_Info_Active[m].CG_core: " << RGBC_Info_Active[m].CG_core<< endl;
+	 }
 	 }*/
-     }
+
      if  (rank_local==0){
 
        // only core 0 local needs to instantiate this 
@@ -3856,11 +3869,12 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
        RGBC_Info_Active_LevelWide = new RGBC_struct[MAX_size_LevelWide];
        initWeightBC_Phase2a(grid, vct, RGBC_Info_Active_LevelWide, &RG_numBCMessages_Active_LevelWide, RGBC_Info_Active, RG_numBCMessages_Active, 0);
        
-       /*cout << "Core 0 of grid " << numGrid <<": I have " << RG_numBCMessages_Ghost_LevelWide << " messages: " <<endl;                                                                                           	 for (int m=0; m< RG_numBCMessages_Ghost_LevelWide; m++){                                              
+       /*cout << "Core 0 of grid " << numGrid <<": I have " << RG_numBCMessages_Ghost_LevelWide << " messages: " <<endl;                                                                                           	 
+       for (int m=0; m< RG_numBCMessages_Ghost_LevelWide; m++){                                              
 	 cout << "Message " << m << " from RG core " << RGBC_Info_Ghost_LevelWide[m].RG_core << " to CG core" << RGBC_Info_Ghost_LevelWide[m].CG_core << " on Parent-Child communicator "<<endl;                         
-	 }*/
+	 }
 
-       /*cout << "ACTIVE Core 0 of grid " << numGrid <<": I have " << RG_numBCMessages_Active_LevelWide << " messages: " <<endl;
+       cout << "ACTIVE Core 0 of grid " << numGrid <<": I have " << RG_numBCMessages_Active_LevelWide << " messages: " <<endl;
        for (int m=0; m< RG_numBCMessages_Active_LevelWide; m++){       
 	 cout << "ACTIVE message " << m << " from RG core " << RGBC_Info_Active_LevelWide[m].RG_core << " to CG core" << RGBC_Info_Active_LevelWide[m].CG_core << " on Parent-Child communicator "<<endl;                         
 	 }*/
@@ -3876,6 +3890,15 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
      } // end if (rank_local==0), phase 2b
   } // end if on children grid
   
+
+   /*MPI_Barrier(MPI_COMM_WORLD);
+   if (rank_local==0){
+     cout << "I am grid " << numGrid <<", I am after the barrier marking Phase2b" << endl;
+     cout << "exiting now..."<< endl;
+   }
+   MPI_Finalize(); exit(EXIT_SUCCESS);*/
+
+
   // phase 2c, only for the parent
   // each CG core will receive a message per child grid
   if (numChildren > 0 ){
@@ -3896,23 +3919,23 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
     initWeightBC_Phase2c(grid, vct, CG_Info_Ghost, CG_numBCMessages_Ghost, -1); 
     initWeightBC_Phase2c(grid, vct, CG_Info_Active, CG_numBCMessages_Active, 0);
 
-    /* checks */
-     // ghost
-    /*for (int ch=0; ch< numChildren; ch++){ // cycle on the children
-      for (int m=0; m< CG_numBCMessages_Ghost[ch]; m++){ // cycle on the messages per child
-	// my rank as a parent on this particular parent- child communicator
-	MPI_Comm_rank(vct->getCommToChild(ch) , &rank_As_Parent);
-	cout << "GHOST: I am core " << rank_As_Parent << " (on the PC comm) " << " of grid " << numGrid <<  " and I will communicate with RG core " << CG_Info_Ghost[ch][m].RG_core << " of my " <<ch << "-th child" <<endl;  
+    if (VerboseCheck== true){
+      for (int ch=0; ch< numChildren; ch++){ // cycle on the children
+	for (int m=0; m< CG_numBCMessages_Ghost[ch]; m++){ // cycle on the messages per child
+	  // my rank as a parent on this particular parent- child communicator
+	  MPI_Comm_rank(vct->getCommToChild(ch) , &rank_As_Parent);
+	  /*cout << "GHOST: I am core " << rank_As_Parent << " (on the PC comm) " << " of grid " << numGrid <<  " and I will communicate with RG core " << CG_Info_Ghost[ch][m].RG_core << " of my " <<ch << "-th child, grid " << vct->getChildGridNum(ch) <<endl;  */
+	}
+      }
+      // active
+      for (int ch=0; ch< numChildren; ch++){ // cycle on the children
+	for (int m=0; m< CG_numBCMessages_Active[ch]; m++){ // cycle on the messages per child
+	  // my rank as a parent on this particular parent- child communicator
+	  MPI_Comm_rank(vct->getCommToChild(ch) , &rank_As_Parent);
+	  /*cout << "ACTIVE: I am core " << rank_As_Parent << " (on the PC comm) " << " of grid " << numGrid <<  " and I will communicate with RG core " << CG_Info_Active[ch][m].RG_core << " of my " <<ch << "-th child, grid " << vct->getChildGridNum(ch) <<endl;*/
+	}
       }
     }
-    // active
-    for (int ch=0; ch< numChildren; ch++){ // cycle on the children
-      for (int m=0; m< CG_numBCMessages_Active[ch]; m++){ // cycle on the messages per child
-	// my rank as a parent on this particular parent- child communicator
-	MPI_Comm_rank(vct->getCommToChild(ch) , &rank_As_Parent);
-	cout << "ACTIVE: I am core " << rank_As_Parent << " (on the PC comm) " << " of grid " << numGrid <<  " and I will communicate with RG core " << CG_Info_Active[ch][m].RG_core << " of my " <<ch << "-th child" <<endl;  
-      }
-    }*/
     /* end checks */
 
     /* build the weights */
@@ -3921,6 +3944,13 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 
   } // end  if (numChildren > 0 ), only for parents
   
+  /*MPI_Barrier(MPI_COMM_WORLD);
+   if (rank_local==0){
+     cout << "I am grid " << numGrid <<", I am after the barrier marking Phase2c" << endl;
+     cout << "exiting now..."<< endl;
+   }
+   MPI_Finalize(); exit(EXIT_SUCCESS);*/
+
   Trim_RGBC_Vectors(vct);
   /* //checks after trim
   if (CommToParent!= MPI_COMM_NULL){
@@ -4012,7 +4042,7 @@ void EMfields3D::TEST__Assign_RG_BC_Values(VirtualTopology3D *vct){
 void EMfields3D::TEST__Assign_RG_BC_Values(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which){
   //NB: the -1 exitign condition is assigned outside this function
   
-  //NB: this is specific to one input file
+  //NB: this is specific to one input file, Test_SameNC.inp
   
   //  AssignValues(int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp )
 
@@ -4107,6 +4137,98 @@ void EMfields3D::TEST__Assign_RG_BC_Values(VirtualTopology3D *vct, RGBC_struct *
   } // end if (which == 0)
 }
 
+// QUI
+void EMfields3D::TEST__Assign_RG_BC_Values_DNC(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which){
+  //NB: the -1 exitign condition is assigned outside this function
+  
+  //NB: this is specific to one input file, Test_DifferentNC.inp
+  
+  //  AssignValues(int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp )
+
+  int CG_core;
+  int rank_local= vct->getCartesian_rank();  
+  
+  MPI_Comm PC_comm = vct->getCommToParent();
+  // my rank on the parent-child communicator
+  if (PC_comm== MPI_COMM_NULL) // this is only for children
+    return;
+
+  int rank_PC;
+  MPI_Comm_rank(PC_comm, &rank_PC);
+
+
+  // ghost messages
+  // numGrid==1,  first message
+  if (which == -1 and numGrid==1 and (rank_PC== 1 or rank_PC== 3 or rank_PC== 4 or rank_PC== 8 )) {
+       
+    CG_core= 0;
+    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
+    *RG_numBCMessages= 1; 
+  }
+  // second
+  if (which == -1 and numGrid==1 and  rank_PC== 8){
+    CG_core= 0;
+    Assign_RGBC_struct_Values(RGBC_Info+1, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
+  }
+  // second                                                                                                                
+  if (which == -1 and numGrid==1 and  rank_PC== 8){
+    CG_core= 0;
+    Assign_RGBC_struct_Values(RGBC_Info+2, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
+    *RG_numBCMessages= 3;
+  }
+
+  // numGrid==2
+  // first message
+  if (which == -1 and numGrid==2 and  (rank_PC== 1  )){
+    CG_core= 0;
+    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
+    *RG_numBCMessages= 1;  
+  }
+
+  // second message
+  if (which == -1 and numGrid==2 and rank_PC== 1){
+    CG_core= 0;
+    Assign_RGBC_struct_Values(RGBC_Info+1, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
+    *RG_numBCMessages= 2;  
+  }
+  
+  // numGrid== 3
+  if (which == -1 and numGrid==3 and  (rank_PC== 8 or rank_PC== 9 or rank_PC== 11 )){
+
+    switch(rank_PC){
+    case 8: CG_core= 0; break;
+    case 9: CG_core= 5; break;
+    case 11: CG_core= 1; break;
+    }
+    
+    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
+    *RG_numBCMessages= 1;
+
+  }
+  
+  // active messages, which==0
+  // numGrid==1
+  if (which == 0 and numGrid==1 and rank_PC== 1 ){
+    CG_core=0;
+    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
+  }
+
+  if (which == 0 and numGrid==1 and rank_PC== 1 ){
+    CG_core=0;
+    Assign_RGBC_struct_Values(RGBC_Info+1, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
+    *RG_numBCMessages= 2;
+  }
+
+  if (which == 0 and numGrid==3 and rank_PC== 11 ){
+    CG_core=7;
+    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
+    *RG_numBCMessages= 1;
+  }
+  
+}
+// END QUI
+
+
 /* end mlmd test functions */
 
 /* define mlmd-specific MPI_Datatypes */
@@ -4196,14 +4318,21 @@ void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int
 */
 void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *RG_numBCMessages, int which){
 
+
   if (! (which== -1 || which ==0)){
       cout << "initWeightBC, phase 1, is receiving wrong inputs. Check the code. Aborting now..." << endl;
       abort();
     }
-
+  
   int XLEN= vct->getXLEN();
   int YLEN= vct->getYLEN();
   int ZLEN= vct->getZLEN();
+
+  int rank_CTP= vct->getRank_CommToParent();
+  int rank_G= vct->getSystemWide_rank();
+
+  cout << "R" <<  rank_G <<":  SONO QUI!!!" << endl;
+
   /* here, a check to see if you are working on ghosts or active 
      BUT MAKE SURE NOT TO WRITE THE CODE TWICE */
     
@@ -4220,9 +4349,15 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
   }
   
   // this is the left face
-  if (vct->getCoordinates(0) ==0 && vct->getXleft_neighbor() == MPI_PROC_NULL){ 
-    // cycle on y and z
+  if (vct->getCoordinates(0) ==0 ) { // && vct->getXleft_neighbor() == MPI_PROC_NULL){ 
     int i;
+    // cycle on y and z
+    cout << "R" <<rank_CTP <<": rank on global comm: "  << rank_G  << endl;
+
+
+    /*for (int j=0; j<nyn; j++) 
+      cout << "R"<<rank_CTP <<": j= " <<j <<", local coor: " << grid->getYN(0, j, 0) <<", PG coord: " << grid->getYN_P(0, j, 0) << endl;*/
+
   }
   
   // this is the right face
@@ -4243,10 +4378,12 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
     int i;
   }
   
+  
   /* */
   
   /* this only for testing communication; comment in the end */
-  TEST__Assign_RG_BC_Values(vct, RGBC_Info, RG_numBCMessages, which);
+  //TEST__Assign_RG_BC_Values(vct, RGBC_Info, RG_numBCMessages, which); // input with same # of cores per grid
+  TEST__Assign_RG_BC_Values_DNC(vct, RGBC_Info, RG_numBCMessages, which); // input with different # of cores per grid  
   /* END THIS IS A TEST; COMMENT IN THE END */
   
   /* for further use, i need to set the RG_core field of the first unused slot to -1 
@@ -4254,6 +4391,8 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
      I will just send a +1 */
   
   RGBC_Info[*RG_numBCMessages].RG_core= -1;
+  RGBC_Info[*RG_numBCMessages].CG_core= -1;
+  //cout << "R" <<  rank_G <<":  END SONO QUI!!!" << endl;
     
 }
 /* phase 2a of initWeightBC:
@@ -4261,6 +4400,7 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
    a level-wide message structure is built */
 void EMfields3D::initWeightBC_Phase2a(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info_LevelWide,int * RG_numBCMessages_LevelWide, RGBC_struct *RGBC_Info, int RG_numBCMessages, int which){
 
+  // this sizes are local to the grid
   int XLEN= vct->getXLEN();
   int YLEN= vct->getYLEN();
   int ZLEN= vct->getZLEN();
@@ -4287,6 +4427,12 @@ void EMfields3D::initWeightBC_Phase2a(Grid *grid, VirtualTopology3D *vct, RGBC_s
   
   *RG_numBCMessages_LevelWide= RG_numBCMessages;
   
+
+  string WW;
+  if (which==0) WW= "ACTIVE";
+  if (which==1) WW= "GHOST";
+
+  /*cout <<WW << " grid " << numGrid << " after core 0 has copies his messages, RG_numBCMessages_LevelWide= " << * RG_numBCMessages_LevelWide <<endl;*/
   // end copying, starts receiving
   
   
@@ -4296,7 +4442,7 @@ void EMfields3D::initWeightBC_Phase2a(Grid *grid, VirtualTopology3D *vct, RGBC_s
     while( buffer_rcv_Core0[rcvd].RG_core != -1  ){
       
       
-      RGBC_Info_LevelWide[*RG_numBCMessages_LevelWide]= buffer_rcv_Core0[rcvd]; !!!
+      RGBC_Info_LevelWide[*RG_numBCMessages_LevelWide]= buffer_rcv_Core0[rcvd]; 
       (*RG_numBCMessages_LevelWide)++;
       
       rcvd++;
@@ -4326,12 +4472,14 @@ void EMfields3D::initWeightBC_Phase2b(Grid *grid, VirtualTopology3D *vct, RGBC_s
   /* here, vectors where core 0 of the local child grid assembles the messages                               
       to all the coarse grid core in the parent-child communicator         
       de-allocated at the end of the function */
+  /* one message per CG core -- hence, the sizes are the sizes of the CG */
+
   RGBC_struct ** RGBC_Info_ToCGCore;
   int * RG_numBCMessages_ToCGCore;
 
-  int XLEN= vct->getXLEN();
-  int YLEN= vct->getYLEN();
-  int ZLEN= vct->getZLEN();
+  // # of cores in the parent, differnt from the # of cores in the child
+  int parentGrid= vct->getParentGridNum();
+  int ParentCoreNum= vct->getXLEN(parentGrid) * vct->getYLEN(parentGrid) *vct->getZLEN(parentGrid);
 
   int TAG;
   if (which==-1) TAG=TAG_BC_GHOST;
@@ -4339,10 +4487,10 @@ void EMfields3D::initWeightBC_Phase2b(Grid *grid, VirtualTopology3D *vct, RGBC_s
 
   MPI_Comm CommToParent= vct->getCommToParent();
 
-  RGBC_Info_ToCGCore =  newArr2(RGBC_struct, XLEN*YLEN*ZLEN, MAX_RG_numBCMessages);
-  RG_numBCMessages_ToCGCore= new int[XLEN*YLEN*ZLEN];
+  RGBC_Info_ToCGCore =  newArr2(RGBC_struct, ParentCoreNum, MAX_RG_numBCMessages);
+  RG_numBCMessages_ToCGCore= new int[ParentCoreNum];
   
-  for (int c=0; c< XLEN*YLEN*ZLEN; c++) {
+  for (int c=0; c< ParentCoreNum; c++) {
     RG_numBCMessages_ToCGCore[c]=0;
   } // end for (int c=0; c< XLEN*YLEN*ZLEN; c++)
   
@@ -4359,13 +4507,15 @@ void EMfields3D::initWeightBC_Phase2b(Grid *grid, VirtualTopology3D *vct, RGBC_s
   }
   
   // this to stop the read when receiving; need to send one more
-  for (int cg=0; cg< XLEN*YLEN*ZLEN; cg++){
+  for (int cg=0; cg< ParentCoreNum; cg++){
     RGBC_Info_ToCGCore[cg][RG_numBCMessages_ToCGCore[cg]].RG_core= -1;
   }
     
   // core 0 of local child grid send a message to all CG cores on the parent-child communicator
   // need to send a message more because the RG_core field of the extra msg contains the -1 flag
-  for (int cg=0; cg <XLEN*YLEN*ZLEN; cg++){
+
+  // NB: this is the size of the parent, not of the child
+  for (int cg=0; cg <ParentCoreNum; cg++){
     //cout << "grid " << numGrid << " sends first, RG_Core " << RGBC_Info_ToCGCore[cg][0].RG_core << endl;
     //cout << "ACTIVE: grid " <<numGrid << ", msg to CG core " << cg << ": "<< RG_numBCMessages_ToCGCore[cg] << "+1" << endl; // ok up to here
 

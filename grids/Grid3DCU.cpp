@@ -25,6 +25,9 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   /*! mlmd: know your grid number */
   numGrid = vct->getNumGrid();
 
+  /*! mlmd: know where you start on your PARENT grid */
+  Ox= col->getOx_P(numGrid); Oy= col->getOy_P(numGrid); Oz= col->getOy_P(numGrid);
+
   // add 2 for the guard cells
   /*! this pre-mlmd 
   nxc = (col->getNxc()) / (vct->getXLEN()) + 2;

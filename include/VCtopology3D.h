@@ -55,12 +55,18 @@ public:
   void Print();
   /** Print the mapping of topology */
   void PrintMapping();
+  /** values local to the grid
   /** get XLEN */
-  int getXLEN() {return(XLEN);};
+  int getXLEN();
   /** get YLEN */
-  int getYLEN() {return(YLEN);};
+  int getYLEN();
   /** get ZLEN */
-  int getZLEN() {return(ZLEN);};
+  int getZLEN();
+  /** end values local to the grid **/
+  /* mlmd: access XLEN, YLEN, ZLEN @ grid level */
+  int getXLEN(int N);
+  int getYLEN(int N);
+  int getZLEN(int N);
   /** get nprocs 
       mlmd: @ grid level */
   int getNprocs() {return(nprocs);};
@@ -122,6 +128,10 @@ public:
   int getNumGrid() {return(numGrid); };
   /*! return the rank of the process in the system-wide communicator, MPI_COMM_WORLD */
   int getSystemWide_rank() {return(systemWide_rank); };
+
+  /** mlmd: get rank on the communicator to parent **/
+  int getRank_CommToParent() {return rank_CommToParent;}
+  
   /*! return the communicator to the parent; it's MPI_COMM_NULL for the coarse grid */
   MPI_Comm getCommToParent() {return CommToParent; }
   /* returns the number of children in the mlmd hierarchy */
@@ -129,13 +139,19 @@ public:
   /* returns the n-th communicator to child form CommToChildren */
   MPI_Comm getCommToChild(int n) {return CommToChildren[n];}
 
-  /*! end mlmd gets */
-
   /*! mlmd test functions */
   /*! tries some basic communication on parent-child inter-communicators and communicators */
   void testMlmdCommunicators();
   /*! end mlmd test functions */
 
+  /* return the number - not the level - of the parent grid */
+  int getParentGridNum(){return parentGrid;}
+
+  /* return the number - not the level - of the child grid n */
+  int getChildGridNum(int n){return childrenGrid[n];}
+
+  /* return the max number of cores used of a single grid */
+  int getMaxGridCoreN() {return MaxGridCoreN;}
   /*! end specific MLMD functions */
 
 private:
@@ -159,6 +175,7 @@ private:
   int LEFT;
   /** dimension of virtual topology */
   int PROCDIM;
+  /** local to this grid, structure for all the levels is also accessible **/ 
   /** number of subdomains - Direction X */
   int XLEN;
   /** number of subdomains - Direction Y */
@@ -242,6 +259,16 @@ private:
   int *rank_CommToChildren;
   /* end ranks */
   
+  /* topology for the grid system */
+  int *XLEN_mlmd;
+  int *YLEN_mlmd;
+  int *ZLEN_mlmd;
+  /* end topology for the grid system */
+
+  /* here, the max number of cores used of a single grid; 
+   needed to size communication buffers in EMfields*/
+  int MaxGridCoreN;
+
   /* number of children of the current grid */
   int numChildren;
 
@@ -260,6 +287,12 @@ private:
       
   /*TagsForFieldBC_, TagsForParticleBC_, TagsForProjection ... */
   
+    // only mine, not all
+    // # of parent grid
+    int parentGrid;
+    // # of children grid
+    int *childrenGrid;
+
 };
 
 #endif
