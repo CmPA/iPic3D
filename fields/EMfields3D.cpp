@@ -3857,8 +3857,8 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 
        for (int m=0; m< RG_numBCMessages_Active+1 ; m++){
 	 cout <<"ACTIVE: Rank local " << rank_local << ", grid " <<numGrid << ", m: " << m <<", RGBC_Info_Active[m].RG_core: " << RGBC_Info_Active[m].RG_core << ", RGBC_Info_Active[m].CG_core: " << RGBC_Info_Active[m].CG_core<< endl;
-	 }
 	 }*/
+	 }
 
      if  (rank_local==0){
 
@@ -4672,6 +4672,19 @@ void EMfields3D::sendBC(Grid *grid, VirtualTopology3D *vct){
   int dest; // destination on the parent-child communicator
   MPI_Comm PC_Comm; // the parent-child communicator
   int tag;
+
+  /* IMPORTANT: before sending BC, make sure ghost nodes are fixed
+   This is enforced here, even if it should be already ok from the Field Solved  
+   but DO NOT USE the communicateNode BC because you don't need to mess up with the BC */
+  
+  communicateNode(nxn, nyn, nzn, Ex, vct);
+  communicateNode(nxn, nyn, nzn, Ey, vct);
+  communicateNode(nxn, nyn, nzn, Ez, vct);
+  communicateNode(nxn, nyn, nzn, Bxn, vct);
+  communicateNode(nxn, nyn, nzn, Byn, vct);
+  communicateNode(nxn, nyn, nzn, Bzn, vct);
+  
+  /* end fixing ghost nodes*/
 
   /* assemble the message */
   /* ......TO DO ........ */
