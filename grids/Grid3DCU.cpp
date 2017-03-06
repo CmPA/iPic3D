@@ -29,11 +29,6 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   Ox= col->getOx_P(numGrid); Oy= col->getOy_P(numGrid); Oz= col->getOy_P(numGrid);
 
   // add 2 for the guard cells
-  /*! this pre-mlmd 
-  nxc = (col->getNxc()) / (vct->getXLEN()) + 2;
-  nyc = (col->getNyc()) / (vct->getYLEN()) + 2;
-  nzc = (col->getNzc()) / (vct->getZLEN()) + 2; */
-
   nxc = (col->getNxc_mlmd(numGrid)) / (vct->getXLEN()) + 2;
   nyc = (col->getNyc_mlmd(numGrid)) / (vct->getYLEN()) + 2;
   nzc = (col->getNzc_mlmd(numGrid)) / (vct->getZLEN()) + 2;
@@ -41,10 +36,6 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   nxn = nxc + 1;
   nyn = nyc + 1;
   nzn = nzc + 1;
-  /*! this pre-mlmd
-  dx = col->getLx() / col->getNxc();
-  dy = col->getLy() / col->getNyc();
-  dz = col->getLz() / col->getNzc(); */
 
   dx = col->getDx_mlmd(numGrid);
   dy = col->getDy_mlmd(numGrid);
@@ -56,30 +47,32 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   invdz = 1.0 / dz;
 
   // local grid dimensions and boundaries of active nodes
-  /*! pre-mlmd
-  xStart = vct->getCoordinates(0) * (col->getLx() / (double) vct->getXLEN());
-
-  xEnd = xStart + (col->getLx() / (double) vct->getXLEN());
-
-  yStart = vct->getCoordinates(1) * (col->getLy() / (double) vct->getYLEN());
-
-  yEnd = yStart + (col->getLy() / (double) vct->getYLEN());
-
-  zStart = vct->getCoordinates(2) * (col->getLz() / (double) vct->getZLEN());
-
-  zEnd = zStart + (col->getLz() / (double) vct->getZLEN()); */
-
   xStart = vct->getCoordinates(0) * (col->getLx_mlmd(numGrid) / (double) vct->getXLEN());
-  
   xEnd = xStart + (col->getLx_mlmd(numGrid) / (double) vct->getXLEN());
-
   yStart = vct->getCoordinates(1) * (col->getLy_mlmd(numGrid) / (double) vct->getYLEN());
-
   yEnd = yStart + (col->getLy_mlmd(numGrid) / (double) vct->getYLEN());
-
   zStart = vct->getCoordinates(2) * (col->getLz_mlmd(numGrid) / (double) vct->getZLEN());
-
   zEnd = zStart + (col->getLz_mlmd(numGrid) / (double) vct->getZLEN());
+
+  /* portion of ACTIVE grid hosted in each parent core                                                                                       
+     -- equivalent of xEnd - xStart on the parent */
+  if (vct->getCommToParent()!= MPI_COMM_NULL) { // I have a parent               
+    int PG= vct->getParentGridNum();
+    parentLenX= col->getLx_mlmd(PG) / double(col->getXLEN_mlmd(PG)); 
+    parentLenY= col->getLy_mlmd(PG) / double(col->getYLEN_mlmd(PG));
+    parentLenZ= col->getLz_mlmd(PG) / double(col->getZLEN_mlmd(PG));
+  }
+  else{parentLenX=-1.; parentLenY=-1.; parentLenZ=-1.;} // just to set a value
+
+  /*
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (numGrid==0){
+    cout << "I am grid " << numGrid <<endl;
+    cout <<"xStart= " << xStart <<", xEnd= " <<xEnd <<", zStart= " << zStart <<", zEnd= " <<zEnd <<endl;
+    cout << "Lx= " << col->getLx_mlmd(numGrid) << ", Ly= " <<col->getLy_mlmd(numGrid) <<", Lz= " << col->getLz_mlmd(numGrid) <<endl;
+    cout <<"dx= " <<dx <<", dy=" <<dy <<", dz=" <<dz <<endl;
+  }
+  MPI_Barrier(MPI_COMM_WORLD);*/
 
   // arrays allocation: nodes ---> the first node has index 1, the last has index nxn-2!
   node_xcoord = new double[nxn];
@@ -95,6 +88,8 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   for(int i=0; i<nxc; i++) center_xcoord[i] = .5*(node_xcoord[i]+node_xcoord[i+1]);
   for(int j=0; j<nyc; j++) center_ycoord[j] = .5*(node_ycoord[j]+node_ycoord[j+1]);
   for(int k=0; k<nzc; k++) center_zcoord[k] = .5*(node_zcoord[k]+node_zcoord[k+1]);
+
+  
 }
 
 /** deallocate the local grid */
@@ -528,3 +523,53 @@ double Grid3DCU::getZend() {
 double Grid3DCU::getInvVOL() {
   return (invVOL);
 }
+
+/** mlmd specific functions **/
+int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn, int zn){
+
+    /*** pay exceptional attention to this description ***/
+    /* nx, ny, nz: index in the current grid, which is a child*/
+    /* returns the rank IN THE PARENT-CHILD communicator of the coarse grid core where the point is hosted                                   
+       only the active part of the parent grid is examined*/
+
+  // rank on MPI_COMM_WORLD
+  int SW_rank=vct->getSystemWide_rank();
+
+  if (vct->getCommToParent()== MPI_COMM_NULL) return -1; // if you are not a child, i return -1 to provoke a segm fault
+  // coordinates in the parent grid                                                                 
+  double coordX_PG= getXN_P(xn, yn, zn);
+  double coordY_PG= getYN_P(xn, yn, zn);
+  double coordZ_PG= getZN_P(xn, yn, zn);
+
+  // !cartesian! coordinates in the parent grid                                                                         
+  int coordX= floor(coordX_PG/ parentLenX);
+  int coordY= floor(coordY_PG/ parentLenY);
+  int coordZ= floor(coordZ_PG/ parentLenZ);
+
+  /* end the search when the data relative to the child grid itself start,                                                                    
+     i.e. at index XLEN_mlmd[parentGrid]*YLEN_mlmd[parentGrid]*ZLEN_mlmd[parentGrid] */
+  // rank in the CommToParent communicator                                                                                                    
+  int rankPC=-1;
+  int ChildStarts= vct->getXLEN(vct->getParentGridNum()) * vct->getYLEN(vct->getParentGridNum()) * vct->getZLEN(vct->getParentGridNum());
+  for (int i=0; i< ChildStarts; i++){
+    if ((coordX == vct->getXcoord_CommToParent(i)) && (coordY == vct->getYcoord_CommToParent(i)) && (coordZ == vct->getZcoord_CommToParent(i)) ){
+      rankPC= i;
+    }
+  }
+
+  if (rankPC==-1){
+    cout << "Fatal error in getParentRankFromGridPoint, aborting...";
+    abort();
+  }
+  else {
+    if (true){
+      cout << "R" <<SW_rank <<": local coords: [ " << getXN(xn, yn, zn) <<", "<< getYN(xn, yn, zn)<<", "<<getZN(xn, yn,zn) <<endl;
+      cout << "R" <<SW_rank <<": on parent grid: [ " << getXN_P(xn, yn, zn) <<", "<< getYN_P(xn, yn, zn)<<", "<<getZN_P(xn, yn, zn) << "(origin at [ " << Ox <<", " << Oy  <<", " << Ox <<"])";
+      cout << "R" <<SW_rank <<": hosted in parent grid core: " << rankPC <<endl;
+    }
+    return rankPC;
+  }
+}
+
+
+/** end mlmd specific functions **/

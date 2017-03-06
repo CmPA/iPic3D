@@ -114,6 +114,12 @@ public:
   virtual int getChildGridNum(int n) =0;
   
   virtual int getMaxGridCoreN()=0;
+
+  /* return the values of the cartesian coordinate lookup table  
+     NB: N is the rank number in the inter-communicator (CommToParent or CommToChildren)*/
+  virtual int getXcoord_CommToParent(int N)=0;
+  virtual int getYcoord_CommToParent(int N)=0;
+  virtual int getZcoord_CommToParent(int N)=0;
   /*! end mlmd specific functions */
 
 

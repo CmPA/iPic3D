@@ -117,7 +117,6 @@ public:
   /** get the MPI communicator */
   MPI_Comm getComm() {return(CART_COMM);};    /*! pre-mlmd: cartesian communicator for the entire system
 						mlmd: cartesian communicator per grid level */
-
   /*! specific MLMD functions */
   /*! mlmd gets */
   /*! returns the non cartesian communicator per grid;
@@ -128,16 +127,16 @@ public:
   int getNumGrid() {return(numGrid); };
   /*! return the rank of the process in the system-wide communicator, MPI_COMM_WORLD */
   int getSystemWide_rank() {return(systemWide_rank); };
-
   /** mlmd: get rank on the communicator to parent **/
   int getRank_CommToParent() {return rank_CommToParent;}
-  
   /*! return the communicator to the parent; it's MPI_COMM_NULL for the coarse grid */
   MPI_Comm getCommToParent() {return CommToParent; }
   /* returns the number of children in the mlmd hierarchy */
   int getNumChildren() {return (numChildren);}
   /* returns the n-th communicator to child form CommToChildren */
   MPI_Comm getCommToChild(int n) {return CommToChildren[n];}
+  /* return the rank as a parent of the n-th child */
+  int getRank_CommToChildren(int nc){return rank_CommToChildren[nc];}
 
   /*! mlmd test functions */
   /*! tries some basic communication on parent-child inter-communicators and communicators */
@@ -152,6 +151,12 @@ public:
 
   /* return the max number of cores used of a single grid */
   int getMaxGridCoreN() {return MaxGridCoreN;}
+
+  /* return the values of the cartesian coordinate lookup table 
+     NB: N is the rank number in the inter-communicator (CommToParent or CommToChildren)*/
+  int getXcoord_CommToParent(int N){return Xcoord_CommToParent[N];}
+  int getYcoord_CommToParent(int N){return Ycoord_CommToParent[N];}
+  int getZcoord_CommToParent(int N){return Zcoord_CommToParent[N];}
   /*! end specific MLMD functions */
 
 private:
@@ -248,7 +253,6 @@ private:
   /*! number of the current grid
     possible values: 0 -> Ngrids -1 */
   int numGrid;
-
   /* mlmd specific ranks 
    - see also cartesian_rank*/
   /*! rank in the system-wide communicator - MPI_COMM_WORLD */
@@ -278,6 +282,11 @@ private:
   /* communicator to children */
   MPI_Comm *CommToChildren;
 
+  /** in case topologies do weird things, the cartesian coordinates (x of Xlen, y of Ylen, z of Zlen)
+      of each core in the parent - child communicator is set here **/
+
+  
+
   /*! TAGS 
     as an experiment, let's start a system of tags to mark the different kind of mlmd communication
     TagsFor*_Parent will be used for communication with the parent
@@ -293,6 +302,26 @@ private:
     // # of children grid
     int *childrenGrid;
 
+    /* use these variables as a look-up table to find the core you need to communicate with on the inter-grid communicators 
+       this is done in case the mapping coordinates <-> rank changes in different implementation
+       This mapping is intended to be used in the Init* functions only
+       Stop to think if you need to use it somewhere else 
+       In each vector/ matrix, one finds the map for the entire communicator
+       the index is the core rank in the communicator
+    */
+
+    // this if the grid is a child
+    int * Xcoord_CommToParent;
+    int * Ycoord_CommToParent;
+    int * Zcoord_CommToParent;
+    int * numGrid_CommToParent; // this is redundant, just to check                                                                              
+    // this if the grid is a parent
+    // rows are the number of children
+    int ** Xcoord_CommToChildren;
+    int ** Ycoord_CommToChildren;
+    int ** Zcoord_CommToChildren;
+    int ** numGrid_CommToChildren; // this is redundant, just to check   
+    /* end use these variables as a look-up table to find the core you need to communicate to on the inter-grid communicators */ 
 };
 
 #endif

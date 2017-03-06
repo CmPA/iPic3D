@@ -46,7 +46,7 @@ struct RGBC_struct {  // when changing this, change MPI_RGBC_struct_commit also
   int np_y;
   int np_z;
 
-   // CG coordinates corresponding to indices RGBC_i.._first
+   // CG coordinates corresponding to indices i.._first
   double CG_x_first;
   double CG_y_first;
   double CG_z_first;

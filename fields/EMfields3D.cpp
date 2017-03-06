@@ -1,6 +1,6 @@
 
 #include "EMfields3D.h"
-
+ 
 /*! constructor */
 /*! pre-mlmd: no topology needed:
   mlmd: topology is needed for the grid communicator */
@@ -4330,52 +4330,189 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
 
   int rank_CTP= vct->getRank_CommToParent();
   int rank_G= vct->getSystemWide_rank();
+  int rank_local= vct->getCartesian_rank();
 
-  cout << "R" <<  rank_G <<":  SONO QUI!!!" << endl;
+  // NB: _s and _e are included!!!, so <= in the for
+  int i_s, i_e;
+  int j_s, j_e;
+  int k_s, k_e;
+  
+  /* in each of those, store the core number in the parent-child communicator where the point sits */
+
+  int **BottomFace = newArr2(int, nxn, nyn);
+  int **TopFace = newArr2(int, nxn, nyn);
+
+  int **LeftFace = newArr2(int, nyn, nzn);
+  int **RightFace = newArr2(int, nyn, nzn);
+
+  int **FrontFace = newArr2(int, nxn, nzn);
+  int **BackFace = newArr2(int, nxn, nzn);
+
+  //cout << "R" <<  rank_G <<":  SONO QUI!!!" << endl;
 
   /* here, a check to see if you are working on ghosts or active 
      BUT MAKE SURE NOT TO WRITE THE CODE TWICE */
     
   // this is the bottom face
   if (vct->getCoordinates(2)==0 && vct->getZleft_neighbor()== MPI_PROC_NULL){
+
     // cycle on x and y
-    int i;
+    if (which ==0){
+      i_s=1; i_e= nxn-2;
+      j_s=1; j_e= nyn-2;
+      k_s=1; k_e=1; 
+    }
+    else if (which==-1){
+      if (vct->getCoordinates(0)==0) i_s=0; else i_s=1;
+      if (vct->getCoordinates(0)==XLEN-1) i_e=nxn-1; else i_e=nxn-2;
+      if (vct->getCoordinates(1)==0) j_s=0; else j_s=1;
+      if (vct->getCoordinates(1)==YLEN-1) j_e=nyn-1; else j_e=nyn-2;
+      k_s=0; k_e=0;
+    }
+    
+    /* function that, given RG index, gives the core number of where the point is in the CG
+       in the parent child communicator */
+    
+    for (int i=i_s; i< i_e; i++){
+      for(int j=j_s; j< j_e; j++){
+	for(int k=k_s; k< k_e; k++){
+	  grid->getParentRankFromGridPoint(vct, i, j, k);
+	}
+      }
+    }
+
   }
   
   // this is the top face
   if (vct->getCoordinates(2) ==ZLEN-1 && vct->getZright_neighbor() == MPI_PROC_NULL){ 
+    
     // cycle on x and y
-    int i;
+    if (which ==0){
+      i_s=1; i_e= nxn-2;
+      j_s=1; j_e= nyn-2;
+      k_s=nzn-2; k_e=nzn-2; 
+    }
+    else if (which==-1){
+      if (vct->getCoordinates(0)==0) i_s=0; else i_s=1;
+      if (vct->getCoordinates(0)==XLEN-1) i_e=nxn-1; else i_e=nxn-2;
+      if (vct->getCoordinates(1)==0) j_s=0; else j_s=1;
+      if (vct->getCoordinates(1)==YLEN-1) j_e=nyn-1; else j_e=nyn-2;
+      k_s=nzn-1; k_e=nzn-1;
+    }
+
+    for (int i=i_s; i< i_e; i++){
+      for(int j=j_s; j< j_e; j++){
+	for(int k=k_s; k< k_e; k++){
+	  grid->getParentRankFromGridPoint(vct, i, j, k);
+	}
+      }
+    }
+
   }
   
   // this is the left face
-  if (vct->getCoordinates(0) ==0 ) { // && vct->getXleft_neighbor() == MPI_PROC_NULL){ 
-    int i;
+  if (vct->getCoordinates(0) ==0  && vct->getXleft_neighbor() == MPI_PROC_NULL){ 
+
     // cycle on y and z
-    cout << "R" <<rank_CTP <<": rank on global comm: "  << rank_G  << endl;
-
-
-    /*for (int j=0; j<nyn; j++) 
-      cout << "R"<<rank_CTP <<": j= " <<j <<", local coor: " << grid->getYN(0, j, 0) <<", PG coord: " << grid->getYN_P(0, j, 0) << endl;*/
+    if (which ==0){
+      i_s=1; i_e= 1;
+      j_s=1; j_e= nyn-2;
+      k_s=1; k_e= nzn-2; 
+    }
+    else if (which==-1){
+      i_s=0; i_e= 0;	       
+      if (vct->getCoordinates(1)==0) j_s=0; else j_s=1;
+      if (vct->getCoordinates(1)==YLEN-1) j_e=nyn-1; else j_e=nyn-2;
+      if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
+      if (vct->getCoordinates(2)==ZLEN-1) k_e=nzn-1; else k_e=nzn-2;
+    }
+    for (int i=i_s; i< i_e; i++){
+      for(int j=j_s; j< j_e; j++){
+	for(int k=k_s; k< k_e; k++){
+	  grid->getParentRankFromGridPoint(vct, i, j, k);
+	}
+      }
+    }
 
   }
   
   // this is the right face
   if (vct->getCoordinates(0) ==XLEN-1 && vct->getXright_neighbor() == MPI_PROC_NULL){ 
+    
     // cycle on y and z
-    int i;
+    if (which ==0){
+      i_s=nxn-2; i_e= nxn-2;
+      j_s=1; j_e= nyn-2;
+      k_s=1; k_e= nzn-2; 
+    }
+    else if (which==-1){
+      i_s=nxn-1; i_e= nxn-1;	       
+      if (vct->getCoordinates(1)==0) j_s=0; else j_s=1;
+      if (vct->getCoordinates(1)==YLEN-1) j_e=nyn-1; else j_e=nyn-2;
+      if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
+      if (vct->getCoordinates(2)==ZLEN-1) k_e=nzn-1; else k_e=nzn-2;
+    }
+
+    for (int i=i_s; i< i_e; i++){
+      for(int j=j_s; j< j_e; j++){
+	for(int k=k_s; k< k_e; k++){
+	  grid->getParentRankFromGridPoint(vct, i, j, k);
+	}
+      }
+    }
   }
   
   // this is the front face
   if (vct->getCoordinates(1) ==0 && vct->getYleft_neighbor() == MPI_PROC_NULL){
+
     // cycle on x and z
-    int i;
+    if (which ==0){
+      i_s=1; i_e= nxn-2;
+      j_s=1; j_e= 1;
+      k_s=1; k_e= nzn-2; 
+    }
+    else if (which==-1){
+      j_s=1; j_e= 1;	       
+      if (vct->getCoordinates(0)==0) i_s=0; else i_s=1;
+      if (vct->getCoordinates(0)==XLEN-1) i_e=nxn-1; else i_e=nxn-2;
+      if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
+      if (vct->getCoordinates(2)==ZLEN-1) k_e=nzn-1; else k_e=nzn-2;
+    }
+
+    for (int i=i_s; i< i_e; i++){
+      for(int j=j_s; j< j_e; j++){
+	for(int k=k_s; k< k_e; k++){
+	  grid->getParentRankFromGridPoint(vct, i, j, k);
+	}
+      }
+    }
+
   }
   
   // this is the back face
   if (vct->getCoordinates(1) == YLEN-1 && vct->getYright_neighbor() == MPI_PROC_NULL){
-    // cycle on y and z
-    int i;
+    
+    // cycle on x and z
+    if (which ==0){
+      i_s=1; i_e= nxn-2;
+      j_s=nyn-2; j_e= nyn-2;
+      k_s=1; k_e= nzn-2; 
+    }
+    else if (which==-1){
+      j_s=nyn-1; j_e= nyn-1;	       
+      if (vct->getCoordinates(0)==0) i_s=0; else i_s=1;
+      if (vct->getCoordinates(0)==XLEN-1) i_e=nxn-1; else i_e=nxn-2;
+      if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
+      if (vct->getCoordinates(2)==ZLEN-1) k_e=nzn-1; else k_e=nzn-2;
+    }
+
+    for (int i=i_s; i< i_e; i++){
+      for(int j=j_s; j< j_e; j++){
+	for(int k=k_s; k< k_e; k++){
+	  grid->getParentRankFromGridPoint(vct, i, j, k);
+	}
+      }
+    }
   }
   
   
@@ -4383,17 +4520,27 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
   
   /* this only for testing communication; comment in the end */
   //TEST__Assign_RG_BC_Values(vct, RGBC_Info, RG_numBCMessages, which); // input with same # of cores per grid
-  TEST__Assign_RG_BC_Values_DNC(vct, RGBC_Info, RG_numBCMessages, which); // input with different # of cores per grid  
+  //TEST__Assign_RG_BC_Values_DNC(vct, RGBC_Info, RG_numBCMessages, which); // input with different # of cores per grid  
   /* END THIS IS A TEST; COMMENT IN THE END */
   
   /* for further use, i need to set the RG_core field of the first unused slot to -1 
      but DO NOT MODIFY THE NUMBER OF MSGs;
      I will just send a +1 */
-  
   RGBC_Info[*RG_numBCMessages].RG_core= -1;
   RGBC_Info[*RG_numBCMessages].CG_core= -1;
   //cout << "R" <<  rank_G <<":  END SONO QUI!!!" << endl;
-    
+
+
+  // all the deletes
+  delArr2(BottomFace, nxn);
+  delArr2(TopFace, nxn);
+
+  delArr2(LeftFace, nyn);
+  delArr2(RightFace, nyn);
+
+  delArr2(FrontFace, nxn);
+  delArr2(BackFace, nxn);
+
 }
 /* phase 2a of initWeightBC:
    core 0 of each child grid receives all the messages to send to the corresponding coarse grid 
@@ -4762,5 +4909,20 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
     MPI_Recv(&msg, 1, MPI_INT, source, tag, CommToParent, &status);
 
   } // end for on msgs
+
+  /*** ***/
+  // set BC //
+  /*** ***/
+
+  /*** after setting BC, fix ghost 
+       IMPORTANT: DO NOT USE communicateNodeBC ***/
+
+  communicateNode(nxn, nyn, nzn, Ex, vct);
+  communicateNode(nxn, nyn, nzn, Ey, vct);
+  communicateNode(nxn, nyn, nzn, Ez, vct);
+  communicateNode(nxn, nyn, nzn, Bxn, vct);
+  communicateNode(nxn, nyn, nzn, Byn, vct);
+  communicateNode(nxn, nyn, nzn, Bzn, vct);
+  /** end fix ghost **/
 }
 /* end BC related operations */

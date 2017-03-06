@@ -131,11 +131,15 @@ public:
   double getInvVOL();
 
   /*! mlmd specific functions */
-  /*! return the number of the current grid in the mlmd hierarchy */
-  int getNumGrid() {return numGrid;}
-
+  int getNumGrid(){return numGrid;}
   /*! return your coordinates of origin on the parent grid */
   int getOx(){return Ox;} int getOy(){return Oy;} int getOz(){return Oz;}
+
+  /*** pay exceptional attention to this description ***/
+  /* nx, ny, nz: index in the current grid, which is a child*/
+  /* returns the rank IN THE PARENT-CHILD communicator of the coarse grid core where the point is hosted    
+     only the active part of the parent grid is examined*/
+  int getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn, int zn);
   /*! end mlmd specific functions */
 
   // /////////// PRIVATE VARIABLES //////////////
@@ -176,6 +180,7 @@ private:
   double *center_zcoord; /** Cell center Z coordinate */
 
   /** local grid boundaries coordinate  */
+  /** mlmd: checked: they mark the active part of the grid **/
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
 
   /*! mlmd specific variables */
@@ -183,6 +188,12 @@ private:
   int numGrid;
   /* coordinates of the origin on the PARENT grid */
   double Ox, Oy, Oz;
+
+  /* portion of ACTIVE grid hosted in each parent core                                                                                       
+     -- equivalent of xEnd - xStart on the parent -- used in getParentRankFromGridPoint */
+  double parentLenX;
+  double parentLenY;
+  double parentLenZ;
   /*! end mlmd specific variables */
 };
 
