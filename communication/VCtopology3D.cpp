@@ -5,14 +5,18 @@
 VCtopology3D::VCtopology3D(Collective *col) {
   // *******************************************
   // *******************************************
+
+  /** mlmd: these set's have to be done AFTER you now your grid number **/
   // here you have to set the topology for the fields
-  PERIODICX = col->getPERIODICX();
+  /*PERIODICX = col->getPERIODICX();
   PERIODICY = col->getPERIODICY();
-  PERIODICZ = col->getPERIODICZ();
+  PERIODICZ = col->getPERIODICZ();*/
   // here you have to set the topology for the Particles
-  PERIODICX_P = col->getPERIODICX();
+  /*PERIODICX_P = col->getPERIODICX();
   PERIODICY_P = col->getPERIODICY();
-  PERIODICZ_P = col->getPERIODICZ();
+  PERIODICZ_P = col->getPERIODICZ();*/
+  /** end mlmd: these set's have to be done AFTER you now your grid number **/
+
   // *******************************************
   // *******************************************
   XDIR = 0;
@@ -23,17 +27,15 @@ VCtopology3D::VCtopology3D(Collective *col) {
 
   reorder = 1;
 
-  /*divisions[0] = XLEN;
-  divisions[1] = YLEN;
-  divisions[2] = ZLEN;*/
-
-  periods[0] = PERIODICX;
+  /** mlmd: these set's have to be done AFTER you now your grid number **/
+  /*periods[0] = PERIODICX;
   periods[1] = PERIODICY;
   periods[2] = PERIODICZ;
 
   periods_P[0] = PERIODICX_P;
   periods_P[1] = PERIODICY_P;
-  periods_P[2] = PERIODICZ_P;
+  periods_P[2] = PERIODICZ_P;*/
+  /** mlmd: these set's have to be done AFTER you now your grid number **/
 
   cVERBOSE = false;             // communication verbose ?
 
@@ -161,6 +163,24 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   divisions[1] = YLEN;
   divisions[2] = ZLEN;
 
+  /* periodicity moved here, AFTER i know my numGrid */
+  /* this is the periodicity of the local grid */
+  PERIODICX = col->getPERIODICX(numGrid);                                                                               
+  PERIODICY = col->getPERIODICY(numGrid);
+  PERIODICZ = col->getPERIODICZ(numGrid);
+
+  PERIODICX_P = col->getPERIODICX(numGrid);   
+  PERIODICY_P = col->getPERIODICY(numGrid); 
+  PERIODICZ_P = col->getPERIODICZ(numGrid);
+
+  periods[0] = PERIODICX;                                                                                                      
+  periods[1] = PERIODICY;   
+  periods[2] = PERIODICZ; 
+
+  periods_P[0] = PERIODICX_P; 
+  periods_P[1] = PERIODICY_P; 
+  periods_P[2] = PERIODICZ_P;
+  /* end periodicity moved here, AFTER i know my numGrid */
   /*! MPI_COMM_GRID is the non cartesian communicator per grid */
   MPI_Comm_split(MPI_COMM_WORLD, numGrid, systemWide_rank, &MPI_COMM_GRID); 
 			
@@ -525,7 +545,7 @@ inline void VCtopology3D::PrintMapping() {
 
 /* mlmd test functions */
 void VCtopology3D::testMlmdCommunicators(){
-    
+
   //  cout << "killing the test... " << endl;
   //return;
 

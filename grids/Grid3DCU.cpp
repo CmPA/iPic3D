@@ -26,7 +26,7 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   numGrid = vct->getNumGrid();
 
   /*! mlmd: know where you start on your PARENT grid */
-  Ox= col->getOx_P(numGrid); Oy= col->getOy_P(numGrid); Oz= col->getOy_P(numGrid);
+  Ox= col->getOx_P(numGrid); Oy= col->getOy_P(numGrid); Oz= col->getOz_P(numGrid);
 
   // add 2 for the guard cells
   nxc = (col->getNxc_mlmd(numGrid)) / (vct->getXLEN()) + 2;
@@ -535,7 +535,10 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
   // rank on MPI_COMM_WORLD
   int SW_rank=vct->getSystemWide_rank();
 
-  if (vct->getCommToParent()== MPI_COMM_NULL) return -1; // if you are not a child, i return -1 to provoke a segm fault
+  if (vct->getCommToParent()== MPI_COMM_NULL){
+    cout << "Fatal error in getParentRankFromGridPoint, aborting...";
+    return -1; // if you are not a child, i return -1 to provoke a segm fault
+  }
   // coordinates in the parent grid                                                                 
   double coordX_PG= getXN_P(xn, yn, zn);
   double coordY_PG= getYN_P(xn, yn, zn);
@@ -562,9 +565,9 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
     abort();
   }
   else {
-    if (true){
+    if (false){
       cout << "R" <<SW_rank <<": local coords: [ " << getXN(xn, yn, zn) <<", "<< getYN(xn, yn, zn)<<", "<<getZN(xn, yn,zn) <<endl;
-      cout << "R" <<SW_rank <<": on parent grid: [ " << getXN_P(xn, yn, zn) <<", "<< getYN_P(xn, yn, zn)<<", "<<getZN_P(xn, yn, zn) << "(origin at [ " << Ox <<", " << Oy  <<", " << Ox <<"])";
+      cout << "R" <<SW_rank <<": on parent grid: [ " << getXN_P(xn, yn, zn) <<", "<< getYN_P(xn, yn, zn)<<", "<<getZN_P(xn, yn, zn) << " (origin at [ " << Ox <<", " << Oy  <<", " << Oz <<"] )";
       cout << "R" <<SW_rank <<": hosted in parent grid core: " << rankPC <<endl;
     }
     return rankPC;

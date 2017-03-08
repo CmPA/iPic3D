@@ -91,11 +91,13 @@ void Collective::ReadInput(string inputfile) {
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle");
     RestartOutputCycle = config.read < int >("RestartOutputCycle");
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
-    
+   
+    /* pre-mlmd: now it is a vector
     // MPI  periodicity
     PERIODICX = config.read < bool >("PERIODICX");
     PERIODICY = config.read < bool >("PERIODICY");
-    PERIODICZ = config.read < bool >("PERIODICZ");
+    PERIODICZ = config.read < bool >("PERIODICZ");*/
+    
 
     // MLMD reads; always read from inputfile
     
@@ -117,6 +119,10 @@ void Collective::ReadInput(string inputfile) {
     array_int YLEN_mlmd0 = config.read < array_int > ("YLEN_mlmd");
     array_int ZLEN_mlmd0 = config.read < array_int > ("ZLEN_mlmd");
 
+    // mlmd periodicity
+    array_bool PERIODICX_mlmd0 = config.read < array_bool > ("PERIODICX");
+    array_bool PERIODICY_mlmd0 = config.read < array_bool > ("PERIODICY");
+    array_bool PERIODICZ_mlmd0 = config.read < array_bool > ("PERIODICZ");
 
     gridLevel = new int[Ngrids];
     RF = new int[Ngrids];
@@ -134,6 +140,10 @@ void Collective::ReadInput(string inputfile) {
     YLEN_mlmd = new int[Ngrids];
     ZLEN_mlmd = new int[Ngrids];
 
+    PERIODICX_mlmd = new bool[Ngrids]; 
+    PERIODICY_mlmd = new bool[Ngrids];
+    PERIODICZ_mlmd = new bool[Ngrids];
+
     gridLevel[0] = gridLevel0.a;
     RF[0] = RF0.a;
     parentGrid[0] = parentGrid0.a;
@@ -149,6 +159,10 @@ void Collective::ReadInput(string inputfile) {
     XLEN_mlmd[0] = XLEN_mlmd0.a;
     YLEN_mlmd[0] = YLEN_mlmd0.a;
     ZLEN_mlmd[0] = ZLEN_mlmd0.a;
+
+    PERIODICX_mlmd[0] = PERIODICX_mlmd0.a;
+    PERIODICY_mlmd[0] = PERIODICY_mlmd0.a;
+    PERIODICZ_mlmd[0] = PERIODICZ_mlmd0.a;
     
     if (Ngrids >1) {
       gridLevel[1] = gridLevel0.b;
@@ -166,6 +180,10 @@ void Collective::ReadInput(string inputfile) {
       XLEN_mlmd[1] = XLEN_mlmd0.b;
       YLEN_mlmd[1] = YLEN_mlmd0.b;
       ZLEN_mlmd[1] = ZLEN_mlmd0.b;
+
+      PERIODICX_mlmd[1] = PERIODICX_mlmd0.b;
+      PERIODICY_mlmd[1] = PERIODICY_mlmd0.b;
+      PERIODICZ_mlmd[1] = PERIODICZ_mlmd0.b;
     }
     
     if (Ngrids >2) {
@@ -184,6 +202,10 @@ void Collective::ReadInput(string inputfile) {
       XLEN_mlmd[2] = XLEN_mlmd0.c;
       YLEN_mlmd[2] = YLEN_mlmd0.c;
       ZLEN_mlmd[2] = ZLEN_mlmd0.c;
+
+      PERIODICX_mlmd[2] = PERIODICX_mlmd0.c;
+      PERIODICY_mlmd[2] = PERIODICY_mlmd0.c;
+      PERIODICZ_mlmd[2] = PERIODICZ_mlmd0.c;
     }
     
     if (Ngrids >3) {
@@ -202,6 +224,10 @@ void Collective::ReadInput(string inputfile) {
       XLEN_mlmd[3] = XLEN_mlmd0.d;
       YLEN_mlmd[3] = YLEN_mlmd0.d;
       ZLEN_mlmd[3] = ZLEN_mlmd0.d;
+
+      PERIODICX_mlmd[3] = PERIODICX_mlmd0.d;
+      PERIODICY_mlmd[3] = PERIODICY_mlmd0.d;
+      PERIODICZ_mlmd[3] = PERIODICZ_mlmd0.d;
     }
     
     if (Ngrids >4) {
@@ -220,6 +246,10 @@ void Collective::ReadInput(string inputfile) {
       XLEN_mlmd[4] = XLEN_mlmd0.e;
       YLEN_mlmd[4] = YLEN_mlmd0.e;
       ZLEN_mlmd[4] = ZLEN_mlmd0.e;
+
+      PERIODICX_mlmd[4] = PERIODICX_mlmd0.e;
+      PERIODICY_mlmd[4] = PERIODICY_mlmd0.e;
+      PERIODICZ_mlmd[4] = PERIODICZ_mlmd0.e;
     }
     
     TopologyType = config.read < int > ("TopologyType");
@@ -963,6 +993,9 @@ Collective::~Collective() {
   delete[]XLEN_mlmd;
   delete[]YLEN_mlmd;
   delete[]ZLEN_mlmd;
+  delete[]PERIODICX_mlmd;
+  delete[]PERIODICY_mlmd;
+  delete[]PERIODICZ_mlmd;
   // MLMD variables
 }
 /*! Print Simulation Parameters */

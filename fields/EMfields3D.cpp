@@ -212,8 +212,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   if (vct->getCartesian_rank() == 0)
     cout << "In EMfields3D.cpp, grid " << numGrid << ", MaxGridCoreN is " << MaxGridCoreN << endl;
 
-  MAX_RG_numBCMessages= (int) (MaxGridCoreN*4); //CHANGE THE MAX SIZE
-  MAX_size_LevelWide= MaxGridCoreN*2;
+  MAX_RG_numBCMessages= (int) (MaxGridCoreN*6); // something smarter has to be done with this guy
+  MAX_size_LevelWide= MAX_RG_numBCMessages* 4;
 
   
  }
@@ -3814,6 +3814,11 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
      RGBC_Info_Ghost = new RGBC_struct[MAX_RG_numBCMessages];
      RGBC_Info_Active = new RGBC_struct[MAX_RG_numBCMessages];
 
+     for (int i=0; i< MAX_RG_numBCMessages; i++){
+       RGBC_Info_Ghost[i].ix_first= 0;
+       RGBC_Info_Active[i].ix_first= 0;
+     }
+
      // -1 for ghost
      // 0 for active
 
@@ -3826,11 +3831,14 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
        {
 	 cout <<"ACTIVE: grid " << numGrid << ", Coarse: " <<RGBC_Info_Active[i].CG_core << ", Refined: " << RGBC_Info_Active[i].RG_core << endl;
 	 }*/
-     
-     
 
    } // end if (numGrid>0)
    /* end phase 1 */
+
+   MPI_Barrier(MPI_COMM_WORLD);
+   if (vct->getSystemWide_rank()==0){
+     cout << "After barrier phase 1" << endl;
+   }
 
    /* phase 2, RG sends info to CG */
    // children grids
@@ -3880,7 +3888,8 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 	 }*/
 
      } // end if (rank_local==0)
-     
+   
+ 
      // phase 2b: core 0 of the child grid assembles & sends messages for all CG cores
      if (rank_local==0){
        //ghost
@@ -3924,7 +3933,7 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 	for (int m=0; m< CG_numBCMessages_Ghost[ch]; m++){ // cycle on the messages per child
 	  // my rank as a parent on this particular parent- child communicator
 	  MPI_Comm_rank(vct->getCommToChild(ch) , &rank_As_Parent);
-	  /*cout << "GHOST: I am core " << rank_As_Parent << " (on the PC comm) " << " of grid " << numGrid <<  " and I will communicate with RG core " << CG_Info_Ghost[ch][m].RG_core << " of my " <<ch << "-th child, grid " << vct->getChildGridNum(ch) <<endl;  */
+	  cout << "GHOST: I am core " << rank_As_Parent << " (on the PC comm) " << " of grid " << numGrid <<  " and I will communicate with RG core " << CG_Info_Ghost[ch][m].RG_core << " of my " <<ch << "-th child, grid " << vct->getChildGridNum(ch) << " for ghost info" <<endl;  
 	}
       }
       // active
@@ -3932,7 +3941,7 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 	for (int m=0; m< CG_numBCMessages_Active[ch]; m++){ // cycle on the messages per child
 	  // my rank as a parent on this particular parent- child communicator
 	  MPI_Comm_rank(vct->getCommToChild(ch) , &rank_As_Parent);
-	  /*cout << "ACTIVE: I am core " << rank_As_Parent << " (on the PC comm) " << " of grid " << numGrid <<  " and I will communicate with RG core " << CG_Info_Active[ch][m].RG_core << " of my " <<ch << "-th child, grid " << vct->getChildGridNum(ch) <<endl;*/
+	  cout << "ACTIVE: I am core " << rank_As_Parent << " (on the PC comm) " << " of grid " << numGrid <<  " and I will communicate with RG core " << CG_Info_Active[ch][m].RG_core << " of my " <<ch << "-th child, grid " << vct->getChildGridNum(ch) << " for active info" <<endl;
 	}
       }
     }
@@ -3944,12 +3953,12 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 
   } // end  if (numChildren > 0 ), only for parents
   
-  /*MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);
    if (rank_local==0){
      cout << "I am grid " << numGrid <<", I am after the barrier marking Phase2c" << endl;
-     cout << "exiting now..."<< endl;
+     // cout << "exiting now..."<< endl;
    }
-   MPI_Finalize(); exit(EXIT_SUCCESS);*/
+   //MPI_Finalize(); exit(EXIT_SUCCESS);*/
 
   Trim_RGBC_Vectors(vct);
   /* //checks after trim
@@ -3974,6 +3983,11 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
     delete[] RGBC_Info_Ghost_LevelWide;
     delete[] RGBC_Info_Active_LevelWide;
   }
+
+  MPI_Barrier (MPI_COMM_WORLD);
+  if (vct->getSystemWide_rank()==0){
+     cout << "At the end of initWeightBC" << endl;
+   }
 }
 
 /* mlmd test functions */
@@ -4290,6 +4304,9 @@ void EMfields3D::MPI_RGBC_struct_commit(){
 
 /* assign the values to RGBC_struct; use ONLY in initWeightBC*/
 void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp ) {
+
+  /// check the struct definition before assigning here!!!
+
   s->ix_first= ix_first_tmp;
   s->iy_first= iy_first_tmp;
   s->iz_first= iz_first_tmp;
@@ -4309,6 +4326,35 @@ void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int
 
   return;
 }
+
+/* assign the values to RGBC_struct; use ONLY in initWeightBC*/
+void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int POS ) {
+
+  /// check the struct definition before assigning here!!!
+
+  cout << "POS: " << POS << endl;
+
+  s[POS].ix_first= ix_first_tmp;
+  s[POS].iy_first= iy_first_tmp;
+  s[POS].iz_first= iz_first_tmp;
+  
+  s[POS].BCside= BCside_tmp;
+
+  s[POS].np_x= np_x_tmp;
+  s[POS].np_y= np_y_tmp;
+  s[POS].np_z= np_z_tmp;
+
+  s[POS].CG_x_first= CG_x_first_tmp;
+  s[POS].CG_y_first= CG_y_first_tmp;
+  s[POS].CG_z_first= CG_z_first_tmp;
+  
+  s[POS].CG_core= CG_core_tmp;
+  s[POS].RG_core= RG_core_tmp;
+
+  return;
+}
+
+
 /* end define mlmd-specific MPI_Datatypes */
 
 /*! end mlmd specific functions */
@@ -4318,12 +4364,45 @@ void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int
 */
 void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *RG_numBCMessages, int which){
 
+  int countMSG=0; // just for internal purposes
 
   if (! (which== -1 || which ==0)){
       cout << "initWeightBC, phase 1, is receiving wrong inputs. Check the code. Aborting now..." << endl;
       abort();
     }
   
+  /*if (vct->getCartesian_rank()==0){
+    cout << "Grid number " << numGrid << "entered initWeightBC_Phase1, which="  << which << endl;
+    }*/
+  int SW_rank=vct->getSystemWide_rank();
+  
+  int MS= nxn; if (nyn>MS) MS= nyn; if (nzn>MS) MS= nzn; 
+
+  /*******************************************************************/
+  // DIR1: starting point, in CG coordinates, per core
+  double *Dir1_SPXperC= new double[MS];
+  double *Dir1_SPYperC= new double[MS];
+  double *Dir1_SPZperC= new double[MS];
+  // DIR1: number of Refined grid point in this direction, per core
+  int *Dir1_NPperC= new int[MS];  // this does not need to be this big, but anyway
+  // DIR1: core ranks in the CommToParent communicator
+  int *Dir1_rank= new int [MS]; // this does not need to be this big, but anyway
+  int *Dir1_IndexFirstPointperC= new int [MS];
+  int Dir1_Ncores=0;
+
+
+  // DIR2: starting point, in CG coordinates, per core
+  double *Dir2_SPXperC= new double[MS];
+  double *Dir2_SPYperC= new double[MS];
+  double *Dir2_SPZperC= new double[MS];
+  // DIR2: number of Refined grid point in this direction, per core
+  int *Dir2_NPperC= new int[MS];  // this does not need to be this big, but anyway 
+  // DIR2: core rank in the CommToParent communicator
+  int *Dir2_rank= new int [MS];  // this does not need to be this big, but anyway
+  int *Dir2_IndexFirstPointperC= new int [MS];
+  int Dir2_Ncores=0;
+  /*******************************************************************/
+
   int XLEN= vct->getXLEN();
   int YLEN= vct->getYLEN();
   int ZLEN= vct->getZLEN();
@@ -4336,22 +4415,14 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
   int i_s, i_e;
   int j_s, j_e;
   int k_s, k_e;
+
+  string FACE;
+
+  // policy:
+  // 1. explore the higher direction (e.g., y as opposed to x in bottom)
+  // 2. do a for on the number of cores found there, and inside the for explore the lower direction (e.g., x in bottom)
+  // 3. commit the message inside the for
   
-  /* in each of those, store the core number in the parent-child communicator where the point sits */
-
-  int **BottomFace = newArr2(int, nxn, nyn);
-  int **TopFace = newArr2(int, nxn, nyn);
-
-  int **LeftFace = newArr2(int, nyn, nzn);
-  int **RightFace = newArr2(int, nyn, nzn);
-
-  int **FrontFace = newArr2(int, nxn, nzn);
-  int **BackFace = newArr2(int, nxn, nzn);
-
-  //cout << "R" <<  rank_G <<":  SONO QUI!!!" << endl;
-
-  /* here, a check to see if you are working on ghosts or active 
-     BUT MAKE SURE NOT TO WRITE THE CODE TWICE */
     
   // this is the bottom face
   if (vct->getCoordinates(2)==0 && vct->getZleft_neighbor()== MPI_PROC_NULL){
@@ -4370,18 +4441,32 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       k_s=0; k_e=0;
     }
     
-    /* function that, given RG index, gives the core number of where the point is in the CG
-       in the parent child communicator */
-    
-    for (int i=i_s; i< i_e; i++){
-      for(int j=j_s; j< j_e; j++){
-	for(int k=k_s; k< k_e; k++){
-	  grid->getParentRankFromGridPoint(vct, i, j, k);
-	}
+    countMSG =  (*RG_numBCMessages);
+    FACE= "BOTTOM";
+    // Dir1, higher dimension: Y
+    RGBCExploreDirection(grid, vct, FACE, 1, j_s, j_e, i_s, k_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+	  
+    for (int n=0; n<Dir1_Ncores; n++){ // it will find again the core in Dir 1, but it will also explore Dir 2
+      RGBCExploreDirection(grid, vct, FACE, 0, i_s, i_e,  Dir1_IndexFirstPointperC[n], k_s, Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); // Dir2, lower dimension: X
+
+      // build and commit each of these
+      for (int NN=0; NN<Dir2_Ncores; NN++){
+	//Assign_RGBC_struct_Values(RGBC_Info, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir2_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+	Assign_RGBC_struct_Values(RGBC_Info+ (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir2_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP);
+
+	(*RG_numBCMessages)++;
       }
+
+    } // end for (int n=0; n<Dir1_Ncores; n++)
+
+
+    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
+    for (int i= countMSG; i< *RG_numBCMessages; i++){ 
+      cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
     }
 
-  }
+  } // end bottom face
   
   // this is the top face
   if (vct->getCoordinates(2) ==ZLEN-1 && vct->getZright_neighbor() == MPI_PROC_NULL){ 
@@ -4399,16 +4484,29 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       if (vct->getCoordinates(1)==YLEN-1) j_e=nyn-1; else j_e=nyn-2;
       k_s=nzn-1; k_e=nzn-1;
     }
+ 
+    countMSG =  (*RG_numBCMessages);
+    FACE= "TOP";
+    // Dir1, higher dimension: Y
+    RGBCExploreDirection(grid, vct, FACE, 1, j_s, j_e, i_s, k_s, Dir1_SPXperC, Dir1_SPYperC,Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+    
+    for (int n=0; n< Dir1_Ncores; n++){
+      RGBCExploreDirection(grid, vct,FACE, 0, i_s, i_e, Dir1_IndexFirstPointperC[n], k_s, Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); // Dir2, lower dimension: X
 
-    for (int i=i_s; i< i_e; i++){
-      for(int j=j_s; j< j_e; j++){
-	for(int k=k_s; k< k_e; k++){
-	  grid->getParentRankFromGridPoint(vct, i, j, k);
-	}
+      for (int NN=0; NN<Dir2_Ncores; NN++){
+	//Assign_RGBC_struct_Values(RGBC_Info, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir1_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir1_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP);
+
+	(*RG_numBCMessages)++;
       }
-    }
+    } // endfor (int n=0; n<Dir1_Ncores; n++)   
 
-  }
+    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
+    for (int i= countMSG; i< *RG_numBCMessages; i++){ 
+      cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
+    }
+  } // end top face
   
   // this is the left face
   if (vct->getCoordinates(0) ==0  && vct->getXleft_neighbor() == MPI_PROC_NULL){ 
@@ -4426,15 +4524,35 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
       if (vct->getCoordinates(2)==ZLEN-1) k_e=nzn-1; else k_e=nzn-2;
     }
-    for (int i=i_s; i< i_e; i++){
-      for(int j=j_s; j< j_e; j++){
-	for(int k=k_s; k< k_e; k++){
-	  grid->getParentRankFromGridPoint(vct, i, j, k);
-	}
-      }
-    }
+    /* left face: 
+       Dir 1 (higher dir) --> Z
+       Dir 2 (lower dir) --> Y */
+    
+    countMSG =  (*RG_numBCMessages);
+    FACE= "LEFT";
 
-  }
+    // Dir1, higher dimensionality: Z
+    RGBCExploreDirection(grid, vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+
+    for (int n=0; n< Dir1_Ncores; n++){
+      // Dir2, Y
+      RGBCExploreDirection(grid, vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); 
+
+      for (int NN=0; NN< Dir2_Ncores; NN++){
+
+	//Assign_RGBC_struct_Values(RGBC_Info, i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+	Assign_RGBC_struct_Values(RGBC_Info+(*RG_numBCMessages), i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+
+	(*RG_numBCMessages)++;
+      }
+    }// end for(int n=0; n< Dir1_Ncores; n++)
+    
+    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
+    for (int i= countMSG; i< *RG_numBCMessages; i++){ 
+      cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
+    }
+  } // end left face
   
   // this is the right face
   if (vct->getCoordinates(0) ==XLEN-1 && vct->getXright_neighbor() == MPI_PROC_NULL){ 
@@ -4452,15 +4570,36 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
       if (vct->getCoordinates(2)==ZLEN-1) k_e=nzn-1; else k_e=nzn-2;
     }
+    /* right face:
+       Dir 1 (higher dir) --> Z
+       Dir 2 (lower dir) --> Y */
 
-    for (int i=i_s; i< i_e; i++){
-      for(int j=j_s; j< j_e; j++){
-	for(int k=k_s; k< k_e; k++){
-	  grid->getParentRankFromGridPoint(vct, i, j, k);
-	}
+    countMSG =  (*RG_numBCMessages);
+    FACE= "RIGHT";
+
+    // Dir1: higher dimensionality --> Z
+    RGBCExploreDirection(grid, vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+    
+
+    for (int n=0; n< Dir1_Ncores; n++){
+      // Dir2, Y
+      RGBCExploreDirection(grid, vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
+
+      for (int NN=0; NN< Dir2_Ncores; NN++){
+
+	//Assign_RGBC_struct_Values(RGBC_Info, i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+	Assign_RGBC_struct_Values(RGBC_Info+ (*RG_numBCMessages), i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP);
+
+	(*RG_numBCMessages)++;
       }
     }
-  }
+
+    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
+    for (int i= countMSG; i< *RG_numBCMessages; i++){ 
+      cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
+    }
+  } // end right face
   
   // this is the front face
   if (vct->getCoordinates(1) ==0 && vct->getYleft_neighbor() == MPI_PROC_NULL){
@@ -4478,16 +4617,36 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
       if (vct->getCoordinates(2)==ZLEN-1) k_e=nzn-1; else k_e=nzn-2;
     }
+    /* front face:
+       Dir 1 (higher dir) --> Z
+       Dir 2 (lower dir) -->  X */
 
-    for (int i=i_s; i< i_e; i++){
-      for(int j=j_s; j< j_e; j++){
-	for(int k=k_s; k< k_e; k++){
-	  grid->getParentRankFromGridPoint(vct, i, j, k);
-	}
+    countMSG =  (*RG_numBCMessages);
+    FACE= "FRONT";
+ 
+    // Dir 1, higher dimensionality: Z   
+    RGBCExploreDirection(grid, vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+
+    for (int n=0; n< Dir1_Ncores; n++){
+      // Dir2, X
+      RGBCExploreDirection(grid, vct, FACE, 0, i_s, i_e, j_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
+
+      for (int NN=0; NN< Dir2_Ncores; NN++){
+	
+	//Assign_RGBC_struct_Values(RGBC_Info, Dir2_IndexFirstPointperC[NN], j_s, Dir1_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+	Assign_RGBC_struct_Values(RGBC_Info+(*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], j_s, Dir1_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP);
+
+	(*RG_numBCMessages)++;
+	cout << "R" <<SW_rank <<"RG_numBCMessages= " <<*RG_numBCMessages <<endl;
       }
-    }
+    } // end for(int n=0; n< Dir1_Ncores; n++){
 
-  }
+    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
+    for (int i= countMSG; i< *RG_numBCMessages; i++){ 
+      cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
+    }
+  } // end front face
   
   // this is the back face
   if (vct->getCoordinates(1) == YLEN-1 && vct->getYright_neighbor() == MPI_PROC_NULL){
@@ -4505,15 +4664,35 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
       if (vct->getCoordinates(2)==ZLEN-1) k_e=nzn-1; else k_e=nzn-2;
     }
+    /* back face:
+       Dir 1 (higher dimensionality) --> Z
+       Dir 2 (lower dimensionality) --> X */
+    
+    countMSG =  (*RG_numBCMessages);    
+    FACE= "BACK";
 
-    for (int i=i_s; i< i_e; i++){
-      for(int j=j_s; j< j_e; j++){
-	for(int k=k_s; k< k_e; k++){
-	  grid->getParentRankFromGridPoint(vct, i, j, k);
-	}
+    // Dir 1, higher dimensionality: Z
+    RGBCExploreDirection(grid, vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+    
+    for (int n=0; n< Dir1_Ncores; n++){
+      // dir2, X
+      RGBCExploreDirection(grid, vct, FACE, 0, i_s, i_e, j_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
+      
+      for (int NN=0; NN< Dir2_Ncores; NN++){
+	//Assign_RGBC_struct_Values(RGBC_Info, Dir2_IndexFirstPointperC[NN], j_s, Dir2_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPXperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+
+	Assign_RGBC_struct_Values(RGBC_Info+ (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], j_s, Dir2_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPXperC[NN], Dir2_rank[NN], rank_CTP);
+	(*RG_numBCMessages)++;
+
       }
+    } // end for(int n=0; n< Dir1_Ncores; n++){*/
+
+    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
+    for (int i= countMSG; i< *RG_numBCMessages; i++){ 
+      cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
     }
-  }
+  } // end back face
   
   
   /* */
@@ -4526,20 +4705,26 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
   /* for further use, i need to set the RG_core field of the first unused slot to -1 
      but DO NOT MODIFY THE NUMBER OF MSGs;
      I will just send a +1 */
+
+  cout << "R" <<SW_rank <<"RG_numBCMessages= " <<*RG_numBCMessages <<endl;
   RGBC_Info[*RG_numBCMessages].RG_core= -1;
   RGBC_Info[*RG_numBCMessages].CG_core= -1;
   //cout << "R" <<  rank_G <<":  END SONO QUI!!!" << endl;
 
 
   // all the deletes
-  delArr2(BottomFace, nxn);
-  delArr2(TopFace, nxn);
 
-  delArr2(LeftFace, nyn);
-  delArr2(RightFace, nyn);
+  delete []Dir1_SPXperC;
+  delete []Dir1_SPYperC;
+  delete []Dir1_SPZperC;
+  delete []Dir1_NPperC;
+  delete []Dir1_rank;
 
-  delArr2(FrontFace, nxn);
-  delArr2(BackFace, nxn);
+  delete []Dir2_SPXperC;
+  delete []Dir2_SPYperC;
+  delete []Dir2_SPZperC;
+  delete []Dir2_NPperC;
+  delete []Dir2_rank;
 
 }
 /* phase 2a of initWeightBC:
@@ -4925,4 +5110,127 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
   communicateNode(nxn, nyn, nzn, Bzn, vct);
   /** end fix ghost **/
 }
+
+/** grid --> obvious                                                                                                                              
+    FACE --> (bottom, top, left, right, front, back) (needed only for debug prints)
+    DIR --> direction of the changing index (0->X, 1->Y, 2->Z)
+    i0_s --> the index of the RG first point (included) in the direction to explore  
+    i0_e --> the index of the RG last point (included) in the direction to explore  
+    i1 --> fixed index, in the lower-order fixed direction (ordering X,Y,Z) 
+    i2 --> fixed index, in the higher-order fixed direction (ordering X,Y,Z)  
+    *SPXperC --> X coordinate (not index!) in the CG of the first point FOR EACH CG CORE 
+    *SPYperC --> Y coordinate (not index!) in the CG of the first point FOR EACH CG CORE 
+    *SPZperC --> Z coordinate (not index!) in the CG of the first point FOR EACH CG CORE       
+    *NPperC --> # of point in this CG core per direction
+    *rank --> rank, IN THE PARENT-CHILD COMMUNICATOR, of the CG core 
+    Ncores --> # of the CG cores involved in BC in this direction   
+    *IndexFirstPointperC --> index in the RG of the first point per core in the selected direction
+    **/
+void EMfields3D::RGBCExploreDirection(Grid *grid, VirtualTopology3D *vct,string FACE, int DIR, int i0_s, int i0_e, int i1, int i2, double *SPXperC, double *SPYperC, double *SPZperC, int *NPperC, int *rank, int* Ncores, int *IndexFirstPointperC){
+
+  //cout << "Inside Explore: FACE ->" << FACE <<", DIR ->" << DIR << ", i0_s -->" << i0_s <<", i0_e -->" << i0_e <<", i1 --> " << i1 <<", i2 -->" << i2;
+  
+  int SW_rank=vct->getSystemWide_rank();
+  int rank_CommToParent;
+
+  // NB: extremes are included; keep the <=
+   if (DIR==0){ // changing index in X
+    for(int i=i0_s; i<= i0_e; i++){
+      int j=i1;
+      int k=i2;
+      //cout << "R" << SW_rank <<", " << FACE <<endl;
+      rank_CommToParent= grid->getParentRankFromGridPoint(vct, i, j, k);
+      if (i==i0_s){ // at the beginning
+	SPXperC[0]= grid->getXN_P(i, j, k);
+	SPYperC[0]= grid->getYN_P(i, j, k);
+	SPZperC[0]= grid->getZN_P(i, j, k);
+	NPperC[0]= 1;
+	rank[0]= rank_CommToParent;
+	IndexFirstPointperC[0]= i0_s;
+	*Ncores=1;
+      } else { // not at the beginning
+	if (rank_CommToParent== rank[*Ncores-1]){ // still in the same rank
+	  NPperC[(*Ncores)-1]++;  // i only update the # of points
+	}else { // changed rank
+	  SPXperC[*Ncores]= grid->getXN_P(i, j, k);
+	  SPYperC[*Ncores]= grid->getYN_P(i, j, k);
+	  SPZperC[*Ncores]= grid->getZN_P(i, j, k);
+	  NPperC[*Ncores]= 1;
+	  rank[*Ncores]= rank_CommToParent;
+	  IndexFirstPointperC[*Ncores]=i;
+	  (*Ncores)++;
+	}// end changed rank
+      } // end else not at the beginning
+    }// end for
+  } // end if dir 
+  
+  if (DIR==1){ //changing index in Y
+    for(int j=i0_s; j<= i0_e; j++){
+      int i=i1;
+      int k=i2;
+      //cout << "R" << SW_rank <<", " << FACE << ", DIR y" <<endl;
+      rank_CommToParent= grid->getParentRankFromGridPoint(vct, i, j, k);
+      if (j==i0_s){ // at the beginning
+	SPXperC[0]= grid->getXN_P(i, j, k);
+	SPYperC[0]= grid->getYN_P(i, j, k);
+	SPZperC[0]= grid->getZN_P(i, j, k);
+	NPperC[0]= 1;
+	rank[0]= rank_CommToParent;
+	IndexFirstPointperC[0]=i0_s;
+	*Ncores=1;
+      } else { // not at the beginning
+	if (rank_CommToParent== rank[(*Ncores)-1]){ // still in the same rank
+	  NPperC[(*Ncores)-1]++; // i only update the # of points
+	}
+	else { // changed rank
+	  SPXperC[*Ncores]= grid->getXN_P(i, j, k);
+	  SPYperC[*Ncores]= grid->getYN_P(i, j, k);
+	  SPZperC[*Ncores]= grid->getZN_P(i, j, k);
+	  NPperC[*Ncores]= 1;
+	  rank[*Ncores]= rank_CommToParent;
+	  IndexFirstPointperC[*Ncores]=j;
+	  (*Ncores)++;
+	}// end changed rank
+      } // end else not at the beginning
+      //cout << "R" << SW_rank << " DIR Y, j= " << j << "after if, *Ncores= " <<*Ncores <<endl;
+    }// end for
+  } // end if dir 
+
+  if (DIR==2){ //changing index in Z
+    for(int k=i0_s; k<= i0_e; k++){
+      int i=i1;
+      int j=i2;
+      //cout << "R" << SW_rank <<", " << FACE << ", DIR Z" <<endl;
+      rank_CommToParent= grid->getParentRankFromGridPoint(vct, i, j, k);
+      if (k==i0_s){ // at the beginning
+	SPXperC[0]= grid->getXN_P(i, j, k);
+	SPYperC[0]= grid->getYN_P(i, j, k);
+	SPZperC[0]= grid->getZN_P(i, j, k);
+	NPperC[0]= 1;
+	rank[0]= rank_CommToParent;
+	IndexFirstPointperC[0]=i0_s;
+	*Ncores=1;
+      } else { 
+	if (rank_CommToParent== rank[*Ncores-1]){ 
+	  // still in the same rank
+	  NPperC[(*Ncores)-1]++; // i only update the # of points
+	}else { // changed rank
+	  SPXperC[*Ncores]= grid->getXN_P(i, j, k);
+	  SPYperC[*Ncores]= grid->getYN_P(i, j, k);
+	  SPZperC[*Ncores]= grid->getZN_P(i, j, k);
+	  NPperC[*Ncores]= 1;
+	  rank[*Ncores]= rank_CommToParent;
+	  IndexFirstPointperC[*Ncores]=k;
+	  (*Ncores)++;
+	}// end changed rank
+      } // end else not at the beginning
+    }// end for
+  } // end if dir 
+
+  //cout <<"R" <<SW_rank  << ", END Inside Explore: FACE ->" << FACE <<", DIR ->" << DIR << ", i0_s -->" << i0_s <<", i0_e -->" << i0_e <<", i1 --> " << i1 <<", i2 -->" << i2;
+  //cout <<"R" <<SW_rank << ", *Ncores " << *Ncores <<endl; 
+  
+}
+
+
 /* end BC related operations */

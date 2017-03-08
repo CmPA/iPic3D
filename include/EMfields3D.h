@@ -35,18 +35,20 @@ using std::endl;
 // mlmd-related structs
 /* RG BCs */
 struct RGBC_struct {  // when changing this, change MPI_RGBC_struct_commit also
-  /* indices, local to the CG core, of the first point of the message*/
+  /* indices, local to the RG core, of the first point of the message*/
+  /* to send back again */
   int ix_first;
   int iy_first;
   int iz_first;
   // this message refers to bottom, top, left, right, front, back face?
+  // this will become a character: 'b' (bottom) 't' (top) 'l' (left) 'r' (right) 'B' (Back) 'f' (front)
   int BCside; 
-  // number of point in the x, y, z direction
+  // number of Refined Grid point in the x, y, z direction
   int np_x;
   int np_y;
   int np_z;
 
-   // CG coordinates corresponding to indices i.._first
+   // CG coordinates corresponding to the first point for this GC core
   double CG_x_first;
   double CG_y_first;
   double CG_z_first;
@@ -494,9 +496,11 @@ class EMfields3D                // :public Field
     
     /* to create the MPI_Datatype associate to RGBC_struct */
     void MPI_RGBC_struct_commit();
-    /* to assign values to RGBC_struct, only for testing purposes */
+    /* to assign values to RGBC_struct 
+       remember to give the poiner to the position */
     void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp );
-
+    /* to assign values to the RGBC struct */
+    void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int POS);
     /* mlmd test functions */
     /* to test communication when the RG communicates to the CG info regarding BC -
        this before the big re-structuring; keep tmp but then delete */
@@ -538,7 +542,26 @@ class EMfields3D                // :public Field
     void sendBC(Grid *grid, VirtualTopology3D *vct);
     /* receiveBC: refined grids receive BCs from the coarse grids */
     void receiveBC(Grid *grid, VirtualTopology3D *vct);
-    /* end mlmd: BC related fucntions */
+    /* calculates RGBC info per direction */
+    /** grid --> obvious
+	vct --> obvious
+	FACE --> (bottom, top, left, right, front, back) (needed only for debug prints)
+	DIR --> direction of the changing index  
+       i0_s --> the index of the RG first point (included) in the direction to explore
+       i0_e --> the index of the RG last point (included) in the direction to explore
+       i1 --> fixed index, in the lower-order fixed direction (ordering X,Y,Z)
+       i2 --> fixed index, in the higher-order fixed direction (ordering X,Y,Z)
+       *SPX --> X coordinate (not index!) in the CG of the first point FOR EACH CG CORE
+       *SPY --> Y coordinate (not index!) in the CG of the first point FOR EACH CG CORE
+       *SPZ --> Z coordinate (not index!) in the CG of the first point FOR EACH CG CORE
+       *NPperC --> # of point in this CG core per direction
+       *rank --> rank, IN THE PARENT-CHILD COMMUNICATOR, of the CG core
+       Ncores --> # of the CG cores involved in BC in this direction
+       *IndexFirstPointperC --> index in the RG of the first point per core in the selected direction 
+       **/
+    void RGBCExploreDirection(Grid *grid, VirtualTopology3D *vct,string FACE, int DIR, int i0_s, int i0_e, int i1, int i2, double *SPXperC, double *SPYperC, double *SPZ_perC, int *NPperC, int *rank, int *Ncores, int *IndexFirstPointperC);
+    
+    /* end mlmd: BC related functions */
 
     /*! end mlmd specific functions */
     /* ********************************* // VARIABLES ********************************* */

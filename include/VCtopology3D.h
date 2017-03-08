@@ -191,16 +191,22 @@ private:
    mlmd: on the local grid*/
   int nprocs;
   /** periodicity on boundaries - DIRECTION X*/
+  /** NB: when mlmd, this is the periodicity of the LOCAL grod **/
   bool PERIODICX;
   /** periodicity on boundaries - DIRECTION Y*/
+  /** NB: when mlmd, this is the periodicity of the LOCAL grod **/
   bool PERIODICY;
   /** periodicity on boundaries - DIRECTION Z*/
+  /** NB: when mlmd, this is the periodicity of the LOCAL grod **/
   bool PERIODICZ;
   /** periodicity on boundaries - DIRECTION X*/
+  /** NB: when mlmd, this is the periodicity of the LOCAL grod **/
   bool PERIODICX_P;
   /** periodicity on boundaries - DIRECTION Y*/
+  /** NB: when mlmd, this is the periodicity of the LOCAL grod **/
   bool PERIODICY_P;
   /** periodicity on boundaries - DIRECTION Z*/
+  /** NB: when mlmd, this is the periodicity of the LOCAL grod **/
   bool PERIODICZ_P;
   /** rank may be reordered     */
   int reorder;

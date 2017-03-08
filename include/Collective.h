@@ -65,11 +65,10 @@ class Collective
     /*! Get the number of cells - direction Z */
     //int getNzc();
     /*! end mlmd: use getNXC_mlmd instead */
-
-    bool getPERIODICX() {return (PERIODICX);};
-    bool getPERIODICY() {return (PERIODICY);};
-    bool getPERIODICZ() {return (PERIODICZ);};
-
+    /* mlmd: use getPERIODICX_mlmd instead*/
+    //bool getPERIODICX() {return (PERIODICX);};
+    //bool getPERIODICY() {return (PERIODICY);};
+    //bool getPERIODICZ() {return (PERIODICZ);};
     /*! mlmd: use getDx_mlmd instead */
     /*! Get the grid spacing - direction X */
     //double getDx();
@@ -258,6 +257,10 @@ class Collective
     double getLy_mlmd(int numgrid);
     double getLz_mlmd(int numgrid);
 
+    /* return the periodicity per direction of grid with number N */
+    bool getPERIODICX(int N) {return (PERIODICX_mlmd[N]);}
+    bool getPERIODICY(int N) {return (PERIODICY_mlmd[N]);}
+    bool getPERIODICZ(int N) {return (PERIODICZ_mlmd[N]);}
 
     /*! get the number of children of grid 'numgrid' */
     int getChildrenNum(int numgrid);
@@ -344,10 +347,13 @@ class Collective
     /*! grid spacing - Z direction */
     double dz;
 
-    bool PERIODICX;    /*! Periodicity in the X direction */
-    bool PERIODICY;    /*! Periodicity in the Y direction */
-    bool PERIODICZ;    /*! Periodicity in the Z direction */
-
+    /* mlmd: periodicity values are now vectors */
+    //bool PERIODICX;    /*! Periodicity in the X direction */
+    //bool PERIODICY;    /*! Periodicity in the Y direction */
+    //bool PERIODICZ;    /*! Periodicity in the Z direction */
+    bool *PERIODICX_mlmd;     /*! Periodicity in the X direction */
+    bool *PERIODICY_mlmd;     /*! Periodicity in the X direction */
+    bool *PERIODICZ_mlmd;     /*! Periodicity in the X direction */
     /*! number of species */
     int ns;
     /*! number of particles per cell */
