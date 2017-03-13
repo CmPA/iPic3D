@@ -2573,149 +2573,80 @@ void EMfields3D::initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col)
 
 }
 
-
-/*! Calculate the susceptibility on the boundary leftX */
-void EMfields3D::sustensorLeftX(double **susxx, double **susyx, double **suszx) {
+/*! Calculate the susceptibility on the X boundary */
+void EMfields3D::sustensorX(double **susxx, double **susxy, double **susxz, int N) {
   double beta, omcx, omcy, omcz, denom;
   for (int j = 0; j < nyn; j++)
     for (int k = 0; k < nzn; k++) {
       susxx[j][k] = 1.0;
-      susyx[j][k] = 0.0;
-      suszx[j][k] = 0.0;
+      susxy[j][k] = 0.0;
+      susxz[j][k] = 0.0;
     }
   for (int is = 0; is < ns; is++) {
     beta = .5 * qom[is] * dt / c;
     for (int j = 0; j < nyn; j++)
       for (int k = 0; k < nzn; k++) {
-        omcx = beta * (Bxn[1][j][k] + Fext*Bx_ext[1][j][k]);
-        omcy = beta * (Byn[1][j][k] + Fext*By_ext[1][j][k]);
-        omcz = beta * (Bzn[1][j][k] + Fext*Bz_ext[1][j][k]);
-        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][1][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+        omcx = beta * (Bxn[N][j][k] + Fext*Bx_ext[N][j][k]);
+        omcy = beta * (Byn[N][j][k] + Fext*By_ext[N][j][k]);
+        omcz = beta * (Bzn[N][j][k] + Fext*Bz_ext[N][j][k]);
+        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][N][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
         susxx[j][k] += (  1.0 + omcx * omcx) * denom;
-        susyx[j][k] += (-omcz + omcx * omcy) * denom;
-        suszx[j][k] += ( omcy + omcx * omcz) * denom;
+        susxy[j][k] += ( omcz + omcx * omcy) * denom;
+        susxz[j][k] += (-omcy + omcx * omcz) * denom;
       }
   }
 
 }
-/*! Calculate the susceptibility on the boundary rightX */
-void EMfields3D::sustensorRightX(double **susxx, double **susyx, double **suszx) {
-  double beta, omcx, omcy, omcz, denom;
-  for (int j = 0; j < nyn; j++)
-    for (int k = 0; k < nzn; k++) {
-      susxx[j][k] = 1.0;
-      susyx[j][k] = 0.0;
-      suszx[j][k] = 0.0;
-    }
-  for (int is = 0; is < ns; is++) {
-    beta = .5 * qom[is] * dt / c;
-    for (int j = 0; j < nyn; j++)
-      for (int k = 0; k < nzn; k++) {
-        omcx = beta * (Bxn[nxn - 2][j][k] + Fext*Bx_ext[nxn - 2][j][k]);
-        omcy = beta * (Byn[nxn - 2][j][k] + Fext*By_ext[nxn - 2][j][k]);
-        omcz = beta * (Bzn[nxn - 2][j][k] + Fext*Bz_ext[nxn - 2][j][k]);
-        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][nxn - 2][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
-        susxx[j][k] += (  1.0 + omcx * omcx) * denom;
-        susyx[j][k] += (-omcz + omcx * omcy) * denom;
-        suszx[j][k] += ( omcy + omcx * omcz) * denom;
-      }
-  }
-}
 
-/*! Calculate the susceptibility on the boundary left */
-void EMfields3D::sustensorLeftY(double **susxy, double **susyy, double **suszy) {
+
+/*! Calculate the susceptibility on the Y boundary */
+void EMfields3D::sustensorY(double **susyx, double **susyy, double **susyz, int N) {
   double beta, omcx, omcy, omcz, denom;
   for (int i = 0; i < nxn; i++)
     for (int k = 0; k < nzn; k++) {
-      susxy[i][k] = 0.0;
+      susyx[i][k] = 0.0;
       susyy[i][k] = 1.0;
-      suszy[i][k] = 0.0;
+      susyz[i][k] = 0.0;
     }
   for (int is = 0; is < ns; is++) {
     beta = .5 * qom[is] * dt / c;
     for (int i = 0; i < nxn; i++)
       for (int k = 0; k < nzn; k++) {
-        omcx = beta * (Bxn[i][1][k] + Fext*Bx_ext[i][1][k]);
-        omcy = beta * (Byn[i][1][k] + Fext*By_ext[i][1][k]);
-        omcz = beta * (Bzn[i][1][k] + Fext*Bz_ext[i][1][k]);
-        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][1][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
-        susxy[i][k] += ( omcz + omcx * omcy) * denom;
+        omcx = beta * (Bxn[i][N][k] + Fext*Bx_ext[i][N][k]);
+        omcy = beta * (Byn[i][N][k] + Fext*By_ext[i][N][k]);
+        omcz = beta * (Bzn[i][N][k] + Fext*Bz_ext[i][N][k]);
+        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][N][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+        susyx[i][k] += (-omcz + omcx * omcy) * denom;
         susyy[i][k] += (  1.0 + omcy * omcy) * denom;
-        suszy[i][k] += (-omcx + omcy * omcz) * denom;
+        susyz[i][k] += (+omcx + omcy * omcz) * denom;
       }
   }
 
 }
-/*! Calculate the susceptibility on the boundary right */
-void EMfields3D::sustensorRightY(double **susxy, double **susyy, double **suszy) {
-  double beta, omcx, omcy, omcz, denom;
-  for (int i = 0; i < nxn; i++)
-    for (int k = 0; k < nzn; k++) {
-      susxy[i][k] = 0.0;
-      susyy[i][k] = 1.0;
-      suszy[i][k] = 0.0;
-    }
-  for (int is = 0; is < ns; is++) {
-    beta = .5 * qom[is] * dt / c;
-    for (int i = 0; i < nxn; i++)
-      for (int k = 0; k < nzn; k++) {
-        omcx = beta * (Bxn[i][nyn - 2][k] + Fext*Bx_ext[i][nyn - 2][k]);
-        omcy = beta * (Byn[i][nyn - 2][k] + Fext*By_ext[i][nyn - 2][k]);
-        omcz = beta * (Bzn[i][nyn - 2][k] + Fext*Bz_ext[i][nyn - 2][k]);
-        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][nyn - 2][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
-        susxy[i][k] += ( omcz + omcx * omcy) * denom;
-        susyy[i][k] += (  1.0 + omcy * omcy) * denom;
-        suszy[i][k] += (-omcx + omcy * omcz) * denom;
-      }
-  }
-}
 
-/*! Calculate the susceptibility on the boundary left */
-void EMfields3D::sustensorLeftZ(double **susxz, double **susyz, double **suszz) {
+/*! Calculate the susceptibility on the Z boundary */
+void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int N) {
   double beta, omcx, omcy, omcz, denom;
   for (int i = 0; i < nxn; i++)
     for (int j = 0; j < nyn; j++) {
-      susxz[i][j] = 0.0;
-      susyz[i][j] = 0.0;
+      suszx[i][j] = 0.0;
+      suszy[i][j] = 0.0;
       suszz[i][j] = 1.0;
     }
   for (int is = 0; is < ns; is++) {
     beta = .5 * qom[is] * dt / c;
     for (int i = 0; i < nxn; i++)
       for (int j = 0; j < nyn; j++) {
-        omcx = beta * (Bxn[i][j][1] + Fext*Bx_ext[i][j][1]);
-        omcy = beta * (Byn[i][j][1] + Fext*By_ext[i][j][1]);
-        omcz = beta * (Bzn[i][j][1] + Fext*Bz_ext[i][j][1]);
-        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][1] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
-        susxz[i][j] += (-omcy + omcx * omcz) * denom;
-        susyz[i][j] += ( omcx + omcy * omcz) * denom;
+        omcx = beta * (Bxn[i][j][N] + Fext*Bx_ext[i][j][N]);
+        omcy = beta * (Byn[i][j][N] + Fext*By_ext[i][j][N]);
+        omcz = beta * (Bzn[i][j][N] + Fext*Bz_ext[i][j][N]);
+        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][N] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+        suszx[i][j] += ( omcy + omcx * omcz) * denom;
+        suszy[i][j] += (-omcx + omcy * omcz) * denom;
         suszz[i][j] += (  1.0 + omcz * omcz) * denom;
       }
   }
 
-}
-/*! Calculate the susceptibility on the boundary right */
-void EMfields3D::sustensorRightZ(double **susxz, double **susyz, double **suszz) {
-  double beta, omcx, omcy, omcz, denom;
-  for (int i = 0; i < nxn; i++)
-    for (int j = 0; j < nyn; j++) {
-      susxz[i][j] = 0.0;
-      susyz[i][j] = 0.0;
-      suszz[i][j] = 1.0;
-    }
-  for (int is = 0; is < ns; is++) {
-    beta = .5 * qom[is] * dt / c;
-    for (int i = 0; i < nxn; i++)
-      for (int j = 0; j < nyn; j++) {
-        omcx = beta * (Bxn[i][j][nzn - 2] + Fext*Bx_ext[i][j][nzn - 2]);
-        omcy = beta * (Byn[i][j][nzn - 2] + Fext*By_ext[i][j][nzn - 2]);
-        omcz = beta * (Bzn[i][j][nzn - 2] + Fext*Bz_ext[i][j][nzn - 2]);
-        denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][nyn - 2] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
-        susxz[i][j] += (-omcy + omcx * omcz) * denom;
-        susyz[i][j] += ( omcx + omcy * omcz) * denom;
-        suszz[i][j] += (  1.0 + omcz * omcz) * denom;
-      }
-  }
 }
 
 /*! Perfect conductor boundary conditions: LEFT wall */
@@ -2732,47 +2663,47 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
   switch(dir){
     case 0:  // boundary condition on X-DIRECTION 
       susxx = newArr2(double,nyn,nzn);
-      susyx = newArr2(double,nyn,nzn);
-      suszx = newArr2(double,nyn,nzn);
-      sustensorLeftX(susxx, susyx, suszx);
+      susxy = newArr2(double,nyn,nzn);
+      susxz = newArr2(double,nyn,nzn);
+      sustensorX(susxx, susxy, susxz, 1);
       for (int i=1; i <  nyn-1;i++)
         for (int j=1; j <  nzn-1;j++){
-          imageX[1][i][j] = vectorX[1][i][j] - (Ex[1][i][j] - susyx[i][j]*vectorY[1][i][j] - suszx[i][j]*vectorZ[1][i][j] - Jxh[1][i][j]*dt*th*FourPI)/susxx[i][j];
+          imageX[1][i][j] = vectorX[1][i][j] - (Ex[1][i][j] - susxy[i][j]*vectorY[1][i][j] - susxz[i][j]*vectorZ[1][i][j] - Jxh[1][i][j]*dt*th*FourPI)/susxx[i][j];
           imageY[1][i][j] = vectorY[1][i][j] - 0.0*vectorY[2][i][j];
           imageZ[1][i][j] = vectorZ[1][i][j] - 0.0*vectorZ[2][i][j];
         }
       delArr2(susxx,nxn);
-      delArr2(susyx,nxn);
-      delArr2(suszx,nxn);
+      delArr2(susxy,nxn);
+      delArr2(susxz,nxn);
       break;
     case 1: // boundary condition on Y-DIRECTION
-      susxy = newArr2(double,nxn,nzn);
+      susyx = newArr2(double,nxn,nzn);
       susyy = newArr2(double,nxn,nzn);
-      suszy = newArr2(double,nxn,nzn);
-      sustensorLeftY(susxy, susyy, suszy);
+      susyz = newArr2(double,nxn,nzn);
+      sustensorY(susyx, susyy, susyz, 1);
       for (int i=1; i < nxn-1;i++)
         for (int j=1; j <  nzn-1;j++){
           imageX[i][1][j] = vectorX[i][1][j] - 0.0*vectorX[i][2][j];
-          imageY[i][1][j] = vectorY[i][1][j] - (Ey[i][1][j] - susxy[i][j]*vectorX[i][1][j] - suszy[i][j]*vectorZ[i][1][j] - Jyh[i][1][j]*dt*th*FourPI)/susyy[i][j];
+          imageY[i][1][j] = vectorY[i][1][j] - (Ey[i][1][j] - susyx[i][j]*vectorX[i][1][j] - susyz[i][j]*vectorZ[i][1][j] - Jyh[i][1][j]*dt*th*FourPI)/susyy[i][j];
           imageZ[i][1][j] = vectorZ[i][1][j] - 0.0*vectorZ[i][2][j];
         }
-      delArr2(susxy,nxn);
+      delArr2(susyx,nxn);
       delArr2(susyy,nxn);
-      delArr2(suszy,nxn);
+      delArr2(susyz,nxn);
       break;
     case 2: // boundary condition on Z-DIRECTION
-      susxz = newArr2(double,nxn,nyn);
-      susyz = newArr2(double,nxn,nyn);
+      suszx = newArr2(double,nxn,nyn);
+      suszy = newArr2(double,nxn,nyn);
       suszz = newArr2(double,nxn,nyn);
-      sustensorLeftZ(susxz, susyz, suszz);
+      sustensorZ(suszx, suszy, suszz, 1);
       for (int i=1; i <  nxn-1;i++)
         for (int j=1; j <  nyn-1;j++){
           imageX[i][j][1] = vectorX[i][j][1];
           imageY[i][j][1] = vectorX[i][j][1];
-          imageZ[i][j][1] = vectorZ[i][j][1] - (Ez[i][j][1] - susxz[i][j]*vectorX[i][j][1] - susyz[i][j]*vectorY[i][j][1] - Jzh[i][j][1]*dt*th*FourPI)/suszz[i][j];
+          imageZ[i][j][1] = vectorZ[i][j][1] - (Ez[i][j][1] - suszx[i][j]*vectorX[i][j][1] - suszy[i][j]*vectorY[i][j][1] - Jzh[i][j][1]*dt*th*FourPI)/suszz[i][j];
         }
-      delArr2(susxz,nxn);
-      delArr2(susyz,nxn);
+      delArr2(suszx,nxn);
+      delArr2(suszy,nxn);
       delArr2(suszz,nxn);
       break;
   }
@@ -2793,47 +2724,47 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
   switch(dir){
     case 0: // boundary condition on X-DIRECTION RIGHT
       susxx = newArr2(double,nyn,nzn);
-      susyx = newArr2(double,nyn,nzn);
-      suszx = newArr2(double,nyn,nzn);
-      sustensorRightX(susxx, susyx, suszx);
+      susxy = newArr2(double,nyn,nzn);
+      susxz = newArr2(double,nyn,nzn);
+      sustensorX(susxx, susxy, susxz, nxn-2);
       for (int i=1; i < nyn-1;i++)
         for (int j=1; j <  nzn-1;j++){
-          imageX[nxn-2][i][j] = vectorX[nxn-2][i][j] - (Ex[nxn-2][i][j] - susyx[i][j]*vectorY[nxn-2][i][j] - suszx[i][j]*vectorZ[nxn-2][i][j] - Jxh[nxn-2][i][j]*dt*th*FourPI)/susxx[i][j];
+          imageX[nxn-2][i][j] = vectorX[nxn-2][i][j] - (Ex[nxn-2][i][j] - susxy[i][j]*vectorY[nxn-2][i][j] - susxz[i][j]*vectorZ[nxn-2][i][j] - Jxh[nxn-2][i][j]*dt*th*FourPI)/susxx[i][j];
           imageY[nxn-2][i][j] = vectorY[nxn-2][i][j] - 0.0 * vectorY[nxn-3][i][j];
           imageZ[nxn-2][i][j] = vectorZ[nxn-2][i][j] - 0.0 * vectorZ[nxn-3][i][j];
         }
       delArr2(susxx,nxn);
-      delArr2(susyx,nxn);       
-      delArr2(suszx,nxn);
+      delArr2(susxy,nxn);       
+      delArr2(susxz,nxn);
       break;
     case 1: // boundary condition on Y-DIRECTION RIGHT
-      susxy = newArr2(double,nxn,nzn);
+      susyx = newArr2(double,nxn,nzn);
       susyy = newArr2(double,nxn,nzn);
-      suszy = newArr2(double,nxn,nzn);
-      sustensorRightY(susxy, susyy, suszy);
+      susyz = newArr2(double,nxn,nzn);
+      sustensorY(susyx, susyy, susyz, nyn-2);
       for (int i=1; i < nxn-1;i++)
         for (int j=1; j < nzn-1;j++){
           imageX[i][nyn-2][j] = vectorX[i][nyn-2][j] - 0.0*vectorX[i][nyn-3][j];
-          imageY[i][nyn-2][j] = vectorY[i][nyn-2][j] - (Ey[i][nyn-2][j] - susxy[i][j]*vectorX[i][nyn-2][j] - suszy[i][j]*vectorZ[i][nyn-2][j] - Jyh[i][nyn-2][j]*dt*th*FourPI)/susyy[i][j];
+          imageY[i][nyn-2][j] = vectorY[i][nyn-2][j] - (Ey[i][nyn-2][j] - susyx[i][j]*vectorX[i][nyn-2][j] - susyz[i][j]*vectorZ[i][nyn-2][j] - Jyh[i][nyn-2][j]*dt*th*FourPI)/susyy[i][j];
           imageZ[i][nyn-2][j] = vectorZ[i][nyn-2][j] - 0.0*vectorZ[i][nyn-3][j];
         }
-      delArr2(susxy,nxn);
+      delArr2(susyx,nxn);
       delArr2(susyy,nxn);
-      delArr2(suszy,nxn);
+      delArr2(susyz,nxn);
       break;
     case 2: // boundary condition on Z-DIRECTION RIGHT
-      susxz = newArr2(double,nxn,nyn);
-      susyz = newArr2(double,nxn,nyn);
+      suszx = newArr2(double,nxn,nyn);
+      suszy = newArr2(double,nxn,nyn);
       suszz = newArr2(double,nxn,nyn);
-      sustensorRightZ(susxz, susyz, suszz);
+      sustensorZ(suszx, suszy, suszz, nzn-2);
       for (int i=1; i < nxn-1;i++)
         for (int j=1; j < nyn-1;j++){
           imageX[i][j][nzn-2] = vectorX[i][j][nzn-2];
           imageY[i][j][nzn-2] = vectorY[i][j][nzn-2];
-          imageZ[i][j][nzn-2] = vectorZ[i][j][nzn-2] - (Ez[i][j][nzn-2] - susxz[i][j]*vectorX[i][j][nzn-2] - susyz[i][j]*vectorY[i][j][nzn-2] - Jzh[i][j][nzn-2]*dt*th*FourPI)/suszz[i][j];
+          imageZ[i][j][nzn-2] = vectorZ[i][j][nzn-2] - (Ez[i][j][nzn-2] - suszx[i][j]*vectorX[i][j][nzn-2] - suszy[i][j]*vectorY[i][j][nzn-2] - Jzh[i][j][nzn-2]*dt*th*FourPI)/suszz[i][j];
         }
-      delArr2(susxz,nxn);
-      delArr2(susyz,nxn);       
+      delArr2(suszx,nxn);
+      delArr2(suszy,nxn);       
       delArr2(suszz,nxn);
       break;
   }
