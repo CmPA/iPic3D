@@ -111,6 +111,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+    else if (col->getCase()=="LightWave") EMf->initLightWave(vct,grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -276,6 +277,10 @@ void c_Solver::GatherMoments(){
 
 void c_Solver::UpdateCycleInfo(int cycle) {
 
+  // only CG must do this
+  if (numGrid != 0) return;
+
+
   EMf->UpdateFext(cycle);
   if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
   if (cycle == first_cycle) {
@@ -316,7 +321,7 @@ void c_Solver::CalculateField() {
   /* end mlmd: BC */
 
   /* some mlmd debug */
-  MPI_Comm localComm= vct->getCommGrid();
+  /*MPI_Comm localComm= vct->getCommGrid();
   MPI_Barrier(localComm);
   int localRank;
   MPI_Comm_rank(localComm, &localRank);
@@ -328,7 +333,7 @@ void c_Solver::CalculateField() {
   MPI_Comm_rank(MPI_COMM_WORLD, &CommWorldRank);
   if (CommWorldRank==0){
     cout << "All grids have finished calculateE" << endl;
-  }
+    }*/
   /* some mlmd debug */
 }
 

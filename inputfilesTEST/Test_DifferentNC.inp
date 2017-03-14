@@ -7,7 +7,7 @@ RestartDirName = dataMLMD     # Restart directory (for WriteMethod=default)
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
 
-Case              = Init                             # Case [ GEM | Dipole | ... ] # Init: won't recognise case, and go into default initialisation with no fields
+Case              = init                             # Case [ GEM | Dipole | ... ] # Init: won't recognise case, and go into default initialisation with no fields
 FieldsInit        = ./data/Initial-Fields_000000.h5 # Initial fields h5 file
 PartInit          = Maxwell                         # Initial particles [ Maxwell | File ]
 WriteMethod       = default                         # Output method [ default | Parallel ]
@@ -28,7 +28,7 @@ delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
 dt = 0.5               # dt = time step  
-ncycles = 21          # cycles
+ncycles = 5          # cycles
 th = 1.0               # th =   decentering parameter
 c = 1.0                # c = light speed 
 

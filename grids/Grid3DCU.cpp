@@ -28,6 +28,9 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   /*! mlmd: know where you start on your PARENT grid */
   Ox= col->getOx_P(numGrid); Oy= col->getOy_P(numGrid); Oz= col->getOz_P(numGrid);
 
+  /*! mlmd: know where you start in the system */
+  Ox_SW= col->getOx_SW(numGrid); Oy_SW= col->getOy_SW(numGrid); Oz_SW= col->getOz_SW(numGrid);
+
   // add 2 for the guard cells
   nxc = (col->getNxc_mlmd(numGrid)) / (vct->getXLEN()) + 2;
   nyc = (col->getNyc_mlmd(numGrid)) / (vct->getYLEN()) + 2;
@@ -238,9 +241,45 @@ void Grid3DCU::curlN2C(double ***curlXC, double ***curlYC, double ***curlZC, dou
         curlZC[i][j][k] = compYDX - compXDY;
       }
 
+}
+
+/** calculate curl on central points, given a vector field defined on nodes                                                                                     
+    calculate ghost cells also using ghost node info if at buondary **/
+void Grid3DCU::curlN2C_Ghost(VirtualTopology3D * vct, double ***curlXC, double ***curlYC, double ***curlZC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN){
+  double compZDY, compYDZ;
+  double compXDZ, compZDX;
+  double compYDX, compXDY;
+
+  int IS=1; if (vct->getXleft_neighbor() == MPI_PROC_NULL) IS=0;
+  int JS=1; if (vct->getYleft_neighbor() == MPI_PROC_NULL) JS=0;
+  int KS=1; if (vct->getZleft_neighbor() == MPI_PROC_NULL) KS=0;
+  int IE= nxc - 1; if (vct->getXright_neighbor() == MPI_PROC_NULL) IE= nxc;
+  int JE= nyc - 1; if (vct->getYright_neighbor() == MPI_PROC_NULL) JE= nyc;
+  int KE= nzc - 1; if (vct->getZright_neighbor() == MPI_PROC_NULL) KE= nzc;
+
+  for (register int i = IS; i < IE; i++)
+    for (register int j = JS; j < JE; j++)
+      for (register int k = KS; k < KE; k++) {
+        // curl - X
+        compZDY = .25 * (vecFieldZN[i][j + 1][k] - vecFieldZN[i][j][k]) * invdy + .25 * (vecFieldZN[i][j + 1][k + 1] - vecFieldZN[i][j][k + 1]) * invdy + .25 * (vecFieldZN[i + 1][j + 1][k] - vecFieldZN[i + 1][j][k]) * invdy + .25 * (vecFieldZN[i + 1][j + 1][k + 1] - vecFieldZN[i + 1][j][k + 1]) * invdy;
+        compYDZ = .25 * (vecFieldYN[i][j][k + 1] - vecFieldYN[i][j][k]) * invdz + .25 * (vecFieldYN[i + 1][j][k + 1] - vecFieldYN[i + 1][j][k]) * invdz + .25 * (vecFieldYN[i][j + 1][k + 1] - vecFieldYN[i][j + 1][k]) * invdz + .25 * (vecFieldYN[i + 1][j + 1][k + 1] - vecFieldYN[i + 1][j + 1][k]) * invdz;
+        // curl - Y
+        compXDZ = .25 * (vecFieldXN[i][j][k + 1] - vecFieldXN[i][j][k]) * invdz + .25 * (vecFieldXN[i + 1][j][k + 1] - vecFieldXN[i + 1][j][k]) * invdz + .25 * (vecFieldXN[i][j + 1][k + 1] - vecFieldXN[i][j + 1][k]) * invdz + .25 * (vecFieldXN[i + 1][j + 1][k + 1] - vecFieldXN[i + 1][j + 1][k]) * invdz;
+        compZDX = .25 * (vecFieldZN[i + 1][j][k] - vecFieldZN[i][j][k]) * invdx + .25 * (vecFieldZN[i + 1][j][k + 1] - vecFieldZN[i][j][k + 1]) * invdx + .25 * (vecFieldZN[i + 1][j + 1][k] - vecFieldZN[i][j + 1][k]) * invdx + .25 * (vecFieldZN[i + 1][j + 1][k + 1] - vecFieldZN[i][j + 1][k + 1]) * invdx;
+        // curl - Z
+        compYDX = .25 * (vecFieldYN[i + 1][j][k] - vecFieldYN[i][j][k]) * invdx + .25 * (vecFieldYN[i + 1][j][k + 1] - vecFieldYN[i][j][k + 1]) * invdx + .25 * (vecFieldYN[i + 1][j + 1][k] - vecFieldYN[i][j + 1][k]) * invdx + .25 * (vecFieldYN[i + 1][j + 1][k + 1] - vecFieldYN[i][j + 1][k + 1]) * invdx;
+        compXDY = .25 * (vecFieldXN[i][j + 1][k] - vecFieldXN[i][j][k]) * invdy + .25 * (vecFieldXN[i][j + 1][k + 1] - vecFieldXN[i][j][k + 1]) * invdy + .25 * (vecFieldXN[i + 1][j + 1][k] - vecFieldXN[i + 1][j][k]) * invdy + .25 * (vecFieldXN[i + 1][j + 1][k + 1] - vecFieldXN[i + 1][j][k + 1]) * invdy;
+
+
+        curlXC[i][j][k] = compZDY - compYDZ;
+        curlYC[i][j][k] = compXDZ - compZDX;
+        curlZC[i][j][k] = compYDX - compXDY;
+      }
+
 
 
 }
+
 
 /** calculate laplacian on nodes, given a scalar field defined on nodes */
 void Grid3DCU::lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vct) {
@@ -536,7 +575,7 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
   int SW_rank=vct->getSystemWide_rank();
 
   if (vct->getCommToParent()== MPI_COMM_NULL){
-    cout << "Fatal error in getParentRankFromGridPoint, aborting...";
+    cout <<"R" << SW_rank << ": Fatal error in getParentRankFromGridPoint, aborting...";
     return -1; // if you are not a child, i return -1 to provoke a segm fault
   }
   // coordinates in the parent grid                                                                 

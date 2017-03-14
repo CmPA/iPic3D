@@ -290,9 +290,9 @@ class Collective
     int getLowestRankOfGrid(int n);
 
     /*! get whether to perform mlmd operations */
-    int getMLMD_BC();
-    int getMLMD_PROJECTION();
-    int getMLMD_ParticleREPOPULATION();
+    bool getMLMD_BC();
+    bool getMLMD_PROJECTION();
+    bool getMLMD_ParticleREPOPULATION();
 
     /*! returns MLMDVerbose */
     bool getMLMDVerbose();
@@ -554,9 +554,9 @@ class Collective
     /* wether to perform mlmd operations - 
        NB: the infrastructure will be built anyway;
        this is mostly for debugging purposes */
-    int MLMD_BC;
-    int MLMD_PROJECTION;
-    int MLMD_ParticleREPOPULATION;
+    bool MLMD_BC;
+    bool MLMD_PROJECTION;
+    bool MLMD_ParticleREPOPULATION;
     
     // end MLMD variables
 };

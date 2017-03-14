@@ -1,4 +1,3 @@
-
 #include "EMfields3D.h"
  
 /*! constructor */
@@ -39,6 +38,16 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
 
   /*! number of children in the mlmd grid hierarchy */
   numChildren= vct->getNumChildren();
+  dx_C=new double[numChildren];
+  dy_C=new double[numChildren];
+  dz_C=new double[numChildren];
+  for (int i=0; i< numChildren; i++){
+    c= vct->getChildGridNum(i);
+    dx_C[i]= col->getDx_mlmd(c) ;
+    dy_C[i]= col->getDy_mlmd(c);
+    dz_C[i]= col->getDz_mlmd(c);
+  }
+
 
   Lx = col->getLx_mlmd(numGrid);
   Ly = col->getLy_mlmd(numGrid);
@@ -195,6 +204,14 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   /*! mlmd specific section */
   MLMDVerbose= col->getMLMDVerbose();
 
+  /* wether to perform mlmd operations */
+  MLMD_BC = col->getMLMD_BC();
+  MLMD_PROJECTION = col->getMLMD_PROJECTION();
+  ParticleREPOPULATION = col->getMLMD_ParticleREPOPULATION();
+
+  /* # of fields that I am sending as BC: 9 (Ex, Ey, Ez, Exth, Eyth, Ezth, Bxn, Byn, Bzn) */
+  NumF= 9;
+
   /* create mlmd-related mpi datatypes */
   MPI_RGBC_struct_commit();
   /* end create mlmd-related mpi datatypes */
@@ -289,18 +306,44 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
    smoothE(Smooth, vct, col);
    smoothE(Smooth, vct, col);
 
-   // communicate so the interpolation can have good values
-   communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-   communicateNodeBC(nxn, nyn, nzn, Eyth, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-   communicateNodeBC(nxn, nyn, nzn, Ezth, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
-   communicateNodeBC(nxn, nyn, nzn, Ex,   col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-   communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-   communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+   if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC){ // mlmd
 
-   // OpenBC
-   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
-   BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
+     // a communicate, but without BC's
+     communicateNode(nxn, nyn, nzn, Ex, vct);
+     communicateNode(nxn, nyn, nzn, Ey, vct);
+     communicateNode(nxn, nyn, nzn, Ez, vct);
 
+     communicateNode(nxn, nyn, nzn, Exth, vct);
+     communicateNode(nxn, nyn, nzn, Eyth, vct);
+     communicateNode(nxn, nyn, nzn, Ezth, vct);
+
+     // if i put active and ghost BC on E*th, then I can calculate the ghost node of B self-consistently
+
+     /*cout << "TEST" << endl;
+     for (int i=0; i< RG_numBCMessages_Ghost; i++){
+       cout << "R" <<vct->getSystemWide_rank()<< " RGBC_Info_Ghost[ " << i << "].CG_Core= " << RGBC_Info_Ghost[i].CG_core << endl;
+       }*/
+
+     setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Ghost_BC, Eyth_Ghost_BC, Ezth_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+     setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+
+     // and this for the known term of E, used as source
+     setBC_Nodes(vct, Ex, Ey, Ez, Ex_Ghost_BC, Ey_Ghost_BC, Ez_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+     setBC_Nodes(vct, Ex, Ey, Ez, Ex_Active_BC, Ey_Active_BC, Ez_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+
+   } else { // normal non mlmd BC 
+     // communicate so the interpolation can have good values
+     communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Eyth, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Ezth, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Ex,   col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+     
+     // OpenBC
+     BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
+     BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
+   }
    // deallocate temporary arrays
    delete[]xkrylov;
    delete[]bkrylov;
@@ -315,6 +358,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
 
  /*! Calculate sorgent for Maxwell solver */
  void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col) {
+   
+   // ME: remember bkrylov is stripped of the ghosts
+   
    eqValue(0.0, tempC, nxc, nyc, nzc);
    eqValue(0.0, tempX, nxn, nyn, nzn);
    eqValue(0.0, tempY, nxn, nyn, nzn);
@@ -325,20 +371,28 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
    eqValue(0.0, temp2X, nxn, nyn, nzn);
    eqValue(0.0, temp2Y, nxn, nyn, nzn);
    eqValue(0.0, temp2Z, nxn, nyn, nzn);
+   
    // communicate
-   communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
-   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
-   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+   if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC){
+     // if i impose BC on E active and ghost, BC ghost center is calculated self-consistently when calculating B
+     // I do not need to touch the BCs
+   }else{
+     // "normal option"
+     communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+     communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+     communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
-   if (Case=="ForceFree") fixBforcefree(grid,vct);
-   if (Case=="GEM")       fixBgem(grid, vct);
-   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
-   // OpenBC:
-   BoundaryConditionsB(Bxc,Byc,Bzc,nxc,nyc,nzc,grid,vct);
-
+     if (Case=="ForceFree") fixBforcefree(grid,vct);
+     if (Case=="GEM")       fixBgem(grid, vct);
+     if (Case=="GEMnoPert") fixBgem(grid, vct);
+     
+     // OpenBC:
+     BoundaryConditionsB(Bxc,Byc,Bzc,nxc,nyc,nzc,grid,vct);
+   }
+   
    // prepare curl of B for known term of Maxwell solver: for the source term
-   grid->curlC2N(tempXN, tempYN, tempZN, Bxc, Byc, Bzc);
+   grid->curlC2N(tempXN, tempYN, tempZN, Bxc, Byc, Bzc);  // MLMD: active is ok
    scale(temp2X, Jxh, -FourPI / c, nxn, nyn, nzn);
    scale(temp2Y, Jyh, -FourPI / c, nxn, nyn, nzn);
    scale(temp2Z, Jzh, -FourPI / c, nxn, nyn, nzn);
@@ -377,27 +431,56 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
    sum(tempY, temp2Y, nxn, nyn, nzn);
    sum(tempZ, temp2Z, nxn, nyn, nzn);
 
-   // Boundary condition in the known term
-   // boundary condition: Xleft
-   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
-     perfectConductorLeftS(tempX, tempY, tempZ, 0);
-   // boundary condition: Xright
-   if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)  // perfect conductor
-     perfectConductorRightS(tempX, tempY, tempZ, 0);
-   // boundary condition: Yleft
-   if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)  // perfect conductor
-     perfectConductorLeftS(tempX, tempY, tempZ, 1);
-   // boundary condition: Yright
-   if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)  // perfect conductor
-     perfectConductorRightS(tempX, tempY, tempZ, 1);
-   // boundary condition: Zleft
-   if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)  // perfect conductor
-     perfectConductorLeftS(tempX, tempY, tempZ, 2);
-   // boundary condition: Zright
-   if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
-     perfectConductorRightS(tempX, tempY, tempZ, 2);
 
-   // physical space -> Krylov space
+   if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC){ // mlmd
+    
+     if (vct->getXleft_neighbor() == MPI_PROC_NULL){
+       MLMDSourceLeft(tempX, tempY, tempZ, 0);
+     }
+     if (vct->getXright_neighbor() == MPI_PROC_NULL){
+       MLMDSourceRight(tempX, tempY, tempZ, 0);
+     }
+
+     if (vct->getYleft_neighbor() == MPI_PROC_NULL){
+       MLMDSourceLeft(tempX, tempY, tempZ, 1);
+     }
+     if (vct->getYright_neighbor() == MPI_PROC_NULL){
+       MLMDSourceRight(tempX, tempY, tempZ, 1);
+     }
+
+     if (vct->getZleft_neighbor() == MPI_PROC_NULL){
+       MLMDSourceLeft(tempX, tempY, tempZ, 2);
+     }
+     if (vct->getZright_neighbor() == MPI_PROC_NULL){
+       MLMDSourceRight(tempX, tempY, tempZ, 2);
+     }
+
+     
+   } else { // normal stuff
+
+
+     // Boundary condition in the known term
+     // boundary condition: Xleft
+     if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
+       perfectConductorLeftS(tempX, tempY, tempZ, 0);
+     // boundary condition: Xright
+     if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)  // perfect conductor
+       perfectConductorRightS(tempX, tempY, tempZ, 0);
+     // boundary condition: Yleft
+     if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)  // perfect conductor
+       perfectConductorLeftS(tempX, tempY, tempZ, 1);
+     // boundary condition: Yright
+     if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)  // perfect conductor
+       perfectConductorRightS(tempX, tempY, tempZ, 1);
+     // boundary condition: Zleft
+     if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)  // perfect conductor
+       perfectConductorLeftS(tempX, tempY, tempZ, 2);
+     // boundary condition: Zright
+     if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
+       perfectConductorRightS(tempX, tempY, tempZ, 2);
+
+   }
+   // physical space -> Krylov space (cuts the guard cells)
    phys2solver(bkrylov, tempX, tempY, tempZ, nxn, nyn, nzn);
 
  }
@@ -413,9 +496,15 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
    eqValue(0.0, Dx, nxn, nyn, nzn);
    eqValue(0.0, Dy, nxn, nyn, nzn);
    eqValue(0.0, Dz, nxn, nyn, nzn);
+
+   // remember: here
+   //GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this);
+   // is the function called
+   //void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b, int m, int max_iter, double tol, Grid * grid, VirtualTopology3D * vct, Field * field)
+   
    // move from krylov space to physical space
-   solver2phys(vectX, vectY, vectZ, vector, nxn, nyn, nzn);
-   grid->lapN2N(imageX, vectX ,vct);
+   solver2phys(vectX, vectY, vectZ, vector, nxn, nyn, nzn); 
+   grid->lapN2N(imageX, vectX ,vct); 
    grid->lapN2N(imageY, vectY, vct);
    grid->lapN2N(imageZ, vectZ, vct);
    neg(imageX, nxn, nyn, nzn);
@@ -454,27 +543,39 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
    sumscalprod(imageY, delt, vectY, Lambda, nxn, nyn, nzn);
    sumscalprod(imageZ, delt, vectZ, Lambda, nxn, nyn, nzn);
 
-   // boundary condition: Xleft
-   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
-     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
-   // boundary condition: Xright
-   if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)  // perfect conductor
-     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
-   // boundary condition: Yleft
-   if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)  // perfect conductor
-     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid);
-   // boundary condition: Yright
-   if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)  // perfect conductor
-     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid);
-   // boundary condition: Zleft
-   if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)  // perfect conductor
-     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid);
-   // boundary condition: Zright
-   if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
-     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid);
 
-   // OpenBC
-   BoundaryConditionsEImage(imageX, imageY, imageZ, vectX, vectY, vectZ, nxn, nyn, nzn, vct, grid);
+   if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC){
+
+     //set what you have to set, in the active nodes
+     setBC_NodesImage(vct, imageX, imageY, imageZ, vectX, vectY, vectZ, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+     //setBC_NodesImage(vct, imageX, imageY, imageZ, vectX, vectY, vectZ, Ex_Active_BC, Ey_Active_BC, Ez_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+     
+     
+   }else {
+
+     // boundary condition: Xleft
+     if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
+       perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
+     // boundary condition: Xright
+     if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)  // perfect conductor
+       perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
+     // boundary condition: Yleft
+     if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)  // perfect conductor
+       perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid);
+     // boundary condition: Yright
+     if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)  // perfect conductor
+       perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid);
+     // boundary condition: Zleft
+     if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)  // perfect conductor
+       perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid);
+     // boundary condition: Zright
+     if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
+       perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid);
+     
+     // OpenBC
+     BoundaryConditionsEImage(imageX, imageY, imageZ, vectX, vectY, vectZ, nxn, nyn, nzn, vct, grid);
+   }// end else
+
 
    // move from physical space to krylov space
    phys2solver(im, imageX, imageY, imageZ, nxn, nyn, nzn);
@@ -958,35 +1059,66 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
      //cout << "*** B CALCULATION ***" << endl;
      cout << "*** G" << numGrid <<": B CALCULATION ***" << endl;
 
-   // calculate the curl of Eth
-   grid->curlN2C(tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
+   if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC){
+     // if Eth active and ghost are imposed, B ghost center can be calculated self- consistently
+     grid->curlN2C_Ghost(vct, tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
 
-   // update the magnetic field
-   addscale(-c * dt, 1, Bxc, tempXC, nxc, nyc, nzc);
-   addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
-   addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
+     // update the magnetic field
+     addscale(-c * dt, 1, Bxc, tempXC, nxc, nyc, nzc);
+     addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
+     addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
+     
+     // communicate ghost but NOT ghosts at outer boundaries
+     communicateCenter(nxc, nyc, nzc, Bxc, vct);
+     communicateCenter(nxc, nyc, nzc, Byc, vct);
+     communicateCenter(nxc, nyc, nzc, Bzc, vct);
 
-   // communicate ghost 
-   communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
-   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
-   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
-   if (Case=="ForceFree") fixBforcefree(grid,vct);
-   if (Case=="GEM")       fixBgem(grid, vct);
-   if (Case=="GEMnoPert") fixBgem(grid, vct);
+   } else { // "normal", non MLMD options
 
-   // OpenBC:
-   BoundaryConditionsB(Bxc,Byc,Bzc,nxc,nyc,nzc,grid,vct);
+     // calculate the curl of Eth
+     grid->curlN2C(tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
+     
+     // update the magnetic field
+     addscale(-c * dt, 1, Bxc, tempXC, nxc, nyc, nzc);
+     addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
+     addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
+     
+     // communicate ghost 
+     communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+     communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+     communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
+     if (Case=="ForceFree") fixBforcefree(grid,vct);
+     if (Case=="GEM")       fixBgem(grid, vct);
+     if (Case=="GEMnoPert") fixBgem(grid, vct);
+     
+     // OpenBC:
+     BoundaryConditionsB(Bxc,Byc,Bzc,nxc,nyc,nzc,grid,vct);
+
+   } // end "normal", non MLMD options
    // interpolate C2N
    grid->interpC2N(Bxn, Bxc);
    grid->interpC2N(Byn, Byc);
    grid->interpC2N(Bzn, Bzc);
 
-   communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
-   communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
-   communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+   if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC){
 
+     // this only for the ghost between cores, not at boundaries
+     communicateNode(nxn, nyn, nzn, Bxn, vct);
+     communicateNode(nxn, nyn, nzn, Byn, vct);
+     communicateNode(nxn, nyn, nzn, Bzn, vct);
+
+      // impose BC B on ghost nodes, only for particles
+     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+
+     
+   }
+   else{ // normal, non mlmd option
+     communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+   }
 
  }
  /*! initialize EM field with transverse electric waves 1D and rotate anticlockwise (theta degrees) */
@@ -1013,6 +1145,108 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
      grid->interpN2C(rhocs, is, rhons);
 
  }
+/* initialize a light wave -MLMD ready */
+void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective *col){
+
+  // to use with periodic BC
+ 
+   if (restart1 == 0) {
+     // initialize
+     if (vct->getCartesian_rank() == 0) {
+       cout << "------------------------------------------" << endl;
+       cout << "Initialize Light Wave in MLMD system" << endl;
+       cout << "------------------------------------------" << endl;
+     }
+      
+     double PI=FourPI/4.0;
+     // density does not need to be initialised   
+     double intensity= 0.1;
+     double KX= 2*PI/(col->getLx_mlmd(0)); // may need a + dx
+     double KY= 2*PI/(col->getLy_mlmd(0)); // may need a + dy
+     double K= sqrt(KX*KX+ KY*KY);
+     double startingT= 0.25/K;
+
+     double globalX, globalY, globalZ;
+
+     int IS; if (vct->getXleft_neighbor()==MPI_PROC_NULL) IS=0; else IS=1;
+     int JS; if (vct->getYleft_neighbor()==MPI_PROC_NULL) JS=0; else JS=1;
+     int KS; if (vct->getZleft_neighbor()==MPI_PROC_NULL) KS=0; else KS=1;
+
+     int IE; if (vct->getXright_neighbor()==MPI_PROC_NULL) IE=nxn-1; else IE=nxn-2;
+     int JE; if (vct->getYright_neighbor()==MPI_PROC_NULL) JE=nyn-1; else JE=nyn-2;
+     int KE; if (vct->getZright_neighbor()==MPI_PROC_NULL) KE=nzn-1; else KE=nzn-2;
+
+     // <= !!!
+     for (int i = IS; i <= IE; i++)
+       for (int j = JS; j <= JE; j++)
+	 for (int k = KS; k <= KE; k++) {
+	   // initialize the density for species
+
+	   globalX= grid->getXN(i,j,k)+ col->getOx_SW(0) ;
+	   globalY= grid->getYN(i,j,k)+ col->getOy_SW(0) ;
+	   globalZ= grid->getZN(i,j,k)+ col->getOz_SW(0) ;
+	   // electric field
+	   Ex[i][j][k] = intensity*KY*cos(KX*globalX)*cos(KY*globalY)*sin(K*startingT)/KX;
+	   Ey[i][j][k] = intensity*sin(KX*globalX)*sin(KY*globalY) *sin(K*startingT); 
+	   Ez[i][j][k] = 0.0;
+	   // Magnetic field
+	   Bxn[i][j][k] = 0.0;
+	   Byn[i][j][k] = 0.0;
+	   Bzn[i][j][k] = intensity*K*cos(KX*globalX)*sin(KY*globalY)*cos(K*startingT)/KX;
+	 }
+
+
+     /*communicateNodeBC(nxn, nyn, nzn, Ex,   col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+
+     communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+     communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);*/
+
+     communicateNode(nxn, nyn, nzn, Ex, vct);
+     communicateNode(nxn, nyn, nzn, Ey, vct);
+     communicateNode(nxn, nyn, nzn, Ez, vct);
+     communicateNode(nxn, nyn, nzn, Bxn, vct);
+     communicateNode(nxn, nyn, nzn, Byn, vct);
+     communicateNode(nxn, nyn, nzn, Bzn, vct);
+
+     if (vct->getXleft_neighbor()==MPI_PROC_NULL) IS=0; else IS=1;
+     if (vct->getYleft_neighbor()==MPI_PROC_NULL) JS=0; else JS=1;
+     if (vct->getZleft_neighbor()==MPI_PROC_NULL) KS=0; else KS=1;
+
+     if (vct->getXright_neighbor()==MPI_PROC_NULL) IE=nxc-1; else IE=nxc-2;
+     if (vct->getYright_neighbor()==MPI_PROC_NULL) JE=nyc-1; else JE=nyc-2;
+     if (vct->getZright_neighbor()==MPI_PROC_NULL) KE=nzc-1; else KE=nzc-2;
+
+     // initialize B on centers
+     for (int i = IS; i <= IE; i++)
+       for (int j = JS; j <= JE; j++)
+	 for (int k = KS; k <= KE; k++) {
+	   
+	   globalX= grid->getXC(i,j,k)+ col->getOx_SW(0) ;
+	   globalY= grid->getYC(i,j,k)+ col->getOy_SW(0) ;
+	   globalZ= grid->getZC(i,j,k)+ col->getOz_SW(0) ;
+
+	   Bxc[i][j][k] = 0.0;
+	   Byc[i][j][k] = 0.0;
+	   Bzc[i][j][k] = intensity*K*cos(KX*globalX)*sin(KY*globalY)*cos(K*startingT)/KX; 
+
+	 }
+
+     /*communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+     communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+     communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);*/
+
+     communicateCenter(nxc, nyc, nzc, Bxc, vct);
+     communicateCenter(nxc, nyc, nzc, Byc, vct);
+     communicateCenter(nxc, nyc, nzc, Bzc, vct);
+   }
+   else {
+     init(vct, grid, col);            // use the fields from restart file
+   }
+
+}
  /*!Add a periodic perturbation in rho exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) * */
  void EMfields3D::AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid) {
 
@@ -2213,6 +2447,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
 
  void EMfields3D::UpdateFext(int cycle){
 
+
+   if (numGrid >0 ) return; // only CG MAY do this
+
    /* -- NOTE: Hardcoded option -- */
    enum   {LINEAR,STAIRCASE};
    int    utype = STAIRCASE;
@@ -2469,10 +2706,10 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
 
 	 Lambda[i][j][k] = 0.0;
 
-	 if (x > xmin_r) {
+	 /*if (x > xmin_r) {
 	   if (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * 4.0 * M_PI / dx;
 	   else            Lambda[i][j][k] = 4.0 * M_PI / dx;
-	 }
+	   }*/
 
        }
      }
@@ -2734,6 +2971,7 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
    }
  }
 
+
  /*! Perfect conductor boundary conditions: RIGHT wall */
  void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid) {
    double beta, omcx, omcy, omcz, denom;
@@ -2841,6 +3079,40 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
    }
  }
 
+ /*! Perfect conductor boundary conditions for source: LEFT WALL */
+ void EMfields3D::MLMDSourceLeft(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
+
+
+   switch(dir){
+     case 0: // boundary condition on X-DIRECTION LEFT
+       for (int i=1; i < nyn-1;i++)
+	 for (int j=1; j < nzn-1;j++){
+
+	   vectorX[1][i][j] = 0.0;
+	   vectorY[1][i][j] = 0.0;
+	   vectorZ[1][i][j] = 0.0;
+	 }
+       break;
+     case 1: // boundary condition on Y-DIRECTION LEFT
+       for (int i=1; i < nxn-1;i++)
+	 for (int j=1; j < nzn-1;j++){
+	   vectorX[i][1][j] = 0.0;
+	   vectorY[i][1][j] = 0.0;
+	   vectorZ[i][1][j] = 0.0;
+	 }
+       break;
+     case 2: // boundary condition on Z-DIRECTION LEFT
+       for (int i=1; i < nxn-1;i++)
+	 for (int j=1; j <  nyn-1;j++){
+	   vectorX[i][j][1] = 0.0;
+	   vectorY[i][j][1] = 0.0;
+	   vectorZ[i][j][1] = 0.0;
+	 }
+       break;
+   }
+ }
+
+
  /*! Perfect conductor boundary conditions for source: RIGHT WALL */
  void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
 
@@ -2887,6 +3159,36 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
    }
  }
 
+void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
+
+   switch(dir){
+     case 0: // boundary condition on X-DIRECTION RIGHT
+       for (int i=1; i < nyn-1;i++)
+	 for (int j=1; j < nzn-1;j++){
+	   vectorX[nxn-2][i][j] = 0.0;
+	   vectorY[nxn-2][i][j] = 0.0;
+	   vectorZ[nxn-2][i][j] = 0.0;
+	 }
+       break;
+     case 1: // boundary condition on Y-DIRECTION RIGHT
+       for (int i=1; i < nxn-1;i++)
+	 for (int j=1; j < nzn-1;j++){
+	   vectorX[i][nyn-2][j] = 0.0;
+	   vectorY[i][nyn-2][j] = 0.0;
+	   vectorZ[i][nyn-2][j] = 0.0;
+	 }
+       break;
+     case 2:
+       for (int i=1; i <  nxn-1;i++)
+	 for (int j=1; j <  nyn-1;j++){
+	   vectorX[i][j][nzn-2] = 0.0;
+	   vectorY[i][j][nzn-2] = 0.0;
+	   vectorZ[i][j][nzn-2] = 0.0;
+	 }
+       break;
+   }
+ }
+
 
  // OpenBCs
 
@@ -2901,6 +3203,8 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 
  void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col){
 
+
+   if (numGrid >0) return;
    /* -- NOTE: Hardcoded option -- */
    bool XRightOutflow = false;
    /* -- END NOTE --*/
@@ -3748,6 +4052,38 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
    delArr3(vectY, nxn, nyn);
    delArr3(vectZ, nxn, nyn);
    delArr3(divC, nxc, nyc);
+
+   delete[]dx_C;
+   delete[]dy_C;
+   delete[]dz_C;
+
+   delArr2(Ex_Active_BC, RG_numBCMessages_Active);
+   delArr2(Ey_Active_BC, RG_numBCMessages_Active);
+   delArr2(Ez_Active_BC, RG_numBCMessages_Active);
+
+   delArr2(Ex_Ghost_BC, RG_numBCMessages_Ghost);
+   delArr2(Ey_Ghost_BC, RG_numBCMessages_Ghost);
+   delArr2(Ez_Ghost_BC, RG_numBCMessages_Ghost);
+
+   delArr2(Exth_Active_BC, RG_numBCMessages_Active);
+   delArr2(Eyth_Active_BC, RG_numBCMessages_Active);
+   delArr2(Ezth_Active_BC, RG_numBCMessages_Active);
+
+   delArr2(Exth_Ghost_BC, RG_numBCMessages_Ghost);
+   delArr2(Eyth_Ghost_BC, RG_numBCMessages_Ghost);
+   delArr2(Ezth_Ghost_BC, RG_numBCMessages_Ghost);
+
+   delArr2(Bxn_Active_BC, RG_numBCMessages_Active);
+   delArr2(Byn_Active_BC, RG_numBCMessages_Active);
+   delArr2(Bzn_Active_BC, RG_numBCMessages_Active);
+
+   delArr2(Bxn_Ghost_BC, RG_numBCMessages_Ghost);
+   delArr2(Byn_Ghost_BC, RG_numBCMessages_Ghost);
+   delArr2(Bzn_Ghost_BC, RG_numBCMessages_Ghost);
+
+   delete[] RGMsg;
+   // other mlmd stuff?
+   
  }
 
  /*! mlmd specific functions */
@@ -3810,6 +4146,7 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
    // as a child
    if (CommToParent != MPI_COMM_NULL){
 
+     RG_MaxMsgSize=0; // values is calulcated in the initWeightBC_Phase1's
      /* instantiate ghost structure */
      RGBC_Info_Ghost = new RGBC_struct[MAX_RG_numBCMessages];
      RGBC_Info_Active = new RGBC_struct[MAX_RG_numBCMessages];
@@ -3827,10 +4164,39 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
      // active
      initWeightBC_Phase1(grid, vct, RGBC_Info_Active, &RG_numBCMessages_Active, 0);
 
-     /*for (int i=0; i< RG_numBCMessages_Active; i++)
-       {
-	 cout <<"ACTIVE: grid " << numGrid << ", Coarse: " <<RGBC_Info_Active[i].CG_core << ", Refined: " << RGBC_Info_Active[i].RG_core << endl;
-	 }*/
+     // now I have all the info to initialise the BC vectors
+
+     // rows: [0 - RG_numBCMessages_Active]                                                    
+     // columns: [0 - RG_MaxMsgSize]                                                          
+     Ex_Active_BC= newArr2(double, RG_numBCMessages_Active, RG_MaxMsgSize);
+     Ey_Active_BC= newArr2(double, RG_numBCMessages_Active, RG_MaxMsgSize);
+     Ez_Active_BC= newArr2(double, RG_numBCMessages_Active, RG_MaxMsgSize);
+
+     Exth_Active_BC= newArr2(double, RG_numBCMessages_Active, RG_MaxMsgSize);
+     Eyth_Active_BC= newArr2(double, RG_numBCMessages_Active, RG_MaxMsgSize);
+     Ezth_Active_BC= newArr2(double, RG_numBCMessages_Active, RG_MaxMsgSize);
+     
+     Bxn_Active_BC= newArr2(double, RG_numBCMessages_Active, RG_MaxMsgSize);
+     Byn_Active_BC= newArr2(double, RG_numBCMessages_Active, RG_MaxMsgSize);
+     Bzn_Active_BC= newArr2(double, RG_numBCMessages_Active, RG_MaxMsgSize);
+
+     // rows: [0 - RG_numBCMessages_Ghost]                                                                                                   
+     // columns: [0 - RG_MaxMsgSize]                                                                            
+     Ex_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize);
+     Ey_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize);
+     Ez_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize);
+
+     Exth_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize);
+     Eyth_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize);
+     Ezth_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize);
+
+     Bxn_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize);
+     Byn_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize);
+     Bzn_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize);
+
+     // this used when receiving
+     RGMsg= new double[RG_MaxMsgSize *NumF];
+
 
    } // end if (numGrid>0)
    /* end phase 1 */
@@ -3907,10 +4273,17 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
    }
    MPI_Finalize(); exit(EXIT_SUCCESS);*/
 
+   MPI_Barrier(MPI_COMM_WORLD);
+   if (vct->getSystemWide_rank()==0){
+     cout << "After barrier phase 2" << endl;
+   }
 
   // phase 2c, only for the parent
   // each CG core will receive a message per child grid
   if (numChildren > 0 ){
+
+
+    CG_MaxSizeMsg=0;
 
     // ghost
     CG_Info_Ghost= newArr2(RGBC_struct, numChildren, MAX_RG_numBCMessages);
@@ -3927,6 +4300,10 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 
     initWeightBC_Phase2c(grid, vct, CG_Info_Ghost, CG_numBCMessages_Ghost, -1); 
     initWeightBC_Phase2c(grid, vct, CG_Info_Active, CG_numBCMessages_Active, 0);
+
+    // same size for all children, used to build BC msg
+    CGMsg = new double [CG_MaxSizeMsg * NumF];
+
 
     if (VerboseCheck== true){
       for (int ch=0; ch< numChildren; ch++){ // cycle on the children
@@ -3946,10 +4323,6 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
       }
     }
     /* end checks */
-
-    /* build the weights */
-    /* .... TO DO ...... */
-    /* end build the weights */
 
   } // end  if (numChildren > 0 ), only for parents
   
@@ -4151,7 +4524,6 @@ void EMfields3D::TEST__Assign_RG_BC_Values(VirtualTopology3D *vct, RGBC_struct *
   } // end if (which == 0)
 }
 
-// QUI
 void EMfields3D::TEST__Assign_RG_BC_Values_DNC(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which){
   //NB: the -1 exitign condition is assigned outside this function
   
@@ -4265,16 +4637,18 @@ void EMfields3D::MPI_RGBC_struct_commit(){
 
       int CG_core;  
       int RG_core; 
+
+      int MsgID;
   */
 
 
   RGBC_struct *a;
 
-  MPI_Datatype type[12]={MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT};
-  int blocklen[12]={1,1,1,1,1,1,1,1,1,1,1,1};
+  MPI_Datatype type[13]={MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT};
+  int blocklen[13]={1,1,1,1,1,1,1,1,1,1,1,1,1};
   
   // displacement in bytes
-  MPI_Aint disp[12];
+  MPI_Aint disp[13];
 
   disp[0]= (MPI_Aint) &(a->ix_first) - (MPI_Aint)a ;
   disp[1]= (MPI_Aint) &(a->iy_first) - (MPI_Aint)a ; 
@@ -4294,11 +4668,13 @@ void EMfields3D::MPI_RGBC_struct_commit(){
   disp[10]= (MPI_Aint) &(a->CG_core) - (MPI_Aint)a ;
   disp[11]= (MPI_Aint) &(a->RG_core) - (MPI_Aint)a ;
  
+  // the msg id
+  disp[12]= (MPI_Aint) &(a->MsgID) - (MPI_Aint)a ;
   //cout << "check" << endl;
   //for (int i=0; i< 12; i++){cout << "disp i: " << i <<", disp[i]: " << disp[i] << endl;}
 
 
-  MPI_Type_create_struct(12, blocklen, disp, type, &MPI_RGBC_struct);
+  MPI_Type_create_struct(13, blocklen, disp, type, &MPI_RGBC_struct);
   MPI_Type_commit(&MPI_RGBC_struct);
 }
 
@@ -4327,29 +4703,29 @@ void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int
   return;
 }
 
-/* assign the values to RGBC_struct; use ONLY in initWeightBC*/
-void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int POS ) {
+// also assign a msg ID
+void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp , int MsgID_tmp) {
 
   /// check the struct definition before assigning here!!!
 
-  cout << "POS: " << POS << endl;
-
-  s[POS].ix_first= ix_first_tmp;
-  s[POS].iy_first= iy_first_tmp;
-  s[POS].iz_first= iz_first_tmp;
+  s->ix_first= ix_first_tmp;
+  s->iy_first= iy_first_tmp;
+  s->iz_first= iz_first_tmp;
   
-  s[POS].BCside= BCside_tmp;
+  s->BCside= BCside_tmp;
 
-  s[POS].np_x= np_x_tmp;
-  s[POS].np_y= np_y_tmp;
-  s[POS].np_z= np_z_tmp;
+  s->np_x= np_x_tmp;
+  s->np_y= np_y_tmp;
+  s->np_z= np_z_tmp;
 
-  s[POS].CG_x_first= CG_x_first_tmp;
-  s[POS].CG_y_first= CG_y_first_tmp;
-  s[POS].CG_z_first= CG_z_first_tmp;
+  s->CG_x_first= CG_x_first_tmp;
+  s->CG_y_first= CG_y_first_tmp;
+  s->CG_z_first= CG_z_first_tmp;
   
-  s[POS].CG_core= CG_core_tmp;
-  s[POS].RG_core= RG_core_tmp;
+  s->CG_core= CG_core_tmp;
+  s->RG_core= RG_core_tmp;
+
+  s->MsgID= MsgID_tmp;  
 
   return;
 }
@@ -4364,7 +4740,7 @@ void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int
 */
 void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *RG_numBCMessages, int which){
 
-  int countMSG=0; // just for internal purposes
+  int countMSG=0; 
 
   if (! (which== -1 || which ==0)){
       cout << "initWeightBC, phase 1, is receiving wrong inputs. Check the code. Aborting now..." << endl;
@@ -4451,20 +4827,25 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
 
       // build and commit each of these
       for (int NN=0; NN<Dir2_Ncores; NN++){
-	//Assign_RGBC_struct_Values(RGBC_Info, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir2_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
-	Assign_RGBC_struct_Values(RGBC_Info+ (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir2_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP);
+	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir1_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
 
 	(*RG_numBCMessages)++;
+
+
+	int tmp= (Dir2_NPperC[NN] +1)*(Dir1_NPperC[n] +1)*(0 +1);
+	if (tmp > RG_MaxMsgSize) RG_MaxMsgSize= tmp;
+	  
+
       }
 
     } // end for (int n=0; n<Dir1_Ncores; n++)
 
 
-    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    /*cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
     cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
     for (int i= countMSG; i< *RG_numBCMessages; i++){ 
       cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
-    }
+      }*/
 
   } // end bottom face
   
@@ -4494,18 +4875,23 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       RGBCExploreDirection(grid, vct,FACE, 0, i_s, i_e, Dir1_IndexFirstPointperC[n], k_s, Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); // Dir2, lower dimension: X
 
       for (int NN=0; NN<Dir2_Ncores; NN++){
-	//Assign_RGBC_struct_Values(RGBC_Info, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir1_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
-	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir1_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP);
+	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir1_NPperC[n], 0, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+
 
 	(*RG_numBCMessages)++;
+
+	int tmp= (Dir2_NPperC[NN]+1)*( Dir1_NPperC[n]+1)*( 0+1);
+	if (tmp > RG_MaxMsgSize) RG_MaxMsgSize= tmp;
+	
+
       }
     } // endfor (int n=0; n<Dir1_Ncores; n++)   
 
-    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    /*cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
     cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
     for (int i= countMSG; i< *RG_numBCMessages; i++){ 
       cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
-    }
+      }*/
   } // end top face
   
   // this is the left face
@@ -4540,18 +4926,22 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
 
       for (int NN=0; NN< Dir2_Ncores; NN++){
 
-	//Assign_RGBC_struct_Values(RGBC_Info, i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
-	Assign_RGBC_struct_Values(RGBC_Info+(*RG_numBCMessages), i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+
 
 	(*RG_numBCMessages)++;
+
+	int tmp= ( 0+1)*( Dir2_NPperC[NN]+1)*( Dir1_NPperC[n]+1);
+	if (tmp > RG_MaxMsgSize) RG_MaxMsgSize= tmp;
+	
       }
     }// end for(int n=0; n< Dir1_Ncores; n++)
     
-    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    /*cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
     cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
     for (int i= countMSG; i< *RG_numBCMessages; i++){ 
       cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
-    }
+      }*/
   } // end left face
   
   // this is the right face
@@ -4587,18 +4977,22 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
 
       for (int NN=0; NN< Dir2_Ncores; NN++){
 
-	//Assign_RGBC_struct_Values(RGBC_Info, i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
-	Assign_RGBC_struct_Values(RGBC_Info+ (*RG_numBCMessages), i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP);
+	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), i_s, Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], -1, 0, Dir2_NPperC[NN], Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
 
 	(*RG_numBCMessages)++;
+
+
+	int tmp= (0+1)* (Dir2_NPperC[NN]+1)*(Dir1_NPperC[n]+1);
+	if (tmp > RG_MaxMsgSize) RG_MaxMsgSize= tmp;
+	
       }
     }
 
-    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    /*cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
     cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
     for (int i= countMSG; i< *RG_numBCMessages; i++){ 
       cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
-    }
+      }*/
   } // end right face
   
   // this is the front face
@@ -4633,19 +5027,22 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
 
       for (int NN=0; NN< Dir2_Ncores; NN++){
 	
-	//Assign_RGBC_struct_Values(RGBC_Info, Dir2_IndexFirstPointperC[NN], j_s, Dir1_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
-	Assign_RGBC_struct_Values(RGBC_Info+(*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], j_s, Dir1_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP);
+	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], j_s, Dir1_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
 
 	(*RG_numBCMessages)++;
-	cout << "R" <<SW_rank <<"RG_numBCMessages= " <<*RG_numBCMessages <<endl;
+
+	int tmp= (Dir2_NPperC[NN]+1)*( 0+1)*( Dir1_NPperC[n]+1);
+	if (tmp > RG_MaxMsgSize) RG_MaxMsgSize= tmp;
+	
+	
       }
     } // end for(int n=0; n< Dir1_Ncores; n++){
 
-    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    /*cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
     cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
     for (int i= countMSG; i< *RG_numBCMessages; i++){ 
       cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
-    }
+      }*/
   } // end front face
   
   // this is the back face
@@ -4679,19 +5076,21 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       RGBCExploreDirection(grid, vct, FACE, 0, i_s, i_e, j_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
       
       for (int NN=0; NN< Dir2_Ncores; NN++){
-	//Assign_RGBC_struct_Values(RGBC_Info, Dir2_IndexFirstPointperC[NN], j_s, Dir2_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPXperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], j_s, Dir2_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPXperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
 
-	Assign_RGBC_struct_Values(RGBC_Info+ (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], j_s, Dir2_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], 0, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPXperC[NN], Dir2_rank[NN], rank_CTP);
 	(*RG_numBCMessages)++;
+
+	int tmp= (Dir2_NPperC[NN]+1)*( 0+1)*( Dir1_NPperC[n]+1);
+	if (tmp > RG_MaxMsgSize) RG_MaxMsgSize= tmp;
 
       }
     } // end for(int n=0; n< Dir1_Ncores; n++){*/
 
-    cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
+    /*cout << "FACE " << FACE << ", Inside Phase 1, which " << which << endl;
     cout << "R" << SW_rank <<" send BC messages to " << (*RG_numBCMessages)-countMSG << "core(s)"  << endl;
     for (int i= countMSG; i< *RG_numBCMessages; i++){ 
       cout << " parent core " << RGBC_Info[i].CG_core <<" " << endl;
-    }
+      }*/
   } // end back face
   
   
@@ -4865,6 +5264,7 @@ void EMfields3D::initWeightBC_Phase2c(Grid *grid, VirtualTopology3D *vct, RGBC_s
 
   MPI_Status status;
 
+  int tmp;
   /* here, each CG core receive messages for core 0 (local) form RG */
   RGBC_struct * CG_buffer;
   CG_buffer= new RGBC_struct[MAX_RG_numBCMessages];
@@ -4886,6 +5286,11 @@ void EMfields3D::initWeightBC_Phase2c(Grid *grid, VirtualTopology3D *vct, RGBC_s
     while (CG_buffer[CG_numBCMessages[ch]].RG_core != -1 ){
       CG_Info[ch][CG_numBCMessages[ch]]= CG_buffer[CG_numBCMessages[ch]];
       
+      // the size of this msg; consider extrems are INCLUDED
+      // the max value will be used as max size for BC msg
+      tmp=( CG_buffer[CG_numBCMessages[ch]].np_x+1 ) * ( CG_buffer[CG_numBCMessages[ch]].np_y+1 ) * ( CG_buffer[CG_numBCMessages[ch]].np_z+1 );
+      if ( tmp> CG_MaxSizeMsg  ) CG_MaxSizeMsg = tmp;
+
       /* some sanity check ---
 	 the CG_core field of the msg should correspond to the rank of this core 
 	 on the parent-child communicator: check */
@@ -4996,77 +5401,69 @@ void EMfields3D::Trim_RGBC_Vectors(VirtualTopology3D *vct){
 /* BC related operations */
 /* sendBC: coarse grids sends BCs to the refined grids */
 void EMfields3D::sendBC(Grid *grid, VirtualTopology3D *vct){
-  /* this is only for coarses grids */
+  // this is only for coarses grids 
   if (numChildren < 1){ return; }
-
+  
   int msg; // this is the fake msg that will be sent to test the communication
   int rank_As_Parent;
   int dest; // destination on the parent-child communicator
   MPI_Comm PC_Comm; // the parent-child communicator
   int tag;
 
-  /* IMPORTANT: before sending BC, make sure ghost nodes are fixed
-   This is enforced here, even if it should be already ok from the Field Solved  
-   but DO NOT USE the communicateNode BC because you don't need to mess up with the BC */
+  // IMPORTANT: before sending BC, make sure ghost nodes are fixed
+  //   This is enforced here, even if it should be already ok from the Field Solved  
+  //   but DO NOT USE the communicateNode BC because you don't need to mess up with the BC 
   
-  communicateNode(nxn, nyn, nzn, Ex, vct);
+  /*communicateNode(nxn, nyn, nzn, Ex, vct);
   communicateNode(nxn, nyn, nzn, Ey, vct);
   communicateNode(nxn, nyn, nzn, Ez, vct);
   communicateNode(nxn, nyn, nzn, Bxn, vct);
   communicateNode(nxn, nyn, nzn, Byn, vct);
-  communicateNode(nxn, nyn, nzn, Bzn, vct);
+  communicateNode(nxn, nyn, nzn, Bzn, vct);*/
   
-  /* end fixing ghost nodes*/
-
-  /* assemble the message */
-  /* ......TO DO ........ */
-  /* end assemble the message */
   
-  /* RGBC_struct ** CG_Info_Ghost;
-    int *CG_numBCMessages_Ghost;
+  // RGBC_struct ** CG_Info_Ghost;
+  //  int *CG_numBCMessages_Ghost;
+  
+  //  RGBC_struct ** CG_Info_Active;
+  //  int *CG_numBCMessages_Active; 
 
-    RGBC_struct ** CG_Info_Active;
-    int *CG_numBCMessages_Active; */
+  // I am sending ghost E, ghost Eth, ghost B
+  // active E, active Eth, active B
+  // at the moment i do not use active B
+  
 
-  /* send messages */
   for (int ch=0; ch< numChildren; ch ++){
-    PC_Comm= vct->getCommToChild(ch);
-    // rank as parent of the parent-child communicator
-    MPI_Comm_rank(PC_Comm, &rank_As_Parent);
-		  
-    // ghost
-    for (int m=0; m<CG_numBCMessages_Ghost[ch]; m++){
-      /* rank_as_Parent should be == CG_Info_Ghost[ch][m],
-	 otherwise mess; in case, aborting */
-      if (rank_As_Parent != (CG_Info_Ghost[ch][m]).CG_core ) {
-	cout << "sendBC has detected an anomaly, aborting now..." << endl;
-	abort();
-      }
-      msg = (CG_Info_Ghost[ch][m]).CG_core;  // fake msg to test communication;
-      dest= (CG_Info_Ghost[ch][m]).RG_core;  // on the parent-child communicator
-      tag= TAG_BC_GHOST;
-      
-      MPI_Send(&msg, 1, MPI_INT, dest, tag, PC_Comm);
-    } // end cycle on ghost msgs
 
     // active
     for (int m=0; m<CG_numBCMessages_Active[ch]; m++){
-      /* rank_as_Parent should be == CG_Info_Active[ch][m],
-	 otherwise mess; in case, aborting */
-      if (rank_As_Parent != (CG_Info_Active[ch][m]).CG_core ) {
-	cout << "sendBC has detected an anomaly, aborting now..." << endl;
-	abort();
-      }
-      msg = (CG_Info_Active[ch][m]).CG_core;  // fake msg to test communication;
-      dest= (CG_Info_Active[ch][m]).RG_core;  // on the parent-child communicator
-      tag= TAG_BC_ACTIVE;
-      
-      MPI_Send(&msg, 1, MPI_INT, dest, tag, PC_Comm);
-    } // end cycle on active msgs
-  } // end cycle on children
+      sendOneBC(vct, grid, CG_Info_Active[ch][m], ch, 0);
+    }
+
+  }
+
+  // THIS BARRIER HAS TO STAY!!!
+  // to make sure all active msgs are sent before the ghost start being sent (otherwise the child, waiting for an active, may actually receive the ghost first)
+  MPI_Barrier(vct->getComm()); 
+  // END THIS BARRIER HAS TO STAY!!!
+
+  for (int ch=0; ch< numChildren; ch ++){
+    
+    for (int m=0; m<CG_numBCMessages_Ghost[ch]; m++){
+      sendOneBC(vct, grid, CG_Info_Ghost[ch][m], ch, 1-1);
+    }
+  } // end cycle on child
+
+
+  MPI_Barrier(vct->getComm());
+  if (vct->getCartesian_rank()==0){
+    cout << "grid " << numGrid << " Finished sending BC" << endl;
+  }
+
 }
 /* receiveBC: refined grids receive BCs from the coarse grids */
 void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
+
   MPI_Comm CommToParent= vct->getCommToParent();
   if (CommToParent == MPI_COMM_NULL) {return;}  // if you are not a refined grid, no need to be here
   
@@ -5075,29 +5472,130 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 
     RGBC_struct * RGBC_Info_Active;
     int RG_numBCMessages_Active; */
-  
-  int msg; // fake msg to test communication
-  int tag;
-  int source;
-  MPI_Status status;
-  // ghost
-  for (int m=0; m< RG_numBCMessages_Ghost; m++){
-    source= (RGBC_Info_Ghost[m]).CG_core; // I am expecting the msgs in order!!!
-    tag= TAG_BC_GHOST;
-    MPI_Recv(&msg, 1, MPI_INT, source, tag, CommToParent, &status);
+  cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " trying to receive msg " <<endl;
 
-  } // end for on msgs
+  MPI_Status status;
+  bool found;
+  int countExp;
+  int count;
+
+  
+  bool Testing= true; // put to false during production
+  // NB: Msg instantiated together with E*_***_BC
   // active
   for (int m=0; m< RG_numBCMessages_Active; m++){
-    source= (RGBC_Info_Active[m]).CG_core; // I am expecting the msgs in order!!!
-    tag= TAG_BC_ACTIVE;
-    MPI_Recv(&msg, 1, MPI_INT, source, tag, CommToParent, &status);
+    //source= (RGBC_Info_Active[m]).CG_core; // I am expecting the msgs in order!!!
+    //tag= RGBC_Info_Active[m]).MsgID;
 
-  } // end for on msgs
+    MPI_Recv(RGMsg, RG_MaxMsgSize *NumF, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, CommToParent, &status);
+    MPI_Get_count(&status, MPI_DOUBLE, &count );
+    
+    //cout << "R" << vct->getSystemWide_rank() <<" R" << vct->getRank_CommToParent() <<" on PC communicator, has received Active msg from " << status.MPI_SOURCE <<" with size " <<count << " and tag " <<status.MPI_TAG <<endl;
 
-  /*** ***/
-  // set BC //
-  /*** ***/
+
+    found= false;
+    // check with stored msgs
+    for (int i=0; i< RG_numBCMessages_Active; i++){
+      if (RGBC_Info_Active[i].MsgID == status.MPI_TAG ){ // NB: the tag gives you the msg position in the BC vector
+	
+	if (Testing){
+	  found= true;
+	  
+	  countExp= (RGBC_Info_Active[i].np_x +1)*(RGBC_Info_Active[i].np_y +1)*(RGBC_Info_Active[i].np_z +1) ;
+	  if (!( (countExp *NumF  == count) and (RGBC_Info_Active[i].CG_core == status.MPI_SOURCE) )){
+	    cout << "R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() <<" : msg recv from core " << status.MPI_SOURCE <<" with tag " << status.MPI_TAG << " but Active size does not check: received: " << count << " expected " << countExp*NumF << ", aborting ..." << endl;
+	    abort();
+	  }
+	  
+	  // put BC here
+	  // the tag gives you the position in the BC vector
+
+	  // E
+	  memcpy(Ex_Active_BC[status.MPI_TAG], RGMsg, sizeof(double)*countExp );
+	  memcpy(Ey_Active_BC[status.MPI_TAG], RGMsg +   countExp, sizeof(double)*countExp );
+	  memcpy(Ez_Active_BC[status.MPI_TAG], RGMsg + 2*countExp, sizeof(double)*countExp );
+
+	  // Eth
+	  memcpy(Exth_Active_BC[status.MPI_TAG], RGMsg+ 3*countExp, sizeof(double)*countExp );
+	  memcpy(Eyth_Active_BC[status.MPI_TAG], RGMsg+ 4*countExp, sizeof(double)*countExp );
+	  memcpy(Ezth_Active_BC[status.MPI_TAG], RGMsg+ 5*countExp, sizeof(double)*countExp );
+	  
+	  // B
+	  memcpy(Bxn_Active_BC[status.MPI_TAG], RGMsg +6*countExp, sizeof(double)*countExp );
+	  memcpy(Byn_Active_BC[status.MPI_TAG], RGMsg +7*countExp, sizeof(double)*countExp );
+	  memcpy(Bzn_Active_BC[status.MPI_TAG], RGMsg +8*countExp, sizeof(double)*countExp );
+	  break;
+	}
+      }
+    }
+
+    if (Testing){
+      if (found == false){
+	cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received a msg I cannot match with my record, aborting..." << endl;
+	abort();
+      }
+    }
+  
+  } // end for on msgs active
+
+
+  MPI_Barrier(vct->getComm());
+
+
+
+    // ghost
+  for (int m=0; m< RG_numBCMessages_Ghost; m++){
+    //source= (RGBC_Info_Ghost[m]).CG_core; // I am expecting the msgs in order!!!
+    //    tag= RGBC_Info_Ghost[m]).MsgID;
+
+    MPI_Recv(RGMsg, RG_MaxMsgSize *NumF, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, CommToParent, &status);
+    MPI_Get_count(&status, MPI_DOUBLE, &count );
+    
+    found= false;
+    // check with stored msgs
+    for (int i=0; i< RG_numBCMessages_Ghost; i++){
+      if (RGBC_Info_Ghost[i].MsgID == status.MPI_TAG ){
+	
+	if (Testing){
+	  found= true;
+	  
+	  countExp= (RGBC_Info_Ghost[i].np_x +1)*(RGBC_Info_Ghost[i].np_y +1)*(RGBC_Info_Ghost[i].np_z +1) ;
+	  if (!( (countExp *NumF  == count) and (RGBC_Info_Ghost[i].CG_core == status.MPI_SOURCE) )){
+	    cout << "R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() <<" : msg recv from core " << status.MPI_SOURCE <<" with tag " << status.MPI_TAG << " but Ghost size does not check: received: " << count << " expected " << countExp << ", aborting ..." << endl;
+	    abort();
+	  }
+	  
+	  // put BC here
+	  // the tag gives you the position in the BC vector
+	  memcpy(Ex_Ghost_BC[status.MPI_TAG], RGMsg, sizeof(double)*countExp );
+	  memcpy(Ey_Ghost_BC[status.MPI_TAG], RGMsg +   countExp, sizeof(double)*countExp );
+	  memcpy(Ez_Ghost_BC[status.MPI_TAG], RGMsg + 2*countExp, sizeof(double)*countExp );
+
+	  // Eth
+	  memcpy(Exth_Ghost_BC[status.MPI_TAG], RGMsg+ 3*countExp, sizeof(double)*countExp );
+	  memcpy(Eyth_Ghost_BC[status.MPI_TAG], RGMsg+ 4*countExp, sizeof(double)*countExp );
+	  memcpy(Ezth_Ghost_BC[status.MPI_TAG], RGMsg+ 5*countExp, sizeof(double)*countExp );
+	  
+	  // B
+	  memcpy(Bxn_Ghost_BC[status.MPI_TAG], RGMsg +6*countExp, sizeof(double)*countExp );
+	  memcpy(Byn_Ghost_BC[status.MPI_TAG], RGMsg +7*countExp, sizeof(double)*countExp );
+	  memcpy(Bzn_Ghost_BC[status.MPI_TAG], RGMsg +8*countExp, sizeof(double)*countExp );
+	  break;
+	}
+      }
+    }
+
+    if (Testing){
+      if (found == false){
+	cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received a msg I cannot match with my record, aborting..." << endl;
+	abort();
+      }
+    }
+
+
+  } // end for on ghost msgs*/
+  
+
 
   /*** after setting BC, fix ghost 
        IMPORTANT: DO NOT USE communicateNodeBC ***/
@@ -5109,7 +5607,15 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
   communicateNode(nxn, nyn, nzn, Byn, vct);
   communicateNode(nxn, nyn, nzn, Bzn, vct);
   /** end fix ghost **/
+
+ 
+
+  MPI_Barrier(vct->getComm());
+  if (vct->getCartesian_rank()== 0){
+    cout << "Grid " << numGrid << " finisged receiving her BC's" << endl;
+  }
 }
+
 
 /** grid --> obvious                                                                                                                              
     FACE --> (bottom, top, left, right, front, back) (needed only for debug prints)
@@ -5232,5 +5738,334 @@ void EMfields3D::RGBCExploreDirection(Grid *grid, VirtualTopology3D *vct,string 
   
 }
 
+void EMfields3D::buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_struct RGInfo, int Size ){
+  
+  // NB: if i send more stuff, do all the interpolation here
+  // i use the three indexes, knowing that one will be zero
 
-/* end BC related operations */
+  // position of the initial RG point in the CG grid
+  // points are displacement over this
+  double x0= RGInfo.CG_x_first;
+  double y0= RGInfo.CG_y_first;
+  double z0= RGInfo.CG_z_first;
+
+  double inv_dx= 1./dx;
+  double inv_dy= 1./dy;
+  double inv_dz= 1./dz;
+
+  double xp, yp, zp;
+  int count =0;
+
+  //cout << "inside building msg RGInfo.np_x " << RGInfo.np_x << " RGInfo.np_y " << RGInfo.np_y << " RGInfo.np_z " << RGInfo.np_z <<endl;
+
+  int II; if (RGInfo.np_x==0) II=1; else {II=RGInfo.np_x;};
+  int JJ; if (RGInfo.np_y==0) JJ=1; else {JJ=RGInfo.np_y;};
+  int KK; if (RGInfo.np_z==0) KK=1; else {KK=RGInfo.np_z;};
+
+  for (int i= 0; i< II; i++){
+    for (int j=0; j< JJ; j++){
+      for (int k=0; k< KK; k++){
+	
+	// ok, now each RG point is treated as a particle here
+	// and i need the E at the point position
+
+	xp= x0+ i*dx_C[ch];
+	yp= y0+ j*dy_C[ch];
+	zp= z0+ k*dz_C[ch];
+	
+	// this is copied from the mover
+	const double ixd = floor((xp - xStart) * inv_dx);
+	const double iyd = floor((yp - yStart) * inv_dy);
+	const double izd = floor((zp - zStart) * inv_dz);
+	int ix = 2 + int (ixd);
+	int iy = 2 + int (iyd);
+	int iz = 2 + int (izd);
+	if (ix < 1)
+	  ix = 1;
+	if (iy < 1)
+	  iy = 1;
+	if (iz < 1)
+	  iz = 1;
+	if (ix > nxn - 1)
+	  ix = nxn - 1;
+	if (iy > nyn - 1)
+	  iy = nyn - 1;
+	if (iz > nzn - 1)
+	  iz = nzn - 1;
+
+	double xi  [2];
+	double eta [2];
+	double zeta[2];
+
+	xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+	eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+	zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+	xi  [1] = grid->getXN(ix,iy,iz) - xp;
+	eta [1] = grid->getYN(ix,iy,iz) - yp;
+	zeta[1] = grid->getZN(ix,iy,iz) - zp;
+
+	double Exl = 0.0;
+	double Eyl = 0.0;
+	double Ezl = 0.0;
+
+	double Exthl = 0.0;
+	double Eythl = 0.0;
+	double Ezthl = 0.0;
+
+	double Bxl = 0.0;
+	double Byl = 0.0;
+	double Bzl = 0.0;
+
+	const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+	const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+	const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+	const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+	const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+	const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+	const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+	const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+	
+	//                                                                                                                                                       
+	Exl += weight000 * (Ex[ix][iy][iz]             );
+	Exl += weight001 * (Ex[ix][iy][iz - 1]         );
+	Exl += weight010 * (Ex[ix][iy - 1][iz]         );
+	Exl += weight011 * (Ex[ix][iy - 1][iz - 1]     );
+	Exl += weight100 * (Ex[ix - 1][iy][iz]         );
+	Exl += weight101 * (Ex[ix - 1][iy][iz - 1]     );
+	Exl += weight110 * (Ex[ix - 1][iy - 1][iz]     );
+	Exl += weight111 * (Ex[ix - 1][iy - 1][iz - 1] );
+
+	Eyl += weight000 * (Ey[ix][iy][iz]             );
+	Eyl += weight001 * (Ey[ix][iy][iz - 1]         );
+	Eyl += weight010 * (Ey[ix][iy - 1][iz]         );
+	Eyl += weight011 * (Ey[ix][iy - 1][iz - 1]     );
+	Eyl += weight100 * (Ey[ix - 1][iy][iz]         );
+	Eyl += weight101 * (Ey[ix - 1][iy][iz - 1]     );
+	Eyl += weight110 * (Ey[ix - 1][iy - 1][iz]     );
+	Eyl += weight111 * (Ey[ix - 1][iy - 1][iz - 1] );
+
+	Ezl += weight000 * (Ez[ix][iy][iz]             );
+	Ezl += weight001 * (Ez[ix][iy][iz - 1]         );
+	Ezl += weight010 * (Ez[ix][iy - 1][iz]         );
+	Ezl += weight011 * (Ez[ix][iy - 1][iz - 1]     );
+	Ezl += weight100 * (Ez[ix - 1][iy][iz]         );
+	Ezl += weight101 * (Ez[ix - 1][iy][iz - 1]     );
+	Ezl += weight110 * (Ez[ix - 1][iy - 1][iz]     );
+	Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] );
+
+
+	// TH
+	Exthl += weight000 * (Exth[ix][iy][iz]             );
+	Exthl += weight001 * (Exth[ix][iy][iz - 1]         );
+	Exthl += weight010 * (Exth[ix][iy - 1][iz]         );
+	Exthl += weight011 * (Exth[ix][iy - 1][iz - 1]     );
+	Exthl += weight100 * (Exth[ix - 1][iy][iz]         );
+	Exthl += weight101 * (Exth[ix - 1][iy][iz - 1]     );
+	Exthl += weight110 * (Exth[ix - 1][iy - 1][iz]     );
+	Exthl += weight111 * (Exth[ix - 1][iy - 1][iz - 1] );
+
+	Eythl += weight000 * (Eyth[ix][iy][iz]             );
+	Eythl += weight001 * (Eyth[ix][iy][iz - 1]         );
+	Eythl += weight010 * (Eyth[ix][iy - 1][iz]         );
+	Eythl += weight011 * (Eyth[ix][iy - 1][iz - 1]     );
+	Eythl += weight100 * (Eyth[ix - 1][iy][iz]         );
+	Eythl += weight101 * (Eyth[ix - 1][iy][iz - 1]     );
+	Eythl += weight110 * (Eyth[ix - 1][iy - 1][iz]     );
+	Eythl += weight111 * (Eyth[ix - 1][iy - 1][iz - 1] );
+
+	Ezthl += weight000 * (Ezth[ix][iy][iz]             );
+	Ezthl += weight001 * (Ezth[ix][iy][iz - 1]         );
+	Ezthl += weight010 * (Ezth[ix][iy - 1][iz]         );
+	Ezthl += weight011 * (Ezth[ix][iy - 1][iz - 1]     );
+	Ezthl += weight100 * (Ezth[ix - 1][iy][iz]         );
+	Ezthl += weight101 * (Ezth[ix - 1][iy][iz - 1]     );
+	Ezthl += weight110 * (Ezth[ix - 1][iy - 1][iz]     );
+	Ezthl += weight111 * (Ezth[ix - 1][iy - 1][iz - 1] );
+	// end TH
+
+	// B
+	Bxl += weight000 * (Bxn[ix][iy][iz]             );
+	Bxl += weight001 * (Bxn[ix][iy][iz - 1]         );
+	Bxl += weight010 * (Bxn[ix][iy - 1][iz]         );
+	Bxl += weight011 * (Bxn[ix][iy - 1][iz - 1]     );
+	Bxl += weight100 * (Bxn[ix - 1][iy][iz]         );
+	Bxl += weight101 * (Bxn[ix - 1][iy][iz - 1]     );
+	Bxl += weight110 * (Bxn[ix - 1][iy - 1][iz]     );
+	Bxl += weight111 * (Bxn[ix - 1][iy - 1][iz - 1] );
+
+	Byl += weight000 * (Byn[ix][iy][iz]             );
+	Byl += weight001 * (Byn[ix][iy][iz - 1]         );
+	Byl += weight010 * (Byn[ix][iy - 1][iz]         );
+	Byl += weight011 * (Byn[ix][iy - 1][iz - 1]     );
+	Byl += weight100 * (Byn[ix - 1][iy][iz]         );
+	Byl += weight101 * (Byn[ix - 1][iy][iz - 1]     );
+	Byl += weight110 * (Byn[ix - 1][iy - 1][iz]     );
+	Byl += weight111 * (Byn[ix - 1][iy - 1][iz - 1] );
+
+	Bzl += weight000 * (Bzn[ix][iy][iz]             );
+	Bzl += weight001 * (Bzn[ix][iy][iz - 1]         );
+	Bzl += weight010 * (Bzn[ix][iy - 1][iz]         );
+	Bzl += weight011 * (Bzn[ix][iy - 1][iz - 1]     );
+	Bzl += weight100 * (Bzn[ix - 1][iy][iz]         );
+	Bzl += weight101 * (Bzn[ix - 1][iy][iz - 1]     );
+	Bzl += weight110 * (Bzn[ix - 1][iy - 1][iz]     );
+	Bzl += weight111 * (Bzn[ix - 1][iy - 1][iz - 1] );
+	// end B
+	
+	CGMsg[0*Size +count]= Exl;
+	CGMsg[1*Size +count]= Eyl;
+	CGMsg[2*Size +count]= Ezl;
+
+	CGMsg[3*Size +count]= Exthl;
+	CGMsg[4*Size +count]= Eythl;
+	CGMsg[5*Size +count]= Ezthl;
+
+	CGMsg[6*Size +count]= Bxl;
+	CGMsg[7*Size +count]= Byl;
+	CGMsg[8*Size +count]= Bzl;
+
+	count ++;
+
+      }
+    }
+  }
+    cout <<"R" << vct->getSystemWide_rank() << ", count " << count << "for child " << ch << endl;
+}
+
+/* the RG sets the received BC                                                                                              
+       Fx, Fy, Fz: the field where BC are applied                      
+       Fx_BC, Fy_BC, Fz_BC: the BCs              
+       RGBC_Info: the RGBC_Info struct (Active or Ghost)                   
+       RG_numBCMessages: number of messages (Active or Ghost) */
+void EMfields3D::setBC_Nodes(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages){
+  for (int m=0; m<RG_numBCMessages; m++){
+    // points are included: <=
+    // remember one index is 0
+    // check here actually
+
+    /*    if (RGBC_Info[m].ix_first+RGBC_Info[m].np_x >nxn ){ cout << "Something is deeply wrong in setBC_Nodes, nxn=" << nxn << " RGBC_Info[m].ix_first+RGBC_Info[m].np_x =" << RGBC_Info[m].ix_first+RGBC_Info[m].np_x <<"  aborting ..." <<endl; abort();}
+    if (RGBC_Info[m].iy_first+RGBC_Info[m].np_y >nyn) { cout << "Something is deeply wrong in setBC_Nodes, nyn=" << nyn << " RGBC_Info[m].iy_first+RGBC_Info[m].np_y =" << RGBC_Info[m].iy_first+RGBC_Info[m].np_y <<"  aborting ..." <<endl; abort();}
+    if (RGBC_Info[m].iz_first+RGBC_Info[m].np_z >nzn) { cout << "Something is deeply wrong in setBC_Nodes, nzn=" << nzn << " RGBC_Info[m].iz_first+RGBC_Info[m].np_z =" << RGBC_Info[m].iz_first+RGBC_Info[m].np_z <<"  aborting ..." <<endl; abort();}*/
+
+    // one direction has to be 0
+    int N0=0;
+    int II; if (RGBC_Info[m].np_x==0) II=1; else {II=RGBC_Info[m].np_x; N0++;}
+    int JJ; if (RGBC_Info[m].np_y==0) JJ=1; else {JJ=RGBC_Info[m].np_y; N0++;}
+    int KK; if (RGBC_Info[m].np_z==0) KK=1; else {KK=RGBC_Info[m].np_z; N0++;}
+
+    if (N0 !=2) {cout << "Something is deeply wrong in setBC_Nodes, N0= " << N0 <<" aborting ..." <<endl; abort();}
+
+    int count=0;
+    for (int i= 0; i<II; i++){
+      for (int j=0; j<JJ; j++){
+	for (int k=0; k<KK; k++){
+
+	  int ix_f= RGBC_Info[m].ix_first;
+	  int iy_f= RGBC_Info[m].iy_first;
+	  int iz_f= RGBC_Info[m].iz_first;
+	  
+	  //Ex_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize); 	  
+	  Fx[ix_f + i][iy_f + j][iz_f + k]= Fx_BC[m][count];
+	  Fy[ix_f + i][iy_f + j][iz_f + k]= Fy_BC[m][count];
+	  Fz[ix_f + i][iy_f + j][iz_f + k]= Fz_BC[m][count];
+	  
+	  count ++;
+
+	} // end cycle k
+      } // end cycle j
+    } // end cycle i
+    //cout << "set BC Nodes: count " << count << endl;
+  } // end cycle on msg
+
+  return;
+}
+
+// QUI
+/* the RG sets the received BC                                                                                              
+       Fx, Fy, Fz: the image
+       vectX, vectY, vectZ: the intermediate solution in the iteration
+       Fx_BC, Fy_BC, Fz_BC: the BCs              
+       RGBC_Info: the RGBC_Info struct (Active or Ghost)                   
+       RG_numBCMessages: number of messages (Active or Ghost) */
+void EMfields3D::setBC_NodesImage(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double ***vectX, double ***vectY, double ***vectZ, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages){
+  for (int m=0; m<RG_numBCMessages; m++){
+
+    // one direction has to be 0
+    int N0=0;
+    int II; if (RGBC_Info[m].np_x==0) II=1; else {II=RGBC_Info[m].np_x; N0++;}
+    int JJ; if (RGBC_Info[m].np_y==0) JJ=1; else {JJ=RGBC_Info[m].np_y; N0++;}
+    int KK; if (RGBC_Info[m].np_z==0) KK=1; else {KK=RGBC_Info[m].np_z; N0++;}
+
+    if (N0 !=2) {cout << "Something is deeply wrong in setBC_Nodes, N0= " << N0 <<" aborting ..." <<endl; abort();}
+
+    int count=0;
+    for (int i= 0; i<II; i++){
+      for (int j=0; j<JJ; j++){
+	for (int k=0; k<KK; k++){
+
+	  int ix_f= RGBC_Info[m].ix_first;
+	  int iy_f= RGBC_Info[m].iy_first;
+	  int iz_f= RGBC_Info[m].iz_first;
+	  
+	  //Ex_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize); 	  
+	  Fx[ix_f + i][iy_f + j][iz_f + k]= vectX[ix_f + i][iy_f + j][iz_f + k] - Fx_BC[m][count];
+	  Fy[ix_f + i][iy_f + j][iz_f + k]= vectY[ix_f + i][iy_f + j][iz_f + k] - Fy_BC[m][count];
+	  Fz[ix_f + i][iy_f + j][iz_f + k]= vectZ[ix_f + i][iy_f + j][iz_f + k] - Fz_BC[m][count];
+	  
+	  count ++;
+
+	} // end cycle k
+      } // end cycle j
+    } // end cycle i
+    //cout << "set BC Nodes: count " << count << endl;
+  } // end cycle on msg
+
+  return;
+}
+
+// END QUI
+
+
+void EMfields3D::sendOneBC(VirtualTopology3D * vct, Grid * grid,  RGBC_struct CG_Info, int ch, int which){
+  
+  // 0: active
+  // -1: ghost [but only for debug]
+  int dest, tag;
+  string TYPE;
+  if (which== 0) TYPE= "ACTIVE";
+  if (which== -1) TYPE= "GHOST";
+
+  MPI_Comm CommToCh= vct->getCommToChild(ch);
+  int rankAsParent;
+  MPI_Comm_rank(CommToCh, &rankAsParent ); 
+
+  int Size=1;
+  int HW=0;
+  // +1 because of the <=
+  if (! ( CG_Info.np_x==0) ) {Size= Size* ( CG_Info.np_x +1); HW++; }
+  if (! ( CG_Info.np_y==0) ) {Size= Size* ( CG_Info.np_y +1); HW++; }
+  if (! ( CG_Info.np_z==0) ) {Size= Size* ( CG_Info.np_z +1); HW++; }
+      
+  if (HW != 2) {
+    cout << "R" << vct->getSystemWide_rank() << "something is deeply wrong in sendOneBC, aborting..." <<endl;
+    abort();
+  }
+
+      
+  //cout << "R" << vct->getSystemWide_rank()  << " before building msg for ch " << ch  << endl;
+  //cout << "R" << vct->getSystemWide_rank() << " (CG_Info_Active[ch][m]).np_x " << (CG_Info_Active[ch][m]).np_x << " (CG_Info_Active[ch][m]).np_y " << (CG_Info_Active[ch][m]).np_y << " (CG_Info_Active[ch][m]).np_z " << (CG_Info_Active[ch][m]).np_z << endl;
+  buildBCMsg(vct, grid, ch, CG_Info, Size );
+
+  //cout << "R" << vct->getSystemWide_rank()  << " after building msg for ch " << ch  << endl;      
+
+  dest= CG_Info.RG_core;  // on the parent-child communicator
+  tag= CG_Info.MsgID;
+    
+  //cout << "R" << vct->getSystemWide_rank()  << " msg " << m << " of " << CG_numBCMessages_Active[ch] << " to core " << dest << " of child " << ch <<", active" << " Size*3="<< Size*3<< endl;
+  MPI_Send(CGMsg, Size*NumF, MPI_DOUBLE, dest, tag, CommToCh);
+
+  //cout << "R" << vct->getSystemWide_rank() <<", R" << rankAsParent <<" on PC communicator, has sent this " << TYPE <<" msg to core " << dest << " in PC communicator, with size " << Size*NumF <<" and tag " << tag<< endl;
+
+  return;
+
+}

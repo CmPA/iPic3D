@@ -64,6 +64,13 @@ struct RGBC_struct {  // when changing this, change MPI_RGBC_struct_commit also
      the rank is on the PARENT-CHILD communicator*/
   int RG_core;
 
+  // so RG grid knows what she is dealing with
+  // when sending BC, send it back as tag
+  // NB: the MsgID is the order in which that particle RG core builds the msg in init Phase1; 
+  // it does not mean anything, just use as a check
+  int MsgID;
+  
+
   
 }; // end structure
 
@@ -237,6 +244,8 @@ class EMfields3D                // :public Field
     void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialized with rotated magnetic field */
     void initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta);
+    /*! initialized with Light Wave */
+    void initLightWave(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! add a perturbattion to charge density */
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */
@@ -500,7 +509,7 @@ class EMfields3D                // :public Field
        remember to give the poiner to the position */
     void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp );
     /* to assign values to the RGBC struct */
-    void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int POS);
+    void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int ID);
     /* mlmd test functions */
     /* to test communication when the RG communicates to the CG info regarding BC -
        this before the big re-structuring; keep tmp but then delete */
@@ -542,6 +551,17 @@ class EMfields3D                // :public Field
     void sendBC(Grid *grid, VirtualTopology3D *vct);
     /* receiveBC: refined grids receive BCs from the coarse grids */
     void receiveBC(Grid *grid, VirtualTopology3D *vct);
+    /* the RG sets the received BC 
+       Fx, Fy, Fz: the field where BC are applied
+       Fx_BC, Fy_BC, Fz_BC: the BCs
+       RGBC_Info: the RGBC_Info struct (Active or Ghost)
+       RG_numBCMessages: number of messages (Active or Ghost) */
+    void setBC_Nodes(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
+    /* for when I need to put the BC on the image */
+    void setBC_NodesImage(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***vectX, double ***vectY, double ***vectZ, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
+    /* set MaxwellSource BC in mlmd; NB: you need to set the actives */
+    void MLMDSourceLeft(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
+    void MLMDSourceRight(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
     /* calculates RGBC info per direction */
     /** grid --> obvious
 	vct --> obvious
@@ -560,8 +580,20 @@ class EMfields3D                // :public Field
        *IndexFirstPointperC --> index in the RG of the first point per core in the selected direction 
        **/
     void RGBCExploreDirection(Grid *grid, VirtualTopology3D *vct,string FACE, int DIR, int i0_s, int i0_e, int i1, int i2, double *SPXperC, double *SPYperC, double *SPZ_perC, int *NPperC, int *rank, int *Ncores, int *IndexFirstPointperC);
-    
+    /* CG core builds the BC msg for a RG core */
+    /* ch: number of the child
+       RGInfo: the message that you got from the refined grid, which holds all the info you need
+       Msg: stuff to send to the RG; this is already the info POINT BY POINT
+       NP: # of points to send
+     */
+    void buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_struct RGInfo,  int NP );
+    /* CG_Info: the entry with the info for that msg
+       ch: number of child
+       which: active or ghost */
+    void sendOneBC(VirtualTopology3D * vct, Grid * grid,  RGBC_struct CG_Info, int ch, int which);
     /* end mlmd: BC related functions */
+
+    
 
     /*! end mlmd specific functions */
     /* ********************************* // VARIABLES ********************************* */
@@ -614,6 +646,11 @@ class EMfields3D                // :public Field
     double Ly;
     /*! simulation box length - Z direction */
     double Lz;
+
+    /* mlmd: i need dx, dy, dz of the children */
+    double *dx_C;
+    double *dy_C;
+    double *dz_C;
 
     /*! end mlmd: these values are for the local grid */
 
@@ -820,6 +857,14 @@ class EMfields3D                // :public Field
     /*! grid number in the mlmd grid hierarchy */
     int numGrid;
 
+    /* wether to perform these operations */
+    bool MLMD_BC;
+    bool MLMD_PROJECTION;
+    bool ParticleREPOPULATION;
+
+    /* number of fields I am sending as BC: Ex, Ey, Ez, Exth, Eyth, Ezth, Bxn, Byn, Bzn */
+    int NumF;
+
     /* coordinates of the origin on the PARENT grid */
     //    double Ox, Oy, Oz;
 
@@ -833,11 +878,46 @@ class EMfields3D                // :public Field
        vectors repeated for ghost nodes and for the one after that, 
        with different names
     */
+
+    // RG_MaxMsgSize is used as a max size for receivinc BC msg
+    // value varies core per core and decided at initWeightBC
+    int RG_MaxMsgSize;
     RGBC_struct * RGBC_Info_Ghost;
     int RG_numBCMessages_Ghost;
 
     RGBC_struct * RGBC_Info_Active;
     int RG_numBCMessages_Active;
+
+    // rows: [0 - RG_numBCMessages_Active]
+    // columns: [0 - RG_MaxMsgSize]
+
+    double **Ex_Active_BC;
+    double **Ey_Active_BC;
+    double **Ez_Active_BC;
+
+    double **Exth_Active_BC;
+    double **Eyth_Active_BC;
+    double **Ezth_Active_BC;
+
+    double **Bxn_Active_BC;
+    double **Byn_Active_BC;
+    double **Bzn_Active_BC;
+
+    // rows: [0 - RG_numBCMessages_Ghost]
+    // columns: [0 - RG_MaxMsgSize]
+    double **Ex_Ghost_BC;
+    double **Ey_Ghost_BC;
+    double **Ez_Ghost_BC;
+
+    double **Exth_Ghost_BC;
+    double **Eyth_Ghost_BC;
+    double **Ezth_Ghost_BC;
+    
+    double **Bxn_Ghost_BC;
+    double **Byn_Ghost_BC;
+    double **Bzn_Ghost_BC;
+
+    double * RGMsg;
 
     /* Number of BC messages for the CG core - 
        the rows are the children, in the same order as the communicators in the
@@ -846,7 +926,12 @@ class EMfields3D                // :public Field
        each elements is a RGBC_struct -
        int *CG_numBCMessages_*** gives the number of message for each child grid -
        
-       structure repeated for the ghost nodes and for the active ones just following */
+       structure repeated for the ghost nodes and for the active ones just following 
+       CG_MaxSizeMsg gives you a max size for the msg to send; Size changes core by core and decided during initWeight
+    */
+
+    int CG_MaxSizeMsg;
+    double *CGMsg; // used to build msgs
 
     RGBC_struct ** CG_Info_Ghost;
     int *CG_numBCMessages_Ghost;

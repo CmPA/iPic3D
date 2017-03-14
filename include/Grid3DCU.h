@@ -55,6 +55,9 @@ public:
   void curlC2N(double ***curlXN, double ***curlYN, double ***curlZN, double ***vecFieldXC, double ***vecFieldYC, double ***vecFieldZC);
   /** calculate curl on central points, given a vector field defined on nodes  */
   void curlN2C(double ***curlXC, double ***curlYC, double ***curlZC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN);
+  /** calculate curl on central points, given a vector field defined on nodes
+      calculate ghost cells also using ghost node info if at buondary **/
+  void curlN2C_Ghost(VirtualTopology3D * vct, double ***curlXC, double ***curlYC, double ***curlZC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN);
 
   /** calculate divergence on central points, given a Tensor field defined on nodes  */
   void divSymmTensorN2C(double ***divCX, double ***divCY, double ***divCZ, double ****pXX, double ****pXY, double ****pXZ, double ****pYY, double ****pYZ, double ****pZZ, int ns);
@@ -135,6 +138,9 @@ public:
   /*! return your coordinates of origin on the parent grid */
   int getOx(){return Ox;} int getOy(){return Oy;} int getOz(){return Oz;}
 
+  /*! return your coordinates of origin in the system */
+  int getOx_SW(){return Ox_SW;} int getOy_SW(){return Oy_SW;} int getOz_SW(){return Oz_SW;}
+
   /*** pay exceptional attention to this description ***/
   /* nx, ny, nz: index in the current grid, which is a child*/
   /* returns the rank IN THE PARENT-CHILD communicator of the coarse grid core where the point is hosted    
@@ -188,6 +194,9 @@ private:
   int numGrid;
   /* coordinates of the origin on the PARENT grid */
   double Ox, Oy, Oz;
+
+  /* coordinates of the grid of origin System-wide */
+  double Ox_SW, Oy_SW, Oz_SW;
 
   /* portion of ACTIVE grid hosted in each parent core                                                                                       
      -- equivalent of xEnd - xStart on the parent -- used in getParentRankFromGridPoint */

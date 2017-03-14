@@ -255,9 +255,9 @@ void Collective::ReadInput(string inputfile) {
     TopologyType = config.read < int > ("TopologyType");
     
     /* whether to perform mlmd operations */
-    MLMD_BC = config.read < int > ("MLMD_BC");
-    MLMD_PROJECTION = config.read < int > ("MLMD_PROJECTION");
-    MLMD_ParticleREPOPULATION = config.read < int > ("MLMD_ParticleREPOPULATION");
+    MLMD_BC = config.read < bool > ("MLMD_BC");
+    MLMD_PROJECTION = config.read < bool > ("MLMD_PROJECTION");
+    MLMD_ParticleREPOPULATION = config.read < bool > ("MLMD_ParticleREPOPULATION");
 
     //cout << "MLMD_BC: " << MLMD_BC <<endl;
     
@@ -1616,9 +1616,9 @@ int Collective::getZLEN_mlmd(int N){ return ZLEN_mlmd[N];}
 int Collective::getnumGrid_clt(){return numGrid_clt;}
 int Collective::getLowestRankOfGrid(int n) {return LowestRankOfGrid[n];}
 
-int Collective::getMLMD_BC() {return MLMD_BC;}
-int Collective::getMLMD_PROJECTION() {return MLMD_PROJECTION;}
-int Collective::getMLMD_ParticleREPOPULATION() {return MLMD_ParticleREPOPULATION;}
+bool Collective::getMLMD_BC() {return MLMD_BC;}
+bool Collective::getMLMD_PROJECTION() {return MLMD_PROJECTION;}
+bool Collective::getMLMD_ParticleREPOPULATION() {return MLMD_ParticleREPOPULATION;}
 
 /*! end MLMD gets */
 /*! a first sanity check on MLMD inputs, called at the end of the constructor */
