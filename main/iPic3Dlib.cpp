@@ -293,6 +293,12 @@ void c_Solver::UpdateCycleInfo(int cycle) {
 
 }
 
+void c_Solver::SendBC(){
+  /* mlmd: BC */
+  if (MLMD_BC) {EMf->sendBC(grid, vct);}
+  /* end mlmd: BC */
+}
+
 void c_Solver::CalculateField() {
 
   // timeTasks.resetCycle();
@@ -315,10 +321,6 @@ void c_Solver::CalculateField() {
   // timeTasks.start(TimeTasks::FIELDS);
   EMf->calculateE(grid, vct, col);               // calculate the E field
   // timeTasks.end(TimeTasks::FIELDS);
-
-  /* mlmd: BC */
-  if (MLMD_BC) {EMf->sendBC(grid, vct);}
-  /* end mlmd: BC */
 
   /* some mlmd debug */
   /*MPI_Comm localComm= vct->getCommGrid();
@@ -355,6 +357,8 @@ bool c_Solver::ParticlesMover() {
   /*  -------------- */
   /*  Particle mover */
   /*  -------------- */
+
+  if (ns==0) mem_avail=1; // otherwise crashes
 
   // timeTasks.start(TimeTasks::PARTICLES);
   for (int i = 0; i < ns; i++)  // move each species

@@ -250,16 +250,14 @@ void Grid3DCU::curlN2C_Ghost(VirtualTopology3D * vct, double ***curlXC, double *
   double compXDZ, compZDX;
   double compYDX, compXDY;
 
-  int IS=1; if (vct->getXleft_neighbor() == MPI_PROC_NULL) IS=0;
-  int JS=1; if (vct->getYleft_neighbor() == MPI_PROC_NULL) JS=0;
-  int KS=1; if (vct->getZleft_neighbor() == MPI_PROC_NULL) KS=0;
-  int IE= nxc - 1; if (vct->getXright_neighbor() == MPI_PROC_NULL) IE= nxc;
-  int JE= nyc - 1; if (vct->getYright_neighbor() == MPI_PROC_NULL) JE= nyc;
-  int KE= nzc - 1; if (vct->getZright_neighbor() == MPI_PROC_NULL) KE= nzc;
+  // I need to do all of them!!! (because i cannot do a communicate node afterwards)
+  // I am adding a communicate node before, just to be safe; NOT a communicateNode BC
+  
+  // very imp: DO NOT DO ANY SORT OF COMMUNICATE HERE
 
-  for (register int i = IS; i < IE; i++)
-    for (register int j = JS; j < JE; j++)
-      for (register int k = KS; k < KE; k++) {
+  for (register int i = 0; i < nxc; i++)
+    for (register int j = 0; j < nyc; j++)
+      for (register int k = 0; k < nzc; k++) {
         // curl - X
         compZDY = .25 * (vecFieldZN[i][j + 1][k] - vecFieldZN[i][j][k]) * invdy + .25 * (vecFieldZN[i][j + 1][k + 1] - vecFieldZN[i][j][k + 1]) * invdy + .25 * (vecFieldZN[i + 1][j + 1][k] - vecFieldZN[i + 1][j][k]) * invdy + .25 * (vecFieldZN[i + 1][j + 1][k + 1] - vecFieldZN[i + 1][j][k + 1]) * invdy;
         compYDZ = .25 * (vecFieldYN[i][j][k + 1] - vecFieldYN[i][j][k]) * invdz + .25 * (vecFieldYN[i + 1][j][k + 1] - vecFieldYN[i + 1][j][k]) * invdz + .25 * (vecFieldYN[i][j + 1][k + 1] - vecFieldYN[i][j + 1][k]) * invdz + .25 * (vecFieldYN[i + 1][j + 1][k + 1] - vecFieldYN[i + 1][j + 1][k]) * invdz;
@@ -468,9 +466,67 @@ void Grid3DCU::interpC2N(double ***vecFieldN, double ***vecFieldC) {
 
 /** interpolate on central points from nodes */
 void Grid3DCU::interpN2C(double ***vecFieldC, double ***vecFieldN) {
-  for (register int i = 1; i < nxc - 1; i++)
+  /*  for (register int i = 1; i < nxc - 1; i++)
     for (register int j = 1; j < nyc - 1; j++)
+    for (register int k = 1; k < nzc - 1; k++)*/
+
+
+  for (register int i = 1; i < nxc ; i++)
+    for (register int j = 1; j < nyc ; j++)
+      for (register int k = 1; k < nzc ; k++)
+
+        vecFieldC[i][j][k] = .125 * (vecFieldN[i][j][k] + vecFieldN[i + 1][j][k] + vecFieldN[i][j + 1][k] + vecFieldN[i][j][k + 1] + vecFieldN[i + 1][j + 1][k] + vecFieldN[i + 1][j][k + 1] + vecFieldN[i][j + 1][k + 1] + vecFieldN[i + 1][j + 1][k + 1]);
+}
+
+void Grid3DCU::interpN2C_ActiveCell(double ***vecFieldC, double ***vecFieldN, VirtualTopology3D * vct) {
+
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL){
+
+    for (register int i = 1; i < 2; i++)
+      for (register int j = 1; j < nyc - 1; j++)
+	for (register int k = 1; k < nzc - 1; k++)
+	  vecFieldC[i][j][k] = .125 * (vecFieldN[i][j][k] + vecFieldN[i + 1][j][k] + vecFieldN[i][j + 1][k] + vecFieldN[i][j][k + 1] + vecFieldN[i + 1][j + 1][k] + vecFieldN[i + 1][j][k + 1] + vecFieldN[i][j + 1][k + 1] + vecFieldN[i + 1][j + 1][k + 1]);
+  }
+
+  if (vct->getXright_neighbor() == MPI_PROC_NULL){
+
+    for (register int i = nxc-2; i < nxc-1; i++)
+      for (register int j = 1; j < nyc - 1; j++)
+	for (register int k = 1; k < nzc - 1; k++)
+	  vecFieldC[i][j][k] = .125 * (vecFieldN[i][j][k] + vecFieldN[i + 1][j][k] + vecFieldN[i][j + 1][k] + vecFieldN[i][j][k + 1] + vecFieldN[i + 1][j + 1][k] + vecFieldN[i + 1][j][k + 1] + vecFieldN[i][j + 1][k + 1] + vecFieldN[i + 1][j + 1][k + 1]);
+  }
+
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL){
+    for (register int i = 1; i < nxc - 1; i++)
+    for (register int j = 1; j < 2; j++)
       for (register int k = 1; k < nzc - 1; k++)
+        vecFieldC[i][j][k] = .125 * (vecFieldN[i][j][k] + vecFieldN[i + 1][j][k] + vecFieldN[i][j + 1][k] + vecFieldN[i][j][k + 1] + vecFieldN[i + 1][j + 1][k] + vecFieldN[i + 1][j][k + 1] + vecFieldN[i][j + 1][k + 1] + vecFieldN[i + 1][j + 1][k + 1]); }
+
+  if (vct->getYright_neighbor() == MPI_PROC_NULL){
+    for (register int i = 1; i < nxc - 1; i++)
+      for (register int j = nyc-2; j < nyc-1; j++)
+      for (register int k = 1; k < nzc - 1; k++)
+        vecFieldC[i][j][k] = .125 * (vecFieldN[i][j][k] + vecFieldN[i + 1][j][k] + vecFieldN[i][j + 1][k] + vecFieldN[i][j][k + 1] + vecFieldN[i + 1][j + 1][k] + vecFieldN[i + 1][j][k + 1] + vecFieldN[i][j + 1][k + 1] + vecFieldN[i + 1][j + 1][k + 1]); }
+
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL){
+    for (register int i = 1; i < nxc - 1; i++)
+    for (register int j = 1; j < nyc - 1; j++)
+      for (register int k = 1; k < 2; k++)
+        vecFieldC[i][j][k] = .125 * (vecFieldN[i][j][k] + vecFieldN[i + 1][j][k] + vecFieldN[i][j + 1][k] + vecFieldN[i][j][k + 1] + vecFieldN[i + 1][j + 1][k] + vecFieldN[i + 1][j][k + 1] + vecFieldN[i][j + 1][k + 1] + vecFieldN[i + 1][j + 1][k + 1]);}
+
+  if (vct->getZright_neighbor() == MPI_PROC_NULL){
+
+    for (register int i = 1; i < nxc - 1; i++)
+      for (register int j = 1; j < nyc - 1; j++)
+	for (register int k = nzc-2; k < nzc - 1; k++)
+	  vecFieldC[i][j][k] = .125 * (vecFieldN[i][j][k] + vecFieldN[i + 1][j][k] + vecFieldN[i][j + 1][k] + vecFieldN[i][j][k + 1] + vecFieldN[i + 1][j + 1][k] + vecFieldN[i + 1][j][k + 1] + vecFieldN[i][j + 1][k + 1] + vecFieldN[i + 1][j + 1][k + 1]);}
+
+}
+
+void Grid3DCU::interpN2C_GC(double ***vecFieldC, double ***vecFieldN) {
+  for (register int i = 0; i < nxc ; i++)
+    for (register int j = 0; j < nyc ; j++)
+      for (register int k = 0; k < nzc ; k++)
         vecFieldC[i][j][k] = .125 * (vecFieldN[i][j][k] + vecFieldN[i + 1][j][k] + vecFieldN[i][j + 1][k] + vecFieldN[i][j][k + 1] + vecFieldN[i + 1][j + 1][k] + vecFieldN[i + 1][j][k + 1] + vecFieldN[i][j + 1][k + 1] + vecFieldN[i + 1][j + 1][k + 1]);
 }
 

@@ -83,8 +83,12 @@ public:
   void interpC2N(double ***vecFieldN, double ***vecFieldC);
   /** interpolate on central points from nodes */
   void interpN2C(double ***vecFieldC, double ***vecFieldN);
+  void interpN2C_GC(double ***vecFieldC, double ***vecFieldN);
   /** interpolate on central points from nodes */
   void interpN2C(double ****vecFieldC, int ns, double ****vecFieldN);
+
+  void interpN2C_ActiveCell(double ***vecFieldC, double ***vecFieldN, VirtualTopology3D * vct) ;
+
 
   /** return nxc */
   int getNXC();

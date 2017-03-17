@@ -27,7 +27,7 @@ void Collective::ReadInput(string inputfile) {
     config.readInto(Smooth, "Smooth");
     SaveDirName = config.read < string > ("SaveDirName");
     RestartDirName = config.read < string > ("RestartDirName");
-    ns = config.read < int >("ns");
+    ns =  config.read < int >("ns");
     NpMaxNpRatio = config.read < double >("NpMaxNpRatio");
     // GEM Challenge 
     B0x = config.read <double>("B0x");
