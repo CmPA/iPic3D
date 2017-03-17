@@ -91,21 +91,18 @@ void Collective::ReadInput(string inputfile) {
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle");
     RestartOutputCycle = config.read < int >("RestartOutputCycle");
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
-   
-    /* pre-mlmd: now it is a vector
-    // MPI  periodicity
-    PERIODICX = config.read < bool >("PERIODICX");
-    PERIODICY = config.read < bool >("PERIODICY");
-    PERIODICZ = config.read < bool >("PERIODICZ");*/
-    
-
     // MLMD reads; always read from inputfile
     
     Ngrids = config.read < int >("Ngrids");
+    
     array_int gridLevel0 = config.read < array_int > ("gridLevel");
-    array_int RF0 = config.read < array_int > ("RF");
+  
     array_int parentGrid0 = config.read < array_int > ("parentGrid");
     
+    array_double Lx_mlmd0 = config.read < array_double > ("Lx_mlmd");
+    array_double Ly_mlmd0 = config.read < array_double > ("Ly_mlmd");
+    array_double Lz_mlmd0 = config.read < array_double > ("Lz_mlmd");
+
     array_int nxc_mlmd0 = config.read < array_int > ("nxc_mlmd");
     array_int nyc_mlmd0 = config.read < array_int > ("nyc_mlmd");
     array_int nzc_mlmd0 = config.read < array_int > ("nzc_mlmd");
@@ -125,7 +122,6 @@ void Collective::ReadInput(string inputfile) {
     array_bool PERIODICZ_mlmd0 = config.read < array_bool > ("PERIODICZ");
 
     gridLevel = new int[Ngrids];
-    RF = new int[Ngrids];
     parentGrid = new int[Ngrids];
 
     nxc_mlmd = new int[Ngrids];
@@ -140,12 +136,15 @@ void Collective::ReadInput(string inputfile) {
     YLEN_mlmd = new int[Ngrids];
     ZLEN_mlmd = new int[Ngrids];
 
+    Lx_mlmd = new double[Ngrids];
+    Ly_mlmd = new double[Ngrids];
+    Lz_mlmd = new double[Ngrids];
+
     PERIODICX_mlmd = new bool[Ngrids]; 
     PERIODICY_mlmd = new bool[Ngrids];
     PERIODICZ_mlmd = new bool[Ngrids];
 
     gridLevel[0] = gridLevel0.a;
-    RF[0] = RF0.a;
     parentGrid[0] = parentGrid0.a;
         
     nxc_mlmd[0] = nxc_mlmd0.a;
@@ -163,10 +162,13 @@ void Collective::ReadInput(string inputfile) {
     PERIODICX_mlmd[0] = PERIODICX_mlmd0.a;
     PERIODICY_mlmd[0] = PERIODICY_mlmd0.a;
     PERIODICZ_mlmd[0] = PERIODICZ_mlmd0.a;
-    
+
+    Lx_mlmd[0] = Lx_mlmd0.a; 
+    Ly_mlmd[0] = Ly_mlmd0.a;
+    Lz_mlmd[0] = Lz_mlmd0.a;
+
     if (Ngrids >1) {
       gridLevel[1] = gridLevel0.b;
-      RF[1]= RF0.b;
       parentGrid[1]= parentGrid0.b;
       
       nxc_mlmd[1] =nxc_mlmd0.b;
@@ -184,11 +186,14 @@ void Collective::ReadInput(string inputfile) {
       PERIODICX_mlmd[1] = PERIODICX_mlmd0.b;
       PERIODICY_mlmd[1] = PERIODICY_mlmd0.b;
       PERIODICZ_mlmd[1] = PERIODICZ_mlmd0.b;
+
+      Lx_mlmd[1] = Lx_mlmd0.b; 
+      Ly_mlmd[1] = Ly_mlmd0.b;
+      Lz_mlmd[1] = Lz_mlmd0.b;
     }
     
     if (Ngrids >2) {
       gridLevel[2] = gridLevel0.c;
-      RF[2]= RF0.c;
       parentGrid[2]= parentGrid0.c;
       
       nxc_mlmd[2] =nxc_mlmd0.c;
@@ -206,11 +211,14 @@ void Collective::ReadInput(string inputfile) {
       PERIODICX_mlmd[2] = PERIODICX_mlmd0.c;
       PERIODICY_mlmd[2] = PERIODICY_mlmd0.c;
       PERIODICZ_mlmd[2] = PERIODICZ_mlmd0.c;
+
+      Lx_mlmd[2] = Lx_mlmd0.c; 
+      Ly_mlmd[2] = Ly_mlmd0.c;
+      Lz_mlmd[2] = Lz_mlmd0.c;
     }
     
     if (Ngrids >3) {
       gridLevel[3] = gridLevel0.d;
-      RF[3]= RF0.d;
       parentGrid[3]= parentGrid0.d;
       
       nxc_mlmd[3] =nxc_mlmd0.d;
@@ -228,11 +236,14 @@ void Collective::ReadInput(string inputfile) {
       PERIODICX_mlmd[3] = PERIODICX_mlmd0.d;
       PERIODICY_mlmd[3] = PERIODICY_mlmd0.d;
       PERIODICZ_mlmd[3] = PERIODICZ_mlmd0.d;
+
+      Lx_mlmd[3] = Lx_mlmd0.d; 
+      Ly_mlmd[3] = Ly_mlmd0.d;
+      Lz_mlmd[3] = Lz_mlmd0.d;
     }
     
     if (Ngrids >4) {
       gridLevel[4] = gridLevel0.e;
-      RF[4]= RF0.e;
       parentGrid[4]= parentGrid0.e;
       
       nxc_mlmd[4] =nxc_mlmd0.e;
@@ -250,6 +261,10 @@ void Collective::ReadInput(string inputfile) {
       PERIODICX_mlmd[4] = PERIODICX_mlmd0.e;
       PERIODICY_mlmd[4] = PERIODICY_mlmd0.e;
       PERIODICZ_mlmd[4] = PERIODICZ_mlmd0.e;
+
+      Lx_mlmd[4] = Lx_mlmd0.e; 
+      Ly_mlmd[4] = Ly_mlmd0.e;
+      Lz_mlmd[4] = Lz_mlmd0.e;
     }
     
     TopologyType = config.read < int > ("TopologyType");
@@ -337,12 +352,12 @@ void Collective::ReadInput(string inputfile) {
     nyc = getFluidNyc();
     nzc = getFluidNzc();
 #else
-    Lx = config.read < double >("Lx");  // I need this read for the MLMD also
+    /*Lx = config.read < double >("Lx");  // I need this read for the MLMD also
     Ly = config.read < double >("Ly");
     Lz = config.read < double >("Lz");
     nxc = config.read < int >("nxc");
     nyc = config.read < int >("nyc");
-    nzc = config.read < int >("nzc");
+    nzc = config.read < int >("nzc");*/
 #endif
 
     
@@ -808,13 +823,7 @@ Collective::Collective(int argc, char **argv) {
   ReadInput(inputfile);
   /*! fourpi = 4 greek pi */
   fourpi = 16.0 * atan(1.0);
-  /*! dx = space step - X direction */
-  dx = Lx / (double) nxc;
-  /*! dy = space step - Y direction */
-  dy = Ly / (double) nyc;
-  /*! dz = space step - Z direction */
-  dz = Lz / (double) nzc;
-
+  
   /*! MLMD:  dx_mlmd, dy_mlmd, dz_mlmd : resolution at grid level */
 
   /* to have the grid number, before topology is set
@@ -853,26 +862,12 @@ Collective::Collective(int argc, char **argv) {
   dx_mlmd = new double[Ngrids];
   dy_mlmd = new double[Ngrids];
   dz_mlmd = new double[Ngrids];
-
-  Lx_mlmd = new double[Ngrids];
-  Ly_mlmd = new double[Ngrids];
-  Lz_mlmd = new double[Ngrids];
-
+  
   Ox_P = new double[Ngrids];
   Oy_P = new double[Ngrids];
   Oz_P = new double[Ngrids];
   
-  Lx_mlmd[0] = Lx;
-  Ly_mlmd[0] = Ly;
-  Lz_mlmd[0] = Lz;
-
-  for (int ng=1; ng < Ngrids; ng++) { // NB: RF is given with respect to the PARENT grid
-    Lx_mlmd[ng]= Lx_mlmd[parentGrid[ng]]/RF[ng];
-    Ly_mlmd[ng]= Ly_mlmd[parentGrid[ng]]/RF[ng];
-    Lz_mlmd[ng]= Lz_mlmd[parentGrid[ng]]/RF[ng];
-  }
-
-  for (int ng=0; ng < Ngrids; ng++) { // NB: RF is given with respect to the PARENT grid 
+  for (int ng=0; ng < Ngrids; ng++) { 
     dx_mlmd[ng]= Lx_mlmd[ng]/ (double) nxc_mlmd[ng];
     dy_mlmd[ng]= Ly_mlmd[ng]/ (double) nyc_mlmd[ng];
     dz_mlmd[ng]= Lz_mlmd[ng]/ (double) nzc_mlmd[ng];
@@ -975,7 +970,6 @@ Collective::~Collective() {
 
   // MLMD variables
   delete[]gridLevel;
-  delete[]RF;
   delete[]parentGrid;
   delete[]nxc_mlmd;
   delete[]nyc_mlmd;
@@ -996,6 +990,9 @@ Collective::~Collective() {
   delete[]PERIODICX_mlmd;
   delete[]PERIODICY_mlmd;
   delete[]PERIODICZ_mlmd;
+  delete[]Lx_mlmd;
+  delete[]Ly_mlmd;
+  delete[]Lz_mlmd;
   // MLMD variables
 }
 /*! Print Simulation Parameters */
@@ -1062,10 +1059,10 @@ void Collective::Print() {
     }
   cout <<endl;
 
-  cout << "Refinement factors            : " <<endl;
+  cout << "Grid dimensions            : " <<endl;
   for (int ng=0; ng < Ngrids; ng++)
     {
-      cout << RF[ng] << "\t";
+      cout << Lx_mlmd[ng] <<"-"  << Ly_mlmd[ng] <<"-"  << Lz_mlmd[ng] << "\t";
     }
   cout <<endl;
   
@@ -1153,10 +1150,10 @@ void Collective::save() {
     }
   my_file <<endl;
 
-  my_file << "Refinement factors            : " <<endl;
+  my_file << "Grid dimensions            : " <<endl;
   for (int ng=0; ng < Ngrids; ng++)
     {
-      my_file << RF[ng] << "\t";
+      my_file << Lx_mlmd[ng] <<"-"  << Ly_mlmd[ng] <<"-"  << Lz_mlmd[ng] << "\t";
     }
   my_file <<endl;
   
@@ -1199,21 +1196,7 @@ void Collective::save() {
 int Collective::getDim() {
   return (dim);
 }
-/*! mlmd: use getLx_mlmd instead */
-/*! get Lx */
-/*double Collective::getLx() {
-  return (Lx);
-}*/
-/*! get Ly */
-/*double Collective::getLy() {
-  return (Ly);
-}*/
-/*! get Lz */
-/*double Collective::getLz() {
-  return (Lz);
-}*/
-/*! end mlmd: use getLx_mlmd instead */ 
-/*! get x_center */
+
 double Collective::getx_center() {
   return (x_center);
 }
@@ -1229,32 +1212,7 @@ double Collective::getz_center() {
 double Collective::getL_square() {
   return (L_square);
 }
-/*! mlmd: use getNxc_mlmd instead */
-/*! get nxc */
-/*int Collective::getNxc() {
-  return (nxc);
-}*/
-/*! get nyx */
-/*int Collective::getNyc() {
-  return (nyc);
-}*/
-/*! get nzc */
-/*!int Collective::getNzc() {
-  return (nzc);
-}*/
-/*! get dx */
-/*! mlmd: use getDx_mlmd instead*/
-/*!double Collective::getDx() {
-  return (dx);
-}
-/*! get dy */
-/*double Collective::getDy() {
-  return (dy);
-}*/
-/*! get dz */
-/*double Collective::getDz() {
-  return (dz);
-}*/
+
 /*! get the light speed */
 double Collective::getC() {
   return (c);
@@ -1535,9 +1493,7 @@ int Collective::getNgrids() {
 int Collective::getgridLevel(int numgrid) {
   return gridLevel[numgrid];
 }
-int Collective::getRF(int numgrid) {
-  return RF[numgrid];
-}
+
 int Collective::getparentGrid(int numgrid) {
   return parentGrid[numgrid];
 }

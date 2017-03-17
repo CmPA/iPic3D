@@ -346,7 +346,6 @@ public:
     if (tag.find("collective", 0) != string::npos) {
 
       /*! mlmd: added */
-      this->output_adaptor.write("/collective/RF", _col->getRF(gridNUM));
       this->output_adaptor.write("/collective/Ox", _col->getOx_SW(gridNUM)); // in terms of the coarsest grid
       this->output_adaptor.write("/collective/Oy", _col->getOy_SW(gridNUM));
       this->output_adaptor.write("/collective/Oz", _col->getOz_SW(gridNUM));
@@ -540,7 +539,7 @@ public:
 
     // Js (current density for species s) is written without ghost cells and defined in nodes
     if (tag.find("Jsall", 0) != string::npos) {
-      for (int i = 0; i < ns; ++i) {
+      for (int i = 0; i < 8; i++){ // ns; ++i) { // debug, to remove!!!
         stringstream ii;
         ii << i;
         this->output_adaptor.write("/moments/species_" + ii.str() + "/Jx/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getJxs());

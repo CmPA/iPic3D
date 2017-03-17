@@ -233,7 +233,6 @@ class Collective
     /*! MLMD gets */
     int getNgrids();
     int getgridLevel(int numgrid);
-    int getRF(int numgrid);
     int getparentGrid(int numgrid);
     /*! in terms of the PARENT grid */
     double getOx_P(int numgrid);
@@ -502,7 +501,6 @@ class Collective
     // MLMD variables
     int Ngrids;
     int *gridLevel;
-    int *RF;
     /*! number of the mlmd parent grid */
     int *parentGrid;
     /*! number of Children each mlmd grid has*/
