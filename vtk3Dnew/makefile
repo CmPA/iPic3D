@@ -157,6 +157,16 @@ AVGxyPHDF5: AVGxyPHDF5.cpp
 	AVGxyPHDF5.cpp  ${LIB_HDF5}  \
 ${HDF5LIBS}	
 
+AVGxzHDF5: AVGxzHDF5.cpp 
+	${CPP}	${OPTFLAGS} -o  AVGxzHDF5 ${INC_HDF5} \
+	AVGxzHDF5.cpp  ${LIB_HDF5}  \
+${HDF5LIBS}	
+
+AVGxzPHDF5: AVGxzPHDF5.cpp 
+	${CPP}	${OPTFLAGS} -o  AVGxzPHDF5 ${INC_HDF5} \
+	AVGxzPHDF5.cpp  ${LIB_HDF5}  \
+${HDF5LIBS}	
+
 xyzGDA: xyzGDA.cpp
 	${CPP}  ${OPTFLAGS} -o  xyzGDA ${INC_HDF5} \
 	xyzGDA.cpp  ${LIB_HDF5}  \

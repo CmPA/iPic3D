@@ -1048,7 +1048,7 @@ void writeVTKvect(int it, string vectname, string addname, double** EX, double**
 	stringstream stringcycle;
 	stringcycle << cycle;
 	string temp;
-	temp = vectname +addname +"_AVG_xy_cycle" +stringcycle.str();
+	temp = vectname +addname +"_AVG_cycle" +stringcycle.str();
 	temp += ".vtk";
 	cout << "Writing file: " << temp << endl;
 	ofstream my_fileE(temp.c_str());
@@ -1082,7 +1082,7 @@ void writeVTKscalar(int it, string scalarname, string addname, double** EX) {
 	string temp;
 	stringstream stringcycle;
 	stringcycle << cycle;
-	temp = scalarname +addname +"_AVG_xy_cycle" +stringcycle.str();
+	temp = scalarname +addname +"_AVG_cycle" +stringcycle.str();
 	temp += ".vtk";
 	cout << "Writing file: " << temp << endl;
 	ofstream my_fileE(temp.c_str());
@@ -1116,7 +1116,7 @@ void writeVTKscalar_species(int it, string scalarname, double** EX, double** EY)
 	string temp;
 	stringstream stringcycle;
 	stringcycle << cycle;
-	temp = scalarname +"_AVG_xy_cycle" +stringcycle.str();
+	temp = scalarname +"_AVG_cycle" +stringcycle.str();
 	temp += ".vtk";
 	cout << "Writing file: " << temp << endl;
 	ofstream my_fileE(temp.c_str());
@@ -1157,7 +1157,7 @@ void writeVTKscalar_species(int it, string scalarname, double** EX, double** EY,
 	string temp;
 	stringstream stringcycle;
 	stringcycle << cycle;
-	temp = scalarname +"_AVG_xy_cycle" +stringcycle.str();
+	temp = scalarname +"_AVG_cycle" +stringcycle.str();
 	temp += ".vtk";
 	cout << "Writing file: " << temp << endl;
 	ofstream my_fileE(temp.c_str());
@@ -1210,7 +1210,7 @@ void writeVTKtensor(int it, string tensorname, string addname, double** EXX, dou
 	string temp;
 	stringstream stringcycle;
 	stringcycle << cycle;
-	temp = tensorname + addname +"_AVG_xy_cycle" +stringcycle.str();
+	temp = tensorname + addname +"_AVG_cycle" +stringcycle.str();
 	temp += ".vtk";
 	cout << "Writing file: " << temp << endl;
 	ofstream my_fileE(temp.c_str());

@@ -88,6 +88,47 @@ void averagecross(double** CX, double** CY, double** CZ,
 		double** STDENTH, double** STDENIN, double** STDJDOTE,
 		double*** VDIVP, double*** DIVJV, double*** JDOTE);
 
+ void averageY(double** EXB, double*** EX);
+
+ void averageYSTD(double** EXB, double** EXSTD, double*** EX);
+
+ void averageY(double** EXB, double** EYB, double** EZB, double*** EX, double*** EY, double*** EZ);
+
+ void averageYdot(double** EdotJX, double** EdotJY, double** EdotJZ,
+ 		   double** dEdotJX, double** dEdotJY, double** dEdotJZ,
+ 		   double** EXB, double** EYB, double** EZB,
+ 		   double** VXB, double** VYB, double** VZB,
+ 		   double*** EX, double*** EY, double*** EZ,
+ 		   double*** VX, double*** VY, double*** VZ);
+
+ void averageYdot(double** EdotJX, double** EdotJY, double** EdotJZ,
+                 double** dEdotJX, double** dEdotJY, double** dEdotJZ,
+                 double** sEdotJX, double** sEdotJY, double** sEdotJZ,
+                 double** EXB, double** EYB, double** EZB,
+                 double** VXB, double** VYB, double** VZB,
+                 double*** EX, double*** EY, double*** EZ,
+                 double*** VX, double*** VY, double*** VZ);
+
+ void averageYcross(double** CX, double** CY, double** CZ,
+ 				double** dCX, double** dCY, double** dCZ,
+ 				double** EXB, double** EYB, double** EZB,
+ 				double** BXB, double** BYB, double** BZB,
+ 				double*** EX, double*** EY, double*** EZ,
+ 				double*** BX, double*** BY, double*** BZ);
+
+ void averageYcross(double** CX, double** CY, double** CZ,
+                   double** dCX, double** dCY, double** dCZ,
+                   double** sCX, double** sCY, double** sCZ,
+                   double** EXB, double** EYB, double** EZB,
+                   double** BXB, double** BYB, double** BZB,
+                   double*** EX, double*** EY, double*** EZ,
+                   double*** BX, double*** BY, double*** BZ);
+
+  void averageY_energy(double** AVGENTH, double** AVGENIN, double** AVGJDOTE,
+ 		double** STDENTH, double** STDENIN, double** STDJDOTE,
+ 		double*** VDIVP, double*** DIVJV, double*** JDOTE);
+
+
 void extract_pressure(double qom, double*** BX, double*** BY, double*** BZ,
 					  double*** VX, double*** VY, double*** VZ,
 					  double*** N, double*** pXX, double*** pXY,
@@ -591,6 +632,338 @@ void average_energy(double** AVGENTH, double** AVGENIN, double** AVGJDOTE,
 			STDENTH[ii][jj] = sqrt(STDENTH[ii][jj] / (nzn*ZLEN-2));
 			STDENIN[ii][jj] = sqrt(STDENIN[ii][jj] / (nzn*ZLEN-2));
 			STDJDOTE[ii][jj] = sqrt(STDJDOTE[ii][jj] / (nzn*ZLEN-2));
+		}
+
+}
+
+// Averaging in Y
+
+void averageY(double** EXB, double** EYB, double** EZB, double*** EX, double*** EY, double*** EZ){
+
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EXB[ii][kk] = 0.0;
+			EYB[ii][kk] = 0.0;
+			EZB[ii][kk] = 0.0;
+		}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+				EXB[ii][kk] += EX[ii][jj][kk];
+				EYB[ii][kk] += EY[ii][jj][kk];
+				EZB[ii][kk] += EZ[ii][jj][kk];
+			}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EXB[ii][kk] = EXB[ii][kk] / nyn/YLEN;
+			EYB[ii][kk] = EYB[ii][kk] / nyn/YLEN;
+			EZB[ii][kk] = EZB[ii][kk] / nyn/YLEN;
+		}
+}
+
+void averageY(double** EXB, double*** EX){
+
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EXB[ii][kk] = 0.0;
+
+		}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+				EXB[ii][kk] += EX[ii][jj][kk];
+
+			}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EXB[ii][kk] = EXB[ii][kk] / nyn/YLEN;
+
+		}
+}
+
+
+void averageYSTD(double** EXB, double** EXSTD, double*** EX){
+
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EXB[ii][kk] = 0.0;
+
+		}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+				EXB[ii][kk] += EX[ii][jj][kk];
+
+			}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EXB[ii][kk] = EXB[ii][kk] / nyn/YLEN;
+
+		}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EXSTD[ii][kk] = 0.0;
+
+		}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+				EXSTD[ii][kk] += pow(EX[ii][jj][kk]-EXB[ii][kk],2);
+            }
+    for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EXSTD[ii][kk] = sqrt(EXSTD[ii][kk] / nyn/YLEN);
+
+		}
+
+}
+
+void averageYdot(double** EdotJX, double** EdotJY, double** EdotJZ,
+				double** dEdotJX, double** dEdotJY, double** dEdotJZ,
+				double** EXB, double** EYB, double** EZB,
+				double** VXB, double** VYB, double** VZB,
+				double*** EX, double*** EY, double*** EZ,
+				double*** VX, double*** VY, double*** VZ){
+
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EdotJX[ii][kk] = EXB[ii][kk] * VXB[ii][kk];
+			EdotJY[ii][kk] = EYB[ii][kk] * VYB[ii][kk];
+			EdotJZ[ii][kk] = EZB[ii][kk] * VZB[ii][kk];
+			dEdotJX[ii][kk] = 0.0;
+			dEdotJY[ii][kk] = 0.0;
+			dEdotJZ[ii][kk] = 0.0;
+		}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+				dEdotJX[ii][kk] += (EX[ii][jj][kk]-EXB[ii][kk]) * (VX[ii][jj][kk]-VXB[ii][kk]);
+				dEdotJY[ii][kk] += (EY[ii][jj][kk]-EYB[ii][kk]) * (VY[ii][jj][kk]-VYB[ii][kk]);
+				dEdotJZ[ii][kk] += (EZ[ii][jj][kk]-EZB[ii][kk]) * (VZ[ii][jj][kk]-VZB[ii][kk]);
+			}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			dEdotJX[ii][kk] = dEdotJX[ii][kk] / nyn/YLEN;
+			dEdotJY[ii][kk] = dEdotJY[ii][kk] / nyn/YLEN;
+			dEdotJZ[ii][kk] = dEdotJZ[ii][kk] / nyn/YLEN;
+		}
+
+}
+
+void averageYdot(double** EdotJX, double** EdotJY, double** EdotJZ,
+				double** dEdotJX, double** dEdotJY, double** dEdotJZ,
+				double** sEdotJX, double** sEdotJY, double** sEdotJZ,
+				double** EXB, double** EYB, double** EZB,
+				double** VXB, double** VYB, double** VZB,
+				double*** EX, double*** EY, double*** EZ,
+				double*** VX, double*** VY, double*** VZ){
+
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			EdotJX[ii][kk] = EXB[ii][kk] * VXB[ii][kk];
+			EdotJY[ii][kk] = EYB[ii][kk] * VYB[ii][kk];
+			EdotJZ[ii][kk] = EZB[ii][kk] * VZB[ii][kk];
+			dEdotJX[ii][kk] = 0.0;
+			dEdotJY[ii][kk] = 0.0;
+			dEdotJZ[ii][kk] = 0.0;
+			sEdotJX[ii][kk] = 0.0;
+			sEdotJY[ii][kk] = 0.0;
+			sEdotJZ[ii][kk] = 0.0;
+		}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+				dEdotJX[ii][kk] += (EX[ii][jj][kk]-EXB[ii][kk]) * (VX[ii][jj][kk]-VXB[ii][kk]);
+				dEdotJY[ii][kk] += (EY[ii][jj][kk]-EYB[ii][kk]) * (VY[ii][jj][kk]-VYB[ii][kk]);
+				dEdotJZ[ii][kk] += (EZ[ii][jj][kk]-EZB[ii][kk]) * (VZ[ii][jj][kk]-VZB[ii][kk]);
+			}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			dEdotJX[ii][kk] = dEdotJX[ii][kk] / nyn/YLEN;
+			dEdotJY[ii][kk] = dEdotJY[ii][kk] / nyn/YLEN;
+			dEdotJZ[ii][kk] = dEdotJZ[ii][kk] / nyn/YLEN;
+		}
+    for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+				sEdotJX[ii][kk] += pow(EX[ii][jj][kk] * VX[ii][jj][kk]
+                                    - EdotJX[ii][kk] - dEdotJX[ii][kk], 2);
+				sEdotJY[ii][kk] += pow(EY[ii][jj][kk] * VY[ii][jj][kk]
+                                       - EdotJY[ii][kk] - dEdotJY[ii][kk], 2);
+				sEdotJZ[ii][kk] += pow(EZ[ii][jj][kk] * VZ[ii][jj][kk]
+                                       - EdotJZ[ii][kk] - dEdotJZ[ii][kk], 2);
+            }
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			sEdotJX[ii][kk] = sqrt(sEdotJX[ii][kk] / nyn/YLEN);
+			sEdotJY[ii][kk] = sqrt(sEdotJY[ii][kk] / nyn/YLEN);
+			sEdotJZ[ii][kk] = sqrt(sEdotJZ[ii][kk] / nyn/YLEN);
+		}
+
+}
+
+
+void averageYcross(double** CX, double** CY, double** CZ,
+				double** dCX, double** dCY, double** dCZ,
+				double** EXB, double** EYB, double** EZB,
+				double** BXB, double** BYB, double** BZB,
+				double*** EX, double*** EY, double*** EZ,
+				double*** BX, double*** BY, double*** BZ){
+
+	cross(EXB,EYB,EZB,BXB,BYB,BZB,CX,CY,CZ);
+
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			dCX[ii][kk] = 0.0;
+			dCY[ii][kk] = 0.0;
+			dCZ[ii][kk] = 0.0;
+		}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+
+				dCX[ii][kk] += (EY[ii][jj][kk] - EYB[ii][kk]) *
+                                               (BZ[ii][jj][kk] - BZB[ii][kk]) -
+                                               (EZ[ii][jj][kk] - EZB[ii][kk]) *
+					       (BY[ii][jj][kk] - BYB[ii][kk]);
+
+				dCY[ii][kk] += (EZ[ii][jj][kk] - EZB[ii][kk]) *
+                                               (BX[ii][jj][kk] - BXB[ii][kk]) -
+                                               (EX[ii][jj][kk] - EXB[ii][kk]) *
+					       (BZ[ii][jj][kk] - BZB[ii][kk]);
+
+				dCZ[ii][kk] += (EX[ii][jj][kk] - EXB[ii][kk]) *
+                                               (BY[ii][jj][kk] - BYB[ii][kk]) -
+                                               (EY[ii][jj][kk] - EYB[ii][kk]) *
+					       (BX[ii][jj][kk] - BXB[ii][kk]);
+			}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			dCX[ii][kk] = dCX[ii][kk] / nyn/YLEN;
+			dCY[ii][kk] = dCY[ii][kk] / nyn/YLEN;
+			dCZ[ii][kk] = dCZ[ii][kk] / nyn/YLEN;
+		}
+
+}
+
+
+void averageYcross(double** CX, double** CY, double** CZ,
+                  double** dCX, double** dCY, double** dCZ,
+                  double** sCX, double** sCY, double** sCZ,
+                  double** EXB, double** EYB, double** EZB,
+                  double** BXB, double** BYB, double** BZB,
+                  double*** EX, double*** EY, double*** EZ,
+                  double*** BX, double*** BY, double*** BZ){
+
+	cross(EXB,EYB,EZB,BXB,BYB,BZB,CX,CY,CZ);
+
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			dCX[ii][kk] = 0.0;
+			dCY[ii][kk] = 0.0;
+			dCZ[ii][kk] = 0.0;
+            sCX[ii][kk] = 0.0;
+			sCY[ii][kk] = 0.0;
+			sCZ[ii][kk] = 0.0;
+		}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+
+				dCX[ii][kk] += (EY[ii][jj][kk] - EYB[ii][kk]) *
+                (BZ[ii][jj][kk] - BZB[ii][kk]) -
+                (EZ[ii][jj][kk] - EZB[ii][kk]) *
+                (BY[ii][jj][kk] - BYB[ii][kk]);
+
+				dCY[ii][kk] += (EZ[ii][jj][kk] - EZB[ii][kk]) *
+                (BX[ii][jj][kk] - BXB[ii][kk]) -
+                (EX[ii][jj][kk] - EXB[ii][kk]) *
+                (BZ[ii][jj][kk] - BZB[ii][kk]);
+
+				dCZ[ii][kk] += (EX[ii][jj][kk] - EXB[ii][kk]) *
+                (BY[ii][jj][kk] - BYB[ii][kk]) -
+                (EY[ii][jj][kk] - EYB[ii][kk]) *
+                (BX[ii][jj][kk] - BXB[ii][kk]);
+			}
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			dCX[ii][kk] = dCX[ii][kk] / nyn/YLEN;
+			dCY[ii][kk] = dCY[ii][kk] / nyn/YLEN;
+			dCZ[ii][kk] = dCZ[ii][kk] / nyn/YLEN;
+		}
+    for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+
+				sCX[ii][kk] += pow(EY[ii][jj][kk] * BZ[ii][jj][kk]  -
+                                   EZ[ii][jj][kk] * BY[ii][jj][kk] - CX[ii][kk]
+                                   -dCX[ii][kk],2);
+
+                sCY[ii][jj] += pow(EZ[ii][jj][kk] * BX[ii][jj][kk]  -
+                                   EX[ii][jj][kk] * BZ[ii][jj][kk] - CY[ii][kk]
+                                   -dCY[ii][kk],2);
+
+                sCZ[ii][jj] += pow(EX[ii][jj][kk] * BY[ii][jj][kk]  -
+                                   EY[ii][jj][kk] * BX[ii][jj][kk] - CZ[ii][kk]
+                                   -dCZ[ii][kk],2);
+
+			}
+    for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			sCX[ii][kk] = sqrt(sCX[ii][kk] / nyn/YLEN);
+			sCY[ii][kk] = sqrt(sCY[ii][kk] / nyn/YLEN);
+			sCZ[ii][kk] = sqrt(sCZ[ii][kk] / nyn/YLEN);
+		}
+
+
+}
+
+
+void averageY_energy(double** AVGENTH, double** AVGENIN, double** AVGJDOTE,
+		double** STDENTH, double** STDENIN, double** STDJDOTE,
+		double*** VDIVP, double*** DIVJV, double*** JDOTE){
+
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			AVGJDOTE[ii][kk] = 0.0;
+			STDJDOTE[ii][kk] = 0.0;
+			AVGENTH[ii][kk] = 0.0;
+			AVGENIN[ii][kk] = 0.0;
+			STDENTH[ii][kk] = 0.0;
+			STDENIN[ii][kk] = 0.0;
+		}
+
+    for (int kk=1; kk < nzn*ZLEN-1;kk++)
+		for (int jj=1; jj < nyn*YLEN-1;jj++)
+			for (int ii=1; ii < nxn*XLEN-1;ii++){
+
+				AVGENTH[ii][kk] += VDIVP[ii][jj][kk]  ;
+				AVGENIN[ii][kk] += (JDOTE[ii][jj][kk] - VDIVP[ii][jj][kk])  ;
+				AVGJDOTE[ii][kk] += JDOTE[ii][jj][kk]   ;
+			}
+
+    for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			AVGENTH[ii][kk] = AVGENTH[ii][kk] / (nyn*YLEN-2);
+			AVGENIN[ii][kk] = AVGENIN[ii][kk] / (nyn*YLEN-2);
+			AVGJDOTE[ii][kk] = AVGJDOTE[ii][kk] / (nyn*YLEN-2);
+		}
+
+
+    for (int kk=1; kk < nzn*ZLEN-1;kk++)
+		for (int jj=1; jj < nyn*YLEN-1;jj++)
+			for (int ii=1; ii < nxn*XLEN-1;ii++){
+
+				STDENTH[ii][kk] += pow(VDIVP[ii][jj][kk]  - AVGENTH[ii][jj],2);
+				STDENIN[ii][kk] += pow(JDOTE[ii][jj][kk] - VDIVP[ii][jj][kk]  - AVGENIN[ii][kk],2);
+				STDJDOTE[ii][kk] += pow(JDOTE[ii][jj][kk]  - AVGJDOTE[ii][kk],2);
+
+			}
+    for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+			STDENTH[ii][kk] = sqrt(STDENTH[ii][kk] / (nyn*YLEN-2));
+			STDENIN[ii][kk] = sqrt(STDENIN[ii][kk] / (nyn*YLEN-2));
+			STDJDOTE[ii][kk] = sqrt(STDJDOTE[ii][kk] / (nyn*YLEN-2));
 		}
 
 }
@@ -1913,12 +2286,12 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
     mat2vet(n,p2,a);
 
     lwork = -1;
-    dgeev_( "N", "N", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    dgeev_( (char*)"N", (char*)"N", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
      &wkopt, &lwork, &info );
     lwork = (int)wkopt;
     work = new double[lwork];
     /* Solve eigenproblem */
-    dgeev_( "N", "N", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    dgeev_( (char*)"N", (char*)"N", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
      work, &lwork, &info );
 
     sort(n,wr);
@@ -1930,12 +2303,12 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
 	delete[] work;
 
     lwork = -1;
-    dgeev_( "N", "V", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    dgeev_( (char*)"N", (char*)"V", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
      &wkopt, &lwork, &info );
     lwork = (int)wkopt;
     work = new double[lwork];
     /* Solve eigenproblem */
-    dgeev_( "N", "V", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
+    dgeev_( (char*)"N", (char*)"V", &n, a, &lda, wr, wi, vl, &ldvl, vr, &ldvr,
      work, &lwork, &info );
 
     vet2mat(n, p2, vr, b, dot);
@@ -1946,7 +2319,7 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
 
     // Aunai Agyro
     double p_par = ppar(n, p, b);
-    double Tr = p[0][0] + p[1][1] + p[2][2];
+    double Tr = p[0][0] + p[1][1] + p[2][2];s should also fix the o
     double p_per = (Tr-p_par)/2.0;
 
     for (int i=0; i<n; i++)
@@ -1972,10 +2345,6 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
 	delete[] b;
 	delete[] dot;
 	delete[] work;
-	delete[] wr;
-	delete[] wi;
-	delete[] vl;
-	delete[] vr;
 }
 void mat2vet(int n, double** mat, double* vet){
 	int counter =0;
