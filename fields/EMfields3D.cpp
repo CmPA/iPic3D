@@ -1090,46 +1090,14 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
      // if Eth active and ghost are imposed, B ghost center can be calculated self- consistently
      grid->curlN2C_Ghost(vct, tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
 
-     cout << "Printing curl Eth, dir X, bottom ghost cell; should be zero" << endl;
-     for (int i=0; i< nxc; i++)
-       for (int j=0; j<nyc; j++)
-	 cout << tempXC[i][j][0] << endl;
-
-     cout << "Printing curl Eth, dir Y, bottom first cell; should be zero" << endl;
-     for (int i=0; i< nxc; i++)
-       for (int j=0; j<nyc; j++)
-	 cout << tempYC[i][j][1] << endl;
-
-     // ghost of the curl ETH is ok
-     for (int i=0; i<nxc; i++)
-       for (int j=0; j<nyc; j++)
-	 for (int k=0; k<nzc; k++){ // so in node 1 i have the GC and i see it in the plot
-	   Jxs[1][1+i][1+j][1+k]=     tempXC[i][j][k];
-	   Jys[1][1+i][1+j][1+k]=     tempYC[i][j][k];
-	   Jzs[1][1+i][1+j][1+k]=     tempZC[i][j][k];
-
-
-	   Jxs[2][i][j][k]=     tempXC[i][j][k];
-	   Jys[2][i][j][k]=     tempYC[i][j][k];
-	   Jzs[2][i][j][k]=     tempZC[i][j][k];
-
-	   /// in J3 I will save Eth ghosts, in J4 Eth active;
-
-	   Jxs[3][i+1][j+1][k+1]=     Exth[i][j][k];
-	   Jys[3][i+1][j+1][k+1]=     Eyth[i][j][k];
-	   Jzs[3][i+1][j+1][k+1]=     Ezth[i][j][k];
-
-	   Jxs[4][i][j][k]=     Exth[i][j][k];
-	   Jys[4][i][j][k]=     Eyth[i][j][k];
-	   Jzs[4][i][j][k]=     Ezth[i][j][k];
-
-	 }
-    
      // update the magnetic field
      addscale(-c * dt, 1, Bxc, tempXC, nxc, nyc, nzc);
      addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
      addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
 
+     communicateCenter(nxc, nyc, nzc, Bxc, vct);
+     communicateCenter(nxc, nyc, nzc, Byc, vct);     
+     communicateCenter(nxc, nyc, nzc, Bzc, vct);
 
    } else { // "normal", non MLMD options
 
@@ -1168,14 +1136,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
 
       // impose BC B on ghost nodes, only for particles
      setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
-     //setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
-
-     // now i reinterpolate the first active cell, because it seems screwed up
-     /*grid->interpN2C_ActiveCell(Bxc, Bxn, vct);
-     grid->interpN2C_ActiveCell(Byc, Byn, vct);
-     grid->interpN2C_ActiveCell(Bzc, Bzn, vct);*/
-
-
+     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+     
    }
    else{ // normal, non mlmd option
      communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
@@ -6002,21 +5964,20 @@ void EMfields3D::setBC_Nodes(VirtualTopology3D * vct, double ***Fx, double ***Fy
     if (!(RGBC_Info[m].np_y==1)) N0++;
     if (!(RGBC_Info[m].np_z==1)) N0++;
 
-    if (N0 !=2) {cout << "Something is deeply wrong in setBC_Nodes, N0= " << N0 <<" aborting ..." <<endl; abort();}
+    if (N0 !=2) {cout << "WARNING: in setBC_Nodes N0!= 2 (but it may be ok)" << endl; }
 
     int II= RGBC_Info[m].np_x;
     int JJ= RGBC_Info[m].np_y;
     int KK= RGBC_Info[m].np_z;
 
-
+    int ix_f= RGBC_Info[m].ix_first;
+    int iy_f= RGBC_Info[m].iy_first;
+    int iz_f= RGBC_Info[m].iz_first;
+    
     int count=0;
     for (int i= 0; i<II; i++){
       for (int j=0; j<JJ; j++){
 	for (int k=0; k<KK; k++){
-
-	  int ix_f= RGBC_Info[m].ix_first;
-	  int iy_f= RGBC_Info[m].iy_first;
-	  int iz_f= RGBC_Info[m].iz_first;
 	  
 	  //Ex_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize); 	  
 	  Fx[ix_f + i][iy_f + j][iz_f + k]= Fx_BC[m][count];
@@ -6053,22 +6014,21 @@ void EMfields3D::setBC_NodesImage(VirtualTopology3D * vct, double ***Fx, double 
     if (!(RGBC_Info[m].np_y==1)) N0++;
     if (!(RGBC_Info[m].np_z==1)) N0++;
 
-    if (N0 !=2) {cout << "Something is deeply wrong in setBC_Nodes, N0= " << N0 <<" aborting ..." <<endl; abort();}
+    if (N0 !=2) {cout << "WARNING: in setBC_NodesImage N0 !=2 (may be ok)" << endl;}
 
     int II= RGBC_Info[m].np_x;
     int JJ= RGBC_Info[m].np_y;
     int KK= RGBC_Info[m].np_z;
 
+    int ix_f= RGBC_Info[m].ix_first;
+    int iy_f= RGBC_Info[m].iy_first;
+    int iz_f= RGBC_Info[m].iz_first;
 
     int count=0;
     for (int i= 0; i<II; i++){
       for (int j=0; j<JJ; j++){
 	for (int k=0; k<KK; k++){
 
-	  int ix_f= RGBC_Info[m].ix_first;
-	  int iy_f= RGBC_Info[m].iy_first;
-	  int iz_f= RGBC_Info[m].iz_first;
-	  
 	  //Ex_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize); 	  
 	  Fx[ix_f + i][iy_f + j][iz_f + k]= vectX[ix_f + i][iy_f + j][iz_f + k] - Fx_BC[m][count];
 	  Fy[ix_f + i][iy_f + j][iz_f + k]= vectY[ix_f + i][iy_f + j][iz_f + k] - Fy_BC[m][count];
@@ -6085,7 +6045,7 @@ void EMfields3D::setBC_NodesImage(VirtualTopology3D * vct, double ***Fx, double 
   return;
 }
 
-// END QUI
+
 
 
 void EMfields3D::sendOneBC(VirtualTopology3D * vct, Grid * grid,  RGBC_struct CG_Info, int ch, int which){
