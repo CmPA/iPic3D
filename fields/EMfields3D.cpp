@@ -319,6 +319,22 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
      // this should be ok from the solver
      setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
+
+     cout << "BEFORE COMMUNICATE NODE "<< endl;
+     cout <<"R"<<vct->getSystemWide_rank()  <<" vct->getZleft_neighbor() " << vct->getZleft_neighbor()  << " Eyth[5][5][0] " << Eyth[5][5][0] << " Eyth[5][5][1] " << Eyth[5][5][1] << "  Eyth[5][5][2] " <<  Eyth[5][5][2]  <<"  Eyth[5][5][3] " <<  Eyth[5][5][3] << " Eyth[5][5][4] " <<   Eyth[5][5][4]  << endl;
+   cout <<"R"<<vct->getSystemWide_rank() << " vct->getZright_neighbor() " << vct->getZright_neighbor() << " Eyth[8][8][nzn-1] " << Eyth[8][8][nzn-1] << "Eyth[8][8][nzn-2] " << Eyth[8][8][nzn-2 ] << "Eyth[8][8][nzn-3] " << Eyth[8][8][nzn-3 ] << "Eyth[8][8][nzn-4] " << Eyth[8][8][nzn-4 ]  << "Eyth[8][8][nzn-5] " << Eyth[8][8][nzn-5 ] << endl;
+
+
+     // added for test
+     communicateNode(nxn, nyn, nzn, Exth, vct);
+     communicateNode(nxn, nyn, nzn, Eyth, vct);
+     communicateNode(nxn, nyn, nzn, Ezth, vct);
+
+     cout << "AFTER COMMUNICATE NODE " << endl;
+     cout <<"R"<<vct->getSystemWide_rank()  <<" vct->getZleft_neighbor() " << vct->getZleft_neighbor()  << " Eyth[5][5][0] " << Eyth[5][5][0] << " Eyth[5][5][1] " << Eyth[5][5][1] << "  Eyth[5][5][2] " <<  Eyth[5][5][2]  <<"  Eyth[5][5][3] " <<  Eyth[5][5][3] << " Eyth[5][5][4] " <<   Eyth[5][5][4]  << endl;
+   cout <<"R"<<vct->getSystemWide_rank() << " vct->getZright_neighbor() " << vct->getZright_neighbor() << " Eyth[8][8][nzn-1] " << Eyth[8][8][nzn-1] << "Eyth[8][8][nzn-2] " << Eyth[8][8][nzn-2 ] << "Eyth[8][8][nzn-3] " << Eyth[8][8][nzn-3 ] << "Eyth[8][8][nzn-4] " << Eyth[8][8][nzn-4 ]  << "Eyth[8][8][nzn-5] " << Eyth[8][8][nzn-5 ] << endl;
+
+
    }
 
    addscale(1 / th, -(1.0 - th) / th, Ex, Exth, nxn, nyn, nzn);
@@ -351,9 +367,6 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
      BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
      BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
    }
-
-   cout <<"R"<<vct->getSystemWide_rank() << "Eyth[5][5][0] " << Eyth[5][5][0] << " Eyth[5][5][1] " << Eyth[5][5][1] << "  Eyth[5][5][2] " <<  Eyth[5][5][2]  <<"  Eyth[5][5][3] " <<  Eyth[5][5][3] << " Eyth[5][5][4] " <<   Eyth[5][5][4]  << endl;
-   cout <<"R"<<vct->getSystemWide_rank() << "Eyth[8][8][nzn-1] " << Eyth[8][8][nzn-1] << "Eyth[8][8][nzn-2] " << Eyth[8][8][nzn-2 ] << "Eyth[8][8][nzn-3] " << Eyth[8][8][nzn-3 ] << "Eyth[8][8][nzn-4] " << Eyth[8][8][nzn-4 ]  << "Eyth[8][8][nzn-5] " << Eyth[8][8][nzn-5 ] << endl;
 
 
    // deallocate temporary arrays
@@ -632,18 +645,18 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
  /*! Calculate MU dot (vectX, vectY, vectZ) */
  void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid) {
    double beta, edotb, omcx, omcy, omcz, denom;
-   for (int i = 1; i < nxn - 1; i++)
-     for (int j = 1; j < nyn - 1; j++)
-       for (int k = 1; k < nzn - 1; k++) {
+   for (int i = 0; i < nxn ; i++)
+     for (int j = 0; j < nyn ; j++)
+       for (int k = 0; k < nzn ; k++) {
 	 MUdotX[i][j][k] = 0.0;
 	 MUdotY[i][j][k] = 0.0;
 	 MUdotZ[i][j][k] = 0.0;
        }
    for (int is = 0; is < ns; is++) {
      beta = .5 * qom[is] * dt / c;
-     for (int i = 1; i < nxn - 1; i++)
-       for (int j = 1; j < nyn - 1; j++)
-	 for (int k = 1; k < nzn - 1; k++) {
+     for (int i = 0; i < nxn ; i++)
+       for (int j = 0; j < nyn ; j++)
+	 for (int k = 0; k < nzn ; k++) {
 	   omcx = beta * (Bxn[i][j][k] + Fext*Bx_ext[i][j][k]);
 	   omcy = beta * (Byn[i][j][k] + Fext*By_ext[i][j][k]);
 	   omcz = beta * (Bzn[i][j][k] + Fext*Bz_ext[i][j][k]);

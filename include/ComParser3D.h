@@ -71,10 +71,13 @@ void makeNodeCorner(int nx, int ny, int nz, double *ghostXsameYrightZrightEdge, 
 // ////////////////////////////
 // ////////////////////////////
 /** insert the ghost cells in the 3D phisical vector */
-void parseFace(int nx, int ny, int nz, double ***vector, double *ghostXrightFace, double *ghostXleftFace, double *ghostYrightFace, double *ghostYleftFace, double *ghostZrightFace, double *ghostZleftFace);
+void parseFace(VirtualTopology3D * vct, int nx, int ny, int nz, double ***vector, double *ghostXrightFace, double *ghostXleftFace, double *ghostYrightFace, double *ghostYleftFace, double *ghostZrightFace, double *ghostZleftFace);
+
+
+void parseFace(VirtualTopology3D * vct, int nx, int ny, int nz, double ***vector, double *ghostXrightFace, double *ghostXleftFace, double *ghostYrightFace, double *ghostYleftFace, double *ghostZrightFace, double *ghostZleftFace);
 
 /** insert the ghost cells in the 3D phisical vector */
-void parseFace(int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightFace, double *ghostXleftFace, double *ghostYrightFace, double *ghostYleftFace, double *ghostZrightFace, double *ghostZleftFace);
+void parseFace(VirtualTopology3D * vct,int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightFace, double *ghostXleftFace, double *ghostYrightFace, double *ghostYleftFace, double *ghostZrightFace, double *ghostZleftFace);
 
 /** add the values of ghost cells faces to the 3D phisical vector */
 void addFace(int nx, int ny, int nz, double ***vector, double *ghostXrightFace, double *ghostXleftFace, double *ghostYrightFace, double *ghostYleftFace, double *ghostZrightFace, double *ghostZleftFace, VirtualTopology3D * vct);
@@ -83,10 +86,10 @@ void addFace(int nx, int ny, int nz, double ***vector, double *ghostXrightFace, 
 void addFace(int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightFace, double *ghostXleftFace, double *ghostYrightFace, double *ghostYleftFace, double *ghostZrightFace, double *ghostZleftFace, VirtualTopology3D * vct);
 
 /** insert the ghost cells Edge Z in the 3D phisical vector */
-void parseEdgeZ(int nx, int ny, int nz, double ***vector, double *ghostXrightYrightZsameEdge, double *ghostXleftYleftZsameEdge, double *ghostXrightYleftZsameEdge, double *ghostXleftYrightZsameEdge);
+void parseEdgeZ(VirtualTopology3D * vct,int nx, int ny, int nz, double ***vector, double *ghostXrightYrightZsameEdge, double *ghostXleftYleftZsameEdge, double *ghostXrightYleftZsameEdge, double *ghostXleftYrightZsameEdge);
 
 /** insert the ghost cells Edge Z in the 3D phisical vector */
-void parseEdgeZ(int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightYrightZsameEdge, double *ghostXleftYleftZsameEdge, double *ghostXrightYleftZsameEdge, double *ghostXleftYrightZsameEdge);
+void parseEdgeZ(VirtualTopology3D * vct,int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightYrightZsameEdge, double *ghostXleftYleftZsameEdge, double *ghostXrightYleftZsameEdge, double *ghostXleftYrightZsameEdge);
 
 /** insert the ghost cells Edge Z in the 3D phisical vector */
 void addEdgeZ(int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightYrightZsameEdge, double *ghostXleftYleftZsameEdge, double *ghostXrightYleftZsameEdge, double *ghostXleftYrightZsameEdge, VirtualTopology3D * vct);
@@ -95,10 +98,10 @@ void addEdgeZ(int nx, int ny, int nz, double ****vector, int ns, double *ghostXr
 void addEdgeZ(int nx, int ny, int nz, double ***vector, double *ghostXrightYrightZsameEdge, double *ghostXleftYleftZsameEdge, double *ghostXrightYleftZsameEdge, double *ghostXleftYrightZsameEdge, VirtualTopology3D * vct);
 
 /** prepare ghost cell Edge Y for communication */
-void parseEdgeY(int nx, int ny, int nz, double ***vector, double *ghostXrightYsameZrightEdge, double *ghostXleftYsameZleftEdge, double *ghostXleftYsameZrightEdge, double *ghostXrightYsameZleftEdge);
+void parseEdgeY(VirtualTopology3D * vct,int nx, int ny, int nz, double ***vector, double *ghostXrightYsameZrightEdge, double *ghostXleftYsameZleftEdge, double *ghostXleftYsameZrightEdge, double *ghostXrightYsameZleftEdge);
 
 /** prepare ghost cell Edge Y for communication */
-void parseEdgeY(int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightYsameZrightEdge, double *ghostXleftYsameZleftEdge, double *ghostXleftYsameZrightEdge, double *ghostXrightYsameZleftEdge);
+void parseEdgeY(VirtualTopology3D * vct,int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightYsameZrightEdge, double *ghostXleftYsameZleftEdge, double *ghostXleftYsameZrightEdge, double *ghostXrightYsameZleftEdge);
 
 /** add the ghost cell values Edge Y to the 3D phisical vector */
 void addEdgeY(int nx, int ny, int nz, double ***vector, double *ghostXrightYsameZrightEdge, double *ghostXleftYsameZleftEdge, double *ghostXleftYsameZrightEdge, double *ghostXrightYsameZleftEdge, VirtualTopology3D * vct);
@@ -107,10 +110,10 @@ void addEdgeY(int nx, int ny, int nz, double ***vector, double *ghostXrightYsame
 void addEdgeY(int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightYsameZrightEdge, double *ghostXleftYsameZleftEdge, double *ghostXleftYsameZrightEdge, double *ghostXrightYsameZleftEdge, VirtualTopology3D * vct);
 
 /** insert the ghost cells Edge X in the 3D physical vector */
-void parseEdgeX(int nx, int ny, int nz, double ***vector, double *ghostXsameYrightZrightEdge, double *ghostXsameYleftZleftEdge, double *ghostXsameYleftZrightEdge, double *ghostXsameYrightZleftEdge);
+void parseEdgeX(VirtualTopology3D * vct, int nx, int ny, int nz, double ***vector, double *ghostXsameYrightZrightEdge, double *ghostXsameYleftZleftEdge, double *ghostXsameYleftZrightEdge, double *ghostXsameYrightZleftEdge);
 
 /** insert the ghost cells Edge X in the 3D phisical vector */
-void parseEdgeX(int nx, int ny, int nz, double ****vector, int ns, double *ghostXsameYrightZrightEdge, double *ghostXsameYleftZleftEdge, double *ghostXsameYleftZrightEdge, double *ghostXsameYrightZleftEdge);
+void parseEdgeX(VirtualTopology3D * vct, int nx, int ny, int nz, double ****vector, int ns, double *ghostXsameYrightZrightEdge, double *ghostXsameYleftZleftEdge, double *ghostXsameYleftZrightEdge, double *ghostXsameYrightZleftEdge);
 
 /** add the ghost values Edge X to the 3D phisical vector */
 void addEdgeX(int nx, int ny, int nz, double ***vector, double *ghostXsameYrightZrightEdge, double *ghostXsameYleftZleftEdge, double *ghostXsameYleftZrightEdge, double *ghostXsameYrightZleftEdge, VirtualTopology3D * vct);
@@ -125,10 +128,10 @@ void addEdgeX(int nx, int ny, int nz, double ****vector, int ns, double *ghostXs
 // //////////////
 
 /** insert the ghost cells Edge X in the 3D phisical vector */
-void parseCorner(int nx, int ny, int nz, double ***vector, double *ghostXrightYrightZrightCorner, double *ghostXleftYrightZrightCorner, double *ghostXrightYleftZrightCorner, double *ghostXleftYleftZrightCorner, double *ghostXrightYrightZleftCorner, double *ghostXleftYrightZleftCorner, double *ghostXrightYleftZleftCorner, double *ghostXleftYleftZleftCorner);
+void parseCorner(VirtualTopology3D * vct, int nx, int ny, int nz, double ***vector, double *ghostXrightYrightZrightCorner, double *ghostXleftYrightZrightCorner, double *ghostXrightYleftZrightCorner, double *ghostXleftYleftZrightCorner, double *ghostXrightYrightZleftCorner, double *ghostXleftYrightZleftCorner, double *ghostXrightYleftZleftCorner, double *ghostXleftYleftZleftCorner);
 
 /** insert the ghost cells Edge X in the 3D physical vector */
-void parseCorner(int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightYrightZrightCorner, double *ghostXleftYrightZrightCorner, double *ghostXrightYleftZrightCorner, double *ghostXleftYleftZrightCorner, double *ghostXrightYrightZleftCorner, double *ghostXleftYrightZleftCorner, double *ghostXrightYleftZleftCorner, double *ghostXleftYleftZleftCorner);
+void parseCorner(VirtualTopology3D * vct, int nx, int ny, int nz, double ****vector, int ns, double *ghostXrightYrightZrightCorner, double *ghostXleftYrightZrightCorner, double *ghostXrightYleftZrightCorner, double *ghostXleftYleftZrightCorner, double *ghostXrightYrightZleftCorner, double *ghostXleftYrightZleftCorner, double *ghostXrightYleftZleftCorner, double *ghostXleftYleftZleftCorner);
 
 /** add ghost cells values Corners in the 3D physical vector */
 void addCorner(int nx, int ny, int nz, double ***vector, double *ghostXrightYrightZrightCorner, double *ghostXleftYrightZrightCorner, double *ghostXrightYleftZrightCorner, double *ghostXleftYleftZrightCorner, double *ghostXrightYrightZleftCorner, double *ghostXleftYrightZleftCorner, double *ghostXrightYleftZleftCorner, double *ghostXleftYleftZleftCorner, VirtualTopology3D * vct);
