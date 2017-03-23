@@ -530,9 +530,12 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
    
    // move from krylov space to physical space
    solver2phys(vectX, vectY, vectZ, vector, nxn, nyn, nzn); 
+
+   
    grid->lapN2N(imageX, vectX ,vct); 
    grid->lapN2N(imageY, vectY, vct);
    grid->lapN2N(imageZ, vectZ, vct);
+
    neg(imageX, nxn, nyn, nzn);
    neg(imageY, nxn, nyn, nzn);
    neg(imageZ, nxn, nyn, nzn);
@@ -4923,16 +4926,15 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
   // this is the left face
   if (vct->getCoordinates(0) ==0  && vct->getXleft_neighbor() == MPI_PROC_NULL && DIR_0){ 
 
+
+    j_s=0; j_e= nyn-1;
+    k_s=0; k_e= nzn-1;
     // cycle on y and z
     if (which ==0){
       i_s=1; i_e= 1;
-      j_s=0; j_e= nyn-1;
-      k_s=0; k_e= nzn-1; 
     }
     else if (which==-1){
       i_s=0; i_e= 0;	       
-      j_s=0; j_e= nyn-1;
-      k_s=0; k_e= nzn-1;
       /*if (vct->getCoordinates(1)==0) j_s=0; else j_s=1;
       if (vct->getCoordinates(1)==YLEN-1) j_e=nyn-1; else j_e=nyn-2;
       if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
@@ -4975,16 +4977,14 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
   // this is the right face
   if (vct->getCoordinates(0) ==XLEN-1 && vct->getXright_neighbor() == MPI_PROC_NULL && DIR_0){ 
     
+    j_s=0; j_e= nyn-1;
+    k_s=0; k_e= nzn-1;
     // cycle on y and z
     if (which ==0){
       i_s=nxn-2; i_e= nxn-2;
-      j_s=0; j_e= nyn-1;
-      k_s=0; k_e= nzn-1; 
     }
     else if (which==-1){
       i_s=nxn-1; i_e= nxn-1;	       
-      j_s=0; j_e= nyn-1;
-      k_s=0; k_e= nzn-1;
       /*if (vct->getCoordinates(1)==0) j_s=0; else j_s=1;
       if (vct->getCoordinates(1)==YLEN-1) j_e=nyn-1; else j_e=nyn-2;
       if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
@@ -5028,16 +5028,14 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
   // this is the front face
   if (vct->getCoordinates(1) ==0 && vct->getYleft_neighbor() == MPI_PROC_NULL && DIR_1){
 
+    i_s=0; i_e= nxn-1;
+    k_s=0; k_e= nzn-1;
     // cycle on x and z
     if (which ==0){
-      i_s=0; i_e= nxn-1;
       j_s=1; j_e= 1;
-      k_s=0; k_e= nzn-1; 
     }
     else if (which==-1){
       j_s=0; j_e= 0;	       
-      i_s=0; i_e= nxn-1;
-      k_s=0; k_e= nzn-1;
       /*if (vct->getCoordinates(0)==0) i_s=0; else i_s=1;
       if (vct->getCoordinates(0)==XLEN-1) i_e=nxn-1; else i_e=nxn-2;
       if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
@@ -5080,16 +5078,14 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
   // this is the back face
   if (vct->getCoordinates(1) == YLEN-1 && vct->getYright_neighbor() == MPI_PROC_NULL && DIR_1){
     
+    i_s=0; i_e= nxn-1;
+    k_s=0; k_e= nzn-1;
     // cycle on x and z
     if (which ==0){
-      i_s=0; i_e= nxn-1;
       j_s=nyn-2; j_e= nyn-2;
-      k_s=0; k_e= nzn-1; 
     }
     else if (which==-1){
       j_s=nyn-1; j_e= nyn-1;	       
-      i_s=0; i_e= nxn-1;
-      k_s=0; k_e= nzn-1;
       /*if (vct->getCoordinates(0)==0) i_s=0; else i_s=1;
       if (vct->getCoordinates(0)==XLEN-1) i_e=nxn-1; else i_e=nxn-2;
       if (vct->getCoordinates(2)==0) k_s=0; else k_s=1;
@@ -5110,7 +5106,7 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       RGBCExploreDirection(grid, vct, FACE, 0, i_s, i_e, j_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
       
       for (int NN=0; NN< Dir2_Ncores; NN++){
-	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], j_s, Dir1_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], DNS, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPXperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
+	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], j_s, Dir1_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], DNS, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
 
 	(*RG_numBCMessages)++;
 

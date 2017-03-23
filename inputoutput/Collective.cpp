@@ -831,6 +831,19 @@ Collective::Collective(int argc, char **argv) {
   int systemWide_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &systemWide_rank);
   
+  // check that the # of cells per direction is a multiple of the # of cores - otherwise BC do not work     
+  for (int i=0; i< Ngrids; i++){  // check that the number of cell per direction is a multiple of the # of cores 
+    bool OkX= (nxc_mlmd[i]% XLEN_mlmd[i] == 0);
+    bool OkY= (nyc_mlmd[i]% YLEN_mlmd[i] == 0);
+    bool OkZ= (nzc_mlmd[i]% ZLEN_mlmd[i] == 0);
+
+    if (! (OkX and OkY and OkZ)){
+      if (systemWide_rank==0){ cout << "The number of cell per direction must be a multiple of the number of cores, aborting ..." << endl;
+      }
+      abort();
+    }
+  }
+
   // here, I calculate the grid number (in a rather crude way, by rank)
   // and then I propagate it to VCtolopoly
 
