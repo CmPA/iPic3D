@@ -181,9 +181,21 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
     }
 
     if (initial_error <= rho_tol) {
-      if (vct->getCartesian_rank() == 0)
+      if (vct->getCartesian_rank() == 0){
         //cout << "GMRES converged at restart # " << itr << "; iteration #" << k << " with error: " << initial_error / rho_tol * tol << endl;
 	cout <<"G" << grid->getNumGrid() << ": GMRES converged at restart # " << itr << "; iteration #" << k << " with error: " << initial_error / rho_tol * tol << endl;
+	
+	cout << "Extra test: ";
+	  
+	(field->*FunctionImage) (im, xkrylov, grid, vct);
+	double Diff=0;
+	for (int i=0; i< xkrylovlen; i++){
+	  double tmp= im[i]- b[i];
+	  Diff+= (tmp*tmp);
+	}
+	cout << "G" << grid->getNumGrid() << " residual calculated by hand inside GMRES before exiting: " << sqrt(Diff) <<endl;
+
+      }
       delete[]r;
       delete[]im;
       delete[]s;

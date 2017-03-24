@@ -432,6 +432,7 @@ class EMfields3D                // :public Field
     double ***&getBzTot();
 
     void UpdateFext(int cycle);
+    void UpdateCycle(int cycle);
     double getFext();
 
     /*! get pressure tensor XX for species */
@@ -768,6 +769,8 @@ class EMfields3D                // :public Field
     double***  Jz_ext;
 
     double Fext;
+
+    int currentCycle;
 
     /*! SPECIES: pressure tensor component-XX, defined on nodes */
     double ****pXXsn;

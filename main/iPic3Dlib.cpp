@@ -277,8 +277,8 @@ void c_Solver::GatherMoments(){
 
 void c_Solver::UpdateCycleInfo(int cycle) {
 
-  // only CG must do this
-  if (numGrid != 0) return;
+  EMf->UpdateCycle(cycle);
+  return;
 
 
   EMf->UpdateFext(cycle);
