@@ -44,6 +44,8 @@ class Particles3D:public Particles3Dcomm {
     void maxwellian_whistler(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space with Kappa */
     void kappa(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: maxwellian from state defined by current and density */
+    void drift_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
     void MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Force Free initialization (JxB=0) for particles */

@@ -2319,7 +2319,7 @@ void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swi
 
     // Aunai Agyro
     double p_par = ppar(n, p, b);
-    double Tr = p[0][0] + p[1][1] + p[2][2];s should also fix the o
+    double Tr = p[0][0] + p[1][1] + p[2][2];
     double p_per = (Tr-p_par)/2.0;
 
     for (int i=0; i<n; i++)

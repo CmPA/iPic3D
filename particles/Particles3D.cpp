@@ -476,6 +476,77 @@ void Particles3D::maxwellian_whistler(Grid * grid, Field * EMf, VirtualTopology3
 
 }
 
+/** Maxellian velocity from currents and prescribed spatial distribution */
+void Particles3D::drift_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct)
+	{
+	  double harvest, prob, theta;
+	  long long counter = 0;
+
+
+		/* initialize random generator with different seed on different processor */
+		srand(vct->getCartesian_rank()+2);
+
+		const double q_sgn = (qom / fabs(qom));
+		const double q_factor =  q_sgn / invVOL / npcel;
+
+		for (int i=1; i< grid->getNXC()-1;i++)
+		for (int j=1; j< grid->getNYC()-1;j++)
+		for (int k=1; k< grid->getNZC()-1;k++){
+
+			double shaper_th = fabs(EMf->getRHOcs(i, j, k, ns));
+
+			const double qpart = q_factor * EMf->getRHOcs(i, j, k, ns);
+
+			// determine the drift velocity from current X
+			u0 = EMf->getJxs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+			if (u0 > c){
+				cout << "DRIFT VELOCITY x > c : B init field too high!" << endl;
+				MPI_Abort(MPI_COMM_WORLD,2);
+			}
+			// determine the drift velocity from current Y
+			v0 = EMf->getJys(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+			if (v0 > c){
+				cout << "DRIFT VELOCITY y > c : B init field too high!" << endl;
+				MPI_Abort(MPI_COMM_WORLD,2);
+			}
+			// determine the drift velocity from current Z
+			w0 = EMf->getJzs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+			if (w0 > c){
+				cout << "DRIFT VELOCITY z > c : B init field too high!" << endl;
+				MPI_Abort(MPI_COMM_WORLD,2);
+			}
+			for (int ii=0; ii < npcelx; ii++)
+			for (int jj=0; jj < npcely; jj++)
+			for (int kk=0; kk < npcelz; kk++){
+
+	            x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+	            y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+	            z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+	            // q = charge
+	            q[counter] = qpart;
+				harvest = rand() / (double) RAND_MAX;
+				prob = shaper_th * sqrt(-2.0 * log(1.0 - .999999 * harvest));
+				harvest = rand() / (double) RAND_MAX;
+				theta = 2.0 * M_PI * harvest;
+				// u
+				u[counter] = u0 + uth * prob * cos(theta);
+				// v
+				v[counter] = v0 + vth * prob * sin(theta);
+				// w
+				harvest = rand() / (double) RAND_MAX;
+				prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+				harvest = rand() / (double) RAND_MAX;
+				theta = 2.0 * M_PI * harvest;
+				w[counter] = w0 + wth * prob * cos(theta);
+				if (TrackParticleID)
+				    ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+				counter++;
+
+			}
+		}
+	}
+
 /** Force Free initialization (JxB=0) for particles */
 void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 

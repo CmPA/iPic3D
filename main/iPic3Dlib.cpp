@@ -87,6 +87,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="Whistler")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
     else if (col->getCase()=="WhistlerKappa")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
     else if (col->getCase()=="Coils")  EMf->initWB8(vct,grid,col);
+    else if (col->getCase()=="FluxRope")  EMf->initFluxRope(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -122,12 +123,16 @@ int c_Solver::Init(int argc, char **argv) {
     if (restart == 0) {
       // wave = new Planewave(col, EMf, grid, vct);
       // wave->Wave_Rotated(part); // Single Plane Wave
+
+    	cout << col->getCase() << endl;
+
       for (int i = 0; i < ns; i++)
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
         else if (col->getCase()=="DoubleHarris")    part[i].maxwellian_reversed(grid, EMf, vct);
         else if (col->getCase()=="Whistler")    part[i].maxwellian_whistler(grid, EMf, vct);
         else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
+        else if (col->getCase()=="FluxRope")    part[i].maxwellian(grid, EMf, vct);
         else if (col->getCase()=="Coils"){
            	if (col->getRHOinject(i) == 0.0)
            			part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0);  // generated maxwellian in a box

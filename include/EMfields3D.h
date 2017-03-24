@@ -193,6 +193,8 @@ class EMfields3D                // :public Field
     void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /**  Init WB8 */
     void initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    /** Init Flux Rope based on pressure equilibrium */
+    void initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *col);
     /*! initialized with rotated magnetic field */
     void initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta);
     /*! add a perturbattion to charge density */
@@ -223,6 +225,8 @@ class EMfields3D                // :public Field
     void calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! fix B on the boundary for gem challange */
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
+    /*! fix B on the boundary for Flux rope */
+    void fixBrope(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for gem challange */
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary to zero */
