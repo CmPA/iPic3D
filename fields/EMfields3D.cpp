@@ -253,6 +253,14 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   // OpenBC
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
   BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
+  // Apply damper on boundary
+
+  weight_tapering(Ex,Lambda,nxc,nyc,nzc);
+  weight_tapering(Ey,Lambda,nxc,nyc,nzc);
+  weight_tapering(Ez,Lambda,nxc,nyc,nzc);
+  weight_tapering(Exth,Lambda,nxc,nyc,nzc);
+  weight_tapering(Eyth,Lambda,nxc,nyc,nzc);
+  weight_tapering(Ezth,Lambda,nxc,nyc,nzc);
 
   // deallocate temporary arrays
   delete[]xkrylov;
@@ -406,9 +414,13 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sum(imageZ, vectZ, nxn, nyn, nzn);
 
   // Temporal damping
-  sumscalprod(imageX, delt, vectX, Lambda, nxn, nyn, nzn);
-  sumscalprod(imageY, delt, vectY, Lambda, nxn, nyn, nzn);
-  sumscalprod(imageZ, delt, vectZ, Lambda, nxn, nyn, nzn);
+//  sumscalprod(imageX, delt, vectX, Lambda, nxn, nyn, nzn);
+//  sumscalprod(imageY, delt, vectY, Lambda, nxn, nyn, nzn);
+//  sumscalprod(imageZ, delt, vectZ, Lambda, nxn, nyn, nzn);
+  double Maxwell_damping =   1.0 * FourPI;
+  sumscalprod(imageX, Maxwell_damping,vectX,Lambda,nxn,nyn,nzn);
+  sumscalprod(imageY, Maxwell_damping,vectY,Lambda,nxn,nyn,nzn);
+  sumscalprod(imageZ, Maxwell_damping,vectZ,Lambda,nxn,nyn,nzn);
 
   // boundary condition: Xleft
   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
@@ -2139,6 +2151,17 @@ void EMfields3D::initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *co
 	} else {
 	    init(vct, grid, col);;  // use the fields from restart file
 	}
+	double scale_decay = L_square/10.0;
+	for (int i=0; i < nxn; i++)
+		for (int j=0; j < nyn; j++)
+			for (int k=0; k < nzn; k++){
+				Lambda[i][j][k]  = 0.0;
+				double r = sqrt(pow(grid->getXN(i,j,k)-Lx/2.0,2.0) + pow(grid->getYN(i,j,k)-Ly/2.0,2.0));
+				if(r>L_square){
+					Lambda[i][j][k]  = 1.0* tanh((r-L_square)/scale_decay);
+				}
+			}
+
 }
 
 
@@ -3055,6 +3078,7 @@ void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, dou
   // Assuming E = - ve x B
   cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
   scale(ebc,-1.0,3);
+  if (Case=="Coils") scale(ebc,0.0,3);
 
   switch(dir){
     case 0: // boundary condition on X-DIRECTION LEFT
@@ -3101,6 +3125,7 @@ void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, do
   // Assuming E = - ve x B
   cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
   scale(ebc,-1.0,3);
+  if (Case=="Coils") scale(ebc,0.0,3);
 
   switch(dir){
     case 0: // boundary condition on X-DIRECTION RIGHT

@@ -445,6 +445,40 @@ inline void getColumn(double *vect, double **Matrix, int column, int n) {
   for (int i = 0; i < n; i++)
     vect[i] = Matrix[i][column];
 }
+/** method to calculate vector1 = vectro1 * vector2 + (1-vector2) * vector3 */
+inline void weight_avg(double ***vect1, double ***vect2,  double ***vect3, int nx, int ny, int nz){
+   for (register int i=0; i< nx; i++)
+    for (register int j=0; j< ny; j++)
+      for (register int k=0; k< nz; k++){
+	double teta = fabs(vect2[i][j][k]);
+	if(teta>1.0) teta=1.0;
+
+         vect1[i][j][k] = vect1[i][j][k]*(1.0 - pow(teta,2.0)) + vect3[i][j][k]* pow(teta,2.0);
+}
+}
+/** method to overwrite vector1 = vector2 where vector3 is above threshold */
+inline void weight_threshold(double ***vect1, double ***vect2, double ***vect3, double gate,  int nx, int ny, int nz){
+   for (register int i=0; i< nx; i++)
+    for (register int j=0; j< ny; j++)
+      for (register int k=0; k< nz; k++){
+
+    	  if(vect3[i][j][k]>gate) {
+    		  vect1[i][j][k] = vect2[i][j][k];
+    	  }
+      }
+}
+/** method to calculate tapering vector1 = vectro1 * (1-vector2) */
+inline void weight_tapering(double ***vect1, double ***vect2,   int nx, int ny, int nz){
+   for (register int i=0; i< nx; i++)
+    for (register int j=0; j< ny; j++)
+      for (register int k=0; k< nz; k++){
+	double teta = fabs(vect2[i][j][k]);
+	if(teta>1.0) teta=1.0;
+
+         vect1[i][j][k] = vect1[i][j][k]*(1.0 - pow(teta,2.0)) ;
+}
+}
+
 /** RIFAI QUESTA PARTE questo e' la tomba delle performance*/
 inline void MODULO(double *x, double L) {
   *x = *x - floor(*x / L) * L;
