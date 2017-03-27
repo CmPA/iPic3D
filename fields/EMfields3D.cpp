@@ -2194,7 +2194,7 @@ void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
                 double x = grid->getXN(i,j,k);
                 double y = grid->getYN(i,j,k);
                 double z = grid->getZN(i,j,k);
-                /*
+
                 loopZ(blp, x, y, z, a, xc, yc, zc+deltaz, -B0z);
                 Bxn[i][j][k] = blp[0];
                 Byn[i][j][k] = blp[1];
@@ -2203,6 +2203,7 @@ void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
                 Bxn[i][j][k] += blp[0];
                 Byn[i][j][k] += blp[1];
                 Bzn[i][j][k] += blp[2];
+
                 loopX(blp, x, y, z, a, xc+deltax, yc, zc, -B0x);
                 Bxn[i][j][k] += blp[0];
                 Byn[i][j][k] += blp[1];
@@ -2211,7 +2212,7 @@ void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
                 Bxn[i][j][k] += blp[0];
                 Byn[i][j][k] += blp[1];
                 Bzn[i][j][k] += blp[2];
-                */
+
                 loopY(blp, x, y, z, a, xc, yc+deltay, zc, -B0y);
                 Bxn[i][j][k] += blp[0];
                 Byn[i][j][k] += blp[1];
@@ -2249,7 +2250,7 @@ void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
                  double x = grid->getXC(i,j,k);
                  double y = grid->getYC(i,j,k);
                  double z = grid->getZC(i,j,k);
-                 /*
+
                  loopZ(blp, x, y, z, a, xc, yc, zc+deltaz, -B0z);
                  //cout << blp[0] << "   " << x << "   " << xc << "   " << m << endl;
                  Bxc[i][j][k] = blp[0];
@@ -2259,6 +2260,7 @@ void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
                  Bxc[i][j][k] += blp[0];
                  Byc[i][j][k] += blp[1];
                  Bzc[i][j][k] += blp[2];
+
                  loopX(blp, x, y, z, a, xc+deltax, yc, zc, -B0x);
                  Bxc[i][j][k] += blp[0];
                  Byc[i][j][k] += blp[1];
@@ -2267,7 +2269,7 @@ void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
                  Bxc[i][j][k] += blp[0];
                  Byc[i][j][k] += blp[1];
                  Bzc[i][j][k] += blp[2];
-                 */
+
                  loopY(blp, x, y, z, a, xc, yc+deltay, zc, -B0y);
                  Bxc[i][j][k] += blp[0];
                  Byc[i][j][k] += blp[1];
@@ -3078,7 +3080,7 @@ void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, dou
   // Assuming E = - ve x B
   cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
   scale(ebc,-1.0,3);
-  if (Case=="Coils") scale(ebc,0.0,3);
+  if (Case=="FluxRope") scale(ebc,0.0,3);
 
   switch(dir){
     case 0: // boundary condition on X-DIRECTION LEFT
@@ -3125,7 +3127,7 @@ void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, do
   // Assuming E = - ve x B
   cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
   scale(ebc,-1.0,3);
-  if (Case=="Coils") scale(ebc,0.0,3);
+  if (Case=="FluxRope") scale(ebc,0.0,3);
 
   switch(dir){
     case 0: // boundary condition on X-DIRECTION RIGHT

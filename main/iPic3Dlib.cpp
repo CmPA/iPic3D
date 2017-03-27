@@ -135,6 +135,7 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="FluxRope")    part[i].maxwellian(grid, EMf, vct);
         else if (col->getCase()=="Coils"){
            	if (col->getRHOinject(i) == 0.0)
+           		// part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0) //generates maxwellian in a box
            			part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0);  // generated maxwellian in a box
        	    else
        	    		part[i].empty(grid, EMf, vct);
@@ -358,7 +359,7 @@ void c_Solver::InjectBoundaryParticles(){
 	  //Remove particles from outside the simulation box
 		for (int i=0; i < ns; i++){
 			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
-			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,0.0);
+			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
 			if (col->getRHOinject(i) > 0.0)
 				mem_avail = part[i].injector_rand_box_mono(grid,vct,EMf);
 		}
