@@ -127,13 +127,11 @@ int c_Solver::Init(int argc, char **argv) {
   if (MLMD_BC)
     EMf->initWeightBC(grid, vct);
   
-  // to remove
-  /*cout << "R"<< myrank <<", grid " << numGrid <<":"<<endl;
-  for (int j=0; j<grid->getNYN(); j++){
-    cout << "R" << myrank <<"G" <<numGrid << ", j= " <<j <<", coord= " << grid->getYN(0,j,0) << endl;
-    }*/
-
-    
+#ifdef __PETSC_SOLVER__
+  // PETSc solver:
+  petscSolver = new PetscSolver(EMf, grid, vct, col);
+#endif
+  
   // OpenBC
   EMf->updateInfoFields(grid,vct,col);
 
@@ -319,7 +317,11 @@ void c_Solver::CalculateField() {
 
   // MAXWELL'S SOLVER
   // timeTasks.start(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct, col);               // calculate the E field
+  #ifdef __PETSC_SOLVER__
+    petscSolver->solveE();
+  #else
+    EMf->calculateE(grid, vct, col);               // calculate the E field
+  #endif
   // timeTasks.end(TimeTasks::FIELDS);
 
   /* some mlmd debug */

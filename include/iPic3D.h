@@ -15,6 +15,7 @@
 #include "Restart3D.h"
 #include "Timing.h"
 #include "ParallelIO.h"
+#include "PetscSolver.h"
 
 #include <iostream>
 #include <fstream>
@@ -111,6 +112,12 @@ namespace iPic3D {
     int MLMD_ParticleREPOPULATION;
 
     /*! end mlmd variables */
+
+    #ifdef __PETSC_SOLVER__
+      PetscSolver *petscSolver;
+    #endif
+
+
   };
 
   inline int c_Solver::FirstCycle() {

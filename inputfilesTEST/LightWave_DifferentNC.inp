@@ -27,8 +27,8 @@ B1z = 0.000
 delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-dt = 0.01 # 0.5               # dt = time step  
-ncycles = 21          # cycles
+dt = 0.1 # 0.5               # dt = time step  
+ncycles = 101          # cycles
 th = 1.0               # th =   decentering parameter
 c = 1.0                # c = light speed 
 
@@ -144,7 +144,7 @@ PERIODICZ       = 1 0 0 0               	     # In direction Z (1=true, 0=false)
 verbose                = 1        # Print to video results
 Vinj                   = 0.0      # Velocity of the injection from the wall
 CGtol                  = 1E-3     # CG solver stopping criterium tolerance
-GMREStol               = 1E-3     # GMRES solver stopping criterium tolerance
+GMREStol               = 1E-6     # GMRES solver stopping criterium tolerance
 NiterMover             = 3        # mover predictor corrector iteration
 FieldOutputCycle       = 1      # Output for field
 ParticlesOutputCycle   = 10      # Output for particles if 1 it doesnt save particles data
