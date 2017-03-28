@@ -103,6 +103,10 @@ Grid3DCU::~Grid3DCU() {
   delete [] center_xcoord;
   delete [] center_ycoord;
   delete [] center_zcoord;
+
+  //delete [] dx_mlmd;
+  //delete [] dy_mlmd;
+  //delete [] dz_mlmd;
 }
 
 /** print the local grid info */
@@ -292,6 +296,26 @@ void Grid3DCU::lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vc
   communicateCenterBC(nxc, nyc, nzc, gradXC, 1, 1, 1, 1, 1, 1, vct);
   communicateCenterBC(nxc, nyc, nzc, gradYC, 1, 1, 1, 1, 1, 1, vct);
   communicateCenterBC(nxc, nyc, nzc, gradZC, 1, 1, 1, 1, 1, 1, vct);
+  divC2N(lapN, gradXC, gradYC, gradZC);
+  // deallocate
+  delArr3(gradXC, nxc, nyc);
+  delArr3(gradYC, nxc, nyc);
+  delArr3(gradZC, nxc, nyc);
+}
+
+void Grid3DCU::lapN2N_mlmd(double ***lapN, double ***scFieldN, VirtualTopology3D * vct) {
+  // calculate laplacian as divercence of gradient
+  // allocate 3 gradients: defined on central points
+  double ***gradXC = newArr3(double, nxc, nyc, nzc);
+  double ***gradYC = newArr3(double, nxc, nyc, nzc);
+  double ***gradZC = newArr3(double, nxc, nyc, nzc);
+
+  // if you put ghost node, ghost cell is ok
+  gradN2C(gradXC, gradYC, gradZC, scFieldN);
+  // communicate with BC
+  communicateCenter(nxc, nyc, nzc, gradXC, vct);
+  communicateCenter(nxc, nyc, nzc, gradYC, vct);
+  communicateCenter(nxc, nyc, nzc, gradZC, vct);
   divC2N(lapN, gradXC, gradYC, gradZC);
   // deallocate
   delArr3(gradXC, nxc, nyc);
@@ -624,6 +648,8 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
     /* returns the rank IN THE PARENT-CHILD communicator of the coarse grid core where the point is hosted                                   
        only the active part of the parent grid is examined*/
 
+  // March 27: examining also the ghost cells of the parent grid
+
   // rank on MPI_COMM_WORLD
   int SW_rank=vct->getSystemWide_rank();
 
@@ -637,9 +663,11 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
   double coordZ_PG= getZN_P(xn, yn, zn);
 
   // !cartesian! coordinates in the parent grid                                                                         
-  int coordX= floor(coordX_PG/ parentLenX);
+  int coordX= floor(coordX_PG/ parentLenX); //if (coordX_PG= ) QUI: check if it's the ghost
   int coordY= floor(coordY_PG/ parentLenY);
   int coordZ= floor(coordZ_PG/ parentLenZ);
+
+  
 
   /* end the search when the data relative to the child grid itself start,                                                                    
      i.e. at index XLEN_mlmd[parentGrid]*YLEN_mlmd[parentGrid]*ZLEN_mlmd[parentGrid] */
@@ -653,7 +681,8 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
   }
 
   if (rankPC==-1){
-    cout << "Fatal error in getParentRankFromGridPoint, aborting...";
+    cout <<"R" << SW_rank  << " grid " << numGrid<< "cFatal error in getParentRankFromGridPoint, aborting...";
+    cout <<"I was looking for the parent rank of point (GC coords) " << coordX_PG <<" - " << coordY_PG << " - " << coordZ_PG << endl;
     abort();
   }
   else {

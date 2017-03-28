@@ -64,6 +64,7 @@ public:
 
   /** calculate laplacian on nodes, given a scalar field defined on nodes */
   void lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vct);
+  void lapN2N_mlmd(double ***lapN, double ***scFieldN, VirtualTopology3D * vct);
   /** calculate laplacian on central points, given a scalar field defined on central points for Poisson */
   void lapC2Cpoisson(double ***lapC, double ***scFieldC, VirtualTopology3D * vct);
   /** calculate laplacian on central points, given a scalar field defined on central points */
@@ -181,6 +182,7 @@ private:
   /** invol = inverse of volume*/
   double invVOL;
 
+
   double *node_xcoord; /** Node X coordinate */
   double *node_ycoord; /** Node Y coordinate */
   double *node_zcoord; /** Node Z coordinate */
@@ -207,6 +209,16 @@ private:
   double parentLenX;
   double parentLenY;
   double parentLenZ;
+
+  // resolution and length of all the grids in the MLMD system
+  /*double * dx_mlmd;
+  double * dy_mlmd;
+  doubke * dz_mlmd;
+
+  double *Lx_mlmd;
+  double *Ly_mlmd;
+  double *Lz_mlmd;*/
+
   /*! end mlmd specific variables */
 };
 

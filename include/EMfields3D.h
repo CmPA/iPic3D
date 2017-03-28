@@ -560,6 +560,11 @@ class EMfields3D                // :public Field
     void setBC_Nodes(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
     /* for when I need to put the BC on the image */
     void setBC_NodesImage(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***vectX, double ***vectY, double ***vectZ, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
+
+    void setBC_Nodes_RENORM(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
+    /* for when I need to put the BC on the image */
+    void setBC_NodesImage_RENORM(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***vectX, double ***vectY, double ***vectZ, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
+
     /* set MaxwellSource BC in mlmd; NB: you need to set the actives */
     void MLMDSourceLeft(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
     void MLMDSourceRight(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);

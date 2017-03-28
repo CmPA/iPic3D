@@ -185,16 +185,17 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
         //cout << "GMRES converged at restart # " << itr << "; iteration #" << k << " with error: " << initial_error / rho_tol * tol << endl;
 	cout <<"G" << grid->getNumGrid() << ": GMRES converged at restart # " << itr << "; iteration #" << k << " with error: " << initial_error / rho_tol * tol << endl;
 	
-	cout << "Extra test: ";
+	if (vct->getNprocs()==1){ // extra test
+	  cout << "Extra test, meaninful only with one core per grid: ";
 	  
-	(field->*FunctionImage) (im, xkrylov, grid, vct);
-	double Diff=0;
-	for (int i=0; i< xkrylovlen; i++){
-	  double tmp= im[i]- b[i];
-	  Diff+= (tmp*tmp);
-	}
-	cout << "G" << grid->getNumGrid() << " residual calculated by hand inside GMRES before exiting: " << sqrt(Diff) <<endl;
-
+	  (field->*FunctionImage) (im, xkrylov, grid, vct);
+	  double Diff=0;
+	  for (int i=0; i< xkrylovlen; i++){
+	    double tmp= im[i]- b[i];
+	    Diff+= (tmp*tmp);
+	  }
+	  cout << "G" << grid->getNumGrid() << " residual calculated by hand inside GMRES before exiting: " << sqrt(Diff) <<endl;
+	}// end extra test
       }
       delete[]r;
       delete[]im;
