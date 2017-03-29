@@ -17,6 +17,8 @@
 
 PetscSolver::PetscSolver(EMfields3D *EMf, Grid* grid, VirtualTopology3D *vct, Collective *col)
 {
+  // mlmd: initialize PETSC_COMM_WORLD to the local (non-cartesian yet) grid communicator                                                  
+  PETSC_COMM_WORLD= vct->getCommGrid();
   PetscInitialize(NULL, NULL, NULL, NULL);
 
   ctx.EMf  = EMf;
