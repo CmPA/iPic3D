@@ -208,6 +208,8 @@ class EMfields3D                // :public Field
     void SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
+    void startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col);
+    void endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
     void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! Image of Poisson Solver (for SOLVER) */
     void PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);

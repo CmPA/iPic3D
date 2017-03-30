@@ -15,6 +15,7 @@
 #include "Restart3D.h"
 #include "Timing.h"
 #include "ParallelIO.h"
+#include "PetscSolver.h"
 
 #include <iostream>
 #include <fstream>
@@ -99,6 +100,11 @@ namespace iPic3D {
     double y_center;
     double z_center;
     double L_square;
+
+    #ifdef __PETSC_SOLVER__
+      PetscSolver *petscSolver;
+    #endif
+
   };
 
   inline int c_Solver::FirstCycle() {

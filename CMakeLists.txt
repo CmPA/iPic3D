@@ -13,6 +13,11 @@ project(iPic3D)
 find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
 
+# Find PETSc
+#
+list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
+
+
 #
 # Options
 #
@@ -34,6 +39,11 @@ include_directories(
     include
     ${MPI_INCLUDE_PATH}
     ${HDF5_INCLUDE_DIRS}
+    ${PETSC_INCLUDES}
+)
+
+add_definitions(
+  ${PETSC_DEFINITIONS}
 )
 
 #
@@ -54,6 +64,7 @@ target_link_libraries(
     iPic3Dlib
     ${MPI_LIBRARIES}
     ${HDF5_LIBRARIES}
+    ${PETSC_LIBRARIES}
 )
 
 #
