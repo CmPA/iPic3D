@@ -80,6 +80,11 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
+  #ifdef __PETSC_SOLVER__
+    // PETSc solver:
+    petscSolver = new PetscSolver(EMf, grid, vct, col);
+  #endif
+
   // OpenBC
   EMf->updateInfoFields(grid,vct,col);
 
@@ -238,7 +243,11 @@ void c_Solver::CalculateField() {
 
   // MAXWELL'S SOLVER
   // timeTasks.start(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct, col);               // calculate the E field
+  #ifdef __PETSC_SOLVER__
+    petscSolver->solveE();
+  #else
+    EMf->calculateE(grid, vct, col);               // calculate the E field
+  #endif
   // timeTasks.end(TimeTasks::FIELDS);
 
 }

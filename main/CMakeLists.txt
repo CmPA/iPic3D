@@ -80,6 +80,13 @@ if(IPIC_XEONPHI)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 endif()
 
+option(IPIC_PETSC_SOLVER "Uses PETSc to solve the field equations" OFF)
+if(IPIC_PETSC_SOLVER)
+  find_package(PETSc REQUIRED)
+  add_definitions(-D__PETSC_SOLVER__)
+endif()
+
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options
 are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)
@@ -95,6 +102,7 @@ include_directories(
         ${H5HUTIO_INCLUDE_DIRS}
         ${HDF5_INCLUDE_DIRS}
         ${MPI_INCLUDE_PATH}
+        ${PETSC_INCLUDES}
 )
 
 link_directories(
@@ -119,4 +127,5 @@ add_library(
 target_link_libraries(
          iPic3Dlib
          ${H5HUTIO_LIBRARIES}
+         ${PETSC_LIBRARIES}
 )

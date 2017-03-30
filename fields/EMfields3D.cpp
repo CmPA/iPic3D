@@ -186,7 +186,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
-void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col) {
+void EMfields3D::startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col) {
   if (vct->getCartesian_rank() == 0)
     cout << "*** E CALCULATION ***" << endl;
   double ***divE = newArr3(double, nxc, nyc, nzc);
@@ -194,15 +194,10 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   double ***gradPHIY = newArr3(double, nxn, nyn, nzn);
   double ***gradPHIZ = newArr3(double, nxn, nyn, nzn);
 
-  double *xkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 E components
-  double *bkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
-
   double *xkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
   double *bkrylovPoisson = new double[(nxc - 2) * (nyc - 2) * (nzc - 2)];
   // set to zero all the stuff 
-  eqValue(0.0, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
   eqValue(0.0, xkrylovPoisson, (nxc - 2) * (nyc - 2) * (nzc - 2));
-  eqValue(0.0, bkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
   eqValue(0.0, divE, nxc, nyc, nzc);
   eqValue(0.0, tempC, nxc, nyc, nzc);
   eqValue(0.0, gradPHIX, nxn, nyn, nzn);
@@ -234,6 +229,25 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
     sub(Ez, gradPHIZ, nxn, nyn, nzn);
 
   }                             // end of divergence cleaning 
+
+  delete[]xkrylovPoisson;
+  delete[]bkrylovPoisson;
+  delArr3(divE, nxc, nyc);
+  delArr3(gradPHIX, nxn, nyn);
+  delArr3(gradPHIY, nxn, nyn);
+  delArr3(gradPHIZ, nxn, nyn);
+}
+
+void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col) {
+
+  startEcalc(grid,vct, col);
+
+  double *xkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 E components
+  double *bkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
+  eqValue(0.0, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
+  eqValue(0.0, bkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
+
+
   if (vct->getCartesian_rank() == 0)
     cout << "*** MAXWELL SOLVER ***" << endl;
   // prepare the source 
@@ -241,6 +255,16 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   phys2solver(xkrylov, Ex, Ey, Ez, nxn, nyn, nzn);
   // solver
   GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this);
+
+  endEcalc(xkrylov, grid, vct, col);
+
+  // deallocate temporary arrays
+  delete[]xkrylov;
+  delete[]bkrylov;
+}
+ 
+void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col)
+{
   // move from krylov space to physical space
   solver2phys(Exth, Eyth, Ezth, xkrylov, nxn, nyn, nzn);
 
@@ -265,15 +289,6 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
   BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
 
-  // deallocate temporary arrays
-  delete[]xkrylov;
-  delete[]bkrylov;
-  delete[]xkrylovPoisson;
-  delete[]bkrylovPoisson;
-  delArr3(divE, nxc, nyc);
-  delArr3(gradPHIX, nxn, nyn);
-  delArr3(gradPHIY, nxn, nyn);
-  delArr3(gradPHIZ, nxn, nyn);
 
 }
 
