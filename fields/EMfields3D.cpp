@@ -2266,7 +2266,7 @@ void EMfields3D::SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective 
 void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective *col){
 
   /* -- NOTE: Hardcoded option */
-  bool twodim  = false; // Two dimensional run
+  bool twodim  = true; // Two dimensional run
   double z_dec = 0.16;  // De-centering from z_center in planet radius
   /* -- END NOTE -- */
 
@@ -2287,7 +2287,7 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
         double rx = x-xc;
         double ry = y-yc;
         double rz = z-zc;
-        if (twodim) ry = 0.0;
+        if (twodim) rz = 0.0;
 
         double r      = sqrt(rx*rx + ry*ry + rz*rz);
 
@@ -2296,7 +2296,7 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
         double Mz = B1z;
 
         if (r < a) {
-          rz = sqrt(a*a - (rx*rx + ry*ry));
+          ry = sqrt(a*a - (rx*rx + rz*rz));
           double one_r3 = 1.0/(a*a*a);
           double rhx = rx/a;
           double rhy = ry/a;
@@ -2308,8 +2308,8 @@ void EMfields3D::SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective 
           double Bme = sqrt(Bxe*Bxe + Bye*Bye + Bze*Bze);
 
           Bx_ext[i][j][k] = 0.0;
-          By_ext[i][j][k] = 0.0;
-          Bz_ext[i][j][k] = (B1z/fabs(B1z)) * Bme;
+          By_ext[i][j][k] = B1y == 0.0 ? 0.0 : (B1y/fabs(B1y)) * Bme;
+          Bz_ext[i][j][k] = 0.0;
         }
         else {
 
