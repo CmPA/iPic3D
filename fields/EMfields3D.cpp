@@ -152,15 +152,15 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   rhons = newArr4(double, ns, nxn, nyn, nzn);
   rhocs = newArr4(double, ns, nxc, nyc, nzc);
 
-  // debug, to remove!!!
-  Jxs = newArr4(double, 8, nxn, nyn, nzn);
+  // debug, to remove (you can use this to save stuff)
+  /*Jxs = newArr4(double, 8, nxn, nyn, nzn);
   Jys = newArr4(double, 8, nxn, nyn, nzn);
-  Jzs = newArr4(double, 8, nxn, nyn, nzn);
+  Jzs = newArr4(double, 8, nxn, nyn, nzn);*/
 
-  /*
+  
   Jxs = newArr4(double, ns, nxn, nyn, nzn);
   Jys = newArr4(double, ns, nxn, nyn, nzn);
-  Jzs = newArr4(double, ns, nxn, nyn, nzn);*/
+  Jzs = newArr4(double, ns, nxn, nyn, nzn);
   pXXsn = newArr4(double, ns, nxn, nyn, nzn);
   pXYsn = newArr4(double, ns, nxn, nyn, nzn);
   pXZsn = newArr4(double, ns, nxn, nyn, nzn);
@@ -304,8 +304,8 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
     cout << "*** G" << numGrid <<": MAXWELL SOLVER ***" << endl;
 
   // here, as a test; i impose E th BC's on Jxs0; to check if they are the same after the GMRES                       
-  setBC_Nodes(vct, Jxs[0], Jys[0], Jzs[0], Exth_Ghost_BC, Eyth_Ghost_BC, Ezth_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
-  setBC_Nodes(vct, Jxs[0], Jys[0], Jzs[0], Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+  //setBC_Nodes(vct, Jxs[0], Jys[0], Jzs[0], Exth_Ghost_BC, Eyth_Ghost_BC, Ezth_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+  //setBC_Nodes(vct, Jxs[0], Jys[0], Jzs[0], Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
   // prepare the source 
   MaxwellSource(bkrylov, grid, vct, col);
@@ -380,14 +380,14 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
     BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
   }
   
-  cout << "GMREStol " << GMREStol << " -log10(GMREStol) " << -log10(GMREStol) <<endl;
+  /*cout << "GMREStol " << GMREStol << " -log10(GMREStol) " << -log10(GMREStol) <<endl;
   cout.precision(-log10(GMREStol));
   cout <<"R"<<vct->getSystemWide_rank() << " cycle " << currentCycle  <<" vct->getZleft_neighbor() " << vct->getZleft_neighbor() << " Eyth[5][5][0] " << Eyth[5][5][0] << " Eyth[5][5][1] " << Eyth[5][5][1] << "  Eyth[5][5][2] " <<  Eyth[5][5][2]  <<"  Eyth[5]\
 [5][3] " <<  Eyth[5][5][3] << " Eyth[5][5][4] " <<   Eyth[5][5][4]  << endl;
   cout <<"R"<<vct->getSystemWide_rank() << " cycle " << currentCycle << " vct->getZright_neighbor() " << vct->getZright_neighbor() << " Eyth[8][8][nzn-1] " << Eyth[8][8][nzn-1] << "Eyth[8][8][nzn-2] " << Eyth[8][8][nzn-2 ] << " Eyth[8][8][nzn-3] " << Eyth[8][8][nzn-3 ] << " Eyth[8][8][nzn-4] " << Eyth[8][8][nzn-4 ]  << " Eyth[8][8][nzn-5] " << Eyth[8][8][nzn-5 ] << endl;
 
   cout <<"R"<<vct->getSystemWide_rank() << " cycle " << currentCycle  <<" vct->getZleft_neighbor() " << vct->getZleft_neighbor() << " Jys[0][5][5][0] " << Jys[0][5][5][0] << " Jys[0][5][5][1] " << Jys[0][5][5][1] << "  Jys[0][5][5][2] " <<  Jys[0][5][5][2] <<"  Jys[0][5][5][3] " <<  Jys[0][5][5][3] << " Jys[0][5][5][4] " <<   Jys[0][5][5][4]  << endl;
-  cout <<"R"<<vct->getSystemWide_rank() << " cycle " << currentCycle << " vct->getZright_neighbor() " << vct->getZright_neighbor() << " Jys[0][8][8][nzn-1] " << Jys[0][8][8][nzn-1] << " Jys[0][8][8][nzn-2] " << Jys[0][8][8][nzn-2 ] << " Jys[0][8][8][nzn-3] " << Jys[0][8][8][nzn-3 ] << " Jys[0][8][8][nzn-4] " << Jys[0][8][8][nzn-4 ]  << " Jys[0][8][8][nzn-5] " << Jys[0][8][8][nzn-5 ] <<endl;
+  cout <<"R"<<vct->getSystemWide_rank() << " cycle " << currentCycle << " vct->getZright_neighbor() " << vct->getZright_neighbor() << " Jys[0][8][8][nzn-1] " << Jys[0][8][8][nzn-1] << " Jys[0][8][8][nzn-2] " << Jys[0][8][8][nzn-2 ] << " Jys[0][8][8][nzn-3] " << Jys[0][8][8][nzn-3 ] << " Jys[0][8][8][nzn-4] " << Jys[0][8][8][nzn-4 ]  << " Jys[0][8][8][nzn-5] " << Jys[0][8][8][nzn-5 ] <<endl;*/
 
 
 }
@@ -1121,11 +1121,9 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
      addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
      
      // communicate ghost 
-     cout << "Before communicateCenterBC"<<endl;
      communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
      communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
      communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
-     cout << "After communicateCenterBC"<<endl;
 
      if (Case=="ForceFree") fixBforcefree(grid,vct);
      if (Case=="GEM")       fixBgem(grid, vct);
@@ -1152,11 +1150,11 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
      communicateNode(nxn, nyn, nzn, Bzn, vct);
    }
    else{ // normal, non mlmd option
-     cout << "Before communicateNodeBC"<<endl;
+     //cout << "Before communicateNodeBC"<<endl;
      communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
      communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
      communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
-     cout << "End communicateNodeBC"<<endl;
+     //cout << "End communicateNodeBC"<<endl;
    }
 
 

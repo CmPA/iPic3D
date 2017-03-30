@@ -117,9 +117,14 @@ void Collective::ReadInput(string inputfile) {
     array_int ZLEN_mlmd0 = config.read < array_int > ("ZLEN_mlmd");
 
     // mlmd periodicity
+    // for fields
     array_bool PERIODICX_mlmd0 = config.read < array_bool > ("PERIODICX");
     array_bool PERIODICY_mlmd0 = config.read < array_bool > ("PERIODICY");
     array_bool PERIODICZ_mlmd0 = config.read < array_bool > ("PERIODICZ");
+    // for particles
+    array_bool PERIODICX_P_mlmd0 = config.read < array_bool > ("PERIODICX_P");
+    array_bool PERIODICY_P_mlmd0 = config.read < array_bool > ("PERIODICY_P");
+    array_bool PERIODICZ_P_mlmd0 = config.read < array_bool > ("PERIODICZ_P");
 
     gridLevel = new int[Ngrids];
     parentGrid = new int[Ngrids];
@@ -144,6 +149,10 @@ void Collective::ReadInput(string inputfile) {
     PERIODICY_mlmd = new bool[Ngrids];
     PERIODICZ_mlmd = new bool[Ngrids];
 
+    PERIODICX_P_mlmd = new bool[Ngrids]; 
+    PERIODICY_P_mlmd = new bool[Ngrids];
+    PERIODICZ_P_mlmd = new bool[Ngrids];
+
     gridLevel[0] = gridLevel0.a;
     parentGrid[0] = parentGrid0.a;
         
@@ -162,6 +171,10 @@ void Collective::ReadInput(string inputfile) {
     PERIODICX_mlmd[0] = PERIODICX_mlmd0.a;
     PERIODICY_mlmd[0] = PERIODICY_mlmd0.a;
     PERIODICZ_mlmd[0] = PERIODICZ_mlmd0.a;
+
+    PERIODICX_P_mlmd[0] = PERIODICX_P_mlmd0.a;
+    PERIODICY_P_mlmd[0] = PERIODICY_P_mlmd0.a;
+    PERIODICZ_P_mlmd[0] = PERIODICZ_P_mlmd0.a;
 
     Lx_mlmd[0] = Lx_mlmd0.a; 
     Ly_mlmd[0] = Ly_mlmd0.a;
@@ -186,6 +199,10 @@ void Collective::ReadInput(string inputfile) {
       PERIODICX_mlmd[1] = PERIODICX_mlmd0.b;
       PERIODICY_mlmd[1] = PERIODICY_mlmd0.b;
       PERIODICZ_mlmd[1] = PERIODICZ_mlmd0.b;
+
+      PERIODICX_P_mlmd[1] = PERIODICX_P_mlmd0.b;
+      PERIODICY_P_mlmd[1] = PERIODICY_P_mlmd0.b;
+      PERIODICZ_P_mlmd[1] = PERIODICZ_P_mlmd0.b;
 
       Lx_mlmd[1] = Lx_mlmd0.b; 
       Ly_mlmd[1] = Ly_mlmd0.b;
@@ -212,6 +229,10 @@ void Collective::ReadInput(string inputfile) {
       PERIODICY_mlmd[2] = PERIODICY_mlmd0.c;
       PERIODICZ_mlmd[2] = PERIODICZ_mlmd0.c;
 
+      PERIODICX_P_mlmd[2] = PERIODICX_P_mlmd0.c;
+      PERIODICY_P_mlmd[2] = PERIODICY_P_mlmd0.c;
+      PERIODICZ_P_mlmd[2] = PERIODICZ_P_mlmd0.c;
+
       Lx_mlmd[2] = Lx_mlmd0.c; 
       Ly_mlmd[2] = Ly_mlmd0.c;
       Lz_mlmd[2] = Lz_mlmd0.c;
@@ -237,6 +258,10 @@ void Collective::ReadInput(string inputfile) {
       PERIODICY_mlmd[3] = PERIODICY_mlmd0.d;
       PERIODICZ_mlmd[3] = PERIODICZ_mlmd0.d;
 
+      PERIODICX_P_mlmd[3] = PERIODICX_P_mlmd0.d;
+      PERIODICY_P_mlmd[3] = PERIODICY_P_mlmd0.d;
+      PERIODICZ_P_mlmd[3] = PERIODICZ_P_mlmd0.d;
+
       Lx_mlmd[3] = Lx_mlmd0.d; 
       Ly_mlmd[3] = Ly_mlmd0.d;
       Lz_mlmd[3] = Lz_mlmd0.d;
@@ -261,6 +286,10 @@ void Collective::ReadInput(string inputfile) {
       PERIODICX_mlmd[4] = PERIODICX_mlmd0.e;
       PERIODICY_mlmd[4] = PERIODICY_mlmd0.e;
       PERIODICZ_mlmd[4] = PERIODICZ_mlmd0.e;
+
+      PERIODICX_P_mlmd[4] = PERIODICX_P_mlmd0.e;
+      PERIODICY_P_mlmd[4] = PERIODICY_P_mlmd0.e;
+      PERIODICZ_P_mlmd[4] = PERIODICZ_P_mlmd0.e;
 
       Lx_mlmd[4] = Lx_mlmd0.e; 
       Ly_mlmd[4] = Ly_mlmd0.e;
@@ -509,17 +538,78 @@ void Collective::ReadInput(string inputfile) {
     bcEz[4] = bcEMfaceZright == 0 ? 2 : 1;   bcBz[4] = bcEMfaceZright == 0 ? 1 : 2;
     bcEz[5] = bcEMfaceZleft  == 0 ? 2 : 1;   bcBz[5] = bcEMfaceZleft  == 0 ? 1 : 2;
 
-    // Particles Boundary condition
-    bcPfaceXright = config.read < int >("bcPfaceXright");
+    // Particles Boundary condition --> became arrays in mlmd
+    /*bcPfaceXright = config.read < int >("bcPfaceXright");
     bcPfaceXleft  = config.read < int >("bcPfaceXleft");
     bcPfaceYright = config.read < int >("bcPfaceYright");
     bcPfaceYleft  = config.read < int >("bcPfaceYleft");
     bcPfaceZright = config.read < int >("bcPfaceZright");
-    bcPfaceZleft  = config.read < int >("bcPfaceZleft");
+    bcPfaceZleft  = config.read < int >("bcPfaceZleft");*/
 
+    array_int bcPfaceXleft0 = config.read < array_int > ("bcPfaceXleft");
+    array_int bcPfaceXright0 = config.read < array_int > ("bcPfaceXright");
+    array_int bcPfaceYleft0 = config.read < array_int > ("bcPfaceYleft");
+    array_int bcPfaceYright0 = config.read < array_int > ("bcPfaceYright");
+    array_int bcPfaceZleft0 = config.read < array_int > ("bcPfaceZleft");
+    array_int bcPfaceZright0 = config.read < array_int > ("bcPfaceZright");
 
+    bcPfaceXleft = new int[Ngrids];
+    bcPfaceXright = new int[Ngrids];
+    bcPfaceYleft = new int[Ngrids];
+    bcPfaceYright = new int[Ngrids];
+    bcPfaceZleft = new int[Ngrids];
+    bcPfaceZright = new int[Ngrids];
 
+    bool outBcP= false;
+    bcPfaceXleft[0]= bcPfaceXleft0.a; if (bcPfaceXleft[0]==-1) outBcP= true;
+    bcPfaceXright[0]= bcPfaceXright0.a; if (bcPfaceXright[0]==-1) outBcP= true;
+    bcPfaceYleft[0]= bcPfaceYleft0.a; if (bcPfaceYleft[0]==-1) outBcP= true;
+    bcPfaceYright[0]= bcPfaceYright0.a; if (bcPfaceYright[0]==-1) outBcP= true;
+    bcPfaceZleft[0]= bcPfaceZleft0.a; if (bcPfaceZleft[0]==-1) outBcP= true;
+    bcPfaceZright[0]= bcPfaceZright0.a; if (bcPfaceZright[0]==-1) outBcP= true;
 
+    if (outBcP){
+      cout << "CAREFUL!!! You are requiring MLMD particle BC for the coarsest grid, which is forbidden: aborting ..." << endl;
+      cerr << "CAREFUL!!! You are requiring MLMD particle BC for the coarsest grid, which is forbidden: aborting ..." << endl;
+      abort();
+    }
+
+    if (Ngrids >1) {
+      bcPfaceXleft[1]= bcPfaceXleft0.b;
+      bcPfaceXright[1]= bcPfaceXright0.b;
+      bcPfaceYleft[1]= bcPfaceYleft0.b;
+      bcPfaceYright[1]= bcPfaceYright0.b;
+      bcPfaceZleft[1]= bcPfaceZleft0.b;
+      bcPfaceZright[1]= bcPfaceZright0.b;
+    }
+
+    if (Ngrids >2) {
+      bcPfaceXleft[2]= bcPfaceXleft0.c;
+      bcPfaceXright[2]= bcPfaceXright0.c;
+      bcPfaceYleft[2]= bcPfaceYleft0.c;
+      bcPfaceYright[2]= bcPfaceYright0.c;
+      bcPfaceZleft[2]= bcPfaceZleft0.c;
+      bcPfaceZright[2]= bcPfaceZright0.c;
+    }
+
+    if (Ngrids >3) {
+      bcPfaceXleft[3]= bcPfaceXleft0.d;
+      bcPfaceXright[3]= bcPfaceXright0.d;
+      bcPfaceYleft[3]= bcPfaceYleft0.d;
+      bcPfaceYright[3]= bcPfaceYright0.d;
+      bcPfaceZleft[3]= bcPfaceZleft0.d;
+      bcPfaceZright[3]= bcPfaceZright0.d;
+    }
+
+    if (Ngrids >4) {
+      bcPfaceXleft[4]= bcPfaceXleft0.e;
+      bcPfaceXright[4]= bcPfaceXright0.e;
+      bcPfaceYleft[4]= bcPfaceYleft0.e;
+      bcPfaceYright[4]= bcPfaceYright0.e;
+      bcPfaceZleft[4]= bcPfaceZleft0.e;
+      bcPfaceZright[4]= bcPfaceZright0.e;
+    }
+      
   }
   TrackParticleID = new bool[ns];
   array_bool TrackParticleID0 = config.read < array_bool > ("TrackParticleID");
@@ -850,11 +940,14 @@ Collective::Collective(int argc, char **argv) {
   // QUI
   int * comulativeSize= new int[Ngrids];
   LowestRankOfGrid= new int[Ngrids];
+  HighestRankOfGrid= new int[Ngrids];
+
 
   LowestRankOfGrid[0]=0;
   int TotalSize=0;
   for (int g=0; g<Ngrids; g++){
     TotalSize+= XLEN_mlmd[g]*YLEN_mlmd[g]*ZLEN_mlmd[g];
+    HighestRankOfGrid[g]= TotalSize-1;
     for (int j=0; j< Ngrids; j++){
       if (j==g) comulativeSize[j]=TotalSize;
       if (j>0) {LowestRankOfGrid[j] = comulativeSize[j-1];}
@@ -997,15 +1090,25 @@ Collective::~Collective() {
   delete[]dy_mlmd;
   delete[]dz_mlmd;
   delete[]LowestRankOfGrid;
+  delete[]HighestRankOfGrid;
   delete[]XLEN_mlmd;
   delete[]YLEN_mlmd;
   delete[]ZLEN_mlmd;
   delete[]PERIODICX_mlmd;
   delete[]PERIODICY_mlmd;
   delete[]PERIODICZ_mlmd;
+  delete[]PERIODICX_P_mlmd;
+  delete[]PERIODICY_P_mlmd;
+  delete[]PERIODICZ_P_mlmd;
   delete[]Lx_mlmd;
   delete[]Ly_mlmd;
   delete[]Lz_mlmd;
+  delete[]bcPfaceXleft;
+  delete[]bcPfaceXright;
+  delete[]bcPfaceYleft;
+  delete[]bcPfaceYright;
+  delete[]bcPfaceZleft;
+  delete[]bcPfaceZright;
   // MLMD variables
 }
 /*! Print Simulation Parameters */
@@ -1314,30 +1417,57 @@ double Collective::getV0(int nspecies) {
 double Collective::getW0(int nspecies) {
   return (w0[nspecies]);
 }
+// you can request the grid level
+/*! get Boundary Condition Particles: FaceXright */
+int Collective::getBcPfaceXright(int N) {
+  return (bcPfaceXright[N]);
+}
+/*! get Boundary Condition Particles: FaceXleft */
+int Collective::getBcPfaceXleft(int N) {
+  return (bcPfaceXleft[N]);
+}
+/*! get Boundary Condition Particles: FaceYright */
+int Collective::getBcPfaceYright(int N) {
+  return (bcPfaceYright[N]);
+}
+/*! get Boundary Condition Particles: FaceYleft */
+int Collective::getBcPfaceYleft(int N) {
+  return (bcPfaceYleft[N]);
+}
+/*! get Boundary Condition Particles: FaceZright */
+int Collective::getBcPfaceZright(int N) {
+  return (bcPfaceZright[N]);
+}
+/*! get Boundary Condition Particles: FaceZleft */
+int Collective::getBcPfaceZleft(int N) {
+  return (bcPfaceZleft[N]);
+}
+// locally, at grid level
 /*! get Boundary Condition Particles: FaceXright */
 int Collective::getBcPfaceXright() {
-  return (bcPfaceXright);
+  return (bcPfaceXright[numGrid_clt]);
 }
 /*! get Boundary Condition Particles: FaceXleft */
 int Collective::getBcPfaceXleft() {
-  return (bcPfaceXleft);
+  return (bcPfaceXleft[numGrid_clt]);
 }
 /*! get Boundary Condition Particles: FaceYright */
 int Collective::getBcPfaceYright() {
-  return (bcPfaceYright);
+  return (bcPfaceYright[numGrid_clt]);
 }
 /*! get Boundary Condition Particles: FaceYleft */
 int Collective::getBcPfaceYleft() {
-  return (bcPfaceYleft);
+  return (bcPfaceYleft[numGrid_clt]);
 }
 /*! get Boundary Condition Particles: FaceZright */
 int Collective::getBcPfaceZright() {
-  return (bcPfaceZright);
+  return (bcPfaceZright[numGrid_clt]);
 }
 /*! get Boundary Condition Particles: FaceZleft */
 int Collective::getBcPfaceZleft() {
-  return (bcPfaceZleft);
+  return (bcPfaceZleft[numGrid_clt]);
 }
+
 /*! get Boundary Condition Electrostatic Potential: FaceXright */
 int Collective::getBcPHIfaceXright() {
   return (bcPHIfaceXright);
@@ -1584,6 +1714,7 @@ int Collective::getZLEN_mlmd(int N){ return ZLEN_mlmd[N];}
 
 int Collective::getnumGrid_clt(){return numGrid_clt;}
 int Collective::getLowestRankOfGrid(int n) {return LowestRankOfGrid[n];}
+int Collective::getHighestRankOfGrid(int n) {return HighestRankOfGrid[n];}
 
 bool Collective::getMLMD_BC() {return MLMD_BC;}
 bool Collective::getMLMD_PROJECTION() {return MLMD_PROJECTION;}

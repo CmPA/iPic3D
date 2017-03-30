@@ -115,13 +115,6 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   v0 = col->getV0(species);
   w0 = col->getW0(species);
   dt = col->getDt();
-  /*! pre-mlmd
-  Lx = col->getLx();
-  Ly = col->getLy();
-  Lz = col->getLz();
-  dx = grid->getDX();
-  dy = grid->getDY();
-  dz = grid->getDZ(); */
   Lx = col->getLx_mlmd(numGrid);
   Ly = col->getLy_mlmd(numGrid);
   Lz = col->getLz_mlmd(numGrid);
@@ -145,11 +138,6 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   zstart = grid->getZstart();
   zend = grid->getZend();
 
-  /*! dunno why it was repeated
-  dx = grid->getDX();
-  dy = grid->getDY();
-  dz = grid->getDZ(); */
-
   nxn = grid->getNXN();
   nyn = grid->getNYN();
   nzn = grid->getNZN();
@@ -158,10 +146,6 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   cVERBOSE = vct->getcVERBOSE();
 
   // boundary condition for particles
-  bcPfaceXright = col->getBcPfaceXright();
-  bcPfaceXleft = col->getBcPfaceXleft();
-  bcPfaceYright = col->getBcPfaceYright();
-  bcPfaceYleft = col->getBcPfaceYleft();
   bcPfaceXright = col->getBcPfaceXright();
   bcPfaceXleft = col->getBcPfaceXleft();
   bcPfaceYright = col->getBcPfaceYright();

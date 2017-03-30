@@ -456,6 +456,15 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     //cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
     cout << "*** G" <<numGrid <<":  MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
   }
+
+  // mlmd: as a check, print # particles
+  int ppc=nop; int TotalP=0;
+  MPI_Allreduce(&ppc, &TotalP, 1, MPI_INT, MPI_SUM, vct->getCommGrid());
+  if (vct->getCartesian_rank()==0){
+    cout << "Grid " << numGrid <<": total number of particles BEFORE mover: " << TotalP << endl;
+  }
+  // end mlmd check
+
   double start_mover_PC = MPI_Wtime();
   double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
   double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
@@ -672,6 +681,15 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
     //MPI_Barrier(MPI_COMM_WORLD);
     MPI_Barrier(vct->getCommGrid()); 
   }
+
+  // mlmd: as a check, print # particles
+  ppc=nop; TotalP=0;
+  MPI_Allreduce(&ppc, &TotalP, 1, MPI_INT, MPI_SUM, vct->getCommGrid());
+  if (vct->getCartesian_rank()==0){
+    cout << "Grid " << numGrid <<": total number of particles AFTER mover: " << TotalP << endl;
+  }
+  // end mlmd check
+
   // timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
 }
@@ -682,6 +700,15 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     //cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
     cout << "*** G" << numGrid <<": MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
   }
+
+  // mlmd: as a check, print # particles
+  int ppc=nop; int TotalP=0;
+  MPI_Allreduce(&ppc, &TotalP, 1, MPI_INT, MPI_SUM, vct->getCommGrid());
+  if (vct->getCartesian_rank()==0){
+    cout << "Grid " << numGrid << " ns " <<ns  <<": total number of particles BEFORE mover: " << TotalP << endl;
+  }
+  // end mlmd check
+
   double start_mover_PC = MPI_Wtime();
   double weights[2][2][2];
   double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
@@ -810,6 +837,15 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     //MPI_Barrier(MPI_COMM_WORLD);
     MPI_Barrier(vct->getCommGrid());
   }
+
+  // mlmd: as a check, print # particles
+  ppc=nop; TotalP=0;
+  MPI_Allreduce(&ppc, &TotalP, 1, MPI_INT, MPI_SUM, vct->getCommGrid());
+  if (vct->getCartesian_rank()==0){
+    cout << "Grid " << numGrid << " ns " <<ns  <<": total number of particles AFTER mover: " << TotalP << endl;
+  }
+  // end mlmd check
+
   // timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
 }

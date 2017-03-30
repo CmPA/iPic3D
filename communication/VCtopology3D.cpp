@@ -45,15 +45,23 @@ VCtopology3D::VCtopology3D(Collective *col) {
   /*! mlmd: inter- and intra- communicators */
   CommToChildren= new MPI_Comm[Ngrids];
   rank_CommToChildren= new int[Ngrids];
+  // for particles
+  CommToChildren_P= new MPI_Comm[Ngrids];
+  rank_CommToChildren_P= new int[Ngrids];
 
   /*! everything initialised to MPI_COMM_NULL */
   for (int ng=0; ng< Ngrids; ng++){
     CommToChildren[ng]= MPI_COMM_NULL;
     rank_CommToChildren[ng]= -1;
+    // for particles
+    CommToChildren_P[ng]= MPI_COMM_NULL;
+    rank_CommToChildren_P[ng]= -1;
   }
 
   CommToParent= MPI_COMM_NULL;
   rank_CommToParent= -1;
+  CommToParent_P= MPI_COMM_NULL;
+  rank_CommToParent_P= -1;
   numChildren= 0;
   /* end mlmd: inter- and intra- communicators */
   
@@ -96,6 +104,8 @@ VCtopology3D::~VCtopology3D(){
   /* communicator stuff*/
   delete[]CommToChildren;
   delete[]rank_CommToChildren;
+  delete[]CommToChildren_P;
+  delete[]rank_CommToChildren_P;
 
   /* TAGS */
   delete[]TagsForInit_Children;
@@ -165,13 +175,13 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
 
   /* periodicity moved here, AFTER i know my numGrid */
   /* this is the periodicity of the local grid */
-  PERIODICX = col->getPERIODICX(numGrid);                                                                               
+  PERIODICX = col->getPERIODICX(numGrid);                 
   PERIODICY = col->getPERIODICY(numGrid);
   PERIODICZ = col->getPERIODICZ(numGrid);
 
-  PERIODICX_P = col->getPERIODICX(numGrid);   
-  PERIODICY_P = col->getPERIODICY(numGrid); 
-  PERIODICZ_P = col->getPERIODICZ(numGrid);
+  PERIODICX_P = col->getPERIODICX_P(numGrid);   
+  PERIODICY_P = col->getPERIODICY_P(numGrid); 
+  PERIODICZ_P = col->getPERIODICZ_P(numGrid);
 
   periods[0] = PERIODICX;                                                                                                      
   periods[1] = PERIODICY;   
@@ -241,6 +251,9 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   MPI_Comm *ChildParentInterComm= new MPI_Comm[Ngrids];
   /* same but for communicators */
   MPI_Comm *ChildParentComm= new MPI_Comm[Ngrids];
+  // for particles
+  MPI_Comm *ChildParentInterComm_P= new MPI_Comm[Ngrids];
+  MPI_Comm *ChildParentComm_P= new MPI_Comm[Ngrids];
   /* end tmp variables for mlmd init */
 
   // refer to collective for unused slots in childreList and parentList[0]
@@ -272,18 +285,41 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   for (int ng=0; ng< Ngrids; ng++){
     ChildParentInterComm[ng]= MPI_COMM_NULL;
     ChildParentComm[ng]= MPI_COMM_NULL;
+  
+    /* intergrid communicators for particles */
+  
+    ChildParentInterComm_P[ng]= MPI_COMM_NULL;
+    ChildParentComm_P[ng]= MPI_COMM_NULL;
   }
 
+  int TAG_SHIFT= 100; // for particle intercomm
 
   // as a child
   if (numGrid>0){ //gridNum=0 is not a child
     int LowestRankParent= col->getLowestRankOfGrid(parentGrid);
     if (cartesian_rank==0){
       cout << "Grid " << numGrid << ", as a child, LRP: " <<LowestRankParent << endl; }
+    // for fields
     // as remote leader, I have to put the lowest rank in the common communicator, MPI_COMM_WORLD
     MPI_Intercomm_create(CART_COMM, 0, MPI_COMM_WORLD, LowestRankParent, numGrid, ChildParentInterComm+numGrid); 
     // due to true, the children cores are ranked after the parent cores
     MPI_Intercomm_merge(ChildParentInterComm[numGrid], true, ChildParentComm + numGrid);
+
+
+    // here, I also have to check if the child grid - the current grid - wants BC's for above
+    // I need to check my own PBC requirements
+    
+    if ((col->getBcPfaceXright() == -1) or (col-> getBcPfaceXleft() == -1) or (	col->getBcPfaceYright() == -1) or (col->getBcPfaceYleft() == -1) or (col-> getBcPfaceZright() == -1) or (col-> getBcPfaceZleft() == -1)) {
+      // for particles
+      // as remote leader, I have to put the lowest rank in the common communicator, MPI_COMM_WORLD
+      // as TAG, which should be unique, i give TAG_SHIFT+numGrid
+      // as leaders, I appoint the higher rank cores (XLEN*YLEN*ZLEN-1 locally, HighestRankParent remotely) , since the lowest rank cores are already busy with fields
+      int HighestRankParent= col->getHighestRankOfGrid(parentGrid);
+      MPI_Intercomm_create(CART_COMM_P, XLEN*YLEN*ZLEN-1, MPI_COMM_WORLD, HighestRankParent, TAG_SHIFT+numGrid, ChildParentInterComm_P+numGrid);
+      // due to true, the children cores are ranked after the parent cores
+      MPI_Intercomm_merge(ChildParentInterComm_P[numGrid], true, ChildParentComm_P + numGrid);
+    }// end check on necessity P BC
+    
   }
 
   // as a parent
@@ -293,9 +329,22 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
     if (cartesian_rank==0){
       cout << "Grid " <<numGrid <<", as a parent, tag " << child << ", LowestRankParent: " << LowestRankChild<<endl;
     }
+    // for fields
     MPI_Intercomm_create(CART_COMM, 0, MPI_COMM_WORLD, LowestRankChild, child, ChildParentInterComm + child);
     // due to false, the parent cores are ranked before the children cores
     MPI_Intercomm_merge(ChildParentInterComm[child], false, ChildParentComm + child);
+
+    // for particles
+    // here, I also have to check if the child grid - NOT the current grid - wants BC's from above
+    if ((col->getBcPfaceXright(child) == -1) or (col-> getBcPfaceXleft(child) == -1) or (col->getBcPfaceYright(child) == -1) or (col->getBcPfaceYleft(child) == -1) or (col-> getBcPfaceZright(child) == -1) or (col-> getBcPfaceZleft(child) == -1)) {
+      // for particles
+      // as leaders, I appoint the higher rank cores (XLEN*YLEN*ZLEN-1 locally, HighestRankParent remotely) , since the lowest rank cores are already busy with fields
+      int HighestRankChild= col->getHighestRankOfGrid(child);
+      // as a tag, which should be unique, i use -child (NB: this is not the number of the child, but the grid number of the child)
+      MPI_Intercomm_create(CART_COMM_P, XLEN*YLEN*ZLEN-1, MPI_COMM_WORLD, HighestRankChild, TAG_SHIFT+child, ChildParentInterComm_P + child);
+      // due to false, the parent cores are ranked before the children cores
+      MPI_Intercomm_merge(ChildParentInterComm_P[child], false, ChildParentComm_P + child);
+    }// end check on necessity P BC
   }  
   
   /*! end tmp communicators array */
@@ -311,6 +360,7 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
       numChildren= childrenNum[ng];
     }
     
+    // for fields
     if (ChildParentInterComm[ng] != MPI_COMM_NULL ){ // ng is either the parent or the child
       if (ng== numGrid){ // ng=numGrid is the child
 	CommToParent= ChildParentComm[ng];
@@ -325,7 +375,46 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
 	}
       } // end of the else
     } // end if != MPI_COMM_NULL
+
+    // for particles
+    if (ChildParentInterComm_P[ng] != MPI_COMM_NULL ){ // ng is either the parent or the child AND the child want BC's from above
+      if (ng== numGrid){ // ng=numGrid is the child
+        CommToParent_P= ChildParentComm_P[ng];
+        MPI_Comm_rank(CommToParent_P, &rank_CommToParent_P);
+      } else {
+        // ng is the child, numGrid is the parent
+        for (int c=0; c<childrenNum[numGrid]; c++ ){ // keep the same children order as in childrenNum
+          if (childrenList[numGrid][c]== ng) {
+            CommToChildren_P[c]= ChildParentComm_P[ng];
+            MPI_Comm_rank(CommToChildren_P[c], rank_CommToChildren_P + c);
+          }
+        }
+      } // end of the else
+    } // end if != MPI_COMM_NULL
+    
+    // this is only for test
+    if (ChildParentInterComm[ng] != MPI_COMM_NULL && ChildParentInterComm_P[ng]== MPI_COMM_NULL){
+      string Relation;
+      if (ng== numGrid) Relation = "Child";
+      else Relation = "Parent";
+
+      if (cartesian_rank==0){
+        cout << "I am grid " << numGrid << " and, as a " << Relation << ", I do NOT want particle MLMD BC  " << endl;
+      }
+    }
   } // end cycle ng
+
+
+  // a little test to comment later
+  if (true){
+    if (cartesian_rank==0){
+      cout << "I am grid " << numGrid << ", My parent communicator is " << CommToParent <<" for fields and "  << CommToParent_P <<" for particles " << "(MPI_COMM_NULL is " << MPI_COMM_NULL << ")" << endl;
+      for (int ng=0; ng<childrenNum[numGrid]; ng++ ){
+        cout << "I am grid " << numGrid << ", my comm to my " << ng << "-th child is " << CommToChildren[ng] << " for fields and " << CommToChildren_P[ng] <<  "for particles" << endl;
+      }
+    }
+  }
+  // end little test
 
   /* end assign values to permanent variables */
   
@@ -424,6 +513,103 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
 
   } // end if (numChildren > 0){
 
+  // now build the X-Y-Zcoord map for the particle communicator as well
+  int my_Xcoord_P= coordinates[0];
+  int my_Ycoord_P= coordinates[1];
+  int my_Zcoord_P= coordinates[2];
+
+
+  /*int MPI_Allgather(const void *sendbuf, int sendcount, MPI_Datatype sendtype,
+		    void *recvbuf, int recvcount, MPI_Datatype recvtype,
+		    MPI_Comm comm)*/
+
+  if (CommToParent_P != MPI_COMM_NULL){ // I have a parent and i want to get P BC from it
+    Xcoord_CommToParent_P= new int[2*MaxGridCoreN];
+    Ycoord_CommToParent_P= new int[2*MaxGridCoreN];
+    Zcoord_CommToParent_P= new int[2*MaxGridCoreN];
+    numGrid_CommToParent_P= new int[2*MaxGridCoreN];
+
+    for (int i=0; i< 2*MaxGridCoreN; i++){
+      Xcoord_CommToParent_P[i]=-1;
+      Ycoord_CommToParent_P[i]=-1;
+      Zcoord_CommToParent_P[i]=-1;
+      numGrid_CommToParent_P[i]=-1;
+    }
+
+    int sizeP; MPI_Comm_size(CommToParent_P, &sizeP) ;
+    int * vectX_P= new int[sizeP];
+    int * vectY_P= new int[sizeP];
+    int * vectZ_P= new int[sizeP];
+    int * vectG_P= new int[sizeP];
+
+    MPI_Allgather(&my_Xcoord_P, 1, MPI_INT, vectX_P, 1, MPI_INT, CommToParent_P);
+    MPI_Allgather(&my_Ycoord_P, 1, MPI_INT, vectY_P, 1, MPI_INT, CommToParent_P);
+    MPI_Allgather(&my_Zcoord_P, 1, MPI_INT, vectZ_P, 1, MPI_INT, CommToParent_P);
+    MPI_Allgather(&numGrid, 1, MPI_INT, vectG_P, 1, MPI_INT, CommToParent_P);
+
+    for (int i=0; i< sizeP; i++){
+      Xcoord_CommToParent_P[i]= vectX_P[i];
+      Ycoord_CommToParent_P[i]= vectY_P[i];
+      Zcoord_CommToParent_P[i]= vectZ_P[i];
+      numGrid_CommToParent_P[i]= vectG_P[i];
+    }
+    delete []vectX_P;
+    delete []vectY_P;
+    delete []vectZ_P;
+    delete []vectG_P;
+
+  } // end if (CommToParent != MPI_COMM_NULL){ // I have a parent  
+
+  
+  if (numChildren > 0){ // I have children
+    Xcoord_CommToChildren_P= newArr2(int, numChildren, 2*MaxGridCoreN);
+    Ycoord_CommToChildren_P= newArr2(int, numChildren, 2*MaxGridCoreN);
+    Zcoord_CommToChildren_P= newArr2(int, numChildren, 2*MaxGridCoreN);
+    numGrid_CommToChildren_P= newArr2(int, numChildren, 2*MaxGridCoreN);
+    
+    for (int i=0; i< numChildren; i++){
+      for (int j=0; j< 2*MaxGridCoreN; j++){
+	Xcoord_CommToChildren_P[i][j]=-1;
+	Ycoord_CommToChildren_P[i][j]=-1;
+	Zcoord_CommToChildren_P[i][j]=-1;
+	numGrid_CommToChildren_P[i][j]=-1;
+      }
+    }
+
+    for (int nc=0; nc< numChildren; nc++){
+
+      // here the check: do i really want BC? 
+      if (CommToChildren_P[nc] == MPI_COMM_NULL) break; // break if not
+ 
+      int sizeP; MPI_Comm_size(CommToChildren_P[nc], &sizeP) ;
+      int * vectX_P= new int[sizeP];
+      int * vectY_P= new int[sizeP];
+      int * vectZ_P= new int[sizeP];
+      int * vectG_P= new int[sizeP];
+
+      MPI_Allgather(&my_Xcoord_P, 1, MPI_INT, vectX_P, 1, MPI_INT, CommToChildren_P[nc]);
+      MPI_Allgather(&my_Ycoord_P, 1, MPI_INT, vectY_P, 1, MPI_INT, CommToChildren_P[nc]);
+      MPI_Allgather(&my_Zcoord_P, 1, MPI_INT, vectZ_P, 1, MPI_INT, CommToChildren_P[nc]);
+      MPI_Allgather(&numGrid, 1, MPI_INT, vectG_P, 1, MPI_INT, CommToChildren_P[nc]);
+
+      //for (int i=0; i< XLEN*YLEN*ZLEN; i++){ // copy only the parent part
+      for (int i=0; i< sizeP; i++){ // copy only the parent part
+	Xcoord_CommToChildren_P[nc][i]= vectX_P[i];
+	Ycoord_CommToChildren_P[nc][i]= vectY_P[i];
+	Zcoord_CommToChildren_P[nc][i]= vectZ_P[i];
+	numGrid_CommToChildren_P[nc][i]= vectG_P[i];
+      }
+    
+      delete []vectX_P;
+      delete []vectY_P;
+      delete []vectZ_P;
+      delete []vectG_P;
+    } // end of for (int nc=0; nc< numChildren; nc++){
+
+  } // end if (numChildren > 0){
+
+  // end particle part
+  
 
   /* quick test to check that the same info is shared on the parent and child side,
      check that the outputs are the same 

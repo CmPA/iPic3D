@@ -144,6 +144,19 @@ class Collective
     bool getSolInit();
 
     /*! get Boundary Condition Particles: FaceXright */
+    int getBcPfaceXright(int NG);
+    /*! get Boundary Condition Particles: FaceXleft */
+    int getBcPfaceXleft(int NG);
+    /*! get Boundary Condition Particles: FaceYright */
+    int getBcPfaceYright(int NG);
+    /*! get Boundary Condition Particles: FaceYleft */
+    int getBcPfaceYleft(int NG);
+    /*! get Boundary Condition Particles: FaceYright */
+    int getBcPfaceZright(int NG);
+    /*! get Boundary Condition Particles: FaceYleft */
+    int getBcPfaceZleft(int NG);
+
+    /*! get Boundary Condition Particles: FaceXright */
     int getBcPfaceXright();
     /*! get Boundary Condition Particles: FaceXleft */
     int getBcPfaceXleft();
@@ -261,6 +274,10 @@ class Collective
     bool getPERIODICY(int N) {return (PERIODICY_mlmd[N]);}
     bool getPERIODICZ(int N) {return (PERIODICZ_mlmd[N]);}
 
+    bool getPERIODICX_P(int N) {return (PERIODICX_P_mlmd[N]);}
+    bool getPERIODICY_P(int N) {return (PERIODICY_P_mlmd[N]);}
+    bool getPERIODICZ_P(int N) {return (PERIODICZ_P_mlmd[N]);}
+
     /*! get the number of children of grid 'numgrid' */
     int getChildrenNum(int numgrid);
 
@@ -285,8 +302,10 @@ class Collective
     int getnumGrid_clt();
 
     /* the rank in MPI_COMM_WORLD of the lowest-ranker core in grid n
-       needed to create parent-child communicators */
+       needed to create field parent-child communicators */
     int getLowestRankOfGrid(int n);
+    /* same for highest-rank core, for particle parent-child communicator */
+    int getHighestRankOfGrid(int n);
 
     /*! get whether to perform mlmd operations */
     bool getMLMD_BC();
@@ -347,12 +366,15 @@ class Collective
     double dz;
 
     /* mlmd: periodicity values are now vectors */
-    //bool PERIODICX;    /*! Periodicity in the X direction */
-    //bool PERIODICY;    /*! Periodicity in the Y direction */
-    //bool PERIODICZ;    /*! Periodicity in the Z direction */
     bool *PERIODICX_mlmd;     /*! Periodicity in the X direction */
     bool *PERIODICY_mlmd;     /*! Periodicity in the X direction */
     bool *PERIODICZ_mlmd;     /*! Periodicity in the X direction */
+
+    // and for particles
+    bool *PERIODICX_P_mlmd;     /*! Periodicity in the X direction */
+    bool *PERIODICY_P_mlmd;     /*! Periodicity in the X direction */
+    bool *PERIODICZ_P_mlmd;     /*! Periodicity in the X direction */
+
     /*! number of species */
     int ns;
     /*! number of particles per cell */
@@ -417,19 +439,19 @@ class Collective
     /*! last cycle */
     int last_cycle;
 
-    /*! Boundary condition on particles 0 = exit 1 = perfect mirror 2 = riemission */
+    /*! Boundary condition on particles per grid level -1 = mlmd 0 = exit 1 = perfect mirror 2 = riemission */
     /*! Boundary Condition Particles: FaceXright */
-    int bcPfaceXright;
+    int *bcPfaceXright;
     /*! Boundary Condition Particles: FaceXleft */
-    int bcPfaceXleft;
+    int *bcPfaceXleft;
     /*! Boundary Condition Particles: FaceYright */
-    int bcPfaceYright;
+    int *bcPfaceYright;
     /*! Boundary Condition Particles: FaceYleft */
-    int bcPfaceYleft;
+    int *bcPfaceYleft;
     /*! Boundary Condition Particles: FaceYright */
-    int bcPfaceZright;
+    int *bcPfaceZright;
     /*! Boundary Condition Particles: FaceYleft */
-    int bcPfaceZleft;
+    int *bcPfaceZleft;
 
 
     /*! Field Boundary Condition 0 = Dirichlet Boundary Condition: specifies the valueto take pn the boundary of the domain 1 = Neumann Boundary Condition: specifies the value of derivative to take on the boundary of the domain 2 = Periodic Condition */
@@ -539,6 +561,8 @@ class Collective
     // here, the lowest rank in MPI_COMM_WORLD for the different grids
     // used to create the parent/ child communicator
     int *LowestRankOfGrid;
+    // analogous, for particle parent / child communicator
+    int *HighestRankOfGrid;
 
     /*! how the grids are distributed in the cores:
       0: one piece of each grid per core

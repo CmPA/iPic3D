@@ -539,7 +539,8 @@ public:
 
     // Js (current density for species s) is written without ghost cells and defined in nodes
     if (tag.find("Jsall", 0) != string::npos) {
-      for (int i = 0; i < 8; i++){ // ns; ++i) { // debug, to remove!!!
+      //for (int i = 0; i < 8; i++){ // ns; ++i) { // debug, to remove!!! -- this when i want to write stuff as debug
+      for (int i = 0; i < ns; ++i) {
         stringstream ii;
         ii << i;
         this->output_adaptor.write("/moments/species_" + ii.str() + "/Jx/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getJxs());
