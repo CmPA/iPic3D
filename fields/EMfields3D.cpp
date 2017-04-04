@@ -1810,7 +1810,7 @@ void EMfields3D::initHarris_Steps(VirtualTopology3D * vct, Grid * grid, Collecti
           Ey[i][j][k] = 0.0;
           Ez[i][j][k] = 0.0;
           // Magnetic field
-          int Nsteps = 2;
+          int Nsteps = (int) coilD;
           int int_tanh = floor0(Nsteps*tanh((grid->getYN(i, j, k) - Ly / 2) / delta));
           Bxn[i][j][k] = B0x * int(int_tanh)/((double)Nsteps);
           // add the initial GEM perturbation

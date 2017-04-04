@@ -46,7 +46,7 @@ y_center =   1.        # Ly = simulation box length - y direction in m
 z_center =   1.        # Lz = simulation box length - z direction in m  
 L_square =   .1
 
-CoilD = 0.0			#magnetic coil diameter -- Proposed WB8 simulation dimensions. 
+CoilD = 2.0			#magnetic coil diameter -- Proposed WB8 simulation dimensions. 
 CoilSpacing= 0.0	                #spacing parameter for magnets 
 
 nxc =  64              # nxc = number of cells - x direction        
