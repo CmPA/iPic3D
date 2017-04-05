@@ -1041,6 +1041,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
+  if (Case=="HarrisSteps")       fixBgem(grid, vct);
   if (Case=="Coils") fixBzero(grid, vct);
   if (Case=="FluxRope") fixBrope(grid, vct);
 
