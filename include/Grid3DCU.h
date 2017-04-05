@@ -117,10 +117,12 @@ public:
   const double &getYC(int X, int Y, int Z) { return center_ycoord[Y];}
   const double &getZC(int X, int Y, int Z) { return center_zcoord[Z];}
 
-  /* mlmd: coordinate on your parent grid */
-  double getXN_P(int X, int Y, int Z) { return node_xcoord[X]+ Ox;}
-  double getYN_P(int X, int Y, int Z) { return node_ycoord[Y]+ Oy;}
-  double getZN_P(int X, int Y, int Z) { return node_zcoord[Z]+ Oz;}
+  /* mlmd: coordinate on your parent grid 
+     NB: i want it to be able to manage also negative indexes or indexes > nxn/ nyn/ nzn 
+     (for the phase 1 of particle init BC) */
+  double getXN_P(int X, int Y, int Z); //{ return node_xcoord[X]+ Ox;}
+  double getYN_P(int X, int Y, int Z); //{ return node_ycoord[Y]+ Oy;}
+  double getZN_P(int X, int Y, int Z); //{ return node_zcoord[Z]+ Oz;}
   /* end mlmd: coordinate on your parent grid */
 
   /** get Xstart */
@@ -142,15 +144,29 @@ public:
   int getNumGrid(){return numGrid;}
   /*! return your coordinates of origin on the parent grid */
   int getOx(){return Ox;} int getOy(){return Oy;} int getOz(){return Oz;}
+  
+  double getDx_mlmd(int NG){return dx_mlmd[NG];}
+  double getDy_mlmd(int NG){return dy_mlmd[NG];}
+  double getDz_mlmd(int NG){return dz_mlmd[NG];}
 
   /*! return your coordinates of origin in the system */
   int getOx_SW(){return Ox_SW;} int getOy_SW(){return Oy_SW;} int getOz_SW(){return Oz_SW;}
+
+  /*! return parentLenX, parentLenY, parentLenZ */
+  double getparentLenX(){return parentLenX;}
+  double getparentLenY(){return parentLenY;}
+  double getparentLenZ(){return parentLenZ;}
 
   /*** pay exceptional attention to this description ***/
   /* nx, ny, nz: index in the current grid, which is a child*/
   /* returns the rank IN THE PARENT-CHILD communicator of the coarse grid core where the point is hosted    
      only the active part of the parent grid is examined*/
   int getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn, int zn);
+  void RGBCExploreDirection(VirtualTopology3D *vct,string FACE, int DIR, int i0_s, int i0_e, int i1, int i2, double *SPXperC, double *SPYperC, double *SPZperC, int *NPperC, int *rank, int* Ncores, int *IndexFirstPointperC);
+  /** given the rank N on the PARENT-CHILD communicator of the core,
+      it returns it physical extension of this PARENT core
+      -- at the moment, used for debug only --**/
+  void getParentLimits(VirtualTopology3D *vct, int N, double *xmin, double *xmax, double *ymin, double *ymax, double *zmin, double *zmax);
   /*! end mlmd specific functions */
 
   // /////////// PRIVATE VARIABLES //////////////
@@ -196,7 +212,9 @@ private:
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
 
   /*! mlmd specific variables */
-  /*! number of the grid in the mlmd grid hierarchy */
+  /*! total number of grids in the mlmd hierarchy */
+  int Ngrids;
+  /*! number of the current grid in the mlmd grid hierarchy */
   int numGrid;
   /* coordinates of the origin on the PARENT grid */
   double Ox, Oy, Oz;
@@ -204,17 +222,18 @@ private:
   /* coordinates of the grid of origin System-wide */
   double Ox_SW, Oy_SW, Oz_SW;
 
-  /* portion of ACTIVE grid hosted in each parent core                                                                                       
+  /* portion of ACTIVE grid hosted in each parent core                                           
      -- equivalent of xEnd - xStart on the parent -- used in getParentRankFromGridPoint */
   double parentLenX;
   double parentLenY;
   double parentLenZ;
 
   // resolution and length of all the grids in the MLMD system
-  /*double * dx_mlmd;
+  double * dx_mlmd;
   double * dy_mlmd;
-  doubke * dz_mlmd;
+  double * dz_mlmd;
 
+  /*
   double *Lx_mlmd;
   double *Ly_mlmd;
   double *Lz_mlmd;*/

@@ -9,6 +9,57 @@ developers: Stefano Markidis, Giovanni Lapenta
 
 #include "Particles.h"
 
+/* mlmd-related struct: RG P BC */
+struct RGPBC_struct {  // when changing this, change MPI_RGPBC_struct_commit also           
+
+  // number of Refined Grid point in the x, y, z direction for which repopulation is needed
+  int np_x;
+  int np_y;
+  int np_z;
+
+  // CG coordinates corresponding to the first point for this GC core           
+  double CG_x_first;
+  double CG_y_first;
+  double CG_z_first;
+
+  /* CG core which sends this set of BCs                                                                                                      
+     important: one core per message;     
+     the rank is the one on the PARENT-CHILD communicator   
+  */
+  int CG_core;
+  /* RG core involved in the communication;      
+     i need it because i plan to have one RG core collecting all the info and   
+     sending it to one CG core, to minimise CG-RG communication;   
+     the rank is on the PARENT-CHILD communicator*/
+  int RG_core;
+  // so RG grid knows what she is dealing with  
+  // when sending BC, send it back as tag  
+  // NB: the MsgID is the order in which that particle RG core builds the msg in init Phase1;  
+  int MsgID;
+}; // end structure   
+
+// structure to send repopulated particles from the coarse to the refined grids
+struct RepP_struct{
+  
+  // position
+  double x;
+  double y;
+  double z;
+
+  // velocity 
+  double u;
+  double v;
+  double w;
+
+  // charge
+  double q;
+
+  // ID
+  unsigned long ID;
+
+}; // end structure
+
+
 /** Class for particle distribution calculation in 3D */
 class c_vDist {
 public:
@@ -181,6 +232,24 @@ public:
   /** Add distributions in this iteration to the total */
   void Add_vDist3D();
   void Write_vDist3D(string SaveDirName);
+  /* initialise the structures for particle BC exchnage */
+  void initWeightPBC(Grid * grid, VirtualTopology3D * ptVCT);
+  /* Phase 1: RG cores build their side of the map for PBC */
+  void initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, RGPBC_struct* RGPBC_Info, int *RG_numPBCMessages);   
+  /* commit the structure created for initial CG/RG handshake as MPI_Datatype*/
+  void MPI_RGPBC_struct_commit();
+  /* commit the structure for the particle CG/RG exchange as MPI_Datatype */
+  void MPI_RepP_struct_commit();
+  // each RG core buid its own PBC communication map
+  void Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct);
+  /* add one handshake msg to the list */
+  void Assign_RGBC_struct_Values(RGPBC_struct *s, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int MsgID_tmp);
+  /* build and send particle BC msg -- CG to RG */
+  void SendPBC(Grid* grid, VirtualTopology3D * vct);
+  /* prepares P BC msg to the refined grid */
+  void buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch);
+  /* add a particle to the PBC msg */
+  void addP(RepP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, VirtualTopology3D* vct);
 
 protected:
   /** number of species */
@@ -352,6 +421,52 @@ protected:
   int SpokePerson;
   /*! number of the current grid in the mlmd hierarchy */
   int numGrid;
+  /* CG SIDE */
+
+  /*! number of children */
+  int numChildren;
+  /* msg receiving structure */
+  RGPBC_struct ** CG_Info;
+  /* num of msg per child */
+  int *CG_numPBCMessages;
+  /* struct hosting info on particles to send to the RG 
+     [number of children][MaxNumMsg][sizePCGMsg] */
+  RepP_struct *** PCGMsg;
+  int MaxNumMsg;
+  /* number of particles to send to each child core
+     [number of children][MaxNumMsg] */
+  int ** nopPCMsg;
+  /* size of the vector -- can be resized up to MAXsizePCMsg -- value set in initWeightPBC */
+  int sizePCGMsg;
+  /* resizing up to here -- value set in initWeightPBC*/
+  int MAXsizePCMsg;
+  /* END CG SIDE */
+  /* RG SIDE */
+  /* number of PBC Msgs to receive, as a child */
+  int RG_numPBCMessages;
+  /* intermediate, for handshake ops */
+  int RG_numPBCMessages_LevelWide;
+  /* struct for RG PBC handshake, child side */
+  RGPBC_struct * RGPBC_Info;
+  /* intermediate, for handshake ops */
+  RGPBC_struct * RGPBC_Info_LevelWide;
+  /* max size struct */
+  int MAX_RG_numPBCMessages;
+  /* intermediate, for handshake ops */
+  int MAX_RG_numPBCMessages_LevelWide;
+  /* END RG SIDE */
+  /* number of boundary cells to repopulate in the different directions */
+  int PRA_XLeft;
+  int PRA_XRight;
+  int PRA_YLeft;
+  int PRA_YRight;
+  int PRA_ZLeft;
+  int PRA_ZRight;
+
+  /* MPI Datatype associated to RGPBC_struct; init in MPI_RGBC_struct_commit  */
+  MPI_Datatype MPI_RGPBC_struct;
+  MPI_Datatype MPI_RepP_struct;
+
   /*! end mlmd specific variables */
 };
 

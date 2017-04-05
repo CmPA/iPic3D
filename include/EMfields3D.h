@@ -67,7 +67,7 @@ struct RGBC_struct {  // when changing this, change MPI_RGBC_struct_commit also
   // so RG grid knows what she is dealing with
   // when sending BC, send it back as tag
   // NB: the MsgID is the order in which that particle RG core builds the msg in init Phase1; 
-  // it does not mean anything, just use as a check
+  // used when actually receiving BCs
   int MsgID;
   
 
@@ -570,24 +570,7 @@ class EMfields3D                // :public Field
     /* set MaxwellSource BC in mlmd; NB: you need to set the actives */
     void MLMDSourceLeft(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
     void MLMDSourceRight(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
-    /* calculates RGBC info per direction */
-    /** grid --> obvious
-	vct --> obvious
-	FACE --> (bottom, top, left, right, front, back) (needed only for debug prints)
-	DIR --> direction of the changing index  
-       i0_s --> the index of the RG first point (included) in the direction to explore
-       i0_e --> the index of the RG last point (included) in the direction to explore
-       i1 --> fixed index, in the lower-order fixed direction (ordering X,Y,Z)
-       i2 --> fixed index, in the higher-order fixed direction (ordering X,Y,Z)
-       *SPX --> X coordinate (not index!) in the CG of the first point FOR EACH CG CORE
-       *SPY --> Y coordinate (not index!) in the CG of the first point FOR EACH CG CORE
-       *SPZ --> Z coordinate (not index!) in the CG of the first point FOR EACH CG CORE
-       *NPperC --> # of point in this CG core per direction
-       *rank --> rank, IN THE PARENT-CHILD COMMUNICATOR, of the CG core
-       Ncores --> # of the CG cores involved in BC in this direction
-       *IndexFirstPointperC --> index in the RG of the first point per core in the selected direction 
-       **/
-    void RGBCExploreDirection(Grid *grid, VirtualTopology3D *vct,string FACE, int DIR, int i0_s, int i0_e, int i1, int i2, double *SPXperC, double *SPYperC, double *SPZ_perC, int *NPperC, int *rank, int *Ncores, int *IndexFirstPointperC);
+        
     /* CG core builds the BC msg for a RG core */
     /* ch: number of the child
        RGInfo: the message that you got from the refined grid, which holds all the info you need

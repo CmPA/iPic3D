@@ -309,7 +309,7 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
     // here, I also have to check if the child grid - the current grid - wants BC's for above
     // I need to check my own PBC requirements
     
-    if ((col->getBcPfaceXright() == -1) or (col-> getBcPfaceXleft() == -1) or (	col->getBcPfaceYright() == -1) or (col->getBcPfaceYleft() == -1) or (col-> getBcPfaceZright() == -1) or (col-> getBcPfaceZleft() == -1)) {
+    if ((col->getBcPfaceXright() <0) or (col-> getBcPfaceXleft() <0) or (col->getBcPfaceYright() <0) or (col->getBcPfaceYleft() <0) or (col-> getBcPfaceZright() <0) or (col-> getBcPfaceZleft() <0)) {
       // for particles
       // as remote leader, I have to put the lowest rank in the common communicator, MPI_COMM_WORLD
       // as TAG, which should be unique, i give TAG_SHIFT+numGrid
@@ -336,7 +336,7 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
 
     // for particles
     // here, I also have to check if the child grid - NOT the current grid - wants BC's from above
-    if ((col->getBcPfaceXright(child) == -1) or (col-> getBcPfaceXleft(child) == -1) or (col->getBcPfaceYright(child) == -1) or (col->getBcPfaceYleft(child) == -1) or (col-> getBcPfaceZright(child) == -1) or (col-> getBcPfaceZleft(child) == -1)) {
+    if ((col->getBcPfaceXright(child) <0) or (col-> getBcPfaceXleft(child) <0) or (col->getBcPfaceYright(child) <0) or (col->getBcPfaceYleft(child) <0) or (col-> getBcPfaceZright(child) <0) or (col-> getBcPfaceZleft(child) <0)) {
       // for particles
       // as leaders, I appoint the higher rank cores (XLEN*YLEN*ZLEN-1 locally, HighestRankParent remotely) , since the lowest rank cores are already busy with fields
       int HighestRankChild= col->getHighestRankOfGrid(child);
@@ -406,14 +406,14 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
 
 
   // a little test to comment later
-  if (true){
+  /*if (true){
     if (cartesian_rank==0){
       cout << "I am grid " << numGrid << ", My parent communicator is " << CommToParent <<" for fields and "  << CommToParent_P <<" for particles " << "(MPI_COMM_NULL is " << MPI_COMM_NULL << ")" << endl;
       for (int ng=0; ng<childrenNum[numGrid]; ng++ ){
         cout << "I am grid " << numGrid << ", my comm to my " << ng << "-th child is " << CommToChildren[ng] << " for fields and " << CommToChildren_P[ng] <<  "for particles" << endl;
       }
     }
-  }
+    }*/
   // end little test
 
   /* end assign values to permanent variables */

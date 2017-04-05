@@ -65,6 +65,11 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]b_Y_LEFT;
   delete[]b_Z_RIGHT;
   delete[]b_Z_LEFT;
+
+  // deallocate mlmd-related stuff
+  delete[]RGPBC_Info;
+  delArr3(PCGMsg, numChildren, MaxNumMsg);
+  delArr2(nopPCMsg, numChildren);
 }
 /** constructors fo a single species*/
 void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
@@ -299,6 +304,19 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     // close the hdf file
     status = H5Fclose(file_id);
   }
+
+  // here, mlmd stuff which does not necessarily need to be at the beginning
+  
+  int MaxGridCoreN= vct->getMaxGridCoreN();
+  MAX_RG_numPBCMessages= (int) (MaxGridCoreN*6+1);
+  MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages*4;
+
+  numChildren= vct->getNumChildren();
+  // here, to be able to used RGPBC_struct as an MPI_Datatype
+  MPI_RGPBC_struct_commit();
+  // here, to be able to use the RepP_struct as an MPI_Datatype
+  MPI_RepP_struct_commit();
+
 
   // //FOR TEST:
   // nvDistLoc = 3;
@@ -566,6 +584,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
   while (np_current < nplast+1){
 
+
     // BC on particles
     if (x[np_current] < 0 && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
       BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft);
@@ -715,14 +734,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     communicateParticles(new_buffer_size, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
 
     // UNBUFFERING
-    // message from XLEFT
     /*! mlmd: need the communicator also */
-    /*avail1 = unbuffer(b_X_RIGHT);
-    avail2 = unbuffer(b_X_LEFT);
-    avail3 = unbuffer(b_Y_RIGHT);
-    avail4 = unbuffer(b_Y_LEFT);
-    avail5 = unbuffer(b_Z_RIGHT);
-    avail6 = unbuffer(b_Z_LEFT);*/
     avail1 = unbuffer(b_X_RIGHT, ptVCT->getCommGrid());
     avail2 = unbuffer(b_X_LEFT, ptVCT->getCommGrid());
     avail3 = unbuffer(b_Y_RIGHT, ptVCT->getCommGrid());
@@ -739,8 +751,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       return (-1);              // too many particles coming, save data nad stop simulation
   }
 
-  return (0);                   // everything was fine
-
+  return(0);
 
 }
 /** resize the buffers */
@@ -1169,3 +1180,711 @@ void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
   cout << endl;
 }
+
+void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
+
+  // Phase 1: as a child
+  // Phase 1a: RG cores which need BCs flag themselves and identify the number of RG cells they will need BC for and the CG which will send
+  // Phase 1b: they all send the msg to the highest ranking core
+  // Phase 1c: highest ranking core assembles the msg and sends and handshake msg to each CG core
+
+  // Phase 2: CG side
+  // Phase 2a: each GC core receives the msg and stores appropriate variables
+
+  /* sizes of the PCGMsg values set here */
+  sizePCGMsg = nop;
+  MAXsizePCMsg = nop;
+  /* end sizes of the PCGMsg values set here */
+  
+  RG_numPBCMessages= 0;
+  int rank_local= vct->getCartesian_rank();  // on the grid communicator
+  int HighestRank= vct->getXLEN()*vct->getYLEN()*vct->getZLEN()-1;
+  MPI_Comm CommToParent_P= vct->getCommToParent_P();
+  MPI_Status status;
+  int TAG_CG_RG= ns; // i need to put it here to be visible from both CG and RG
+
+  /* phase 1: as a child */
+  if (CommToParent_P != MPI_COMM_NULL) { // meaning: you are a child AND you want to receive PBC
+    
+    RGPBC_Info = new RGPBC_struct[MAX_RG_numPBCMessages];
+    
+    // this number is at the moment arbitrarily decided
+    PRA_XLeft = 2;
+    PRA_XRight = 2;
+    PRA_YLeft = 2;
+    PRA_YRight = 2;
+    PRA_ZLeft = 2;
+    PRA_ZRight = 2;
+
+    initWeightPBC_Phase1(grid, vct, RGPBC_Info, &RG_numPBCMessages);
+    
+    
+
+    // checks, aborting if checks fails
+    int PG= vct->getParentGridNum();
+    int localRank= vct->getCartesian_rank();
+    double xmin, xmax, ymin, ymax, zmin, zmax;
+    
+
+    for (int i=0; i< RG_numPBCMessages; i++){
+      int CG= RGPBC_Info[i].CG_core;
+      double MsgLimsXMin= RGPBC_Info[i].CG_x_first;
+      double MsgLimsXMax= RGPBC_Info[i].CG_x_first+ dx*(RGPBC_Info[i].np_x-1);
+
+      double MsgLimsYMin= RGPBC_Info[i].CG_y_first;
+      double MsgLimsYMax= RGPBC_Info[i].CG_y_first+ dy*(RGPBC_Info[i].np_y-1);
+
+      double MsgLimsZMin= RGPBC_Info[i].CG_z_first;
+      double MsgLimsZMax= RGPBC_Info[i].CG_z_first+ dz*(RGPBC_Info[i].np_z-1);
+
+      grid->getParentLimits(vct, CG, &xmin, &xmax, &ymin, &ymax, &zmin, &zmax);
+	
+      /*cout <<"G" <<numGrid <<"R" << localRank << " Checking msg "<< i <<" after phase 1" << endl;
+      cout <<"G" <<numGrid <<"R" << localRank  << " Msg from RG core " <<RGPBC_Info[i].RG_core <<" to CG " << RGPBC_Info[i].CG_core << "(PC comm)" << endl;
+      cout <<"G" <<numGrid <<"R" << localRank << " Msg limits: X=" << MsgLimsXMin <<"-" << MsgLimsXMax <<" Y: " << MsgLimsYMin << "-" << MsgLimsYMax << " Z=" << MsgLimsZMin <<"-" <<MsgLimsZMax  << " RGPBC_Info[i].np_z " << RGPBC_Info[i].np_z << endl;
+      cout <<"G" <<numGrid <<"R" << localRank << " Core limits: X=" << xmin << "-" << xmax << " Y= " <<ymin <<"-" << ymax <<" Z= " <<zmin <<"-" <<zmax << endl;*/
+      if (MsgLimsXMin < xmin or MsgLimsXMax > xmax or MsgLimsYMin < ymin or MsgLimsYMax > ymax or MsgLimsZMin < zmin or MsgLimsZMax > zmax){
+	cout <<"G" <<numGrid <<"R" << localRank <<" Msg " << i << " we have a problem in initWeightPBC, aborting ... " << endl;
+	abort();
+      }
+      
+    }
+
+    // here i should decide wether i want to instantiate vectors to receive particles, or create them on the spot; also, vectors to store particle while processing them
+
+  } // end if (CommToParent_P != MPI_COMM_NULL) { 
+
+
+  if (CommToParent_P != MPI_COMM_NULL) { // meaning: you are a child AND you want to receive PBC
+    int TAG_1b1c= ns;
+    // phase 1b: all RG cores (but itself) send their msgs to highest ranking core 
+    if (rank_local < HighestRank){
+      /* send one message more; the last message has -1 in the RG_core   
+	 to signal end of 'valid' messages */
+      int dest= vct->getXLEN()*vct->getYLEN()*vct->getZLEN()-1;
+      MPI_Send(RGPBC_Info, RG_numPBCMessages+1, MPI_RGPBC_struct, HighestRank, TAG_1b1c, vct->getComm());
+    } // end phase 1b
+   
+    //Phase 1c: highest ranking core assembles the msg and sends and handshake msg to each CG core
+    if (rank_local==HighestRank) {
+      RGPBC_Info_LevelWide = new RGPBC_struct[MAX_RG_numPBCMessages_LevelWide];
+      RG_numPBCMessages_LevelWide= 0;
+
+      // first, highest ranking core copies its own msg into the level-wide structure
+      for (int m=0; m< RG_numPBCMessages; m++){
+	RGPBC_Info_LevelWide[m]= RGPBC_Info[m];
+      }
+      RG_numPBCMessages_LevelWide= RG_numPBCMessages;
+
+      // then, it receives msgs from all the other cores in the grid
+      RGPBC_struct * buffer_rcv;
+      buffer_rcv= new RGPBC_struct[MAX_RG_numPBCMessages];
+      
+      // i am receiveing XLEN*YLEN*ZLEN-1 --> HighestRank msg
+      for (int c=0; c< HighestRank; c++){
+	int recv=0;
+	MPI_Recv(buffer_rcv, MAX_RG_numPBCMessages, MPI_RGPBC_struct, MPI_ANY_SOURCE, TAG_1b1c, vct->getComm(), &status);
+	
+	while(buffer_rcv[recv].RG_core != -1){
+	  RGPBC_Info_LevelWide[RG_numPBCMessages_LevelWide]= buffer_rcv[recv];
+	  RG_numPBCMessages_LevelWide++;
+
+	  recv++;
+
+	  if (RG_numPBCMessages_LevelWide== MAX_RG_numPBCMessages_LevelWide){
+	    cout << "initWeightPBC: MAX_RG_numPBCMessages_LevelWide is " << MAX_RG_numPBCMessages_LevelWide <<", but you need more..."<< endl << "Aborting...";
+	    abort();
+	  }
+	  
+	} // end while
+	
+      } // end for (int c=0; c< HighestRank; c++){
+
+      delete[]buffer_rcv;
+
+      // now send the msg to the coarse grid
+      int parentGrid= vct->getParentGridNum();
+      int ParentCoreNum= vct->getXLEN(parentGrid) * vct->getYLEN(parentGrid) *vct->getZLEN(parentGrid);
+      RGPBC_struct ** RGPBC_Info_ToCGCore= newArr2(RGPBC_struct, ParentCoreNum, MAX_RG_numPBCMessages);
+      int * RG_numPBCMessages_ToCGCore = new int[ParentCoreNum];
+
+      for (int c=0; c< ParentCoreNum; c++){
+	RG_numPBCMessages_ToCGCore[c]=0;
+      }
+      
+      // find the parent core where msg has to be sent
+      for (int m=0; m< RG_numPBCMessages_LevelWide; m++){
+	int where= RGPBC_Info_LevelWide[m].CG_core;
+	RGPBC_Info_ToCGCore[where][RG_numPBCMessages_ToCGCore[where]]=RGPBC_Info_LevelWide[m];
+	RG_numPBCMessages_ToCGCore[where]++;
+
+	if (RG_numPBCMessages_ToCGCore[where] == MAX_RG_numPBCMessages){
+	  cout << "Too many msgs to be sent for PBC from RG to CG, aborting..."<< endl;
+	  abort();
+	}
+      } // end for (int m=0; m< RG_numPBCMessages_LevelWide; m++)
+      
+      // this is to stop the reading when CG core receives
+      for (int cg=0; cg< ParentCoreNum; cg++){
+	RGPBC_Info_ToCGCore[cg][RG_numPBCMessages_ToCGCore[cg]].RG_core= -1;
+      } 
+      // this is the send; send +1 in the # of msgs
+      // rank as a child in the PC communicator
+      int rankAsChild;
+      MPI_Comm_rank(CommToParent_P, &rankAsChild);
+
+      cout << "ParentCoreNum= "<< ParentCoreNum<< endl;
+      for (int cg=0; cg< ParentCoreNum; cg++){
+	MPI_Send(&(RGPBC_Info_ToCGCore[cg][0]), RG_numPBCMessages_ToCGCore[cg]+1, MPI_RGPBC_struct, cg, TAG_CG_RG, CommToParent_P);
+	cout << "R " << rankAsChild << " on thr PC communicator has just sent a msg to core " << cg << endl; 
+      }
+
+      delete[]RGPBC_Info_ToCGCore;
+      delete[]RG_numPBCMessages_ToCGCore;
+      
+    } // end if if (rank_local==HighestRank) 
+  } //  if (CommToParent_P != MPI_COMM_NULL)
+
+  // Phase 2: CG receives the handshake and reacts
+  // NB: for all children, I have to check if they want PBC
+  // if no, do not allocate stuff
+
+  if (numChildren>0){
+    CG_Info= newArr2(RGPBC_struct, numChildren, MAX_RG_numPBCMessages);
+    CG_numPBCMessages= new int[numChildren];
+  }
+
+  for (int ch=0; ch <  numChildren; ch++){
+    CG_numPBCMessages[ch]=0;
+
+    RGPBC_struct * CG_buffer=  new RGPBC_struct[MAX_RG_numPBCMessages];
+    if (vct->getCommToChild_P(ch) != MPI_COMM_NULL){ // it may happen that a particular child does not want PC
+      
+      int ChildHighestRank;
+      MPI_Comm_size(vct->getCommToChild_P(ch), &ChildHighestRank); ChildHighestRank--;
+      int PCrank= vct->getRank_CommToChildren_P(ch);
+      
+      //cout << "Grid " << numGrid << ", local rank on PC comm " << PCrank << " is trying to receive from ch " << ch << endl;
+
+      // receive one msg from HighestRank on the PC comm
+
+      // to put ChildHighestRank as source is just a precaution, MPI_ANY_Source should work
+      MPI_Recv(CG_buffer, MAX_RG_numPBCMessages, MPI_RGPBC_struct, ChildHighestRank, TAG_CG_RG, vct->getCommToChild_P(ch), &status);
+
+      //cout << "Grid " << numGrid << ", local rank on PC comm " << PCrank << " has recevied from ch " << ch << " tag " << TAG_CG_RG << endl;
+
+      
+      // process update the msg structure
+      while (CG_buffer[CG_numPBCMessages[ch]].RG_core!= -1){
+	//cout << "INSIDE WHILE: ch is " << ch << " CG_numPBCMessages[ch] is " << CG_numPBCMessages[ch] << " CG_buffer[CG_numPBCMessages[ch]].RG_core is " <<CG_buffer[CG_numPBCMessages[ch]].RG_core << endl;
+	CG_Info[ch][CG_numPBCMessages[ch]]= CG_buffer[CG_numPBCMessages[ch]];
+	CG_numPBCMessages[ch]++;
+      }
+
+    } // end if (vct->getCommToChild_P()!= MPI_COMM_NULL)
+    
+    // allocate CG vectors
+
+    delete[]CG_buffer;
+    
+  } // end for (int ch=0; ch< numChildren; ch++)
+
+  if (numChildren>0){
+    MaxNumMsg=0;
+    for (int i=0; i< numChildren; i++){
+      if (CG_numPBCMessages[i]> MaxNumMsg) MaxNumMsg= CG_numPBCMessages[i];
+    }
+    
+    PCGMsg= newArr3(RepP_struct, numChildren, MaxNumMsg, sizePCGMsg);
+    nopPCMsg = newArr2(int, numChildren, MaxNumMsg);
+    cout << "Grid " << numGrid << " core " << vct->getCartesian_rank() << " nopPCMsg has sizes " << numChildren << " x " <<MaxNumMsg << endl;  
+  }
+}
+
+/** commit the RGPBC structure for initial handshake between coarse and refined grids **/
+void Particles3Dcomm::MPI_RGPBC_struct_commit(){
+
+  /* struct RGPBC_struct {  // when changing this, change MPI_RGPBC_struct_commit also   
+    int np_x;
+    int np_y;
+    int np_z;
+    double CG_x_first;
+    double CG_y_first;
+    double CG_z_first;
+    int CG_core;
+    int RG_core;
+    int MsgID;
+    };*/
+
+
+  RGPBC_struct *a;
+
+  MPI_Datatype type[9]={MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT};
+  int blocklen[9]={1,1,1,1,1,1,1,1,1};
+
+  // displacement in bytes      
+  MPI_Aint disp[9];
+
+  // np_*      
+  disp[0]= (MPI_Aint) &(a->np_x) - (MPI_Aint)a ;
+  disp[1]= (MPI_Aint) &(a->np_y) - (MPI_Aint)a ;
+  disp[2]= (MPI_Aint) &(a->np_z) - (MPI_Aint)a ;
+
+  // CG_*_first                                            
+  disp[3]= (MPI_Aint) &(a->CG_x_first) - (MPI_Aint)a ;
+  disp[4]= (MPI_Aint) &(a->CG_y_first) - (MPI_Aint)a ;
+  disp[5]= (MPI_Aint) &(a->CG_z_first) - (MPI_Aint)a ;
+
+  // the cores                                                                                          
+  disp[6]= (MPI_Aint) &(a->CG_core) - (MPI_Aint)a ;
+  disp[7]= (MPI_Aint) &(a->RG_core) - (MPI_Aint)a ;
+
+  // the msg id           
+  disp[8]= (MPI_Aint) &(a->MsgID) - (MPI_Aint)a ;
+
+  MPI_Type_create_struct(9, blocklen, disp, type, &MPI_RGPBC_struct);
+  MPI_Type_commit(&MPI_RGPBC_struct); 
+
+}
+
+/* commit the structure for the particle CG/RG exchange as MPI_Datatype */
+void Particles3Dcomm::MPI_RepP_struct_commit(){
+
+  /*struct RepP_struct{
+    // position    
+    double x;
+    double y;
+    double z;
+    // velocity    
+    double u;
+    double v;
+    double q;
+    // charge    
+    double q;
+    // ID               
+    unsigned long ID;
+    }; */
+
+  RepP_struct *a;
+
+  MPI_Datatype type[8]={MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_UNSIGNED_LONG};
+
+  int blocklen[8]={1,1,1,1,1,1,1,1};
+
+  // displacement in bytes      
+  MPI_Aint disp[8];
+
+  // position
+  disp[0]= (MPI_Aint) &(a->x) - (MPI_Aint)a ;
+  disp[1]= (MPI_Aint) &(a->y) - (MPI_Aint)a ;
+  disp[2]= (MPI_Aint) &(a->z) - (MPI_Aint)a ;
+
+  // velocity
+  disp[3]= (MPI_Aint) &(a->u) - (MPI_Aint)a ;
+  disp[4]= (MPI_Aint) &(a->v) - (MPI_Aint)a ;
+  disp[5]= (MPI_Aint) &(a->w) - (MPI_Aint)a ;
+
+  // charge
+  disp[6]= (MPI_Aint) &(a->q) - (MPI_Aint)a ;
+
+  // ID
+  disp[7]= (MPI_Aint) &(a->ID) - (MPI_Aint)a ;
+
+
+  MPI_Type_create_struct(8, blocklen, disp, type, &MPI_RepP_struct);
+  MPI_Type_commit(&MPI_RepP_struct); 
+
+}
+
+/* Phase 1: RG cores build their side of the map for PBC */
+void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, RGPBC_struct *RGPBC_Info, int *RG_numPBCMessages){
+
+  // NB: when build the PBC msg on the CG side, I have to pay attention not to replicate the info; that was not a problem with fields, but it is now
+  int XLEN= vct->getXLEN();
+  int YLEN= vct->getYLEN();
+  int ZLEN= vct->getZLEN();
+
+  int SW_rank=vct->getSystemWide_rank();
+
+  string FACE;
+
+  bool DIR_0=true;
+  bool DIR_1=true;
+  bool DIR_2=true;
+
+  int MS= nxn; if (nyn>MS) MS= nyn; if (nzn>MS) MS= nzn;
+
+  int i_s, i_e;
+  int j_s, j_e;
+  int k_s, k_e;
+  // careful when copying from the initWeight in fields: getXXX_neighbor_P !!!
+  // (so i can have different periodicities in fields and particles)
+
+  // this is the bottom face
+  if (vct->getCoordinates(2)==0 && vct->getZleft_neighbor_P()== MPI_PROC_NULL && DIR_2){
+
+    FACE= "BOTTOM";
+    /*i_s= 0; i_e= nxn-1;
+    j_s= 0; j_e= nyn-1;
+    k_s= 0; k_e= PRA_ZLeft;*/
+    // 
+    i_s= 0-1; i_e= nxn-1+1;
+    j_s= 0-1; j_e= nyn-1+1;
+    k_s= 0-1; k_e= PRA_ZLeft+1;
+
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    cout <<"FACE " << FACE << endl;
+  } // end bottom face
+  
+  // this is the top face
+  if (vct->getCoordinates(2) ==ZLEN-1 && vct->getZright_neighbor_P() == MPI_PROC_NULL && DIR_2){
+    
+    FACE= "TOP";
+    /*i_s=0; i_e= nxn-1;
+    j_s=0; j_e= nyn-1;
+    k_s= nzn-1-PRA_ZRight; k_e= nzn-1;*/
+    i_s=0-1; i_e= nxn-1+1;
+    j_s=0-1; j_e= nyn-1+1;
+    k_s= nzn-1-PRA_ZRight-1; k_e= nzn-1+1;
+
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    cout<<"FACE " << FACE << endl;
+  } // end top face
+
+  // this is the left face
+  if (vct->getCoordinates(0) ==0  && vct->getXleft_neighbor_P() == MPI_PROC_NULL && DIR_0){
+
+    FACE= "LEFT";
+    /*i_s= 0; i_e= PRA_XLeft;
+    j_s= 0; j_e= nyn-1;
+    k_s= 0; k_e= nzn-1;*/
+    i_s= 0-1; i_e= PRA_XLeft+1;
+    j_s= 0-1; j_e= nyn-1+1;
+    k_s= 0-1; k_e= nzn-1+1;
+
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    cout<<"FACE " << FACE << endl;
+  } // end left face
+
+  // this is the right face
+  if (vct->getCoordinates(0) ==XLEN-1 && vct->getXright_neighbor_P() == MPI_PROC_NULL && DIR_0){
+
+    FACE= "RIGHT";
+    /*i_s= nxn-1-PRA_XRight; i_e= nxn-1;
+    j_s= 0; j_e= nyn-1;
+    k_s= 0; k_e= nzn-1;*/
+    i_s= nxn-1-PRA_XRight-1; i_e= nxn-1+1;
+    j_s= 0-1; j_e= nyn-1+1;
+    k_s= 0-1; k_e= nzn-1+1;
+
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    cout<<"FACE " << FACE << endl;
+  } // end right face
+  
+  // this is the front face
+  if (vct->getCoordinates(1) ==0 && vct->getYleft_neighbor_P() == MPI_PROC_NULL && DIR_1){ 
+
+    FACE= "FRONT";
+    /*i_s= 0; i_e= nxn-1;
+    j_s= 0; j_e= PRA_YLeft;
+    k_s= 0; k_e= nzn-1;*/
+    i_s= 0-1; i_e= nxn-1+1;
+    j_s= 0-1; j_e= PRA_YLeft+1;
+    k_s= 0-1; k_e= nzn-1+1;
+
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    cout<<"FACE " << FACE << endl;
+  } // end front face
+
+  // this is the back face
+  if (vct->getCoordinates(1) == YLEN-1 && vct->getYright_neighbor_P() == MPI_PROC_NULL && DIR_1){
+
+    FACE= "BACK";
+    /*i_s= 0; i_e= nxn-1;
+    j_s= nyn-1-PRA_YRight; j_e= nyn-1;
+    k_s= 0; k_e= nzn-1;*/
+    i_s= 0-1; i_e= nxn-1+1;
+    j_s= nyn-1-PRA_YRight-1; j_e= nyn-1+1;
+    k_s= 0-1; k_e= nzn-1+1;
+    
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    cout<<"FACE " << FACE << endl;
+  } // end back face
+  
+  /* for further use, i need to set the RG_core field of the first unused slot to -1  
+     but DO NOT MODIFY THE NUMBER OF MSGs;                             
+     I will just send a +1 */
+
+  cout << "R" <<SW_rank <<" RG_numPBCMessages= " <<*RG_numPBCMessages <<endl;
+  RGPBC_Info[*RG_numPBCMessages].RG_core= -1;
+  RGPBC_Info[*RG_numPBCMessages].CG_core= -1;
+ 
+
+}
+
+void Particles3Dcomm::Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct ){
+
+  // policy:
+  // explore Z dir
+  // for on the number of cores found there: explore Y dir
+  // for on the number of cores found there: explore X dir
+  // finally, commit  NB: all faces should have the same c
+
+  int MS= nxn; if (nyn>MS) MS= nyn; if (nzn>MS) MS= nzn;
+  int rank_CTP= vct->getRank_CommToParent();
+  /*******************************************************************/
+  // DIR1: starting point, in CG coordinates, per core                       
+  double *Dir1_SPXperC= new double[MS];
+  double *Dir1_SPYperC= new double[MS];
+  double *Dir1_SPZperC= new double[MS];
+  // DIR1: number of Refined grid point in this direction, per core     
+  int *Dir1_NPperC= new int[MS];  // this does not need to be this big, but anyway   
+  // DIR1: core ranks in the CommToParent communicator              
+  int *Dir1_rank= new int [MS]; // this does not need to be this big, but anyway      
+  int *Dir1_IndexFirstPointperC= new int [MS];
+  int Dir1_Ncores=0;
+
+  // DIR2: starting point, in CG coordinates, per core                                  
+  double *Dir2_SPXperC= new double[MS];
+  double *Dir2_SPYperC= new double[MS];
+  double *Dir2_SPZperC= new double[MS];
+  // DIR2: number of Refined grid point in this direction, per core     
+  int *Dir2_NPperC= new int[MS];  // this does not need to be this big, but anyway   
+  // DIR2: core ranks in the CommToParent communicator              
+  int *Dir2_rank= new int [MS]; // this does not need to be this big, but anyway      
+  int *Dir2_IndexFirstPointperC= new int [MS];
+  int Dir2_Ncores=0;
+
+  // DIR3: starting point, in CG coordinates, per core                     
+  double *Dir3_SPXperC= new double[MS];
+  double *Dir3_SPYperC= new double[MS];
+  double *Dir3_SPZperC= new double[MS];
+  // DIR3: number of Refined grid point in this direction, per core     
+  int *Dir3_NPperC= new int[MS];  // this does not need to be this big, but anyway   
+  // DIR3: core ranks in the CommToParent communicator              
+  int *Dir3_rank= new int [MS]; // this does not need to be this big, but anyway      
+  int *Dir3_IndexFirstPointperC= new int [MS];
+  int Dir3_Ncores=0;
+  /*******************************************************************/
+
+
+  // variables which i do not need to update for particle BCs
+  string FACE= "nn";
+
+  // for debug 
+  int PG= vct->getParentGridNum();
+  // end for debug
+
+  double CG_C_i_s= grid->getXN_P(i_s, j_s, k_s);
+  double CG_C_j_s= grid->getYN_P(i_s, j_s, k_s);
+  double CG_C_k_s= grid->getZN_P(i_s, j_s, k_s);
+  double CG_C_i_e= grid->getXN_P(i_e, j_e, k_e);
+  double CG_C_j_e= grid->getYN_P(i_e, j_e, k_e);
+  double CG_C_k_e= grid->getZN_P(i_e, j_e, k_e);
+
+  /*  cout << "Inside explore and commit: " << endl;
+  cout << "i_s= " <<i_s <<" -> " << CG_C_i_s << endl;
+  cout << "i_e= " <<i_e <<" -> " << CG_C_i_e <<endl;
+
+  cout << "j_s= " <<j_s <<" -> " << CG_C_j_s << endl;
+  cout << "j_e= " <<j_e <<" -> " << CG_C_j_e <<endl;
+
+  cout << "k_s= " <<k_s <<" -> " << CG_C_k_s << endl;
+  cout << "k_e= " <<k_e <<" -> " << CG_C_k_e <<endl;*/
+
+  // Z dir / Dir 1
+  grid->RGBCExploreDirection(vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+
+  /*
+  // debug
+  cout << "G"<< numGrid <<"R" << rank_CTP <<": Z dir, " << Dir1_Ncores << " cores " << endl;
+  for (int ii=0; ii< Dir1_Ncores; ii++){
+    cout << "G"<< numGrid <<"R" << rank_CTP << " " << ii <<": " << Dir1_rank[ii] << " first coord: " <<Dir1_SPZperC[ii] << ", n points: " << Dir1_NPperC[ii] << " which means up to " << Dir1_SPZperC[ii]+(Dir1_NPperC[ii] -1)*dz << endl;
+  }
+  // end debug*/
+  
+  for (int n=0; n<Dir1_Ncores; n++){ // it will find again the core in Dir 1, but it will also explore Dir 2 
+    // Y dir / Dir 2
+    grid->RGBCExploreDirection(vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n],  Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); 
+    /* // debug
+    cout << "G"<< numGrid <<"R" << rank_CTP <<": Y dir, " << Dir2_Ncores << " cores " << endl;
+    for (int ii=0; ii< Dir2_Ncores; ii++){
+      cout << "G"<< numGrid <<"R" << rank_CTP << " " << ii <<": " << Dir2_rank[ii] << " first coord: " <<Dir2_SPYperC[ii] << ", n points: " << Dir2_NPperC[ii] << " which means up to " << Dir2_SPYperC[ii]+(Dir2_NPperC[ii] -1)*dy << endl;
+    }
+    // end debug */
+    
+    for (int m=0; m< Dir2_Ncores; m++){ //it will find again the core in Dir 1, but it will also explore Dir 2 
+      // X dir / Dir 3
+      grid->RGBCExploreDirection(vct, FACE, 0, i_s, i_e, Dir2_IndexFirstPointperC[m],  Dir1_IndexFirstPointperC[n], Dir3_SPXperC, Dir3_SPYperC, Dir3_SPZperC, Dir3_NPperC, Dir3_rank, &Dir3_Ncores, Dir3_IndexFirstPointperC);
+
+      /* // debug
+      cout << "G"<< numGrid <<"R" << rank_CTP <<": X dir, " << Dir3_Ncores << " cores " << endl;
+      for (int ii=0; ii< Dir3_Ncores; ii++){
+	cout << "G"<< numGrid <<"R" << rank_CTP << " " << ii <<": " << Dir3_rank[ii] << " first coord: " <<Dir3_SPXperC[ii] << ", n points: " << Dir3_NPperC[ii] << " which means up to " << Dir3_SPXperC[ii]+(Dir3_NPperC[ii] -1)*dx << endl;
+      }
+      // end debug*/
+
+	// now commit msg
+	for (int NN=0; NN< Dir3_Ncores; NN++){
+	  Assign_RGBC_struct_Values(RGPBC_Info + (*numMsg), Dir3_NPperC[NN], Dir2_NPperC[m], Dir1_NPperC[n], Dir3_SPXperC[NN], Dir3_SPYperC[NN], Dir3_SPZperC[NN], Dir3_rank[NN], rank_CTP, *numMsg);
+	  (*numMsg)++;
+
+	  int tmp= Dir3_NPperC[NN]*Dir2_NPperC[m]*Dir1_NPperC[n];
+	  if (tmp > *MaxSizeMsg) (*MaxSizeMsg)= tmp;
+	  
+	} // end for (int NN=0; NN< Dir3_Ncores; NN++){
+    } // end  for (int m=0; m< Dir2_Ncores; m++){
+  } // end for (int n=0; n<Dir1_Ncores; n++){
+
+  delete[]Dir1_SPXperC;
+  delete[]Dir1_SPYperC;
+  delete[]Dir1_SPZperC;
+  delete[]Dir1_NPperC;
+  delete[]Dir1_rank;
+  delete[]Dir1_IndexFirstPointperC;
+
+  delete[]Dir2_SPXperC;
+  delete[]Dir2_SPYperC;
+  delete[]Dir2_SPZperC;
+  delete[]Dir2_NPperC;
+  delete[]Dir2_rank;
+  delete[]Dir2_IndexFirstPointperC;
+
+  delete[]Dir3_SPXperC;
+  delete[]Dir3_SPYperC;
+  delete[]Dir3_SPZperC;
+  delete[]Dir3_NPperC;
+  delete[]Dir3_rank;
+  delete[]Dir3_IndexFirstPointperC;
+}
+/* add one handshake msg to the list */
+void Particles3Dcomm::Assign_RGBC_struct_Values(RGPBC_struct *s, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int MsgID_tmp ) {
+
+  s->np_x = np_x_tmp;
+  s->np_y = np_y_tmp;
+  s->np_z = np_z_tmp;
+
+  s->CG_x_first = CG_x_first_tmp;
+  s->CG_y_first = CG_y_first_tmp;
+  s->CG_z_first = CG_z_first_tmp;
+
+  s->CG_core = CG_core_tmp;
+  
+  s->RG_core = RG_core_tmp;
+
+  s->MsgID = MsgID_tmp;
+
+  return;
+}
+
+/* build and send particle BC msg -- CG to RG */
+void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
+  if (numChildren==0) return;
+
+  for (int ch=0; ch < numChildren; ch++){
+    if (vct->getCommToChild_P(ch) != MPI_COMM_NULL){ // this child wants PBC
+      buildPBCMsg(grid, vct, ch);
+    }
+  }
+  // now send; send an extra msg for the -1
+  
+  //...
+  return;
+}
+
+void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
+  
+  /* returns the number - not the level or the order in the children vector - of the child grid n */
+  int childNum= vct->getChildGridNum(ch);
+  // these are the dx, dy, dz of the child
+  double dx= grid->getDx_mlmd(childNum);
+  double dy= grid->getDy_mlmd(childNum);
+  double dz= grid->getDz_mlmd(childNum);
+
+  double x_min, x_max, y_min, y_max, z_min, z_max;
+ 
+  // set number of particles to 0
+  for (int m=0; m< CG_numPBCMessages[ch]; m++){
+    nopPCMsg[ch][m]= 0;
+  }
+  
+  if (CG_numPBCMessages[ch]>0){ // this particular core has to send BC
+    for (int p=0; p<nop; p++){
+      // here, i have to check all the msgs in else if, to make sure that I am sending 
+      // this particular particle only to one core
+      
+      for (int n=0; n< CG_numPBCMessages[ch]; n++){ 
+	  
+	x_min= CG_Info[ch][n].CG_x_first;
+	x_max= CG_Info[ch][n].CG_x_first+ dx*(CG_Info[ch][n].np_x-1);
+	y_min= CG_Info[ch][n].CG_y_first;
+	y_max= CG_Info[ch][n].CG_y_first+ dy*(CG_Info[ch][n].np_y-1);
+	z_min= CG_Info[ch][n].CG_z_first;
+	z_max= CG_Info[ch][n].CG_z_first+ dz*(CG_Info[ch][n].np_z-1);
+	
+	/*cout << "QUA" << endl;
+	cout <<"p " << p  << " x_min " << x_min << " x_max " << x_max << " x[p] " << x[p] << " xstart " << xstart << " xend "<< xend << endl;
+	cout <<"p " << p  << " y_min " << y_min << " y_max " << y_max << " y[p] " << y[p] << " ystart " << ystart << " yend "<< yend << endl;
+	cout <<"p " << p  << " z_min " << z_min << " z_max " << z_max << " z[p] " << z[p] << " zstart " << zstart << " zend "<< zend << endl;
+	cout << "End QUA" << endl;*/
+
+	if (x_min <= x[p] && x_max >= x[p] && y_min <= y[p] && y_max >= y[p] && z_min <= z[p] && z_max >= z[p]){ // to use for PBC
+	  cout << "adding " << p << " to " << n << endl;
+	  unsigned long ID;
+	  if (TrackParticleID) ID= ParticleID[p]; else ID=0;
+	  addP(PCGMsg[ch][n], &(nopPCMsg[ch][n]), x[p], y[p], z[p], u[p], v[p], w[p], q[p], ID, vct);
+	  break; // to make sure that a particle is added only to one msg
+	} 
+	
+	
+      }// end  for (int n=0; n< CG_numPBCMessages[ch]; n++)
+      
+      
+    } // end for (int p=0; p<nop; p++){
+  } // end f (CG_numPBCMessages[ch]>0){ // this particular core has to send BC   
+  
+  /*
+    // the last one, to mark the end of the the meaningful part --> q=0.0
+  for (int m=0; m< CG_numPBCMessages[ch]; m++ ){
+    //addP(PCGMsg[ch][m], &(nopPCMsg[ch][m]), -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 0.0, 0, vct);
+    PCGMsg[ch][m][nopPCMsg[ch][m]].q= 0.0;
+  }
+  
+  for (int m=0; m< CG_numPBCMessages[ch]; m++){
+    cout << "Grid " << numGrid <<" core " << vct->getCartesian_rank() << " on the local grid communicator is sending " << nopPCMsg[ch][m] << " particles as BC to grid " << childNum << " core " << CG_Info[ch][m].RG_core << " (msg " << m << " of " <<CG_numPBCMessages[ch] <<")" << endl; 
+  }
+  */
+  
+  
+}
+
+void Particles3Dcomm::addP(RepP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, VirtualTopology3D* vct){
+
+  //  cout << "adding P: before adding *num= " << *num << endl; 
+ 
+  (Vec+(*num))->x=x;
+
+  (Vec+(*num))->y=y;
+  (Vec+(*num))->z=z;
+
+  (Vec+(*num))->u=u;
+  (Vec+(*num))->v=v;
+  (Vec+(*num))->w=w;
+
+  (Vec+(*num))->q=q;
+  
+  (Vec+(*num))->ID=ID;
+  
+  (*num)++;
+  // cout << "adding P: after adding *num= " << *num << endl;
+
+  if (*num > sizePCGMsg){
+    // TO DO:RESIZE
+    cout << "in addP, numGrid " << numGrid << " core " << vct->getCartesian_rank()  << " in the local grid communicator, you plan on passing too many particles as BC; IMPLEMENT RESIZE; aborting now..." << endl;
+    abort();
+  }
+  return;
+
+}
+
+

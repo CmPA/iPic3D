@@ -126,6 +126,7 @@ int c_Solver::Init(int argc, char **argv) {
   // mlmd BC init
   if (MLMD_BC)
     EMf->initWeightBC(grid, vct);
+
   
 #ifdef __PETSC_SOLVER__
   // PETSc solver:
@@ -163,6 +164,10 @@ int c_Solver::Init(int argc, char **argv) {
 
     }
   }
+
+  if (MLMD_ParticleREPOPULATION)
+    for (int i=0; i< ns; i++ )
+      part[i].initWeightPBC(grid, vct);
 
   num_grid_STR << numGrid;  //mlmd  
   num_proc << myrank; // mlmd: @grid level 
@@ -392,6 +397,14 @@ bool c_Solver::ParticlesMover() {
       cout << "*************************************************************" << endl;
     }
     return (true);              // exit from the time loop
+  }
+
+  // CG sends PBC
+  
+  if (MLMD_ParticleREPOPULATION){
+    for (int i = 0; i < ns; i++){
+      part[i].SendPBC(grid, vct);
+    }
   }
 
   return (false);

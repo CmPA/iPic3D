@@ -154,7 +154,7 @@ public:
   /* return the number - not the level - of the parent grid */
   int getParentGridNum(){return parentGrid;}
 
-  /* return the number - not the level - of the child grid n */
+  /* returns the number - not the level or the order in the children vector - of the child grid n */
   int getChildGridNum(int n){return childrenGrid[n];}
 
   /* return the max number of cores used of a single grid */

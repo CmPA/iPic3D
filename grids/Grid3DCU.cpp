@@ -67,6 +67,19 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   }
   else{parentLenX=-1.; parentLenY=-1.; parentLenZ=-1.;} // just to set a value
 
+  /* total number of grids */
+  Ngrids= col->getNgrids();
+  /* dx, dy, dz of all grids */
+  dx_mlmd= new double [Ngrids];
+  dy_mlmd= new double [Ngrids];
+  dz_mlmd= new double [Ngrids];
+
+  for (int g=0; g< Ngrids; g++){
+    dx_mlmd[g]= col->getDx_mlmd(g);
+    dy_mlmd[g]= col->getDy_mlmd(g);
+    dz_mlmd[g]= col->getDz_mlmd(g);
+  }
+
   /*
   MPI_Barrier(MPI_COMM_WORLD);
   if (numGrid==0){
@@ -104,9 +117,9 @@ Grid3DCU::~Grid3DCU() {
   delete [] center_ycoord;
   delete [] center_zcoord;
 
-  //delete [] dx_mlmd;
-  //delete [] dy_mlmd;
-  //delete [] dz_mlmd;
+  delete [] dx_mlmd;
+  delete [] dy_mlmd;
+  delete [] dz_mlmd;
 }
 
 /** print the local grid info */
@@ -654,7 +667,8 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
   int SW_rank=vct->getSystemWide_rank();
 
   if (vct->getCommToParent()== MPI_COMM_NULL){
-    cout <<"R" << SW_rank << ": Fatal error in getParentRankFromGridPoint, aborting...";
+    cout <<"R" << SW_rank << ": Fatal error in getParentRankFromGridPoint:" << endl ;
+    abort();
     return -1; // if you are not a child, i return -1 to provoke a segm fault
   }
   // coordinates in the parent grid                                                                 
@@ -681,8 +695,10 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
   }
 
   if (rankPC==-1){
-    cout <<"R" << SW_rank  << " grid " << numGrid<< "cFatal error in getParentRankFromGridPoint, aborting...";
-    cout <<"I was looking for the parent rank of point (GC coords) " << coordX_PG <<" - " << coordY_PG << " - " << coordZ_PG << endl;
+    cout <<"R" << SW_rank  << " grid " << numGrid<< "Fatal error in getParentRankFromGridPoint";
+    cout <<"R" << SW_rank << " You need to change the reciprocal positions of the grids, aborting .." << endl;
+    cout <<"R" << SW_rank  <<"I was looking for the parent rank of point (GC coords) " << coordX_PG <<" - " << coordY_PG << " - " << coordZ_PG << endl;
+    cout << "Aborting now ..." << endl;
     abort();
   }
   else {
@@ -696,4 +712,174 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
 }
 
 
+/** grid --> obvious     
+    FACE --> (bottom, top, left, right, front, back) (needed only for debug prints)     
+    DIR --> direction of the changing index (0->X, 1->Y, 2->Z)
+    i0_s --> the index of the RG first point (included) in the direction to explore    
+    i0_e --> the index of the RG last point (included) in the direction to explore 
+    i1 --> fixed index, in the lower-order fixed direction (ordering X,Y,Z)     
+    i2 --> fixed index, in the higher-order fixed direction (ordering X,Y,Z)     
+    *SPXperC --> X coordinate (not index!) in the CG of the first point FOR EACH CG CORE     
+    *SPYperC --> Y coordinate (not index!) in the CG of the first point FOR EACH CG CORE     
+    *SPZperC --> Z coordinate (not index!) in the CG of the first point FOR EACH CG CORE     
+    *NPperC --> # of point in this CG core per direction    
+    *rank --> rank, IN THE PARENT-CHILD COMMUNICATOR, of the CG core     
+    Ncores --> # of the CG cores involved in BC in this direction     
+    *IndexFirstPointperC --> index in the RG of the first point per core in the selected direction      **/
+void Grid3DCU::RGBCExploreDirection(VirtualTopology3D *vct,string FACE, int DIR, int i0_s, int i0_e, int i1, int i2, double *SPXperC, double *SPYperC, double *SPZperC, int *NPperC, int *rank, int* Ncores, int *IndexFirstPointperC){
+
+  //cout << "Inside Explore: FACE ->" << FACE <<", DIR ->" << DIR << ", i0_s -->" << i0_s <<", i0_e -->" << i0_e <<", i1 --> " << i1 <<", i2 -->" << i2;              
+
+  int SW_rank=vct->getSystemWide_rank();
+  int rank_CommToParent;
+
+  // NB: extremes are included; keep the <=
+  if (DIR==0){ // changing index in X                                                      
+    for(int i=i0_s; i<= i0_e; i++){
+      int j=i1;
+      int k=i2;
+      //cout << "R" << SW_rank <<", " << FACE <<endl;                                    
+      rank_CommToParent= getParentRankFromGridPoint(vct, i, j, k);
+      if (i==i0_s){ // at the beginning                                                                       
+	SPXperC[0]= getXN_P(i, j, k);
+	SPYperC[0]= getYN_P(i, j, k);
+	SPZperC[0]= getZN_P(i, j, k);
+        NPperC[0]= 1;
+        rank[0]= rank_CommToParent;
+        IndexFirstPointperC[0]= i0_s;
+        *Ncores=1;
+      } else { // not at the beginning                       
+        if (rank_CommToParent== rank[*Ncores-1]){ // still in the same rank      
+          NPperC[(*Ncores)-1]++;  // i only update the # of points               
+	}else { // changed rank                                                                            
+          SPXperC[*Ncores]= getXN_P(i, j, k);
+          SPYperC[*Ncores]= getYN_P(i, j, k);
+          SPZperC[*Ncores]= getZN_P(i, j, k);
+          NPperC[*Ncores]= 1;
+          rank[*Ncores]= rank_CommToParent;
+          IndexFirstPointperC[*Ncores]=i;
+          (*Ncores)++;
+        }// end changed rank 
+      } // end else not at the beginning                                                             
+    }// end for                                                                       
+  } // end if dir 
+
+  if (DIR==1){ //changing index in Y     
+    for(int j=i0_s; j<= i0_e; j++){
+      int i=i1;
+      int k=i2;
+      rank_CommToParent= getParentRankFromGridPoint(vct, i, j, k);
+      if (j==i0_s){ // at the beginning                               
+	SPXperC[0]= getXN_P(i, j, k);
+        SPYperC[0]= getYN_P(i, j, k);
+        SPZperC[0]= getZN_P(i, j, k);
+        NPperC[0]= 1;
+        rank[0]= rank_CommToParent;
+        IndexFirstPointperC[0]=i0_s;
+        *Ncores=1;
+      } else { // not at the beginning                                                               
+        if (rank_CommToParent== rank[(*Ncores)-1]){ // still in the same rank     
+          NPperC[(*Ncores)-1]++; // i only update the # of points                   
+	}
+        else { // changed rank           
+	  SPXperC[*Ncores]= getXN_P(i, j, k);
+          SPYperC[*Ncores]= getYN_P(i, j, k);
+          SPZperC[*Ncores]= getZN_P(i, j, k);
+          NPperC[*Ncores]= 1;
+          rank[*Ncores]= rank_CommToParent;
+          IndexFirstPointperC[*Ncores]=j;
+          (*Ncores)++;
+        }// end changed rank 
+      } // end else not at the beginning      
+    }// end for                                                                     
+  } // end if dir
+
+  if (DIR==2){ //changing index in Z                                                  
+    for(int k=i0_s; k<= i0_e; k++){
+      int i=i1;
+      int j=i2;
+      rank_CommToParent= getParentRankFromGridPoint(vct, i, j, k);
+      if (k==i0_s){ // at the beginning                                            
+	SPXperC[0]= getXN_P(i, j, k);
+        SPYperC[0]= getYN_P(i, j, k);
+        SPZperC[0]= getZN_P(i, j, k);
+        NPperC[0]= 1;
+        rank[0]= rank_CommToParent;
+        IndexFirstPointperC[0]=i0_s;
+        *Ncores=1;
+      } else {
+        if (rank_CommToParent== rank[*Ncores-1]){
+          // still in the same rank                            
+          NPperC[(*Ncores)-1]++; // i only update the # of points         
+        }else { // changed rank                      
+          SPXperC[*Ncores]= getXN_P(i, j, k);
+          SPYperC[*Ncores]= getYN_P(i, j, k);
+          SPZperC[*Ncores]= getZN_P(i, j, k);
+          NPperC[*Ncores]= 1;
+          rank[*Ncores]= rank_CommToParent;
+          IndexFirstPointperC[*Ncores]=k;
+          (*Ncores)++;
+        }// end changed rank 
+      } // end else not at the beginning    
+
+    }// end for                                         
+  } // end if dir 
+
+}
+
+void Grid3DCU::getParentLimits(VirtualTopology3D *vct, int N, double *xmin, double *xmax, double *ymin, double *ymax, double *zmin, double *zmax){
+  
+  int XC= vct->getXcoord_CommToParent(N);
+  int YC= vct->getYcoord_CommToParent(N);
+  int ZC= vct->getZcoord_CommToParent(N);
+
+  *xmin= parentLenX* XC;
+  *xmax= parentLenX* (XC+1);
+
+  *ymin= parentLenY* YC;
+  *ymax= parentLenY* (YC+1);
+
+  *zmin= parentLenZ* ZC;
+  *zmax= parentLenZ* (ZC+1);
+}
+
+/* mlmd: coordinate on your parent grid     
+   NB: i want it to be able to manage also negative indexes or indexes > nxn/ nyn/ nzn    
+   (for the phase 1 of particle init BC) */
+
+double Grid3DCU::getXN_P(int X, int Y, int Z){ 
+  double dx= node_xcoord[1]-node_xcoord[0];
+  
+  if (X>-1 and X<nxn) {
+    return node_xcoord[X]+ Ox;} // "normal" case
+  if (X<0){
+    return Ox+ node_xcoord[0]+ dx*X;}
+  if (X>nxn-1){
+    return Ox+ node_xcoord[nxn-1] + dx*(X-(nxn-1));}
+
+}
+
+double Grid3DCU::getYN_P(int X, int Y, int Z){ 
+  double dy= node_ycoord[1]-node_ycoord[0];
+  
+  if (Y>-1 and Y<nyn) 
+    return node_ycoord[Y]+ Oy; // "normal" case
+  if (Y<0)
+    return Oy+ node_ycoord[0]+ dy*Y;
+  if (Y>nyn-1)
+    return Oy+ node_ycoord[nyn-1] + dy*(Y-(nyn-1));
+}
+
+double Grid3DCU::getZN_P(int X, int Y, int Z){ 
+  double dz= node_zcoord[1]-node_zcoord[0];
+  
+  if (Z>-1 and Z<nzn) 
+    return node_zcoord[Z]+ Oz; // "normal" case
+  if (Z<0)
+    return Oz+ node_zcoord[0]+ dz*Z;
+  if (Z>nzn-1)
+    return Oz+ node_zcoord[nzn-1] + dz*(Z-(nzn-1));
+}
+  
 /** end mlmd specific functions **/
+

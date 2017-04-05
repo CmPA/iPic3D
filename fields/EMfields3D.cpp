@@ -4230,10 +4230,10 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
    } // end if (numGrid>0)
    /* end phase 1 */
 
-   MPI_Barrier(MPI_COMM_WORLD);
+   /*MPI_Barrier(MPI_COMM_WORLD);
    if (vct->getSystemWide_rank()==0){
      cout << "After barrier phase 1" << endl;
-   }
+     }*/
 
    /* phase 2, RG sends info to CG */
    // children grids
@@ -4355,12 +4355,12 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
 
   } // end  if (numChildren > 0 ), only for parents
   
-  MPI_Barrier(MPI_COMM_WORLD);
+  /*MPI_Barrier(MPI_COMM_WORLD);
    if (rank_local==0){
      cout << "I am grid " << numGrid <<", I am after the barrier marking Phase2c" << endl;
      // cout << "exiting now..."<< endl;
-   }
-   //MPI_Finalize(); exit(EXIT_SUCCESS);*/
+     }*/
+   
 
   Trim_RGBC_Vectors(vct);
   /* //checks after trim
@@ -4852,10 +4852,10 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
     countMSG =  (*RG_numBCMessages);
     FACE= "BOTTOM";
     // Dir1, higher dimension: Y
-    RGBCExploreDirection(grid, vct, FACE, 1, j_s, j_e, i_s, k_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+    grid->RGBCExploreDirection(vct, FACE, 1, j_s, j_e, i_s, k_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
 	  
     for (int n=0; n<Dir1_Ncores; n++){ // it will find again the core in Dir 1, but it will also explore Dir 2
-      RGBCExploreDirection(grid, vct, FACE, 0, i_s, i_e,  Dir1_IndexFirstPointperC[n], k_s, Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); // Dir2, lower dimension: X
+      grid->RGBCExploreDirection(vct, FACE, 0, i_s, i_e,  Dir1_IndexFirstPointperC[n], k_s, Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); // Dir2, lower dimension: X
 
       // build and commit each of these
       for (int NN=0; NN<Dir2_Ncores; NN++){
@@ -4902,10 +4902,10 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
     countMSG =  (*RG_numBCMessages);
     FACE= "TOP";
     // Dir1, higher dimension: Y
-    RGBCExploreDirection(grid, vct, FACE, 1, j_s, j_e, i_s, k_s, Dir1_SPXperC, Dir1_SPYperC,Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+    grid->RGBCExploreDirection(vct, FACE, 1, j_s, j_e, i_s, k_s, Dir1_SPXperC, Dir1_SPYperC,Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
     
     for (int n=0; n< Dir1_Ncores; n++){
-      RGBCExploreDirection(grid, vct,FACE, 0, i_s, i_e, Dir1_IndexFirstPointperC[n], k_s, Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); // Dir2, lower dimension: X
+      grid->RGBCExploreDirection(vct,FACE, 0, i_s, i_e, Dir1_IndexFirstPointperC[n], k_s, Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); // Dir2, lower dimension: X
 
       for (int NN=0; NN<Dir2_Ncores; NN++){
 	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir1_NPperC[n], DNS, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
@@ -4952,11 +4952,11 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
     FACE= "LEFT";
 
     // Dir1, higher dimensionality: Z
-    RGBCExploreDirection(grid, vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+    grid->RGBCExploreDirection(vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
 
     for (int n=0; n< Dir1_Ncores; n++){
       // Dir2, Y
-      RGBCExploreDirection(grid, vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); 
+      grid->RGBCExploreDirection(vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); 
 
       for (int NN=0; NN< Dir2_Ncores; NN++){
 
@@ -5002,12 +5002,12 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
     FACE= "RIGHT";
 
     // Dir1: higher dimensionality --> Z
-    RGBCExploreDirection(grid, vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+    grid->RGBCExploreDirection(vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
     
 
     for (int n=0; n< Dir1_Ncores; n++){
       // Dir2, Y
-      RGBCExploreDirection(grid, vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
+      grid->RGBCExploreDirection(vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
 
       for (int NN=0; NN< Dir2_Ncores; NN++){
 
@@ -5053,11 +5053,11 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
     FACE= "FRONT";
  
     // Dir 1, higher dimensionality: Z   
-    RGBCExploreDirection(grid, vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+    grid->RGBCExploreDirection(vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
 
     for (int n=0; n< Dir1_Ncores; n++){
       // Dir2, X
-      RGBCExploreDirection(grid, vct, FACE, 0, i_s, i_e, j_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
+      grid->RGBCExploreDirection(vct, FACE, 0, i_s, i_e, j_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
 
       for (int NN=0; NN< Dir2_Ncores; NN++){
 	
@@ -5103,11 +5103,11 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
     FACE= "BACK";
 
     // Dir 1, higher dimensionality: Z
-    RGBCExploreDirection(grid, vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+    grid->RGBCExploreDirection(vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
     
     for (int n=0; n< Dir1_Ncores; n++){
       // dir2, X
-      RGBCExploreDirection(grid, vct, FACE, 0, i_s, i_e, j_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
+      grid->RGBCExploreDirection(vct, FACE, 0, i_s, i_e, j_s, Dir1_IndexFirstPointperC[n], Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
       
       for (int NN=0; NN< Dir2_Ncores; NN++){
 	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], j_s, Dir1_IndexFirstPointperC[n], -1, Dir2_NPperC[NN], DNS, Dir1_NPperC[n], Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
@@ -5684,130 +5684,6 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
   }
 
 
-}
-
-
-
-/** grid --> obvious                                                                                                                              
-    FACE --> (bottom, top, left, right, front, back) (needed only for debug prints)
-    DIR --> direction of the changing index (0->X, 1->Y, 2->Z)
-    i0_s --> the index of the RG first point (included) in the direction to explore  
-    i0_e --> the index of the RG last point (included) in the direction to explore  
-    i1 --> fixed index, in the lower-order fixed direction (ordering X,Y,Z) 
-    i2 --> fixed index, in the higher-order fixed direction (ordering X,Y,Z)  
-    *SPXperC --> X coordinate (not index!) in the CG of the first point FOR EACH CG CORE 
-    *SPYperC --> Y coordinate (not index!) in the CG of the first point FOR EACH CG CORE 
-    *SPZperC --> Z coordinate (not index!) in the CG of the first point FOR EACH CG CORE       
-    *NPperC --> # of point in this CG core per direction
-    *rank --> rank, IN THE PARENT-CHILD COMMUNICATOR, of the CG core 
-    Ncores --> # of the CG cores involved in BC in this direction   
-    *IndexFirstPointperC --> index in the RG of the first point per core in the selected direction
-    **/
-void EMfields3D::RGBCExploreDirection(Grid *grid, VirtualTopology3D *vct,string FACE, int DIR, int i0_s, int i0_e, int i1, int i2, double *SPXperC, double *SPYperC, double *SPZperC, int *NPperC, int *rank, int* Ncores, int *IndexFirstPointperC){
-
-  //cout << "Inside Explore: FACE ->" << FACE <<", DIR ->" << DIR << ", i0_s -->" << i0_s <<", i0_e -->" << i0_e <<", i1 --> " << i1 <<", i2 -->" << i2;
-  
-  int SW_rank=vct->getSystemWide_rank();
-  int rank_CommToParent;
-
-
-  // NB: extremes are included; keep the <=
-   if (DIR==0){ // changing index in X
-    for(int i=i0_s; i<= i0_e; i++){
-      int j=i1;
-      int k=i2;
-      //cout << "R" << SW_rank <<", " << FACE <<endl;
-      rank_CommToParent= grid->getParentRankFromGridPoint(vct, i, j, k);
-      if (i==i0_s){ // at the beginning
-	SPXperC[0]= grid->getXN_P(i, j, k);
-	SPYperC[0]= grid->getYN_P(i, j, k);
-	SPZperC[0]= grid->getZN_P(i, j, k);
-	NPperC[0]= 1;
-	rank[0]= rank_CommToParent;
-	IndexFirstPointperC[0]= i0_s;
-	*Ncores=1;
-      } else { // not at the beginning
-	if (rank_CommToParent== rank[*Ncores-1]){ // still in the same rank
-	  NPperC[(*Ncores)-1]++;  // i only update the # of points
-	}else { // changed rank
-	  SPXperC[*Ncores]= grid->getXN_P(i, j, k);
-	  SPYperC[*Ncores]= grid->getYN_P(i, j, k);
-	  SPZperC[*Ncores]= grid->getZN_P(i, j, k);
-	  NPperC[*Ncores]= 1;
-	  rank[*Ncores]= rank_CommToParent;
-	  IndexFirstPointperC[*Ncores]=i;
-	  (*Ncores)++;
-	}// end changed rank
-      } // end else not at the beginning
-    }// end for
-  } // end if dir 
-  
-  if (DIR==1){ //changing index in Y
-    for(int j=i0_s; j<= i0_e; j++){
-      int i=i1;
-      int k=i2;
-      //cout << "R" << SW_rank <<", " << FACE << ", DIR y" <<endl;
-      rank_CommToParent= grid->getParentRankFromGridPoint(vct, i, j, k);
-      if (j==i0_s){ // at the beginning
-	SPXperC[0]= grid->getXN_P(i, j, k);
-	SPYperC[0]= grid->getYN_P(i, j, k);
-	SPZperC[0]= grid->getZN_P(i, j, k);
-	NPperC[0]= 1;
-	rank[0]= rank_CommToParent;
-	IndexFirstPointperC[0]=i0_s;
-	*Ncores=1;
-      } else { // not at the beginning
-	if (rank_CommToParent== rank[(*Ncores)-1]){ // still in the same rank
-	  NPperC[(*Ncores)-1]++; // i only update the # of points
-	}
-	else { // changed rank
-	  SPXperC[*Ncores]= grid->getXN_P(i, j, k);
-	  SPYperC[*Ncores]= grid->getYN_P(i, j, k);
-	  SPZperC[*Ncores]= grid->getZN_P(i, j, k);
-	  NPperC[*Ncores]= 1;
-	  rank[*Ncores]= rank_CommToParent;
-	  IndexFirstPointperC[*Ncores]=j;
-	  (*Ncores)++;
-	}// end changed rank
-      } // end else not at the beginning
-      //cout << "R" << SW_rank << " DIR Y, j= " << j << "after if, *Ncores= " <<*Ncores <<endl;
-    }// end for
-  } // end if dir 
-
-  if (DIR==2){ //changing index in Z
-    for(int k=i0_s; k<= i0_e; k++){
-      int i=i1;
-      int j=i2;
-      //cout << "R" << SW_rank <<", " << FACE << ", DIR Z" <<endl;
-      rank_CommToParent= grid->getParentRankFromGridPoint(vct, i, j, k);
-      if (k==i0_s){ // at the beginning
-	SPXperC[0]= grid->getXN_P(i, j, k);
-	SPYperC[0]= grid->getYN_P(i, j, k);
-	SPZperC[0]= grid->getZN_P(i, j, k);
-	NPperC[0]= 1;
-	rank[0]= rank_CommToParent;
-	IndexFirstPointperC[0]=i0_s;
-	*Ncores=1;
-      } else { 
-	if (rank_CommToParent== rank[*Ncores-1]){ 
-	  // still in the same rank
-	  NPperC[(*Ncores)-1]++; // i only update the # of points
-	}else { // changed rank
-	  SPXperC[*Ncores]= grid->getXN_P(i, j, k);
-	  SPYperC[*Ncores]= grid->getYN_P(i, j, k);
-	  SPZperC[*Ncores]= grid->getZN_P(i, j, k);
-	  NPperC[*Ncores]= 1;
-	  rank[*Ncores]= rank_CommToParent;
-	  IndexFirstPointperC[*Ncores]=k;
-	  (*Ncores)++;
-	}// end changed rank
-      } // end else not at the beginning
-    }// end for
-  } // end if dir 
-
-  //cout <<"R" <<SW_rank  << ", END Inside Explore: FACE ->" << FACE <<", DIR ->" << DIR << ", i0_s -->" << i0_s <<", i0_e -->" << i0_e <<", i1 --> " << i1 <<", i2 -->" << i2;
-  //cout <<"R" <<SW_rank << ", *Ncores " << *Ncores <<endl; 
-  
 }
 
 void EMfields3D::buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_struct RGInfo, int Size ){
