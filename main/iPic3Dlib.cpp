@@ -88,6 +88,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="Whistler")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
     else if (col->getCase()=="WhistlerKappa")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
     else if (col->getCase()=="Coils")  EMf->initWB8(vct,grid,col);
+    else if (col->getCase()=="CoilsMono")  EMf->initWB8(vct,grid,col);
     else if (col->getCase()=="FluxRope")  EMf->initFluxRope(vct,grid,col);
     else {
       if (myrank==0) {
@@ -140,14 +141,18 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
         else if (col->getCase()=="FluxRope")    part[i].maxwellian(grid, EMf, vct);
         else if (col->getCase()=="Coils"){
-           	if (col->getRHOinject(i) == 0.0)
-           		// part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0) //generates maxwellian in a box
-           			part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0);  // generated maxwellian in a box
-       	    else
-       	    		part[i].empty(grid, EMf, vct);
+           	if (col->getRHOinit(i) > 0.0)
+           		part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+           	else
+       	    	part[i].empty(grid, EMf, vct);
         								  }
-        else                                  part[i].maxwellian(grid, EMf, vct);
-
+        else if (col->getCase()=="CoilsMono"){
+            if (col->getRHOinit(i) > 0.0)
+                part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0);  // generated monoenergetic in a box
+            else
+                part[i].empty(grid, EMf, vct);
+                								  }
+        else  part[i].maxwellian(grid, EMf, vct);
     }
   }
 
@@ -366,6 +371,15 @@ void c_Solver::InjectBoundaryParticles(){
       }
       }
       if (col->getCase()=="Coils") {
+	  //Remove particles from outside the simulation box
+		for (int i=0; i < ns; i++){
+			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+			if (col->getRHOinject(i) > 0.0)
+				mem_avail = part[i].injector_rand_box(grid,vct,EMf);
+		}
+      }
+      if (col->getCase()=="CoilsMono") {
 	  //Remove particles from outside the simulation box
 		for (int i=0; i < ns; i++){
 			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
