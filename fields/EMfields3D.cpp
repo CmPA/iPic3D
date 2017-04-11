@@ -1996,6 +1996,102 @@ void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTop
 }
 
 
+void EMfields3D::initDoublePeriodicHarrisSteps(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  const double pertX = 0.0;
+  const double deltax = 8. * delta;
+  const double deltay = 4. * delta;
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize GEM Challenge with Pertubation" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+           double xM = grid->getXN(i, j, k) - .25 * Lx;
+           double xMshift = grid->getXN(i, j, k) - .75 * Lx;
+
+           double yB = grid->getYN(i, j, k) - .25 * Ly;
+           double yT = grid->getYN(i, j, k) - .75 * Ly;
+           double yBd = yB / delta;
+           double yTd = yT / delta;
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is]) {
+               double sech_yBd = 1. / cosh(yBd);
+               double sech_yTd = 1. / cosh(yTd);
+              rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
+              rhons[is][i][j][k] += rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
+            }
+            else
+              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          int Nsteps = (int) coilD;
+          int int_tanh = floor0(Nsteps*tanh(yBd));
+          Bxn[i][j][k] = B0x * int(int_tanh)/((double)Nsteps);
+          Bxn[i][j][k] = B0x * (-1.0 + int_tanh - tanh(yTd));
+          // add the initial GEM perturbation
+          Bxn[i][j][k] += 0.;
+          Byn[i][j][k] = B0y;
+          // add the initial X perturbation
+           double xMdx = xM / deltax;
+           double xMshiftdx = xMshift / deltax;
+           double yBdy = yB / deltay;
+           double yTdy = yT / deltay;
+           double humpB = exp(-xMdx * xMdx - yBdy * yBdy);
+          Bxn[i][j][k] -= (B0x * pertX) * humpB * cos(2 * M_PI * xM / Lx) * sin(M_PI * yB / Ly);
+          Byn[i][j][k] += (B0x * pertX) * humpB * sin(2 * M_PI * xM / Lx) * cos(M_PI * yB / Ly);
+
+          // add the second initial X perturbation
+           double humpT = exp(-xMshiftdx * xMshiftdx - yTdy * yTdy);
+          Bxn[i][j][k] += (B0x * pertX) * humpT * cos(2 * M_PI * xMshift / Lx) * sin(M_PI * yT / Ly);
+          Byn[i][j][k] -= (B0x * pertX) * humpT * sin(2 * M_PI * xMshift / Lx) * cos(M_PI * yT / Ly);
+
+          // guide field
+          Bzn[i][j][k] = B0z;
+        }
+    // communicate ghost
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    // initialize B on centers
+    // initialize B on centers
+	grid->interpN2C(Bxc,Bxn);
+	grid->interpN2C(Byc,Byn);
+	grid->interpN2C(Bzc,Bzn);
+    // communicate ghost
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+
 /*! initialize GEM challenge with no Perturbation with dipole-like tail topology */
 void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 
