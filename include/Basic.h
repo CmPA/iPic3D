@@ -546,9 +546,13 @@ inline void loopWork(double *b, double x, double y, double z, double a, double x
 
 	double Q = ((1 + Alpha)*(1 + Alpha) + Beta*Beta);
 	double k = sqrt(4*Alpha/Q);
-	double B0 = m / (2*a); //m * (C_LIGHT * MU0)/(2*a*a*a*M_PI);
+	//double B0 = m / (2*a); //m * (C_LIGHT * MU0)/(2*a*a*a*M_PI);
 
 	int err = 0;
+
+	double central_value = (EllipticE(0.0,err)+EllipticF(0.0,err))/M_PI;
+	cout << central_value << "   " << xc << "   " << yc << "   " <<zc <<endl;
+	double B0 = m  /central_value;
 
 	double Bz = B0*(EllipticE(k,err)*(1-Alpha*Alpha-Beta*Beta)/(Q-4*Alpha)+EllipticF(k,err))/(M_PI*sqrt(Q));
 	double BRho = B0*Gamma*(EllipticE(k,err)*(1+Alpha*Alpha+Beta*Beta)/(Q-4*Alpha)-EllipticF(k,err))/(M_PI*sqrt(Q));

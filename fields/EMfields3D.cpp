@@ -2379,6 +2379,10 @@ void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
                 double y = grid->getYN(i,j,k);
                 double z = grid->getZN(i,j,k);
 
+                 Bxn[i][j][k] = 0.0;
+                 Byn[i][j][k] = 0.0;
+                 Bzn[i][j][k] = 0.0;
+
                 loopZ(blp, x, y, z, a, xc, yc, zc+deltaz, -B0z);
                 Bxn[i][j][k] = blp[0];
                 Byn[i][j][k] = blp[1];
@@ -2434,6 +2438,10 @@ void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
                  double x = grid->getXC(i,j,k);
                  double y = grid->getYC(i,j,k);
                  double z = grid->getZC(i,j,k);
+                 Bxc[i][j][k] = 0.0;
+                 Byc[i][j][k] = 0.0;
+                 Bzc[i][j][k] = 0.0;
+
 
                  loopZ(blp, x, y, z, a, xc, yc, zc+deltaz, -B0z);
                  //cout << blp[0] << "   " << x << "   " << xc << "   " << m << endl;
