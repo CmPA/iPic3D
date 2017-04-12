@@ -374,9 +374,11 @@ void c_Solver::InjectBoundaryParticles(){
 	  //Remove particles from outside the simulation box
 		for (int i=0; i < ns; i++){
 			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
-			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+/*			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
 			if (col->getRHOinject(i) > 0.0)
 				mem_avail = part[i].injector_rand_box(grid,vct,EMf);
+				*/
+			Qremoved[i] = part[i].ReturnToCenterOuterFrame(6.0,6.0,6.0);
 		}
       }
       if (col->getCase()=="CoilsMono") {

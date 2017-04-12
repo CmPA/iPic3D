@@ -2196,6 +2196,34 @@ double Particles3D::deleteParticlesOuterFrame(double multx, double multy, double
 	return(Q_removed);
 }
 
+/** Reflect particles in the outer shell towards the center */
+double Particles3D::ReturnToCenterOuterFrame(double multx, double multy, double multz){
+	// calculate accumulated charge on the spacecraft
+	long long np_current = 0, nplast = nop-1;
+	double r;
+	double udotr;
+	while (np_current < nplast+1) {
+		if (x[np_current] < multx*dx || x[np_current] > (Lx-multx*dx) ||
+		    y[np_current] < multy*dy || y[np_current] > (Ly-multy*dx) ||
+		    z[np_current] < multz*dz || z[np_current] > (Lz-multz*dx)) {
+			r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
+					(y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
+					(z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
+			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
+					v[np_current] * (y[np_current]-Ly/2.0)+
+					w[np_current] * (z[np_current]-Lz/2.0))/r;
+			udotr += abs(udotr);
+			u[np_current] = u[np_current] -  udotr * (x[np_current]-Lx/2.0)/r;
+			v[np_current] = v[np_current] -  udotr * (y[np_current]-Ly/2.0)/r;
+			w[np_current] = w[np_current] -  udotr * (z[np_current]-Lz/2.0)/r;
+		} else {
+			np_current++;
+		}
+	}
+	nop = nplast +1;
+	return(0.0);
+}
+
 /** Delete the particles inside the sphere with radius R and center x_center y_center */
 double Particles3D::deleteParticlesOutsideSphere(double R, double x_center, double y_center, double z_center){
 	// calculate accumulated charge on the spacecraft
