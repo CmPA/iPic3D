@@ -2048,8 +2048,7 @@ void EMfields3D::initDoublePeriodicHarrisSteps(VirtualTopology3D * vct, Grid * g
           // Magnetic field
           int Nsteps = (int) coilD;
           int int_tanh = floor0(Nsteps*tanh(yBd));
-          Bxn[i][j][k] = B0x * int(int_tanh)/((double)Nsteps);
-          Bxn[i][j][k] = B0x * (-1.0 + int_tanh - tanh(yTd));
+          Bxn[i][j][k] = B0x * (-1.0 + int(int_tanh)/((double)Nsteps) - tanh(yTd));
           // add the initial GEM perturbation
           Bxn[i][j][k] += 0.;
           Byn[i][j][k] = B0y;
