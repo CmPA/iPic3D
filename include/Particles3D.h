@@ -101,9 +101,10 @@ class Particles3D:public Particles3Dcomm {
 	 double deleteParticlesOutsideSphere(double R, double x_center, double y_center, double z_center);
 	/** Delete the particles outside the cube with dimension L */
 	 double deleteParticlesOutsideBox(double L);
-
+	 /** Delete particles in the outer shell towards the center */
 	double deleteParticlesOuterFrame(double multx, double multy, double multz);
-
+	/** Reflect particles in the outer shell towards the center */
+	double ReturnToCenterOuterFrame(double multx, double multy, double multz);
 	/** Initial condition: localised in a box and maxwellian in velocity */
     void dual_spark_plug(Grid* grid,Field* EMf, VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center);
 	 /** record the Flux through the FluxLoops **/
