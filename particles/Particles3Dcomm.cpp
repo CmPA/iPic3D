@@ -69,7 +69,11 @@ Particles3Dcomm::~Particles3Dcomm() {
   // deallocate mlmd-related stuff
   delete[]RGPBC_Info;
   delArr3(PCGMsg, numChildren, MaxNumMsg);
-  delArr2(nopPCMsg, numChildren);
+  delArr2(nopPCGMsg, numChildren);
+  delArr2(PRGMsg, RG_numPBCMessages);
+  delete[]nopPRGMsg;
+  delete[]PRGMsgArrived;
+  delete[]PRGMsg_General;
 }
 /** constructors fo a single species*/
 void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
@@ -306,17 +310,64 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   }
 
   // here, mlmd stuff which does not necessarily need to be at the beginning
+  numChildren= vct->getNumChildren();
+
   
   int MaxGridCoreN= vct->getMaxGridCoreN();
   MAX_RG_numPBCMessages= (int) (MaxGridCoreN*6+1);
   MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages*4;
 
-  numChildren= vct->getNumChildren();
+  // sizes of the PCGMsg values set here (but allocated only if needed) 
+  // to have the send/ receive vectors with the same size, I cook up a number based 
+  //   on the coarsest grid 
+  int MaxNopMLMD= npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0));
+
+  sizePBCMsg = 0.2*MaxNopMLMD;
+  MAXsizePBCMsg = 0.5*MaxNopMLMD;
+  // end sizes of the PCGMsg values set here 
+
   // here, to be able to used RGPBC_struct as an MPI_Datatype
   MPI_RGPBC_struct_commit();
   // here, to be able to use the RepP_struct as an MPI_Datatype
   MPI_RepP_struct_commit();
 
+  // PRA related initialisation
+  // the # of PRA cells is a tmp variable
+  //   the 'visible' variables are the index at which PRA starts/ ends 
+  
+  int PRACells = 2;
+  
+  // index at which the PRA starts/ ends
+  PRA_XLeft_Start= 0;
+  PRA_XLeft_End= 0+PRACells;
+  PRA_XRight_End= nxn-1;
+  PRA_XRight_Start= nxn-1 -PRACells ;
+
+  PRA_YLeft_Start= 0;
+  PRA_YLeft_End= 0+PRACells;
+  PRA_YRight_End= nyn-1;
+  PRA_YRight_Start= nyn-1 -PRACells ;
+
+  PRA_ZLeft_Start= 0;
+  PRA_ZLeft_End= 0+PRACells;
+  PRA_ZRight_End= nzn-1;
+  PRA_ZRight_Start= nzn-1 -PRACells ;
+
+  // corresponding coordinates
+  Coord_XLeft_Start= grid->getXN(PRA_XLeft_Start, 0, 0);
+  Coord_XLeft_End= grid->getXN(PRA_XLeft_End, 0, 0);
+  Coord_XRight_End= grid->getXN(PRA_XRight_End, 0, 0);
+  Coord_XRight_Start= grid->getXN(PRA_XRight_Start, 0, 0);
+
+  Coord_YLeft_Start= grid->getYN(0, PRA_YLeft_Start, 0);
+  Coord_YLeft_End= grid->getYN(0, PRA_YLeft_End, 0);
+  Coord_YRight_End= grid->getYN(0, PRA_YRight_End, 0);
+  Coord_YRight_Start= grid->getYN(0, PRA_YRight_Start,0); 
+
+  Coord_ZLeft_Start= grid->getZN(0, 0, PRA_ZLeft_Start);
+  Coord_ZLeft_End= grid->getZN(0, 0, PRA_ZLeft_End);
+  Coord_ZRight_End= grid->getZN(0, 0, PRA_ZRight_End);
+  Coord_ZRight_Start= grid->getZN(0, 0, PRA_ZRight_Start);
 
   // //FOR TEST:
   // nvDistLoc = 3;
@@ -582,21 +633,29 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   long long np_current = 0, nplast = nop - 1;
 
+  // to prevent RG particles in the GC from being eliminated from the domain
+  double xMin=0, yMin=0, zMin=0;
+  double xMax= Lx, yMax= Ly, zMax= Lz;
+  if (ptVCT->getCommToParent_P()!= MPI_COMM_NULL and RG_numPBCMessages >0){
+    xMin= -dx; yMin= -dy; zMin= -dz;
+    xMax= Lx+dx; yMax= Ly+dy; zMax= Lz+dz;
+  }
+
   while (np_current < nplast+1){
 
 
     // BC on particles
-    if (x[np_current] < 0 && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
+    if (x[np_current] < xMin && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
       BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft);
-    else if (x[np_current] > Lx && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL)
+    else if (x[np_current] > xMax && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL)
       BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft); 
-    if (y[np_current] < 0 && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL)  // check it here
+    if (y[np_current] < yMin && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL)  // check it here
       BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft);
-    else if (y[np_current] > Ly && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL) //check it here
+    else if (y[np_current] > yMax && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL) //check it here
       BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft); 
-    if (z[np_current] < 0 && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL)  // check it here
+    if (z[np_current] < zMin && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL)  // check it here
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
-    else if (z[np_current] > Lz && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) //check it here
+    else if (z[np_current] > zMax && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) //check it here
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
 
     // if the particle exits, apply the boundary conditions add the particle to communication buffer
@@ -613,7 +672,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitXleft++;
       } 
-      else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL){
+      else if (x[np_current] < xMin && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
         npExitXleft++;
       } 
@@ -628,7 +687,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitXright++;
       }
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL){
+      else if (x[np_current] > xMax && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
         npExitXright++;
       }
@@ -646,7 +705,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitYleft++;
       }
-      else if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL){
+      else if (y[np_current] < yMin && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL){
         // delete the particle and pack the particle array, the value of nplast changes
         del_pack(np_current,&nplast);
         npExitYleft++;
@@ -662,7 +721,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
         del_pack(np_current,&nplast);
         npExitYright++;
       }
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL){
+      else if (y[np_current] > yMax && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL){
         // delete the particle and pack the particle array, the value of nplast changes
         del_pack(np_current,&nplast);
         npExitYright++;
@@ -681,7 +740,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
         npExitZleft++;
       } 
-      else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL){
+      else if (z[np_current] < zMin && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
         npExitZleft++;
       }
@@ -697,7 +756,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
         npExitZright++;
       }
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL){
+      else if (z[np_current] > zMax && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL){
         del_pack(np_current,&nplast);
         npExitZright++;
       }
@@ -750,6 +809,36 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     if (availALL < 0)
       return (-1);              // too many particles coming, save data nad stop simulation
   }
+
+  // here, if RG core receving PBC particles, I have to deal with RG particles already present in the repopulation buffer
+  // here I check RG_numPBCMessages also not to do ops in a core which is not affected by PBC
+  if (ptVCT->getCommToParent_P()!= MPI_COMM_NULL and RG_numPBCMessages >0){
+    long long np_current = 0, nplast = nop - 1;
+
+    while (np_current < nplast+1){
+      if (ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL and bcPfaceXleft== -1 and x[np_current] < Coord_XLeft_End) { // Xleft
+	del_pack(np_current,&nplast);
+      }
+      else if (ptVCT->getXright_neighbor_P() == MPI_PROC_NULL and bcPfaceXright== -1 and x[np_current] > Coord_XRight_Start ) { // Xright
+	del_pack(np_current,&nplast);
+      }
+      else if (ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL and bcPfaceYleft== -1 and y[np_current] < Coord_YLeft_End) { // Yleft
+	del_pack(np_current,&nplast);
+      }
+      else if (ptVCT->getYright_neighbor_P() == MPI_PROC_NULL and bcPfaceYright== -1 and y[np_current] > Coord_YRight_Start ) { // Yright
+	del_pack(np_current,&nplast);
+      }
+      else if (ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL and bcPfaceZleft== -1 and z[np_current] < Coord_ZLeft_End) { // Zleft
+	del_pack(np_current,&nplast);
+      }
+      else if (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL and bcPfaceZright== -1 and z[np_current] > Coord_ZRight_Start ) { // Zright
+	del_pack(np_current,&nplast);
+      }
+      else{np_current++; };
+
+    } // end while (np_current < nplast+1){
+    nop= nplast+1;
+  } // end if (ptVCT->getCommToParent_P()!= MPI_COMM_NULL and RG_numPBCMessages >0){
 
   return(0);
 
@@ -1191,10 +1280,6 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
   // Phase 2: CG side
   // Phase 2a: each GC core receives the msg and stores appropriate variables
 
-  /* sizes of the PCGMsg values set here */
-  sizePCGMsg = nop;
-  MAXsizePCMsg = nop;
-  /* end sizes of the PCGMsg values set here */
   
   RG_numPBCMessages= 0;
   int rank_local= vct->getCartesian_rank();  // on the grid communicator
@@ -1208,18 +1293,10 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
     
     RGPBC_Info = new RGPBC_struct[MAX_RG_numPBCMessages];
     
-    // this number is at the moment arbitrarily decided
-    PRA_XLeft = 2;
-    PRA_XRight = 2;
-    PRA_YLeft = 2;
-    PRA_YRight = 2;
-    PRA_ZLeft = 2;
-    PRA_ZRight = 2;
-
     initWeightPBC_Phase1(grid, vct, RGPBC_Info, &RG_numPBCMessages);
     
     
-
+    /**** check begins ****/
     // checks, aborting if checks fails
     int PG= vct->getParentGridNum();
     int localRank= vct->getCartesian_rank();
@@ -1249,13 +1326,21 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       }
       
     }
+    /**** check ends ****/
 
-    // here i should decide wether i want to instantiate vectors to receive particles, or create them on the spot; also, vectors to store particle while processing them
-
+    // now i can instantiate the vector for receiving PBC (but only if i will be receivinv PBC msgs)
+    if (RG_numPBCMessages>0){
+      PRGMsg= newArr2(RepP_struct, RG_numPBCMessages, sizePBCMsg);
+      nopPRGMsg= new int[RG_numPBCMessages];
+      PRGMsgArrived= new bool [RG_numPBCMessages];
+      PRGMsg_General= new RepP_struct[sizePBCMsg];
+    }
   } // end if (CommToParent_P != MPI_COMM_NULL) { 
 
 
-  if (CommToParent_P != MPI_COMM_NULL) { // meaning: you are a child AND you want to receive PBC
+  // you are a child grid which wants to receive BC;
+  // all cores have to do this, even if RG_numPBCMessages== 0
+  if (CommToParent_P != MPI_COMM_NULL) {
     int TAG_1b1c= ns;
     // phase 1b: all RG cores (but itself) send their msgs to highest ranking core 
     if (rank_local < HighestRank){
@@ -1339,6 +1424,8 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 	cout << "R " << rankAsChild << " on thr PC communicator has just sent a msg to core " << cg << endl; 
       }
 
+      delete[]RGPBC_Info_LevelWide;
+      
       delete[]RGPBC_Info_ToCGCore;
       delete[]RG_numPBCMessages_ToCGCore;
       
@@ -1382,23 +1469,25 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       }
 
     } // end if (vct->getCommToChild_P()!= MPI_COMM_NULL)
-    
-    // allocate CG vectors
 
     delete[]CG_buffer;
     
   } // end for (int ch=0; ch< numChildren; ch++)
 
+  // coarse grids allocate vectors
   if (numChildren>0){
     MaxNumMsg=0;
     for (int i=0; i< numChildren; i++){
       if (CG_numPBCMessages[i]> MaxNumMsg) MaxNumMsg= CG_numPBCMessages[i];
     }
     
-    PCGMsg= newArr3(RepP_struct, numChildren, MaxNumMsg, sizePCGMsg);
-    nopPCMsg = newArr2(int, numChildren, MaxNumMsg);
-    cout << "Grid " << numGrid << " core " << vct->getCartesian_rank() << " nopPCMsg has sizes " << numChildren << " x " <<MaxNumMsg << endl;  
-  }
+    if (MaxNumMsg >0){ // otherwise, i am not sending PBC and i don't need to allocate
+      PCGMsg= newArr3(RepP_struct, numChildren, MaxNumMsg, sizePBCMsg);
+      nopPCGMsg = newArr2(int, numChildren, MaxNumMsg);
+      cout << "Grid " << numGrid << " core " << vct->getCartesian_rank() << " nopPCGMsg has sizes " << numChildren << " x " <<MaxNumMsg << endl;  
+    }
+  } // end if (numChildren>0){
+
 }
 
 /** commit the RGPBC structure for initial handshake between coarse and refined grids **/
@@ -1524,13 +1613,9 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(2)==0 && vct->getZleft_neighbor_P()== MPI_PROC_NULL && DIR_2){
 
     FACE= "BOTTOM";
-    /*i_s= 0; i_e= nxn-1;
-    j_s= 0; j_e= nyn-1;
-    k_s= 0; k_e= PRA_ZLeft;*/
-    // 
     i_s= 0-1; i_e= nxn-1+1;
     j_s= 0-1; j_e= nyn-1+1;
-    k_s= 0-1; k_e= PRA_ZLeft+1;
+    k_s= PRA_ZLeft_Start-1; k_e= PRA_ZLeft_End+1;
 
     Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
     cout <<"FACE " << FACE << endl;
@@ -1540,12 +1625,9 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(2) ==ZLEN-1 && vct->getZright_neighbor_P() == MPI_PROC_NULL && DIR_2){
     
     FACE= "TOP";
-    /*i_s=0; i_e= nxn-1;
-    j_s=0; j_e= nyn-1;
-    k_s= nzn-1-PRA_ZRight; k_e= nzn-1;*/
     i_s=0-1; i_e= nxn-1+1;
     j_s=0-1; j_e= nyn-1+1;
-    k_s= nzn-1-PRA_ZRight-1; k_e= nzn-1+1;
+    k_s= PRA_ZRight_Start-1; k_e= PRA_ZRight_End +1;
 
     Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
     cout<<"FACE " << FACE << endl;
@@ -1555,10 +1637,7 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(0) ==0  && vct->getXleft_neighbor_P() == MPI_PROC_NULL && DIR_0){
 
     FACE= "LEFT";
-    /*i_s= 0; i_e= PRA_XLeft;
-    j_s= 0; j_e= nyn-1;
-    k_s= 0; k_e= nzn-1;*/
-    i_s= 0-1; i_e= PRA_XLeft+1;
+    i_s= PRA_XLeft_Start-1; i_e= PRA_XLeft_End +1;
     j_s= 0-1; j_e= nyn-1+1;
     k_s= 0-1; k_e= nzn-1+1;
 
@@ -1570,10 +1649,7 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(0) ==XLEN-1 && vct->getXright_neighbor_P() == MPI_PROC_NULL && DIR_0){
 
     FACE= "RIGHT";
-    /*i_s= nxn-1-PRA_XRight; i_e= nxn-1;
-    j_s= 0; j_e= nyn-1;
-    k_s= 0; k_e= nzn-1;*/
-    i_s= nxn-1-PRA_XRight-1; i_e= nxn-1+1;
+    i_s= PRA_XRight_Start-1; i_e= PRA_XRight_End+1;
     j_s= 0-1; j_e= nyn-1+1;
     k_s= 0-1; k_e= nzn-1+1;
 
@@ -1585,11 +1661,8 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(1) ==0 && vct->getYleft_neighbor_P() == MPI_PROC_NULL && DIR_1){ 
 
     FACE= "FRONT";
-    /*i_s= 0; i_e= nxn-1;
-    j_s= 0; j_e= PRA_YLeft;
-    k_s= 0; k_e= nzn-1;*/
     i_s= 0-1; i_e= nxn-1+1;
-    j_s= 0-1; j_e= PRA_YLeft+1;
+    j_s= PRA_YLeft_Start-1; j_e= PRA_YLeft_End+1;
     k_s= 0-1; k_e= nzn-1+1;
 
     Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
@@ -1600,11 +1673,8 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(1) == YLEN-1 && vct->getYright_neighbor_P() == MPI_PROC_NULL && DIR_1){
 
     FACE= "BACK";
-    /*i_s= 0; i_e= nxn-1;
-    j_s= nyn-1-PRA_YRight; j_e= nyn-1;
-    k_s= 0; k_e= nzn-1;*/
     i_s= 0-1; i_e= nxn-1+1;
-    j_s= nyn-1-PRA_YRight-1; j_e= nyn-1+1;
+    j_s= PRA_YRight_Start-1; j_e= PRA_XRight_End+1;
     k_s= 0-1; k_e= nzn-1+1;
     
     Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
@@ -1781,15 +1851,108 @@ void Particles3Dcomm::Assign_RGBC_struct_Values(RGPBC_struct *s, int np_x_tmp, i
 void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
   if (numChildren==0) return;
 
-  for (int ch=0; ch < numChildren; ch++){
-    if (vct->getCommToChild_P(ch) != MPI_COMM_NULL){ // this child wants PBC
-      buildPBCMsg(grid, vct, ch);
-    }
-  }
-  // now send; send an extra msg for the -1
+  MPI_Request request;
+  MPI_Status status;
   
-  //...
+  for (int ch=0; ch < numChildren; ch++){
+    if (vct->getCommToChild_P(ch) != MPI_COMM_NULL and CG_numPBCMessages[ch]>0){ // this child wants PBC and this core participates
+
+      // build all the PBC msgs that this core has to send 
+      buildPBCMsg(grid, vct, ch);
+
+      // now send; send an extra msg to signal the end of the meaningful part
+      // cycle on all the msgs this core has to send
+      for (int m=0; m< CG_numPBCMessages[ch]; m++){
+	int dest= CG_Info[ch][m].RG_core;
+	int tag= CG_Info[ch][m].MsgID;
+
+	MPI_Isend(PCGMsg[ch][m], nopPCGMsg[ch][m]+1, MPI_RepP_struct, dest, tag, vct->getCommToChild_P(ch), &request );
+	MPI_Wait(&request, &status);
+
+	//MPI_Send(PCGMsg[ch][m], nopPCGMsg[ch][m]+1, MPI_RepP_struct, dest, tag, vct->getCommToChild_P(ch) );
+	//cout << "Grid "  << numGrid << " rank " << vct->getRank_CommToChildren_P(ch) << "on PC comm has sent one PBC, " << nopPCGMsg[ch][m] <<" particles +1, to RG core " << dest << endl; 
+      } // end for (int m=0; m< CG_numPBCMessages[ch]; m++)
+
+    } //  if (vct->getCommToChild_P(ch) != MPI_COMM_NULL){ /
+  } // end for (int ch=0; ch < numChildren; ch++){ 
+
+  MPI_Barrier(vct->getComm());
+  int RR= vct->getCartesian_rank();
+  if (RR==0)
+  cout << "Grid " << numGrid << " has finished sending PBC ns  " <<ns << endl;
+  
   return;
+}
+
+/* RG receives PBC msg and acts accordingly */
+void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct){
+  
+  /* this method is at the moment particularly inefficient to catch eventual bugs_
+     improve after some testing */
+
+  int RR= vct->getCartesian_rank();
+ 
+  // first, check if if i am a child and if i want to receive PBC
+  // if not, exits
+  if (vct->getCommToParent_P()!= MPI_COMM_NULL and RG_numPBCMessages >0){
+
+    for (int i=0; i<RG_numPBCMessages; i++ ){
+      PRGMsgArrived[i]= false;
+      nopPRGMsg[i]=0;
+    }
+    
+    MPI_Status status;
+    
+    int count, src, MsgID;;
+    for (int i=0; i< RG_numPBCMessages; i++){
+      MPI_Recv(PRGMsg_General, sizePBCMsg, MPI_RepP_struct, MPI_ANY_SOURCE, MPI_ANY_TAG, vct->getCommToParent_P(), &status);
+      MPI_Get_count( &status, MPI_RepP_struct, &count );
+      
+      //cout << "Received msg " << i << " of " << RG_numPBCMessages << endl;
+      cout << "Core "<< vct->getRank_CommToParent_P() << " has received one PBC msg from core " << status.MPI_SOURCE << endl;
+
+      // match the message to the RG_info
+      src= status.MPI_SOURCE;
+      MsgID= status.MPI_TAG;
+      //cout << "src: " << src <<" MsgID: " << MsgID << endl;
+      bool found= false;
+      /*for (int mm=0; mm< RG_numPBCMessages; mm++){
+	if (MsgID == RGPBC_Info[mm].MsgID and src == RGPBC_Info[mm].CG_core and PRGMsgArrived[mm]== false){ // message matched
+	  // update the PRGMsgArrived 
+	  PRGMsgArrived[mm]=true;
+	  found= true;
+	  // update the structure
+	  //memcpy ( void * destination, const void * source, size_t num );
+	  memcpy(PRGMsg[mm], PRGMsg_General, count);
+	  break;
+	} // end msg matched
+
+      } // end for (int mm=0; mm< RG_numPBCMessages; mm++){
+      if (found== false){
+	cout << "In ReceivePBC, G" << numGrid <<"C" <<vct->getCartesian_rank() << " could not match a PBC msg from C" << src <<" (PC comm) with tag " << MsgID << ", aborting ..." << endl;
+	abort();
+	} */
+      
+    } // end for (int i=0; i< RG_numPBCMessages; i++){
+
+    // here, PBC have been successfully received
+    // now I have to apply them
+    
+    //ApplyPBC(vct);
+
+
+
+  } // end if (vct->getCommToParent_P()!= MPI_COMM_NULL and RG_numPBCMessages >0){
+
+  MPI_Barrier(vct->getComm());
+  if (RR==0) cout << "grid " << numGrid << " has finished receiving all PBC msgs, ns " << ns << endl;
+
+
+  /*MPI_Barrier(vct->getComm());
+  int RR= vct->getCartesian_rank();
+  if (RR==0)
+  cout << "Grid " << numGrid << " after barrier receiving PBC, species " <<ns << endl;*/
+  
 }
 
 void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
@@ -1802,13 +1965,15 @@ void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
   double dz= grid->getDz_mlmd(childNum);
 
   double x_min, x_max, y_min, y_max, z_min, z_max;
- 
-  // set number of particles to 0
-  for (int m=0; m< CG_numPBCMessages[ch]; m++){
-    nopPCMsg[ch][m]= 0;
-  }
   
   if (CG_numPBCMessages[ch]>0){ // this particular core has to send BC
+
+    // pre
+    for (int m=0; m< CG_numPBCMessages[ch]; m++){
+      nopPCGMsg[ch][m]= 0;
+    } 
+
+    // core
     for (int p=0; p<nop; p++){
       // here, i have to check all the msgs in else if, to make sure that I am sending 
       // this particular particle only to one core
@@ -1821,18 +1986,12 @@ void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
 	y_max= CG_Info[ch][n].CG_y_first+ dy*(CG_Info[ch][n].np_y-1);
 	z_min= CG_Info[ch][n].CG_z_first;
 	z_max= CG_Info[ch][n].CG_z_first+ dz*(CG_Info[ch][n].np_z-1);
-	
-	/*cout << "QUA" << endl;
-	cout <<"p " << p  << " x_min " << x_min << " x_max " << x_max << " x[p] " << x[p] << " xstart " << xstart << " xend "<< xend << endl;
-	cout <<"p " << p  << " y_min " << y_min << " y_max " << y_max << " y[p] " << y[p] << " ystart " << ystart << " yend "<< yend << endl;
-	cout <<"p " << p  << " z_min " << z_min << " z_max " << z_max << " z[p] " << z[p] << " zstart " << zstart << " zend "<< zend << endl;
-	cout << "End QUA" << endl;*/
 
 	if (x_min <= x[p] && x_max >= x[p] && y_min <= y[p] && y_max >= y[p] && z_min <= z[p] && z_max >= z[p]){ // to use for PBC
-	  cout << "adding " << p << " to " << n << endl;
+	  //cout << "adding " << p << " to " << n << endl;
 	  unsigned long ID;
 	  if (TrackParticleID) ID= ParticleID[p]; else ID=0;
-	  addP(PCGMsg[ch][n], &(nopPCMsg[ch][n]), x[p], y[p], z[p], u[p], v[p], w[p], q[p], ID, vct);
+	  addP(PCGMsg[ch][n], &(nopPCGMsg[ch][n]), x[p], y[p], z[p], u[p], v[p], w[p], q[p], ID, vct);
 	  break; // to make sure that a particle is added only to one msg
 	} 
 	
@@ -1841,20 +2000,17 @@ void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
       
       
     } // end for (int p=0; p<nop; p++){
+
+    // post
+    // the last one, to mark the end of the the meaningful part --> q=0.0 
+    for (int m=0; m< CG_numPBCMessages[ch]; m++ ){
+      PCGMsg[ch][m][nopPCGMsg[ch][m]].q= 0.0;
+
+      //cout << "Grid " << numGrid <<" core " << vct->getCartesian_rank() << " on the local grid communicator is sending " << nopPCGMsg[ch][m] << " particles as BC to grid " << childNum << " core " << CG_Info[ch][m].RG_core << " (msg " << m << " of " <<CG_numPBCMessages[ch] <<")" << endl; 
+      
+    }
+
   } // end f (CG_numPBCMessages[ch]>0){ // this particular core has to send BC   
-  
-  /*
-    // the last one, to mark the end of the the meaningful part --> q=0.0
-  for (int m=0; m< CG_numPBCMessages[ch]; m++ ){
-    //addP(PCGMsg[ch][m], &(nopPCMsg[ch][m]), -1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 0.0, 0, vct);
-    PCGMsg[ch][m][nopPCMsg[ch][m]].q= 0.0;
-  }
-  
-  for (int m=0; m< CG_numPBCMessages[ch]; m++){
-    cout << "Grid " << numGrid <<" core " << vct->getCartesian_rank() << " on the local grid communicator is sending " << nopPCMsg[ch][m] << " particles as BC to grid " << childNum << " core " << CG_Info[ch][m].RG_core << " (msg " << m << " of " <<CG_numPBCMessages[ch] <<")" << endl; 
-  }
-  */
-  
   
 }
 
@@ -1878,7 +2034,7 @@ void Particles3Dcomm::addP(RepP_struct * Vec, int *num, double x, double y, doub
   (*num)++;
   // cout << "adding P: after adding *num= " << *num << endl;
 
-  if (*num > sizePCGMsg){
+  if (*num > sizePBCMsg){
     // TO DO:RESIZE
     cout << "in addP, numGrid " << numGrid << " core " << vct->getCartesian_rank()  << " in the local grid communicator, you plan on passing too many particles as BC; IMPLEMENT RESIZE; aborting now..." << endl;
     abort();
@@ -1887,4 +2043,159 @@ void Particles3Dcomm::addP(RepP_struct * Vec, int *num, double x, double y, doub
 
 }
 
+void Particles3Dcomm::ApplyPBC(VirtualTopology3D* vct){
 
+  int RR= vct->getCartesian_rank();
+  cout << "R" << RR <<" G" << numGrid << ", nop before applying BC: " << nop <<endl;
+
+  for (int m=0; m< RG_numPBCMessages; m++){
+    int count =0; 
+    while (PRGMsg[m][count].q != 0.0){
+      SplitPBC(PRGMsg[m][count]);
+      count ++;
+    }
+    nopPRGMsg[m]= count;
+  } // end for (int m=0; m< RG_numPBCMessages; m++){
+
+  cout << "R" << RR <<" G" << numGrid << ", nop after applying BC: " << nop <<endl;
+}
+
+void Particles3Dcomm::MPI_Barrier_ParentChild(VirtualTopology3D* vct){
+
+  int RS= vct->getSystemWide_rank();
+  int RR= vct->getCartesian_rank();
+  int TOT= vct->getNprocs();
+
+  //cout <<"R" << RR <<"/" << TOT <<" G" <<numGrid << " before barrier vct->getCommToParent_P()" << endl;
+
+  if (vct->getCommToParent_P() != MPI_COMM_NULL)  MPI_Barrier(vct->getCommToParent_P());
+  /*if (RR==0)
+    cout << "Grid " << numGrid << " after barrier vct->getCommToParent_P()" << endl;
+  
+    cout <<"R" << RR <<"/" << TOT <<" G" <<numGrid << " after barrier vct->getCommToParent_P()" << endl;*/
+
+  for (int ch=0; ch< numChildren; ch++)
+    if (vct->getCommToChild_P(ch) != MPI_COMM_NULL)
+      MPI_Barrier(vct->getCommToChild_P(ch));
+
+  /*if (RR==0)
+    cout << "Grid " << numGrid << " after barrier vct->getCommToChild_P(ch)" << endl;
+    cout <<"R" <<RR <<"/" << TOT << " G" <<numGrid << " after barrier vct->getCommToParent_P()" << endl;*/
+
+  if (RS==0)
+    cout << "Everybody at the end of particles3Dcomm::MPI_Barrier_ParentChild, ns " << ns << endl;
+}
+
+void Particles3Dcomm::CheckSentReceivedParticles(VirtualTopology3D* vct){
+
+  int RR= vct->getCartesian_rank();
+
+  // RG Side
+  int RGPPerCore=0;
+  int RGPGridWide=0;
+  if (vct->getCommToParent_P() != MPI_COMM_NULL){
+    for (int m=0; m<RG_numPBCMessages; m++){
+      RGPPerCore+= nopPRGMsg[m];
+    }
+    // MPI_Allreduce
+    MPI_Allreduce(&RGPPerCore, &RGPGridWide, 1, MPI_INT, MPI_SUM, vct->getComm());
+
+    if (RR==0){
+      cout << "Grid "<< numGrid << " received " << RGPGridWide << " particles ns " << ns << " from grid " << vct->getParentGridNum()<< endl;
+    }
+  }
+  // CG Side
+  int * CGPPerCore= new int[numChildren];
+  int * CGPGridWide= new int[numChildren];
+  for (int ch=0; ch< numChildren; ch++){
+    CGPPerCore[ch]=0;
+    if (vct->getCommToChild_P(ch) != MPI_COMM_NULL){
+      for (int m=0; m< CG_numPBCMessages[m]; m++){
+	CGPPerCore[m] += nopPCGMsg[ch][m];
+      } // end for (int m=0; m< CG_numPBCMessages[m]; m++)
+      // MPI_Allreduce
+      MPI_Allreduce(&(CGPPerCore[ch]), &(CGPGridWide[ch]), 1, MPI_INT, MPI_SUM, vct->getComm());
+     
+      if (RR==0){
+	cout << "Grid "<< numGrid << " sent " << CGPGridWide[ch] << " particles ns " << ns << " to grid " << vct->getChildGridNum(ch)<< endl;
+      }
+    } // end if (vct->getCommToChild_P(ch) != MPI_COMM_NULL)
+  } // end for (int ch=0; ch< numChildren; ch++)
+
+  delete[]CGPPerCore;
+  delete[]CGPGridWide;
+}
+
+void Particles3Dcomm::SplitPBC(RepP_struct p){
+}
+
+void Particles3Dcomm::CheckAfterInitWeightPBC(VirtualTopology3D * vct){
+  // check if number of msgs sent and receive from the grids correspond
+  int RR= vct->getCartesian_rank();
+
+  MPI_Barrier_ParentChild(vct);
+  if (RR==0)
+    cout << "CheckAfterInitWeightPBC: " << numGrid <<" after the initial PC barrier " << endl;
+  
+
+  // RG Side
+  int RGMsgGW=0;
+  if (vct->getCommToParent_P() != MPI_COMM_NULL){
+
+    // MPI_Allreduce
+    MPI_Allreduce(&RG_numPBCMessages, &RGMsgGW, 1, MPI_INT, MPI_SUM, vct->getComm());
+
+    if (RR==0){
+      cout << "Grid "<< numGrid << " must receive " << RGMsgGW  << " PBC msgs ns " << ns << " from grid " << vct->getParentGridNum()<< endl;
+    }
+  }
+  // CG Side
+  int * CGMsgGW= new int[numChildren];
+  for (int ch=0; ch< numChildren; ch++){
+    CGMsgGW[ch]=0;
+    if (vct->getCommToChild_P(ch) != MPI_COMM_NULL){
+     
+      // MPI_Allreduce
+      MPI_Allreduce(&(CG_numPBCMessages[ch] ), &(CGMsgGW[ch]), 1, MPI_INT, MPI_SUM, vct->getComm());
+     
+      if (RR==0){
+	cout << "Grid "<< numGrid << " must send " << CGMsgGW[ch] << " PBC msgs ns " << ns << " to grid " << vct->getChildGridNum(ch)<< endl;
+      }
+    } // end if (vct->getCommToChild_P(ch) != MPI_COMM_NULL)
+  } // end for (int ch=0; ch< numChildren; ch++)
+
+  MPI_Status status;
+  // compare the values in the two grids
+  // RG sends info to CG
+  if (vct->getCommToParent_P() != MPI_COMM_NULL and RR==0){
+    MPI_Send(&RGMsgGW, 1, MPI_INT, 0, 6, vct->getCommToParent_P());
+    cout << numGrid<< " RGMsgGW: " << RGMsgGW << endl;
+  }
+  // CG receives and check
+  int *recvFromRG= new int[numChildren];
+  for (int ch=0; ch < numChildren; ch++){
+    if (vct->getCommToChild_P(ch) != MPI_COMM_NULL and RR==0){
+      MPI_Recv(&(recvFromRG[ch]), 1, MPI_INT, vct->getXLEN()*vct->getYLEN()*vct->getZLEN(), 6, vct->getCommToChild_P(ch), &status);
+      cout << numGrid << " receives " << recvFromRG[ch] <<endl;
+    }
+  }
+
+  for (int i=0; i<numChildren; i++){
+    if (vct->getCommToChild_P(i) != MPI_COMM_NULL and RR==0){
+      if (recvFromRG[i] != CGMsgGW[i]){
+	cout << "WARNING: Grid " << numGrid << " there is a mismatch between PBC sent/ received to child grid "<<vct->getChildGridNum(i)  << endl;
+	cout << numGrid <<" sends " << CGMsgGW[i] << " , child wants to receive " << recvFromRG[i] << endl;
+      }
+      else{
+	cout << numGrid << " and its child "<<vct->getChildGridNum(i) << " exchange " << recvFromRG[i] << " msgs" << endl;
+      }
+    }
+  }
+
+  delete[]CGMsgGW;
+  delete[]recvFromRG;
+
+  MPI_Barrier_ParentChild(vct);
+  if (RR==0)
+    cout << "CheckAfterInitWeightPBC:" << numGrid <<" after the final PC barrier " << endl;
+}

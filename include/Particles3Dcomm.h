@@ -234,6 +234,8 @@ public:
   void Write_vDist3D(string SaveDirName);
   /* initialise the structures for particle BC exchnage */
   void initWeightPBC(Grid * grid, VirtualTopology3D * ptVCT);
+  /* some checks after initWeightPBC - comment for production runs */
+  void CheckAfterInitWeightPBC(VirtualTopology3D * ptVCT);
   /* Phase 1: RG cores build their side of the map for PBC */
   void initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, RGPBC_struct* RGPBC_Info, int *RG_numPBCMessages);   
   /* commit the structure created for initial CG/RG handshake as MPI_Datatype*/
@@ -246,11 +248,20 @@ public:
   void Assign_RGBC_struct_Values(RGPBC_struct *s, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int MsgID_tmp);
   /* build and send particle BC msg -- CG to RG */
   void SendPBC(Grid* grid, VirtualTopology3D * vct);
+  /* RG receives PBC msg and acts accordingly */
+  void ReceivePBC(Grid* grid, VirtualTopology3D * vct);
   /* prepares P BC msg to the refined grid */
   void buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch);
   /* add a particle to the PBC msg */
   void addP(RepP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, VirtualTopology3D* vct);
-
+  /* ApplyPBC: RG, after receiving PBC, applies them */
+  void ApplyPBC(VirtualTopology3D* vct);
+  /* split a particle received form the CG into RG particles */
+  void SplitPBC(RepP_struct p);
+  /* a barrier on both parent and child side of the particle communicator, to prevent messages for different particle speciesfrom crossing */
+  void MPI_Barrier_ParentChild(VirtualTopology3D* vct);
+  /* check number of particle sent/ received from each grid */
+  void CheckSentReceivedParticles(VirtualTopology3D* vct);
 protected:
   /** number of species */
   /*! comment: the number of THIS species, not the total number of particle species */
@@ -422,7 +433,6 @@ protected:
   /*! number of the current grid in the mlmd hierarchy */
   int numGrid;
   /* CG SIDE */
-
   /*! number of children */
   int numChildren;
   /* msg receiving structure */
@@ -430,17 +440,21 @@ protected:
   /* num of msg per child */
   int *CG_numPBCMessages;
   /* struct hosting info on particles to send to the RG 
-     [number of children][MaxNumMsg][sizePCGMsg] */
+     [number of children][MaxNumMsg][sizePBCMsg] */
   RepP_struct *** PCGMsg;
   int MaxNumMsg;
   /* number of particles to send to each child core
      [number of children][MaxNumMsg] */
-  int ** nopPCMsg;
-  /* size of the vector -- can be resized up to MAXsizePCMsg -- value set in initWeightPBC */
-  int sizePCGMsg;
-  /* resizing up to here -- value set in initWeightPBC*/
-  int MAXsizePCMsg;
+  int ** nopPCGMsg;
   /* END CG SIDE */
+  /* BOTH SIDES */
+  /* size of the vector -- can be resized up to MAXsizePCMsg -- value set in initWeightPBC 
+     same for RG and CG side */
+  int sizePBCMsg;
+  /* resizing up to here -- value set in initWeightPBC
+     same for RG and CG side */
+  int MAXsizePBCMsg;
+  /* END BOTH SIDES */
   /* RG SIDE */
   /* number of PBC Msgs to receive, as a child */
   int RG_numPBCMessages;
@@ -454,14 +468,48 @@ protected:
   int MAX_RG_numPBCMessages;
   /* intermediate, for handshake ops */
   int MAX_RG_numPBCMessages_LevelWide;
+  /* struct hosting particles received from the RG (here, they are not split yet)
+     [RG_numPBCMessages][sizePCMsg]*/
+  RepP_struct ** PRGMsg;
+  /* number of particles received as part of each msg
+     [RG_numPBCMessages] */
+  int * nopPRGMsg;
+  /* debug structure to verify if all PBC msg arrived 
+     here, put a 'true' in the line corresponding to a particular msg if it arrived */
+  bool * PRGMsgArrived;
+  /* general buffer to receive particles BC; before putting them in the proper slot in PRGMsg
+     [sizePCMsg]*/
+  RepP_struct* PRGMsg_General;
   /* END RG SIDE */
-  /* number of boundary cells to repopulate in the different directions */
-  int PRA_XLeft;
-  int PRA_XRight;
-  int PRA_YLeft;
-  int PRA_YRight;
-  int PRA_ZLeft;
-  int PRA_ZRight;
+
+  /* Index (NOT coordinates, not number of cells) at which PRA starts / ends 
+     set in allocate */
+  int PRA_XLeft_Start;
+  int PRA_XLeft_End;
+  int PRA_XRight_Start;
+  int PRA_XRight_End;
+  int PRA_YLeft_Start;
+  int PRA_YLeft_End;
+  int PRA_YRight_Start;
+  int PRA_YRight_End;
+  int PRA_ZLeft_Start;
+  int PRA_ZLeft_End;
+  int PRA_ZRight_Start;
+  int PRA_ZRight_End;
+
+  /* corresponding coordinates */
+  double Coord_XLeft_Start;
+  double Coord_XLeft_End;
+  double Coord_XRight_Start;
+  double Coord_XRight_End;
+  double Coord_YLeft_Start;
+  double Coord_YLeft_End;
+  double Coord_YRight_Start;
+  double Coord_YRight_End;
+  double Coord_ZLeft_Start;
+  double Coord_ZLeft_End;
+  double Coord_ZRight_Start;
+  double Coord_ZRight_End;
 
   /* MPI Datatype associated to RGPBC_struct; init in MPI_RGBC_struct_commit  */
   MPI_Datatype MPI_RGPBC_struct;

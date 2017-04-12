@@ -55,6 +55,7 @@ void BCpart(double *x, double *u, double Lx, double ut, int bcFaceXright, int bc
   <li>bc = 2 riemission     </li>
   </ul>*/
 void BCpart(double *x, double *u, double *v, double *w, double Lx, double ut, double vt, double wt, int bcFaceXright, int bcFaceXleft) {
+
   if (*x > Lx) {
     switch (bcFaceXright) {
       case 1:                  // perfect mirror

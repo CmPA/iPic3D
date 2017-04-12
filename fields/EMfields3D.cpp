@@ -4226,7 +4226,56 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
      // this used when receiving
      RGMsg= new double[RG_MaxMsgSize *NumF];
 
+     /**** check starts ****/
+     // before proceeding, a check with the possibility of aborting if the check is failed
+     int PG= vct->getParentGridNum();
+     int localRank= vct->getCartesian_rank();
+     double xmin, xmax, ymin, ymax, zmin, zmax;
+     double MsgLimsXMin, MsgLimsXMax, MsgLimsYMin, MsgLimsYMax, MsgLimsZMin, MsgLimsZMax;
+     // check on ghost
+     for (int i=0; i< RG_numBCMessages_Ghost; i++){
+       int CG= RGBC_Info_Ghost[i].CG_core;
+       
+       MsgLimsXMin= RGBC_Info_Ghost[i].CG_x_first;
+       MsgLimsXMax= RGBC_Info_Ghost[i].CG_x_first+ dx*(RGBC_Info_Ghost[i].np_x-1);
 
+       MsgLimsYMin= RGBC_Info_Ghost[i].CG_y_first;
+       MsgLimsYMax= RGBC_Info_Ghost[i].CG_y_first+ dy*(RGBC_Info_Ghost[i].np_y-1);
+
+       MsgLimsZMin= RGBC_Info_Ghost[i].CG_z_first;
+       MsgLimsZMax= RGBC_Info_Ghost[i].CG_z_first+ dz*(RGBC_Info_Ghost[i].np_z-1);
+
+       grid->getParentLimits(vct, CG, &xmin, &xmax, &ymin, &ymax, &zmin, &zmax);
+
+       if (MsgLimsXMin < xmin or MsgLimsXMax > xmax or MsgLimsYMin < ymin or MsgLimsYMax > ymax or MsgLimsZMin < zmin or MsgLimsZMax > zmax){
+	 cout <<"G" <<numGrid <<"R" << localRank <<" Msg " << i << " we have a problem in initWeightBC, ghost BC, aborting ... " << endl;
+	 abort();
+       }
+     } // for (int i=0; i< RG_numBCMessages_Ghost; i++)
+
+     // check on active
+     for (int i=0; i< RG_numBCMessages_Active; i++){
+       int CG= RGBC_Info_Active[i].CG_core;
+       
+       MsgLimsXMin= RGBC_Info_Active[i].CG_x_first;
+       MsgLimsXMax= RGBC_Info_Active[i].CG_x_first+ dx*(RGBC_Info_Active[i].np_x-1);
+
+       MsgLimsYMin= RGBC_Info_Active[i].CG_y_first;
+       MsgLimsYMax= RGBC_Info_Active[i].CG_y_first+ dy*(RGBC_Info_Active[i].np_y-1);
+
+       MsgLimsZMin= RGBC_Info_Active[i].CG_z_first;
+       MsgLimsZMax= RGBC_Info_Active[i].CG_z_first+ dz*(RGBC_Info_Active[i].np_z-1);
+
+       grid->getParentLimits(vct, CG, &xmin, &xmax, &ymin, &ymax, &zmin, &zmax);
+
+       if (MsgLimsXMin < xmin or MsgLimsXMax > xmax or MsgLimsYMin < ymin or MsgLimsYMax > ymax or MsgLimsZMin < zmin or MsgLimsZMax > zmax){
+	 cout <<"G" <<numGrid <<"R" << localRank <<" Msg " << i << " we have a problem in initWeightBC, active BC, aborting ... " << endl;
+	 abort();
+       }
+     }
+
+
+     /**** check ends ****/
    } // end if (numGrid>0)
    /* end phase 1 */
 
@@ -4386,10 +4435,10 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
     delete[] RGBC_Info_Active_LevelWide;
   }
 
-  MPI_Barrier (MPI_COMM_WORLD);
+  /*MPI_Barrier (MPI_COMM_WORLD);
   if (vct->getSystemWide_rank()==0){
      cout << "At the end of initWeightBC" << endl;
-   }
+     }*/
 }
 
 /* mlmd test functions */
@@ -5540,7 +5589,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 
       if (RGBC_Info_Active[i].MsgID == status.MPI_TAG ){ // NB: the tag gives you the msg position in the BC vector
 	
-	cout << "R" << vct->getSystemWide_rank() <<" R" << vct->getRank_CommToParent() <<" on PC communicator, has received and matchedActive msg from " << status.MPI_SOURCE <<" with size " <<count << " and tag " <<status.MPI_TAG <<endl;
+	//cout << "R" << vct->getSystemWide_rank() <<" R" << vct->getRank_CommToParent() <<" on PC communicator, has received and matchedActive msg from " << status.MPI_SOURCE <<" with size " <<count << " and tag " <<status.MPI_TAG <<endl;
 
 	found= true;
 	  
@@ -5614,7 +5663,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 	
 	found= true;
 
-	cout << "R" << vct->getSystemWide_rank() <<" R" << vct->getRank_CommToParent() <<" on PC communicator, has received and matched Ghost msg from " << status.MPI_SOURCE <<" with size " <<count << " and tag " <<status.MPI_TAG <<endl;
+	//cout << "R" << vct->getSystemWide_rank() <<" R" << vct->getRank_CommToParent() <<" on PC communicator, has received and matched Ghost msg from " << status.MPI_SOURCE <<" with size " <<count << " and tag " <<status.MPI_TAG <<endl;
 	  
 	countExp= RGBC_Info_Ghost[i].np_x*RGBC_Info_Ghost[i].np_y*RGBC_Info_Ghost[i].np_z  ;
 
@@ -5677,9 +5726,9 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 	sumDiffExth+= ( fabs(Ezth_Ghost_BC[i][j] )  -  fabs(Ezth_Active_BC[i][j] ));
       }
 
-      cout << "Top/ bottom msg: sumDiffExth = " << sumDiffExth << " (should be 0 with LW)" << endl;
+      /*cout << "Top/ bottom msg: sumDiffExth = " << sumDiffExth << " (should be 0 with LW)" << endl;
       cout << "Top/ bottom msg: sumDiffEyth = "<< sumDiffEyth << " (should be 0 with LW)" << endl;
-      cout << "Top/ bottom msg: sumDiffEzth = "<< sumDiffEzth << " (should be 0 with LW)" << endl;
+      cout << "Top/ bottom msg: sumDiffEzth = "<< sumDiffEzth << " (should be 0 with LW)" << endl;*/
     }
   }
 
@@ -6110,4 +6159,28 @@ void EMfields3D::sendOneBC(VirtualTopology3D * vct, Grid * grid,  RGBC_struct CG
 
   return;
 
+}
+
+void EMfields3D::MPI_Barrier_ParentChild(VirtualTopology3D* vct){
+
+  int RS= vct->getSystemWide_rank();
+  int RR= vct->getCartesian_rank();
+  int TOT= vct->getNprocs();
+
+  /*if (RR==0){
+    cout << "Grid " <<numGrid << " before MPI_Barrier_ParentChild- fields" << endl;
+    }*/
+
+  if (vct->getCommToParent() != MPI_COMM_NULL)  MPI_Barrier(vct->getCommToParent());
+
+  for (int ch=0; ch< numChildren; ch++)
+    if (vct->getCommToChild(ch) != MPI_COMM_NULL)
+      MPI_Barrier(vct->getCommToChild(ch));
+
+  /*if (RR==0){
+    cout << "Grid " <<numGrid << " at the end of MPI_Barrier_ParentChild- fields" << endl;
+    }*/
+
+  if (RS==0)
+    cout << "Everybody at the end of EMfields3D::MPI_Barrier_ParentChild" << endl;
 }

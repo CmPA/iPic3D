@@ -583,8 +583,8 @@ class EMfields3D                // :public Field
        which: active or ghost */
     void sendOneBC(VirtualTopology3D * vct, Grid * grid,  RGBC_struct CG_Info, int ch, int which);
     /* end mlmd: BC related functions */
-
-    
+    /* a barrier on both parent and child side of the field communicator, to prevent messages from crossing */
+    void MPI_Barrier_ParentChild(VirtualTopology3D* vct);    
 
     /*! end mlmd specific functions */
     /* ********************************* // VARIABLES ********************************* */

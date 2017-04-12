@@ -1004,6 +1004,7 @@ Collective::Collective(int argc, char **argv) {
     npcel[i] = npcelx[i] * npcely[i] * npcelz[i];
     np[i] = npcel[i] * (nxc/XLEN_mlmd[numGrid_clt]) * (nyc/YLEN_mlmd[numGrid_clt]) * (nzc/ZLEN_mlmd[numGrid_clt]);
     npMax[i] = (long) (NpMaxNpRatio * np[i]);
+    
   }
 
   /*! building the list of the children grids */

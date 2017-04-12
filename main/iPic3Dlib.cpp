@@ -166,8 +166,10 @@ int c_Solver::Init(int argc, char **argv) {
   }
 
   if (MLMD_ParticleREPOPULATION)
-    for (int i=0; i< ns; i++ )
+    for (int i=0; i< ns; i++ ){
       part[i].initWeightPBC(grid, vct);
+      part[i].CheckAfterInitWeightPBC(vct);
+    }
 
   num_grid_STR << numGrid;  //mlmd  
   num_proc << myrank; // mlmd: @grid level 
@@ -251,6 +253,16 @@ int c_Solver::Init(int argc, char **argv) {
 
   my_clock = new Timing(myrank);
 
+  int RR= vct->getSystemWide_rank();
+  MPI_Barrier(MPI_COMM_WORLD);
+  
+  if (RR==0){
+    cout << "Init finished "<< endl;
+  }				   
+				
+
+
+
   return 0;
 }
 
@@ -296,12 +308,6 @@ void c_Solver::UpdateCycleInfo(int cycle) {
 
 }
 
-void c_Solver::SendBC(){
-  /* mlmd: BC */
-  if (MLMD_BC) {EMf->sendBC(grid, vct);}
-  /* end mlmd: BC */
-}
-
 void c_Solver::CalculateField() {
 
   // timeTasks.resetCycle();
@@ -317,6 +323,7 @@ void c_Solver::CalculateField() {
   // timeTasks.end(TimeTasks::MOMENTS);
 
   /* mlmd: BC */
+  // receive BC on En+theta, Bn 
   if (MLMD_BC) {EMf->receiveBC(grid, vct);}
   /* end mlmd: BC */
 
@@ -328,6 +335,13 @@ void c_Solver::CalculateField() {
     EMf->calculateE(grid, vct, col);               // calculate the E field
   #endif
   // timeTasks.end(TimeTasks::FIELDS);
+
+  /* mlmd: BC */
+  // send BC on En+theta, Bn 
+  if (MLMD_BC) {EMf->sendBC(grid, vct);}
+  /* end mlmd: BC */
+
+  if (MLMD_BC) EMf->MPI_Barrier_ParentChild(vct);
 
   /* some mlmd debug */
   /*MPI_Comm localComm= vct->getCommGrid();
@@ -357,6 +371,7 @@ void c_Solver::CalculateBField() {
 
   // print out total time for all tasks
   // timeTasks.print_cycle_times();
+
 }
 
 bool c_Solver::ParticlesMover() {
@@ -400,10 +415,23 @@ bool c_Solver::ParticlesMover() {
   }
 
   // CG sends PBC
-  
+  int RR= vct->getCartesian_rank();   
   if (MLMD_ParticleREPOPULATION){
     for (int i = 0; i < ns; i++){
       part[i].SendPBC(grid, vct);
+      //part[i].MPI_Barrier_ParentChild(vct);
+      part[i].ReceivePBC(grid, vct);
+      //part[i].MPI_Barrier_ParentChild(vct);
+      // to prevent PBC msg from different species to cross 
+
+      if (RR==0)
+	cout << "Grid "<<numGrid << " at the end of MLMD PBC ops, before PC barrier,  ns " << i <<endl;
+
+      part[i].MPI_Barrier_ParentChild(vct);
+      //part[i].CheckSentReceivedParticles(vct);
+
+      if (RR==0)
+	cout << "Grid "<<numGrid << " at the end of MLMD PBC ops, afyer PC barrier, ns " << i <<endl;
     }
   }
 

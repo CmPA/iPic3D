@@ -114,6 +114,7 @@ public:
 
   virtual int getSystemWide_rank()=0;
   virtual int getRank_CommToParent()=0;
+  virtual int getRank_CommToParent_P()=0;
 
   virtual int getParentGridNum()=0;
   virtual int getChildGridNum(int n) =0;

@@ -307,7 +307,11 @@ private:
   /* communicator to children */
   MPI_Comm *CommToChildren;
 
-  /* communicator to parent -- for Particles */
+  /* communicator to parent -- for Particles 
+     != from MPI_COMM_NULL if the grid is a child which wants to receive PBC
+     but it's != MPI_COMM_NULL also if this particular core does not need to receive msg-
+     check RG_numPBCMessages also */
+  
   MPI_Comm CommToParent_P;
 
   /* communicator to children -- for Particles*/

@@ -41,8 +41,6 @@ int main(int argc, char **argv) {
 
     if (!b_err) KCode.CalculateBField();
 
-    KCode.SendBC();
-
     if (!b_err) KCode.GatherMoments();
 
     if ( b_err) i = KCode.LastCycle() + 1;
