@@ -45,9 +45,9 @@ int c_Solver::Init(int argc, char **argv) {
 
   vct->setup_vctopology(MPI_COMM_WORLD, col);
 
-  if (MlmdVerbose){
+  /*if (MlmdVerbose){
     vct->testMlmdCommunicators();
-  }
+    }*/
 
   nprocs = vct->getNprocs();  // @gridLevel
   myrank = vct->getCartesian_rank(); // @gridLevel
@@ -164,6 +164,7 @@ int c_Solver::Init(int argc, char **argv) {
   if (MLMD_ParticleREPOPULATION)
     for (int i=0; i< ns; i++ ){
       part[i].initWeightPBC(grid, vct);
+      // comment during production
       part[i].CheckAfterInitWeightPBC(vct);
     }
 
@@ -401,6 +402,9 @@ bool c_Solver::ParticlesMover() {
     for (int i = 0; i < ns; i++){
       part[i].SendPBC(grid, vct);
       part[i].ReceivePBC(grid, vct);
+
+      // comment during production
+      part[i].CheckSentReceivedParticles(vct);
     }
   }
 

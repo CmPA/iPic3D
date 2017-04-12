@@ -238,8 +238,8 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
     cout << "A process is trown away from the new topology for Particles. VCtopology3D.h" << endl;
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (systemWide_rank==0) cout << "Before creating children" << endl;
+  /*MPI_Barrier(MPI_COMM_WORLD);
+    if (systemWide_rank==0) cout << "Before creating children" << endl;*/
 
   /*! end: this entire chunk is lifted from the non-mlmd version, with MPI_COMM_GRID instead of old_comm */
   /* end build cartesian communicators for the grids */
@@ -367,8 +367,8 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   /*! end tmp communicators array */
   
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  if (systemWide_rank==0) cout << "after creating children comm" << endl;
+  /*MPI_Barrier(MPI_COMM_WORLD);
+    if (systemWide_rank==0) cout << "after creating children comm" << endl;*/
 
   /* assign value to permanent variables */
   for (int ng=0; ng< Ngrids; ng++){

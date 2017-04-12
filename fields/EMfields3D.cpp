@@ -229,8 +229,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   // size message buffer on the max size
   int MaxGridCoreN= vct->getMaxGridCoreN(); // NB: this is only local
 
-  if (vct->getCartesian_rank() == 0)
-    cout << "In EMfields3D.cpp, grid " << numGrid << ", MaxGridCoreN is " << MaxGridCoreN << endl;
+  /*if (vct->getCartesian_rank() == 0)
+    cout << "In EMfields3D.cpp, grid " << numGrid << ", MaxGridCoreN is " << MaxGridCoreN << endl;*/
   
   MAX_RG_numBCMessages= (int) (MaxGridCoreN*6+1); // something smarter has to be done with this guy
   MAX_size_LevelWide= MAX_RG_numBCMessages* 4;
@@ -4119,7 +4119,7 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
 
  void EMfields3D::initWeightBC(Grid *grid, VirtualTopology3D *vct){
 
-   bool VerboseCheck= true;
+   bool VerboseCheck= false;
 
    /* what I am doing here
       phase 1: the refined grids calculates:
@@ -4909,19 +4909,13 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
       // build and commit each of these
       for (int NN=0; NN<Dir2_Ncores; NN++){
 	Assign_RGBC_struct_Values(RGBC_Info + (*RG_numBCMessages), Dir2_IndexFirstPointperC[NN], Dir1_IndexFirstPointperC[n], k_s, -1, Dir2_NPperC[NN], Dir1_NPperC[n], DNS, Dir2_SPXperC[NN], Dir2_SPYperC[NN], Dir2_SPZperC[NN], Dir2_rank[NN], rank_CTP, *RG_numBCMessages);
-
-
 	
-	cout << "R" <<rank_G << " NN " << NN  << "BOTTOM: which " << which << ", init ["  <<  Dir2_IndexFirstPointperC[NN] <<"-" << Dir1_IndexFirstPointperC[n] <<"-" << k_s << " # points [" <<Dir2_NPperC[NN] <<"-" <<Dir1_NPperC[n] <<"-" <<DNS <<   "]"<<endl;
-	
+	//cout << "R" <<rank_G << " NN " << NN  << "BOTTOM: which " << which << ", init ["  <<  Dir2_IndexFirstPointperC[NN] <<"-" << Dir1_IndexFirstPointperC[n] <<"-" << k_s << " # points [" <<Dir2_NPperC[NN] <<"-" <<Dir1_NPperC[n] <<"-" <<DNS <<   "]"<<endl;
 
 	(*RG_numBCMessages)++;
 
-
 	int tmp= Dir2_NPperC[NN] *Dir1_NPperC[n] ;
 	if (tmp > RG_MaxMsgSize) RG_MaxMsgSize= tmp;
-	  
-
       }
 
     } // end for (int n=0; n<Dir1_Ncores; n++)
