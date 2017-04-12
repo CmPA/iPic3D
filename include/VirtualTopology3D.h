@@ -103,25 +103,25 @@ public:
   /*! returns the communicator to the parent grid */
   virtual MPI_Comm getCommToParent() = 0;
   /*! returns the communicator to the parent grid for particles */
-  virtual MPI_Comm getCommToParent_P() = 0;
+  virtual MPI_Comm getCommToParent_P(int is) = 0;
   /*! returns the number of children of a grid */ 
   virtual int getNumChildren() =0;
   /* return the communicator to the child grid n in the mlmd hierarchy */
   // for fields
   virtual MPI_Comm getCommToChild(int n) =0;
   // for particles
-  virtual MPI_Comm getCommToChild_P(int n) =0;
+  virtual MPI_Comm getCommToChild_P(int n, int is) =0;
 
   virtual int getSystemWide_rank()=0;
   virtual int getRank_CommToParent()=0;
-  virtual int getRank_CommToParent_P()=0;
+  virtual int getRank_CommToParent_P(int is)=0;
 
   virtual int getParentGridNum()=0;
   virtual int getChildGridNum(int n) =0;
   
   virtual int getMaxGridCoreN()=0;
 
-  virtual int getRank_CommToChildren_P(int nc) =0;
+  virtual int getRank_CommToChildren_P(int nc, int is) =0;
   /* return the values of the cartesian coordinate lookup table  
      NB: N is the rank number in the inter-communicator (CommToParent or CommToChildren)*/
   virtual int getXcoord_CommToParent(int N)=0;

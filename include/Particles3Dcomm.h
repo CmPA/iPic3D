@@ -515,6 +515,13 @@ protected:
   MPI_Datatype MPI_RGPBC_struct;
   MPI_Datatype MPI_RepP_struct;
 
+  // communicators to parent/ children divided for particle species 
+  MPI_Comm CommToParent_P;
+  MPI_Comm *CommToChild_P;
+
+  int *Rank_CommToChildren_P;
+  int Rank_CommToParent_P;
+
   /*! end mlmd specific variables */
 };
 

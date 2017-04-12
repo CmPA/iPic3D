@@ -667,7 +667,7 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
   int SW_rank=vct->getSystemWide_rank();
 
   if (vct->getCommToParent()== MPI_COMM_NULL){
-    cout <<"R" << SW_rank << ": Fatal error in getParentRankFromGridPoint:" << endl ;
+    cout << "Grid " <<numGrid  <<" R" << SW_rank << ": Fatal error in getParentRankFromGridPoint:" << endl ;
     abort();
     return -1; // if you are not a child, i return -1 to provoke a segm fault
   }
@@ -695,7 +695,7 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
   }
 
   if (rankPC==-1){
-    cout <<"R" << SW_rank  << " grid " << numGrid<< "Fatal error in getParentRankFromGridPoint";
+    cout <<"R" << SW_rank  << " grid " << numGrid<< " Fatal error in getParentRankFromGridPoint";
     cout <<"R" << SW_rank << " You need to change the reciprocal positions of the grids, aborting .." << endl;
     cout <<"R" << SW_rank  <<"I was looking for the parent rank of point (GC coords) " << coordX_PG <<" - " << coordY_PG << " - " << coordZ_PG << endl;
     cout << "Aborting now ..." << endl;

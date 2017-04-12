@@ -49,9 +49,6 @@ int c_Solver::Init(int argc, char **argv) {
     vct->testMlmdCommunicators();
   }
 
-  MPI_Barrier(MPI_COMM_WORLD);
-  cout << "after the communicator test" << endl;
-
   nprocs = vct->getNprocs();  // @gridLevel
   myrank = vct->getCartesian_rank(); // @gridLevel
   numGrid = vct->getNumGrid(); // added, mlmd
@@ -76,7 +73,6 @@ int c_Solver::Init(int argc, char **argv) {
 
  
   // Create the local grid
-  MPI_Barrier(MPI_COMM_WORLD);
   grid = new Grid3DCU(col, vct);  // Create the local grid
   /*! pre-mlmd: no topology needed in the fields constructor
     mlmd: now i need the topology also*/
@@ -341,23 +337,8 @@ void c_Solver::CalculateField() {
   if (MLMD_BC) {EMf->sendBC(grid, vct);}
   /* end mlmd: BC */
 
-  if (MLMD_BC) EMf->MPI_Barrier_ParentChild(vct);
+  //if (MLMD_BC) EMf->MPI_Barrier_ParentChild(vct);
 
-  /* some mlmd debug */
-  /*MPI_Comm localComm= vct->getCommGrid();
-  MPI_Barrier(localComm);
-  int localRank;
-  MPI_Comm_rank(localComm, &localRank);
-  if (localRank==0){
-    cout << "Grid " << vct->getNumGrid() << " after the grid barrier at the end of calculateE" << endl;
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-  int CommWorldRank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &CommWorldRank);
-  if (CommWorldRank==0){
-    cout << "All grids have finished calculateE" << endl;
-    }*/
-  /* some mlmd debug */
 }
 
 void c_Solver::CalculateBField() {
@@ -419,19 +400,7 @@ bool c_Solver::ParticlesMover() {
   if (MLMD_ParticleREPOPULATION){
     for (int i = 0; i < ns; i++){
       part[i].SendPBC(grid, vct);
-      //part[i].MPI_Barrier_ParentChild(vct);
       part[i].ReceivePBC(grid, vct);
-      //part[i].MPI_Barrier_ParentChild(vct);
-      // to prevent PBC msg from different species to cross 
-
-      if (RR==0)
-	cout << "Grid "<<numGrid << " at the end of MLMD PBC ops, before PC barrier,  ns " << i <<endl;
-
-      part[i].MPI_Barrier_ParentChild(vct);
-      //part[i].CheckSentReceivedParticles(vct);
-
-      if (RR==0)
-	cout << "Grid "<<numGrid << " at the end of MLMD PBC ops, afyer PC barrier, ns " << i <<endl;
     }
   }
 

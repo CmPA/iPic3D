@@ -25,7 +25,7 @@ list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 option(IPIC_TESTS "Set up the code tests" OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Chose the type of build, options
 are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)
 endif()
 

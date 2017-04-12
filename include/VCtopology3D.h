@@ -130,11 +130,11 @@ public:
   /** mlmd: get rank on the communicator to parent **/
   int getRank_CommToParent() {return rank_CommToParent;}
   /** mlmd: get rank on the communicator to parent FOR PARTICLES **/
-  int getRank_CommToParent_P() {return rank_CommToParent_P;}
+  int getRank_CommToParent_P(int is) {return rank_CommToParent_P[is];}
   /*! return the communicator to the parent; it's MPI_COMM_NULL for the coarse grid */
   MPI_Comm getCommToParent() {return CommToParent; }
   /*! return the communicator to the parent FOR PARTICLES; it's MPI_COMM_NULL for the coarse grid or if you chose other BC's*/ 
-  MPI_Comm getCommToParent_P() {return CommToParent_P; }
+  MPI_Comm getCommToParent_P(int is) {return CommToParent_P[is]; }
   /* returns the number of children in the mlmd hierarchy */
   int getNumChildren() {return (numChildren);}
   /* returns the n-th communicator to child form CommToChildren */
@@ -142,9 +142,9 @@ public:
   /* return the rank as a parent of the n-th child */
   int getRank_CommToChildren(int nc){return rank_CommToChildren[nc];}
   /* returns the n-th communicator to child form CommToChildren FOR PARTICLES*/
-  MPI_Comm getCommToChild_P(int n) {return CommToChildren_P[n];}
+  MPI_Comm getCommToChild_P(int n, int is) {return CommToChildren_P[n][is];}
   /* return the rank as a parent of the n-th child FOR PARTICLES*/
-  int getRank_CommToChildren_P(int nc){return rank_CommToChildren_P[nc];}
+  int getRank_CommToChildren_P(int nc, int is){return rank_CommToChildren_P[nc][is];}
 
   /*! mlmd test functions */
   /*! tries some basic communication on parent-child inter-communicators and communicators */
@@ -168,9 +168,9 @@ public:
   int getZcoord_CommToParent(int N){return Zcoord_CommToParent[N];}
 
   // for particles
-  int getXcoord_CommToParent_P(int N){return Xcoord_CommToParent_P[N];}
-  int getYcoord_CommToParent_P(int N){return Ycoord_CommToParent_P[N];}
-  int getZcoord_CommToParent_P(int N){return Zcoord_CommToParent_P[N];}
+  int getXcoord_CommToParent_P(int N, int is){return Xcoord_CommToParent_P[N][is];}
+  int getYcoord_CommToParent_P(int N, int is){return Ycoord_CommToParent_P[N][is];}
+  int getZcoord_CommToParent_P(int N, int is){return Zcoord_CommToParent_P[N][is];}
   /*! end specific MLMD functions */
 
 private:
@@ -282,9 +282,9 @@ private:
   /* rank in CommToChildren communicator */
   int *rank_CommToChildren;
   /* rank in CommToParent communicator FOR PARTICLES*/
-  int rank_CommToParent_P;
+  int * rank_CommToParent_P;
   /* rank in CommToChildren communicator FOR PARTICLES*/
-  int *rank_CommToChildren_P;
+  int **rank_CommToChildren_P;
 
   /* end ranks */
   
@@ -312,10 +312,15 @@ private:
      but it's != MPI_COMM_NULL also if this particular core does not need to receive msg-
      check RG_numPBCMessages also */
   
-  MPI_Comm CommToParent_P;
+  // number of particle species
+  int ns;
 
-  /* communicator to children -- for Particles*/
-  MPI_Comm *CommToChildren_P;
+  // divided by species
+  MPI_Comm *CommToParent_P;
+
+  /* communicator to children -- for Particles, divided by species*/
+  /* [numChildren][ns]*/
+  MPI_Comm **CommToChildren_P;
 
   /** in case topologies do weird things, the cartesian coordinates (x of Xlen, y of Ylen, z of Zlen)
       of each core in the parent - child communicator is set here **/
@@ -343,6 +348,8 @@ private:
        Stop to think if you need to use it somewhere else 
        In each vector/ matrix, one finds the map for the entire communicator
        the index is the core rank in the communicator
+
+       - for particles, also indexed on species
     */
 
     // this if the grid is a child
@@ -352,10 +359,10 @@ private:
     int * numGrid_CommToParent; // this is redundant, just to check      
 
     // for particles
-    int * Xcoord_CommToParent_P;
-    int * Ycoord_CommToParent_P;
-    int * Zcoord_CommToParent_P;
-    int * numGrid_CommToParent_P; // this is redundant, just to check      
+    int ** Xcoord_CommToParent_P;
+    int ** Ycoord_CommToParent_P;
+    int ** Zcoord_CommToParent_P;
+    int ** numGrid_CommToParent_P; // this is redundant, just to check      
 
     // this if the grid is a parent
     // rows are the number of children
@@ -364,10 +371,10 @@ private:
     int ** Zcoord_CommToChildren;
     int ** numGrid_CommToChildren; // this is redundant, just to check   
 
-    int ** Xcoord_CommToChildren_P;
-    int ** Ycoord_CommToChildren_P;
-    int ** Zcoord_CommToChildren_P;
-    int ** numGrid_CommToChildren_P; // this is redundant, just to check   
+    int *** Xcoord_CommToChildren_P;
+    int *** Ycoord_CommToChildren_P;
+    int *** Zcoord_CommToChildren_P;
+    int *** numGrid_CommToChildren_P; // this is redundant, just to check   
     /* end use these variables as a look-up table to find the core you need to communicate to on the inter-grid communicators */ 
 };
 
