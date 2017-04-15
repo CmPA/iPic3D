@@ -2212,10 +2212,12 @@ double Particles3D::ReturnToCenterOuterFrame(double multx, double multy, double 
 			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
 					v[np_current] * (y[np_current]-Ly/2.0)+
 					w[np_current] * (z[np_current]-Lz/2.0))/r;
-			udotr += abs(udotr);
-			u[np_current] = u[np_current] -  udotr * (x[np_current]-Lx/2.0)/r;
-			v[np_current] = v[np_current] -  udotr * (y[np_current]-Ly/2.0)/r;
-			w[np_current] = w[np_current] -  udotr * (z[np_current]-Lz/2.0)/r;
+		//	udotr += abs(udotr);
+if(udotr>0){
+			u[np_current] = u[np_current] -  2.0 *udotr * (x[np_current]-Lx/2.0)/r;
+			v[np_current] = v[np_current] -  2.0* udotr * (y[np_current]-Ly/2.0)/r;
+			w[np_current] = w[np_current] -  2.0 *udotr * (z[np_current]-Lz/2.0)/r; }
+			np_current++;
 		} else {
 			np_current++;
 		}
