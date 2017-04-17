@@ -2225,6 +2225,53 @@ if(udotr>0){
 	nop = nplast +1;
 	return(0.0);
 }
+double Particles3D::ReturnRegeneratedToCenterOuterFrame(double multx, double multy, double multz){
+	// calculate accumulated charge on the spacecraft
+	long long np_current = 0, nplast = nop-1;
+	  double harvest;
+	  double prob, theta, sign;
+	double r;
+	double udotr;
+	while (np_current < nplast+1) {
+		if (x[np_current] < multx*dx || x[np_current] > (Lx-multx*dx) ||
+		    y[np_current] < multy*dy || y[np_current] > (Ly-multy*dx) ||
+		    z[np_current] < multz*dz || z[np_current] > (Lz-multz*dx)) {
+			r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
+					(y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
+					(z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
+			// regenerate particle speed from intial maxwellian
+            // u
+            harvest = rand() / (double) RAND_MAX;
+            prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+            harvest = rand() / (double) RAND_MAX;
+            theta = 2.0 * M_PI * harvest;
+            u[np_current] = u0 + uth * prob * cos(theta);
+            // v
+            v[np_current] = v0 + vth * prob * sin(theta);
+            // w
+            harvest = rand() / (double) RAND_MAX;
+            prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+            harvest = rand() / (double) RAND_MAX;
+            theta = 2.0 * M_PI * harvest;
+            w[np_current] = w0 + wth * prob * cos(theta);
+
+            // turn it towards the center if it is not going there already
+			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
+					v[np_current] * (y[np_current]-Ly/2.0)+
+					w[np_current] * (z[np_current]-Lz/2.0))/r;
+		//	udotr += abs(udotr);
+if(udotr>0){
+			u[np_current] = u[np_current] -  2.0 *udotr * (x[np_current]-Lx/2.0)/r;
+			v[np_current] = v[np_current] -  2.0* udotr * (y[np_current]-Ly/2.0)/r;
+			w[np_current] = w[np_current] -  2.0 *udotr * (z[np_current]-Lz/2.0)/r; }
+			np_current++;
+		} else {
+			np_current++;
+		}
+	}
+	nop = nplast +1;
+	return(0.0);
+}
 
 /** Delete the particles inside the sphere with radius R and center x_center y_center */
 double Particles3D::deleteParticlesOutsideSphere(double R, double x_center, double y_center, double z_center){
