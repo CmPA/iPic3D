@@ -378,7 +378,7 @@ void c_Solver::InjectBoundaryParticles(){
 			if (col->getRHOinject(i) > 0.0)
 				mem_avail = part[i].injector_rand_box(grid,vct,EMf);
 				*/
-			Qremoved[i] = part[i].ReturnRegeneratedToCenterOuterFrame(6.0,6.0,6.0);
+			Qremoved[i] = part[i].ReturnToCenterCircle(col->getcoilSpacing()/2.0+col->getcoilD()/4.0);
 		}
       }
       if (col->getCase()=="CoilsMono") {
