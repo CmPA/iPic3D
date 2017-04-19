@@ -2230,12 +2230,13 @@ double Particles3D::ReturnToCenterCircle(double L_outer){
 	long long np_current = 0, nplast = nop-1;
 	double r;
 	double udotr;
+	double ukick = 3.0 *uth;
 	while (np_current < nplast+1) {
 		r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
 							(y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
 							(z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
 		if (r> L_outer) {
-			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
+/*			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
 					v[np_current] * (y[np_current]-Ly/2.0)+
 					w[np_current] * (z[np_current]-Lz/2.0))/r;
 		//	udotr += abs(udotr);
@@ -2243,6 +2244,11 @@ if(udotr>0){
 			u[np_current] = u[np_current] -  2.0 *udotr * (x[np_current]-Lx/2.0)/r;
 			v[np_current] = v[np_current] -  2.0* udotr * (y[np_current]-Ly/2.0)/r;
 			w[np_current] = w[np_current] -  2.0 *udotr * (z[np_current]-Lz/2.0)/r; }
+			*/
+			u[np_current] = u[np_current] -  ukick * (x[np_current]-Lx/2.0)/r;
+			v[np_current] = v[np_current] -  ukick * (y[np_current]-Ly/2.0)/r;
+			w[np_current] = w[np_current] -  ukick * (z[np_current]-Lz/2.0)/r;
+
 			np_current++;
 		} else {
 			np_current++;
