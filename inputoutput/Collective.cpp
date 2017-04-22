@@ -701,7 +701,7 @@ int Collective::ReadRestart(string inputfile) {
   dataset_id = H5Dopen2(file_id, "/collective/bc/PfaceZright", H5P_DEFAULT); // HDF 1.8.8
   status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &bcPfaceZright);
   status = H5Dclose(dataset_id);
-  // allocate fields depending on species
+  /*// allocate fields depending on species
   npcelx = new int[ns];
   npcely = new int[ns];
   npcelz = new int[ns];
@@ -712,6 +712,7 @@ int Collective::ReadRestart(string inputfile) {
   u0 = new double[ns];
   v0 = new double[ns];
   w0 = new double[ns];
+  */
   // read data from species0, species 1, species2,...
   string *name_species = new string[ns];
   stringstream *ss = new stringstream[ns];
@@ -720,6 +721,7 @@ int Collective::ReadRestart(string inputfile) {
     ss[i] << i;
     name_species[i] = "/collective/species_" + ss[i].str() + "/";
   }
+  /*
   // npcelx for different species
   for (int i = 0; i < ns; i++) {
     dataset_id = H5Dopen2(file_id, (name_species[i] + "Npcelx").c_str(), H5P_DEFAULT); // HDF 1.8.8
@@ -744,7 +746,7 @@ int Collective::ReadRestart(string inputfile) {
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &qom[i]);
     status = H5Dclose(dataset_id);
   }
-  /*! not needed for restart * */
+  /// not needed for restart (this is not true)
   for (int i = 0; i < ns; i++)
     uth[i] = 0.0;
   for (int i = 0; i < ns; i++)
@@ -757,6 +759,7 @@ int Collective::ReadRestart(string inputfile) {
     v0[i] = 0.0;
   for (int i = 0; i < ns; i++)
     w0[i] = 0.0;
+  */
   // verbose on
   verbose = 1;
 
