@@ -82,6 +82,8 @@ void Particles3D::uniform_background(Grid * grid, Field * EMf) {
               counter++;
             }
 
+  // to set number of particles in allocate, keeping in mind that in mlmd there can be particles in the GC
+  nop= counter;
 
   cout << "Velocity Maxwellian Distribution " << endl;
 }
@@ -243,12 +245,12 @@ void Particles3D::MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology
             }
       }
 
-
+  // to set number of particles in allocate, keeping in mind that in mlmd there can be particles in the GC
+  nop= counter;
 }
 
 /** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
-
 
   /* initialize random generator with different seed on different processor */
   srand(vct->getCartesian_rank() + 2);
@@ -256,15 +258,30 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
   double harvest;
   double prob, theta, sign;
   long long counter = 0;
-  for (int i = 1; i < grid->getNXC() - 1; i++)
-    for (int j = 1; j < grid->getNYC() - 1; j++)
-      for (int k = 1; k < grid->getNZC() - 1; k++)
+
+  int i_s=1, i_e= grid->getNXC() - 1;
+  int j_s=1, j_e= grid->getNYC() - 1;
+  int k_s=1, k_e= grid->getNZC() - 1;
+
+  if (bcPfaceXleft<0 and vct->getXleft_neighbor_P() == MPI_PROC_NULL) i_s=0;
+  if (bcPfaceXright<0 and vct->getXright_neighbor_P() == MPI_PROC_NULL) i_e=grid->getNXC();
+
+  if (bcPfaceYleft<0 and vct->getYleft_neighbor_P() == MPI_PROC_NULL) j_s=0;
+  if (bcPfaceYright<0 and vct->getYright_neighbor_P() == MPI_PROC_NULL) j_e=grid->getNYC();
+
+  if (bcPfaceZleft<0 and vct->getZleft_neighbor_P() == MPI_PROC_NULL) k_s=0;
+  if (bcPfaceZright<0 and vct->getZright_neighbor_P() == MPI_PROC_NULL) k_e=grid->getNZC();
+
+  for (int i = i_s; i < i_e; i++)
+    for (int j = j_s; j < j_e; j++)
+      for (int k = k_s; k < k_e; k++)
         for (int ii = 0; ii < npcelx; ii++)
           for (int jj = 0; jj < npcely; jj++)
             for (int kk = 0; kk < npcelz; kk++) {
               x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
               y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
               z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+	      
               // q = charge
               q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
               // u
@@ -287,8 +304,15 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
               counter++;
             }
-  
+  // to set number of particles in allocate, keeping in mind that in mlmd there can be particles in the GC
+  nop= counter;
 
+  // number of particles after the allocation
+  int Tot_nop;
+  MPI_Allreduce(&nop, &Tot_nop, 1, MPI_INT, MPI_SUM, vct->getComm());
+  /*if (vct->getCartesian_rank()==XLEN*YLEN*ZLEN-1){
+    cout << "Grid " << numGrid << " ns " << ns << " Particles after Maxwellian: " <<Tot_nop << endl;
+    }*/
 
 }
 
@@ -349,6 +373,8 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               counter++;
             }
 
+  // to set number of particles in allocate, keeping in mind that in mlmd there can be particles in the GC
+  nop= counter;
 }
 
 /**Add a periodic perturbation in J exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
@@ -709,6 +735,8 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   }
   // end mlmd check
 
+  if (true){
+
   double start_mover_PC = MPI_Wtime();
   double weights[2][2][2];
   double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
@@ -817,6 +845,7 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     } // END  OF SUBCYCLING LOOP
   }                             // END OF ALL THE PARTICLES
 
+  } else { cout <<"Grid " << numGrid << "I am not moving particles " << endl;}
   // ********************//
   // COMMUNICATION 
   // *******************//
@@ -1338,7 +1367,7 @@ void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * v
 
   }
   // communicate contribution from ghost cells 
-  EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
+  EMf->communicateGhostP2G(ns, bcPfaceXright, bcPfaceXleft, bcPfaceYright, bcPfaceYleft, bcPfaceZright, bcPfaceZleft, vct);
 }
 /** apply a linear perturbation to particle distribution */
 void Particles3D::linear_perturbation(double deltaBoB, double kx, double ky, double angle, double omega_r, double omega_i, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, Grid * grid, Field * EMf, VirtualTopology3D * vct) {
@@ -1429,6 +1458,9 @@ void Particles3D::linear_perturbation(double deltaBoB, double kx, double ky, dou
   nop = counter + 1;
   // if (vct->getCartesian_rank()==0)
   cout << "Rejection method: " << (counter + 1) / double (total_generated) * 100 << " % of particles are accepted for species " << ns << " counter=" << counter << endl;
+
+  // to set number of particles in allocate, keeping in mind that in mlmd there can be particles in the GC
+  nop= counter;
 }
 
 /** Linear delta f for bi-maxwellian plasma */

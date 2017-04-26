@@ -158,7 +158,7 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   if (size_CW != TotalSize) {
     if (systemWide_rank==0){
       cout << "The number of MPI processes must be " << TotalSize << ", aborting ..." << flush;
-      abort();
+      MPI_Abort(MPI_COMM_WORLD, -1);
     }
   }
 
@@ -226,7 +226,7 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   // Particles Communicator
   if (CART_COMM_P != MPI_COMM_NULL) {
     MPI_Comm_rank(CART_COMM_P, &cartesian_rank);
-    MPI_Comm_size(CART_COMM, &nproc);
+    MPI_Comm_size(CART_COMM_P, &nproc);
     MPI_Cart_coords(CART_COMM_P, cartesian_rank, 3, coordinates);
 
     MPI_Cart_shift(CART_COMM_P, XDIR, RIGHT, &xleft_neighbor_P, &xright_neighbor_P);

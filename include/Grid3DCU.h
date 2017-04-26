@@ -88,6 +88,8 @@ public:
   /** interpolate on central points from nodes */
   void interpN2C(double ****vecFieldC, int ns, double ****vecFieldN);
 
+  void interpN2C_GC(double ****vecFieldC, int ns, double ****vecFieldN);
+
   void interpN2C_ActiveCell(double ***vecFieldC, double ***vecFieldN, VirtualTopology3D * vct) ;
 
 
@@ -140,17 +142,30 @@ public:
   /** get the inverse of volume */
   double getInvVOL();
 
+  /** get xStart_GC **/
+  double getxStart_GC();
+  /** get yStart_GC **/
+  double getyStart_GC();
+  /** get zStart_GC **/
+  double getzStart_GC();
+  /** get xEnd_GC **/
+  double getxEnd_GC();
+  /** get yEnd_GC **/
+  double getyEnd_GC();
+  /** get zEnd_GC **/
+  double getzEnd_GC();
+
   /*! mlmd specific functions */
   int getNumGrid(){return numGrid;}
   /*! return your coordinates of origin on the parent grid */
-  int getOx(){return Ox;} int getOy(){return Oy;} int getOz(){return Oz;}
+  double getOx(){return Ox;} double getOy(){return Oy;} double getOz(){return Oz;}
   
   double getDx_mlmd(int NG){return dx_mlmd[NG];}
   double getDy_mlmd(int NG){return dy_mlmd[NG];}
   double getDz_mlmd(int NG){return dz_mlmd[NG];}
 
   /*! return your coordinates of origin in the system */
-  int getOx_SW(){return Ox_SW;} int getOy_SW(){return Oy_SW;} int getOz_SW(){return Oz_SW;}
+  double getOx_SW(){return Ox_SW;} double getOy_SW(){return Oy_SW;} double getOz_SW(){return Oz_SW;}
 
   /*! return parentLenX, parentLenY, parentLenZ */
   double getparentLenX(){return parentLenX;}
@@ -210,6 +225,9 @@ private:
   /** local grid boundaries coordinate  */
   /** mlmd: checked: they mark the active part of the grid **/
   double xStart, xEnd, yStart, yEnd, zStart, zEnd;
+
+  /** include ghost cells if boundary core- to be used only in communicateRepopulatedParticles **/
+  double xStart_GC, xEnd_GC, yStart_GC, yEnd_GC, zStart_GC, zEnd_GC;
 
   /*! mlmd specific variables */
   /*! total number of grids in the mlmd hierarchy */

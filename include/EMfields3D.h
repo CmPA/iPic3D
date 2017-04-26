@@ -306,11 +306,13 @@ class EMfields3D                // :public Field
     void smoothE(double value, VirtualTopology3D * vct, Collective *col);
 
     /*! communicate ghost for grid -> Particles interpolation */
-    void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
+    void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
     void addToSpeciesMoments(const Moments & in, int is);
     /*! add an amount of charge density to charge density field at node X,Y,Z */
     void addRho(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! for debugging purposes */
+    void addRho(double weight[][2][2], int X, int Y, int Z, int is, VirtualTopology3D * vct, double xp, double yp, double zp);
     /*! add an amount of current density - direction X to current density field at node X,Y,Z */
     void addJx(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction Y to current density field at node X,Y,Z */
@@ -332,7 +334,7 @@ class EMfields3D                // :public Field
     void addPzz(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! adjust densities on boundaries that are not periodic */
-    void adjustNonPeriodicDensities(int is, VirtualTopology3D * vct);
+    void adjustNonPeriodicDensities(int is, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct);
 
 
     /*! Perfect conductor boundary conditions LEFT wall */

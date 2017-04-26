@@ -57,6 +57,38 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   zStart = vct->getCoordinates(2) * (col->getLz_mlmd(numGrid) / (double) vct->getZLEN());
   zEnd = zStart + (col->getLz_mlmd(numGrid) / (double) vct->getZLEN());
 
+  // if @ boudaries with MPI_PROC_NULL, local grid dimensions INCLUDING ghost areas; otherwise, 'usual' values
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL)
+    xStart_GC= xStart-dx;
+  else
+    xStart_GC= xStart;
+
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL)
+    yStart_GC= yStart-dy;
+  else
+    yStart_GC= yStart;
+
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL)
+    zStart_GC= zStart-dz;
+  else
+    zStart_GC= zStart;
+
+  if (vct->getXright_neighbor() == MPI_PROC_NULL)
+    xEnd_GC= xEnd+dx;
+  else
+    xEnd_GC= xEnd;
+
+  if (vct->getYright_neighbor() == MPI_PROC_NULL)
+    yEnd_GC= yEnd+dy;
+  else
+    yEnd_GC= yEnd;
+
+  if (vct->getZright_neighbor() == MPI_PROC_NULL)
+    zEnd_GC= zEnd+dz;
+  else
+    zEnd_GC= zEnd;
+
+
   /* portion of ACTIVE grid hosted in each parent core                                                                                       
      -- equivalent of xEnd - xStart on the parent */
   if (vct->getCommToParent()!= MPI_COMM_NULL) { // I have a parent               
@@ -572,6 +604,13 @@ void Grid3DCU::interpN2C(double ****vecFieldC, int ns, double ****vecFieldN) {
         vecFieldC[ns][i][j][k] = .125 * (vecFieldN[ns][i][j][k] + vecFieldN[ns][i + 1][j][k] + vecFieldN[ns][i][j + 1][k] + vecFieldN[ns][i][j][k + 1] + vecFieldN[ns][i + 1][j + 1][k] + vecFieldN[ns][i + 1][j][k + 1] + vecFieldN[ns][i][j + 1][k + 1] + vecFieldN[ns][i + 1][j + 1][k + 1]);
 }
 
+void Grid3DCU::interpN2C_GC(double ****vecFieldC, int ns, double ****vecFieldN) {
+  for (register int i = 0; i < nxc ; i++)
+    for (register int j = 0; j < nyc ; j++)
+      for (register int k = 0; k < nzc ; k++)
+        vecFieldC[ns][i][j][k] = .125 * (vecFieldN[ns][i][j][k] + vecFieldN[ns][i + 1][j][k] + vecFieldN[ns][i][j + 1][k] + vecFieldN[ns][i][j][k + 1] + vecFieldN[ns][i + 1][j + 1][k] + vecFieldN[ns][i + 1][j][k + 1] + vecFieldN[ns][i][j + 1][k + 1] + vecFieldN[ns][i + 1][j + 1][k + 1]);
+}
+
 
 /** get nxc */
 int Grid3DCU::getNXC() {
@@ -653,6 +692,13 @@ double Grid3DCU::getInvVOL() {
   return (invVOL);
 }
 
+double Grid3DCU::getxStart_GC(){return xStart_GC;}
+double Grid3DCU::getyStart_GC(){return yStart_GC;}
+double Grid3DCU::getzStart_GC(){return zStart_GC;}
+double Grid3DCU::getxEnd_GC(){return xEnd_GC;}
+double Grid3DCU::getyEnd_GC(){return yEnd_GC;}
+double Grid3DCU::getzEnd_GC(){return zEnd_GC;}
+
 /** mlmd specific functions **/
 int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn, int zn){
 
@@ -668,7 +714,7 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
 
   if (vct->getCommToParent()== MPI_COMM_NULL){
     cout << "Grid " <<numGrid  <<" R" << SW_rank << ": Fatal error in getParentRankFromGridPoint:" << endl ;
-    abort();
+    MPI_Abort(MPI_COMM_WORLD, -1);
     return -1; // if you are not a child, i return -1 to provoke a segm fault
   }
   // coordinates in the parent grid                                                                 
@@ -688,7 +734,12 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
   // rank in the CommToParent communicator                                                                                                    
   int rankPC=-1;
   int ChildStarts= vct->getXLEN(vct->getParentGridNum()) * vct->getYLEN(vct->getParentGridNum()) * vct->getZLEN(vct->getParentGridNum());
+  //cout <<"R" << SW_rank  <<" parentGridNum: " << vct->getParentGridNum() << " vct->getXLEN(vct->getParentGridNum()): " << vct->getXLEN(vct->getParentGridNum()) << ",  vct->getYLEN(vct->getParentGridNum()): " <<  vct->getYLEN(vct->getParentGridNum()) << ", vct->getZLEN(vct->getParentGridNum()): " << vct->getZLEN(vct->getParentGridNum()) << endl;
+  //cout <<"R" << SW_rank << " parentLenX " << parentLenX << " parentLenY " << parentLenY << " parentLenZ " << parentLenZ << endl; 
   for (int i=0; i< ChildStarts; i++){
+    /*cout <<"R" << SW_rank << " i=" <<i << " vct->getXcoord_CommToParent(i): " << vct->getXcoord_CommToParent(i) << " coordX " << coordX << endl;
+    cout <<"R" << SW_rank << " i=" <<i << " vct->getYcoord_CommToParent(i): " << vct->getYcoord_CommToParent(i) << " coordY " << coordY << endl;
+    cout <<"R" << SW_rank << " i=" <<i << " vct->getZcoord_CommToParent(i): " << vct->getZcoord_CommToParent(i) << " coordZ " << coordZ << endl;*/
     if ((coordX == vct->getXcoord_CommToParent(i)) && (coordY == vct->getYcoord_CommToParent(i)) && (coordZ == vct->getZcoord_CommToParent(i)) ){
       rankPC= i;
     }
@@ -696,10 +747,11 @@ int Grid3DCU::getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn
 
   if (rankPC==-1){
     cout <<"R" << SW_rank  << " grid " << numGrid<< " Fatal error in getParentRankFromGridPoint";
-    cout <<"R" << SW_rank << " You need to change the reciprocal positions of the grids, aborting .." << endl;
-    cout <<"R" << SW_rank  <<"I was looking for the parent rank of point (GC coords) " << coordX_PG <<" - " << coordY_PG << " - " << coordZ_PG << endl;
+    cout <<"R" << SW_rank  << " You need to change the reciprocal positions of the grids, aborting .." << endl;
+    cout <<"R" << SW_rank  << " I was looking for the parent rank of point (GC coords) " << coordX_PG <<" - " << coordY_PG << " - " << coordZ_PG << endl;
+    cout <<"R" << SW_rank  << " Calculated CG coords: " << coordX <<" - " << coordY << " - " << coordZ << endl; 
     cout << "Aborting now ..." << endl;
-    abort();
+    MPI_Abort(MPI_COMM_WORLD, -1);
   }
   else {
     if (false){

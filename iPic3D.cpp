@@ -25,7 +25,6 @@ int main(int argc, char **argv) {
   /* ------------ */
 
   for (int i = KCode.FirstCycle(); i <= KCode.LastCycle(); i++) {
-
     /*! mlmd: KCode.get_myrank() is on the local grid communicator */
     if (KCode.get_myrank() == 0) cout << " ======= Grid " << KCode.get_numGrid()  <<"  Cycle " << i << " ======= " << endl;
 

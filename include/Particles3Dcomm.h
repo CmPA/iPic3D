@@ -59,6 +59,29 @@ struct RepP_struct{
 
 }; // end structure
 
+// structure to exchange repopulated particles (after split) within RG
+struct CRP_struct{
+  
+  // position
+  double x;
+  double y;
+  double z;
+
+  // velocity 
+  double u;
+  double v;
+  double w;
+
+  // charge
+  double q;
+
+  // ID
+  unsigned long ID;
+
+  // rank of destination- on the local RG communicator
+  int Destination;
+}; // end structure
+
 
 /** Class for particle distribution calculation in 3D */
 class c_vDist {
@@ -242,6 +265,8 @@ public:
   void MPI_RGPBC_struct_commit();
   /* commit the structure for the particle CG/RG exchange as MPI_Datatype */
   void MPI_RepP_struct_commit();
+  /* commit the structure for repopulated particle exchange within the RG */
+  void MPI_CRP_struct_commit();
   // each RG core buid its own PBC communication map
   void Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct);
   /* add one handshake msg to the list */
@@ -254,14 +279,21 @@ public:
   void buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch);
   /* add a particle to the PBC msg */
   void addP(RepP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, VirtualTopology3D* vct);
+  /* add a particle for the exchange of the repopulated particles within the R*/
+  void addP_CRP(CRP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, int DestinationRank, VirtualTopology3D* vct);			       
+  /* add a particle packed into the CRP_struct into the core particle vectors 
+     -- lots of checks inside, which can be disabled */
+  void unpack_CRP(CRP_struct p, VirtualTopology3D * vct);
   /* ApplyPBC: RG, after receiving PBC, applies them */
-  void ApplyPBC(VirtualTopology3D* vct);
+  void ApplyPBC(VirtualTopology3D* vct, Grid* grid);
   /* split a particle received form the CG into RG particles */
-  void SplitPBC(RepP_struct p);
+  void SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p);
   /* a barrier on both parent and child side of the particle communicator, to prevent messages for different particle speciesfrom crossing */
   void MPI_Barrier_ParentChild(VirtualTopology3D* vct);
   /* check number of particle sent/ received from each grid */
   void CheckSentReceivedParticles(VirtualTopology3D* vct);
+  /* distribute split particles to the right RG core*/
+  void communicateRepopulatedParticles(Grid* grid, VirtualTopology3D * vct);
 protected:
   /** number of species */
   /*! comment: the number of THIS species, not the total number of particle species */
@@ -326,6 +358,8 @@ protected:
 
   /** Simulation domain lengths */
   double xstart, xend, ystart, yend, zstart, zend, invVOL;
+  /** simulation domain lengths, including ghost cells if bordering MPI_PROC_NULL **/
+  double xStart_GC, yStart_GC, zStart_GC, xEnd_GC, yEnd_GC, zEnd_GC;
   /** time step */
   double dt;
   /** Lx = simulation box length - x direction   */
@@ -336,6 +370,10 @@ protected:
   double Lz;
   /** grid spacings */
   double dx, dy, dz;
+  /** parent grid spacing **/
+  double DxP, DyP, DzP;
+  /* RF, used in split */
+  double RFx, RFy, RFz;
   /** number of grid 
           nodes */
   int nxn, nyn, nzn;
@@ -425,6 +463,11 @@ protected:
   int nvDistLoc;
   c_vDist* vDist;
 
+  // local to this grid
+  int XLEN;
+  int YLEN;
+  int ZLEN;
+
   /*! mlmd specific variables */
   /*! if true, mlmd related output */
   bool MLMDVerbose;
@@ -480,6 +523,35 @@ protected:
   /* general buffer to receive particles BC; before putting them in the proper slot in PRGMsg
      [sizePCMsg]*/
   RepP_struct* PRGMsg_General;
+  /* particles added to the PRA area from MLMD BC */
+  int PRA_PAdded;
+  /* number of particles in the core at the end of communicate */
+  int nop_EndCommunicate;
+  /* number of particles in the core AFTER ReceivePBC */
+  int nop_AfterReceivePBC;
+  /* number of particles to transfer to core HighestRank in communicateRepopulatedParticles*/
+  int np_ToCoreH_CRP; 
+  /* vectors to exchange repopulated particles within the RG */
+  CRP_struct * CRP_ToCoreH;
+  /* Core H counterpart */
+  /* [XLEN*YLEN*ZLEN][MAX_np_CRP] */
+  /* in each row, the particles to send to that core */
+  CRP_struct ** H_CRP_Msg;
+  /* [XLEN*YLEN*ZLEN] 
+     the number of particles to send to that core */
+  int *H_num_CRP_nop;
+  CRP_struct * H_CRP_General;
+  /* size of ToCoreH */
+  int MAX_np_CRP;
+  /* only in HighestRank: tells you how many msgs to expect while communicating repopulated particles and which cores should participate */
+  /* if here 1, this core participates in particle exchange in communicateRepopulatedParticles */
+  int * H_CRP_cores;
+  /* the number of these msgs that HighestRank should expect */
+  int num_H_CRP_cores;
+  /* number of CRP particles receive by rank < HighestRank */
+  int NH_num_CRP_nop;
+  /* particles deleted at the end of communicate*/
+  int PRA_deleted;
   /* END RG SIDE */
 
   /* Index (NOT coordinates, not number of cells) at which PRA starts / ends 
@@ -497,7 +569,8 @@ protected:
   int PRA_ZRight_Start;
   int PRA_ZRight_End;
 
-  /* corresponding coordinates */
+  /* corresponding coordinates --
+     calculated with respect to the entire grid, not this particular core */
   double Coord_XLeft_Start;
   double Coord_XLeft_End;
   double Coord_XRight_Start;
@@ -514,6 +587,7 @@ protected:
   /* MPI Datatype associated to RGPBC_struct; init in MPI_RGBC_struct_commit  */
   MPI_Datatype MPI_RGPBC_struct;
   MPI_Datatype MPI_RepP_struct;
+  MPI_Datatype MPI_CRP_struct;
 
   // communicators to parent/ children divided for particle species 
   MPI_Comm CommToParent_P;

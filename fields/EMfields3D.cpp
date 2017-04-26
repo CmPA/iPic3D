@@ -817,8 +817,10 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 
 
  /*! adjust densities on boundaries that are not periodic */
- void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
-   if (vct->getXleft_neighbor_P() == MPI_PROC_NULL) {
+void EMfields3D::adjustNonPeriodicDensities(int is, int bcPfaceXright, int bcPfaceXleft, int bcPfaceYright, int bcPfaceYleft, int bcPfaceZright, int bcPfaceZleft, VirtualTopology3D * vct) {
+   /* this function is needed only if i do not have particles in GC; 
+      with mlmd, bcPface... <0 they are there, hence skip it */
+   if (vct->getXleft_neighbor_P() == MPI_PROC_NULL and bcPfaceXleft > -1 ) {
      for (int i = 1; i < nyn - 1; i++)
        for (int k = 1; k < nzn - 1; k++) {
 	 rhons[is][1][i][k] += rhons[is][1][i][k];
@@ -833,7 +835,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	 pZZsn[is][1][i][k] += pZZsn[is][1][i][k];
        }
    }
-   if (vct->getYleft_neighbor_P() == MPI_PROC_NULL) {
+   if (vct->getYleft_neighbor_P() == MPI_PROC_NULL and bcPfaceYleft > -1 ) {
      for (int i = 1; i < nxn - 1; i++)
        for (int k = 1; k < nzn - 1; k++) {
 	 rhons[is][i][1][k] += rhons[is][i][1][k];
@@ -848,7 +850,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	 pZZsn[is][i][1][k] += pZZsn[is][i][1][k];
        }
    }
-   if (vct->getZleft_neighbor_P() == MPI_PROC_NULL) {
+   if (vct->getZleft_neighbor_P() == MPI_PROC_NULL and bcPfaceZleft > -1) {
      for (int i = 1; i < nxn - 1; i++)
        for (int j = 1; j < nyn - 1; j++) {
 	 rhons[is][i][j][1] += rhons[is][i][j][1];
@@ -863,7 +865,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	 pZZsn[is][i][j][1] += pZZsn[is][i][j][1];
        }
    }
-   if (vct->getXright_neighbor_P() == MPI_PROC_NULL) {
+   if (vct->getXright_neighbor_P() == MPI_PROC_NULL and bcPfaceXright > -1) {
      for (int i = 1; i < nyn - 1; i++)
        for (int k = 1; k < nzn - 1; k++) {
 	 rhons[is][nxn - 2][i][k] += rhons[is][nxn - 2][i][k];
@@ -878,7 +880,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	 pZZsn[is][nxn - 2][i][k] += pZZsn[is][nxn - 2][i][k];
        }
    }
-   if (vct->getYright_neighbor_P() == MPI_PROC_NULL) {
+   if (vct->getYright_neighbor_P() == MPI_PROC_NULL and bcPfaceYright > -1) {
      for (int i = 1; i < nxn - 1; i++)
        for (int k = 1; k < nzn - 1; k++) {
 	 rhons[is][i][nyn - 2][k] += rhons[is][i][nyn - 2][k];
@@ -893,7 +895,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	 pZZsn[is][i][nyn - 2][k] += pZZsn[is][i][nyn - 2][k];
        }
    }
-   if (vct->getZright_neighbor_P() == MPI_PROC_NULL) {
+   if (vct->getZright_neighbor_P() == MPI_PROC_NULL and bcPfaceZright > -1) {
      for (int i = 1; i < nxn - 1; i++)
        for (int j = 1; j < nyn - 1; j++) {
 	 rhons[is][i][j][nzn - 2] += rhons[is][i][j][nzn - 2];
@@ -1205,7 +1207,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 
 
    for (int is = 0; is < ns; is++)
-     grid->interpN2C(rhocs, is, rhons);
+     grid->interpN2C_GC(rhocs, is, rhons);
 
  }
 /* initialize a light wave -MLMD ready */
@@ -1288,7 +1290,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
      }
 
    for (int is = 0; is < ns; is++)
-     grid->interpN2C(rhocs, is, rhons);
+     grid->interpN2C_GC(rhocs, is, rhons);
  }
 
 
@@ -1387,11 +1389,12 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
  /*! interpolate charge density and pressure density from node to center */
  void EMfields3D::interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid) {
    // do we need communication or not really?
-   grid->interpN2C(rhoc, rhon);
+   grid->interpN2C_GC(rhoc, rhon);
  }
  /*! communicate ghost for grid -> Particles interpolation */
- void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct) {
-   // interpolate adding common nodes among processors
+void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
+  // NB: these bc passed are the particle ones
+  // interpolate adding common nodes among processors
    communicateInterp(nxn, nyn, nzn, ns, rhons, 0, 0, 0, 0, 0, 0, vct);
    communicateInterp(nxn, nyn, nzn, ns, Jxs, 0, 0, 0, 0, 0, 0, vct);
    communicateInterp(nxn, nyn, nzn, ns, Jys, 0, 0, 0, 0, 0, 0, vct);
@@ -1402,8 +1405,11 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
    communicateInterp(nxn, nyn, nzn, ns, pYYsn, 0, 0, 0, 0, 0, 0, vct);
    communicateInterp(nxn, nyn, nzn, ns, pYZsn, 0, 0, 0, 0, 0, 0, vct);
    communicateInterp(nxn, nyn, nzn, ns, pZZsn, 0, 0, 0, 0, 0, 0, vct);
+
+   
    // calculate the correct densities on the boundaries
-   adjustNonPeriodicDensities(ns, vct);
+   // mlmd: not to do if bcPface... <0 (the mlmd BC conditions)
+   adjustNonPeriodicDensities(ns, bcFaceXright, bcFaceXleft, bcFaceYright, bcFaceYleft, bcFaceZright, bcFaceZleft, vct);
    // put the correct values on ghost cells
 
    communicateNode_P(nxn, nyn, nzn, rhons, ns, vct);
@@ -1422,6 +1428,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
 
  /** add an amount of charge density to charge density field at node X,Y */
  void Moments::addRho(double weight[][2][2], int X, int Y, int Z) {
+
    for (int i = 0; i < 2; i++)
      for (int j = 0; j < 2; j++)
        for (int k = 0; k < 2; k++) {
@@ -1534,11 +1541,57 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
 
  /*! add an amount of charge density to charge density field at node X,Y */
  void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is) {
+   
    for (int i = 0; i < 2; i++)
      for (int j = 0; j < 2; j++)
        for (int k = 0; k < 2; k++)
 	 rhons[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
  }
+
+/*! add an amount of charge density to charge density field at node X,Y */
+void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is, VirtualTopology3D * vct, double xp, double yp, double zp) {
+   
+  int R= vct->getCartesian_rank();
+  int C0= vct->getCoordinates(0);
+  int C1= vct->getCoordinates(1);
+  int C2= vct->getCoordinates(2);
+  int XLEN= vct->getXLEN();
+  int YLEN= vct->getYLEN();
+  int ZLEN= vct->getZLEN();
+
+  if (X<0 or X>nxn-1){
+    cout << "Grid " << numGrid << " R " << R << " particle tries to accumulate outside of grid " << endl;
+    cout << "Grid " << numGrid << " R " << R << "Inside add rho: X " << X << " of " << nxn << endl;
+    cout << "Grid " << numGrid << " R " << R << " x: " << xp << " -dx " << -dx <<" Lx+dx " << Lx+dx << endl;
+    cout << "Grid " << numGrid << " R " << R << " " << C0 << "/ " << XLEN << endl;
+    //return;
+    int j; for(int i=0; i<10000; i++) j++;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+  if (Y<0 or Y>nyn-1){
+    cout << "Grid " << numGrid << " R " << R << " particle tries to accumulate outside of grid " << endl;
+    cout << "Grid " << numGrid << " R " << R << "Inside add rho: Y " << Y << " of " << nyn << endl;
+    cout << "Grid " << numGrid << " R " << R <<" y: " << yp << " -dy " << -dy <<" Ly+dy " << Ly+dy << endl;    
+    cout << "Grid " << numGrid << " R " << R << " " << C1 << "/ " << YLEN << endl;
+    //return;
+    int j; for(int i=0; i<10000; i++) j++;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+  if (Z<0 or Z>nzn-1){ 
+    cout << "Grid " << numGrid << " R " << R << " particle tries to accumulate outside of grid " << endl;
+    cout << "Grid " << numGrid << " R " << R << "Inside add rho: Z " << Z << " of " << nzn << endl;
+    cout << "Grid " << numGrid << " R " << R <<" z: " << xp << " -dz " << -dz <<" Lz+dz " << Lz+dz << endl;
+    cout << "Grid " << numGrid << " R " << R << " " << C2 << "/ " << ZLEN << endl;
+    //return;
+    int j; for (int i=0; i<10000; i++) j++;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+  
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+       for (int k = 0; k < 2; k++)
+	 rhons[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
  /*! add an amount of charge density to current density - direction X to current density field on the node */
  void EMfields3D::addJx(double weight[][2][2], int X, int Y, int Z, int is) {
    for (int i = 0; i < 2; i++)
@@ -1690,7 +1743,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
      grid->interpN2C(Bzc, Bzn);
 
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
    }
    else {                        // READING FROM RESTART
      if (vct->getCartesian_rank() == 0)
@@ -1833,7 +1886,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
      communicateNodeBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
      communicateNodeBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
      // close the hdf file
      status = H5Fclose(file_id);
      delete[]temp_storage;
@@ -1951,7 +2004,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
 
 	 }
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
    }
    else {
      init(vct, grid, col);            // use the fields from restart file
@@ -2016,7 +2069,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
 	   Bzc[i][j][k] = B0z;
 	 }
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
    }
    else {
      init(vct, grid, col);            // use the fields from restart file
@@ -2126,7 +2179,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
      communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
      communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
    }
    else {
      init(vct, grid, col);            // use the fields from restart file
@@ -2217,7 +2270,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
 
 	 }
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
    }
    else {
      init(vct, grid, col);            // use the fields from restart file
@@ -2279,7 +2332,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
 
 	 }
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
    }
    else {
      init(vct, grid, col);            // use the fields from restart file
@@ -2361,7 +2414,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
      communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
      communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
    }
    else {
      init(vct, grid, col);            // use the fields from restart file
@@ -2419,7 +2472,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
 	 }
 
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
    }
    else {
      init(vct, grid, col);            // use the fields from restart file
@@ -2462,7 +2515,7 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
 
 	 }
      for (int is = 0; is < ns; is++)
-       grid->interpN2C(rhocs, is, rhons);
+       grid->interpN2C_GC(rhocs, is, rhons);
    }
    else {                        // EM initialization from RESTART
      init(vct, grid, col);            // use the fields from restart file
@@ -2856,7 +2909,7 @@ void EMfields3D::UpdateCycle(int cycle){
    // -- end J_ext
 
    for (int is=0 ; is<ns; is++)
-     grid->interpN2C(rhocs,is,rhons);
+     grid->interpN2C_GC(rhocs,is,rhons);
 
    if (restart1 != 0) { // EM initialization from RESTART
      init(vct,grid,col);  // use the fields from restart file
@@ -4249,7 +4302,7 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
 
        if (MsgLimsXMin < xmin or MsgLimsXMax > xmax or MsgLimsYMin < ymin or MsgLimsYMax > ymax or MsgLimsZMin < zmin or MsgLimsZMax > zmax){
 	 cout <<"G" <<numGrid <<"R" << localRank <<" Msg " << i << " we have a problem in initWeightBC, ghost BC, aborting ... " << endl;
-	 abort();
+	 MPI_Abort(MPI_COMM_WORLD, -1);
        }
      } // for (int i=0; i< RG_numBCMessages_Ghost; i++)
 
@@ -4270,7 +4323,7 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
 
        if (MsgLimsXMin < xmin or MsgLimsXMax > xmax or MsgLimsYMin < ymin or MsgLimsYMax > ymax or MsgLimsZMin < zmin or MsgLimsZMax > zmax){
 	 cout <<"G" <<numGrid <<"R" << localRank <<" Msg " << i << " we have a problem in initWeightBC, active BC, aborting ... " << endl;
-	 abort();
+	 MPI_Abort(MPI_COMM_WORLD, -1);
        }
      }
 
@@ -4828,7 +4881,7 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
 
   if (! (which== -1 || which ==0)){
       cout << "initWeightBC, phase 1, is receiving wrong inputs. Check the code. Aborting now..." << endl;
-      abort();
+      MPI_Abort(MPI_COMM_WORLD, -1);
     }
   
   /*if (vct->getCartesian_rank()==0){
@@ -5193,7 +5246,7 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
      but DO NOT MODIFY THE NUMBER OF MSGs;
      I will just send a +1 */
 
-  cout << "R" <<SW_rank <<"RG_numBCMessages= " <<*RG_numBCMessages <<endl;
+  //cout << "R" <<SW_rank <<"RG_numBCMessages= " <<*RG_numBCMessages <<endl;
   RGBC_Info[*RG_numBCMessages].RG_core= -1;
   RGBC_Info[*RG_numBCMessages].CG_core= -1;
   //cout << "R" <<  rank_G <<":  END SONO QUI!!!" << endl;
@@ -5268,7 +5321,7 @@ void EMfields3D::initWeightBC_Phase2a(Grid *grid, VirtualTopology3D *vct, RGBC_s
       if (*RG_numBCMessages_LevelWide==MAX_size_LevelWide){
 	cout << "initWeightBC_Phase2a: The number of msgs that you plan on sending (>" << *RG_numBCMessages_LevelWide <<") exceeds capabilities;" << endl;
 	cout << "increase buffer size; aborting now " << endl;
-	abort();
+	MPI_Abort(MPI_COMM_WORLD, -1);
       }
       
     }
@@ -5321,7 +5374,7 @@ void EMfields3D::initWeightBC_Phase2b(Grid *grid, VirtualTopology3D *vct, RGBC_s
     if (RG_numBCMessages_ToCGCore[where] == MAX_RG_numBCMessages){
       cout << "initWeightBC_Phase2b: The number of msgs that you plan on sending (>" << MAX_RG_numBCMessages <<") exceeds capabilities;" << endl;
       cout << "increase buffer size; aborting now " << endl;
-      abort();
+      MPI_Abort(MPI_COMM_WORLD, -1);
     }
   }
   
@@ -5386,7 +5439,7 @@ void EMfields3D::initWeightBC_Phase2c(Grid *grid, VirtualTopology3D *vct, RGBC_s
       if (rank_As_Parent != (CG_Info[ch][CG_numBCMessages[ch]]).CG_core ){
 	cout << "initWeightBC_Phase2c has detected an anomaly in msg from RG grid ..." << endl;
 	cout << "aborting now ..." << endl;
-	abort();
+	MPI_Abort(MPI_COMM_WORLD, -1);
       } //else {cout << "Sanity check in initWeightBC_Phase2c passed ..." << endl;}
       /* end sanity check */
       
@@ -5592,7 +5645,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 	if (Testing){
 	  if (!( (countExp *NumF  == count) and (RGBC_Info_Active[i].CG_core == status.MPI_SOURCE) )){
 	    cout << "R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() <<" : msg recv from core " << status.MPI_SOURCE <<" with tag " << status.MPI_TAG << " but Active size does not check: received: " << count << " expected " << countExp*NumF << ", aborting ..." << endl;
-	    abort();
+	    MPI_Abort(MPI_COMM_WORLD, -1);
 	  }
 	}
 	  
@@ -5634,7 +5687,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
     if (Testing){
       if (found == false){
 	cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received a msg I cannot match with my record, aborting..." << endl;
-	abort();
+	MPI_Abort(MPI_COMM_WORLD, -1);
       }
     }
     
@@ -5664,7 +5717,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 	if (Testing){
 	  if (!( (countExp *NumF  == count) and (RGBC_Info_Ghost[i].CG_core == status.MPI_SOURCE) )){
 	    cout << "R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() <<" : msg recv from core " << status.MPI_SOURCE <<" with tag " << status.MPI_TAG << " but Ghost size does not check: received: " << count << " expected " << countExp*NumF << ", aborting ..." << endl;
-	    abort();
+	    MPI_Abort(MPI_COMM_WORLD, -1);
 	  }
 	}
 	  
@@ -5704,7 +5757,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
     if (Testing){
 	if (found == false){
 	  cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received a msg I cannot match with my record, aborting..." << endl;
-	  abort();
+	  MPI_Abort(MPI_COMM_WORLD, -1);
 	}
       }
   } // end receive msg
