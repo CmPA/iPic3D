@@ -246,6 +246,8 @@ class EMfields3D                // :public Field
     void initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta);
     /*! initialized with Light Wave */
     void initLightWave(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! double GEM, mlmd ready */
+    void initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! add a perturbattion to charge density */
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */

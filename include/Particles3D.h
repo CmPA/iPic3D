@@ -42,6 +42,8 @@ class Particles3D:public Particles3Dcomm {
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
     void alt_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** double current sheet, mlmd-ready **/
+    void MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective* col);
     /** Linear_perturbation */
     void linear_perturbation(double deltaBX, double kx, double ky, double theta, double omega_r, double omega_i, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /**Add a periodic perturbation in velocity exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/

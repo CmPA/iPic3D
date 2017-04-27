@@ -252,6 +252,13 @@ void Particles3D::MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology
 /** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
+
+  if (vct->getCartesian_rank() == 0) {
+    cout << "------------------------------------------" << endl;
+    cout << "Initialize PARTICLE Maxwellian " << endl;
+    cout << "------------------------------------------" << endl;
+  }
+
   /* initialize random generator with different seed on different processor */
   srand(vct->getCartesian_rank() + 2);
 
@@ -1578,3 +1585,79 @@ double Particles3D::deleteParticlesInsideSphere(double R, double x_center, doubl
   return(Q_removed);
 }
 
+
+/** Maxellian random velocity and uniform spatial distribution, goes with Double GEM */
+void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective* col) {
+  // mlmd-ready
+
+  if (vct->getCartesian_rank() == 0) {
+    cout << "------------------------------------------" << endl;
+    cout << "Initialize PARTICLE DOUBLE GEM Challenge " << endl;
+    cout << "------------------------------------------" << endl;
+  }
+  
+  // initialize random generator with different seed on different processor 
+  srand(vct->getCartesian_rank() + 2);
+
+  int i_s=1, i_e= grid->getNXC() - 1;
+  int j_s=1, j_e= grid->getNYC() - 1;
+  int k_s=1, k_e= grid->getNZC() - 1;
+
+  if (bcPfaceXleft<0 and vct->getXleft_neighbor_P() == MPI_PROC_NULL) i_s=0;
+  if (bcPfaceXright<0 and vct->getXright_neighbor_P() == MPI_PROC_NULL) i_e=grid->getNXC();
+
+  if (bcPfaceYleft<0 and vct->getYleft_neighbor_P() == MPI_PROC_NULL) j_s=0;
+  if (bcPfaceYright<0 and vct->getYright_neighbor_P() == MPI_PROC_NULL) j_e=grid->getNYC();
+
+  if (bcPfaceZleft<0 and vct->getZleft_neighbor_P() == MPI_PROC_NULL) k_s=0;
+  if (bcPfaceZright<0 and vct->getZright_neighbor_P() == MPI_PROC_NULL) k_e=grid->getNZC();
+
+  // local
+  double Ly = col->getLx_mlmd(0);
+  // end local
+
+  const double coarsedy= col->getDy_mlmd(0);
+  double globaly;
+  double shaperz;
+    
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  for (int i = i_s; i < i_e; i++)
+    for (int j = j_s; j < j_e; j++)
+      for (int k = k_s; k < k_e; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+	            
+	      globaly= grid->getYN(i,j,k)+ coarsedy + grid->getOy_SW();
+	      shaperz= -tanh((globaly - Ly/2)/delta) ;
+	            
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = w0*shaperz + wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+
+              counter++;
+            }
+  
+  nop= counter;
+}
