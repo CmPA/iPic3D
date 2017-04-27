@@ -5989,7 +5989,7 @@ void EMfields3D::setBC_Nodes(VirtualTopology3D * vct, double ***Fx, double ***Fy
     if (!(RGBC_Info[m].np_y==1)) N0++;
     if (!(RGBC_Info[m].np_z==1)) N0++;
 
-    if (N0 !=2) {cout << "WARNING: in setBC_Nodes N0!= 2 (but it may be ok)" << endl; }
+    //if (N0 !=2) {cout << "WARNING: in setBC_Nodes N0!= 2 (but it may be ok)" << endl; }
 
     int II= RGBC_Info[m].np_x;
     int JJ= RGBC_Info[m].np_y;
@@ -6034,7 +6034,7 @@ void EMfields3D::setBC_Nodes_RENORM(VirtualTopology3D * vct, double ***Fx, doubl
     if (!(RGBC_Info[m].np_y==1)) N0++;
     if (!(RGBC_Info[m].np_z==1)) N0++;
 
-    if (N0 !=2) {cout << "WARNING: in setBC_Nodes N0!= 2 (but it may be ok)" << endl; }
+    //if (N0 !=2) {cout << "WARNING: in setBC_Nodes N0!= 2 (but it may be ok)" << endl; }
 
     int II= RGBC_Info[m].np_x;
     int JJ= RGBC_Info[m].np_y;
@@ -6084,7 +6084,7 @@ void EMfields3D::setBC_NodesImage(VirtualTopology3D * vct, double ***Fx, double 
     if (!(RGBC_Info[m].np_y==1)) N0++;
     if (!(RGBC_Info[m].np_z==1)) N0++;
 
-    if (N0 !=2) {cout << "WARNING: in setBC_NodesImage N0 !=2 (may be ok)" << endl;}
+    //if (N0 !=2) {cout << "WARNING: in setBC_NodesImage N0 !=2 (may be ok)" << endl;}
 
     int II= RGBC_Info[m].np_x;
     int JJ= RGBC_Info[m].np_y;
@@ -6128,7 +6128,7 @@ void EMfields3D::setBC_NodesImage_RENORM(VirtualTopology3D * vct, double ***Fx, 
     if (!(RGBC_Info[m].np_y==1)) N0++;
     if (!(RGBC_Info[m].np_z==1)) N0++;
 
-    if (N0 !=2) {cout << "WARNING: in setBC_NodesImage N0 !=2 (may be ok)" << endl;}
+    //if (N0 !=2) {cout << "WARNING: in setBC_NodesImage N0 !=2 (may be ok)" << endl;}
 
     int II= RGBC_Info[m].np_x;
     int JJ= RGBC_Info[m].np_y;
