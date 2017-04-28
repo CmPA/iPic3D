@@ -2426,7 +2426,7 @@ void Particles3Dcomm::CheckSentReceivedParticles(VirtualTopology3D* vct){
 	MPI_Abort(MPI_COMM_WORLD, -1);
       }
       else{
-	//cout << "Grid " << numGrid << " and its child "<<vct->getChildGridNum(i) << " exchanged " << CGPGridWide[i] << " RG BC particles: same # of particles sent and received" << endl;
+	cout << "Grid " << numGrid << " and its child "<<vct->getChildGridNum(i) << " exchanged " << CGPGridWide[i] << " RG BC particles: same # of particles sent and received" << endl;
 	
       }
     }
@@ -2459,7 +2459,7 @@ void Particles3Dcomm::CheckSentReceivedParticles(VirtualTopology3D* vct){
 /** split each received particles **/
 void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p){
   // to prevent the repopulation of particles which would try to accumulate outside the grid
-  double PM=0.99;
+  double PM=0.01;
 
   double xTmp;
   double yTmp;
@@ -2473,33 +2473,33 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
     xTmp= p.x - DxP/2.0 + dx*(1./2. + i)- grid->getOx();
         
     // if outside the domain, no  point in continuing splitting
-    if (xTmp < Coord_XLeft_Start*PM or xTmp>Coord_XRight_End*PM)
+    if (xTmp < Coord_XLeft_Start or xTmp>Coord_XRight_End)
       continue;
     
     // am i inside a X PRA?
-    StX= (xTmp> Coord_XLeft_Start*PM and xTmp < Coord_XLeft_End) or (xTmp> Coord_XRight_Start and xTmp < Coord_XRight_End*PM);
+    StX= (xTmp> Coord_XLeft_Start+dx*PM and xTmp < Coord_XLeft_End) or (xTmp> Coord_XRight_Start and xTmp < Coord_XRight_End-dx*PM);
     /*if (! StX ) continue;*/
 
     for (int j=0; j< ceil(RFy); j++){
       yTmp= p.y - DyP/2.0 + dy*(1./2. + j)- grid->getOy();
 
       // if outside the domain, no  point in continuing splitting
-      if (yTmp < Coord_YLeft_Start*PM or yTmp>Coord_YRight_End*PM)
+      if (yTmp < Coord_YLeft_Start or yTmp>Coord_YRight_End)
 	continue;
       
       // am i inside a Y PRA?
-      StY= (yTmp> Coord_YLeft_Start*PM and yTmp < Coord_YLeft_End) or (yTmp> Coord_YRight_Start and yTmp < Coord_YRight_End*PM);
+      StY= (yTmp> Coord_YLeft_Start+dy*PM and yTmp < Coord_YLeft_End) or (yTmp> Coord_YRight_Start and yTmp < Coord_YRight_End-dy*PM);
       /*if (! StY ) continue;*/
 
       for (int k=0; k< ceil(RFz); k++){
 	zTmp= p.z - DzP/2.0 + dz*(1./2. + k)- grid->getOz();
 	
 	// if outside the domain, no  point in continuing splitting
-	if (zTmp < Coord_ZLeft_Start*PM or zTmp>Coord_ZRight_End*PM)
+	if (zTmp < Coord_ZLeft_Start or zTmp>Coord_ZRight_End)
 	  continue;
 
 	// am i inside a Z PRA?
-	StZ= (zTmp> Coord_ZLeft_Start*PM and zTmp < Coord_ZLeft_End) or (zTmp> Coord_ZRight_Start and zTmp < Coord_ZRight_End*PM);
+	StZ= (zTmp> Coord_ZLeft_Start+dz*PM and zTmp < Coord_ZLeft_End) or (zTmp> Coord_ZRight_Start and zTmp < Coord_ZRight_End);
 	
 	//cout << " Coord_ZLeft_Start " << Coord_ZLeft_Start << " Coord_ZLeft_End " << Coord_ZLeft_End << " Coord_ZRight_Start " << Coord_ZRight_Start << " Coord_ZRight_End " << Coord_ZRight_End << endl;
 
