@@ -198,6 +198,8 @@ class EMfields3D                // :public Field
     void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /**  Init WB8 */
     void initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    /**  Init Two Coils */
+    void initTwoCoils(VirtualTopology3D *vct, Grid *grid, Collective *col);
     /** Init Flux Rope based on pressure equilibrium */
     void initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *col);
     /*! initialized with rotated magnetic field */

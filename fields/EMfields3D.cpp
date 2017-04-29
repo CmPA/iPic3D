@@ -2494,6 +2494,152 @@ void EMfields3D::initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col){
         }
 
 }
+//Initializes the vacuum fields for EMC2.
+void EMfields3D::initTwoCoils(VirtualTopology3D *vct, Grid *grid, Collective *col){
+        double distance;
+
+	//char BlogName[256];
+	//sprintf(BlogName, "/home/aws/VacuumB.%d.csv", vct->getCartesian_rank());
+	//FILE *Blog = fopen(BlogName, "w");
+	//fprintf(Blog, "x,y,z,Bx,By,Bz\n");
+
+           for (int i=0; i < nxn; i++){
+            for (int j=0; j < nyn; j++){
+              for (int k=0; k < nzn; k++){
+                for (int is=0; is < ns; is++){
+        		  rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+        		}
+        		Ex[i][j][k] = 0.0;
+                Ey[i][j][k] = 0.0;
+                Ez[i][j][k] = 0.0;
+                double blp[3];
+                double a=coilD/2.0;
+                double xc=Lx/2.0;
+                double yc=Ly/2.0;
+                double zc=Lz/2.0;
+                double deltax=coilSpacing/2.0;
+                double deltay=coilSpacing/2.0;
+                double deltaz=coilSpacing/2.0;
+                double x = grid->getXN(i,j,k);
+                double y = grid->getYN(i,j,k);
+                double z = grid->getZN(i,j,k);
+
+                 Bxn[i][j][k] = 0.0;
+                 Byn[i][j][k] = 0.0;
+                 Bzn[i][j][k] = 0.0;
+/*
+                loopZ(blp, x, y, z, a, xc, yc, zc+deltaz, -B0z);
+                Bxn[i][j][k] = blp[0];
+                Byn[i][j][k] = blp[1];
+                Bzn[i][j][k] = blp[2];
+                loopZ(blp, x, y, z, a, xc, yc, zc-deltaz, B0z);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+
+                loopX(blp, x, y, z, a, xc+deltax, yc, zc, -B0x);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+                loopX(blp, x, y, z, a, xc-deltax, yc, zc, B0x);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+*/
+                loopY(blp, x, y, z, a, xc, yc+deltay, zc, -B0y);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+                loopY(blp, x, y, z, a, xc, yc-deltay, zc, B0y);
+                Bxn[i][j][k] += blp[0];
+                Byn[i][j][k] += blp[1];
+                Bzn[i][j][k] += blp[2];
+
+		//fprintf(Blog, "%f,%f,%f,%E,%E,%E\n", x, y, z, Bxn[i][j][k], Byn[i][j][k], Bzn[i][j][k]);
+              }
+            }
+           }
+           // communicate ghost
+           communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+           communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+           communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+
+
+           // initialize B on centers
+            grid->interpN2C(Bxc,Bxn);
+        	grid->interpN2C(Byc,Byn);
+        	grid->interpN2C(Bzc,Bzn);
+            for (int i=0; i < nxc; i++){
+             for (int j=0; j < nyc; j++){
+               for (int k=0; k < nzc; k++){
+                 double blp[3];
+                 double a=coilD/2.0;
+                 double xc=Lx/2.0;
+                 double yc=Ly/2.0;
+                 double zc=Lz/2.0;
+                 double deltax=coilSpacing/2.0;
+                 double deltay=coilSpacing/2.0;
+                 double deltaz=coilSpacing/2.0;
+                 double x = grid->getXC(i,j,k);
+                 double y = grid->getYC(i,j,k);
+                 double z = grid->getZC(i,j,k);
+                 Bxc[i][j][k] = 0.0;
+                 Byc[i][j][k] = 0.0;
+                 Bzc[i][j][k] = 0.0;
+
+/*
+                 loopZ(blp, x, y, z, a, xc, yc, zc+deltaz, -B0z);
+                 //cout << blp[0] << "   " << x << "   " << xc << "   " << m << endl;
+                 Bxc[i][j][k] = blp[0];
+                 Byc[i][j][k] = blp[1];
+                 Bzc[i][j][k] = blp[2];
+                 loopZ(blp, x, y, z, a, xc, yc, zc-deltaz, B0z);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+
+                 loopX(blp, x, y, z, a, xc+deltax, yc, zc, -B0x);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+                 loopX(blp, x, y, z, a, xc-deltax, yc, zc, B0x);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+*/
+                 loopY(blp, x, y, z, a, xc, yc+deltay, zc, -B0y);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+                 loopY(blp, x, y, z, a, xc, yc-deltay, zc, B0y);
+                 Bxc[i][j][k] += blp[0];
+                 Byc[i][j][k] += blp[1];
+                 Bzc[i][j][k] += blp[2];
+
+		//fprintf(Blog, "%f,%f,%f,%E,%E,%E\n", x, y, z, Bxc[i][j][k], Byc[i][j][k], Bzc[i][j][k]);
+               }
+             }
+            }
+		//fclose(Blog);
+
+        	communicateCenterBC_P(nxc,nyc,nzc,Bxc,2,2,2,2,2,2,vct);
+        	communicateCenterBC_P(nxc,nyc,nzc,Byc,2,2,2,2,2,2,vct);
+        	communicateCenterBC_P(nxc,nyc,nzc,Bzc,2,2,2,2,2,2,vct);
+            // initialize J on nodes
+        	grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc);
+        	scale(Jx_ext,tempXN,c/FourPI,nxn,nyn,nzn);
+        	scale(Jy_ext,tempYN,c/FourPI,nxn,nyn,nzn);
+        	scale(Jz_ext,tempZN,c/FourPI,nxn,nyn,nzn);
+
+                for (int is=0 ; is<ns; is++)
+                 grid->interpN2C(rhocs,is,rhons);
+         if (restart1 ==0){
+//  do nothing
+        } else { // EM initialization from RESTART
+                init(vct,grid,col);  // use the fields from restart file
+        }
+
+}
 
 void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   double **modes_seed = newArr2(double, 7, 7);
