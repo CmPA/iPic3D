@@ -310,7 +310,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="HarrisSteps")       fixBgem(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
-  if (Case=="Coils") fixBzero(grid, vct);
+  if (Case=="Coils" || Case=="TwoCoils") fixBzero(grid, vct);
   if (Case=="FluxRope") fixBrope(grid, vct);
 
   // OpenBC:
@@ -1042,7 +1042,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
   if (Case=="HarrisSteps")       fixBgem(grid, vct);
-  if (Case=="Coils") fixBzero(grid, vct);
+  if (Case=="Coils" || Case=="TwoCoils") fixBzero(grid, vct);
   if (Case=="FluxRope") fixBrope(grid, vct);
 
   // OpenBC:
