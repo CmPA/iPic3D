@@ -710,10 +710,17 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
    for (int icount = 1; icount < nvolte + 1; icount++) {
      if (value != 1.0) {
        double alpha;
-       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ex, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
+       if (! MLMD_BC){ // CG 
+	 communicateNodeBoxStencilBC(nxn, nyn, nzn, Ex, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+	 communicateNodeBoxStencilBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+	 communicateNodeBoxStencilBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+       } 
+       else { //RG
+	 communicateNodeBoxStencil(nxn, nyn, nzn, Ex, vct);
+	 communicateNodeBoxStencil(nxn, nyn, nzn, Ey, vct);
+	 communicateNodeBoxStencil(nxn, nyn, nzn, Ez, vct);
+       }
        double ***temp = newArr3(double, nxn, nyn, nzn);
        if (icount % 2 == 1) {
 	 value = 0.;

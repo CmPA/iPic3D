@@ -415,6 +415,8 @@ bool c_Solver::ParticlesMover() {
 }
 
 void c_Solver::InjectBoundaryParticles(){
+  
+  if (numGrid >0) return;
 
   for (int i=0; i < ns; i++) {
     if (col->getRHOinject(i)>0.0){
