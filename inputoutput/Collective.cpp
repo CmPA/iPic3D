@@ -303,6 +303,7 @@ void Collective::ReadInput(string inputfile) {
     MLMD_PROJECTION = config.read < bool > ("MLMD_PROJECTION");
     MLMD_ParticleREPOPULATION = config.read < bool > ("MLMD_ParticleREPOPULATION");
 
+    AllowPMsgResize= config.read < bool > ("AllowPMsgResize");
     //cout << "MLMD_BC: " << MLMD_BC <<endl;
     
     // end MLMD reads
@@ -1720,6 +1721,8 @@ int Collective::getHighestRankOfGrid(int n) {return HighestRankOfGrid[n];}
 bool Collective::getMLMD_BC() {return MLMD_BC;}
 bool Collective::getMLMD_PROJECTION() {return MLMD_PROJECTION;}
 bool Collective::getMLMD_ParticleREPOPULATION() {return MLMD_ParticleREPOPULATION;}
+
+bool Collective::getAllowPMsgResize() {return AllowPMsgResize;}
 
 /*! end MLMD gets */
 /*! a first sanity check on MLMD inputs, called at the end of the constructor */

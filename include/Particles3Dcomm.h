@@ -278,7 +278,12 @@ public:
   /* prepares P BC msg to the refined grid */
   void buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch);
   /* add a particle to the PBC msg */
-  void addP(RepP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, VirtualTopology3D* vct);
+  void addP(int ch, int n, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, VirtualTopology3D* vct);
+  /* resize the buffers responsible for sending repopulated particle from the CG to the RG -- CG side*/
+  void resize_CG_MLMD_buffers(VirtualTopology3D * vct);
+  /* resize the buffers responsible for sending repopulated particles from teh CG to the RG -- RG side 
+     the difference: I do not need to preserve info, only the resize buffers */
+  void resize_RG_MLMD_buffers(int NEW_sizePBCMsg);
   /* add a particle for the exchange of the repopulated particles within the R*/
   void addP_CRP(CRP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, int DestinationRank, VirtualTopology3D* vct);			       
   /* add a particle packed into the CRP_struct into the core particle vectors 
@@ -478,13 +483,14 @@ protected:
   /* CG SIDE */
   /*! number of children */
   int numChildren;
-  /* msg receiving structure */
+  /* msg receiving structure 
+     [numChildren] [MAX_RG_numPBCMessages] */
   RGPBC_struct ** CG_Info;
-  /* num of msg per child */
   int *CG_numPBCMessages;
   /* struct hosting info on particles to send to the RG 
-     [number of children][MaxNumMsg][sizePBCMsg] */
+     [number of children][MaxNumMsg][sizeCG_PBCMsg] */
   RepP_struct *** PCGMsg;
+  RepP_struct *** PCGMsg_ptr; // alias to make the resize
   int MaxNumMsg;
   /* number of particles to send to each child core
      [number of children][MaxNumMsg] */
@@ -492,11 +498,16 @@ protected:
   /* END CG SIDE */
   /* BOTH SIDES */
   /* size of the vector -- can be resized up to MAXsizePCMsg -- value set in initWeightPBC 
-     same for RG and CG side */
-  int sizePBCMsg;
+     broken for CG and RG side, in case one core is both */
+  int sizeCG_PBCMsg; // CG side
+  int sizeRG_PBCMsg; // RG side
   /* resizing up to here -- value set in initWeightPBC
      same for RG and CG side */
   int MAXsizePBCMsg;
+  /* wether to allow the resize of the buffers containing the particles to send CG->RG for repopulation
+     false may be heavy on memory consumption                 
+     true may be heavy on performance */
+  bool AllowPMsgResize;
   /* END BOTH SIDES */
   /* RG SIDE */
   /* number of PBC Msgs to receive, as a child */
@@ -512,7 +523,7 @@ protected:
   /* intermediate, for handshake ops */
   int MAX_RG_numPBCMessages_LevelWide;
   /* struct hosting particles received from the RG (here, they are not split yet)
-     [RG_numPBCMessages][sizePCMsg]*/
+     [RG_numPBCMessages][sizeRG_PCMsg]*/
   RepP_struct ** PRGMsg;
   /* number of particles received as part of each msg
      [RG_numPBCMessages] */
@@ -521,7 +532,7 @@ protected:
      here, put a 'true' in the line corresponding to a particular msg if it arrived */
   bool * PRGMsgArrived;
   /* general buffer to receive particles BC; before putting them in the proper slot in PRGMsg
-     [sizePCMsg]*/
+     [sizeRG_PCMsg]*/
   RepP_struct* PRGMsg_General;
   /* particles added to the PRA area from MLMD BC */
   int PRA_PAdded;
@@ -596,6 +607,25 @@ protected:
   int *Rank_CommToChildren_P;
   int Rank_CommToParent_P;
 
+  // communicators involving only the cores in the grid involved in particle BC communication
+  MPI_Comm COMM_RG_PBCSubset_P;
+  /* the CG core (rank in the PG communicator) exchanging PBC info that will communicate with RG cores if communication with PBC function has to be initiated e.g. for the resize of the particle buffers */
+  /* as saved by CG */
+  /* [numChildren] */
+  int *CGSide_CGLeader_PBCSubset;
+  /* as saved by RG */
+  int RGSide_CGLeader_PBCSubset;
+  /* [numChildren] */
+  MPI_Comm *COMM_CG_PBCSubset_P;
+
+  /* number of RG cores which communicate with this CG*/
+  /* [numChildren]; instantiate only if you- as a CG core- are the spokeperson to a RG 
+     only the entry relative to that grid has a valid number */
+  int *numRcv;
+  /* [numChildren][local variable > the biggest of numRcv] 
+     instantiate only if you- as a CG core- are the spokeperson to a RG 
+     only the entry relative to that grid has a valid number*/
+  int **RcvList;
   /*! end mlmd specific variables */
 };
 

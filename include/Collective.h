@@ -312,6 +312,8 @@ class Collective
     bool getMLMD_PROJECTION();
     bool getMLMD_ParticleREPOPULATION();
 
+    bool getAllowPMsgResize();
+
     /*! returns MLMDVerbose */
     bool getMLMDVerbose();
     /*! end MLMD gets */
@@ -580,6 +582,10 @@ class Collective
     bool MLMD_PROJECTION;
     bool MLMD_ParticleREPOPULATION;
     
+    /* wether to allow the resize of the buffers containing the particles to send CG->RG for repopulation
+       false may be heavy on memory consumption
+       true may be heavy on performance */
+    bool AllowPMsgResize;
     // end MLMD variables
 };
 
