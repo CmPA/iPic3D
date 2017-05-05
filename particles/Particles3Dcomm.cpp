@@ -469,7 +469,8 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
 
   PRA_PAdded=0;
-  MAX_np_CRP= 0.5*npmax;
+  MAX_np_CRP= 10*npmax; // exagerated number
+  size_CRP=  nop;
   // //FOR TEST:
   // nvDistLoc = 3;
   // vDist     = new c_vDist[nvDistLoc];
@@ -481,7 +482,6 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // vDist[1].init(species, 6.36, 11.00, 0.02625, 256, 256, 256, vR, vFact, col, grid);
   // vDist[2].init(species, 10.0, 15.0 , 0.02625, 256, 256, 256, vR, vFact, col, grid);
   // //END FOR TEST
-
 
 }
 
@@ -617,6 +617,11 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
 
+  for (int i=0; i< nop; i++){
+    if (z[i]==1.00208){
+      cout << "z== 1.00208 appeared in interpP2G" << endl;
+    }
+  }
 
   //#pragma omp parallel
   {
@@ -1448,8 +1453,10 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 
       // these are vectors needed to exchange repopulated particles inside the RG 
       if (rank_local==HighestRank){ 
-	H_CRP_General= new CRP_struct[MAX_np_CRP];
-	H_CRP_Msg= newArr2(CRP_struct, XLEN*YLEN*ZLEN, MAX_np_CRP);
+	H_CRP_General= new CRP_struct[size_CRP];
+	H_CRP_General_ptr= H_CRP_General; // for resize
+	H_CRP_Msg= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
+	H_CRP_Msg_ptr= H_CRP_Msg;
 	H_num_CRP_nop= new int[XLEN*YLEN*ZLEN];
 	H_CRP_cores= new int[XLEN*YLEN*ZLEN];
 	for (int ii=0; ii< XLEN*YLEN*ZLEN; ii++){
@@ -1459,7 +1466,8 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 	num_H_CRP_cores=0;
       }
       else{
-	CRP_ToCoreH= new CRP_struct[MAX_np_CRP];
+	CRP_ToCoreH= new CRP_struct[size_CRP];
+	CRP_ToCoreH_ptr= CRP_ToCoreH;
       }
     }
   } // end if (CommToParent_P != MPI_COMM_NULL) { 
@@ -2329,12 +2337,10 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct){
     cout << "Grid " << numGrid << " added " << ToTPRA_PAdded << " particles, deleted " << TotPRA_deleted << endl;
     }*/
 
-  /*if (numGrid>0)
-    cout <<"Grid " << numGrid << " R " << vct->getCartesian_rank() << " ns " << ns << " nop " << nop << " before communicateRepopulatedParticles "<< endl;*/
-
   if (CommToParent_P!= MPI_COMM_NULL) {
     communicateRepopulatedParticles(grid, vct);
   }
+
   /*if (numGrid>0)
     cout <<"Grid " << numGrid << " R " << vct->getCartesian_rank() << " ns " << ns << " nop " << nop << " at the end of ReceivePBC "<< endl;*/
 }
@@ -2571,7 +2577,8 @@ void Particles3Dcomm::CheckSentReceivedParticles(VirtualTopology3D* vct){
 /** split each received particles **/
 void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p){
   // to prevent the repopulation of particles which would try to accumulate outside the grid
-  double PM=0.01;
+
+  double PM= 0.0001;
 
   double xTmp;
   double yTmp;
@@ -2580,12 +2587,11 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
   
   bool StX, StY, StZ;
 
-  
   for (int i=0; i< ceil(RFx); i++){
     xTmp= p.x - DxP/2.0 + dx*(1./2. + i)- grid->getOx();
         
     // if outside the domain, no  point in continuing splitting
-    if (xTmp < Coord_XLeft_Start or xTmp>Coord_XRight_End)
+    if (xTmp < Coord_XLeft_Start+dx*PM or xTmp>Coord_XRight_End-dx*PM)
       continue;
     
     // am i inside a X PRA?
@@ -2596,7 +2602,7 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
       yTmp= p.y - DyP/2.0 + dy*(1./2. + j)- grid->getOy();
 
       // if outside the domain, no  point in continuing splitting
-      if (yTmp < Coord_YLeft_Start or yTmp>Coord_YRight_End)
+      if (yTmp < Coord_YLeft_Start+dy*PM or yTmp>Coord_YRight_End-dy*PM)
 	continue;
       
       // am i inside a Y PRA?
@@ -2607,11 +2613,11 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	zTmp= p.z - DzP/2.0 + dz*(1./2. + k)- grid->getOz();
 	
 	// if outside the domain, no  point in continuing splitting
-	if (zTmp < Coord_ZLeft_Start or zTmp>Coord_ZRight_End)
+	if (zTmp < Coord_ZLeft_Start+dz*PM or zTmp>Coord_ZRight_End-dz*PM)
 	  continue;
 
 	// am i inside a Z PRA?
-	StZ= (zTmp> Coord_ZLeft_Start+dz*PM and zTmp < Coord_ZLeft_End) or (zTmp> Coord_ZRight_Start and zTmp < Coord_ZRight_End);
+	StZ= (zTmp> Coord_ZLeft_Start+dz*PM and zTmp < Coord_ZLeft_End) or (zTmp> Coord_ZRight_Start and zTmp < Coord_ZRight_End-dz*PM);
 	
 	//cout << " Coord_ZLeft_Start " << Coord_ZLeft_Start << " Coord_ZLeft_End " << Coord_ZLeft_End << " Coord_ZRight_Start " << Coord_ZRight_Start << " Coord_ZRight_End " << Coord_ZRight_End << endl;
 
@@ -2863,6 +2869,16 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
   if (rank_local==HighestRank )
   cout << "Grid " << numGrid << " SONO QUI 0, grid barrier" << endl;*/
 
+  /* -- exchange - resize_CRPbuffers_BSTH -- */
+  if (AllowPMsgResize){ // if, from inputfile, the resize is an option, do it
+    int New_size_CRP;
+    // on the PBC communicators
+    MPI_Allreduce(&size_CRP, &New_size_CRP, 1, MPI_INT, MPI_MAX, COMM_RG_PBCSubset_P);
+    if (New_size_CRP> size_CRP) 
+      resize_CRP_buffers_BSTH(vct, New_size_CRP);
+  }
+  /* -- exchange - resize_CRPbuffers_BSTH -- */
+
   if (rank_local< HighestRank){
     MPI_Isend(CRP_ToCoreH, np_ToCoreH_CRP, MPI_CRP_struct, HighestRank, TAG, vct->getComm(), &request);  
     MPI_Wait(&request, &status);
@@ -2871,7 +2887,6 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
   }  
 
   if (rank_local == HighestRank){
-    
     // receive from the other cores involved in communicateRepopulatedParticles
     // the msg with the particles to dispatch
     
@@ -2879,25 +2894,25 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
     // valid value only in HighestRank
     int count, src;
     for (int m=0; m< num_H_CRP_cores; m++){ 
-      MPI_Recv(H_CRP_General, MAX_np_CRP, MPI_CRP_struct, MPI_ANY_SOURCE, TAG, vct->getComm(), &status);
+      MPI_Recv(H_CRP_General, size_CRP, MPI_CRP_struct, MPI_ANY_SOURCE, TAG, vct->getComm(), &status);
       MPI_Get_count(&status, MPI_CRP_struct, &count);
       
       src= status.MPI_SOURCE;
       
       //cout <<"CRP: Grid "<<numGrid <<" R " << rank_local <<" has received " << count <<" repop particles from core " << src << " ns " <<ns << endl;
-
+      
       // I am checking if this core is expected to participate in communicateRepopulatedParticles
       if (H_CRP_cores[src]!=1){
 	cout << "L2: Grid "<<numGrid << ": in communicateRepopulatedParticles, HighestRank is receiving a msg from a forbidden source... " << endl << "Check the inconsistency, aborting now ..." << endl;
 	MPI_Abort(MPI_COMM_WORLD, -1);
       }
-
+      
       // process the msg
       for (int mm=0; mm< count; mm++){
 	
 	// check if the destination (WhereToSend), as calculated from the originating core, is allowed
 	int WTS= H_CRP_General[mm].Destination;
-
+	
 	if (WTS== rank_local){ // this core is the destination, unpack and go to next particle
 	  unpack_CRP(H_CRP_General[mm], vct);
 	}
@@ -2907,22 +2922,29 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
 	    cout << "Grid "<<numGrid << ": in communicateRepopulatedParticles, HighestRank wants to send a msg to a forbidden destination... " << endl << "Check the inconsistency, aborting now ..." << endl;
 	    MPI_Abort(MPI_COMM_WORLD, -1);
 	  }
-	  // if so, assign to the right line in H_CRP_Msg and 
-	  // increase corresponding # of particles 
-	  H_CRP_Msg[WTS][H_num_CRP_nop[WTS]]= H_CRP_General[mm];
-	  (H_num_CRP_nop[WTS])++;
 	  
-	  // put a check of the # of particles packed here
-	  if (H_num_CRP_nop[WTS] == MAX_np_CRP){
-	    cout << "Implement buffer resize in communicateRepopulatedParticles, you are exceedin MAX_np_CRP, aborting now..." << endl;
-	    MPI_Abort(MPI_COMM_WORLD, -1);
-	  }
+	  // if so, assign to the right line in H_CRP_Msg and
+	  unsigned long ID;
+	  if (TrackParticleID) ID= H_CRP_General[mm].ID;
+	  
+	  addP_CRP(H_CRP_Msg[WTS], &(H_num_CRP_nop[WTS]), H_CRP_General[mm].x, H_CRP_General[mm].y, H_CRP_General[mm].z, H_CRP_General[mm].u, H_CRP_General[mm].v, H_CRP_General[mm].w, H_CRP_General[mm].q, ID, WTS, vct);
+	  
 	} // end if (WTS== rank_local){ 
-	
-      }// end for (int mm=0; mm< count; mm++)
-      
+      }// end for (int mm=0; mm< count; mm++) 
     } // end for (int m=0; m< num_H_CRP_cores; m++){ 
+  } // end if (rank_local == HighestRank)
+  
+  /* -- exchange - resize_CRPbuffers_BSFH -- */
+  if (AllowPMsgResize){ // if, from inputfile, the resize is an option, do it
+    int New_size_CRP;
+    // on the PBC communicators
+    MPI_Allreduce(&size_CRP, &New_size_CRP, 1, MPI_INT, MPI_MAX, COMM_RG_PBCSubset_P);
+    if (New_size_CRP> size_CRP) 
+      resize_CRP_buffers_BSFH(vct, New_size_CRP);
+  }
+  /* -- exchange - resize_CRPbuffers_BSFH -- */
     
+  if (rank_local == HighestRank){
     // now, HighestRank sends directly to the right core
     int sent=0;
     for (int m=0; m< HighestRank; m++){  
@@ -2940,7 +2962,7 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
     }
   } // end if (rank_local == HighestRank) 
 
-  // here the next intermediate check, check nop for everybody Ã+ H_num_CRP_nopi] for HighestRank
+  // here the next intermediate check, check nop for everybody Ãƒ+ H_num_CRP_nopi] for HighestRank
 
   /*MPI_Barrier(vct->getComm());
   if (rank_local== HighestRank)
@@ -2972,7 +2994,7 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
   if (true){
   if (rank_local < HighestRank){
     // reuse the same bugger used for the send to HighestRank
-    MPI_Recv(CRP_ToCoreH, MAX_np_CRP, MPI_CRP_struct, HighestRank, ns, vct->getComm(), &status);
+    MPI_Recv(CRP_ToCoreH, size_CRP, MPI_CRP_struct, HighestRank, ns, vct->getComm(), &status);
     MPI_Get_count(&status, MPI_CRP_struct, &count);
 
     //cout << "LR: Grid "<< numGrid <<" R "<<rank_local <<" has received " << count << " particles from core " <<HighestRank << " ns " << ns << endl;
@@ -3050,11 +3072,15 @@ void Particles3Dcomm::addP_CRP(CRP_struct * Vec, int *num, double x, double y, d
   (*num)++;
   // cout << "adding P: after adding *num= " << *num << endl;
 
-  if (*num > MAX_np_CRP){
-    // TO DO:RESIZE
-    cout << "in addP_CRP, numGrid " << numGrid << " core " << vct->getCartesian_rank()  << " in the local grid communicator, you plan on passing too many particles as BC; IMPLEMENT RESIZE; aborting now..." << endl;
-    MPI_Abort(MPI_COMM_WORLD, -1);
+  if (*num  == size_CRP){
+    if (AllowPMsgResize){
+      resize_CRP_buffers(vct);
+    }else{
+      cout << "in addP_CRP, numGrid " << numGrid << " core " << vct->getCartesian_rank()  << " in the local grid communicator, you plan on passing too many particles as BC; " << endl << "ENABLE RESIZE --> AllowPMsgResize = 1 in the inputfile" << endl <<"Aborting now..." << endl;
+      MPI_Abort(MPI_COMM_WORLD, -1);
+    }
   }
+
   return;
  
 }
@@ -3113,3 +3139,135 @@ void Particles3Dcomm::resize_RG_MLMD_buffers(int NEW_sizePBCMsg){
   PRGMsg_General= new RepP_struct[sizeRG_PBCMsg];
 }
 
+void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct){
+  /** I will now multiply by 2 **/
+  int NEW_size_CRP= size_CRP*2;
+
+  int RR= vct->getCartesian_rank();
+  int HighestRank= XLEN*YLEN*ZLEN-1;
+
+  if (NEW_size_CRP > MAX_np_CRP){
+    cout << "Grid " <<numGrid << " R " << RR <<": attempt to resize CRP particle repopulation buffers failed because NEW_size_CRPg > allowed value, "<< MAX_np_CRP << endl;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  } else{
+    cout << "Grid " <<numGrid <<" R " << RR <<": resize_CRP_buffers from " << size_CRP << " to " << NEW_size_CRP << " particles, max allowed " << MAX_np_CRP  << endl;
+  }
+  
+  if (RR!= HighestRank){ 
+    /* if called by addP_CRP with RR!= HighestRank, it is called while building msg to HighestRank
+       resize & preserve CRP_ToCoreH */
+    CRP_struct * tmp_CRP_ToCoreH= new CRP_struct[size_CRP];
+
+    memcpy(tmp_CRP_ToCoreH, CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    delete[] CRP_ToCoreH;
+
+    CRP_ToCoreH= new CRP_struct[NEW_size_CRP];
+    CRP_ToCoreH_ptr= CRP_ToCoreH;
+
+    memcpy(CRP_ToCoreH, tmp_CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    delete[] tmp_CRP_ToCoreH;
+  } else{ // here, RR== HighestRank
+    /* if called by addP_CRP with RR== HighestRank, it is called when HighestRank is building msg
+       to everbybody else -
+       resize H_CRP_General; resize & preserve H_CRP_Msg*/
+
+    /* -- H_CRP_General -- */
+    delete[] H_CRP_General;
+    H_CRP_General= new CRP_struct[NEW_size_CRP];
+    H_CRP_General_ptr= H_CRP_General;
+
+    /* -- H_CRP_Msg -- */
+    CRP_struct ** H_CRP_Msg_tmp= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
+    
+    for (int i=0; i< XLEN*YLEN*ZLEN; i++){
+      memcpy(&(H_CRP_Msg_tmp[i][0]), &(H_CRP_Msg[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+    }
+
+    delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
+    H_CRP_Msg= newArr2(CRP_struct, XLEN*YLEN*ZLEN, NEW_size_CRP);
+    H_CRP_Msg_ptr= H_CRP_Msg;
+    
+    for (int i=0; i< XLEN*YLEN*ZLEN; i++){
+      memcpy(&(H_CRP_Msg[i][0]), &(H_CRP_Msg_tmp[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+    }
+    delArr2(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN);
+
+  }
+
+  size_CRP= NEW_size_CRP;
+}
+
+void Particles3Dcomm::resize_CRP_buffers_BSTH(VirtualTopology3D * vct, int NewSize){
+  /* done after communication of the new value of size_CRP BEFORE non HighestRank send CRP msg TO HighestRank*/
+
+  if (size_CRP >= NewSize) return;
+
+  cout << "Grid " <<numGrid <<": resize_CRP_buffers_BSTH from " << size_CRP << " to " << NewSize << " particles " << endl;
+
+  int RR= vct->getCartesian_rank();
+  int HighestRank= XLEN*YLEN*ZLEN-1;
+
+  if (RR==HighestRank){
+    /* resize - without preserving - H_CRP_General 
+     resize & preserve H_CRP_Msg */
+    
+    /* -- H_CRP_General -- */
+    delete[] H_CRP_General;
+    H_CRP_General= new CRP_struct[NewSize];
+    H_CRP_General_ptr= H_CRP_General;
+
+    /* -- H_CRP_Msg -- */
+    CRP_struct ** H_CRP_Msg_tmp= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
+    
+    for (int i=0; i< XLEN*YLEN*ZLEN; i++){
+      memcpy(&(H_CRP_Msg_tmp[i][0]), &(H_CRP_Msg[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+    }
+
+    delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
+    H_CRP_Msg= newArr2(CRP_struct, XLEN*YLEN*ZLEN, NewSize);
+    H_CRP_Msg_ptr= H_CRP_Msg;
+    
+    for (int i=0; i< XLEN*YLEN*ZLEN; i++){
+      memcpy(&(H_CRP_Msg[i][0]), &(H_CRP_Msg_tmp[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+    }
+    delArr2(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN);
+
+  } else{ 
+    /* not HighestRank: resize & preserve CRP_ToCoreH */
+
+    CRP_struct * tmp_CRP_ToCoreH= new CRP_struct[size_CRP];
+
+    memcpy(tmp_CRP_ToCoreH, CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    delete[] CRP_ToCoreH;
+
+    CRP_ToCoreH= new CRP_struct[NewSize];
+    CRP_ToCoreH_ptr= CRP_ToCoreH;
+
+    memcpy(CRP_ToCoreH, tmp_CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    delete[] tmp_CRP_ToCoreH;
+  }
+  
+  size_CRP= NewSize;
+}
+
+void Particles3Dcomm::resize_CRP_buffers_BSFH(VirtualTopology3D * vct, int NewSize){
+  /* done after communication of the new value of size_CRP BEFORE HighestRank sends CRP msg TO non HighestRank*/
+
+  /* RR== HighestRank should get out here, because this is called just after it resized */
+  if (size_CRP >= NewSize) return;
+
+  cout << "Grid " <<numGrid <<": resize_CRP_buffers_BSFH from " << size_CRP << " to " << NewSize << " particles " << endl;
+
+  int RR= vct->getCartesian_rank();
+  int HighestRank= XLEN*YLEN*ZLEN-1;
+
+  if (RR!=HighestRank){
+    /* resize CRP_ToCoreH without preserving */
+
+    delete[] CRP_ToCoreH;
+    CRP_ToCoreH= new CRP_struct[NewSize];
+    CRP_ToCoreH_ptr= CRP_ToCoreH;
+  } 
+
+  size_CRP= NewSize;
+}

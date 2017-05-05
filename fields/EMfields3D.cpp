@@ -1151,7 +1151,7 @@ void EMfields3D::adjustNonPeriodicDensities(int is, int bcPfaceXright, int bcPfa
 
       // impose BC B on ghost nodes, only for particles
      setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
-     //setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active); // in theory should not be needed
+     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active); // if i don't put this, i see dots in correspondance with RG boundaries
 
      // does not touch the ghosts
      communicateNode(nxn, nyn, nzn, Bxn, vct);
@@ -1587,7 +1587,7 @@ void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is, Virt
   if (Z<0 or Z>nzn-1){ 
     cout << "Grid " << numGrid << " R " << R << " particle tries to accumulate outside of grid " << endl;
     cout << "Grid " << numGrid << " R " << R << "Inside add rho: Z " << Z << " of " << nzn << endl;
-    cout << "Grid " << numGrid << " R " << R <<" z: " << xp << " -dz " << -dz <<" Lz+dz " << Lz+dz << endl;
+    cout << "Grid " << numGrid << " R " << R <<" z: " << zp << " -dz " << -dz <<" Lz+dz " << Lz+dz << endl;
     cout << "Grid " << numGrid << " R " << R << " " << C2 << "/ " << ZLEN << endl;
     //return;
     int j; for (int i=0; i<10000; i++) j++;

@@ -284,6 +284,13 @@ public:
   /* resize the buffers responsible for sending repopulated particles from teh CG to the RG -- RG side 
      the difference: I do not need to preserve info, only the resize buffers */
   void resize_RG_MLMD_buffers(int NEW_sizePBCMsg);
+  /* resize the buffers responsible for communicating repopulated particles -- called by addP_CRP*/
+  void resize_CRP_buffers(VirtualTopology3D * vct);
+  /* resize the buffers responsible for communicating repopulated particles -- when size is avaialble*/
+  /* before send TO HighestRank */
+  void resize_CRP_buffers_BSTH(VirtualTopology3D * vct, int NewSize);
+  /* before send FROM HighestRank */
+  void resize_CRP_buffers_BSFH(VirtualTopology3D * vct, int NewSize);
   /* add a particle for the exchange of the repopulated particles within the R*/
   void addP_CRP(CRP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, int DestinationRank, VirtualTopology3D* vct);			       
   /* add a particle packed into the CRP_struct into the core particle vectors 
@@ -544,15 +551,20 @@ protected:
   int np_ToCoreH_CRP; 
   /* vectors to exchange repopulated particles within the RG */
   CRP_struct * CRP_ToCoreH;
+  CRP_struct * CRP_ToCoreH_ptr; // for resize
   /* Core H counterpart */
-  /* [XLEN*YLEN*ZLEN][MAX_np_CRP] */
+  /* [XLEN*YLEN*ZLEN][size_CRP] */
   /* in each row, the particles to send to that core */
   CRP_struct ** H_CRP_Msg;
+  CRP_struct ** H_CRP_Msg_ptr; // for resize
   /* [XLEN*YLEN*ZLEN] 
      the number of particles to send to that core */
   int *H_num_CRP_nop;
   CRP_struct * H_CRP_General;
+  CRP_struct * H_CRP_General_ptr; // for resize
   /* size of ToCoreH */
+  int size_CRP;
+  /** cannot resize CRP above this **/
   int MAX_np_CRP;
   /* only in HighestRank: tells you how many msgs to expect while communicating repopulated particles and which cores should participate */
   /* if here 1, this core participates in particle exchange in communicateRepopulatedParticles */
