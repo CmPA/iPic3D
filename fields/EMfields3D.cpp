@@ -348,6 +348,9 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
 
   if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC){
     setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Ghost_BC, Eyth_Ghost_BC, Ezth_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+    /* added, to have the cleanest possible solution on active nodes
+       when doing this, do not smooth active nodes */
+    setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
     communicateNode(nxn, nyn, nzn, Exth, vct);
     communicateNode(nxn, nyn, nzn, Eyth, vct);
@@ -729,10 +732,26 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	 value = 0.5;
        }
        alpha = (1.0 - value) / 6;
+
+       // not to blur active node solution in the RG
+       int i_s=1, i_e= nxn-1;
+       int j_s=1, j_e= nyn-1;
+       int k_s=1, k_e= nzn-1;
+
+       if (numGrid>0 and vct->getXleft_neighbor() == MPI_PROC_NULL) i_s=2;
+       if (numGrid>0 and vct->getXright_neighbor() == MPI_PROC_NULL) i_e=nxn-2;
+
+       if (numGrid>0 and vct->getYleft_neighbor() == MPI_PROC_NULL) j_s=2;
+       if (numGrid>0 and vct->getYright_neighbor() == MPI_PROC_NULL) j_e=nyn-2;
+
+       if (numGrid>0 and vct->getZleft_neighbor() == MPI_PROC_NULL) k_s=2;
+       if (numGrid>0 and vct->getZright_neighbor() == MPI_PROC_NULL) k_e=nzn-2;
+       // end not to blur active node solution in the RG 
+
        // Exth
-       for (int i = 1; i < nxn - 1; i++)
-	 for (int j = 1; j < nyn - 1; j++)
-	   for (int k = 1; k < nzn - 1; k++)
+       for (int i = i_s; i < i_e; i++)
+	 for (int j = j_s; j < j_e; j++)
+	   for (int k = k_s; k < k_e; k++)
 	     temp[i][j][k] = value * Ex[i][j][k] + alpha * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
        for (int i = 1; i < nxn - 1; i++)
 	 for (int j = 1; j < nyn - 1; j++)
