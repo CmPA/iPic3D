@@ -2439,14 +2439,14 @@ void circshift(double ***vect, double ***tmp, int xshift, int yshift, int zshift
    for (int j=0; j < ydim;j++){
      int jj = (j + yshift) % ydim;
      if (jj<0) jj = ydim + jj;
-     for (int k=0; k < nzn*ZLEN;k++){
+     for (int k=0; k < zdim;k++){
     	 int kk = (k + zshift) % zdim;
     	 if (kk<0) kk = zdim +kk;
              tmp[ii][jj][kk] = vect[i][j][k];
    }}}
    for (int i=0; i < xdim ;i++)
    for (int j=0; j < ydim;j++)
-   for (int k=0; k < nzn*ZLEN;k++){
+   for (int k=0; k < zdim;k++){
     vect[i][j][k] = tmp[i][j][k];
    }
 }

@@ -86,6 +86,8 @@ void writeVTKtensor(int it, string tensorname, string addname, double** EXX, dou
 // Function needed fro switching from little-Endian to big-Endian needed by paraview
 float ReverseFloat( const float inFloat );
 
+//function to rotate indexes
+int irot(int i);
 
 // Various useful variables about the dataset
 
@@ -271,9 +273,9 @@ void readvect(int it, string campo, string vectname, double*** EX, double*** EY,
 					for (int jj=0; jj < (nyn+1);jj++)
 						for (int kk=0; kk < nodes_z;kk++){
 							if (ii!=nxn && jj!= nyn && kk!= nzn){
-								EX[ii + nxn*i][jj + nyn*j][kk + nzn*k] = temp_storageX[node];
-								EY[ii + nxn*i][jj + nyn*j][kk + nzn*k] = temp_storageY[node];
-								EZ[ii + nxn*i][jj + nyn*j][kk + nzn*k] = temp_storageZ[node];
+								EX[irot(ii + nxn*i)][jj + nyn*j][kk + nzn*k] = temp_storageX[node];
+								EY[irot(ii + nxn*i)][jj + nyn*j][kk + nzn*k] = temp_storageY[node];
+								EZ[irot(ii + nxn*i)][jj + nyn*j][kk + nzn*k] = temp_storageZ[node];
 							}
 							node++;
 						}
@@ -326,9 +328,9 @@ void addreadvect(int it, string campo, string vectname, double*** EX, double*** 
 					for (int jj=0; jj < (nyn+1);jj++)
 						for (int kk=0; kk < nodes_z;kk++){
 							if (ii!=nxn && jj!= nyn && kk!= nzn){
-								EX[ii + nxn*i][jj + nyn*j][kk + nzn*k] += temp_storageX[node];
-								EY[ii + nxn*i][jj + nyn*j][kk + nzn*k] += temp_storageY[node];
-								EZ[ii + nxn*i][jj + nyn*j][kk + nzn*k] += temp_storageZ[node];
+								EX[irot(ii + nxn*i)][jj + nyn*j][kk + nzn*k] += temp_storageX[node];
+								EY[irot(ii + nxn*i)][jj + nyn*j][kk + nzn*k] += temp_storageY[node];
+								EZ[irot(ii + nxn*i)][jj + nyn*j][kk + nzn*k] += temp_storageZ[node];
 							}
 							node++;
 						}
@@ -376,7 +378,7 @@ void readscalar(int it, string campo, string scalarname, double*** EX) {
 					for (int jj=0; jj < (nyn+1);jj++)
 						for (int kk=0; kk < nodes_z;kk++){
 							if (ii!=nxn && jj!= nyn && kk!= nzn){
-								EX[ii + nxn*i][jj + nyn*j][kk + nzn*k] = temp_storageX[node];
+								EX[irot(ii + nxn*i)][jj + nyn*j][kk + nzn*k] = temp_storageX[node];
 							}
 							node++;
 						}
@@ -422,7 +424,7 @@ void addreadscalar(int it, string campo, string scalarname, double*** EX) {
 					for (int jj=0; jj < (nyn+1);jj++)
 						for (int kk=0; kk < nodes_z;kk++){
 							if (ii!=nxn && jj!= nyn && kk!= nzn){
-								EX[ii + nxn*i][jj + nyn*j][kk + nzn*k] += temp_storageX[node];
+								EX[irot(ii + nxn*i)][jj + nyn*j][kk + nzn*k] += temp_storageX[node];
 							}
 							node++;
 						}
@@ -466,7 +468,7 @@ void readpotential(int it, string campo, string scalarname, double*** EX) {
 				for (int ii=0; ii < (nxn);ii++)
 					for (int jj=0; jj < (nyn);jj++)
 						for (int kk=0; kk < (nzn);kk++){
-							EX[ii + nxn*i][jj + nyn*j][kk + nzn*k] = temp_storageX[node];
+							EX[irot(ii + nxn*i)][jj + nyn*j][kk + nzn*k] = temp_storageX[node];
 							node++;
 						}
 				// close the file
@@ -1396,4 +1398,11 @@ void readVTKpreamble(string filename) {
 	myfile >> npoints;
     myfile.close();	
 }	
+
+int irot(int i){
+int ii = (i+ xshift) % (nxn*XLEN);
+if (ii<0) ii = (nxn*XLEN) + ii;;
+return ii;
+}
+
 

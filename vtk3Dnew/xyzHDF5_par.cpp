@@ -23,6 +23,9 @@ int main (int argc, char **argv) {
 		sscanf(argv[1],"%d",&InitT);
 	sscanf(argv[2],"%d",&MaxLevel);
 	sscanf(argv[3],"%d",&DeltaT);
+	sscanf(argv[4],"%d",&xshift);
+	sscanf(argv[5],"%d",&yshift);
+	sscanf(argv[6],"%d",&zshift);
 
 	if(argc>3) {
 			sscanf(argv[4], "%d", &NdimCode);
@@ -216,10 +219,23 @@ int main (int argc, char **argv) {
 	delArr3(EX,nxn*XLEN,nyn*YLEN);
 	delArr3(EY,nxn*XLEN,nyn*YLEN);
 	delArr3(EZ,nxn*XLEN,nyn*YLEN);
+	delArr3(NI,nxn*XLEN,nyn*YLEN);
+	delArr3(NE,nxn*XLEN,nyn*YLEN);
+	delArr3(NO,nxn*XLEN,nyn*YLEN);
 	delArr3(VX,nxn*XLEN,nyn*YLEN);
 	delArr3(VY,nxn*XLEN,nyn*YLEN);
 	delArr3(VZ,nxn*XLEN,nyn*YLEN);
 	delArr3(AZ,nxn*XLEN,nyn*YLEN);
+	delArr3(TXX,nxn*XLEN,nyn*YLEN);
+	delArr3(TXY,nxn*XLEN,nyn*YLEN);
+	delArr3(TXZ,nxn*XLEN,nyn*YLEN);
+	delArr3(TYY,nxn*XLEN,nyn*YLEN);
+	delArr3(TYZ,nxn*XLEN,nyn*YLEN);
+	delArr3(TZZ,nxn*XLEN,nyn*YLEN);
+	delArr3(TPAR,nxn*XLEN,nyn*YLEN);
+	delArr3(TPER1,nxn*XLEN,nyn*YLEN);
+	delArr3(TPER2,nxn*XLEN,nyn*YLEN);
+	delArr3(EPS,nxn*XLEN,nyn*YLEN);
 	delArr3(agyro_scudder,nxn*XLEN,nyn*YLEN);
 	delArr3(agyro_aunai,nxn*XLEN,nyn*YLEN);
 	delArr3(nongyro_swisdak,nxn*XLEN,nyn*YLEN);
