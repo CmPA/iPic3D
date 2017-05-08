@@ -290,6 +290,10 @@ void LEBT(double*** BX, double*** BY, double*** BZ,
 
 void mult(double a, double*** E);
 
+// C++ implementation of the circshift MATLAB function
+void circshift(double ***vect, double ***tmp, int xshift, int yshift, int zshift);
+
+
 //Compute A = A *B /C
 void divmult(double*** A, double*** B, double*** C);
 
@@ -2423,3 +2427,28 @@ double norm(int n,  double* b){
 	norm= sqrt(norm);
 	return( norm ) ;
 }
+
+void circshift(double ***vect, double ***tmp, int xshift, int yshift, int zshift)
+{
+	int xdim = nxn*XLEN;
+	int ydim = nyn*YLEN;
+	int zdim = nzn*ZLEN;
+   for (int i=0; i < xdim ;i++){
+   int ii = (i + xshift) % xdim;
+   if (ii<0) ii = xdim + ii;
+   for (int j=0; j < ydim;j++){
+     int jj = (j + yshift) % ydim;
+     if (jj<0) jj = ydim + jj;
+     for (int k=0; k < nzn*ZLEN;k++){
+    	 int kk = (k + zshift) % zdim;
+    	 if (kk<0) kk = zdim +kk;
+             tmp[ii][jj][kk] = vect[i][j][k];
+   }}}
+   for (int i=0; i < xdim ;i++)
+   for (int j=0; j < ydim;j++)
+   for (int k=0; k < nzn*ZLEN;k++){
+    vect[i][j][k] = tmp[i][j][k];
+   }
+}
+
+

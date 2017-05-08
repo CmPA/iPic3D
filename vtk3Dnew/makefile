@@ -86,6 +86,10 @@ HDF5LIBS = -lhdf5 -lhdf5_hl  -llapack -lblas
 endif
 
 
+xyzHDF5_circshift: xyzHDF5_circshift.cpp
+	${CPP}  ${OPTFLAGS} -o  xyzHDF5_circshift ${INC_HDF5} \
+	xyzHDF5_circshift.cpp  ${LIB_HDF5}  \
+${HDF5LIBS}
 
 xyzGDA_par: xyzGDA_par.cpp
 	${CPP}  ${OPTFLAGS} -o  xyzGDA_par ${INC_HDF5} \

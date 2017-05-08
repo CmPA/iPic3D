@@ -95,6 +95,9 @@ int InitT;
 int nlevels;
 int initlevel;
 int NdimCode = 3;
+int xshift = 0;
+int yshift = 0;
+int zshift = 0;
 
 double *temp_storageX;
 double *temp_storageY;
