@@ -20,20 +20,22 @@
 
 int main (int argc, char **argv) {
 	// cycle we want to open
-		sscanf(argv[1],"%d",&InitT);
+	sscanf(argv[1],"%d",&InitT);
 	sscanf(argv[2],"%d",&MaxLevel);
 	sscanf(argv[3],"%d",&DeltaT);
-	sscanf(argv[4],"%d",&xshift);
-	sscanf(argv[5],"%d",&yshift);
-	sscanf(argv[6],"%d",&zshift);
 
-	if(argc>3) {
-			sscanf(argv[4], "%d", &NdimCode);
-		}
-		else
-		{
-			NdimCode = 3;
-		}
+
+	if(argc>3) sscanf(argv[4], "%d", &NdimCode);
+	else NdimCode = 3;
+
+	if(argc>4) sscanf(argv[5],"%d",&xshift);
+		else xshift=0;
+
+	if(argc>5) sscanf(argv[6],"%d",&yshift);
+		else yshift=0;
+
+	if(argc>6) sscanf(argv[7],"%d",&zshift);
+		else zshift=0;
 
     int rank, size;
 
