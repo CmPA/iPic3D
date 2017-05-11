@@ -2875,7 +2875,7 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
     // on the PBC communicators
     MPI_Allreduce(&size_CRP, &New_size_CRP, 1, MPI_INT, MPI_MAX, COMM_RG_PBCSubset_P);
     if (New_size_CRP> size_CRP) 
-      resize_CRP_buffers_BSTH(vct, New_size_CRP);
+      resize_CRP_buffers(vct, New_size_CRP);
   }
   /* -- exchange - resize_CRPbuffers_BSTH -- */
 
@@ -2940,7 +2940,7 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
     // on the PBC communicators
     MPI_Allreduce(&size_CRP, &New_size_CRP, 1, MPI_INT, MPI_MAX, COMM_RG_PBCSubset_P);
     if (New_size_CRP> size_CRP) 
-      resize_CRP_buffers_BSFH(vct, New_size_CRP);
+      resize_CRP_buffers(vct, New_size_CRP);
   }
   /* -- exchange - resize_CRPbuffers_BSFH -- */
     
@@ -3038,6 +3038,11 @@ void Particles3Dcomm::unpack_CRP(CRP_struct p, VirtualTopology3D * vct){
   v[nop]= p.v;
   w[nop]= p.w;
 
+  if (fabs(q[nop]) < fabs(-8.99449e-05)*0.99 ){
+    cout << "ERROR IN UNPACK_CRP: q[nop]= " << q[nop] << ", aborting..." << endl;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+
   if (TrackParticleID)
     ParticleID[nop]= p.ID;
 
@@ -3104,7 +3109,9 @@ void Particles3Dcomm::resize_CG_MLMD_buffers(VirtualTopology3D * vct){
 
   for (int ch=0; ch<numChildren; ch++)
     for (int m=0; m< CG_numPBCMessages[ch]; m++)
-      memcpy(&(tmp[ch][m][0]), &(PCGMsg_ptr[ch][m][0]), nopPCGMsg[ch][m]*sizeof(RepP_struct));
+      for (int n=0; n< nopPCGMsg[ch][m]; n++)
+	tmp[ch][m][n]= PCGMsg_ptr[ch][m][n];
+      //memcpy(&(tmp[ch][m][0]), &(PCGMsg_ptr[ch][m][0]), nopPCGMsg[ch][m]*sizeof(RepP_struct));
 
   //cout << "inside resize_CG_MLMD_buffers, before deleting: PCGMsg: " <<PCGMsg << " PCGMsg_ptr " << PCGMsg_ptr<<endl;
   delArr3(PCGMsg, numChildren, MaxNumMsg);
@@ -3115,7 +3122,9 @@ void Particles3Dcomm::resize_CG_MLMD_buffers(VirtualTopology3D * vct){
 
   for (int ch=0; ch< numChildren; ch++)
     for (int m=0; m< CG_numPBCMessages[ch]; m++)
-      memcpy(&(PCGMsg[ch][m][0]), &(tmp[ch][m][0]), nopPCGMsg[ch][m]*sizeof(RepP_struct));
+      for (int n=0; n< nopPCGMsg[ch][m]; n++)
+	PCGMsg[ch][m][n]= tmp[ch][m][n];
+	//memcpy(&(PCGMsg[ch][m][0]), &(tmp[ch][m][0]), nopPCGMsg[ch][m]*sizeof(RepP_struct));
   
       
   delArr3(tmp, numChildren, MaxNumMsg);
@@ -3156,31 +3165,59 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct){
   if (RR!= HighestRank){ 
     /* if called by addP_CRP with RR!= HighestRank, it is called while building msg to HighestRank
        resize & preserve CRP_ToCoreH */
+
     CRP_struct * tmp_CRP_ToCoreH= new CRP_struct[size_CRP];
 
-    memcpy(tmp_CRP_ToCoreH, CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    //memcpy(tmp_CRP_ToCoreH, CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    for (int i=0; i<np_ToCoreH_CRP; i++)
+      tmp_CRP_ToCoreH[i]= CRP_ToCoreH_ptr[i];
     delete[] CRP_ToCoreH;
 
     CRP_ToCoreH= new CRP_struct[NEW_size_CRP];
     CRP_ToCoreH_ptr= CRP_ToCoreH;
 
-    memcpy(CRP_ToCoreH, tmp_CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    //memcpy(CRP_ToCoreH, tmp_CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    for (int i=0; i< np_ToCoreH_CRP; i++)
+      CRP_ToCoreH[i]= tmp_CRP_ToCoreH[i];
     delete[] tmp_CRP_ToCoreH;
+
+    for (int i=0; i< np_ToCoreH_CRP; i++){
+      if (fabs(CRP_ToCoreH[i].q) < fabs(-8.99449e-05)*0.99 ){
+        cout << "ERROR IN resize_CRP_buffers, q is " << CRP_ToCoreH[i].q << endl;
+      }
+    }
+
   } else{ // here, RR== HighestRank
     /* if called by addP_CRP with RR== HighestRank, it is called when HighestRank is building msg
        to everbybody else -
        resize H_CRP_General; resize & preserve H_CRP_Msg*/
 
     /* -- H_CRP_General -- */
+    //delete[] H_CRP_General;
+    //H_CRP_General= new CRP_struct[NEW_size_CRP];
+    //H_CRP_General_ptr= H_CRP_General;
+
+    CRP_struct *H_CRP_General_tmp= new CRP_struct[size_CRP];
+
+    for (int i=0; i< size_CRP; i++)
+      H_CRP_General_tmp[i]= H_CRP_General_ptr[i];
+    
     delete[] H_CRP_General;
+    
     H_CRP_General= new CRP_struct[NEW_size_CRP];
     H_CRP_General_ptr= H_CRP_General;
+    
+    for (int i=0; i< size_CRP; i++)
+      H_CRP_General[i]= H_CRP_General_tmp[i];
+    delete[]H_CRP_General_tmp;
 
     /* -- H_CRP_Msg -- */
     CRP_struct ** H_CRP_Msg_tmp= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
     
     for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      memcpy(&(H_CRP_Msg_tmp[i][0]), &(H_CRP_Msg[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      //memcpy(&(H_CRP_Msg_tmp[i][0]), &(H_CRP_Msg[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      for (int j=0; j< H_num_CRP_nop[i]; j++)
+	H_CRP_Msg_tmp[i][j]= H_CRP_Msg_ptr[i][j];
     }
 
     delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
@@ -3188,7 +3225,9 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct){
     H_CRP_Msg_ptr= H_CRP_Msg;
     
     for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      memcpy(&(H_CRP_Msg[i][0]), &(H_CRP_Msg_tmp[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      //memcpy(&(H_CRP_Msg[i][0]), &(H_CRP_Msg_tmp[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      for (int j=0; j<  H_num_CRP_nop[i]; j++)
+	H_CRP_Msg[i][j]= H_CRP_Msg_tmp[i][j];
     }
     delArr2(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN);
 
@@ -3197,8 +3236,7 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct){
   size_CRP= NEW_size_CRP;
 }
 
-void Particles3Dcomm::resize_CRP_buffers_BSTH(VirtualTopology3D * vct, int NewSize){
-  /* done after communication of the new value of size_CRP BEFORE non HighestRank send CRP msg TO HighestRank*/
+void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct, int NewSize){
 
   if (size_CRP >= NewSize) return;
 
@@ -3212,15 +3250,31 @@ void Particles3Dcomm::resize_CRP_buffers_BSTH(VirtualTopology3D * vct, int NewSi
      resize & preserve H_CRP_Msg */
     
     /* -- H_CRP_General -- */
+    //delete[] H_CRP_General;
+    //H_CRP_General= new CRP_struct[NewSize];
+    //H_CRP_General_ptr= H_CRP_General;
+
+    CRP_struct *H_CRP_General_tmp= new CRP_struct[size_CRP];
+
+    for (int i=0; i< size_CRP; i++)
+      H_CRP_General_tmp[i]= H_CRP_General_ptr[i];
+    
     delete[] H_CRP_General;
+    
     H_CRP_General= new CRP_struct[NewSize];
     H_CRP_General_ptr= H_CRP_General;
+    
+    for (int i=0; i< size_CRP; i++)
+      H_CRP_General[i]= H_CRP_General_tmp[i];
+    delete[]H_CRP_General_tmp;
 
     /* -- H_CRP_Msg -- */
     CRP_struct ** H_CRP_Msg_tmp= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
     
     for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      memcpy(&(H_CRP_Msg_tmp[i][0]), &(H_CRP_Msg[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      //memcpy(&(H_CRP_Msg_tmp[i][0]), &(H_CRP_Msg[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      for (int j=0; j< H_num_CRP_nop[i]; j++)
+        H_CRP_Msg_tmp[i][j]= H_CRP_Msg_ptr[i][j];
     }
 
     delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
@@ -3228,46 +3282,47 @@ void Particles3Dcomm::resize_CRP_buffers_BSTH(VirtualTopology3D * vct, int NewSi
     H_CRP_Msg_ptr= H_CRP_Msg;
     
     for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      memcpy(&(H_CRP_Msg[i][0]), &(H_CRP_Msg_tmp[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      for (int j=0; j< H_num_CRP_nop[i]; j++)
+        H_CRP_Msg[i][j]= H_CRP_Msg_tmp[i][j];
+      //memcpy(&(H_CRP_Msg[i][0]), &(H_CRP_Msg_tmp[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
     }
     delArr2(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN);
+
+    for (int i=0; i< XLEN*YLEN*ZLEN; i++){
+      for (int j=0; j< H_num_CRP_nop[i]; j++){
+
+        if (fabs(H_CRP_Msg[i][j].q) < fabs(-8.99449e-05)*0.99 ){
+          cout << "ERROR IN resize_CRP_buffers, q is " << CRP_ToCoreH[i].q << endl;
+        }
+      }
+    }
 
   } else{ 
     /* not HighestRank: resize & preserve CRP_ToCoreH */
 
     CRP_struct * tmp_CRP_ToCoreH= new CRP_struct[size_CRP];
 
-    memcpy(tmp_CRP_ToCoreH, CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    //memcpy(tmp_CRP_ToCoreH, CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    for (int i=0; i<np_ToCoreH_CRP; i++)
+      tmp_CRP_ToCoreH[i]= CRP_ToCoreH_ptr[i];
     delete[] CRP_ToCoreH;
 
     CRP_ToCoreH= new CRP_struct[NewSize];
     CRP_ToCoreH_ptr= CRP_ToCoreH;
 
-    memcpy(CRP_ToCoreH, tmp_CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    //memcpy(CRP_ToCoreH, tmp_CRP_ToCoreH, sizeof(CRP_struct)* np_ToCoreH_CRP);
+    for (int i=0; i< np_ToCoreH_CRP; i++)
+      CRP_ToCoreH[i]= tmp_CRP_ToCoreH[i];
     delete[] tmp_CRP_ToCoreH;
+
+    for (int i=0; i< np_ToCoreH_CRP; i++){
+      if (fabs(CRP_ToCoreH[i].q) < fabs(-8.99449e-05)*0.99 ){
+        cout << "ERROR IN resize_CRP_buffers, q is " << CRP_ToCoreH[i].q << endl;
+      }
+    }
   }
   
   size_CRP= NewSize;
 }
 
-void Particles3Dcomm::resize_CRP_buffers_BSFH(VirtualTopology3D * vct, int NewSize){
-  /* done after communication of the new value of size_CRP BEFORE HighestRank sends CRP msg TO non HighestRank*/
 
-  /* RR== HighestRank should get out here, because this is called just after it resized */
-  if (size_CRP >= NewSize) return;
-
-  cout << "Grid " <<numGrid <<": resize_CRP_buffers_BSFH from " << size_CRP << " to " << NewSize << " particles " << endl;
-
-  int RR= vct->getCartesian_rank();
-  int HighestRank= XLEN*YLEN*ZLEN-1;
-
-  if (RR!=HighestRank){
-    /* resize CRP_ToCoreH without preserving */
-
-    delete[] CRP_ToCoreH;
-    CRP_ToCoreH= new CRP_struct[NewSize];
-    CRP_ToCoreH_ptr= CRP_ToCoreH;
-  } 
-
-  size_CRP= NewSize;
-}

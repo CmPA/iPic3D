@@ -287,10 +287,9 @@ public:
   /* resize the buffers responsible for communicating repopulated particles -- called by addP_CRP*/
   void resize_CRP_buffers(VirtualTopology3D * vct);
   /* resize the buffers responsible for communicating repopulated particles -- when size is avaialble*/
-  /* before send TO HighestRank */
-  void resize_CRP_buffers_BSTH(VirtualTopology3D * vct, int NewSize);
-  /* before send FROM HighestRank */
-  void resize_CRP_buffers_BSFH(VirtualTopology3D * vct, int NewSize);
+
+  void resize_CRP_buffers(VirtualTopology3D * vct, int NewSize);
+
   /* add a particle for the exchange of the repopulated particles within the R*/
   void addP_CRP(CRP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, int DestinationRank, VirtualTopology3D* vct);			       
   /* add a particle packed into the CRP_struct into the core particle vectors 
