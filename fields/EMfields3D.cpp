@@ -316,27 +316,6 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
 
   endEcalc(xkrylov, grid, vct, col);
 
-  // check                                                                                                                        
-  if (vct->getNprocs()==1){ // meaningful only if one core per grid  
-    double* ImTest= new double [3 * (nxn - 2) * (nyn - 2) * (nzn - 2)] ;    
-    double* Diff= new double [3 * (nxn - 2) * (nyn - 2) * (nzn - 2)] ;
-    double sumDiff=0;
-
-    MaxwellImage(ImTest, xkrylov, grid, vct);
-
-    for (int i=0; i< 3 * (nxn - 2) * (nyn - 2) * (nzn - 2); i++){ 
-      Diff[i]= ImTest[i]-bkrylov[i];
-      sumDiff+= (Diff[i]*Diff[i]);
-    }
-    
-    cout << "Grid " << numGrid <<  " residual by hand= " << sqrt(sumDiff) << "; should be the same as the res calculated by hand \
-inside GMRES" << endl;
-    delete[] ImTest;
-    delete[] Diff;
-  } // end extra test
-
-  endEcalc(xkrylov, grid, vct, col);
-
   // deallocate temporary arrays
   delete[]xkrylov;
   delete[]bkrylov;
@@ -383,15 +362,17 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
     BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
     BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
   }
-  
-  /*cout << "GMREStol " << GMREStol << " -log10(GMREStol) " << -log10(GMREStol) <<endl;
-  cout.precision(-log10(GMREStol));
-  cout <<"R"<<vct->getSystemWide_rank() << " cycle " << currentCycle  <<" vct->getZleft_neighbor() " << vct->getZleft_neighbor() << " Eyth[5][5][0] " << Eyth[5][5][0] << " Eyth[5][5][1] " << Eyth[5][5][1] << "  Eyth[5][5][2] " <<  Eyth[5][5][2]  <<"  Eyth[5]\
-[5][3] " <<  Eyth[5][5][3] << " Eyth[5][5][4] " <<   Eyth[5][5][4]  << endl;
-  cout <<"R"<<vct->getSystemWide_rank() << " cycle " << currentCycle << " vct->getZright_neighbor() " << vct->getZright_neighbor() << " Eyth[8][8][nzn-1] " << Eyth[8][8][nzn-1] << "Eyth[8][8][nzn-2] " << Eyth[8][8][nzn-2 ] << " Eyth[8][8][nzn-3] " << Eyth[8][8][nzn-3 ] << " Eyth[8][8][nzn-4] " << Eyth[8][8][nzn-4 ]  << " Eyth[8][8][nzn-5] " << Eyth[8][8][nzn-5 ] << endl;
+  else{
+    setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+    setBC_Nodes(vct, Ex, Ey, Ez, Ex_Active_BC, Ey_Active_BC, Ez_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
-  cout <<"R"<<vct->getSystemWide_rank() << " cycle " << currentCycle  <<" vct->getZleft_neighbor() " << vct->getZleft_neighbor() << " Jys[0][5][5][0] " << Jys[0][5][5][0] << " Jys[0][5][5][1] " << Jys[0][5][5][1] << "  Jys[0][5][5][2] " <<  Jys[0][5][5][2] <<"  Jys[0][5][5][3] " <<  Jys[0][5][5][3] << " Jys[0][5][5][4] " <<   Jys[0][5][5][4]  << endl;
-  cout <<"R"<<vct->getSystemWide_rank() << " cycle " << currentCycle << " vct->getZright_neighbor() " << vct->getZright_neighbor() << " Jys[0][8][8][nzn-1] " << Jys[0][8][8][nzn-1] << " Jys[0][8][8][nzn-2] " << Jys[0][8][8][nzn-2 ] << " Jys[0][8][8][nzn-3] " << Jys[0][8][8][nzn-3 ] << " Jys[0][8][8][nzn-4] " << Jys[0][8][8][nzn-4 ]  << " Jys[0][8][8][nzn-5] " << Jys[0][8][8][nzn-5 ] <<endl;*/
+    // NB: these BCs are at time n, here B is still at time n                                     
+    // impose BC B on ghost nodes, for particles                                                
+    setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+    setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active); // if i don't put this, i see dots in correspondance with RG boundar\
+ies                                                                                               
+
+  }
 
 
 }
@@ -739,14 +720,14 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
        int j_s=1, j_e= nyn-1;
        int k_s=1, k_e= nzn-1;
 
-       if (numGrid>0 and vct->getXleft_neighbor() == MPI_PROC_NULL) i_s=2;
+       /*if (numGrid>0 and vct->getXleft_neighbor() == MPI_PROC_NULL) i_s=2;
        if (numGrid>0 and vct->getXright_neighbor() == MPI_PROC_NULL) i_e=nxn-2;
 
        if (numGrid>0 and vct->getYleft_neighbor() == MPI_PROC_NULL) j_s=2;
        if (numGrid>0 and vct->getYright_neighbor() == MPI_PROC_NULL) j_e=nyn-2;
 
        if (numGrid>0 and vct->getZleft_neighbor() == MPI_PROC_NULL) k_s=2;
-       if (numGrid>0 and vct->getZright_neighbor() == MPI_PROC_NULL) k_e=nzn-2;
+       if (numGrid>0 and vct->getZright_neighbor() == MPI_PROC_NULL) k_e=nzn-2;*/
        // end not to blur active node solution in the RG 
 
        // Exth
@@ -1167,18 +1148,8 @@ void EMfields3D::adjustNonPeriodicDensities(int is, int bcPfaceXright, int bcPfa
    grid->interpC2N(Byn, Byc);
    grid->interpC2N(Bzn, Bzc);
 
-   if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC){
+   if (! (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC)){
 
-      // impose BC B on ghost nodes, only for particles
-     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
-     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active); // if i don't put this, i see dots in correspondance with RG boundaries
-
-     // does not touch the ghosts
-     communicateNode(nxn, nyn, nzn, Bxn, vct);
-     communicateNode(nxn, nyn, nzn, Byn, vct);
-     communicateNode(nxn, nyn, nzn, Bzn, vct);
-   }
-   else{ // normal, non mlmd option
      //cout << "Before communicateNodeBC"<<endl;
      communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
      communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
@@ -1187,31 +1158,6 @@ void EMfields3D::adjustNonPeriodicDensities(int is, int bcPfaceXright, int bcPfa
    }
 
 
-   if (Case=="LightWave"){
-     double sumBx=0.0;
-     double sumBy=0.0;
-     double sumEz=0.0;
-     double TotSumBx=0.0;
-     double TotSumBy=0.0;
-     double TotSumEz=0.0;
-     int S;
-     for (int i=1; i< nxn-1; i++)
-       for (int j=1; j<nyn-1; j++)
-	 for (int k=1; k<nzn-1; k++){
-	   S= (nxn-2 )*(nyn-2)*(nzn-2);
-	   sumBx+= fabs(Bxn[i][j][k]/S);
-	   sumBy+= fabs(Byn[i][j][k]/S);
-	   sumEz+= fabs(Ez[i][j][k]/S);
-	 }
-     
-     MPI_Allreduce(&sumBx, &TotSumBx, 1, MPI_DOUBLE, MPI_SUM, vct->getComm()) ;
-     MPI_Allreduce(&sumBy, &TotSumBy, 1, MPI_DOUBLE, MPI_SUM, vct->getComm()) ;
-     MPI_Allreduce(&sumEz, &TotSumEz, 1, MPI_DOUBLE, MPI_SUM, vct->getComm()) ;
-     
-     if (vct->getCartesian_rank()==0){
-       cout <<"Grid " <<numGrid  << " cycle " << currentCycle  <<" LightWave check (div Size): Bx TOT " << TotSumBx << ", By TOT " << TotSumBy <<", Ez TOT " <<TotSumEz << " (should be less " << GMREStol << ")"<< endl;
-     }
-   }
  }
  /*! initialize EM field with transverse electric waves 1D and rotate anticlockwise (theta degrees) */
  void EMfields3D::initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta) {
