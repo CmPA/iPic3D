@@ -285,9 +285,19 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
         for (int ii = 0; ii < npcelx; ii++)
           for (int jj = 0; jj < npcely; jj++)
             for (int kk = 0; kk < npcelz; kk++) {
-              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+
+              /*x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
               y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
-              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);*/
+
+	      // init with random position in the cell
+	      double rX = ((double)rand() / (double)(RAND_MAX));
+	      double rY = ((double)rand() / (double)(RAND_MAX));
+	      double rZ = ((double)rand() / (double)(RAND_MAX));
+
+	      x[counter]= grid->getXN(i, j, k)+ dx*rX;
+	      y[counter]= grid->getYN(i, j, k)+ dy*rY;
+	      z[counter]= grid->getZN(i, j, k)+ dz*rZ;
 	      
               // q = charge
               q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
@@ -1633,11 +1643,22 @@ void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3
 	      globaly= grid->getYN(i,j,k)+ coarsedy + grid->getOy_SW();
 	      shaperz= -tanh((globaly - Ly/2)/delta) ;
 	            
-              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              /*x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  
               y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
-              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);*/
+
+	      // init with random position in the cell; ESSENTIAL FOR MLMD, OTHERWISE DENSITY 'RING' AT CYCLE 0
+	      double rX = ((double)rand() / (double)(RAND_MAX));
+	      double rY = ((double)rand() / (double)(RAND_MAX));
+	      double rZ = ((double)rand() / (double)(RAND_MAX));
+
+	      x[counter]= grid->getXN(i, j, k)+ dx*rX;
+	      y[counter]= grid->getYN(i, j, k)+ dy*rY;
+	      z[counter]= grid->getZN(i, j, k)+ dz*rZ;
+
               // q = charge
               q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+
               // u
               harvest = rand() / (double) RAND_MAX;
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
@@ -1660,4 +1681,12 @@ void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3
             }
   
   nop= counter;
+
+  int nop_tot;
+
+  MPI_Allreduce(&nop, &nop_tot, 1, MPI_INT, MPI_SUM, vct->getComm());
+
+  if (vct->getCartesian_rank()==0){
+    cout << "numGrid "<< numGrid << " after DoubleGem init, nop total= " << nop_tot << endl;
+  }
 }
