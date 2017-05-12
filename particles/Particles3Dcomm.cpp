@@ -3038,11 +3038,7 @@ void Particles3Dcomm::unpack_CRP(CRP_struct p, VirtualTopology3D * vct){
   v[nop]= p.v;
   w[nop]= p.w;
 
-  if (fabs(q[nop]) < fabs(-8.99449e-05)*0.99 ){
-    cout << "ERROR IN UNPACK_CRP: q[nop]= " << q[nop] << ", aborting..." << endl;
-    MPI_Abort(MPI_COMM_WORLD, -1);
-  }
-
+  
   if (TrackParticleID)
     ParticleID[nop]= p.ID;
 
@@ -3181,11 +3177,6 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct){
       CRP_ToCoreH[i]= tmp_CRP_ToCoreH[i];
     delete[] tmp_CRP_ToCoreH;
 
-    for (int i=0; i< np_ToCoreH_CRP; i++){
-      if (fabs(CRP_ToCoreH[i].q) < fabs(-8.99449e-05)*0.99 ){
-        cout << "ERROR IN resize_CRP_buffers, q is " << CRP_ToCoreH[i].q << endl;
-      }
-    }
 
   } else{ // here, RR== HighestRank
     /* if called by addP_CRP with RR== HighestRank, it is called when HighestRank is building msg
@@ -3288,15 +3279,6 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct, int NewSize){
     }
     delArr2(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN);
 
-    for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      for (int j=0; j< H_num_CRP_nop[i]; j++){
-
-        if (fabs(H_CRP_Msg[i][j].q) < fabs(-8.99449e-05)*0.99 ){
-          cout << "ERROR IN resize_CRP_buffers, q is " << CRP_ToCoreH[i].q << endl;
-        }
-      }
-    }
-
   } else{ 
     /* not HighestRank: resize & preserve CRP_ToCoreH */
 
@@ -3315,11 +3297,6 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct, int NewSize){
       CRP_ToCoreH[i]= tmp_CRP_ToCoreH[i];
     delete[] tmp_CRP_ToCoreH;
 
-    for (int i=0; i< np_ToCoreH_CRP; i++){
-      if (fabs(CRP_ToCoreH[i].q) < fabs(-8.99449e-05)*0.99 ){
-        cout << "ERROR IN resize_CRP_buffers, q is " << CRP_ToCoreH[i].q << endl;
-      }
-    }
   }
   
   size_CRP= NewSize;

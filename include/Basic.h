@@ -417,6 +417,17 @@ inline void eqValue(double value, double ***vect, int nx, int ny, int nz) {
         vect[i][j][k] = value;
 
 }
+
+/** method to set a vector to a Value */
+inline void eqValue(double value, double ****vect, int nx, int ny, int nz, int nt) {
+  for (register int i = 0; i < nx; i++)
+    for (register int j = 0; j < ny; j++)
+      for (register int k = 0; k < nz; k++)
+	for (register int t = 0; t < nt; t++)
+	  vect[i][j][k][t] = value;
+
+}
+
 inline void eqValue(double value, double vect[][2][2], int nx, int ny, int nz) {
   for (int i = 0; i < nx; i++)
     for (int j = 0; j < ny; j++)

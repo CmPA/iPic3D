@@ -34,14 +34,14 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
 
   /*! number of children in the mlmd grid hierarchy */
   numChildren= vct->getNumChildren();
-  dx_C=new double[numChildren];
-  dy_C=new double[numChildren];
-  dz_C=new double[numChildren];
+  dx_Ch=new double[numChildren];
+  dy_Ch=new double[numChildren];
+  dz_Ch=new double[numChildren];
   for (int i=0; i< numChildren; i++){
     c= vct->getChildGridNum(i);
-    dx_C[i]= col->getDx_mlmd(c) ;
-    dy_C[i]= col->getDy_mlmd(c);
-    dz_C[i]= col->getDz_mlmd(c);
+    dx_Ch[i]= col->getDx_mlmd(c) ;
+    dy_Ch[i]= col->getDy_mlmd(c);
+    dz_Ch[i]= col->getDz_mlmd(c);
   }
 
 
@@ -223,6 +223,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   /* for mlmd BC communication */
   TAG_BC_GHOST= 2;
   TAG_BC_ACTIVE= 3;
+  TAG_PROJ= 4;
 
   /* stuff that it's convenient not to pass around */
   // since the number of core per grid may vary wildly and give problems
@@ -4161,9 +4162,9 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
    delArr3(vectZ, nxn, nyn);
    delArr3(divC, nxc, nyc);
 
-   delete[]dx_C;
-   delete[]dy_C;
-   delete[]dz_C;
+   delete[]dx_Ch;
+   delete[]dy_Ch;
+   delete[]dz_Ch;
 
    delArr2(Ex_Active_BC, RG_numBCMessages_Active);
    delArr2(Ey_Active_BC, RG_numBCMessages_Active);
@@ -4444,11 +4445,11 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
 
     // ghost
     CG_Info_Ghost= newArr2(RGBC_struct, numChildren, MAX_RG_numBCMessages);
-    CG_numBCMessages_Ghost= new int[MAX_RG_numBCMessages]; 
+    CG_numBCMessages_Ghost= new int[numChildren]; 
 
     //active
     CG_Info_Active= newArr2(RGBC_struct, numChildren, MAX_RG_numBCMessages);
-    CG_numBCMessages_Active= new int[MAX_RG_numBCMessages]; 
+    CG_numBCMessages_Active= new int[numChildren]; 
 
     for (int i=0; i<numChildren; i++){
       CG_numBCMessages_Ghost[i]=0;
@@ -5308,6 +5309,7 @@ void EMfields3D::initWeightBC_Phase2a(Grid *grid, VirtualTopology3D *vct, RGBC_s
   int TAG;
   if (which==-1) TAG=TAG_BC_GHOST;
   if (which==0) TAG=TAG_BC_ACTIVE;
+  if (which==3) TAG=TAG_PROJ;
 
   /* here, core 0 local receives one message per other RG core */
   RGBC_struct * buffer_rcv_Core0;
@@ -5329,6 +5331,7 @@ void EMfields3D::initWeightBC_Phase2a(Grid *grid, VirtualTopology3D *vct, RGBC_s
   string WW;
   if (which==0) WW= "ACTIVE";
   if (which==1) WW= "GHOST";
+  if (which==3) WW= "PROJ";
 
   /*cout <<WW << " grid " << numGrid << " after core 0 has copies his messages, RG_numBCMessages_LevelWide= " << * RG_numBCMessages_LevelWide <<endl;*/
   // end copying, starts receiving
@@ -5382,6 +5385,7 @@ void EMfields3D::initWeightBC_Phase2b(Grid *grid, VirtualTopology3D *vct, RGBC_s
   int TAG;
   if (which==-1) TAG=TAG_BC_GHOST;
   if (which==0) TAG=TAG_BC_ACTIVE;
+  if (which==3) TAG=TAG_PROJ;
 
   MPI_Comm CommToParent= vct->getCommToParent();
 
@@ -5432,6 +5436,8 @@ void EMfields3D::initWeightBC_Phase2c(Grid *grid, VirtualTopology3D *vct, RGBC_s
   MPI_Status status;
 
   int tmp;
+  int tmp_proj;
+  int tmp_PPP;
   /* here, each CG core receive messages for core 0 (local) form RG */
   RGBC_struct * CG_buffer;
   CG_buffer= new RGBC_struct[MAX_RG_numBCMessages];
@@ -5439,6 +5445,7 @@ void EMfields3D::initWeightBC_Phase2c(Grid *grid, VirtualTopology3D *vct, RGBC_s
   int TAG;
   if (which==-1) TAG=TAG_BC_GHOST;
   if (which==0) TAG=TAG_BC_ACTIVE;
+  if (which==3) TAG= TAG_PROJ;
 
   int rank_As_Parent;
   
@@ -5455,9 +5462,18 @@ void EMfields3D::initWeightBC_Phase2c(Grid *grid, VirtualTopology3D *vct, RGBC_s
       
       // the size of this msg; consider extrems are INCLUDED
       // the max value will be used as max size for BC msg
-      tmp=( CG_buffer[CG_numBCMessages[ch]].np_x ) * ( CG_buffer[CG_numBCMessages[ch]].np_y ) * ( CG_buffer[CG_numBCMessages[ch]].np_z);
-      if ( tmp> CG_MaxSizeMsg  ) CG_MaxSizeMsg = tmp;
+      
+      if (which == -1 or which==0){ 
+	tmp=( CG_buffer[CG_numBCMessages[ch]].np_x ) * ( CG_buffer[CG_numBCMessages[ch]].np_y ) * ( CG_buffer[CG_numBCMessages[ch]].np_z);
+	if ( tmp> CG_MaxSizeMsg  ) CG_MaxSizeMsg = tmp;
+      }
 
+      if (which ==3){
+	tmp_proj=( CG_buffer[CG_numBCMessages[ch]].np_x ) * ( CG_buffer[CG_numBCMessages[ch]].np_y ) * ( CG_buffer[CG_numBCMessages[ch]].np_z);
+	if ( tmp_proj> size_CG_ProjMsg  ) size_CG_ProjMsg = tmp_proj;
+      }
+
+	
       /* some sanity check ---
 	 the CG_core field of the msg should correspond to the rank of this core 
 	 on the parent-child communicator: check */
@@ -5471,6 +5487,12 @@ void EMfields3D::initWeightBC_Phase2c(Grid *grid, VirtualTopology3D *vct, RGBC_s
       
       CG_numBCMessages[ch]++;
     } // end while
+
+    if (which==3){ // to instantiate the vector with the weight
+      tmp_PPP= CG_numBCMessages[ch];
+      if (tmp_PPP> Max_CG_numProjMessages) {Max_CG_numProjMessages= tmp_PPP;}
+    }
+
   } // end for (int ch=0; ch < numChildren; ch ++){
 
   delete[]CG_buffer;
@@ -5835,9 +5857,9 @@ void EMfields3D::buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_st
 	// ok, now each RG point is treated as a particle here
 	// and i need the E at the point position
 
-	xp= x0 + i*dx_C[ch];
-	yp= y0 + j*dy_C[ch];
-	zp= z0 + k*dz_C[ch]; 
+	xp= x0 + i*dx_Ch[ch];
+	yp= y0 + j*dy_Ch[ch];
+	zp= z0 + k*dz_Ch[ch]; 
 	
 	// this is copied from the mover
 	const double ixd = floor((xp - xStart) * inv_dx);
@@ -6422,4 +6444,618 @@ void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective 
   else {
     init(vct, grid, col);            // use the fields from restart file
   }
+}
+
+
+void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
+
+  // copy as much as possible form initWeightBC
+
+  int rank_local=vct->getCartesian_rank();
+  MPI_Comm CommToParent= vct->getCommToParent(); // if != MPI_COMM_NULL the grid is a child
+ 
+  size_RG_ProjMsg=0;
+  size_CG_ProjMsg=0;
+  RG_numProjMessages=0;
+
+  /* here, vectors where core 0 of the local child grid assembles the messages
+      from all the local grid 
+      de-allocated at the end of the function */
+  RGBC_struct * RGProj_Info_LevelWide;
+  int RG_numProjMessage_LevelWide=0;
+
+  /* phase 1, as a child */
+  if (CommToParent!= MPI_COMM_NULL){
+
+    RGProj_Info= new RGBC_struct[MAX_RG_numBCMessages];
+
+    initWeightProj_Phase1(grid, vct);
+
+    // *3 for the three componenets of E
+    RG_ProjMsg= new double[(size_RG_ProjMsg+1)*3];
+
+    // here, in the BC versions there are several checks which i did NOT implement
+  }
+
+  /* end phase 1 */
+
+  /* phase 2, RG sends info to CG */
+  // children grids
+  if (CommToParent != MPI_COMM_NULL) {
+
+    // phase 2a: children assemble all the info in core 0 in the LOCAL child grid
+
+    if (rank_local >0){
+    /* send one message more; the last message has -1 in the RG_core
+       to signal end of 'valid' messages */
+
+      MPI_Send(RGProj_Info, RG_numProjMessages+1, MPI_RGBC_struct, 0, TAG_PROJ, vct->getComm());
+    }// end if (rank_local >0){
+    if (rank_local ==0){
+
+      // only rank_local==0 needs to instantiate this
+      RGProj_Info_LevelWide = new RGBC_struct[MAX_size_LevelWide];
+      
+      // recycling initWeightBC_Phase2a, maybe change name 
+      initWeightBC_Phase2a(grid, vct, RGProj_Info_LevelWide, &RG_numProjMessage_LevelWide, RGProj_Info, RG_numProjMessages, 3);
+
+    } // end if (rank_local ==0){
+
+    
+    // phase 2b: core 0 of the child grid assembles & sends messages for all CG cores
+    if (rank_local==0){
+      // recycling initWeightBC_Phase2b, maybe change name  
+      initWeightBC_Phase2b(grid, vct, RGProj_Info_LevelWide, RG_numProjMessage_LevelWide, 3);
+
+    } // end if (rank_local==0), phase 2b
+
+  } // end if (CommToParent != MPI_COMM_NULL) {
+  
+  // phase 2c, only for the parent
+  // each CG core will receive a message per child grid
+  if (numChildren > 0 ){
+
+    size_CG_ProjMsg=0;
+    Max_CG_numProjMessages=0;
+
+    CGProj_Info= newArr2(RGBC_struct, numChildren, MAX_RG_numBCMessages);
+    CG_numProjMessages = new int [numChildren];
+
+    for (int i=0; i< numChildren; i++){
+      CG_numProjMessages[i]=0;
+    }
+
+    // recycling initWeightBC_Phase2c, maybe change name 
+    initWeightBC_Phase2c(grid, vct, CGProj_Info, CG_numProjMessages, 3);
+
+    // do i need to instantiate stuff??
+    bool Needed= false;
+
+    for (int ch=0; ch<numChildren; ch++){
+      if (CG_numProjMessages[ch]>0) {Needed= true; break;}
+    }
+    
+    if (Needed){
+
+      // NOW, instantiate vector with the weights and fill them
+      
+      double inv_dx= 1./dx;
+      double inv_dy= 1./dy;
+      double inv_dz= 1./dz;
+      
+      // the vector where you will actually receive the projection message
+      CG_ProjMsg= new double[3*size_CG_ProjMsg +3];
+
+      ProjWeight000= newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      ProjWeight001= newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      ProjWeight010= newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      ProjWeight011= newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      ProjWeight100= newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      ProjWeight101= newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      ProjWeight110= newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      ProjWeight111= newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      
+      ProjIX=newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      ProjIY=newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      ProjIZ=newArr3(double, numChildren, Max_CG_numProjMessages, size_CG_ProjMsg);
+      
+      for (int ch=0; ch< numChildren; ch++){
+	for (int m=0; m< CG_numProjMessages[ch]; m++){
+	  RGBC_struct msg= CGProj_Info[ch][m];
+	  
+	  double x0= msg.CG_x_first;
+	  double y0= msg.CG_y_first;
+	  double z0= msg.CG_z_first;
+	  
+	  double xp, yp, zp;
+	  int count=0;
+	  
+	  for (int i= 0; i<msg.np_x; i++){
+	    for (int j=0; j<msg.np_y; j++){
+	      for (int k=0; k<msg.np_z; k++){
+		
+		// ok, now each RG point is treated as a particle here
+		// and i need the E at the point position
+		
+		xp= x0 + i*dx_Ch[ch];
+		yp= y0 + j*dy_Ch[ch];
+		zp= z0 + k*dz_Ch[ch]; 
+		
+		// this is copied from the mover
+		const double ixd = floor((xp - xStart) * inv_dx);
+		const double iyd = floor((yp - yStart) * inv_dy);
+		const double izd = floor((zp - zStart) * inv_dz);
+		int ix = 2 + int (ixd);
+		int iy = 2 + int (iyd);
+		int iz = 2 + int (izd);
+
+		if (ix <1 or iy< 1 or iz<1){
+		  cout << "Grid " << numGrid << " R " << vct->getCartesian_rank() << "RN position on CG: " << xp << " " <<yp <<" " << zp << " xstart " << xStart <<" " << yStart <<" " << zStart << " Ix" << ix << " " <<iy <<" " <<iz <<endl;
+		  cout << "Aborting "<< endl;
+		  MPI_Abort(MPI_COMM_WORLD, -1);
+		  
+		}
+
+		if (ix < 1)
+		  ix = 1;
+		if (iy < 1)
+		  iy = 1;
+		if (iz < 1)
+		  iz = 1;
+		if (ix > nxn - 1)
+		  ix = nxn - 1;
+		if (iy > nyn - 1)
+		  iy = nyn - 1;
+		if (iz > nzn - 1)
+		  iz = nzn - 1;
+		
+		double xi  [2];
+		double eta [2];
+		double zeta[2];
+		
+		xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+		eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+		zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+		xi  [1] = grid->getXN(ix,iy,iz) - xp;
+		eta [1] = grid->getYN(ix,iy,iz) - yp;
+		zeta[1] = grid->getZN(ix,iy,iz) - zp;
+		
+		ProjWeight000[ch][m][count] = xi[0] * eta[0] * zeta[0] * invVOL;
+		ProjWeight001[ch][m][count] = xi[0] * eta[0] * zeta[1] * invVOL;
+		ProjWeight010[ch][m][count] = xi[0] * eta[1] * zeta[0] * invVOL;
+		ProjWeight011[ch][m][count] = xi[0] * eta[1] * zeta[1] * invVOL;
+		ProjWeight100[ch][m][count] = xi[1] * eta[0] * zeta[0] * invVOL;
+		ProjWeight101[ch][m][count] = xi[1] * eta[0] * zeta[1] * invVOL;
+		ProjWeight110[ch][m][count] = xi[1] * eta[1] * zeta[0] * invVOL;
+		ProjWeight111[ch][m][count] = xi[1] * eta[1] * zeta[1] * invVOL;
+		
+		ProjIX[ch][m][count]= ix;
+		ProjIY[ch][m][count]= iy;
+		ProjIZ[ch][m][count]= iz;
+		
+		count++;
+	      }
+	    }
+	  }
+	} // end for (int m=0; m< CG_numProjMessages[m]; m++){
+      } // end for(int i=0; i< numChildren; i++){
+
+      // now instantantiate the (very wasteful) vectors for projection
+      ExthProjSt= newArr4(double, numChildren, nxn, nyn, nzn);
+      EythProjSt= newArr4(double, numChildren, nxn, nyn, nzn);
+      EzthProjSt= newArr4(double, numChildren, nxn, nyn, nzn);
+      DenProjSt= newArr4(double, numChildren, nxn, nyn, nzn);
+
+      // DenProjSt can be filled right now
+
+      eqValue(0.0, DenProjSt, numChildren, nxn, nyn, nzn);
+
+      for (int ch=0; ch< numChildren; ch++){
+	for (int m=0; m< CG_numProjMessages[ch]; m++){
+	  int CC= CGProj_Info[ch][m].np_x* CGProj_Info[ch][m].np_y * CGProj_Info[ch][m].np_z;
+	  for (int c=0; c<CC; c++){
+	    
+	    int IX= ProjIX[ch][m][c];
+	    int IY= ProjIY[ch][m][c];
+	    int IZ= ProjIZ[ch][m][c];
+
+	    cout << "Grid " << numGrid << " R " << vct->getCartesian_rank() << " IX " << IX <<" IY " << IY << " IZ " << IZ << endl;
+	    
+	    DenProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][m][c] ;
+            DenProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][m][c] ; 
+            DenProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][m][c] ;
+            DenProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][m][c]; 
+            DenProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][m][c] ;
+            DenProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][m][c]; 
+            DenProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][m][c] ;
+            DenProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][m][c]; 
+
+	} // int CC= CGProj_Info[ch][i].np_x* CGProj_Info[ch][i].np_y * CGProj_Info[ch][i].np_z;
+      } // end  for (int i=0; i< CG_numProjMessages[ch]; i++){
+    } // end for (int ch=0; ch< numChildren; ch++){
+
+    } // end if(Needed)
+  } // end  if (numChildren > 0 ){
+  
+   Trim_Proj_Vectors(vct); 
+
+  /*if (CommToParent != MPI_COMM_NULL && rank_local==0){
+    delete[] RGProj_Info_LevelWide;
+  }
+
+  int RL= vct->getCartesian_rank();
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (numChildren >0){
+    for (int ch=0; ch < numChildren; ch++){
+      int CG_PC= vct->getRank_CommToChildren(ch);
+
+      int waste=0;
+      for (int ii=0; ii< 10000* RL; ii++){
+	waste= waste+1;
+      }
+      cout << waste << endl;
+      cout << "CG core " << CG_PC << " expects " << CG_numProjMessages[ch] << " projections messages:" << endl;
+      for (int j=0; j <CG_numProjMessages[ch]; j++){
+	RGBC_struct msg = CGProj_Info[ch][j];
+	if (CG_PC != msg.CG_core) {cout << "FATAL ERROR IN RANK, ABORTING" << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
+	cout << "CG core " << msg.CG_core << " RG core " << msg.RG_core << " Id " << msg.MsgID << " count "  << msg.np_x*msg.np_y*msg.np_z<< endl; 
+      }
+    }
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  if (CommToParent != MPI_COMM_NULL){
+    int RG_PC= vct->getRank_CommToParent();
+    
+    int waste=0;
+    for (int ii=0; ii< 100000000* RL; ii++){
+      waste= waste+1;
+    }
+    cout << waste << endl;
+
+    cout << "RG core " << RG_PC << " sends " << RG_numProjMessages << " projections messages:" << endl;
+    for (int j=0; j< RG_numProjMessages; j++){
+      RGBC_struct msg = RGProj_Info[j];
+      if (RG_PC != msg.RG_core) {cout << "FATAL ERROR IN RANK, RG, ABORTING" << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
+      cout << "RG core " << msg.RG_core << " CG core " << msg.CG_core << " Id " << msg.MsgID << " count "  << msg.np_x*msg.np_y*msg.np_z << endl;
+    }
+  }
+
+  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Abort(MPI_COMM_WORLD, -1);*/
+
+  MPI_Barrier(MPI_COMM_WORLD);
+}
+
+
+
+void EMfields3D::initWeightProj_Phase1(Grid *grid, VirtualTopology3D *vct){
+
+  // RG cores build the map for proj info
+
+  /* if the left neighbor is MPI_PROC_NULL, i don't want to send back the BC
+     if it's not, i don't want to send twice the same node
+     hence, the _s is always 2 */
+  int i_s=2, i_e= nxn-1; 
+  int j_s=2, j_e= nyn-1;
+  int k_s=2, k_e= nzn-1;
+  
+  /* this because i don't want to send back the BC */
+
+  if (vct->getXright_neighbor()== MPI_PROC_NULL) i_e=nxn-2; // so i don't send the shared node twice
+  if (vct->getYright_neighbor()== MPI_PROC_NULL) j_e=nyn-2; // so i don't send the shared node twice  
+  if (vct->getZright_neighbor()== MPI_PROC_NULL) k_e=nzn-2; // so i don't send the shared node twice  
+
+  // here, the same as Explore3DAndCommit for particles
+  
+  // policy:
+  // explore Z dir
+  // for on the number of cores found there: explore Y dir
+  // for on the number of cores found there: explore X dir
+  // finally, commit  NB: all faces should have the same c
+
+  int MS= nxn; if (nyn>MS) MS= nyn; if (nzn>MS) MS= nzn;
+  int rank_CTP= vct->getRank_CommToParent();
+  /*******************************************************************/
+  // DIR1: starting point, in CG coordinates, per core                       
+  double *Dir1_SPXperC= new double[MS];
+  double *Dir1_SPYperC= new double[MS];
+  double *Dir1_SPZperC= new double[MS];
+  // DIR1: number of Refined grid point in this direction, per core     
+  int *Dir1_NPperC= new int[MS];  // this does not need to be this big, but anyway   
+  // DIR1: core ranks in the CommToParent communicator              
+  int *Dir1_rank= new int [MS]; // this does not need to be this big, but anyway      
+  int *Dir1_IndexFirstPointperC= new int [MS];
+  int Dir1_Ncores=0;
+
+  // DIR2: starting point, in CG coordinates, per core                                  
+  double *Dir2_SPXperC= new double[MS];
+  double *Dir2_SPYperC= new double[MS];
+  double *Dir2_SPZperC= new double[MS];
+  // DIR2: number of Refined grid point in this direction, per core     
+  int *Dir2_NPperC= new int[MS];  // this does not need to be this big, but anyway   
+  // DIR2: core ranks in the CommToParent communicator              
+  int *Dir2_rank= new int [MS]; // this does not need to be this big, but anyway      
+  int *Dir2_IndexFirstPointperC= new int [MS];
+  int Dir2_Ncores=0;
+
+  // DIR3: starting point, in CG coordinates, per core                     
+  double *Dir3_SPXperC= new double[MS];
+  double *Dir3_SPYperC= new double[MS];
+  double *Dir3_SPZperC= new double[MS];
+  // DIR3: number of Refined grid point in this direction, per core     
+  int *Dir3_NPperC= new int[MS];  // this does not need to be this big, but anyway   
+  // DIR3: core ranks in the CommToParent communicator              
+  int *Dir3_rank= new int [MS]; // this does not need to be this big, but anyway      
+  int *Dir3_IndexFirstPointperC= new int [MS];
+  int Dir3_Ncores=0;
+  /*******************************************************************/
+
+  string FACE="nn";
+  // Z dir / Dir 1
+  grid->RGBCExploreDirection(vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+
+  for (int n=0; n<Dir1_Ncores; n++){ // it will find again the core in Dir 1, but it will also explore Dir 2 
+    // Y dir / Dir 2
+    grid->RGBCExploreDirection(vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n],  Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); 
+    
+    for (int m=0; m< Dir2_Ncores; m++){ //it will find again the core in Dir 1, but it will also explore Dir 2 
+      // X dir / Dir 3
+      grid->RGBCExploreDirection(vct, FACE, 0, i_s, i_e, Dir2_IndexFirstPointperC[m],  Dir1_IndexFirstPointperC[n], Dir3_SPXperC, Dir3_SPYperC, Dir3_SPZperC, Dir3_NPperC, Dir3_rank, &Dir3_Ncores, Dir3_IndexFirstPointperC);
+
+      for (int NN=0; NN< Dir3_Ncores; NN++){
+	// using the function written for BCs, it's the same
+
+	//void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int ID);
+
+	Assign_RGBC_struct_Values(RGProj_Info + RG_numProjMessages, Dir3_IndexFirstPointperC[NN], Dir2_IndexFirstPointperC[m], Dir1_IndexFirstPointperC[n], -1, Dir3_NPperC[NN], Dir2_NPperC[m], Dir1_NPperC[n], Dir3_SPXperC[NN], Dir3_SPYperC[NN], Dir3_SPZperC[NN], Dir3_rank[NN], rank_CTP, RG_numProjMessages);
+	
+	RG_numProjMessages++;
+
+	int tmp= Dir3_NPperC[NN]*Dir2_NPperC[m]*Dir1_NPperC[n];
+	  if (tmp > size_RG_ProjMsg) size_RG_ProjMsg= tmp; 
+	  
+      } // end for (int NN=0; NN< Dir3_Ncores; NN++){
+    } // end  for (int m=0; m< Dir2_Ncores; m++){
+  } // end for (int n=0; n<Dir1_Ncores; n++){
+  // end here, the same as Explore3DAndCommit for particles
+
+
+  // the msg signaling the end
+  RGProj_Info[RG_numProjMessages].RG_core= -1;
+  RGProj_Info[RG_numProjMessages].RG_core= -1;
+  
+
+  // deletes
+  delete[]Dir1_SPXperC;
+  delete[]Dir1_SPYperC;
+  delete[]Dir1_SPZperC;
+  delete[]Dir1_NPperC;
+  delete[]Dir1_rank;
+  delete[]Dir1_IndexFirstPointperC;
+
+  delete[]Dir2_SPXperC;
+  delete[]Dir2_SPYperC;
+  delete[]Dir2_SPZperC;
+  delete[]Dir2_NPperC;
+  delete[]Dir2_rank;
+  delete[]Dir2_IndexFirstPointperC;
+
+  delete[]Dir3_SPXperC;
+  delete[]Dir3_SPYperC;
+  delete[]Dir3_SPZperC;
+  delete[]Dir3_NPperC;
+  delete[]Dir3_rank;
+  delete[]Dir3_IndexFirstPointperC;
+
+}
+
+void EMfields3D::Trim_Proj_Vectors(VirtualTopology3D *vct){
+  int dim;
+  
+  MPI_Comm CommToParent= vct->getCommToParent();
+
+  if (CommToParent != MPI_COMM_NULL){ // then trim RGProj_Info
+    
+    dim= RG_numProjMessages+1;
+    RGBC_struct *tmp= new RGBC_struct[dim];
+    
+    for (int i=0; i< dim; i++)
+      tmp[i]= RGProj_Info[i];
+
+    delete[]RGProj_Info;
+    
+    RGProj_Info= new RGBC_struct[dim];
+
+    for (int i=0; i< dim; i++)
+      RGProj_Info[i]= tmp[i];
+    
+    delete[]tmp;
+  }
+  
+  if (numChildren>0){
+    dim=0;
+    for (int ch=0; ch < numChildren; ch++){
+      if (CG_numProjMessages[ch]> dim) {dim= CG_numProjMessages[ch];}
+    }
+
+    dim= dim+1;
+
+    RGBC_struct **tmp2= newArr2(RGBC_struct, numChildren, dim);
+    
+    for (int ch=0; ch < numChildren; ch++)
+      for (int j=0; j< CG_numProjMessages[ch]; j++)
+	tmp2[ch][j]= CGProj_Info[ch][j];
+    
+    delArr2(CGProj_Info, numChildren);
+
+    CGProj_Info= newArr2(RGBC_struct, numChildren, dim);
+    for (int ch=0; ch < numChildren; ch++)
+      for (int j=0; j< CG_numProjMessages[ch]; j++)
+	CGProj_Info[ch][j]= tmp2[ch][j];
+    
+    delArr2(tmp2, numChildren);
+  } // end if (numChildren>0){
+
+}
+
+void EMfields3D::sendProjection(Grid *grid, VirtualTopology3D *vct){
+  
+  if (vct->getCommToParent()==MPI_COMM_NULL) return; // only children do this
+
+  cout << "numGrid " << numGrid << " R " << vct->getCartesian_rank() << " is sending proj" << endl;
+  
+  int dest;
+  int tag;
+  MPI_Request request;
+  MPI_Status status;
+
+  for (int m=0; m< RG_numProjMessages; m++){
+    
+    // build and send each RG Proj msg
+    RGBC_struct msg= RGProj_Info[m];
+    int count=0;
+
+    int Size= msg.np_x*msg.np_y*msg.np_z;
+
+    for (int i= msg.ix_first; i< msg.np_x; i++)
+      for (int j= msg.iy_first; j< msg.np_y; j++)
+	for (int k= msg.iz_first; k< msg.np_z; k++){
+	  RG_ProjMsg[0*Size + count]=Exth[i][j][k];
+	  RG_ProjMsg[1*Size + count]=Eyth[i][j][k];
+	  RG_ProjMsg[2*Size + count]=Ezth[i][j][k];
+
+	  count ++;
+	}
+      
+    dest= msg.CG_core;
+    tag= msg.MsgID;
+
+    /* i did not even try with MPI_Send, just went directly for the non-blocking
+       to let RG go immediately after sending*/
+    MPI_Isend(RG_ProjMsg, Size*3, MPI_DOUBLE, dest, tag, vct->getCommToParent(), &request);
+    MPI_Wait(&request, &status);
+    
+
+  } // end for (int m=0; m< RG_numProjMessages; m++){
+
+}
+
+void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
+  
+  int RR= vct->getCartesian_rank();
+
+  if (numChildren <1) return; // this is only for parents
+
+  cout << "Grid " << numGrid << " R " << RR << " has started receiveProjection" <<endl;
+
+  /* set staging vectors (ExthProjSt, EythProjSt, EzthProjSt, DenProjSt) to 0
+     before starting accumulatimg */
+  eqValue(0.0, ExthProjSt, numChildren, nxn, nyn, nzn);
+  eqValue(0.0, EythProjSt, numChildren, nxn, nyn, nzn);
+  eqValue(0.0, EzthProjSt, numChildren, nxn, nyn, nzn);
+
+
+  /* I have to receive child by child because different children send on different communicators
+     this will introduce delays;
+     should not produce DD */
+  MPI_Status status;
+  int count;
+  bool found;
+  int countExp;
+  bool Testing= true;
+
+  for (int ch=0; ch< numChildren; ch++){ // check projection from all children
+
+    int R_PC= vct->getRank_CommToChildren(ch);
+    for (int m=0; m< CG_numProjMessages[m]; m++){ // check all the messages to this core
+      
+      MPI_Recv(CG_ProjMsg, (size_CG_ProjMsg+1)*3, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, vct->getCommToChild(ch), &status);
+      MPI_Get_count(&status, MPI_DOUBLE, &count );
+    
+      // store them immediately after receiving them, hoping it will minimize waits
+
+      // 1. try to match the msg
+      found= false;
+      
+      for (int i=0; i< CG_numProjMessages[ch]; i++){ // for to match the msg
+	// I have to match BOTH id and RG_Core, because the id's are unique to the RG cores, not to the CG cores
+	
+	if (CGProj_Info[ch][i].MsgID == status.MPI_TAG and CGProj_Info[ch][i].RG_core == status.MPI_SOURCE){
+	  found = true;
+	  
+	  countExp= CGProj_Info[ch][i].np_x* CGProj_Info[ch][i].np_y* CGProj_Info[ch][i].np_z;
+	  if   (Testing){
+	    if ( ! (countExp*3 == count)){
+	      cout << "Grid " << numGrid << " R " << RR << ": fatal error in receiveProjection, I expect a msg with size " << countExp*3 << ", I got " << count ;
+	      cout << "Aborting ..." << endl;
+	      MPI_Abort(MPI_COMM_WORLD, -1);
+	    }
+	  } // if (Testing){ 
+	  
+	  // STORE IT
+	  
+	  int CC= CGProj_Info[ch][i].np_x* CGProj_Info[ch][i].np_y * CGProj_Info[ch][i].np_z;
+	  for (int c=0; c<CC; c++){
+	    
+	    int IX= ProjIX[ch][m][c];
+	    int IY= ProjIY[ch][m][c];
+	    int IZ= ProjIZ[ch][m][c];
+	    
+	    // NB: the denominator is written only once, in initWeightProj
+	    
+	    ExthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][m][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][m][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][m][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][m][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][m][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][m][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][m][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][m][c] * CG_ProjMsg[0*CC+c];
+
+	    EythProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][m][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][m][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][m][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][m][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][m][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][m][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][m][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][m][c] * CG_ProjMsg[1*CC+c];
+
+	    EzthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][m][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][m][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][m][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][m][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][m][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][m][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][m][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][m][c] * CG_ProjMsg[2*CC+c];
+
+	    
+	  }
+	  
+	  break;
+	}   //  if (CGProj_Info[ch][i].MsgID == status.MPI_TAG and ...
+      
+	
+      } // end for (int i=0; i< CG_numProjMessages[ch]; i++){ // for to match it
+      
+      if (found== false){ // I could not match the msg
+	  cout << "Grid " << numGrid << " R (PC rank) " << R_PC<< ": fatal error in receiveProjection, I could not match a msg..." ;
+	  cout << "Msg is from core (PC comm) " << status.MPI_SOURCE << " size:  " << count << " ID:  " << status.MPI_TAG << " size " << count << endl;
+	  cout << "Aborting ..." << endl;
+	  MPI_Abort(MPI_COMM_WORLD, -1);
+      } // end if (found== false){ 
+      
+    } // end for (int m=0; m< CG_numProjMessages[m]; m++){ // check all the messages to this core 
+  
+
+  } // end for (int ch=0; ch< numChildren; ch++){ // check projection from all children 
+
+  cout << "Grid " << numGrid <<" R " << " has finished receiveProjection" <<endl;
+  MPI_Barrier(vct->getComm());
+  if (RR=0){
+    cout << "Grid " << numGrid << " has finished receiving projection ..." << endl;
+  }
+
 }

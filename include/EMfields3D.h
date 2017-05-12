@@ -509,7 +509,10 @@ class EMfields3D                // :public Field
        parent grid: recceives the info
        here, fieldBC communication is set up */
     void initWeightBC(Grid *grid, VirtualTopology3D *vct);
-    
+    void initWeightProj(Grid *grid, VirtualTopology3D *vct);
+    void initWeightProj_Phase1(Grid *grid, VirtualTopology3D *vct);
+    void sendProjection(Grid *grid, VirtualTopology3D *vct);
+    void receiveProjection(Grid *grid, VirtualTopology3D *vct);
     /* to create the MPI_Datatype associate to RGBC_struct */
     void MPI_RGBC_struct_commit();
     /* to assign values to RGBC_struct 
@@ -552,7 +555,8 @@ class EMfields3D                // :public Field
        internal reasons;
        once initWeightBC has finished, we want to free to unused memory */
     void Trim_RGBC_Vectors(VirtualTopology3D *vct);
-    
+    /* same for projection */
+    void Trim_Proj_Vectors(VirtualTopology3D *vct);
     /* mlmd: BC related functions */
     /* sendBC: coarse grids sends BCs to the refined grids */
     void sendBC(Grid *grid, VirtualTopology3D *vct);
@@ -643,9 +647,9 @@ class EMfields3D                // :public Field
     double Lz;
 
     /* mlmd: i need dx, dy, dz of the children */
-    double *dx_C;
-    double *dy_C;
-    double *dz_C;
+    double *dx_Ch;
+    double *dy_Ch;
+    double *dz_Ch;
 
     /*! end mlmd: these values are for the local grid */
 
@@ -946,7 +950,62 @@ class EMfields3D                // :public Field
     /* max vector dimensions */
     int MAX_RG_numBCMessages;
     int MAX_size_LevelWide;
+
+    // projection
+
+    /* tags for send/receive of proj*/
+    int TAG_PROJ;
+
+    // RG side
+    int RG_numProjMessages;
+    // [MAX_RG_numBCMessages], later trimmed
+    RGBC_struct * RGProj_Info;
+    
+    // largest numbers of point that RG has to send as proj, set in initWeightProj_Phase1
+    int size_RG_ProjMsg;
+    // each projection msg RG sends; [(size_RG_ProjMsg+1)*3]
+    double * RG_ProjMsg;
+    
+    // CG side
+    // [numChildren]
+    int *CG_numProjMessages;
+    
+    // [numChildren][MAX_RG_numBCMessages], later trimmed
+    RGBC_struct ** CGProj_Info;
+
+    // largest numbers of point that CG receives as proj, set in initWeightProj
+    int size_CG_ProjMsg;
+    // each projection msg CG receives; [(size_CG_ProjMsg+1)*3] 
+    double * CG_ProjMsg;
+    // per core, this is max(CG_numProjMessages); used to instantiate the weights
+    int Max_CG_numProjMessages;
+    
+    // [numChildren][Max_CG_numProjMessages][size_CG_ProjMsg]
+    double ***ProjWeight000;
+    double ***ProjWeight001;
+    double ***ProjWeight010;
+    double ***ProjWeight011;
+    double ***ProjWeight100;
+    double ***ProjWeight101;
+    double ***ProjWeight110;
+    double ***ProjWeight111;
+    double ***ProjIX;
+    double ***ProjIY;
+    double ***ProjIZ;
+    // end projection
+
+    // the vectors where CG accumulates info on projection before applying it to fields
+    // instantiated only if at least one CG_numProjMessages >0
+    
+    // [numChildren][nxn][nzn][nzn]
+    double ****ExthProjSt;
+    double ****EythProjSt;
+    double ****EzthProjSt;
+
+    double ****DenProjSt;
+    
 };
+
 
 typedef EMfields3D Field;
 
