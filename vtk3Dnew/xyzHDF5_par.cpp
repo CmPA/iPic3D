@@ -24,6 +24,7 @@ int main (int argc, char **argv) {
 	sscanf(argv[2],"%d",&MaxLevel);
 	sscanf(argv[3],"%d",&DeltaT);
 
+	argc = argc -1; % the name of the program is added by the compiler as extra element in the array
 
 	if(argc>3) sscanf(argv[4], "%d", &NdimCode);
 	else NdimCode = 3;

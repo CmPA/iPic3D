@@ -2639,6 +2639,18 @@ void EMfields3D::initTwoCoils(VirtualTopology3D *vct, Grid *grid, Collective *co
                 init(vct,grid,col);  // use the fields from restart file
         }
 
+     	double external_radius = coilSpacing/2.0 + coilD/4.0;
+     	double scale_decay = external_radius/10.0;
+     	for (int i=0; i < nxn; i++)
+     		for (int j=0; j < nyn; j++)
+     			for (int k=0; k < nzn; k++){
+     				Lambda[i][j][k]  = 0.0;
+     				double r = sqrt(pow(grid->getXN(i,j,k)-Lx/2.0,2.0) + pow(grid->getYN(i,j,k)-Ly/2.0,2.0) + pow(grid->getZN(i,j,k)-Lz/2.0,2.0) );
+     				if(r>external_radius-scale_decay){
+     					Lambda[i][j][k]  = 1.0* tanh((r-(external_radius-scale_decay))/scale_decay);
+     				}
+     			}
+
 }
 
 void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col) {
