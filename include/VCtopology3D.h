@@ -133,12 +133,16 @@ public:
   int getRank_CommToParent_P(int is) {return rank_CommToParent_P[is];}
   /*! return the communicator to the parent; it's MPI_COMM_NULL for the coarse grid */
   MPI_Comm getCommToParent() {return CommToParent; }
+  MPI_Comm getCommToParent_BCGhost() {return CommToParent_BCGhost; }
+  MPI_Comm getCommToParent_Proj() {return CommToParent_Proj; }
   /*! return the communicator to the parent FOR PARTICLES; it's MPI_COMM_NULL for the coarse grid or if you chose other BC's*/ 
   MPI_Comm getCommToParent_P(int is) {return CommToParent_P[is]; }
   /* returns the number of children in the mlmd hierarchy */
   int getNumChildren() {return (numChildren);}
   /* returns the n-th communicator to child form CommToChildren */
   MPI_Comm getCommToChild(int n) {return CommToChildren[n];}
+  MPI_Comm getCommToChild_BCGhost(int n) {return CommToChildren_BCGhost[n];}
+  MPI_Comm getCommToChild_Proj(int n) {return CommToChildren_Proj[n];}
   /* return the rank as a parent of the n-th child */
   int getRank_CommToChildren(int nc){return rank_CommToChildren[nc];}
   /* returns the n-th communicator to child form CommToChildren FOR PARTICLES*/
@@ -303,10 +307,13 @@ private:
 
   /* communicator to parent */
   MPI_Comm CommToParent;
+  MPI_Comm CommToParent_BCGhost;
+  MPI_Comm CommToParent_Proj;
 
   /* communicator to children */
   MPI_Comm *CommToChildren;
-
+  MPI_Comm *CommToChildren_BCGhost;
+  MPI_Comm *CommToChildren_Proj;
   /* communicator to parent -- for Particles 
      != from MPI_COMM_NULL if the grid is a child which wants to receive PBC
      but it's != MPI_COMM_NULL also if this particular core does not need to receive msg-

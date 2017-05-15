@@ -47,6 +47,8 @@ VCtopology3D::VCtopology3D(Collective *col) {
 
   /*! mlmd: inter- and intra- communicators */
   CommToChildren= new MPI_Comm[Ngrids];
+  CommToChildren_BCGhost= new MPI_Comm[Ngrids];
+  CommToChildren_Proj= new MPI_Comm[Ngrids];
   rank_CommToChildren= new int[Ngrids];
   // for particles
   CommToChildren_P= newArr2(MPI_Comm, Ngrids, ns);
@@ -55,6 +57,8 @@ VCtopology3D::VCtopology3D(Collective *col) {
   /*! everything initialised to MPI_COMM_NULL */
   for (int ng=0; ng< Ngrids; ng++){
     CommToChildren[ng]= MPI_COMM_NULL;
+    CommToChildren_BCGhost[ng]= MPI_COMM_NULL;
+    CommToChildren_Proj[ng]= MPI_COMM_NULL;
     rank_CommToChildren[ng]= -1;
     // for particles
     for (int is=0; is<ns; is++){
@@ -64,6 +68,8 @@ VCtopology3D::VCtopology3D(Collective *col) {
   }
 
   CommToParent= MPI_COMM_NULL;
+  CommToParent_BCGhost= MPI_COMM_NULL;
+  CommToParent_Proj= MPI_COMM_NULL;
   rank_CommToParent= -1;
 
   CommToParent_P= new MPI_Comm[ns];
@@ -103,8 +109,6 @@ VCtopology3D::VCtopology3D(Collective *col) {
 
   int rr;
   MPI_Comm_rank(MPI_COMM_WORLD, &rr);
-  
-
 
 }
 
@@ -414,6 +418,25 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
     } // end if != MPI_COMM_NULL
   } // end cycle ng
 
+  
+  // copy the intercommunicators, as to have different communicators for active and ghost BCs
+
+  if (CommToParent != MPI_COMM_NULL){
+    MPI_Comm_dup(CommToParent, &CommToParent_BCGhost);
+    MPI_Comm_dup(CommToParent, &CommToParent_Proj);
+  }
+
+  for (int i=0; i<numChildren; i++){
+    MPI_Comm_dup(CommToChildren[i], &(CommToChildren_BCGhost[i]));
+    MPI_Comm_dup(CommToChildren[i], &(CommToChildren_Proj[i]));
+  }
+
+  for (int i=0; i< Ngrids; i++){
+    if (CommToChildren[i] != MPI_COMM_NULL and CommToChildren_BCGhost[i] == MPI_COMM_NULL){
+      cout << "FATAL ERROR IN VCT: duplicate failed  "<<endl;
+      MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+  }
 
   // a little test to comment later
   /*if (true){

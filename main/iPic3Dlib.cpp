@@ -109,6 +109,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
     else if (col->getCase()=="LightWave") EMf->initLightWave(vct,grid, col);
     else if (col->getCase()=="DoubleGEM") EMf->initDoubleGEM(vct,grid, col);
+    else if (col->getCase()=="initTestProjection") EMf->initTestProjection(vct,grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -124,6 +125,10 @@ int c_Solver::Init(int argc, char **argv) {
   if (MLMD_BC)
     EMf->initWeightBC(grid, vct);
 
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  if (MLMD_PROJECTION)
+    EMf->initWeightProj(grid, vct);
   
 #ifdef __PETSC_SOLVER__
   // PETSc solver:
@@ -326,21 +331,34 @@ void c_Solver::CalculateField() {
   if (MLMD_BC) {EMf->receiveBC(grid, vct);}
   /* end mlmd: BC */
 
-  // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
-  #ifdef __PETSC_SOLVER__
+
+  if (false){
+    // MAXWELL'S SOLVER
+    // timeTasks.start(TimeTasks::FIELDS);
+#ifdef __PETSC_SOLVER__
     petscSolver->solveE();
-  #else
+#else
     EMf->calculateE(grid, vct, col);               // calculate the E field
-  #endif
-  // timeTasks.end(TimeTasks::FIELDS);
+#endif
+    // timeTasks.end(TimeTasks::FIELDS);
+  }
 
   /* mlmd: BC */
   // send BC on En+theta, Bn 
   if (MLMD_BC) {EMf->sendBC(grid, vct);}
   /* end mlmd: BC */
 
-  //if (MLMD_BC) EMf->MPI_Barrier_ParentChild(vct);
+  MPI_Barrier(vct->getComm());
+  // if you are are child, send projection, E n+theta                           
+  if (MLMD_PROJECTION){EMf->sendProjection(grid,vct);}
+
+  if (MLMD_PROJECTION ){
+    EMf->receiveProjection(grid,vct);
+    EMf->TestProjection(grid, vct);
+    
+  }
+
+  
 
 }
 

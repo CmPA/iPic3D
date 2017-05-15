@@ -752,7 +752,7 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   }
   // end mlmd check
 
-  if (true){ // to experiment without mover
+  if (false){ // to experiment without mover
 
   double start_mover_PC = MPI_Wtime();
   double weights[2][2][2];

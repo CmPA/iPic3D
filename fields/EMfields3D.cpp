@@ -153,14 +153,14 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   rhocs = newArr4(double, ns, nxc, nyc, nzc);
 
   // debug, to remove (you can use this to save stuff)
-  /*Jxs = newArr4(double, 8, nxn, nyn, nzn);
-  Jys = newArr4(double, 8, nxn, nyn, nzn);
-  Jzs = newArr4(double, 8, nxn, nyn, nzn);*/
-
-  
   Jxs = newArr4(double, ns, nxn, nyn, nzn);
   Jys = newArr4(double, ns, nxn, nyn, nzn);
   Jzs = newArr4(double, ns, nxn, nyn, nzn);
+
+  
+  /*Jxs = newArr4(double, ns, nxn, nyn, nzn);
+  Jys = newArr4(double, ns, nxn, nyn, nzn);
+  Jzs = newArr4(double, ns, nxn, nyn, nzn);*/
   pXXsn = newArr4(double, ns, nxn, nyn, nzn);
   pXYsn = newArr4(double, ns, nxn, nyn, nzn);
   pXZsn = newArr4(double, ns, nxn, nyn, nzn);
@@ -1107,18 +1107,10 @@ void EMfields3D::adjustNonPeriodicDensities(int is, int bcPfaceXright, int bcPfa
      addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
      addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
 
-     /*cout << "BEFORE communicate centers" << endl;
-     cout <<"R"<<vct->getSystemWide_rank()  <<" vct->getZleft_neighbor() " << vct->getZleft_neighbor()  << " Bzc[5][5][0] " << Bzc[5][5][0] << " Bzc[5][5][1] " << Bzc[5][5][1] << "  Bzc[5][5][2] " <<  Bzc[5][5][2]  <<"  Bzc[5][5][3] " <<  Bzc[5][5][3] << " Bzc[5][5][4] " <<   Bzc[5][5][4]  << endl;
-     cout <<"R"<<vct->getSystemWide_rank() << " vct->getZright_neighbor() " << vct->getZright_neighbor() << " Bzc[8][8][nzn-1] " << Bzc[8][8][nzn-1] << "Bzc[8][8][nzn-2] " << Bzc[8][8][nzn-2 ] << "Bzc[8][8][nzn-3] " << Bzc[8][8][nzn-3 ] << "Bzc[8][8][nzn-4] " << Bzc[8][8][nzn-4 ]  << "Bzc[8][8][nzn-5] " << Bzc[8][8][nzn-5 ] << endl;*/
-
-
      communicateCenter(nxc, nyc, nzc, Bxc, vct);
      communicateCenter(nxc, nyc, nzc, Byc, vct);     
      communicateCenter(nxc, nyc, nzc, Bzc, vct);
 
-     /*cout << "AFTER communicate centers" << endl;
-     cout <<"R"<<vct->getSystemWide_rank()  <<" vct->getZleft_neighbor() " << vct->getZleft_neighbor()  << " Bzc[5][5][0] " << Bzc[5][5][0] << " Bzc[5][5][1] " << Bzc[5][5][1] << "  Bzc[5][5][2] " <<  Bzc[5][5][2]  <<"  Bzc[5][5][3] " <<  Bzc[5][5][3] << " Bzc[5][5][4] " <<   Bzc[5][5][4]  << endl;
-     cout <<"R"<<vct->getSystemWide_rank() << " vct->getZright_neighbor() " << vct->getZright_neighbor() << " Bzc[8][8][nzn-1] " << Bzc[8][8][nzn-1] << "Bzc[8][8][nzn-2] " << Bzc[8][8][nzn-2 ] << "Bzc[8][8][nzn-3] " << Bzc[8][8][nzn-3 ] << "Bzc[8][8][nzn-4] " << Bzc[8][8][nzn-4 ]  << "Bzc[8][8][nzn-5] " << Bzc[8][8][nzn-5 ] << endl;*/
 
    } else { // "normal", non MLMD options
 
@@ -5585,7 +5577,7 @@ void EMfields3D::sendBC(Grid *grid, VirtualTopology3D *vct){
   for (int ch=0; ch< numChildren; ch ++){
     
     for (int m=0; m<CG_numBCMessages_Ghost[ch]; m++){
-      sendOneBC(vct, grid, CG_Info_Ghost[ch][m], ch, 1-1);
+      sendOneBC(vct, grid, CG_Info_Ghost[ch][m], ch, -1);
     }
   } // end cycle on child
 
@@ -5600,6 +5592,7 @@ void EMfields3D::sendBC(Grid *grid, VirtualTopology3D *vct){
 void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 
   MPI_Comm CommToParent= vct->getCommToParent();
+  MPI_Comm CommToParent_BCGhost= vct->getCommToParent_BCGhost();
   if (CommToParent == MPI_COMM_NULL) {return;}  // if you are not a refined grid, no need to be here
 
   /* RGBC_struct * RGBC_Info_Ghost;
@@ -5628,7 +5621,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
     // check with stored msgs
     for (int i=0; i< RG_numBCMessages_Active; i++){
 
-      if (RGBC_Info_Active[i].MsgID == status.MPI_TAG ){ // NB: the tag gives you the msg position in the BC vector
+      if (RGBC_Info_Active[i].MsgID == status.MPI_TAG and RGBC_Info_Active[i].CG_core == status.MPI_SOURCE){ // NB: the tag gives you the msg position in the BC vector
 	
 	//cout << "R" << vct->getSystemWide_rank() <<" R" << vct->getRank_CommToParent() <<" on PC communicator, has received and matchedActive msg from " << status.MPI_SOURCE <<" with size " <<count << " and tag " <<status.MPI_TAG <<endl;
 
@@ -5637,7 +5630,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 	countExp= RGBC_Info_Active[i].np_x*RGBC_Info_Active[i].np_y*RGBC_Info_Active[i].np_z  ;
 
 	if (Testing){
-	  if (!( (countExp *NumF  == count) and (RGBC_Info_Active[i].CG_core == status.MPI_SOURCE) )){
+	  if (countExp *NumF  != count){
 	    cout << "R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() <<" : msg recv from core " << status.MPI_SOURCE <<" with tag " << status.MPI_TAG << " but Active size does not check: received: " << count << " expected " << countExp*NumF << ", aborting ..." << endl;
 	    MPI_Abort(MPI_COMM_WORLD, -1);
 	  }
@@ -5680,7 +5673,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 
     if (Testing){
       if (found == false){
-	cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received a msg I cannot match with my record, aborting..." << endl;
+	cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received an active msg I cannot match with my record, aborting..." << endl;
 	MPI_Abort(MPI_COMM_WORLD, -1);
       }
     }
@@ -5693,14 +5686,14 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
   // ghosts
   for (int m=0; m< RG_numBCMessages_Ghost; m++){
 
-    MPI_Recv(RGMsg, RG_MaxMsgSize *NumF, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, CommToParent, &status);
+    MPI_Recv(RGMsg, RG_MaxMsgSize *NumF, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, CommToParent_BCGhost, &status);
     MPI_Get_count(&status, MPI_DOUBLE, &count );
     
     found= false;
     // check with stored msgs
     for (int i=0; i< RG_numBCMessages_Ghost; i++){
 
-      if (RGBC_Info_Ghost[i].MsgID == status.MPI_TAG ){ // NB: the tag gives you the msg position in the BC vector
+      if (RGBC_Info_Ghost[i].MsgID == status.MPI_TAG and (RGBC_Info_Ghost[i].CG_core == status.MPI_SOURCE)){ // NB: the tag gives you the msg position in the BC vector
 	
 	found= true;
 
@@ -5709,7 +5702,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 	countExp= RGBC_Info_Ghost[i].np_x*RGBC_Info_Ghost[i].np_y*RGBC_Info_Ghost[i].np_z  ;
 
 	if (Testing){
-	  if (!( (countExp *NumF  == count) and (RGBC_Info_Ghost[i].CG_core == status.MPI_SOURCE) )){
+	  if (countExp *NumF  != count ){
 	    cout << "R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() <<" : msg recv from core " << status.MPI_SOURCE <<" with tag " << status.MPI_TAG << " but Ghost size does not check: received: " << count << " expected " << countExp*NumF << ", aborting ..." << endl;
 	    MPI_Abort(MPI_COMM_WORLD, -1);
 	  }
@@ -5742,7 +5735,6 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 	  cout << endl;
 
 	} // end if true
-
 	break;
       } // end if (RGBC_Info_Ghost[i].MsgID == status.MPI_TAG )
            
@@ -5750,7 +5742,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 
     if (Testing){
 	if (found == false){
-	  cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received a msg I cannot match with my record, aborting..." << endl;
+	  cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received a ghostmsg I cannot match with my record, aborting..." << endl;
 	  MPI_Abort(MPI_COMM_WORLD, -1);
 	}
       }
@@ -6166,10 +6158,28 @@ void EMfields3D::sendOneBC(VirtualTopology3D * vct, Grid * grid,  RGBC_struct CG
   if (which== 0) TYPE= "ACTIVE";
   if (which== -1) TYPE= "GHOST";
 
-  MPI_Comm CommToCh= vct->getCommToChild(ch);
+  MPI_Comm CommToCh;
+  if (which==0)
+    CommToCh=vct->getCommToChild(ch);
+  else if (which== -1)
+    CommToCh=vct->getCommToChild_BCGhost(ch);
+  
   int rankAsParent;
-  MPI_Comm_rank(CommToCh, &rankAsParent ); 
+  int rankAsParent_BCGhost;
 
+  if (vct->getCommToChild(ch) != MPI_COMM_NULL and vct->getCommToChild_BCGhost(ch)== MPI_COMM_NULL){
+    cout << "FATAL ERROR: duplicate failed  "<<endl;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+
+  // prova
+  MPI_Comm_rank(vct->getCommToChild(ch), &rankAsParent ); 
+  MPI_Comm_rank(vct->getCommToChild_BCGhost(ch), &rankAsParent_BCGhost);
+
+  if (rankAsParent != rankAsParent_BCGhost){
+    cout << "FATAL ERROR: ranks are not the same on communicator and copy  "<<endl;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
   
   int HW=0;
   
@@ -6194,7 +6204,12 @@ void EMfields3D::sendOneBC(VirtualTopology3D * vct, Grid * grid,  RGBC_struct CG
   tag= CG_Info.MsgID;
     
   //cout << "R" << vct->getSystemWide_rank()  << " msg " << m << " of " << CG_numBCMessages_Active[ch] << " to core " << dest << " of child " << ch <<", active" << " Size*3="<< Size*3<< endl;
-  MPI_Send(CGMsg, Size*NumF, MPI_DOUBLE, dest, tag, CommToCh);
+  MPI_Request request;
+  MPI_Status status;
+  
+  MPI_Isend(CGMsg, Size*NumF, MPI_DOUBLE, dest, tag, CommToCh, &request);
+  MPI_Wait(&request, &status);
+  
 
   //cout << "R" << vct->getSystemWide_rank() <<", R" << rankAsParent <<" on PC communicator, has sent this " << TYPE <<" msg to core " << dest << " in PC communicator, with size " << Size*NumF <<" and tag " << tag<< endl;
 
@@ -6475,13 +6490,13 @@ void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
     initWeightBC_Phase2c(grid, vct, CGProj_Info, CG_numProjMessages, 3);
 
     // do i need to instantiate stuff??
-    bool Needed= false;
+    /*CGProjVectors_Needed= false;
 
     for (int ch=0; ch<numChildren; ch++){
-      if (CG_numProjMessages[ch]>0) {Needed= true; break;}
-    }
+      if (CG_numProjMessages[ch]>0) {CGProjVectors_Needed= true; break;}
+      }*/
     
-    if (Needed){
+    if (true){
 
       // NOW, instantiate vector with the weights and fill them
       
@@ -6579,6 +6594,7 @@ void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
 		ProjIY[ch][m][count]= iy;
 		ProjIZ[ch][m][count]= iz;
 		
+		//cout << "ProjWeight000[ch][m][count]: " << ProjWeight000[ch][m][count] << " xi[0] " << xi[0] << " xi[1] " << xi[1]<<" eta[0] " << eta[0] << " zeta[0] " << zeta[0] <<" invVOL" << invVOL << " xp " << xp <<" yp " << yp << " zp " << zp << endl; 
 		count++;
 	      }
 	    }
@@ -6604,8 +6620,6 @@ void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
 	    int IX= ProjIX[ch][m][c];
 	    int IY= ProjIY[ch][m][c];
 	    int IZ= ProjIZ[ch][m][c];
-
-	    cout << "Grid " << numGrid << " R " << vct->getCartesian_rank() << " IX " << IX <<" IY " << IY << " IZ " << IZ << endl;
 	    
 	    DenProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][m][c] ;
             DenProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][m][c] ; 
@@ -6615,20 +6629,25 @@ void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
             DenProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][m][c]; 
             DenProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][m][c] ;
             DenProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][m][c]; 
+	    
+	  } // int CC= CGProj_Info[ch][i].np_x* CGProj_Info[ch][i].np_y * CGProj_Info[ch][i].np_z;
+	} // end  for (int i=0; i< CG_numProjMessages[ch]; i++){
 
-	} // int CC= CGProj_Info[ch][i].np_x* CGProj_Info[ch][i].np_y * CGProj_Info[ch][i].np_z;
-      } // end  for (int i=0; i< CG_numProjMessages[ch]; i++){
-    } // end for (int ch=0; ch< numChildren; ch++){
-
-    } // end if(Needed)
+	communicateNode_Proj(nxn, nyn, nzn, DenProjSt[ch], 0, 0, 0, 0, 0, 0, vct) ;
+      } // end for (int ch=0; ch< numChildren; ch++){
+      
+    } // end if(Needed) --> became end if (true)
   } // end  if (numChildren > 0 ){
+  
+
   
    Trim_Proj_Vectors(vct); 
 
-  /*if (CommToParent != MPI_COMM_NULL && rank_local==0){
+  if (CommToParent != MPI_COMM_NULL && rank_local==0){
     delete[] RGProj_Info_LevelWide;
   }
 
+  /*
   int RL= vct->getCartesian_rank();
   MPI_Barrier(MPI_COMM_WORLD);
   if (numChildren >0){
@@ -6645,6 +6664,8 @@ void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
 	RGBC_struct msg = CGProj_Info[ch][j];
 	if (CG_PC != msg.CG_core) {cout << "FATAL ERROR IN RANK, ABORTING" << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
 	cout << "CG core " << msg.CG_core << " RG core " << msg.RG_core << " Id " << msg.MsgID << " count "  << msg.np_x*msg.np_y*msg.np_z<< endl; 
+
+	
       }
     }
   }
@@ -6668,9 +6689,9 @@ void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Abort(MPI_COMM_WORLD, -1);*/
+  MPI_Abort(MPI_COMM_WORLD, -1);
 
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(MPI_COMM_WORLD);*/
 }
 
 
@@ -6679,18 +6700,15 @@ void EMfields3D::initWeightProj_Phase1(Grid *grid, VirtualTopology3D *vct){
 
   // RG cores build the map for proj info
 
-  /* if the left neighbor is MPI_PROC_NULL, i don't want to send back the BC
-     if it's not, i don't want to send twice the same node
-     hence, the _s is always 2 */
-  int i_s=2, i_e= nxn-1; 
-  int j_s=2, j_e= nyn-1;
-  int k_s=2, k_e= nzn-1;
+  // i do not want to send back the BC
+  int i_s=2, i_e= nxn-1-2;
+  int j_s=2, j_e= nyn-1-2;
+  int k_s=2, k_e= nzn-1-2;
   
-  /* this because i don't want to send back the BC */
-
-  if (vct->getXright_neighbor()== MPI_PROC_NULL) i_e=nxn-2; // so i don't send the shared node twice
-  if (vct->getYright_neighbor()== MPI_PROC_NULL) j_e=nyn-2; // so i don't send the shared node twice  
-  if (vct->getZright_neighbor()== MPI_PROC_NULL) k_e=nzn-2; // so i don't send the shared node twice  
+  // the right core sends the shared node
+  if (vct->getXleft_neighbor()!= MPI_PROC_NULL and vct->getXLEN()>1) i_s=1; // so i don't send the shared node twice
+  if (vct->getYleft_neighbor()!= MPI_PROC_NULL and vct->getYLEN()>1) j_s=1; // so i don't send the shared node twice  
+  if (vct->getZleft_neighbor()!= MPI_PROC_NULL and vct->getZLEN()>1) k_s=1; // so i don't send the shared node twice  
 
   // here, the same as Explore3DAndCommit for particles
   
@@ -6864,9 +6882,13 @@ void EMfields3D::sendProjection(Grid *grid, VirtualTopology3D *vct){
 
     int Size= msg.np_x*msg.np_y*msg.np_z;
 
-    for (int i= msg.ix_first; i< msg.np_x; i++)
-      for (int j= msg.iy_first; j< msg.np_y; j++)
-	for (int k= msg.iz_first; k< msg.np_z; k++){
+    for (int i= 0; i< msg.np_x; i++)
+      for (int j= 0; j< msg.np_y; j++)
+	for (int k= 0; k< msg.np_z; k++){
+	  int xC= msg.ix_first+i;
+	  int yC= msg.iy_first+j;
+	  int zC= msg.iz_first+k;
+	  
 	  RG_ProjMsg[0*Size + count]=Exth[i][j][k];
 	  RG_ProjMsg[1*Size + count]=Eyth[i][j][k];
 	  RG_ProjMsg[2*Size + count]=Ezth[i][j][k];
@@ -6879,7 +6901,7 @@ void EMfields3D::sendProjection(Grid *grid, VirtualTopology3D *vct){
 
     /* i did not even try with MPI_Send, just went directly for the non-blocking
        to let RG go immediately after sending*/
-    MPI_Isend(RG_ProjMsg, Size*3, MPI_DOUBLE, dest, tag, vct->getCommToParent(), &request);
+    MPI_Isend(RG_ProjMsg, Size*3, MPI_DOUBLE, dest, tag, vct->getCommToParent_Proj(), &request);
     MPI_Wait(&request, &status);
     
 
@@ -6892,6 +6914,8 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
   int RR= vct->getCartesian_rank();
 
   if (numChildren <1) return; // this is only for parents
+
+  //if (CGProjVectors_Needed== false) return; // if you are not involved in proj operators, exit
 
   cout << "Grid " << numGrid << " R " << RR << " has started receiveProjection" <<endl;
 
@@ -6914,9 +6938,9 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
   for (int ch=0; ch< numChildren; ch++){ // check projection from all children
 
     int R_PC= vct->getRank_CommToChildren(ch);
-    for (int m=0; m< CG_numProjMessages[m]; m++){ // check all the messages to this core
+    for (int m=0; m< CG_numProjMessages[ch]; m++){ // check all the messages to this core
       
-      MPI_Recv(CG_ProjMsg, (size_CG_ProjMsg+1)*3, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, vct->getCommToChild(ch), &status);
+      MPI_Recv(CG_ProjMsg, (size_CG_ProjMsg+1)*3, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, vct->getCommToChild_Proj(ch), &status);
       MPI_Get_count(&status, MPI_DOUBLE, &count );
     
       // store them immediately after receiving them, hoping it will minimize waits
@@ -6931,6 +6955,9 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
 	  found = true;
 	  
 	  countExp= CGProj_Info[ch][i].np_x* CGProj_Info[ch][i].np_y* CGProj_Info[ch][i].np_z;
+
+	  cout << "Grid "<< numGrid << " R " <<vct->getRank_CommToChildren(ch)<< " found msg: count: " << countExp << " S " << status.MPI_SOURCE << " ID " << status.MPI_TAG << endl;
+
 	  if   (Testing){
 	    if ( ! (countExp*3 == count)){
 	      cout << "Grid " << numGrid << " R " << RR << ": fatal error in receiveProjection, I expect a msg with size " << countExp*3 << ", I got " << count ;
@@ -6938,46 +6965,75 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
 	      MPI_Abort(MPI_COMM_WORLD, -1);
 	    }
 	  } // if (Testing){ 
-	  
+
 	  // STORE IT
-	  
 	  int CC= CGProj_Info[ch][i].np_x* CGProj_Info[ch][i].np_y * CGProj_Info[ch][i].np_z;
 	  for (int c=0; c<CC; c++){
 	    
-	    int IX= ProjIX[ch][m][c];
-	    int IY= ProjIY[ch][m][c];
-	    int IZ= ProjIZ[ch][m][c];
-	    
+	    int IX= ProjIX[ch][i][c];
+	    int IY= ProjIY[ch][i][c];
+	    int IZ= ProjIZ[ch][i][c];
+
+	    //cout << "Grid " << numGrid << " R " << vct->getCartesian_rank() << "IX " <<IX << " IY " << IY <<" IZ " <<IZ <<endl;
 	    // NB: the denominator is written only once, in initWeightProj
 	    
-	    ExthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][m][c] * CG_ProjMsg[0*CC+c];
-	    ExthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][m][c] * CG_ProjMsg[0*CC+c];
-	    ExthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][m][c] * CG_ProjMsg[0*CC+c];
-	    ExthProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][m][c] * CG_ProjMsg[0*CC+c];
-	    ExthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][m][c] * CG_ProjMsg[0*CC+c];
-	    ExthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][m][c] * CG_ProjMsg[0*CC+c];
-	    ExthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][m][c] * CG_ProjMsg[0*CC+c];
-	    ExthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][m][c] * CG_ProjMsg[0*CC+c];
+	    /*ExthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][i][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][i][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][i][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][i][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][i][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][i][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][i][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * CG_ProjMsg[0*CC+c];
 
-	    EythProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][m][c] * CG_ProjMsg[1*CC+c];
-	    EythProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][m][c] * CG_ProjMsg[1*CC+c];
-	    EythProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][m][c] * CG_ProjMsg[1*CC+c];
-	    EythProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][m][c] * CG_ProjMsg[1*CC+c];
-	    EythProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][m][c] * CG_ProjMsg[1*CC+c];
-	    EythProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][m][c] * CG_ProjMsg[1*CC+c];
-	    EythProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][m][c] * CG_ProjMsg[1*CC+c];
-	    EythProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][m][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][i][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][i][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][i][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][i][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][i][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][i][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][i][c] * CG_ProjMsg[1*CC+c];
+	    EythProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * CG_ProjMsg[1*CC+c];
 
-	    EzthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][m][c] * CG_ProjMsg[2*CC+c];
-	    EzthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][m][c] * CG_ProjMsg[2*CC+c];
-	    EzthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][m][c] * CG_ProjMsg[2*CC+c];
-	    EzthProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][m][c] * CG_ProjMsg[2*CC+c];
-	    EzthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][m][c] * CG_ProjMsg[2*CC+c];
-	    EzthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][m][c] * CG_ProjMsg[2*CC+c];
-	    EzthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][m][c] * CG_ProjMsg[2*CC+c];
-	    EzthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][m][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][i][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][i][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][i][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][i][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][i][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][i][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][i][c] * CG_ProjMsg[2*CC+c];
+	    EzthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * CG_ProjMsg[2*CC+c];*/
 
+	    // as a test: plot this / DenProjSt, to see if the projection operator is correct 
+	    // (should be 1 or <1 towards the edges of the superposition region)
+	    ExthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][i][c] * 1;
+	    ExthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][i][c] * 1;
+	    ExthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][i][c] * 1;
+	    ExthProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][i][c] * 1;
+	    ExthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][i][c] * 1;
+	    ExthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][i][c] * 1;
+	    ExthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][i][c] * 1;
+	    ExthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * 1;
+
+	    EythProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][i][c] * 1;
+	    EythProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][i][c] * 1;
+	    EythProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][i][c] * 1;
+	    EythProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][i][c] * 1;
+	    EythProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][i][c] * 1;
+	    EythProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][i][c] * 1;
+	    EythProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][i][c] * 1;
+	    EythProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * 1;
+
+	    EzthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][i][c] * 1;
+	    EzthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][i][c] * 1;
+	    EzthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][i][c] * 1;
+	    EzthProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][i][c] * 1;
+	    EzthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][i][c] * 1;
+	    EzthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][i][c] * 1;
+	    EzthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][i][c] * 1;
+	    EzthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * 1;
 	    
+	    cout << "Grid " << numGrid << " R " << vct->getCartesian_rank() << " I have just finished dealing with a msg " << ExthProjSt[ch][IX][IY][IZ] << " " << ProjWeight000[ch][i][c] <<" " <<CG_ProjMsg[0*CC+c] << endl;
 	  }
 	  
 	  break;
@@ -6998,10 +7054,154 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
 
   } // end for (int ch=0; ch< numChildren; ch++){ // check projection from all children 
 
+  for (int ch=0; ch < numChildren; ch++){
+    // this is if the projection ends up in shared nodes
+    communicateNode_Proj(nxn, nyn, nzn, ExthProjSt[ch], 0, 0, 0, 0, 0, 0, vct) ;
+    communicateNode_Proj(nxn, nyn, nzn, EythProjSt[ch], 0, 0, 0, 0, 0, 0, vct) ;
+    communicateNode_Proj(nxn, nyn, nzn, EzthProjSt[ch], 0, 0, 0, 0, 0, 0, vct) ;
+  }
   cout << "Grid " << numGrid <<" R " << " has finished receiveProjection" <<endl;
-  MPI_Barrier(vct->getComm());
-  if (RR=0){
-    cout << "Grid " << numGrid << " has finished receiving projection ..." << endl;
+
+}
+
+void EMfields3D::TestProjection(Grid *grid, VirtualTopology3D *vct){
+
+  /* instructions for the test:
+     1. this method has to be positioned here:
+        if (MLMD_PROJECTION ){
+        EMf->receiveProjection(grid,vct);
+        EMf->TestProjection(grid, vct);
+       }
+     2. in receiveProjection, do not sum 'received value'* weight, but 1*weight
+     3. in the inputfile, enable also BC and particle repopulation, otherwise RG messages
+        that should be received at different cycles may be erroneously received at the same cycke
+     4. Ex should give the projection operator (1 at the center of the overlap area, <1 when close to the boundaries)
+        if not, check separately Ey[i][j][k]= ExthProjSt[ch][i][j][k]  and Ez[i][j][k]= DenProjSt [ch][i][j][k]; for clues
+     5. to avoid mess, disable mover and solver
+     GOOD LUCK!
+  */
+     
+
+  if (numChildren <1) return; // this is only for parents   
+
+  // I have to set E to 0 otherwise it will keep summing
+  for (int i=0; i<nxn; i++)
+    for (int j=0; j<nyn; j++)
+      for (int k=0; k<nzn; k++){
+	Ex[i][j][k]=0;
+	Ey[i][j][k]=0;
+	Ez[i][j][k]=0;
+      }
+
+
+  if (true){
+
+    for (int ch=0; ch< numChildren; ch++){
+      for (int i=0; i<nxn; i++)
+	for (int j=0; j<nyn; j++)
+	  for (int k=0; k<nzn; k++){
+	    if (fabs(DenProjSt [ch][i][j][k]) >0){
+	      
+	      Ex[i][j][k]= ExthProjSt[ch][i][j][k] /DenProjSt [ch][i][j][k];
+	      Ey[i][j][k]= ExthProjSt[ch][i][j][k] ;
+	      Ez[i][j][k]= DenProjSt [ch][i][j][k];
+	      
+	    }
+	  }
+    }
   }
 
+}
+
+void EMfields3D::initTestProjection(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  const double pertX = 0.4;
+  const double pertGEM = 0.0;
+
+  double globalx;
+  double globaly;
+  double globalz;
+
+  const double coarsedx= grid->getDx_mlmd(0) ;
+  const double coarsedy= grid->getDy_mlmd(0) ;
+  const double coarsedz= grid->getDz_mlmd(0) ;
+
+  // this local
+  double Lx= col->getLx_mlmd(0);
+  double Ly= col->getLy_mlmd(0);
+  // end local
+
+  const double deltax= Lx/2.0;
+  const double deltay= Ly/2.0;
+ 
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize initTestProjection " << endl;
+      cout << "------------------------------------------" << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+	  globalx= grid->getXN(i, j, k) + coarsedx + grid->getOx_SW();
+	  globaly= grid->getYN(i, j, k) + coarsedy + grid->getOy_SW();
+	  globalz= grid->getZN(i, j, k) + coarsedz + grid->getOz_SW();
+         
+	    
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+	    rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+          // electric field
+	  if (numGrid ==0){
+	    Ex[i][j][k] = 0.0;
+	    Ey[i][j][k] = 0.0;
+	    Ez[i][j][k] = 0.0;}
+	  else{
+	    Ex[i][j][k] = 1*globalx;
+	    Ey[i][j][k] = 2*globaly;
+	    Ez[i][j][k] = 3*globalz;
+
+	    Exth[i][j][k] = 1*globalx;
+	    Eyth[i][j][k] = 2*globaly;
+	    Ezth[i][j][k] = 3*globalz;
+	    //cout << "Ex[i][j][k] " << Ex[i][j][k]  << "Ey[i][j][k] " << Ey[i][j][k]  << "Ez[i][j][k] " << Ez[i][j][k] << endl;
+	  }
+          // Magnetic field
+          Bxn[i][j][k] = B0x;
+          Byn[i][j][k] = B0y;
+	  Byn[i][j][k] = B0z;
+          // add the initial X perturbation
+          
+        }
+    // communicate ghost
+    communicateNode(nxn, nyn, nzn, Bxn, vct);
+    communicateNode(nxn, nyn, nzn, Byn, vct);
+    communicateNode(nxn, nyn, nzn, Bzn, vct);
+    // initialize B on centers; same thing as on nodes but on centers
+
+    grid->interpN2C_GC(Bxc, Bxn);
+    grid->interpN2C_GC(Byc, Byn);
+    grid->interpN2C_GC(Bzc, Bzn);
+     
+    // end initialize B on centers 
+    communicateCenter(nxc, nyc, nzc, Bxc, vct);
+    communicateCenter(nxc, nyc, nzc, Byc, vct);
+    communicateCenter(nxc, nyc, nzc, Bzc, vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C_GC(rhocs, is, rhons);
+
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
 }

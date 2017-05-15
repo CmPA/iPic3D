@@ -102,6 +102,8 @@ public:
   virtual int getNumGrid() = 0;
   /*! returns the communicator to the parent grid */
   virtual MPI_Comm getCommToParent() = 0;
+  virtual MPI_Comm getCommToParent_BCGhost() = 0;
+  virtual MPI_Comm getCommToParent_Proj() = 0;
   /*! returns the communicator to the parent grid for particles */
   virtual MPI_Comm getCommToParent_P(int is) = 0;
   /*! returns the number of children of a grid */ 
@@ -109,6 +111,8 @@ public:
   /* return the communicator to the child grid n in the mlmd hierarchy */
   // for fields
   virtual MPI_Comm getCommToChild(int n) =0;
+  virtual MPI_Comm getCommToChild_BCGhost(int n) =0;
+  virtual MPI_Comm getCommToChild_Proj(int n) =0;
   // for particles
   virtual MPI_Comm getCommToChild_P(int n, int is) =0;
 

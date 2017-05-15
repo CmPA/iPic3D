@@ -248,6 +248,7 @@ class EMfields3D                // :public Field
     void initLightWave(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! double GEM, mlmd ready */
     void initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initTestProjection(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! add a perturbattion to charge density */
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */
@@ -513,6 +514,7 @@ class EMfields3D                // :public Field
     void initWeightProj_Phase1(Grid *grid, VirtualTopology3D *vct);
     void sendProjection(Grid *grid, VirtualTopology3D *vct);
     void receiveProjection(Grid *grid, VirtualTopology3D *vct);
+    void TestProjection(Grid *grid, VirtualTopology3D *vct);
     /* to create the MPI_Datatype associate to RGBC_struct */
     void MPI_RGBC_struct_commit();
     /* to assign values to RGBC_struct 
@@ -1003,7 +1005,9 @@ class EMfields3D                // :public Field
     double ****EzthProjSt;
 
     double ****DenProjSt;
-    
+
+    // if you, as a CG core, are involved in projection operators
+    //bool CGProjVectors_Needed;
 };
 
 
