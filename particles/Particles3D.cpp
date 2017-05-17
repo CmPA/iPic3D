@@ -2231,6 +2231,7 @@ double Particles3D::ReturnToCenterCircle(double L_outer){
 	double r;
 	double udotr;
 	double ukick = 3.0 *uth;
+	double external_radius = Lx*.4;
 	while (np_current < nplast+1) {
 		r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
 							(y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
