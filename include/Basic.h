@@ -284,6 +284,14 @@ inline void addscale(double alfa, double beta, double ***vect1, double ***vect2,
 
 }
 /** method to calculate vector1 = beta*vector1 + alfa*vector2 */
+inline void addscale(double alfa, double beta, double ***vectRES, double ***vect1, double ***vect2, int nx, int ny, int nz) {
+  for (register int i = 0; i < nx; i++)
+    for (register int j = 0; j < ny; j++)
+      for (register int k = 0; k < nz; k++) {
+        vectRES[i][j][k] = beta * vect1[i][j][k] + alfa * vect2[i][j][k];
+      }
+}
+/** method to calculate vector1 = beta*vector1 + alfa*vector2 */
 inline void addscale(double alfa, double beta, double ***vect1, double ***vect2, int nx, int ny) {
   for (register int i = 0; i < nx; i++)
     for (register int j = 0; j < ny; j++)

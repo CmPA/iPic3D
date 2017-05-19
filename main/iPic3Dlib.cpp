@@ -332,7 +332,7 @@ void c_Solver::CalculateField() {
   /* end mlmd: BC */
 
 
-  if (false){
+  if (true){
     // MAXWELL'S SOLVER
     // timeTasks.start(TimeTasks::FIELDS);
 #ifdef __PETSC_SOLVER__
@@ -350,16 +350,13 @@ void c_Solver::CalculateField() {
 
   MPI_Barrier(vct->getComm());
   // if you are are child, send projection, E n+theta                           
-  if (MLMD_PROJECTION){EMf->sendProjection(grid,vct);}
-
-  if (MLMD_PROJECTION ){
-    EMf->receiveProjection(grid,vct);
-    EMf->TestProjection(grid, vct);
-    
-  }
-
+  if (MLMD_PROJECTION){
+    EMf->sendProjection(grid,vct);
   
-
+    EMf->receiveProjection(grid,vct);
+    //EMf->TestProjection(grid, vct); // This has to be on only if you are testing, without running
+    EMf->applyProjection(grid, vct, col);
+  }
 }
 
 void c_Solver::CalculateBField() {
@@ -368,7 +365,16 @@ void c_Solver::CalculateBField() {
   /* --------------------- */
 
   // timeTasks.start(TimeTasks::BFIELD);
+
+
+  // receive BC on  Bn 
+  if (MLMD_BC) {EMf->receiveBC(grid, vct);}
+
   EMf->calculateB(grid, vct, col);   // calculate the B field
+
+  // send BC on Bn 
+  if (MLMD_BC) {EMf->sendBC(grid, vct);}
+
   // timeTasks.end(TimeTasks::BFIELD);
 
   // print out total time for all tasks

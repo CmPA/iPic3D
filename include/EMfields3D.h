@@ -281,7 +281,9 @@ class EMfields3D                // :public Field
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for gem challange */
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
-
+    /* fix B ghost cell after receive B node BC */
+    void fixBghostCells_Left(int Dir, int NCells);
+    void fixBghostCells_Right(int Dir, int NCells);
     /*! Calculate the three components of Pi(implicit pressure) cross image vector */
     void PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid);
     /*! Calculate the three components of mu (implicit permeattivity) cross image vector */
@@ -360,18 +362,21 @@ class EMfields3D                // :public Field
     double &getEx(int indexX, int indexY, int indexZ) const;
     /*! get Electric field X component array */
     double ***getEx();
+    double ***getExth();
     /*! get Electric field X component cell array without the ghost cells */
     double ***getExc();
     /*! get Electric Field component Y defined on node(indexX,indexY,indexZ) */
     double &getEy(int indexX, int indexY, int indexZ) const;
     /*! get Electric field Y component array */
     double ***getEy();
+    double ***getEyth();
     /*! get Electric field Y component cell array without the ghost cells */
     double ***getEyc();
     /*! get Electric Field component Z defined on node(indexX,indexY,indexZ) */
     double &getEz(int indexX, int indexY, int indexZ) const;
     /*! get Electric field Z component array */
     double ***getEz();
+    double ***getEzth();
     /*! get Electric field Z component cell array without the ghost cells */
     double ***getEzc();
     /*! get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
@@ -514,6 +519,7 @@ class EMfields3D                // :public Field
     void initWeightProj_Phase1(Grid *grid, VirtualTopology3D *vct);
     void sendProjection(Grid *grid, VirtualTopology3D *vct);
     void receiveProjection(Grid *grid, VirtualTopology3D *vct);
+    void applyProjection(Grid *grid, VirtualTopology3D *vct, Collective *col);
     void TestProjection(Grid *grid, VirtualTopology3D *vct);
     /* to create the MPI_Datatype associate to RGBC_struct */
     void MPI_RGBC_struct_commit();
@@ -1006,8 +1012,14 @@ class EMfields3D                // :public Field
 
     double ****DenProjSt;
 
-    // if you, as a CG core, are involved in projection operators
-    //bool CGProjVectors_Needed;
+    /* if you, as a CG core, need to apply projection 
+       (at any level; just checked to see wether ApplyProjection can be skipped) */
+    bool ApplyProjection; 
+
+    // instantiated only if ApplyProjection= true, used to regenerated En+1 after receiving projection
+    double ***Ex_n;
+    double ***Ey_n;
+    double ***Ez_n;
 };
 
 

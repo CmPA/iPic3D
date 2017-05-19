@@ -337,6 +337,16 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
     communicateNode(nxn, nyn, nzn, Ezth, vct);
 
   }
+  // save the old E if you need to regenerate it after receiving projection
+  if (numChildren>0 and MLMD_PROJECTION and ApplyProjection){
+    for (int i=0; i< nxn; i++)
+      for (int j=0; j< nyn; j++)
+	for (int k=0; k< nzn; k++){
+	  Ex_n[i][j][k]= Ex[i][j][k];
+	  Ey_n[i][j][k]= Ey[i][j][k];
+	  Ez_n[i][j][k]= Ez[i][j][k];
+	}
+  } // end if (numChildren>0 and MLMD_BC and ApplyProjection){
 
   addscale(1 / th, -(1.0 - th) / th, Ex, Exth, nxn, nyn, nzn);  
   addscale(1 / th, -(1.0 - th) / th, Ey, Eyth, nxn, nyn, nzn);
@@ -368,9 +378,9 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
 
     // NB: these BCs are at time n, here B is still at time n                                     
     // impose BC B on ghost nodes, for particles                                                
-    setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
-    setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active); // if i don't put this, i see dots in correspondance with RG boundar\
-ies                                                                                               
+    // i am imposing them at the previous time step, BC at n+1
+    //setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+    //setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active); // if i don't put this, i see dots in correspondance with RG boundaries                                                                                               
 
   }
 
@@ -719,7 +729,8 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
        int i_s=1, i_e= nxn-1;
        int j_s=1, j_e= nyn-1;
        int k_s=1, k_e= nzn-1;
-
+       
+       // DO NOT DO THIS!!!
        /*if (numGrid>0 and vct->getXleft_neighbor() == MPI_PROC_NULL) i_s=2;
        if (numGrid>0 and vct->getXright_neighbor() == MPI_PROC_NULL) i_e=nxn-2;
 
@@ -1147,12 +1158,78 @@ void EMfields3D::adjustNonPeriodicDensities(int is, int bcPfaceXright, int bcPfa
      communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
      communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
      //cout << "End communicateNodeBC"<<endl;
+   } else{ // i put new send/ receive BC for B, sent/ received just before calculateB
+     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+
+     communicateNode(nxn, nyn, nzn, Bxn, vct);
+     communicateNode(nxn, nyn, nzn, Byn, vct);
+     communicateNode(nxn, nyn, nzn, Bzn, vct);
+
+     // fix cells
+     if (vct->getXleft_neighbor() == MPI_PROC_NULL)
+       fixBghostCells_Left(0, 1);
+     if (vct->getYleft_neighbor() == MPI_PROC_NULL)
+       fixBghostCells_Left(1, 1);
+     if (vct->getZleft_neighbor() == MPI_PROC_NULL)
+       fixBghostCells_Left(2, 1);
+
+     if (vct->getXright_neighbor() == MPI_PROC_NULL)
+       fixBghostCells_Right(0, 1);
+     if (vct->getYright_neighbor() == MPI_PROC_NULL)
+       fixBghostCells_Right(1, 1);
+     if (vct->getZright_neighbor() == MPI_PROC_NULL)
+       fixBghostCells_Right(2, 1);
    }
 
+   communicateCenter(nxc, nyc, nzc, Bxc, vct);
+   communicateCenter(nxc, nyc, nzc, Byc, vct);     
+   communicateCenter(nxc, nyc, nzc, Bzc, vct);
+}
 
- }
- /*! initialize EM field with transverse electric waves 1D and rotate anticlockwise (theta degrees) */
- void EMfields3D::initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta) {
+void EMfields3D::fixBghostCells_Left(int Dir, int NCells){
+  
+  int i_s= 0, i_e= nxc-1;
+  int j_s= 0, j_e= nyc-1;
+  int k_s= 0, k_e= nzc-1;
+  
+  if (Dir==0) i_e= NCells;
+  if (Dir==1) j_e= NCells;
+  if (Dir==2) k_e= NCells;
+
+
+  for (int i=i_s; i< i_e; i++)
+    for (int j=j_s; j<j_e; j++)
+      for(int k=k_s; k<k_e; k++){
+	Bxc[i][j][k] = .125 * (Bxn[i][j][k] + Bxn[i + 1][j][k] + Bxn[i][j + 1][k] + Bxn[i][j][k + 1] + Bxn[i + 1][j + 1][k] + Bxn[i + 1][j][k + 1] + Bxn[i][j + 1][k + 1] + Bxn[i + 1][j + 1][k + 1]);
+	Byc[i][j][k] = .125 * (Byn[i][j][k] + Byn[i + 1][j][k] + Byn[i][j + 1][k] + Byn[i][j][k + 1] + Byn[i + 1][j + 1][k] + Byn[i + 1][j][k + 1] + Byn[i][j + 1][k + 1] + Byn[i + 1][j + 1][k + 1]);
+	Bzc[i][j][k] = .125 * (Bzn[i][j][k] + Bzn[i + 1][j][k] + Bzn[i][j + 1][k] + Bzn[i][j][k + 1] + Bzn[i + 1][j + 1][k] + Bzn[i + 1][j][k + 1] + Bzn[i][j + 1][k + 1] + Bzn[i + 1][j + 1][k + 1]);
+      }
+}
+
+
+void EMfields3D::fixBghostCells_Right(int Dir, int NCells){
+  
+  int i_s= 0, i_e= nxc-1;
+  int j_s= 0, j_e= nyc-1;
+  int k_s= 0, k_e= nzc-1;
+  
+  if (Dir==0) i_s= nxc-1-NCells;
+  if (Dir==1) j_s= nyc-1-NCells;
+  if (Dir==2) k_s= nzc-1-NCells;
+
+
+  for (int i=i_s; i< i_e; i++)
+    for (int j=j_s; j<j_e; j++)
+      for(int k=k_s; k<k_e; k++){
+	Bxc[i][j][k] = .125 * (Bxn[i][j][k] + Bxn[i + 1][j][k] + Bxn[i][j + 1][k] + Bxn[i][j][k + 1] + Bxn[i + 1][j + 1][k] + Bxn[i + 1][j][k + 1] + Bxn[i][j + 1][k + 1] + Bxn[i + 1][j + 1][k + 1]);
+	Byc[i][j][k] = .125 * (Byn[i][j][k] + Byn[i + 1][j][k] + Byn[i][j + 1][k] + Byn[i][j][k + 1] + Byn[i + 1][j + 1][k] + Byn[i + 1][j][k + 1] + Byn[i][j + 1][k + 1] + Byn[i + 1][j + 1][k + 1]);
+	Bzc[i][j][k] = .125 * (Bzn[i][j][k] + Bzn[i + 1][j][k] + Bzn[i][j + 1][k] + Bzn[i][j][k + 1] + Bzn[i + 1][j + 1][k] + Bzn[i + 1][j][k + 1] + Bzn[i][j + 1][k + 1] + Bzn[i + 1][j + 1][k + 1]);
+      }
+}
+
+/*! initialize EM field with transverse electric waves 1D and rotate anticlockwise (theta degrees) */
+void EMfields3D::initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta) {
    // initialize E and rhos on nodes
    for (int i = 0; i < nxn; i++)
      for (int j = 0; j < nyn; j++) {
@@ -1198,6 +1275,9 @@ void EMfields3D::initLightWave(VirtualTopology3D * vct, Grid * grid, Collective 
 
      double globalX, globalY, globalZ;
 
+     cout << "Grid " << numGrid << " Ox "<< col->getOx_SW(numGrid) <<endl;
+     cout << "Grid " <<numGrid<< " Oy "<< col->getOy_SW(numGrid) <<endl;
+     cout << "Grid " <<numGrid<< " Oz "<< col->getOz_SW(numGrid) <<endl;
 
      for (int i = 0; i < nxn; i++)
        for (int j = 0; j < nyn; j++)
@@ -3647,6 +3727,9 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
  double ***EMfields3D::getEx() {
    return (Ex);
  }
+double ***EMfields3D::getExth() {
+   return (Exth);
+ }
  /*! get Electric Field component X array cell without the ghost cells */
  double ***EMfields3D::getExc() {
 
@@ -3672,6 +3755,9 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
  double ***EMfields3D::getEy() {
    return (Ey);
  }
+double ***EMfields3D::getEyth() {
+   return (Eyth);
+ }
  /*! get Electric Field component Y array cell without the ghost cells */
  double ***EMfields3D::getEyc() {
 
@@ -3695,6 +3781,9 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
  /*! get Electric field component Z array */
  double ***EMfields3D::getEz() {
    return (Ez);
+ }
+double ***EMfields3D::getEzth() {
+   return (Ezth);
  }
  /*! get Electric Field component Z array cell without the ghost cells */
  double ***EMfields3D::getEzc() {
@@ -4457,6 +4546,8 @@ void EMfields3D::MLMDSourceRight(double ***vectorX, double ***vectorY, double **
   if (vct->getSystemWide_rank()==0){
      cout << "At the end of initWeightBC" << endl;
      }*/
+
+  
 }
 
 /* mlmd test functions */
@@ -5788,6 +5879,8 @@ void EMfields3D::buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_st
 
   //cout << "inside building msg RGInfo.np_x " << RGInfo.np_x << " RGInfo.np_y " << RGInfo.np_y << " RGInfo.np_z " << RGInfo.np_z <<endl;
 
+  //cout <<"building msg, starts @ " << x0 << "; " << y0 << "; " << z0 << endl;
+
   for (int i= 0; i<RGInfo.np_x; i++){
     for (int j=0; j<RGInfo.np_y; j++){
       for (int k=0; k<RGInfo.np_z; k++){
@@ -5799,6 +5892,8 @@ void EMfields3D::buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_st
 	yp= y0 + j*dy_Ch[ch];
 	zp= z0 + k*dz_Ch[ch]; 
 	
+	//cout << "building msg, point " << xp << "; " <<yp <<"; " << zp << endl;
+
 	// this is copied from the mover
 	const double ixd = floor((xp - xStart) * inv_dx);
 	const double iyd = floor((yp - yStart) * inv_dy);
@@ -6194,8 +6289,7 @@ void EMfields3D::sendOneBC(VirtualTopology3D * vct, Grid * grid,  RGBC_struct CG
   }
 
       
-  //cout << "R" << vct->getSystemWide_rank()  << " before building msg for ch " << ch  << endl;
-  //cout << "R" << vct->getSystemWide_rank() << " (CG_Info_Active[ch][m]).np_x " << (CG_Info_Active[ch][m]).np_x << " (CG_Info_Active[ch][m]).np_y " << (CG_Info_Active[ch][m]).np_y << " (CG_Info_Active[ch][m]).np_z " << (CG_Info_Active[ch][m]).np_z << endl;
+  cout << "Starting buildBCMsg, case: " << which << endl;  
   buildBCMsg(vct, grid, ch, CG_Info, Size );
 
   //cout << "R" << vct->getSystemWide_rank()  << " after building msg for ch " << ch  << endl;      
@@ -6639,9 +6733,27 @@ void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
     } // end if(Needed) --> became end if (true)
   } // end  if (numChildren > 0 ){
   
+  Trim_Proj_Vectors(vct); 
 
-  
-   Trim_Proj_Vectors(vct); 
+  // here, to decide wether you have to enter ApplyProjection
+  ApplyProjection= false;
+  for (int ch=0; ch< numChildren; ch++)
+    for (int i=0; i<nxn; i++)
+      for (int j=0; j<nyn; j++)
+	for (int k=0; k<nzn; k++){
+	  // I am checking DenProjSt[ch][i][j][k] because you may have a != 0 after the communicateNode_Proj
+	  // not necessarily only after the messaging thing
+ 	  if (DenProjSt[ch][i][j][k] >0.0){
+	    ApplyProjection= true;
+	    break;
+	  }
+	}
+  if (ApplyProjection){
+    Ex_n = newArr3(double, nxn, nyn, nzn);
+    Ey_n = newArr3(double, nxn, nyn, nzn);
+    Ez_n = newArr3(double, nxn, nyn, nzn);
+  }
+  // end here, to decide wether you have to enter ApplyProjection
 
   if (CommToParent != MPI_COMM_NULL && rank_local==0){
     delete[] RGProj_Info_LevelWide;
@@ -6889,9 +7001,9 @@ void EMfields3D::sendProjection(Grid *grid, VirtualTopology3D *vct){
 	  int yC= msg.iy_first+j;
 	  int zC= msg.iz_first+k;
 	  
-	  RG_ProjMsg[0*Size + count]=Exth[i][j][k];
-	  RG_ProjMsg[1*Size + count]=Eyth[i][j][k];
-	  RG_ProjMsg[2*Size + count]=Ezth[i][j][k];
+	  RG_ProjMsg[0*Size + count]=Exth[xC][yC][zC];
+	  RG_ProjMsg[1*Size + count]=Eyth[xC][yC][zC];
+	  RG_ProjMsg[2*Size + count]=Ezth[xC][yC][zC];
 
 	  count ++;
 	}
@@ -6977,7 +7089,7 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
 	    //cout << "Grid " << numGrid << " R " << vct->getCartesian_rank() << "IX " <<IX << " IY " << IY <<" IZ " <<IZ <<endl;
 	    // NB: the denominator is written only once, in initWeightProj
 	    
-	    /*ExthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][i][c] * CG_ProjMsg[0*CC+c];
+	    ExthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][i][c] * CG_ProjMsg[0*CC+c];
 	    ExthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][i][c] * CG_ProjMsg[0*CC+c];
 	    ExthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][i][c] * CG_ProjMsg[0*CC+c];
 	    ExthProjSt[ch][IX][IY-1][IZ-1] += ProjWeight011[ch][i][c] * CG_ProjMsg[0*CC+c];
@@ -7002,10 +7114,10 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
 	    EzthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][i][c] * CG_ProjMsg[2*CC+c];
 	    EzthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][i][c] * CG_ProjMsg[2*CC+c];
 	    EzthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][i][c] * CG_ProjMsg[2*CC+c];
-	    EzthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * CG_ProjMsg[2*CC+c];*/
+	    EzthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * CG_ProjMsg[2*CC+c];
 
-	    // as a test: plot this / DenProjSt, to see if the projection operator is correct 
-	    // (should be 1 or <1 towards the edges of the superposition region)
+	    /* this is to test the projection operator, see instruction in TestProjection 
+
 	    ExthProjSt[ch][IX][IY][IZ] += ProjWeight000[ch][i][c] * 1;
 	    ExthProjSt[ch][IX][IY][IZ-1] += ProjWeight001[ch][i][c] * 1;
 	    ExthProjSt[ch][IX][IY-1][IZ] += ProjWeight010[ch][i][c] * 1;
@@ -7031,9 +7143,9 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
 	    EzthProjSt[ch][IX-1][IY][IZ] += ProjWeight100[ch][i][c] * 1;
 	    EzthProjSt[ch][IX-1][IY][IZ-1] += ProjWeight101[ch][i][c] * 1;
 	    EzthProjSt[ch][IX-1][IY-1][IZ] += ProjWeight110[ch][i][c] * 1;
-	    EzthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * 1;
+	    EzthProjSt[ch][IX-1][IY-1][IZ-1] += ProjWeight111[ch][i][c] * 1;*/
 	    
-	    cout << "Grid " << numGrid << " R " << vct->getCartesian_rank() << " I have just finished dealing with a msg " << ExthProjSt[ch][IX][IY][IZ] << " " << ProjWeight000[ch][i][c] <<" " <<CG_ProjMsg[0*CC+c] << endl;
+	    //cout << "Grid " << numGrid << " R " << vct->getCartesian_rank() << " I have just finished dealing with a msg " << ExthProjSt[ch][IX][IY][IZ] << " " << ProjWeight000[ch][i][c] <<" " <<CG_ProjMsg[0*CC+c] << endl;
 	  }
 	  
 	  break;
@@ -7075,8 +7187,9 @@ void EMfields3D::TestProjection(Grid *grid, VirtualTopology3D *vct){
      2. in receiveProjection, do not sum 'received value'* weight, but 1*weight
      3. in the inputfile, enable also BC and particle repopulation, otherwise RG messages
         that should be received at different cycles may be erroneously received at the same cycke
-     4. Ex should give the projection operator (1 at the center of the overlap area, <1 when close to the boundaries)
-        if not, check separately Ey[i][j][k]= ExthProjSt[ch][i][j][k]  and Ez[i][j][k]= DenProjSt [ch][i][j][k]; for clues
+     4. Ex =1 says that you received everything and you are appropriately dividing
+        Ey[i][j][k]= ExthProjSt[ch][i][j][k]
+	Ez[i][j][k]= DenProjSt [ch][i][j][k] counts the contribution for each grid point
      5. to avoid mess, disable mover and solver
      GOOD LUCK!
   */
@@ -7204,4 +7317,42 @@ void EMfields3D::initTestProjection(VirtualTopology3D * vct, Grid * grid, Collec
   else {
     init(vct, grid, col);            // use the fields from restart file
   }
+}
+
+void EMfields3D::applyProjection(Grid *grid, VirtualTopology3D *vct, Collective * col){
+  
+  // NB: at this stage, I assume the refined grids at the same levels do not overlap
+
+  if (numChildren <1) return; // this is only for parents
+
+  if (ApplyProjection == false ) return; // you are a CG, but you do not seperimpose a RG
+  
+  for (int ch=0; ch < numChildren; ch++)
+    for (int i=0; i< nxn; i++)
+      for (int j=0; j< nyn; j++)
+	for (int k=0; k< nzn; k++){
+	  if (DenProjSt[ch][i][j][k]>0){
+	    // average
+	    Exth[i][j][k]= (Exth[i][j][k] + ExthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
+	    Eyth[i][j][k]= (Eyth[i][j][k] + EythProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
+	    Ezth[i][j][k]= (Ezth[i][j][k] + EzthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
+
+	    // substitution
+	    /*Exth[i][j][k]= ExthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k];
+	    Eyth[i][j][k]= EythProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k];
+	    Ezth[i][j][k]= EzthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k];*/
+
+	  } // end if (DenProjSt[ch][i][j][k]>0){
+	} // end for (int k=0; k< nzn; k++)
+
+  // now regenerate E n+1
+  addscale(1 / th, -(1.0 - th) / th, Ex, Ex_n, Exth, nxn, nyn, nzn);  
+  addscale(1 / th, -(1.0 - th) / th, Ey, Ey_n, Eyth, nxn, nyn, nzn);
+  addscale(1 / th, -(1.0 - th) / th, Ez, Ez_n, Ezth, nxn, nyn, nzn);
+
+
+  // and smooth
+  smoothE(Smooth, vct, col);
+  smoothE(Smooth, vct, col);
+  smoothE(Smooth, vct, col);
 }
