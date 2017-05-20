@@ -516,6 +516,8 @@ class EMfields3D                // :public Field
     double z_center;
     /** Characteristic length */
     double L_square;
+    /** Characteristic outer length */
+    double L_outer;
     /** Coil Parameter: magnetic coil diameter    */
     double coilD;
     /** Coil Parameter: magnetic coil spacing   */

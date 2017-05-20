@@ -349,6 +349,7 @@ public:
       this->output_adaptor.write("/collective/y_center", _col->gety_center());
       this->output_adaptor.write("/collective/z_center", _col->getz_center());
       this->output_adaptor.write("/collective/L_square", _col->getL_square());
+      this->output_adaptor.write("/collective/L_outer", _col->getL_outer());
       this->output_adaptor.write("/collective/Bx0", _col->getB0x());
       this->output_adaptor.write("/collective/By0", _col->getB0y());
       this->output_adaptor.write("/collective/Bz0", _col->getB0z());

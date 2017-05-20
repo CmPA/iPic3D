@@ -133,6 +133,7 @@ void Collective::ReadInput(string inputfile) {
     y_center = config.read < double >("y_center");
     z_center = config.read < double >("z_center");
     L_square = config.read < double >("L_square");
+    L_outer = config.read < double >("L_outer");
 	coilD = config.read<double>( "CoilD" );
 	coilSpacing = config.read<double>( "CoilSpacing" );
 
@@ -379,6 +380,7 @@ void Collective::ReadInput(string inputfile) {
     y_center = config.read < double >("y_center");
     z_center = config.read < double >("z_center");
     L_square = config.read < double >("L_square");
+    L_outer = config.read < double >("L_outer");
     coilD = config.read<double>( "CoilD" );
     coilSpacing = config.read<double>( "CoilSpacing" );
 
@@ -607,6 +609,10 @@ int Collective::ReadRestart(string inputfile) {
   // read L_square
   dataset_id = H5Dopen2(file_id, "/collective/L_square", H5P_DEFAULT); // HDF 1.8.8
   status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &L_square);
+  status = H5Dclose(dataset_id);
+  // read L_outer
+  dataset_id = H5Dopen2(file_id, "/collective/L_outer", H5P_DEFAULT); // HDF 1.8.8
+  status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &L_outer);
   status = H5Dclose(dataset_id);
     // read nxc
   dataset_id = H5Dopen2(file_id, "/collective/Nxc", H5P_DEFAULT);  // HDF 1.8.8
@@ -1016,6 +1022,10 @@ double Collective::getz_center() {
 /*! get L_square */
 double Collective::getL_square() {
   return (L_square);
+}
+/*! get L_outer */
+double Collective::getL_outer() {
+  return (L_outer);
 }
 /** get CoilD */
 double Collective::getcoilD(){

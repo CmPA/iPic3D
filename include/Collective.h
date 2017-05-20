@@ -61,6 +61,8 @@ class Collective
     double getz_center();
     /*! Get object size - cubic box */
     double getL_square();
+    /*! Get object size - outer dimension */
+    double getL_outer();
     /** getgeometry coild - Coil Diameter */
     double getcoilD();
     /** getgeometry coild - Coil Spacing */
@@ -281,6 +283,8 @@ class Collective
     double z_center;
     /*! object size - assuming a cubic box */
     double L_square;
+    /*! object size - outer size */
+    double L_outer;
     /** geometry coil - Coil Diameter */
     double coilD;
     /** geometry coil - Coil Spacing */

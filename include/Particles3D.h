@@ -106,7 +106,7 @@ class Particles3D:public Particles3Dcomm {
 	/** Reflect particles in the outer shell towards the center */
 	double ReturnToCenterOuterFrame(double multx, double multy, double multz);
 	/** Reflect particles in outside a circle */
-	double ReturnToCenterCircle(double L_outer);
+	double ReturnToCenterCircle();
 	/** Reflect particles in the outer shell towards the center after regenerating their speed form intial temperature*/
 	double ReturnRegeneratedToCenterOuterFrame(double multx, double multy, double multz);
 	/** Initial condition: localised in a box and maxwellian in velocity */

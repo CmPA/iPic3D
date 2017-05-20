@@ -2225,18 +2225,17 @@ if(udotr>0){
 	nop = nplast +1;
 	return(0.0);
 }
-double Particles3D::ReturnToCenterCircle(double L_outer){
+double Particles3D::ReturnToCenterCircle(){
 	// calculate accumulated charge on the spacecraft
 	long long np_current = 0, nplast = nop-1;
 	double r;
 	double udotr;
 	double ukick = 3.0 *uth;
-	double external_radius = Lx*.4;
 	while (np_current < nplast+1) {
 		r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
 							(y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
 							(z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
-		if (r> external_radius) {
+		if (r> L_outer) {
 /*			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
 					v[np_current] * (y[np_current]-Ly/2.0)+
 					w[np_current] * (z[np_current]-Lz/2.0))/r;

@@ -106,6 +106,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   y_center   = col->gety_center();
   z_center     = col->getz_center();
   L_square = col->getL_square();
+  L_outer = col->getL_outer();
 
   dx = grid->getDX();
   dy = grid->getDY();

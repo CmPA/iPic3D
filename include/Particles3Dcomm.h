@@ -256,6 +256,8 @@ protected:
   double z_center;
   /** size of immersed box - cube */
   double L_square;
+  /** size of immersed box - outer dimension */
+  double L_outer;
   /** grid spacings */
   double dx, dy, dz;
   /** number of grid 

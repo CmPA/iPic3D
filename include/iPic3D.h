@@ -100,6 +100,7 @@ namespace iPic3D {
     double y_center;
     double z_center;
     double L_square;
+    double L_outer;
 
     #ifdef __PETSC_SOLVER__
       PetscSolver *petscSolver;

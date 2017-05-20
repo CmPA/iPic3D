@@ -33,6 +33,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   y_center = col->gety_center();
   z_center = col->getz_center();
   L_square = col->getL_square();
+  L_outer = col->getL_outer();
   coilD = col->getcoilD();
   coilSpacing = col->getcoilSpacing();
 
@@ -2640,7 +2641,7 @@ void EMfields3D::initTwoCoils(VirtualTopology3D *vct, Grid *grid, Collective *co
         }
 
 //     	double external_radius = coilSpacing/2.0 + coilD/4.0;
-     	double external_radius = Lx*.4;
+     	double external_radius = L_outer;
      	double scale_decay = external_radius/10.0;
      	for (int i=0; i < nxn; i++)
      		for (int j=0; j < nyn; j++)
