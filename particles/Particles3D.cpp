@@ -2236,7 +2236,7 @@ double Particles3D::ReturnToCenterCircle(double L_outer){
 		r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
 							(y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
 							(z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
-		if (r> L_outer) {
+		if (r> external_radius) {
 /*			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
 					v[np_current] * (y[np_current]-Ly/2.0)+
 					w[np_current] * (z[np_current]-Lz/2.0))/r;
