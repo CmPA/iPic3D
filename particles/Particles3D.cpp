@@ -2399,20 +2399,20 @@ int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf
 					(y[nop]-Ly/2.0)*(y[nop]-Ly/2.0) +
 					(z[nop]-Lz/2.0)*(z[nop]-Lz/2.0));
 
-			q[nop] =  (qom/fabs(qom))*(rhoINJECT/npcel)*(1.0/grid->getInvVOL());
+			q[nop] =  (qom/fabs(qom)) * rhoINJECT * dx_inject * dy_inject * dz_inject / npinject;
 			// u
 			harvest =   rand()/(double)RAND_MAX;
 			prob  = sqrt(-2.0*log(1.0-.999999*harvest));
 			harvest =   rand()/(double)RAND_MAX;
 			theta = 2.0*M_PI*harvest;
 
-			u[nop] = - 3.0 *v0 * (x[nop]-Lx/2.0)/r + uth*prob*cos(theta);
-			v[nop] = - 3.0 *v0 * (y[nop]-Ly/2.0)/r + vth*prob*sin(theta);
+			u[nop] = - v0 * (x[nop]-Lx/2.0)/r + uth*prob*cos(theta);
+			v[nop] = - v0 * (y[nop]-Ly/2.0)/r + vth*prob*sin(theta);
 			harvest =   rand()/(double)RAND_MAX;
 			prob  = sqrt(-2.0*log(1.0-.999999*harvest));
 			harvest =   rand()/(double)RAND_MAX;
 			theta = 2.0*M_PI*harvest;
-			w[nop] = - 3.0 *v0 * (z[nop]-Lz/2.0)/r + wth*prob*cos(theta);;
+			w[nop] = - v0 * (z[nop]-Lz/2.0)/r + wth*prob*cos(theta);;
 
 
 			if (TrackParticleID)
