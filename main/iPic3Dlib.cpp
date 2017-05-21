@@ -27,6 +27,7 @@ int c_Solver::Init(int argc, char **argv) {
   y_center = col->gety_center();
   z_center = col->getz_center();
   L_square = col->getL_square();
+  L_outer = col->getL_outer();
   cylindrical = col->getcylindrical();
 
   // initialize the virtual cartesian topology 
@@ -392,11 +393,19 @@ void c_Solver::InjectBoundaryParticles(){
       	  //Remove particles from outside the simulation box
       		for (int i=0; i < ns; i++){
       			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
-      /*			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
-      			if (col->getRHOinject(i) > 0.0)
-      				mem_avail = part[i].injector_rand_box(grid,vct,EMf);
-      				*/
-      			Qremoved[i] = part[i].ReturnToCenterCircle();
+      			  // Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+      			Qremoved[i] =part[i].deleteParticlesOutsideSphere(L_outer, col->getx_center(), col->gety_center(), col->getz_center());
+      			if (col->getRHOinject(i) > 0.0){
+      				double x_center_inect = col->getx_center() ;
+      				double y_center_inect = col->gety_center() + col->getcoilSpacing()/2.0;
+      				double z_center_inect = col->getz_center() ;
+      				mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
+     				x_center_inect = col->getx_center() ;
+      				y_center_inect = col->gety_center() - col->getcoilSpacing()/2.0;
+      				z_center_inect = col->getz_center() ;
+      				mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
+      			}
+      			//Qremoved[i] = part[i].ReturnToCenterCircle();
       		}
             }
       if (col->getCase()=="CoilsMono") {

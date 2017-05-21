@@ -65,7 +65,7 @@ class Particles3D:public Particles3Dcomm {
     /** Linear delta f for bi-maxwellian plasma */
     double delta_f(double u, double v, double w, double x, double y, double kx, double ky, double omega_re, double omega_i, double Ex_ampl, double Ex_phase, double Ey_ampl, double Ey_phase, double Ez_ampl, double Ez_phase, double theta, Field * EMf);
 	 /** particle injector */
-    int injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf);
+    int injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf, double x_center_inject, double y_center_inject, double z_center_inject, double L_inject);
     /** particle injector monoenergetic*/
     int injector_rand_box_mono(Grid* grid,VirtualTopology3D* vct, Field* EMf);
     /** Derivative of f0 wrt vpar */
@@ -76,6 +76,8 @@ class Particles3D:public Particles3Dcomm {
     double f0(double vpar, double vperp);
     /** Rotate velocities in plane XY of angle theta */
     void RotatePlaneXY(double theta);
+    /** Compute overlap of intervals */
+    double interval_overlap(double xd0, double xd1, double xp0, double xp1, double& x_start_overlap);
     /** mover with the esplicit non relativistic scheme */
     void mover_explicit(Grid * grid, VirtualTopology3D * vct, Field * EMf);
 

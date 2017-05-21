@@ -2344,55 +2344,76 @@ double Particles3D::deleteParticlesOutsideBox(double L){
 	nop = nplast +1;
 	return(Q_removed);
 }
+/* Computes overalp of two intervals */
+double Particles3D::interval_overlap(double xd0, double xd1, double xp0, double xp1, double& xstart_interval)
+{
+	double dx_inject;
+	xstart_interval = max(xp0, xd0);
+	double xend_interval = min(xp1,xd1);
+	if(xstart_interval < xend_interval )
+		dx_inject = xend_interval-xstart_interval;
+	else
+		dx_inject = 0.0;
+	return(dx_inject);
+}
 
-int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf)
+/* Inject from a box, checking overal with the local processor */
+int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf, double x_center_inject, double y_center_inject, double z_center_inject, double L_inject)
 {
 	double harvest;
 	double prob, theta, sign;
+	double r;
 	int avail;
 	long long store_nop=nop;
 	long long counter=nop;
 
-	//double Iinj=0.002;
+	//Vinj from the input file has hte number of particles to be injected
+	//Ninj is the RHOinject from the input file
 	double Iinj=Vinj;
 	long long npinject=1;
 	if (Iinj > 1)
 		npinject = (int)floor(Iinj);
 
-	if (vct->getCartesian_rank() == 0){
-			cout << "*** Injector Rand Box species " << ns << " ***" << NiterMover <<" ITERATIONS : INJECTING " << npinject << " particles, each with a charge of " << (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*(1.0/grid->getInvVOL()) << " C  ****" << endl;
+	double xstart_inject;
+	double dx_inject = interval_overlap(x_center_inject-L_inject,x_center_inject+L_inject, xstart, xend, xstart_inject);
+	double ystart_inject;
+	double dy_inject = interval_overlap(y_center_inject-L_inject,y_center_inject+L_inject, ystart, yend, ystart_inject);
+	double zstart_inject;
+	double dz_inject = interval_overlap(z_center_inject-L_inject,z_center_inject+L_inject, zstart, zend, zstart_inject);
 
+//	cout << xstart_inject  << "  " << ystart_inject << "   " << zstart_inject << endl;
+	if (dx_inject * dy_inject * dz_inject > 0.0)
+	{
+
+//cout << dx_inject * dy_inject * dz_inject  << "  " << npinject << endl;
 
 		for (int inject = 0; inject < npinject; inject++)
 		{
 			harvest =   rand()/(double)RAND_MAX ;
-			x[nop] = x_center+(harvest-0.5)*L_square;
+			x[nop] = xstart_inject+(harvest) * dx_inject;
 			harvest =   rand()/(double)RAND_MAX ;
-			y[nop] = y_center+(harvest-0.5)*L_square;
+			y[nop] = ystart_inject+(harvest) * dy_inject;
 			harvest =   rand()/(double)RAND_MAX ;
-			z[nop] = z_center+(harvest-0.5)*L_square;
-			//cout << "x=" <<x[nop] << "y=" << y[nop]<< "z=" << z[nop] <<endl;
-			//this assigns charge the same as does maxwell_box
-			q[nop] =  (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*(1.0/grid->getInvVOL());
+			z[nop] = zstart_inject+(harvest) * dz_inject;
+			r = 1e-10+sqrt((x[nop]-Lx/2.0)*(x[nop]-Lx/2.0) +
+					(y[nop]-Ly/2.0)*(y[nop]-Ly/2.0) +
+					(z[nop]-Lz/2.0)*(z[nop]-Lz/2.0));
 
-			// random numbers for Maxwellian
+			q[nop] =  (qom/fabs(qom))*(rhoINJECT/npcel)*(1.0/grid->getInvVOL());
+			// u
 			harvest =   rand()/(double)RAND_MAX;
 			prob  = sqrt(-2.0*log(1.0-.999999*harvest));
 			harvest =   rand()/(double)RAND_MAX;
 			theta = 2.0*M_PI*harvest;
 
-			//u
-			u[nop] = u0 + uth*prob*cos(theta);
-
-			// v
-			v[nop] = v0 + vth*prob*sin(theta);
-
-			// w
+			u[nop] = - 3.0 *v0 * (x[nop]-Lx/2.0)/r + uth*prob*cos(theta);
+			v[nop] = - 3.0 *v0 * (y[nop]-Ly/2.0)/r + vth*prob*sin(theta);
 			harvest =   rand()/(double)RAND_MAX;
 			prob  = sqrt(-2.0*log(1.0-.999999*harvest));
 			harvest =   rand()/(double)RAND_MAX;
 			theta = 2.0*M_PI*harvest;
-			w[nop] = w0 + wth*prob*cos(theta);
+			w[nop] = - 3.0 *v0 * (z[nop]-Lz/2.0)/r + wth*prob*cos(theta);;
+
 
 			if (TrackParticleID)
 				ParticleID[nop]= nop*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
@@ -2400,6 +2421,7 @@ int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf
 			//printf("*** DEBUG: Added a particle at (x,y,z) = (%f,%f,%f) with (vx,vy,vz) = (%f,%f,%f)\n", x[nop], y[nop], z[nop], u[nop], v[nop], w[nop]);
 
 			nop++;
+//			cout << nop << endl;
 		}
 
 
@@ -2409,7 +2431,7 @@ int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf
 			y[i] += v[i]*dt;
 			z[i] += w[i]*dt;
 		}
-	}
+
 
 		// ******************** //
 		// COMMUNICATION
@@ -2430,7 +2452,7 @@ int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf
 		        return(-1);
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-
+	}
 
 //	cout << "Communicated!!\n";
 
