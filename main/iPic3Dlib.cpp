@@ -35,6 +35,7 @@ int c_Solver::Init(int argc, char **argv) {
   MLMD_BC = col->getMLMD_BC();
   MLMD_PROJECTION = col->getMLMD_PROJECTION();
   MLMD_ParticleREPOPULATION = col->getMLMD_ParticleREPOPULATION();
+  MLMD_InitialInterpolation = col->getMLMD_InitialInterpolation();
   /* end mlmd: to decide whether to perform mlmd ops */
   
   // initialize the virtual cartesian topology 
@@ -110,6 +111,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="LightWave") EMf->initLightWave(vct,grid, col);
     else if (col->getCase()=="DoubleGEM") EMf->initDoubleGEM(vct,grid, col);
     else if (col->getCase()=="initTestProjection") EMf->initTestProjection(vct,grid, col);
+    else if (col->getCase()=="initTestBC") EMf->initTestBC(vct,grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -121,6 +123,27 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
+  MPI_Barrier(MPI_COMM_WORLD); // leave it here if init conditions for RG are interpolated
+  int rr= vct->getCartesian_rank();
+
+  if (MLMD_InitialInterpolation){
+    
+    EMf->initWeightBC_InitialInterpolation(grid, vct);
+        
+    /*if (rr==0){
+      cout << "Grid " << numGrid << " after initWeightBC_InitialInterpolation" <<endl;
+      }*/
+    
+    EMf->receiveInitialInterpolation(grid, vct);
+    EMf->sendInitialInterpolation(grid, vct);
+    
+    EMf->ApplyInitialInterpolation(vct, grid);
+    EMf->DeallocateII();
+      
+    if (rr==0){
+      cout << "Grid " << numGrid << " after setting interpolated fields" <<endl; 
+    }
+  }// end if (InitialInterpolations)
   // mlmd BC init
   if (MLMD_BC)
     EMf->initWeightBC(grid, vct);
@@ -129,6 +152,11 @@ int c_Solver::Init(int argc, char **argv) {
 
   if (MLMD_PROJECTION)
     EMf->initWeightProj(grid, vct);
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (rr==0){
+    cout << "Grid " << numGrid << " after initWeightBC, initWeightProj" <<endl; 
+  }
   
 #ifdef __PETSC_SOLVER__
   // PETSc solver:

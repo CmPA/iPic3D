@@ -249,6 +249,7 @@ class EMfields3D                // :public Field
     /*! double GEM, mlmd ready */
     void initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initTestProjection(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initTestBC(VirtualTopology3D * vct, Grid * grid, Collective *col); 
     /*! add a perturbattion to charge density */
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */
@@ -515,6 +516,8 @@ class EMfields3D                // :public Field
        parent grid: recceives the info
        here, fieldBC communication is set up */
     void initWeightBC(Grid *grid, VirtualTopology3D *vct);
+    void initWeightBC_InitialInterpolation(Grid *grid, VirtualTopology3D *vct);
+    void initWeightBC_InitialInterpolation_Phase1(Grid *grid, VirtualTopology3D *vct);
     void initWeightProj(Grid *grid, VirtualTopology3D *vct);
     void initWeightProj_Phase1(Grid *grid, VirtualTopology3D *vct);
     void sendProjection(Grid *grid, VirtualTopology3D *vct);
@@ -544,6 +547,8 @@ class EMfields3D                // :public Field
     /* performs the real BC calculations; to be reused for ghost (which =-1, *_Ghost)
        and active nodes (which= 0; *Active) */
     void initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int* RG_numBCMessages, int which);
+    // for the inital interpolation
+    void initWeightBC_InitialInterpolation_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int* RG_numBCMessages);
 
     /* phase 2a of initWeightBC:                                                                          
    core 0 of each child grid receives all the messages to send to the corresponding coarse grid           
@@ -563,13 +568,23 @@ class EMfields3D                // :public Field
        internal reasons;
        once initWeightBC has finished, we want to free to unused memory */
     void Trim_RGBC_Vectors(VirtualTopology3D *vct);
+    /* same for interpolation vectors */
+    void Trim_RGBC_Vectors_II(VirtualTopology3D *vct);
     /* same for projection */
     void Trim_Proj_Vectors(VirtualTopology3D *vct);
     /* mlmd: BC related functions */
     /* sendBC: coarse grids sends BCs to the refined grids */
     void sendBC(Grid *grid, VirtualTopology3D *vct);
+    void sendInitialInterpolation(Grid *grid, VirtualTopology3D *vct);
     /* receiveBC: refined grids receive BCs from the coarse grids */
     void receiveBC(Grid *grid, VirtualTopology3D *vct);
+    void receiveInitialInterpolation(Grid *grid, VirtualTopology3D *vct);
+    void ApplyInitialInterpolation(VirtualTopology3D *vct, Grid * grid);
+    void DeallocateII();
+    /* Initial interpolation Ã*/
+    void sendBC_InitialInterpolation(Grid *grid, VirtualTopology3D *vct);
+    void receiveBC_InitialInterpolation(Grid *grid, VirtualTopology3D *vct);
+    /* end Initial interpolation */
     /* the RG sets the received BC 
        Fx, Fy, Fz: the field where BC are applied
        Fx_BC, Fy_BC, Fz_BC: the BCs
@@ -583,6 +598,8 @@ class EMfields3D                // :public Field
     /* for when I need to put the BC on the image */
     void setBC_NodesImage_RENORM(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***vectX, double ***vectY, double ***vectZ, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
 
+    void setBC_Nodes(VirtualTopology3D * vct, double **Fx_BC, double **Fy_BC, double **Fz_BC, double **Fa_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
+    
     /* set MaxwellSource BC in mlmd; NB: you need to set the actives */
     void MLMDSourceLeft(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
     void MLMDSourceRight(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
@@ -594,6 +611,7 @@ class EMfields3D                // :public Field
        NP: # of points to send
      */
     void buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_struct RGInfo,  int NP );
+    void buildIIMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_struct RGInfo, int Size );
     /* CG_Info: the entry with the info for that msg
        ch: number of child
        which: active or ghost */
@@ -940,11 +958,13 @@ class EMfields3D                // :public Field
     */
 
     int CG_MaxSizeMsg;
+    //[CG_MaxSizeMsg * NumF]
     double *CGMsg; // used to build msgs
 
     RGBC_struct ** CG_Info_Ghost;
     int *CG_numBCMessages_Ghost;
 
+    //[numChildren][MAX_RG_numBCMessages], then resized to [numChildren][max(CG_numBCMessages_Ghost[ch)+1]
     RGBC_struct ** CG_Info_Active;
     int *CG_numBCMessages_Active;
 
@@ -954,6 +974,7 @@ class EMfields3D                // :public Field
     /* tags for send/receive of BCs*/
     int TAG_BC_GHOST;
     int TAG_BC_ACTIVE;
+    int TAG_II;
 
     /* max vector dimensions */
     int MAX_RG_numBCMessages;
@@ -1020,6 +1041,37 @@ class EMfields3D                // :public Field
     double ***Ex_n;
     double ***Ey_n;
     double ***Ez_n;
+
+    // stuff for initial interpolation
+    // CG side
+    int CG_MaxSizeMsg_II;
+
+    //[numChildren][MAX_RG_numBCMessages], then resized to [numChildren][max(CG_numBCMessages_Ghost[ch)+1] 
+    RGBC_struct ** CG_Info_II;
+    int *CG_numBCMessages_II;
+    double *CGMsg_II;
+    // RG side
+    RGBC_struct * RGBC_Info_II;
+    int RG_numBCMessages_II;
+    int RG_MaxMsgSize_II;
+
+
+    double **Ex_II;
+    double **Ey_II;
+    double **Ez_II;
+
+    double **Bxn_II;
+    double **Byn_II;
+    double **Bzn_II;
+
+    double **rho0_II;
+    double **rho1_II;
+    double **rho2_II;
+    double **rho3_II;
+
+    double *RGMsg_II;
+
+    int NumF_II;
 };
 
 

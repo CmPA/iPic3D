@@ -901,7 +901,7 @@ void Grid3DCU::getParentLimits(VirtualTopology3D *vct, int N, double *xmin, doub
 
 double Grid3DCU::getXN_P(int X, int Y, int Z){ 
   double dx= node_xcoord[1]-node_xcoord[0];
-  
+
   if (X>-1 and X<nxn) {
     return node_xcoord[X]+ Ox;} // "normal" case
   if (X<0){

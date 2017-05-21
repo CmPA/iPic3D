@@ -302,6 +302,7 @@ void Collective::ReadInput(string inputfile) {
     MLMD_BC = config.read < bool > ("MLMD_BC");
     MLMD_PROJECTION = config.read < bool > ("MLMD_PROJECTION");
     MLMD_ParticleREPOPULATION = config.read < bool > ("MLMD_ParticleREPOPULATION");
+    MLMD_InitialInterpolation = config.read < bool > ("MLMD_InitialInterpolation");
 
     AllowPMsgResize= config.read < bool > ("AllowPMsgResize");
     //cout << "MLMD_BC: " << MLMD_BC <<endl;
@@ -1721,6 +1722,7 @@ int Collective::getHighestRankOfGrid(int n) {return HighestRankOfGrid[n];}
 bool Collective::getMLMD_BC() {return MLMD_BC;}
 bool Collective::getMLMD_PROJECTION() {return MLMD_PROJECTION;}
 bool Collective::getMLMD_ParticleREPOPULATION() {return MLMD_ParticleREPOPULATION;}
+bool Collective::getMLMD_InitialInterpolation() {return MLMD_InitialInterpolation;}
 
 bool Collective::getAllowPMsgResize() {return AllowPMsgResize;}
 

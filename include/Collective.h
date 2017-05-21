@@ -311,6 +311,7 @@ class Collective
     bool getMLMD_BC();
     bool getMLMD_PROJECTION();
     bool getMLMD_ParticleREPOPULATION();
+    bool getMLMD_InitialInterpolation();
 
     bool getAllowPMsgResize();
 
@@ -581,6 +582,7 @@ class Collective
     bool MLMD_BC;
     bool MLMD_PROJECTION;
     bool MLMD_ParticleREPOPULATION;
+    bool MLMD_InitialInterpolation;
     
     /* wether to allow the resize of the buffers containing the particles to send CG->RG for repopulation
        false may be heavy on memory consumption
