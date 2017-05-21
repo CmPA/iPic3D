@@ -7656,32 +7656,32 @@ void EMfields3D::applyProjection(Grid *grid, VirtualTopology3D *vct, Collective 
 
   if (numChildren <1) return; // this is only for parents
 
-  if (ApplyProjection == false ) return; // you are a CG, but you do not seperimpose a RG
+  if (ApplyProjection == true ){ // you are a CG, but you do not seperimpose a RG
   
-  for (int ch=0; ch < numChildren; ch++)
-    for (int i=0; i< nxn; i++)
-      for (int j=0; j< nyn; j++)
-	for (int k=0; k< nzn; k++){
-	  if (DenProjSt[ch][i][j][k]>0){
-	    // average
-	    /*Exth[i][j][k]= (Exth[i][j][k] + ExthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
-	    Eyth[i][j][k]= (Eyth[i][j][k] + EythProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
-	    Ezth[i][j][k]= (Ezth[i][j][k] + EzthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;*/
-
-	    // substitution
-	    Exth[i][j][k]= ExthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k];
-	    Eyth[i][j][k]= EythProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k];
-	    Ezth[i][j][k]= EzthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k];
-
-	  } // end if (DenProjSt[ch][i][j][k]>0){
-	} // end for (int k=0; k< nzn; k++)
-
-  // now regenerate E n+1
-  addscale(1 / th, -(1.0 - th) / th, Ex, Ex_n, Exth, nxn, nyn, nzn);  
-  addscale(1 / th, -(1.0 - th) / th, Ey, Ey_n, Eyth, nxn, nyn, nzn);
-  addscale(1 / th, -(1.0 - th) / th, Ez, Ez_n, Ezth, nxn, nyn, nzn);
-
-
+    for (int ch=0; ch < numChildren; ch++)
+      for (int i=0; i< nxn; i++)
+	for (int j=0; j< nyn; j++)
+	  for (int k=0; k< nzn; k++){
+	    if (DenProjSt[ch][i][j][k]>0){
+	      // average
+	      Exth[i][j][k]= (Exth[i][j][k] + ExthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
+	      Eyth[i][j][k]= (Eyth[i][j][k] + EythProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
+	      Ezth[i][j][k]= (Ezth[i][j][k] + EzthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
+	      
+	      // substitution
+	      /*Exth[i][j][k]= ExthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k];
+		Eyth[i][j][k]= EythProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k];
+		Ezth[i][j][k]= EzthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k];*/
+	      
+	    } // end if (DenProjSt[ch][i][j][k]>0){
+	  } // end for (int k=0; k< nzn; k++)
+    
+    // now regenerate E n+1
+    addscale(1 / th, -(1.0 - th) / th, Ex, Ex_n, Exth, nxn, nyn, nzn);  
+    addscale(1 / th, -(1.0 - th) / th, Ey, Ey_n, Eyth, nxn, nyn, nzn);
+    addscale(1 / th, -(1.0 - th) / th, Ez, Ez_n, Ezth, nxn, nyn, nzn);
+    
+  }
   // and smooth
   smoothE(Smooth, vct, col);
   smoothE(Smooth, vct, col);

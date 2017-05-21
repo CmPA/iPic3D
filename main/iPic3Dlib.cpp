@@ -376,7 +376,7 @@ void c_Solver::CalculateField() {
   if (MLMD_BC) {EMf->sendBC(grid, vct);}
   /* end mlmd: BC */
 
-  MPI_Barrier(vct->getComm());
+  //MPI_Barrier(vct->getComm());
   // if you are are child, send projection, E n+theta                           
   if (MLMD_PROJECTION){
     EMf->sendProjection(grid,vct);
@@ -411,7 +411,7 @@ void c_Solver::CalculateBField() {
 }
 
 bool c_Solver::ParticlesMover() {
-
+  
   /*  -------------- */
   /*  Particle mover */
   /*  -------------- */
@@ -458,10 +458,11 @@ bool c_Solver::ParticlesMover() {
       part[i].ReceivePBC(grid, vct);
 
       // comment during production
-      part[i].CheckSentReceivedParticles(vct);
+      //     part[i].CheckSentReceivedParticles(vct);
     }
   }
 
+ 
   return (false);
 
 }
