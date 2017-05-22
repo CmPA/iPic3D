@@ -4564,18 +4564,18 @@ void EMfields3D::initWeightBC(Grid *grid, VirtualTopology3D *vct){
       cout <<"AFTER TRIM, grid " <<numGrid << ", m: " << m <<", RGBC_Info_Ghost[m].RG_core: " << RGBC_Info_Ghost[m].RG_core << ", RGBC_Info_Ghost[m].CG_core: " << RGBC_Info_Ghost[m].CG_core<< endl;
       }*/
   }
-  if (numChildren > 0){
+  /*if (numChildren > 0){
     for (int ch=0; ch< numChildren; ch++){
       cout << "CG_numBCMessages_Active[ch]: " << CG_numBCMessages_Active[ch] <<endl;
-      /*for (int d=0; d< CG_numBCMessages_Active[ch]; d++){
+      //for (int d=0; d< CG_numBCMessages_Active[ch]; d++){
 	cout << "AFTER TRIM ACTIVE, grid " << numGrid << ", child " << ch << ", CG core " << CG_Info_Active[ch][d].CG_core << " to RG core " << CG_Info_Active[ch][d].RG_core << endl;
-	}*/
+	}
       cout << "CG_numBCMessages_Ghost[ch]: " << CG_numBCMessages_Ghost[ch] <<endl;
-      /*for (int d=0; d< CG_numBCMessages_Ghost[ch]; d++){
+      //for (int d=0; d< CG_numBCMessages_Ghost[ch]; d++){
 	cout << "AFTER TRIM GHOST, grid " << numGrid << ", child " << ch << ", CG core " << CG_Info_Ghost[ch][d].CG_core << " to RG core " << CG_Info_Ghost[ch][d].RG_core << endl;
-	}*/
+	}
     }
-  } // end if (numChildren>0)
+} // end if (numChildren>0)*/
   
   /* these deletes only for core 0 of RGs */  
   if (CommToParent != MPI_COMM_NULL && rank_local==0){

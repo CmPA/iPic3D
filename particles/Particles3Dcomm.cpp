@@ -2681,7 +2681,7 @@ void Particles3Dcomm::CheckSentReceivedParticles(VirtualTopology3D* vct){
 	MPI_Abort(MPI_COMM_WORLD, -1);
       }
       else{
-	cout << "Grid " << numGrid << " and its child "<<vct->getChildGridNum(i) << " exchanged " << CGPGridWide[i] << " RG BC particles: same # of particles sent and received" << endl;
+	//cout << "Grid " << numGrid << " and its child "<<vct->getChildGridNum(i) << " exchanged " << CGPGridWide[i] << " RG BC particles: same # of particles sent and received" << endl;
 	
       }
     }
@@ -2861,7 +2861,7 @@ void Particles3Dcomm::CheckAfterInitWeightPBC(VirtualTopology3D * vct){
 	MPI_Abort(MPI_COMM_WORLD, -1);
       }
       else{
-	cout << numGrid << " and its child "<<vct->getChildGridNum(i) << " exchange " << recvFromRG[i] << " msgs" << endl;
+	//cout << numGrid << " and its child "<<vct->getChildGridNum(i) << " exchange " << recvFromRG[i] << " msgs" << endl;
       }
     }
   }
@@ -2947,7 +2947,7 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
 	  //cout << "L1: Grid "<<numGrid << ": in communicateRepopulatedParticles, HighestRank wants to send a msg to a forbidden destination... " << endl << "Check the inconsistency, aborting now ..." << endl;
 	  cout << "L1: Grid "<<numGrid << ": in communicateRepopulatedParticles, HighestRank wants to send a msg to a forbidden destination... " << endl << "Check the inconsistency, now deleting particle and continuing ..." << endl;
 	  
-
+	  /*
 	  cout <<"Cores to send msgs to:" << endl;
 	  for (int j=0; j< XLEN*YLEN*ZLEN; j++)
 	    cout <<" Core " <<j <<": " << H_CRP_cores[j] << endl;
@@ -2965,7 +2965,7 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
 	    cout << "Z dir: " << vct->getCoordinates(2) << "/ " <<ZLEN << endl;
 	    }
 	  //MPI_Abort(MPI_COMM_WORLD, -1);
-
+	  */
 	  del_pack(np_current,&nplast);
 	  continue;
 	  
