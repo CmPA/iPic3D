@@ -7211,7 +7211,7 @@ void EMfields3D::sendProjection(Grid *grid, VirtualTopology3D *vct){
   
   if (vct->getCommToParent()==MPI_COMM_NULL) return; // only children do this
 
-  cout << "numGrid " << numGrid << " R " << vct->getCartesian_rank() << " is sending proj" << endl;
+  //cout << "numGrid " << numGrid << " R " << vct->getCartesian_rank() << " is sending proj" << endl;
   
   int dest;
   int tag;

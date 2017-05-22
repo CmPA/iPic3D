@@ -2944,7 +2944,9 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
       else{ // you are HighestRank, start packing it in the vector for the appropriate dest
 	// check the destination is allowed
 	if (H_CRP_cores[DestCore]!=1){
-	  cout << "L1: Grid "<<numGrid << ": in communicateRepopulatedParticles, HighestRank wants to send a msg to a forbidden destination... " << endl << "Check the inconsistency, aborting now ..." << endl;
+	  //cout << "L1: Grid "<<numGrid << ": in communicateRepopulatedParticles, HighestRank wants to send a msg to a forbidden destination... " << endl << "Check the inconsistency, aborting now ..." << endl;
+	  cout << "L1: Grid "<<numGrid << ": in communicateRepopulatedParticles, HighestRank wants to send a msg to a forbidden destination... " << endl << "Check the inconsistency, now deleting particle and continuing ..." << endl;
+	  
 
 	  cout <<"Cores to send msgs to:" << endl;
 	  for (int j=0; j< XLEN*YLEN*ZLEN; j++)
@@ -2962,7 +2964,11 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
 	    cout << "Y dir: " << vct->getCoordinates(1) << "/ " <<YLEN << endl;
 	    cout << "Z dir: " << vct->getCoordinates(2) << "/ " <<ZLEN << endl;
 	    }
-	  MPI_Abort(MPI_COMM_WORLD, -1);
+	  //MPI_Abort(MPI_COMM_WORLD, -1);
+
+	  del_pack(np_current,&nplast);
+	  continue;
+	  
 	}
 	
 	// I pack it in the vector from HighestRank to the appropriate core
