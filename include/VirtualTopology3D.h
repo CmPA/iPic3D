@@ -50,10 +50,13 @@ public:
   virtual int getNprocs() = 0;
   /** get periodicity on boundaries - DIRECTION X*/
   virtual bool getPERIODICX() = 0;
+  virtual bool getPERIODICX_P() = 0;
   /** get periodicity on boundaries - DIRECTION Y*/
   virtual bool getPERIODICY() = 0;
+  virtual bool getPERIODICY_P() = 0;
   /** get periodicity on boundaries - DIRECTION Z*/
   virtual bool getPERIODICZ() = 0;
+  virtual bool getPERIODICZ_P() = 0;
   /** get the cartesian rank of the process */
   virtual int getCartesian_rank() = 0;
   /** get the total number of process */

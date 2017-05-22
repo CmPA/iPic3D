@@ -747,6 +747,9 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 
   while (np_current < nplast+1){
      
+    xMin=0; yMin=0; zMin=0;
+    xMax=Lx; yMax=Ly; zMax=Ly;
+
     // BC on particles
     if (x[np_current] < xMin && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
       BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft);
@@ -760,7 +763,19 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
     else if (z[np_current] > zMax && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) //check it here
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
-
+    // here i deal with periodic
+    else if (x[np_current] < xMin && ptVCT->getPERIODICX_P())
+      x[np_current]+=Lx;
+    else if (x[np_current] > xMax && ptVCT->getPERIODICX_P())
+      x[np_current]-=Lx;
+    if (y[np_current] < yMin && ptVCT->getPERIODICY_P())
+      y[np_current]+=Ly;
+    else if (y[np_current] > yMax && ptVCT->getPERIODICY_P())
+      y[np_current]-=Ly;
+    if (z[np_current] < zMin && ptVCT->getPERIODICZ_P())
+      z[np_current]+= Lz;
+    else if (z[np_current] > zMax && ptVCT->getPERIODICZ_P())
+      z[np_current]-= Lz;
     
     // NB: if you are CG, particles <0 and >Lx have been already screened out here
     

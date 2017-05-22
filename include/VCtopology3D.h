@@ -76,6 +76,12 @@ public:
   bool getPERIODICY() {return(PERIODICY);};
   /** get periodicity on boundaries - DIRECTION Z*/
   bool getPERIODICZ() {return(PERIODICZ);};
+  /** get periodicity on boundaries - DIRECTION X*/
+  bool getPERIODICX_P() {return(PERIODICX_P);};
+  /** get periodicity on boundaries - DIRECTION Y*/
+  bool getPERIODICY_P() {return(PERIODICY_P);};
+  /** get periodicity on boundaries - DIRECTION Z*/
+  bool getPERIODICZ_P() {return(PERIODICZ_P);};
   /** get the cartesian rank of the process */
   int getCartesian_rank() {return(cartesian_rank);};
   /** get the total number of process */
