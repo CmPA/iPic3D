@@ -763,22 +763,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
     else if (z[np_current] > zMax && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) //check it here
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
-    // here i deal with periodic
-    else if (x[np_current] < xMin && ptVCT->getPERIODICX_P())
-      x[np_current]+=Lx;
-    else if (x[np_current] > xMax && ptVCT->getPERIODICX_P())
-      x[np_current]-=Lx;
-    if (y[np_current] < yMin && ptVCT->getPERIODICY_P())
-      y[np_current]+=Ly;
-    else if (y[np_current] > yMax && ptVCT->getPERIODICY_P())
-      y[np_current]-=Ly;
-    if (z[np_current] < zMin && ptVCT->getPERIODICZ_P())
-      z[np_current]+= Lz;
-    else if (z[np_current] > zMax && ptVCT->getPERIODICZ_P())
-      z[np_current]-= Lz;
-    
-    // NB: if you are CG, particles <0 and >Lx have been already screened out here
-    
 
     if (bcPfaceXleft==-1 and CommToParent_P!= MPI_COMM_NULL){
       xMin= Coord_XLeft_End; xMax= Coord_XRight_Start;
@@ -790,9 +774,10 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       yMin= Coord_YLeft_Start; yMax= Coord_YRight_End;
       zMin= Coord_ZLeft_Start; zMax= Coord_ZRight_End;
     }else{
-      xMin=0; xMax=Lx;
-      yMin=0; yMax=Ly;
-      zMin=0; zMax=Lz;
+      // so, if periodic, particles are not deleted
+      xMin=-Lx; xMax=2*Lx;
+      yMin=-Ly; yMax=2*Ly;
+      zMin=-Lz; zMax=2*Lz;
     }
     
 
@@ -800,7 +785,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       // particle to delete
       del_pack(np_current,&nplast);
       npExitXleft++;
-    }else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
+    }else if (x[np_current] < xStart_GC && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitXleft+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -812,7 +797,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitXleft++;
       } 
     
-    else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
+    else if (x[np_current] > xEnd_GC && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitXright+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -824,7 +809,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitXright++;
     }
     
-    else  if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
+    else  if (y[np_current] < yStart_GC && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitYleft+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -836,7 +821,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitYleft++;
     }
     
-    else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
+    else if (y[np_current] > yEnd_GC && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitYright+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -847,7 +832,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       del_pack(np_current,&nplast);
       npExitYright++;
     }
-    else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
+    else if (z[np_current] < zStart_GC && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitZleft+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -860,7 +845,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitZleft++;
     } 
     
-    else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
+    else if (z[np_current] > zEnd_GC && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitZright+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -1078,9 +1063,9 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
 
   buffer_size = new_buffer_size;
 }
-/** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
+/** Put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
 void Particles3Dcomm::bufferXleft(double *b_, long long np_current, VirtualTopology3D * vct) {
-  if (x[np_current] < 0)
+  if (x[np_current] < 0 and vct->getPERIODICX_P())
     b_[npExitXleft * nVar] = x[np_current] + Lx;  // this applies to the the leftmost processor
   else
     b_[npExitXleft * nVar] = x[np_current];
@@ -1095,7 +1080,7 @@ void Particles3Dcomm::bufferXleft(double *b_, long long np_current, VirtualTopol
 }
 /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
 void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopology3D * vct) {
-  if (x[np_current] > Lx)
+  if (x[np_current] > Lx and vct->getPERIODICX_P())
     b_[npExitXright * nVar] = x[np_current] - Lx; // this applies to the right most processor
   else
     b_[npExitXright * nVar] = x[np_current];
@@ -1111,7 +1096,7 @@ void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopo
 /** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, VirtualTopology3D * vct) {
   b_[npExitYleft * nVar] = x[np_current];
-  if (y[np_current] < 0)
+  if (y[np_current] < 0 and vct->getPERIODICY_P())
     b_[npExitYleft * nVar + 1] = y[np_current] + Ly;
   else
     b_[npExitYleft * nVar + 1] = y[np_current];
@@ -1126,7 +1111,7 @@ inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, Virtu
 /** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, VirtualTopology3D * vct) {
   b_[npExitYright * nVar] = x[np_current];
-  if (y[np_current] > Ly)
+  if (y[np_current] > Ly and vct->getPERIODICY_P())
     b_[npExitYright * nVar + 1] = y[np_current] - Ly;
   else
     b_[npExitYright * nVar + 1] = y[np_current];
@@ -1142,7 +1127,7 @@ inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, Virt
 inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, VirtualTopology3D * vct) {
   b_[npExitZleft * nVar] = x[np_current];
   b_[npExitZleft * nVar + 1] = y[np_current];
-  if (z[np_current] < 0)
+  if (z[np_current] < 0 and vct->getPERIODICZ_P())
     b_[npExitZleft * nVar + 2] = z[np_current] + Lz;
   else
     b_[npExitZleft * nVar + 2] = z[np_current];
@@ -1157,7 +1142,7 @@ inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, Virtu
 inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, VirtualTopology3D * vct) {
   b_[npExitZright * nVar] = x[np_current];
   b_[npExitZright * nVar + 1] = y[np_current];
-  if (z[np_current] > Lz)
+  if (z[np_current] > Lz and vct->getPERIODICZ_P())
     b_[npExitZright * nVar + 2] = z[np_current] - Lz;
   else
     b_[npExitZright * nVar + 2] = z[np_current];
@@ -1186,7 +1171,7 @@ int Particles3Dcomm::unbuffer(double *b_, MPI_Comm Comm) {
       ParticleID[nop] = (unsigned long) b_[nVar * np_current + 7];
     np_current++;
     // these particles need further communication
-    if (x[nop] < xstart || x[nop] > xend || y[nop] < ystart || y[nop] > yend || z[nop] < zstart || z[nop] > zend)
+    if (x[nop] < xStart_GC || x[nop] > xEnd_GC || y[nop] < yStart_GC || y[nop] > yEnd_GC || z[nop] < zStart_GC || z[nop] > zEnd_GC)
       rightDomain++;            // the particle is not in the domain
     nop++;
     if (nop > npmax) {
