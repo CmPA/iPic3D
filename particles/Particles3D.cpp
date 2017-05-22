@@ -2424,7 +2424,7 @@ int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf
 //			cout << nop << endl;
 		}
 
-
+	}
 		// move particles inside the sim box
 		for (int i=store_nop; i < nop; i++){
 			x[i] += u[i]*dt;
@@ -2452,7 +2452,7 @@ int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf
 		        return(-1);
 			MPI_Barrier(MPI_COMM_WORLD);
 		}
-	}
+
 
 //	cout << "Communicated!!\n";
 
