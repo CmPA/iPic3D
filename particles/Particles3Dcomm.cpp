@@ -785,81 +785,78 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       // particle to delete
       del_pack(np_current,&nplast);
       npExitXleft++;
-    }else{
-      // particle to move
-      // communicate if they don't belong to the domain
-      if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
-	// check if there is enough space in the buffer before putting in the particle
-	if(((npExitXleft+1)*nVar)>=buffer_size){
-	  resize_buffers((int) (buffer_size*2)); 
-	}
-	// put it in the communication buffer
-	bufferXleft(b_X_LEFT,np_current,ptVCT);
-	// delete the particle and pack the particle array, the value of nplast changes
-	del_pack(np_current,&nplast);
-        npExitXleft++;
+    }else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitXleft+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferXleft(b_X_LEFT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitXleft++;
       } 
     
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
-	// check if there is enough space in the buffer before putting in the particle
-	if(((npExitXright+1)*nVar)>=buffer_size){
-	  resize_buffers((int) (buffer_size*2)); 
-	}
-	// put it in the communication buffer
-	bufferXright(b_X_RIGHT,np_current,ptVCT);
-	// delete the particle and pack the particle array, the value of nplast changes
-	del_pack(np_current,&nplast);
-	npExitXright++;
+    else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitXright+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
       }
+      // put it in the communication buffer
+      bufferXright(b_X_RIGHT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitXright++;
+    }
+    
+    else  if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitYleft+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferYleft(b_Y_LEFT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitYleft++;
+    }
+    
+    else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitYright+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferYright(b_Y_RIGHT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitYright++;
+    }
+    else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitZleft+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferZleft(b_Z_LEFT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
       
-      else  if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
-	// check if there is enough space in the buffer before putting in the particle
-	if(((npExitYleft+1)*nVar)>=buffer_size){
-	  resize_buffers((int) (buffer_size*2)); 
-	}
-	// put it in the communication buffer
-	bufferYleft(b_Y_LEFT,np_current,ptVCT);
-	// delete the particle and pack the particle array, the value of nplast changes
-	del_pack(np_current,&nplast);
-	npExitYleft++;
+      npExitZleft++;
+    } 
+    
+    else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitZright+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
       }
+      // put it in the communication buffer
+      bufferZright(b_Z_RIGHT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
       
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
-	// check if there is enough space in the buffer before putting in the particle
-	if(((npExitYright+1)*nVar)>=buffer_size){
-	  resize_buffers((int) (buffer_size*2)); 
-	}
-	// put it in the communication buffer
-	bufferYright(b_Y_RIGHT,np_current,ptVCT);
-	// delete the particle and pack the particle array, the value of nplast changes
-	del_pack(np_current,&nplast);
-	npExitYright++;
-      }
-      else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
-	// check if there is enough space in the buffer before putting in the particle
-	if(((npExitZleft+1)*nVar)>=buffer_size){
-	  resize_buffers((int) (buffer_size*2)); 
-	}
-	// put it in the communication buffer
-	bufferZleft(b_Z_LEFT,np_current,ptVCT);
-	// delete the particle and pack the particle array, the value of nplast changes
-	del_pack(np_current,&nplast);
-	
-	npExitZleft++;
-      } 
-      
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
-	// check if there is enough space in the buffer before putting in the particle
-	if(((npExitZright+1)*nVar)>=buffer_size){
-	  resize_buffers((int) (buffer_size*2)); 
-	}
-	// put it in the communication buffer
-	bufferZright(b_Z_RIGHT,np_current,ptVCT);
-	// delete the particle and pack the particle array, the value of nplast changes
-	del_pack(np_current,&nplast);
-	
-	npExitZright++;
-      }
+      npExitZright++;
+    
     } // end else you have to move particle
     else {
       // particle ok
