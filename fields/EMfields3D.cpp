@@ -7261,7 +7261,7 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
 
   //if (CGProjVectors_Needed== false) return; // if you are not involved in proj operators, exit
 
-  cout << "Grid " << numGrid << " R " << RR << " has started receiveProjection" <<endl;
+  //cout << "Grid " << numGrid << " R " << RR << " has started receiveProjection" <<endl;
 
   /* set staging vectors (ExthProjSt, EythProjSt, EzthProjSt, DenProjSt) to 0
      before starting accumulatimg */
@@ -7300,7 +7300,7 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
 	  
 	  countExp= CGProj_Info[ch][i].np_x* CGProj_Info[ch][i].np_y* CGProj_Info[ch][i].np_z;
 
-	  cout << "Grid "<< numGrid << " R " <<vct->getRank_CommToChildren(ch)<< " found msg: count: " << countExp << " S " << status.MPI_SOURCE << " ID " << status.MPI_TAG << endl;
+	  //cout << "Grid "<< numGrid << " R " <<vct->getRank_CommToChildren(ch)<< " found msg: count: " << countExp << " S " << status.MPI_SOURCE << " ID " << status.MPI_TAG << endl;
 
 	  if   (Testing){
 	    if ( ! (countExp*3 == count)){
@@ -7404,7 +7404,7 @@ void EMfields3D::receiveProjection(Grid *grid, VirtualTopology3D *vct){
     communicateNode_Proj(nxn, nyn, nzn, EythProjSt[ch], 0, 0, 0, 0, 0, 0, vct) ;
     communicateNode_Proj(nxn, nyn, nzn, EzthProjSt[ch], 0, 0, 0, 0, 0, 0, vct) ;
   }
-  cout << "Grid " << numGrid <<" R " << " has finished receiveProjection" <<endl;
+  //cout << "Grid " << numGrid <<" R " << " has finished receiveProjection" <<endl;
 
 }
 
@@ -7658,11 +7658,18 @@ void EMfields3D::applyProjection(Grid *grid, VirtualTopology3D *vct, Collective 
 
   if (ApplyProjection == true ){ // you are a CG, but you do not seperimpose a RG
   
-    for (int ch=0; ch < numChildren; ch++)
+    for (int ch=0; ch < numChildren; ch++){
+
+      double RFx= dx/ dx_Ch[ch];
+      double RFy= dy/ dy_Ch[ch];
+      double RFz= dz/ dz_Ch[ch];
+      
       for (int i=0; i< nxn; i++)
 	for (int j=0; j< nyn; j++)
 	  for (int k=0; k< nzn; k++){
-	    if (DenProjSt[ch][i][j][k]>0){
+	    //if (DenProjSt[ch][i][j][k]>0){
+	    // to exclude boundary nodes
+	    if (DenProjSt[ch][i][j][k]> RFx*RFy*RFz*0.99){
 	      // average
 	      Exth[i][j][k]= (Exth[i][j][k] + ExthProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
 	      Eyth[i][j][k]= (Eyth[i][j][k] + EythProjSt[ch][i][j][k] / DenProjSt[ch][i][j][k])/2;
@@ -7675,7 +7682,7 @@ void EMfields3D::applyProjection(Grid *grid, VirtualTopology3D *vct, Collective 
 	      
 	    } // end if (DenProjSt[ch][i][j][k]>0){
 	  } // end for (int k=0; k< nzn; k++)
-    
+    } // end cycle on children
     // now regenerate E n+1
     addscale(1 / th, -(1.0 - th) / th, Ex, Ex_n, Exth, nxn, nyn, nzn);  
     addscale(1 / th, -(1.0 - th) / th, Ey, Ey_n, Eyth, nxn, nyn, nzn);

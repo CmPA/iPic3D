@@ -299,6 +299,8 @@ public:
   void ApplyPBC(VirtualTopology3D* vct, Grid* grid);
   /* split a particle received form the CG into RG particles */
   void SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p);
+  /* for repopulation method -2 */
+  bool RepopulatedParticleHasEnteredRG(double xTmp, double yTmp, double zTmp, double u, double v, double w);
   /* a barrier on both parent and child side of the particle communicator, to prevent messages for different particle speciesfrom crossing */
   void MPI_Barrier_ParentChild(VirtualTopology3D* vct);
   /* check number of particle sent/ received from each grid */

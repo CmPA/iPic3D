@@ -386,8 +386,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // the # of PRA cells is a tmp variable
   //   the 'visible' variables are the index at which PRA starts/ ends 
   
-  int PRACells =2; // 4;
-  
+  int PRACells = int(RFx); // 4;
+  if (RFy > RFx) PRACells= int (RFy);
+
   // index at which the PRA starts/ ends
   // 
   PRA_XLeft_Start= 0;
@@ -741,13 +742,14 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   long long np_current = 0, nplast = nop - 1;
 
-  // to prevent RG particles in the GC from being eliminated from the domain
-  double xMin=0, yMin=0, zMin=0;
-  double xMax= Lx, yMax= Ly, zMax= Lz;
-  /* mlmd: do NOT change these limits, otherwise it hangs up */ 
+  double xMin, yMin, zMin;
+  double xMax, yMax, zMax;
 
   while (np_current < nplast+1){
 
+    xMin=0, yMin=0, zMin=0;
+    xMax=Lx, yMax=Ly, zMax=Lz;
+ 
 
     // BC on particles
     if (x[np_current] < xMin && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
@@ -763,6 +765,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     else if (z[np_current] > zMax && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) //check it here
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
 
+    /*
     // if the particle exits, apply the boundary conditions add the particle to communication buffer
     if (x[np_current] < xstart || x[np_current] >xend){
       // communicate if they don't belong to the domain
@@ -870,7 +873,114 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       np_current++;
     }
 
+  }*/
+
+    // NB: if you are CG, particles <0 and >Lx have been already screened out here
+    xMin=-dx; xMax=Lx+dx;
+    yMin=-dy; yMax=Ly+dy;
+    zMin=-dz; zMax=Lz+dz;
+    // communicate if they don't belong to the domain
+    if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitXleft+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferXleft(b_X_LEFT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+        npExitXleft++;
+    } 
+    else if (x[np_current] < xMin && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL){
+        del_pack(np_current,&nplast);
+        npExitXleft++;
+    } 
+    else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitXright+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferXright(b_X_RIGHT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitXright++;
+    }
+    else if (x[np_current] > xMax && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL){
+      del_pack(np_current,&nplast);
+      npExitXright++;
+    }
+    else  if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitYleft+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferYleft(b_Y_LEFT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitYleft++;
+    }
+    else if (y[np_current] < yMin && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL){
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitYleft++;
+    }
+    else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitYright+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferYright(b_Y_RIGHT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitYright++;
+    }
+    else if (y[np_current] > yMax && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL){
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitYright++;
+    }
+    else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitZleft+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferZleft(b_Z_LEFT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      
+      npExitZleft++;
+    } 
+    else if (z[np_current] < zMin && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL){
+      del_pack(np_current,&nplast);
+      npExitZleft++;
+    }
+    else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitZright+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferZright(b_Z_RIGHT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      
+      npExitZright++;
+    }
+    else if (z[np_current] > zMax && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL){
+      del_pack(np_current,&nplast);
+      npExitZright++;
+    }
+    else {
+      // particle is still in the domain, procede with the next particle
+      np_current++;
+    }
+    
   }
+  
 
   nop = nplast + 1;
   npExitingMax = 0;
@@ -915,6 +1025,9 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       return (-1);              // too many particles coming, save data nad stop simulation
   }
 
+
+
+
   // here, if RG core receving PBC particles, I have to deal with RG particles already present in the repopulation buffer
   // here I check RG_numPBCMessages also not to do ops in a core which is not affected by PBC
   if (CommToParent_P!= MPI_COMM_NULL and RG_numPBCMessages >0){
@@ -922,9 +1035,13 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     PRA_deleted=0;
 
     long long np_current = 0, nplast = nop - 1;
-    
+    // here, i interleave the == -2 case
     while (np_current < nplast+1){
       if (ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL and bcPfaceXleft== -1 and x[np_current] < Coord_XLeft_End) { // Xleft
+	del_pack(np_current,&nplast);
+	PRA_deleted++;
+      }
+      else if (ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL and bcPfaceXleft== -2 and x[np_current] < Coord_XLeft_Start) { // Xleft
 	del_pack(np_current,&nplast);
 	PRA_deleted++;
       }
@@ -932,7 +1049,15 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 	del_pack(np_current,&nplast);
 	PRA_deleted++;
       }
+      else if (ptVCT->getXright_neighbor_P() == MPI_PROC_NULL and bcPfaceXright== -2 and x[np_current] > Coord_XRight_End ) { // Xright
+	del_pack(np_current,&nplast);
+	PRA_deleted++;
+      }
       else if (ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL and bcPfaceYleft== -1 and y[np_current] < Coord_YLeft_End) { // Yleft
+	del_pack(np_current,&nplast);
+	PRA_deleted++;
+      }
+      else if (ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL and bcPfaceYleft== -2 and y[np_current] < Coord_YLeft_Start) { // Yleft
 	del_pack(np_current,&nplast);
 	PRA_deleted++;
       }
@@ -940,11 +1065,23 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 	del_pack(np_current,&nplast);
 	PRA_deleted++;
       }
+      else if (ptVCT->getYright_neighbor_P() == MPI_PROC_NULL and bcPfaceYright== -2 and y[np_current] > Coord_YRight_End ) { // Yright
+	del_pack(np_current,&nplast);
+	PRA_deleted++;
+      }
       else if (ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL and bcPfaceZleft== -1 and z[np_current] < Coord_ZLeft_End) { // Zleft
 	del_pack(np_current,&nplast);
 	PRA_deleted++;
       }
+      else if (ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL and bcPfaceZleft== -2 and z[np_current] < Coord_ZLeft_Start) { // Zleft
+	del_pack(np_current,&nplast);
+	PRA_deleted++;
+      }
       else if (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL and bcPfaceZright== -1 and z[np_current] > Coord_ZRight_Start ) { // Zright
+	del_pack(np_current,&nplast);
+	PRA_deleted++;
+      }
+      else if (ptVCT->getZright_neighbor_P() == MPI_PROC_NULL and bcPfaceZright== -2 and z[np_current] > Coord_ZRight_End ) { // Zright
 	del_pack(np_current,&nplast);
 	PRA_deleted++;
       }
@@ -2622,7 +2759,18 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	//cout << " Coord_ZLeft_Start " << Coord_ZLeft_Start << " Coord_ZLeft_End " << Coord_ZLeft_End << " Coord_ZRight_Start " << Coord_ZRight_Start << " Coord_ZRight_End " << Coord_ZRight_End << endl;
 
 	// if i am inside any PRA (if i arrived here i am inside the extended domain)
-	if (StX or StY or StZ){
+	bool Keep= false;
+	// i should really separate by direction but i will do that later
+	if (bcPfaceXleft== -1 ) { 
+	  /* this is when i repopulate all the PRA
+	     if you arrive here, you should be kep */
+	  Keep= true;
+	}
+	else if (bcPfaceXleft== -2){ // here i keep only the particles that have entered in the last dt
+	  Keep= RepopulatedParticleHasEnteredRG(xTmp, yTmp, zTmp, p.u, p.v, p.w);
+	}
+
+	if ((StX or StY or StZ) and Keep){
 	  //cout << "Grid "<< numGrid <<" R" <<vct->getCartesian_rank() <<" Particle split and accepted " <<endl; 
 	  
 	  // if it arrives here, particle is to add to the PRA, not necessarily to this core
@@ -3303,3 +3451,19 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct, int NewSize){
 }
 
 
+bool Particles3Dcomm::RepopulatedParticleHasEnteredRG(double xTmp, double yTmp, double zTmp, double u, double v, double w){
+  // this is for repopulation method -2
+  // i want to check if the repopulated particle has entered during the last dt
+  // i return a false if the particle was already inside RG last dt
+  // otherwise true
+
+  double xB= xTmp- u*dt;
+  double yB= yTmp- v*dt;
+  double zB= zTmp- w*dt;
+
+  if ((xB > Coord_XLeft_Start and xB < Coord_XRight_End) and (yB > Coord_YLeft_Start and yB < Coord_YRight_End) and (zB > Coord_ZLeft_Start and zB < Coord_ZRight_End) )
+    return false;
+
+  return true;
+  
+}
