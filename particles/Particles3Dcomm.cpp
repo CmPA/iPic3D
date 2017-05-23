@@ -785,7 +785,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       // particle to delete
       del_pack(np_current,&nplast);
       npExitXleft++;
-    }else if (x[np_current] < xStart_GC && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
+    }else if (x[np_current] < xStart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitXleft+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -797,7 +797,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitXleft++;
       } 
     
-    else if (x[np_current] > xEnd_GC && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
+    else if (x[np_current] > xEnd && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitXright+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -809,7 +809,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitXright++;
     }
     
-    else  if (y[np_current] < yStart_GC && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
+    else  if (y[np_current] < yStart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitYleft+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -821,7 +821,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitYleft++;
     }
     
-    else if (y[np_current] > yEnd_GC && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
+    else if (y[np_current] > yEnd && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitYright+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -832,7 +832,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       del_pack(np_current,&nplast);
       npExitYright++;
     }
-    else if (z[np_current] < zStart_GC && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
+    else if (z[np_current] < zStart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitZleft+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -845,7 +845,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       npExitZleft++;
     } 
     
-    else if (z[np_current] > zEnd_GC && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
+    else if (z[np_current] > zEnd && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitZright+1)*nVar)>=buffer_size){
 	resize_buffers((int) (buffer_size*2)); 
@@ -2359,9 +2359,8 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct){
     cout << "Grid " << numGrid << " added " << ToTPRA_PAdded << " particles, deleted " << TotPRA_deleted << endl;
     }*/
 
-  if (CommToParent_P!= MPI_COMM_NULL) {
-    communicateRepopulatedParticles(grid, vct);
-  }
+  communicateRepopulatedParticles(grid, vct);
+
 
   /*if (numGrid>0)
     cout <<"Grid " << numGrid << " R " << vct->getCartesian_rank() << " ns " << ns << " nop " << nop << " at the end of ReceivePBC "<< endl;*/
