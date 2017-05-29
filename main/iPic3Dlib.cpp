@@ -454,11 +454,13 @@ bool c_Solver::ParticlesMover() {
   int RR= vct->getCartesian_rank();   
   if (MLMD_ParticleREPOPULATION){
     for (int i = 0; i < ns; i++){
+      // in practice, removes particles from the PRA
+      part[i].communicateAfterMover(vct);
       part[i].SendPBC(grid, vct);
       part[i].ReceivePBC(grid, vct);
 
       // comment during production
-      //     part[i].CheckSentReceivedParticles(vct);
+           part[i].CheckSentReceivedParticles(vct);
     }
   }
 

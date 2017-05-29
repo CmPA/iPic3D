@@ -156,6 +156,8 @@ public:
   void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct);
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   int communicate(VirtualTopology3D * ptVCT);
+  /** what it needs to do, is to remove particles from the PRA **/
+  int communicateAfterMover(VirtualTopology3D * ptVCT);
   /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
   void bufferXleft(double *b_, long long np, VirtualTopology3D * vct);
   /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
