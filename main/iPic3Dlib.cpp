@@ -460,7 +460,7 @@ bool c_Solver::ParticlesMover() {
       part[i].ReceivePBC(grid, vct);
 
       // comment during production
-           part[i].CheckSentReceivedParticles(vct);
+      //part[i].CheckSentReceivedParticles(vct);
     }
   }
 

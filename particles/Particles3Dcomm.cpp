@@ -386,11 +386,12 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // the # of PRA cells is a tmp variable
   //   the 'visible' variables are the index at which PRA starts/ ends 
   
-  int PRACells = int(RFx); // 4;
+  int PRACells = int(RFx); 
   if (RFy > RFx) PRACells= int (RFy);
 
   // added
-  //PRACells= 4;
+  if (bcPfaceXleft== -1 )
+    PRACells= 4;
 
   // Index at which the PRA starts/ ends
   // 
@@ -783,7 +784,6 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     if (x[np_current] < xMin or x[np_current]> xMax or y[np_current] < yMin or y[np_current]> yMax or z[np_current] < zMin or z[np_current]> zMax){
       // particle to delete
       del_pack(np_current,&nplast);
-      npExitXleft++;
     }else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitXleft+1)*nVar)>=buffer_size){
@@ -981,7 +981,7 @@ int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
     if (x[np_current] < xMin or x[np_current]> xMax or y[np_current] < yMin or y[np_current]> yMax or z[np_current] < zMin or z[np_current]> zMax){
       // particle to delete
       del_pack(np_current,&nplast);
-      npExitXleft++;
+
     }else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
       // check if there is enough space in the buffer before putting in the particle
       if(((npExitXleft+1)*nVar)>=buffer_size){
@@ -2487,14 +2487,16 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct){
 
   //cout << "Grid " << numGrid <<" R " << vct->getCartesian_rank() << " ns " << ns << " added " << PRA_PAdded << " particles, deleted " << PRA_deleted << endl;
 
-  // here, check how many PBC particles have been added at grid lvel
-  int ToTPRA_PAdded;
-  int TotPRA_deleted;
-  MPI_Allreduce(&PRA_PAdded, &ToTPRA_PAdded, 1, MPI_INT, MPI_SUM, vct->getComm());
-  MPI_Allreduce(&PRA_deleted, &TotPRA_deleted, 1, MPI_INT, MPI_SUM, vct->getComm());
-  if (RR== XLEN*YLEN*ZLEN-1){
-    cout << "Grid " << numGrid << " ns " << ns << " added " << ToTPRA_PAdded << " particles, deleted " << TotPRA_deleted << " (this before communicateRepopulatedParticles)" << endl;
+  // here, check how many PBC particles have been added at grid level
+  if (false){
+    int ToTPRA_PAdded;
+    int TotPRA_deleted;
+    MPI_Allreduce(&PRA_PAdded, &ToTPRA_PAdded, 1, MPI_INT, MPI_SUM, vct->getComm());
+    MPI_Allreduce(&PRA_deleted, &TotPRA_deleted, 1, MPI_INT, MPI_SUM, vct->getComm());
+    if (RR== XLEN*YLEN*ZLEN-1){
+      cout << "Grid " << numGrid << " ns " << ns << " added " << ToTPRA_PAdded << " particles, deleted " << TotPRA_deleted << " (this before communicateRepopulatedParticles)" << endl;
     }
+  } // end debug stuff
 
   if (CommToParent_P!= MPI_COMM_NULL) {
     communicateRepopulatedParticles(grid, vct);
