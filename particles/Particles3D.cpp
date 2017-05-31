@@ -1660,6 +1660,12 @@ void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3
 	      y[counter]= grid->getYN(i, j, k)+ dy*rY;
 	      z[counter]= grid->getZN(i, j, k)+ dz*rZ;
 
+	      // to avoid accumulation outside of the grid
+	      double PM=0.001;
+	      if (x[counter]< -dx*PM or x[counter]> Lx+dx*PM) continue;
+	      if (y[counter]< -dy*PM or y[counter]> Ly+dy*PM) continue;
+	      if (z[counter]< -dz*PM or z[counter]> Lz+dz*PM) continue;
+
               // q = charge
               q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
 
