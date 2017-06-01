@@ -2247,7 +2247,7 @@ void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective 
 //Flux Rope based on pressure equilibrium
 void EMfields3D::initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *col)
 {
-
+    double xctr, yctr, r, teta, Bth;
 	if (restart1 ==0){
 		if (vct->getCartesian_rank() ==0){
 			cout << "----------------------------------------" << endl;
@@ -2267,8 +2267,11 @@ void EMfields3D::initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *co
 		for (int j=0; j < nyn; j++)
 		for (int k=0; k < nzn; k++){
 
-			double r = sqrt(pow(grid->getXN(i,j,k)-Lx/2.0,2.0) + pow(grid->getYN(i,j,k)-Ly/2.0,2.0));
-			double teta = atan2(grid->getYN(i,j,k)-Ly/2.0,grid->getXN(i,j,k)-Lx/2.0);
+			 xctr = Lx/2.0 + delta /10.0 * cos(grid->getZN(i,j,k)/Lz * 2.0*M_PI);
+			 yctr = Lx/2.0 + delta /10.0 * sin(grid->getZN(i,j,k)/Lz * 2.0*M_PI);
+
+			 r = sqrt(pow(grid->getXN(i,j,k)-xctr,2.0) + pow(grid->getYN(i,j,k)-yctr,2.0));
+			 teta = atan2(grid->getYN(i,j,k)-yctr,grid->getXN(i,j,k)-xctr);
 
 		   // initialize the density for species
 		   for (int is=0; is < ns; is++)
@@ -2280,7 +2283,7 @@ void EMfields3D::initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *co
 			Ez[i][j][k] =  0.0;
 			// Magnetic field
 
-			double Bth = B0x * r * delta /(r*r+ delta*delta);
+			 Bth = B0x * r * delta /(r*r+ delta*delta);
 			Bxn[i][j][k] = -Bth * sin(teta);
 			Byn[i][j][k] = Bth * cos (teta);
 			Bzn[i][j][k] = B0z;
@@ -2291,10 +2294,13 @@ void EMfields3D::initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *co
         for (int i = 0; i < nxc; i++)
           for (int j = 0; j < nyc; j++)
             for (int k = 0; k < nzc; k++) {
-    			double r = sqrt(pow(grid->getXC(i,j,k)-Lx/2.0,2.0) + pow(grid->getYC(i,j,k)-Ly/2.0,2.0));
-    			double teta = atan2(grid->getYC(i,j,k)-Ly/2.0,grid->getXC(i,j,k)-Lx/2.0);
+    			 xctr = Lx/2.0 + delta /10.0 * cos(grid->getZN(i,j,k)/Lz * 2.0*M_PI);
+    			 yctr = Lx/2.0 + delta /10.0 * sin(grid->getZN(i,j,k)/Lz * 2.0*M_PI);
 
-    			double Bth = B0x * r * delta /(r*r+ delta*delta);
+    			 r = sqrt(pow(grid->getXC(i,j,k)-xctr,2.0) + pow(grid->getYC(i,j,k)-yctr,2.0));
+    			 teta = atan2(grid->getYC(i,j,k)-yctr,grid->getXC(i,j,k)-xctr);
+
+    			 Bth = B0x * r * delta /(r*r+ delta*delta);
     			Bxc[i][j][k] = -Bth * sin(teta);
     			Byc[i][j][k] = Bth * cos (teta);
     			Bzc[i][j][k] = B0z;
