@@ -77,7 +77,7 @@ ZLEN = 2              # Number of subdomains in the X direction
 ns = 2
 
 rhoINIT =  0.0  0.0  1e-9 		# Initial density (make sure you are neutral)
-rhoINJECT =  2e-4  2e-4  0.0000		# Injected density 
+rhoINJECT =  2e-5  2e-5  0.0000		# Injected density 
 
 TrackParticleID = 0	0	0   # TrackParticleID[species] = 1=true, 0=false 
 
@@ -141,7 +141,7 @@ cylindrical 	= 0
 
 # %%%%%%%%%%%% Numerics options %%%%%%%%%%%%%%%
 verbose                = 1        # Print to video results
-Vinj                   = 100      # Velocity/Number of the injection from the wall
+Vinj                   = 20      # Velocity/Number of the injection from the wall
 CGtol                  = 1E-3     # CG solver stopping criterium tolerance
 GMREStol               = 1E-3     # GMRES solver stopping criterium tolerance
 NiterMover             = 3        # mover predictor corrector iteration

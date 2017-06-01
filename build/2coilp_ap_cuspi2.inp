@@ -17,9 +17,9 @@ SimulationName    = TwoCoils                    # Simulation name for the output
 
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
-B0x = 0.035
-B0y = 0.035
-B0z = 0.035
+B0x = 0.0015
+B0y = 0.0015
+B0z = 0.0015
 
 B1x = 0.0
 B1y = 0.0
@@ -28,12 +28,8 @@ B1z = 0.0
 delta = 3.0
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-<<<<<<< HEAD
-dt = 1.0		# dt = time step this is still in wp-1
-=======
 dt = .3		# dt = time step this is still in wp-1
->>>>>>> 6b63ea42a74dac68b2e253a8580c10bb4c3b8a10
-ncycles = 50001 	      # cycles -- should run to 100us range for steady state
+ncycles = 150001 	      # cycles -- should run to 100us range for steady state
 th = 1.0                     # th =   decentering parameter
 c = 1.0                      # c = light speed 
 
@@ -55,25 +51,22 @@ Lz =   75.0                # Lz = simulation box length - z direction in m
 x_center =   37.5                  # center of initial square - x direction in m  
 y_center =   37.5                  # center of initial square - y direction in m
 z_center =   37.5                   # center of initial square - z direction in m  
-L_square =   14.4		 # side of initial square 
-<<<<<<< HEAD
+L_square =   3.0		 # side of initial square 
 L_outer =   30.0		 # side of initial square 
-=======
->>>>>>> 6b63ea42a74dac68b2e253a8580c10bb4c3b8a10
 
 CoilD = 25.2			#magnetic coil diameter -- Proposed WB8 simulation dimensions. 
-CoilSpacing= 40.0	                #spacing parameter for magnets 
+CoilSpacing= 20.0	                #spacing parameter for magnets 
 
 
-nxc =  32                   # nxc = number of cells - x direction  
-nyc =  32                 # nyc = number of cells - y direction
-nzc =  32                  # nzc = number of cells - z direction     
+nxc =  150                   # nxc = number of cells - x direction  
+nyc =  150                  # nyc = number of cells - y direction
+nzc =  150                  # nzc = number of cells - z direction     
 
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
-XLEN = 2              # Number of subdomains in the X direction
-YLEN = 2              # Number of subdomains in the X direction
-ZLEN = 2              # Number of subdomains in the X direction
+XLEN = 10              # Number of subdomains in the X direction
+YLEN = 10              # Number of subdomains in the X direction
+ZLEN = 10              # Number of subdomains in the X direction
    
 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
@@ -83,8 +76,8 @@ ZLEN = 2              # Number of subdomains in the X direction
 #    2,3,4,5,... = ions
 ns = 2
 
-rhoINIT =  1.0  1.0  1e-9 		# Initial density (make sure you are neutral)
-rhoINJECT =  0.0  0.0  0.0000		# Injected density 
+rhoINIT =  0.0  0.0  1e-9 		# Initial density (make sure you are neutral)
+rhoINJECT =  1e-5  1e-5  0.0000		# Injected density 
 
 TrackParticleID = 0	0	0   # TrackParticleID[species] = 1=true, 0=false 
 
@@ -101,7 +94,7 @@ vth = 2.33e-3   2.33e-3	0.5 # vth = thermal velocity for different species - Dir
 wth = 2.33e-3   2.33e-3	0.5 # wth = thermal velocity for different species - Direction Z
   
 u0 = 0.0    	0.0	0.0 	# u0 = drift velocity   - Direction X  
-v0 = 0.0   	0.0	0.0	# v0 = drift velocity   - Direction Y 
+v0 = 2.33e-3	2.33e-3 0.0	0.0	# v0 = drift velocity   - Direction Y 
 w0 = 0.0	0.0	0.0	# w0 = drift velocity   - Direction Z    
 
 # %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
@@ -138,29 +131,23 @@ cylindrical 	= 0
 #    0 = exit
 #    1 = perfect mirror
 #    2 = riemission
-    bcPfaceXright = 0
-    bcPfaceXleft =  0
-    bcPfaceYright = 0
-    bcPfaceYleft =  0
-    bcPfaceZright = 0
-    bcPfaceZleft =  0
+    bcPfaceXright = 1
+    bcPfaceXleft =  1
+    bcPfaceYright = 1
+    bcPfaceYleft =  1
+    bcPfaceZright = 1
+    bcPfaceZleft =  1
 
 
 # %%%%%%%%%%%% Numerics options %%%%%%%%%%%%%%%
 verbose                = 1        # Print to video results
-Vinj                   = 10      # Velocity of the injection from the wall
+Vinj                   = 50      # Velocity of the injection from the wall
 CGtol                  = 1E-3     # CG solver stopping criterium tolerance
 GMREStol               = 1E-3     # GMRES solver stopping criterium tolerance
 NiterMover             = 3        # mover predictor corrector iteration
-<<<<<<< HEAD
-FieldOutputCycle       = 100      # Output for field
-ParticlesOutputCycle   = 1      # Output for particles if 1 it doesnt save particles data
-RestartOutputCycle     = 100     # restart cycle
-=======
 FieldOutputCycle       = 1000      # Output for field
 ParticlesOutputCycle   = 1      # Output for particles if 1 it doesnt save particles data
 RestartOutputCycle     = 1000     # restart cycle
->>>>>>> 6b63ea42a74dac68b2e253a8580c10bb4c3b8a10
 DiagnosticsOutputCycle = 1        # Diagnostics cycle
 
 

@@ -7,19 +7,19 @@ SaveDirName    = data     # Output directory
 RestartDirName = data     # Restart directory (for WriteMethod=default)
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
-Case              = TwoCoils                    # Case [ GEM | Dipole | ... ]
+Case              = Coils                    # Case [ GEM | Dipole | ... ]
 FieldsInit        = ./data/Initial-Fields_000000.h5 # Initial fields h5 file
-PartInit          = TwoCoils                         # Initial particles [ Maxwell | File ]
+PartInit          = Coils                         # Initial particles [ Maxwell | File ]
 WriteMethod       = default                       # Output method [ default | Parallel ]
 PoissonCorrection = no                             # Poisson correction [ yes | no ]
-SimulationName    = TwoCoils                    # Simulation name for the output
+SimulationName    = Coils                    # Simulation name for the output
 
 
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
-B0x = 0.035
-B0y = 0.035
-B0z = 0.035
+B0x = 0.0035
+B0y = 0.0035
+B0z = 0.0035
 
 B1x = 0.0
 B1y = 0.0
@@ -28,11 +28,7 @@ B1z = 0.0
 delta = 3.0
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-<<<<<<< HEAD
-dt = 1.0		# dt = time step this is still in wp-1
-=======
 dt = .3		# dt = time step this is still in wp-1
->>>>>>> 6b63ea42a74dac68b2e253a8580c10bb4c3b8a10
 ncycles = 50001 	      # cycles -- should run to 100us range for steady state
 th = 1.0                     # th =   decentering parameter
 c = 1.0                      # c = light speed 
@@ -56,24 +52,20 @@ x_center =   37.5                  # center of initial square - x direction in m
 y_center =   37.5                  # center of initial square - y direction in m
 z_center =   37.5                   # center of initial square - z direction in m  
 L_square =   14.4		 # side of initial square 
-<<<<<<< HEAD
-L_outer =   30.0		 # side of initial square 
-=======
->>>>>>> 6b63ea42a74dac68b2e253a8580c10bb4c3b8a10
 
 CoilD = 25.2			#magnetic coil diameter -- Proposed WB8 simulation dimensions. 
 CoilSpacing= 40.0	                #spacing parameter for magnets 
 
 
-nxc =  32                   # nxc = number of cells - x direction  
-nyc =  32                 # nyc = number of cells - y direction
-nzc =  32                  # nzc = number of cells - z direction     
+nxc =  150                   # nxc = number of cells - x direction  
+nyc =  150                  # nyc = number of cells - y direction
+nzc =  150                  # nzc = number of cells - z direction     
 
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
-XLEN = 2              # Number of subdomains in the X direction
-YLEN = 2              # Number of subdomains in the X direction
-ZLEN = 2              # Number of subdomains in the X direction
+XLEN = 10              # Number of subdomains in the X direction
+YLEN = 10              # Number of subdomains in the X direction
+ZLEN = 10              # Number of subdomains in the X direction
    
 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
@@ -152,15 +144,9 @@ Vinj                   = 10      # Velocity of the injection from the wall
 CGtol                  = 1E-3     # CG solver stopping criterium tolerance
 GMREStol               = 1E-3     # GMRES solver stopping criterium tolerance
 NiterMover             = 3        # mover predictor corrector iteration
-<<<<<<< HEAD
-FieldOutputCycle       = 100      # Output for field
-ParticlesOutputCycle   = 1      # Output for particles if 1 it doesnt save particles data
-RestartOutputCycle     = 100     # restart cycle
-=======
 FieldOutputCycle       = 1000      # Output for field
 ParticlesOutputCycle   = 1      # Output for particles if 1 it doesnt save particles data
 RestartOutputCycle     = 1000     # restart cycle
->>>>>>> 6b63ea42a74dac68b2e253a8580c10bb4c3b8a10
 DiagnosticsOutputCycle = 1        # Diagnostics cycle
 
 
