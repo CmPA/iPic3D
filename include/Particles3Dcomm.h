@@ -302,13 +302,19 @@ public:
   /* split a particle received form the CG into RG particles */
   void SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p);
   /* for repopulation method -2 */
-  bool RepopulatedParticleHasEnteredRG(double xTmp, double yTmp, double zTmp, double u, double v, double w);
+  bool RepopulatedParticleHasEnteredRG(Grid* grid, double xTmp, double yTmp, double zTmp, double u, double v, double w);
   /* a barrier on both parent and child side of the particle communicator, to prevent messages for different particle speciesfrom crossing */
   void MPI_Barrier_ParentChild(VirtualTopology3D* vct);
   /* check number of particle sent/ received from each grid */
   void CheckSentReceivedParticles(VirtualTopology3D* vct);
   /* distribute split particles to the right RG core*/
   void communicateRepopulatedParticles(Grid* grid, VirtualTopology3D * vct);
+
+  // moved here from Particles3D.h
+  void get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]);
+  void get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext);
+  void get_El(const double weights[2][2][2], int ix, int iy, int iz, double& Exl, double& Eyl, double& Ezl, double*** Ex, double*** Ey, double*** Ez);
+
 protected:
   /** number of species */
   /*! comment: the number of THIS species, not the total number of particle species */
@@ -642,6 +648,22 @@ protected:
      only the entry relative to that grid has a valid number*/
   int **RcvList;
   /*! end mlmd specific variables */
+
+  // i keep here a copy of Ex, Ey, Ez, Bxn, Byn, Bzn, Bx_ext, By_ext, Bz_ext for the mover but also for moving repopulated particles
+  double ***Ex;
+  double ***Ey;
+  double ***Ez;
+  double ***Bx;
+  double ***By;
+  double ***Bz;
+                                                                                                                        
+  double ***Bx_ext;
+  double ***By_ext;
+  double ***Bz_ext;
+
+  double Fext;
+  
+
 };
 
 #endif

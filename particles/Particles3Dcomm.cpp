@@ -85,6 +85,18 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]H_num_CRP_nop;
   delete[]H_CRP_General;
   delete[]H_CRP_cores;
+
+  delArr3(Ex, nxn, nyn);
+  delArr3(Ey, nxn, nyn);
+  delArr3(Ez, nxn, nyn);
+
+  delArr3(Bx, nxn, nyn);
+  delArr3(By, nxn, nyn);
+  delArr3(Bz, nxn, nyn);
+
+  delArr3(Bx_ext, nxn, nyn);
+  delArr3(By_ext, nxn, nyn);
+  delArr3(Bz_ext, nxn, nyn);
 }
 /** constructors fo a single species*/
 void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
@@ -476,6 +488,20 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   PRA_PAdded=0;
   MAX_np_CRP= 10*npmax; // exagerated number
   size_CRP=  nop;
+
+  // I am instantiating here local copies of Ex, Ey, Ezm Bx, By, Bz, Bx_ext, By_ext, Bz_ext
+  Ex= newArr3(double, nxn, nyn, nzn);
+  Ey= newArr3(double, nxn, nyn, nzn);
+  Ez= newArr3(double, nxn, nyn, nzn);
+
+  Bx= newArr3(double, nxn, nyn, nzn);
+  By= newArr3(double, nxn, nyn, nzn);
+  Bz= newArr3(double, nxn, nyn, nzn);
+
+  Bx_ext= newArr3(double, nxn, nyn, nzn);
+  By_ext= newArr3(double, nxn, nyn, nzn);
+  Bz_ext= newArr3(double, nxn, nyn, nzn);
+
   // //FOR TEST:
   // nvDistLoc = 3;
   // vDist     = new c_vDist[nvDistLoc];
@@ -2791,7 +2817,7 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	  Keep= true;
 	}
 	else if (bcPfaceXleft== -2){ // here i keep only the particles that have entered in the last dt
-	  Keep= RepopulatedParticleHasEnteredRG(xTmp, yTmp, zTmp, p.u, p.v, p.w);
+	  Keep= RepopulatedParticleHasEnteredRG(grid, xTmp, yTmp, zTmp, p.u, p.v, p.w);
 	}
 
 	if ((StX or StY or StZ) and Keep){
@@ -3482,19 +3508,202 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct, int NewSize){
 }
 
 
-bool Particles3Dcomm::RepopulatedParticleHasEnteredRG(double xTmp, double yTmp, double zTmp, double u, double v, double w){
+bool Particles3Dcomm::RepopulatedParticleHasEnteredRG(Grid* grid, double xTmp, double yTmp, double zTmp, double u, double v, double w){
   // this is for repopulation method -2
   // i want to check if the repopulated particle has entered during the last dt
   // i return a false if the particle was already inside RG last dt
   // otherwise true
 
+  /* this method is too simplestic and does not work
   double xB= xTmp- u*dt;
   double yB= yTmp- v*dt;
   double zB= zTmp- w*dt;
 
   if ((xB > Coord_XLeft_Start and xB < Coord_XRight_End) and (yB > Coord_YLeft_Start and yB < Coord_YRight_End) and (zB > Coord_ZLeft_Start and zB < Coord_ZRight_End) )
-    return false;
+  return false;*/
+
+  // copied from mover BUT in the mover i have xn, vn and i want to go to xn+1 vn+1; here the opposite
+  // so i have to put -'s (see calculations)
+  double xp = xTmp;
+  double yp = yTmp;
+  double zp = zTmp;
+  double up = u;
+  double vp = v;
+  double wp = w;
+  const double xptilde = xTmp;
+  const double yptilde = yTmp;
+  const double zptilde = zTmp;
+  double uptilde;
+  double vptilde;
+  double wptilde;
+
+  double Exl = 0.0;
+  double Eyl = 0.0;
+  double Ezl = 0.0;
+  double Bxl = 0.0;
+  double Byl = 0.0;
+  double Bzl = 0.0;
+  int ix;
+  int iy;
+  int iz;
+
+  double weights[2][2][2];
+
+  // BEGIN OF SUBCYCLING LOOP
+
+  get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+  get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+
+  const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+  double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
+  const int    sub_cycles = int(dt/dt_sub) + 1;
+
+  dt_sub = dt/double(sub_cycles);
+    
+  const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
+    
+  // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
+
+  for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
+
+    // calculate the average velocity iteratively
+    int nit = NiterMover;
+    if (sub_cycles > 2*NiterMover) nit = 1;
+
+    for (int innter = 0; innter < nit; innter++) {
+      // interpolation G-->P
+
+      get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+      get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+      get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+
+      // end interpolation
+      const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
+      const double denom = 1.0 / (1.0 + omdtsq);
+      // solve the position equation
+      /*const double ut = up + qomdt2 * Exl;
+      const double vt = vp + qomdt2 * Eyl;
+      const double wt = wp + qomdt2 * Ezl;*/
+      // BACKWARDS
+      const double ut = up - qomdt2 * Exl;
+      const double vt = vp - qomdt2 * Eyl;
+      const double wt = wp - qomdt2 * Ezl;
+
+      const double udotb = ut * Bxl + vt * Byl + wt * Bzl;
+      // solve the velocity equation 
+      /*uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
+      vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
+      wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;*/
+      // BACKWARDS
+      uptilde = (ut - qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
+      vptilde = (vt - qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
+      wptilde = (wt - qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
+      // update position
+      /*xp = xptilde + uptilde * dto2;
+      yp = yptilde + vptilde * dto2;
+      zp = zptilde + wptilde * dto2;*/
+      // BACKWARDS
+      xp = xptilde - uptilde * dto2;
+      yp = yptilde - vptilde * dto2;
+      zp = zptilde - wptilde * dto2;
+    }                           // end of iteration
+    // update the final position and velocity
+    // BACKWARDS -> i don't need velocity
+    /*up = 2.0 * uptilde - u[rest];
+    vp = 2.0 * vptilde - v[rest];
+    wp = 2.0 * wptilde - w[rest];
+    xp = xptilde + uptilde * dt_sub;
+    yp = yptilde + vptilde * dt_sub;
+    zp = zptilde + wptilde * dt_sub;*/
+    // BACKWARDS
+    xp = xptilde - uptilde * dt_sub;
+    yp = yptilde - vptilde * dt_sub;
+    zp = zptilde - wptilde * dt_sub;
+  } // END  OF SUBCYCLING LOOP
+  // end copied from mover
+
+  // if the reconstructed past particle was inside, kill it
+  if ((xp > Coord_XLeft_Start and xp < Coord_XRight_End) and (yp > Coord_YLeft_Start and yp < Coord_YRight_End) and (zp > Coord_ZLeft_Start and zp < Coord_ZRight_End) )
+  return false;
 
   return true;
   
+}
+
+
+void Particles3Dcomm::get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]){
+
+  const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+  const double ixd = floor((xp - xstart) * inv_dx);
+  const double iyd = floor((yp - ystart) * inv_dy);
+  const double izd = floor((zp - zstart) * inv_dz);
+
+  ix = 2 + int (ixd);
+  iy = 2 + int (iyd);
+  iz = 2 + int (izd);
+
+  if (ix < 1)
+    ix = 1;
+  if (iy < 1)
+    iy = 1;
+  if (iz < 1)
+    iz = 1;
+  if (ix > nxn - 1)
+    ix = nxn - 1;
+  if (iy > nyn - 1)
+    iy = nyn - 1;
+  if (iz > nzn - 1)
+    iz = nzn - 1;
+
+  double xi  [2];
+  double eta [2];
+  double zeta[2];
+
+  xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+  eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+  zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+  xi  [1] = grid->getXN(ix,iy,iz) - xp;
+  eta [1] = grid->getYN(ix,iy,iz) - yp;
+  zeta[1] = grid->getZN(ix,iy,iz) - zp;
+
+  for (int ii = 0; ii < 2; ii++)
+    for (int jj = 0; jj < 2; jj++)
+      for (int kk = 0; kk < 2; kk++)
+        weights[ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
+}
+
+
+void Particles3Dcomm::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext){
+
+  Bxl = 0.0;
+  Byl = 0.0;
+  Bzl = 0.0;
+
+  int l = 0;
+  for (int i=0; i<=1; i++)
+    for (int j=0; j<=1; j++)
+      for (int k=0; k<=1; k++) {
+        Bxl += weights[i][j][k] * (Bx[ix-i][iy-j][iz-k] + Fext*Bx_ext[ix-i][iy-j][iz-k]);
+        Byl += weights[i][j][k] * (By[ix-i][iy-j][iz-k] + Fext*By_ext[ix-i][iy-j][iz-k]);
+        Bzl += weights[i][j][k] * (Bz[ix-i][iy-j][iz-k] + Fext*Bz_ext[ix-i][iy-j][iz-k]);
+        l = l + 1;
+      }
+}
+
+void Particles3Dcomm::get_El(const double weights[2][2][2], int ix, int iy, int iz, double& Exl, double& Eyl, double& Ezl, double*** Ex, double*** Ey, double*** Ez){
+
+  Exl = 0.0;
+  Eyl = 0.0;
+  Ezl = 0.0;
+
+  int l = 0;
+  for (int i=0; i<=1; i++)
+    for (int j=0; j<=1; j++)
+      for (int k=0; k<=1; k++) {
+        Exl += weights[i][j][k] * Ex[ix-i][iy-j][iz-k];
+        Eyl += weights[i][j][k] * Ey[ix-i][iy-j][iz-k];
+        Ezl += weights[i][j][k] * Ez[ix-i][iy-j][iz-k];
+        l = l + 1;
+      }
+
 }

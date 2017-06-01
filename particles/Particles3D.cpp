@@ -417,7 +417,7 @@ void Particles3D::mover_explicit(Grid * grid, VirtualTopology3D * vct, Field * E
 
 }
 
-void Particles3D::get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]){
+/*void Particles3D::get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]){
 
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   const double ixd = floor((xp - xstart) * inv_dx);
@@ -456,9 +456,9 @@ void Particles3D::get_weights(Grid * grid, double xp, double yp, double zp, int&
     for (int jj = 0; jj < 2; jj++)
       for (int kk = 0; kk < 2; kk++)
         weights[ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
-}
+	}*/
 
-void Particles3D::get_El(const double weights[2][2][2], int ix, int iy, int iz, double& Exl, double& Eyl, double& Ezl, double*** Ex, double*** Ey, double*** Ez){
+/*void Particles3D::get_El(const double weights[2][2][2], int ix, int iy, int iz, double& Exl, double& Eyl, double& Ezl, double*** Ex, double*** Ey, double*** Ez){
 
   Exl = 0.0;
   Eyl = 0.0;
@@ -474,9 +474,9 @@ void Particles3D::get_El(const double weights[2][2][2], int ix, int iy, int iz, 
         l = l + 1;
       }
 
-}
+      }*/
 
-void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext){
+/*void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext){
 
   Bxl = 0.0;
   Byl = 0.0;
@@ -491,7 +491,7 @@ void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, 
         Bzl += weights[i][j][k] * (Bz[ix-i][iy-j][iz-k] + Fext*Bz_ext[ix-i][iy-j][iz-k]);
         l = l + 1;
       }
-}
+      }*/
 
 /** mover with a Predictor-Corrector scheme */
 int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
@@ -756,11 +756,8 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
   double start_mover_PC = MPI_Wtime();
   double weights[2][2][2];
-  /* move in Eth, not E 
-  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
-  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
-  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());*/
-  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getExth());
+  /* move in Eth, not E */
+  /*double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getExth());
   double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEyth());
   double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEzth());
   double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
@@ -772,6 +769,21 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
   double Fext = EMf->getFext();
+  */
+  
+  // i have instantiated them in Particles3Dcomm, so i only need to copy inside here
+  Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getExth());
+  Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEyth());
+  Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEzth());
+  Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+  By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+  Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+
+  Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+  By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+  Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+  Fext = EMf->getFext();
 
   // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   // don't bother trying to push any particles simultaneously;
