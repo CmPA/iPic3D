@@ -1758,14 +1758,28 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
           Byc[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
           // guide field
           Bzc[i][j][k] = B0z;
-
         }
-    for (int is = 0; is < ns; is++)
-      grid->interpN2C(rhocs, is, rhons);
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
   }
+  // This needs to be outside the main if because it needs to happen also in the case of restart
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+  //     	Adds damping region padded near the edge of the y axis.
+       	double external_radius = L_outer;
+       	if(external_radius < Ly/2.0){
+       	double scale_decay = (Ly/2.0 - L_outer)/2.0;
+       	for (int i=0; i < nxn; i++)
+       		for (int j=0; j < nyn; j++)
+       			for (int k=0; k < nzn; k++){
+       				Lambda[i][j][k]  = 0.0;
+       				double r = sqrt( pow(grid->getYN(i,j,k)-Ly/2.0,2.0) );
+       				if(r>external_radius-scale_decay){
+       					Lambda[i][j][k]  = 1.0* tanh((r-(external_radius-scale_decay))/scale_decay);
+       				}
+       			}
+       	}
 }
 double floor0( double value )
   {
