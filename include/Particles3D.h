@@ -36,6 +36,8 @@ class Particles3D:public Particles3Dcomm {
       </ul>
       */
     void constantVelocity(double vel, int dim, Grid * grid, Field * EMf);
+    /** Initial condition: uniform in space and relativistic maxwellian in velocity */
+    void relativistic_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
     void maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian with reversal across Y in velocity */
@@ -89,8 +91,11 @@ class Particles3D:public Particles3Dcomm {
     int mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** mover with a Predictor-Corrector Scheme for 2D cylindrical symmetry*/
     int mover_PC_sub_cyl(Grid * grid, VirtualTopology3D * vct, Field * EMf);
-    /** relativistic mover with a Predictor-Corrector scheme */
+    /** relativistic mover with a Boris-like scheme */
     int mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /** relativistic mover with the Celested3D scheme */
+    int mover_relativistic_celeste(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+
     /** particle repopulator */
     int particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is);
     /** interpolation Particle->Grid only charge density, current */

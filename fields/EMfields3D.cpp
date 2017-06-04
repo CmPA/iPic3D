@@ -308,7 +308,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
-  else if (Case=="GEM")       fixBgem(grid, vct);
+  else if (Case=="GEM" || Case=="GEMRelativity")       fixBgem(grid, vct);
   else if (Case=="HarrisSteps")       fixBgem(grid, vct);
   else if (Case=="GEMnoPert") fixBgem(grid, vct);
   else if (Case=="FluxRope") fixBrope(grid, vct);
@@ -1040,7 +1040,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
-    else if (Case=="GEM")       fixBgem(grid, vct);
+    else if (Case=="GEM" || Case=="GEMRelativity")       fixBgem(grid, vct);
     else if (Case=="HarrisSteps")       fixBgem(grid, vct);
     else if (Case=="GEMnoPert") fixBgem(grid, vct);
     else if (Case=="FluxRope") fixBrope(grid, vct);

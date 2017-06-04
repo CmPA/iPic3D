@@ -81,7 +81,7 @@ int c_Solver::Init(int argc, char **argv) {
     /* --------------------------------------------------------- */
     if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
     else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
-    else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
+    else if ((col->getCase()=="GEM") || (col->getCase()=="GEMRelativity"))  EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="HarrisSteps")       EMf->initDoublePeriodicHarrisSteps(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
@@ -141,8 +141,8 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="DoubleHarris")    part[i].maxwellian_reversed(grid, EMf, vct);
         else if (col->getCase()=="Whistler")    part[i].maxwellian_whistler(grid, EMf, vct);
         else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
-        else if (col->getCase()=="FluxRope")    part[i].maxwellian(grid, EMf, vct);
-        else if (col->getCase()=="Coils"){
+        else if (col->getCase()=="GEMRelativity")    part[i].relativistic_maxwellian(grid, EMf, vct);
+else if (col->getCase()=="Coils"){
            	if (col->getRHOinit(i) > 0.0)
            		part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
            	else
@@ -328,7 +328,11 @@ bool c_Solver::ParticlesMover() {
 	  }
 	  else{
 		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-		  mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
+		  //mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
+		  if(col->getCase()=="GEMRelativity")
+			  mem_avail = part[i].mover_relativistic(grid, vct, EMf);
+		  else
+			  mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
 	  }
   }
   // timeTasks.end(TimeTasks::PARTICLES);
