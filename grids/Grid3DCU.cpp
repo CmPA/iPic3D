@@ -58,32 +58,33 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   zEnd = zStart + (col->getLz_mlmd(numGrid) / (double) vct->getZLEN());
 
   // if @ boudaries with MPI_PROC_NULL, local grid dimensions INCLUDING ghost areas; otherwise, 'usual' values
-  if (vct->getXleft_neighbor() == MPI_PROC_NULL)
+  // since it is used only by particles, use particle periodicity
+  if (vct->getXleft_neighbor_P() == MPI_PROC_NULL)
     xStart_GC= xStart-dx;
   else
     xStart_GC= xStart;
 
-  if (vct->getYleft_neighbor() == MPI_PROC_NULL)
+  if (vct->getYleft_neighbor_P() == MPI_PROC_NULL)
     yStart_GC= yStart-dy;
   else
     yStart_GC= yStart;
 
-  if (vct->getZleft_neighbor() == MPI_PROC_NULL)
+  if (vct->getZleft_neighbor_P() == MPI_PROC_NULL)
     zStart_GC= zStart-dz;
   else
     zStart_GC= zStart;
 
-  if (vct->getXright_neighbor() == MPI_PROC_NULL)
+  if (vct->getXright_neighbor_P() == MPI_PROC_NULL)
     xEnd_GC= xEnd+dx;
   else
     xEnd_GC= xEnd;
 
-  if (vct->getYright_neighbor() == MPI_PROC_NULL)
+  if (vct->getYright_neighbor_P() == MPI_PROC_NULL)
     yEnd_GC= yEnd+dy;
   else
     yEnd_GC= yEnd;
 
-  if (vct->getZright_neighbor() == MPI_PROC_NULL)
+  if (vct->getZright_neighbor_P() == MPI_PROC_NULL)
     zEnd_GC= zEnd+dz;
   else
     zEnd_GC= zEnd;
