@@ -1814,9 +1814,9 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
     }
 
     // initialize B on centers
-    grid->interpN2C(Bxc, Bxn);
-    grid->interpN2C(Byc, Byn);
-    grid->interpN2C(Bzc, Bzn);
+    grid->interpN2C_GC(Bxc, Bxn);
+    grid->interpN2C_GC(Byc, Byn);
+    grid->interpN2C_GC(Bzc, Bzn);
 
     for (int is = 0; is < ns; is++)
       grid->interpN2C_GC(rhocs, is, rhons);

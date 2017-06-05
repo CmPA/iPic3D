@@ -573,7 +573,7 @@ void Collective::ReadInput(string inputfile) {
     if (outBcP){
       cout << "CAREFUL!!! You are requiring MLMD particle BC for the coarsest grid, which is forbidden: aborting ..." << endl;
       cerr << "CAREFUL!!! You are requiring MLMD particle BC for the coarsest grid, which is forbidden: aborting ..." << endl;
-      abort();
+      MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
     if (Ngrids >1) {
@@ -583,6 +583,18 @@ void Collective::ReadInput(string inputfile) {
       bcPfaceYright[1]= bcPfaceYright0.b;
       bcPfaceZleft[1]= bcPfaceZleft0.b;
       bcPfaceZright[1]= bcPfaceZright0.b;
+
+      // here, if particle periodicity is specified as periodic, I change PBC to 0, not to active MLMDPBC
+      int N=1;
+      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
     }
 
     if (Ngrids >2) {
@@ -592,6 +604,18 @@ void Collective::ReadInput(string inputfile) {
       bcPfaceYright[2]= bcPfaceYright0.c;
       bcPfaceZleft[2]= bcPfaceZleft0.c;
       bcPfaceZright[2]= bcPfaceZright0.c;
+
+      int N=2;
+      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+
     }
 
     if (Ngrids >3) {
@@ -601,6 +625,17 @@ void Collective::ReadInput(string inputfile) {
       bcPfaceYright[3]= bcPfaceYright0.d;
       bcPfaceZleft[3]= bcPfaceZleft0.d;
       bcPfaceZright[3]= bcPfaceZright0.d;
+
+      int N=3;
+      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
     }
 
     if (Ngrids >4) {
@@ -610,6 +645,17 @@ void Collective::ReadInput(string inputfile) {
       bcPfaceYright[4]= bcPfaceYright0.e;
       bcPfaceZleft[4]= bcPfaceZleft0.e;
       bcPfaceZright[4]= bcPfaceZright0.e;
+
+      int N=4;
+      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
     }
       
   }
