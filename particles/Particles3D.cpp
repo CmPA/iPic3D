@@ -553,7 +553,7 @@ void Particles3D::relativistic_maxwellian(Grid * grid, Field * EMf, VirtualTopol
   srand(vct->getCartesian_rank() + 2);
 
   double harvest;
-  double prob, theta, sign;
+  double prob, fi, sign, gammap, mu, ep, denom, numerator;
   long long counter = 0;
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
@@ -566,26 +566,59 @@ void Particles3D::relativistic_maxwellian(Grid * grid, Field * EMf, VirtualTopol
               z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
               // q = charge
               q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
-              // u
-              harvest = rand() / (double) RAND_MAX;
-              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-              harvest = rand() / (double) RAND_MAX;
-              theta = 2.0 * M_PI * harvest;
-              double gamma = 1.0/(1.0- (uth*uth + vth*vth+wth*wth)/c/c);
-              u[counter] = uth *gamma * prob * cos(theta);
-              // v
-              v[counter] = vth * gamma * prob * sin(theta);
-              // w
-              harvest = rand() / (double) RAND_MAX;
-              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-              harvest = rand() / (double) RAND_MAX;
-              theta = 2.0 * M_PI * harvest;
-              w[counter] = wth * gamma * prob * cos(theta);
 
-              gamma = (1.0+ (u[counter]*u[counter] + v[counter]*v[counter] + w[counter]*w[counter])/c/c);
-              u[counter] /= gamma;
-              v[counter] /= gamma;
-              w[counter] /= gamma;
+              //Generate speed in rest frame using Boltzmann energy distribution
+
+              // Generate first the particle energy
+              // We assume a Boltzmann energy distribution
+              // Only one thermal speed is considered: kT wich
+              // reinterprets vth from the input file
+              // This assumes uth is sqrt(kT / m_0 c^2)
+              //
+
+              harvest = rand() / (double) RAND_MAX;
+              prob = log(1.0 - .999999 * harvest);
+              gammap = 1.0 - uth * uth /abs(qom) * prob;
+
+              // Generate solid angle
+              harvest = rand() / (double) RAND_MAX;
+              mu = 2.0 * harvest - 1.0; //this is cos theta
+              harvest = rand() / (double) RAND_MAX;
+              fi = 2.0 * M_PI * harvest;
+
+
+              u[counter] = sqrt((1.0-1.0/gammap/gammap)) * sqrt(1-mu*mu) * cos(fi);
+              // v
+              v[counter] = sqrt((1.0-1.0/gammap/gammap)) * sqrt(1-mu*mu) * sin(fi);
+              // w
+              w[counter] = sqrt((1.0-1.0/gammap/gammap)) * mu;
+              // w
+
+
+              // Boost it from rest frame to lab frame
+              // This procedure is not correct in the opinion of Melzani.
+              // Further analysis is needed
+              // x direction
+              denom = (1.0 + u0 * u[counter]/c/c);
+              numerator = sqrt(1.0 - u0 * u0/c/c);
+              u[counter] = (u[counter] + u0)/ denom;
+              v[counter] *=  numerator/ denom;
+              w[counter] *=  numerator/ denom;
+
+              // y direction
+              denom = (1.0 + v0 * v[counter]/c/c);
+              numerator = sqrt(1.0 - v0 * v0/c/c);
+              v[counter] = (v[counter] + v0)/ denom;
+              u[counter] *=  numerator/ denom;
+              w[counter] *=  numerator/ denom;
+
+              // z direction
+              denom = (1.0 + w0 * w[counter]/c/c);
+              numerator = sqrt(1.0 - w0 * w0/c/c);
+              w[counter] = (w[counter] + w0)/ denom;
+              u[counter] *=  numerator/ denom;
+              v[counter] *=  numerator/ denom;
+
 
               if (TrackParticleID)
                 ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
@@ -1649,7 +1682,7 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
 
             uxnew = wx + uxnew *2.0/(1+h2) + qomdt2 * Exl;
             uynew = wy + uynew *2.0/(1+h2) + qomdt2 * Eyl;
-            uxnew = wz + uznew *2.0/(1+h2) + qomdt2 * Exl;
+            uznew = wz + uznew *2.0/(1+h2) + qomdt2 * Ezl;
 
             gamma_new = sqrt(1.0 + uxnew *uxnew + uynew *uynew + uznew *uznew);
 

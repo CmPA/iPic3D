@@ -15,7 +15,7 @@ PoissonCorrection = yes                             # Poisson correction [ yes |
 SimulationName    = GEMRelativity                            # Simulation name for the output
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
-B0x = 1.8
+B0x = 0.2
 B0y = 0.00
 B0z = 0.0
 
@@ -67,9 +67,9 @@ ZLEN = 1               # Number of subdomains in the X direction
 
 ns = 4 
 # Initial density (make sure you are neutral)
-rhoINIT =  1.0	1.0	0.1 	0.1	
+rhoINIT =  1.0	1.0	0.01 	0.01	
 # Inject density (make sure you are neutral)
-rhoINJECT =  1.0	1.0	0.1 	0.1
+rhoINJECT =  1.0	1.0	0.01 	0.01
 
 
 # TrackParticleID[species] = 1=true, 0=false --> Assign ID to particles 
@@ -86,17 +86,17 @@ NpMaxNpRatio    = 20.0                # Maximum number of particles allocated
 # qom = charge to mass ratio for different species 
 qom =  -1.0	1.0	-1.0	1.0	
 # uth = thermal velocity for different species - Direction X  
-uth  = 0.9	0.9	0.9	0.9
+uth  = 0.1	0.1	0.1	0.1
 # vth = thermal velocity for different species - Direction Y 
-vth  = 0.9	0.9	0.9	0.9
+vth  = 0.1	0.1	0.1	0.1
 # wth = thermal velocity for different species - Direction Z 
-wth  = 0.9	0.9	0.9	0.9
+wth  = 0.1	0.1	0.1	0.1
 # u0 = drift velocity   - Direction X    
 u0 = 0.0	0.0  	0.0	0.0	
 # v0 = drift velocity   - Direction Y    
 v0 = 0.0	0.0   0.0	0.0	
 # w0 = drift velocity   - Direction Z    
-w0 = 0.009	-0.009		0.	0.
+w0 = 0.2	-0.2		0.	0.
 
 # %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
 PERIODICX       = 1                  # In direction X (1=true, 0=false)
@@ -146,8 +146,8 @@ Vinj                   = 0.0      # Velocity of the injection from the wall
 CGtol                  = 1E-3     # CG solver stopping criterium tolerance
 GMREStol               = 1E-3     # GMRES solver stopping criterium tolerance
 NiterMover             = 3        # mover predictor corrector iteration
-FieldOutputCycle       = 100      # Output for field
+FieldOutputCycle       = 400      # Output for field
 ParticlesOutputCycle   = 1      # Output for particles if 1 it doesnt save particles data
-RestartOutputCycle     = 400     # restart cycle
+RestartOutputCycle     = 800     # restart cycle
 DiagnosticsOutputCycle = 1        # Diagnostics cycle
 
