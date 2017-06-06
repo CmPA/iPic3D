@@ -263,9 +263,9 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   addscale(1 / th, -(1.0 - th) / th, Ez, Ezth, nxn, nyn, nzn);
 
   // apply to smooth to electric field 3 times
-  smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
+  smoothE(Smooth, Nvolte, vct, col);
+  //smoothE(Smooth, Nvolte, vct, col);
+  //smoothE(Smooth, Nvolte, vct, col);
 
   // communicate so the interpolation can have good values
   communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
@@ -515,9 +515,8 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
 
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
 
-  int nvolte = 6;
   for (int icount = 1; icount < nvolte + 1; icount++) {
 
     if (value != 1.0) {
@@ -559,9 +558,8 @@ void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, V
   }
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col) {
+void EMfields3D::smoothE(double value,  int nvolte, VirtualTopology3D * vct, Collective *col) {
 
-  int nvolte = 6;
   for (int icount = 1; icount < nvolte + 1; icount++) {
     if (value != 1.0) {
       double alpha;
@@ -612,7 +610,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 }
 
 /* SPECIES: Interpolation smoothing TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector type = 1 --> node based vector */
-void EMfields3D::smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::smooth(double value, int nvolte, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
   cout << "Smoothing for Species not implemented in 3D" << endl;
 }
 
@@ -1141,7 +1139,7 @@ void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, double E
 /*! Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
 void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
   // smoothing
-  smooth(Smooth, rhoc, 0, grid, vct);
+  smooth(Smooth, Nvolte, rhoc, 0, grid, vct);
   // calculate j hat
 
   for (int is = 0; is < ns; is++) {
@@ -1166,9 +1164,9 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
 
   }
   // smooth j
-  smooth(Smooth, Jxh, 1, grid, vct);
-  smooth(Smooth, Jyh, 1, grid, vct);
-  smooth(Smooth, Jzh, 1, grid, vct);
+  smooth(Smooth, Nvolte, Jxh, 1, grid, vct);
+  smooth(Smooth, Nvolte, Jyh, 1, grid, vct);
+  smooth(Smooth, Nvolte, Jzh, 1, grid, vct);
 
   // calculate rho hat = rho - (dt*theta)div(jhat)
   grid->divN2C(tempXC, Jxh, Jyh, Jzh);

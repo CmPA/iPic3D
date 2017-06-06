@@ -261,11 +261,11 @@ class EMfields3D                // :public Field
     /*! Sum current over different species */
     void sumOverSpeciesJ();
     /*! Smoothing after the interpolation* */
-    void smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct);
+    void smooth(double value, int Nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
-    void smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
+    void smooth(double value, int Nvolte, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
     /*! smooth the electric field */
-    void smoothE(double value, VirtualTopology3D * vct, Collective *col);
+    void smoothE(double value, int Nvolte, VirtualTopology3D * vct, Collective *col);
 
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
