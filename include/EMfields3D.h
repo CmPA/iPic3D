@@ -520,6 +520,8 @@ class EMfields3D                // :public Field
     void initWeightBC_InitialInterpolation_Phase1(Grid *grid, VirtualTopology3D *vct);
     void initWeightProj(Grid *grid, VirtualTopology3D *vct);
     void initWeightProj_Phase1(Grid *grid, VirtualTopology3D *vct);
+    // used in initWeightProj_Phase1, initWeightBCBuffer_Phase1, copied form particles
+    void Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct );
     void sendProjection(Grid *grid, VirtualTopology3D *vct);
     void receiveProjection(Grid *grid, VirtualTopology3D *vct);
     void applyProjection(Grid *grid, VirtualTopology3D *vct, Collective *col);
@@ -549,7 +551,8 @@ class EMfields3D                // :public Field
     void initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int* RG_numBCMessages, int which);
     // for the inital interpolation
     void initWeightBC_InitialInterpolation_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int* RG_numBCMessages);
-
+    void initWeightBCBuffer_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg);
+    
     /* phase 2a of initWeightBC:                                                                          
    core 0 of each child grid receives all the messages to send to the corresponding coarse grid           
    a level-wide message structure is built */
@@ -609,9 +612,11 @@ class EMfields3D                // :public Field
        RGInfo: the message that you got from the refined grid, which holds all the info you need
        Msg: stuff to send to the RG; this is already the info POINT BY POINT
        NP: # of points to send
+       Msg: the msg where to pack this
      */
-    void buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_struct RGInfo,  int NP );
+    void buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_struct RGInfo,  int NP , double *Msg);
     void buildIIMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_struct RGInfo, int Size );
+
     /* CG_Info: the entry with the info for that msg
        ch: number of child
        which: active or ghost */
@@ -676,6 +681,11 @@ class EMfields3D                // :public Field
     double *dx_Ch;
     double *dy_Ch;
     double *dz_Ch;
+    
+    /** parent grid spacing **/
+    double DxP, DyP, DzP;
+    /* RF, used in split */
+    double RFx, RFy, RFz;
 
     /*! end mlmd: these values are for the local grid */
 
@@ -888,6 +898,7 @@ class EMfields3D                // :public Field
     bool MLMD_BC;
     bool MLMD_PROJECTION;
     bool ParticleREPOPULATION;
+    bool MLMD_BCBufferArea;
 
     /* number of fields I am sending as BC: Ex, Ey, Ez, Exth, Eyth, Ezth, Bxn, Byn, Bzn */
     int NumF;
@@ -897,7 +908,6 @@ class EMfields3D                // :public Field
 
     /*! number of children in the mlmd hierarchy */ 
     int numChildren;
-    /*! end mlmd specidic variables */
 
     /* Number of BC messages for the RG core -
        size of the local RGBC_struct; valid only for RGs;
@@ -914,6 +924,13 @@ class EMfields3D                // :public Field
 
     RGBC_struct * RGBC_Info_Active;
     int RG_numBCMessages_Active;
+
+    /* in case MLMD_BCBufferArea= true */
+    int RG_MaxMsgBufferSize;
+
+    RGBC_struct * RGBC_Info_Buffer;
+    int RG_numBCMessages_Buffer;
+    /* end in case MLMD_BCBufferArea= true */
 
     // rows: [0 - RG_numBCMessages_Active]
     // columns: [0 - RG_MaxMsgSize]
@@ -944,7 +961,26 @@ class EMfields3D                // :public Field
     double **Byn_Ghost_BC;
     double **Bzn_Ghost_BC;
 
+    /* in case MLMD_BCBufferArea= true */
+    // [RG_numBCMessages_Buffer][RG_MaxMsgBufferSize]
+    double **Ex_Buffer_BC;
+    double **Ey_Buffer_BC;
+    double **Ez_Buffer_BC;
+
+    double **Exth_Buffer_BC;
+    double **Eyth_Buffer_BC;
+    double **Ezth_Buffer_BC;
+    
+    double **Bxn_Buffer_BC;
+    double **Byn_Buffer_BC;
+    double **Bzn_Buffer_BC;
+    /* end in case MLMD_BCBufferArea= true */
+    
+    // this for ghost and active [RG_MaxMsgSize *NumF]
     double * RGMsg;
+    // this for buffer [RG_MaxMsgBufferSize *NumF]
+    double * RGMsgBuffer;
+    
 
     /* Number of BC messages for the CG core - 
        the rows are the children, in the same order as the communicators in the
@@ -968,6 +1004,15 @@ class EMfields3D                // :public Field
     RGBC_struct ** CG_Info_Active;
     int *CG_numBCMessages_Active;
 
+    /* in case MLMD_BCBufferArea= true */
+    //[CG_MaxSizeBufferMsg * NumF] 
+    double *CGMsgBuffer; // used to build msgs
+
+    int CG_MaxSizeBufferMsg;
+    RGBC_struct ** CG_Info_Buffer;
+    int *CG_numBCMessages_Buffer;
+    /* end in case MLMD_BCBufferArea= true */
+
     /* MPI Datatype associated to RGBC_struct; init in MPI_RGBC_struct_commit  */
     MPI_Datatype MPI_RGBC_struct;
     
@@ -975,6 +1020,7 @@ class EMfields3D                // :public Field
     int TAG_BC_GHOST;
     int TAG_BC_ACTIVE;
     int TAG_II;
+    int TAG_BC_BUFFER;
 
     /* max vector dimensions */
     int MAX_RG_numBCMessages;
@@ -1072,6 +1118,7 @@ class EMfields3D                // :public Field
     double *RGMsg_II;
 
     int NumF_II;
+    /*! end mlmd specidic variables */
 };
 
 

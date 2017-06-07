@@ -312,6 +312,7 @@ class Collective
     bool getMLMD_PROJECTION();
     bool getMLMD_ParticleREPOPULATION();
     bool getMLMD_InitialInterpolation();
+    bool getMLMD_BCBufferArea();
 
     bool getAllowPMsgResize();
 
@@ -576,13 +577,13 @@ class Collective
     /*! picked up by other classes, true for mlmd related output */
     bool MLMDVerbose;
 
-    /* wether to perform mlmd operations - 
-       NB: the infrastructure will be built anyway;
-       this is mostly for debugging purposes */
+    /* wether to perform mlmd operations */
+       
     bool MLMD_BC;
     bool MLMD_PROJECTION;
     bool MLMD_ParticleREPOPULATION;
     bool MLMD_InitialInterpolation;
+    bool MLMD_BCBufferArea;
     
     /* wether to allow the resize of the buffers containing the particles to send CG->RG for repopulation
        false may be heavy on memory consumption

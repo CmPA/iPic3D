@@ -48,6 +48,7 @@ VCtopology3D::VCtopology3D(Collective *col) {
   /*! mlmd: inter- and intra- communicators */
   CommToChildren= new MPI_Comm[Ngrids];
   CommToChildren_BCGhost= new MPI_Comm[Ngrids];
+  CommToChildren_BCBuffer= new MPI_Comm[Ngrids];
   CommToChildren_Proj= new MPI_Comm[Ngrids];
   rank_CommToChildren= new int[Ngrids];
   // for particles
@@ -58,6 +59,7 @@ VCtopology3D::VCtopology3D(Collective *col) {
   for (int ng=0; ng< Ngrids; ng++){
     CommToChildren[ng]= MPI_COMM_NULL;
     CommToChildren_BCGhost[ng]= MPI_COMM_NULL;
+    CommToChildren_BCBuffer[ng]= MPI_COMM_NULL;
     CommToChildren_Proj[ng]= MPI_COMM_NULL;
     rank_CommToChildren[ng]= -1;
     // for particles
@@ -70,6 +72,7 @@ VCtopology3D::VCtopology3D(Collective *col) {
   CommToParent= MPI_COMM_NULL;
   CommToParent_BCGhost= MPI_COMM_NULL;
   CommToParent_Proj= MPI_COMM_NULL;
+  CommToParent_BCBuffer= MPI_COMM_NULL;
   rank_CommToParent= -1;
 
   CommToParent_P= new MPI_Comm[ns];
@@ -424,11 +427,13 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   if (CommToParent != MPI_COMM_NULL){
     MPI_Comm_dup(CommToParent, &CommToParent_BCGhost);
     MPI_Comm_dup(CommToParent, &CommToParent_Proj);
+    MPI_Comm_dup(CommToParent, &CommToParent_BCBuffer);
   }
 
   for (int i=0; i<numChildren; i++){
     MPI_Comm_dup(CommToChildren[i], &(CommToChildren_BCGhost[i]));
     MPI_Comm_dup(CommToChildren[i], &(CommToChildren_Proj[i]));
+    MPI_Comm_dup(CommToChildren[i], &(CommToChildren_BCBuffer[i]));
   }
 
   for (int i=0; i< Ngrids; i++){

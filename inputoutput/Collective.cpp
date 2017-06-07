@@ -303,6 +303,7 @@ void Collective::ReadInput(string inputfile) {
     MLMD_PROJECTION = config.read < bool > ("MLMD_PROJECTION");
     MLMD_ParticleREPOPULATION = config.read < bool > ("MLMD_ParticleREPOPULATION");
     MLMD_InitialInterpolation = config.read < bool > ("MLMD_InitialInterpolation");
+    MLMD_BCBufferArea = config.read < bool > ("MLMD_BCBufferArea");
 
     AllowPMsgResize= config.read < bool > ("AllowPMsgResize");
     //cout << "MLMD_BC: " << MLMD_BC <<endl;
@@ -1769,6 +1770,7 @@ bool Collective::getMLMD_BC() {return MLMD_BC;}
 bool Collective::getMLMD_PROJECTION() {return MLMD_PROJECTION;}
 bool Collective::getMLMD_ParticleREPOPULATION() {return MLMD_ParticleREPOPULATION;}
 bool Collective::getMLMD_InitialInterpolation() {return MLMD_InitialInterpolation;}
+bool Collective::getMLMD_BCBufferArea() {return MLMD_BCBufferArea;}
 
 bool Collective::getAllowPMsgResize() {return AllowPMsgResize;}
 
