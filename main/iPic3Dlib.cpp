@@ -367,22 +367,16 @@ bool c_Solver::ParticlesMover() {
 
 void c_Solver::InjectBoundaryParticles(){
 
-  for (int i=0; i < ns; i++) {
-
-      mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
-
-      /* --------------------------------------- */
-      /* Remove particles from depopulation area */
-      /* --------------------------------------- */
 
       if (col->getCase()=="Dipole") {
         for (int i=0; i < ns; i++){
             if (col->getRHOinject(i)>0.0)
+            	mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
           Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
 
       }
       }
-      if (col->getCase()=="Coils") {
+      else if (col->getCase()=="Coils") {
 	  //Remove particles from outside the simulation box
 		for (int i=0; i < ns; i++){
 			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
@@ -393,7 +387,7 @@ void c_Solver::InjectBoundaryParticles(){
 			Qremoved[i] = part[i].ReturnToCenterCircle();
 		}
       }
-      if (col->getCase()=="TwoCoils") {
+      else if (col->getCase()=="TwoCoils") {
       	  //Remove particles from outside the simulation box
       		for (int i=0; i < ns; i++){
       			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
@@ -413,7 +407,7 @@ void c_Solver::InjectBoundaryParticles(){
       			Qremoved[i] = part[i].ReturnToCenterCircle();
       		}
             }
-      if (col->getCase()=="CoilsMono") {
+      else if (col->getCase()=="CoilsMono") {
 	  //Remove particles from outside the simulation box
 		for (int i=0; i < ns; i++){
 			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
@@ -422,10 +416,16 @@ void c_Solver::InjectBoundaryParticles(){
 				mem_avail = part[i].injector_rand_box_mono(grid,vct,EMf);
 		}
       }
-
-  }
-
+      else{
+    	     /* --------------------------------------- */
+    	      /* Remove particles from depopulation area */
+    	      /* --------------------------------------- */
+          for (int i=0; i < ns; i++){
+          mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+      }
+      }
 }
+
 
 void c_Solver::WriteRestart(int cycle) {
   // write the RESTART file
