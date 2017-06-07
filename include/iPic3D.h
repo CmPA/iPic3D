@@ -110,7 +110,7 @@ namespace iPic3D {
     int MLMD_BC;
     int MLMD_PROJECTION;
     int MLMD_ParticleREPOPULATION;
-    int MLMD_InitialInterpolation;
+    //int MLMD_InitialInterpolation;
 
     /*! end mlmd variables */
 

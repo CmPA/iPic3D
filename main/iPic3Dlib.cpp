@@ -35,7 +35,7 @@ int c_Solver::Init(int argc, char **argv) {
   MLMD_BC = col->getMLMD_BC();
   MLMD_PROJECTION = col->getMLMD_PROJECTION();
   MLMD_ParticleREPOPULATION = col->getMLMD_ParticleREPOPULATION();
-  MLMD_InitialInterpolation = col->getMLMD_InitialInterpolation();
+  //MLMD_InitialInterpolation = col->getMLMD_InitialInterpolation();
   /* end mlmd: to decide whether to perform mlmd ops */
   
   // initialize the virtual cartesian topology 
@@ -126,8 +126,9 @@ int c_Solver::Init(int argc, char **argv) {
   MPI_Barrier(MPI_COMM_WORLD); // leave it here if init conditions for RG are interpolated
   int rr= vct->getCartesian_rank();
 
-  if (MLMD_InitialInterpolation){
-    
+  // if (MLMD_InitialInterpolation){
+  if (col->getMLMD_InitialInterpolation()) { 
+
     EMf->initWeightBC_InitialInterpolation(grid, vct);
         
     /*if (rr==0){
