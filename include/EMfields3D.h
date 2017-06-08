@@ -521,7 +521,7 @@ class EMfields3D                // :public Field
     void initWeightProj(Grid *grid, VirtualTopology3D *vct);
     void initWeightProj_Phase1(Grid *grid, VirtualTopology3D *vct);
     // used in initWeightProj_Phase1, initWeightBCBuffer_Phase1, copied form particles
-    void Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct );
+    void Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct, char  FACE );
     void sendProjection(Grid *grid, VirtualTopology3D *vct);
     void receiveProjection(Grid *grid, VirtualTopology3D *vct);
     void applyProjection(Grid *grid, VirtualTopology3D *vct, Collective *col);
@@ -552,7 +552,10 @@ class EMfields3D                // :public Field
     // for the inital interpolation
     void initWeightBC_InitialInterpolation_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int* RG_numBCMessages);
     void initWeightBCBuffer_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg);
-    
+
+    /* return the factor for the BC multiplication */
+    double BufferFactor(char Dir, int X, int Y, int Z, int BufLenX, int BufLenY, int BufLenZ);
+
     /* phase 2a of initWeightBC:                                                                          
    core 0 of each child grid receives all the messages to send to the corresponding coarse grid           
    a level-wide message structure is built */
@@ -600,7 +603,11 @@ class EMfields3D                // :public Field
     void setBC_Nodes_RENORM(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
     /* for when I need to put the BC on the image */
     void setBC_NodesImage_RENORM(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***vectX, double ***vectY, double ***vectZ, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
+    /* average native RG and interpolated CG solution */
+    void AverageBC_Nodes(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
 
+    /* set average between CG BC and local intermediate solution as BC */
+    void averageBC_BufferSource(VirtualTopology3D * vct, double *** SX, double *** SY, double *** SZ, double *** vectX, double *** vectY, double *** vectZ, double ** Exth_Buffer_BC, double ** Eyth_Buffer_BC, double ** Ezth_Buffer_BC, RGBC_struct * RGBC_Info_Buffer, int RG_numBCMessages_Buffer);
     void setBC_Nodes(VirtualTopology3D * vct, double **Fx_BC, double **Fy_BC, double **Fz_BC, double **Fa_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
     
     /* set MaxwellSource BC in mlmd; NB: you need to set the actives */
@@ -928,6 +935,14 @@ class EMfields3D                // :public Field
     /* in case MLMD_BCBufferArea= true */
     int RG_MaxMsgBufferSize;
 
+    /* the length over which to do the buffering */
+    int BufX;
+    int BufY;
+    int BufZ;
+
+    // direction of the BC Buffer - (L)eft / (R)ight - (T)op / (B)ottom - (F)ront / (b)ack
+    char * DirBuffer;
+
     RGBC_struct * RGBC_Info_Buffer;
     int RG_numBCMessages_Buffer;
     /* end in case MLMD_BCBufferArea= true */
@@ -1087,6 +1102,12 @@ class EMfields3D                // :public Field
     double ***Ex_n;
     double ***Ey_n;
     double ***Ez_n;
+
+    // instantiated only if CG_numBCMessages_Ghost[any] >0 or CG_numBCMessages_Active[any]>0 --> BSNeeded= true
+    bool BSNeeded;
+    double ***Ex_BS;
+    double ***Ey_BS;
+    double ***Ez_BS;
 
     // stuff for initial interpolation
     // CG side
