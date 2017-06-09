@@ -29,7 +29,7 @@ delta = 3.0
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
 dt = .3		# dt = time step this is still in wp-1
-ncycles = 50001 	      # cycles -- should run to 100us range for steady state
+ncycles = 150001 	      # cycles -- should run to 100us range for steady state
 th = 1.0                     # th =   decentering parameter
 c = 1.0                      # c = light speed 
 
@@ -75,7 +75,7 @@ ZLEN = 10              # Number of subdomains in the X direction
 #    2,3,4,5,... = ions
 ns = 2
 
-rhoINIT =  1.0  1.0  1e-9 		# Initial density (make sure you are neutral)
+rhoINIT =  0.3  0.3  1e-9 		# Initial density (make sure you are neutral)
 rhoINJECT =  0.0  0.0  0.0000		# Injected density 
 
 TrackParticleID = 0	0	0   # TrackParticleID[species] = 1=true, 0=false 

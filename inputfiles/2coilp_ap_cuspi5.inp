@@ -7,12 +7,12 @@ SaveDirName    = data     # Output directory
 RestartDirName = data     # Restart directory (for WriteMethod=default)
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
-Case              = Coils                    # Case [ GEM | Dipole | ... ]
+Case              = TwoCoils                    # Case [ GEM | Dipole | ... ]
 FieldsInit        = ./data/Initial-Fields_000000.h5 # Initial fields h5 file
-PartInit          = Coils                         # Initial particles [ Maxwell | File ]
+PartInit          = TwoCoils                         # Initial particles [ Maxwell | File ]
 WriteMethod       = default                       # Output method [ default | Parallel ]
 PoissonCorrection = no                             # Poisson correction [ yes | no ]
-SimulationName    = Coils                    # Simulation name for the output
+SimulationName    = TwoCoils                    # Simulation name for the output
 
 
 
@@ -51,10 +51,11 @@ Lz =   75.0                # Lz = simulation box length - z direction in m
 x_center =   37.5                  # center of initial square - x direction in m  
 y_center =   37.5                  # center of initial square - y direction in m
 z_center =   37.5                   # center of initial square - z direction in m  
-L_square =   14.4		 # side of initial square 
+L_square =   3.0		 # side of initial square 
+L_outer =   30.0		 # side of initial square 
 
 CoilD = 25.2			#magnetic coil diameter -- Proposed WB8 simulation dimensions. 
-CoilSpacing= 40.0	                #spacing parameter for magnets 
+CoilSpacing= 20.0	                #spacing parameter for magnets 
 
 
 nxc =  150                   # nxc = number of cells - x direction  
@@ -75,8 +76,8 @@ ZLEN = 10              # Number of subdomains in the X direction
 #    2,3,4,5,... = ions
 ns = 2
 
-rhoINIT =  0.3  0.3  1e-9 		# Initial density (make sure you are neutral)
-rhoINJECT =  0.0  0.0  0.0000		# Injected density 
+rhoINIT =  0.0  0.0  1e-9 		# Initial density (make sure you are neutral)
+rhoINJECT =  2e-6  2e-6  0.0000		# Injected density 
 
 TrackParticleID = 0	0	0   # TrackParticleID[species] = 1=true, 0=false 
 
@@ -93,7 +94,7 @@ vth = 2.33e-3   2.33e-3	0.5 # vth = thermal velocity for different species - Dir
 wth = 2.33e-3   2.33e-3	0.5 # wth = thermal velocity for different species - Direction Z
   
 u0 = 0.0    	0.0	0.0 	# u0 = drift velocity   - Direction X  
-v0 = 0.0   	0.0	0.0	# v0 = drift velocity   - Direction Y 
+v0 = 1.2e-2	1.2e-2 	0.0	# v0 = drift velocity   - Direction Y 
 w0 = 0.0	0.0	0.0	# w0 = drift velocity   - Direction Z    
 
 # %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
