@@ -250,9 +250,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   RFz= DzP/dz;
 
   /* length over which to do the buffering */
-  BufX= ceil(RFx);
-  BufY= ceil(RFy);
-  BufZ= ceil(RFz);
+  BufX=  ceil(RFx);
+  BufY=  ceil(RFy);
+  BufZ=  ceil(RFz);
 
 
 }
@@ -744,8 +744,14 @@ void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, V
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col) {
+
+  bool ExtraSmoothing= false;
+
+  if (numGrid>0) ExtraSmoothing= true;
   
-  
+  if (vct->getCartesian_rank()==0 and numGrid >0){
+    cout << "Grid " << numGrid <<" is doing extra boundary smoothing" << endl;
+  }
   int nvolte = 6;
   for (int icount = 1; icount < nvolte + 1; icount++) {
     if (value != 1.0) {
@@ -774,23 +780,33 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
       int i_s=1, i_e= nxn-1;
       int j_s=1, j_e= nyn-1;
       int k_s=1, k_e= nzn-1;
-       
-      // DO NOT DO THIS!!!
-      /*if (numGrid>0 and vct->getXleft_neighbor() == MPI_PROC_NULL) i_s=2;
-	if (numGrid>0 and vct->getXright_neighbor() == MPI_PROC_NULL) i_e=nxn-2;
-
-	if (numGrid>0 and vct->getYleft_neighbor() == MPI_PROC_NULL) j_s=2;
-	if (numGrid>0 and vct->getYright_neighbor() == MPI_PROC_NULL) j_e=nyn-2;
-
-	if (numGrid>0 and vct->getZleft_neighbor() == MPI_PROC_NULL) k_s=2;
-	if (numGrid>0 and vct->getZright_neighbor() == MPI_PROC_NULL) k_e=nzn-2;*/
-      // end not to blur active node solution in the RG 
+      
+      int BBX= RFx*4;
+      int BBY= RFy*4;
+      int BBZ= RFz*4;
 
       // Exth
       for (int i = i_s; i < i_e; i++)
 	for (int j = j_s; j < j_e; j++)
-	  for (int k = k_s; k < k_e; k++)
-	    temp[i][j][k] = value * Ex[i][j][k] + alpha * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
+	  for (int k = k_s; k < k_e; k++){
+
+	    if ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL)){
+	      value= 0;
+	      
+	    }
+	    else{
+	      if (icount % 2 == 1) {
+		value = 0.;
+	      }
+	      else {
+		value = 0.5;
+	      }
+	      
+	    }
+	    alpha = (1.0 - value) / 6;
+
+	    temp[i][j][k] = value * Ex[i][j][k] + alpha * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);}
+
       for (int i = 1; i < nxn - 1; i++)
 	for (int j = 1; j < nyn - 1; j++)
 	  for (int k = 1; k < nzn - 1; k++)
@@ -798,17 +814,67 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
       // Eyth
       for (int i = 1; i < nxn - 1; i++)
 	for (int j = 1; j < nyn - 1; j++)
-	  for (int k = 1; k < nzn - 1; k++)
+	  for (int k = 1; k < nzn - 1; k++){
+
+	    if ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL)){
+	      value= 0;
+	      
+	    }
+	    else{
+	      if (icount % 2 == 1) {
+		value = 0.;
+	      }
+	      else {
+		value = 0.5;
+	      }
+	      
+	    }
+	    alpha = (1.0 - value) / 6;
+
 	    temp[i][j][k] = value * Ey[i][j][k] + alpha * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
+	  }
       for (int i = 1; i < nxn - 1; i++)
 	for (int j = 1; j < nyn - 1; j++)
-	  for (int k = 1; k < nzn - 1; k++)
+	  for (int k = 1; k < nzn - 1; k++){
+	    if ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL)){
+	      value= 0;
+	      
+	    }
+	    else{
+	      if (icount % 2 == 1) {
+		value = 0.;
+	      }
+	      else {
+		value = 0.5;
+	      }
+	      
+	    }
+	    alpha = (1.0 - value) / 6;
+
 	    Ey[i][j][k] = temp[i][j][k];
+	  }
       // Ezth
       for (int i = 1; i < nxn - 1; i++)
 	for (int j = 1; j < nyn - 1; j++)
-	  for (int k = 1; k < nzn - 1; k++)
-	    temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+	  for (int k = 1; k < nzn - 1; k++){
+
+	    if ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL)){
+	      value= 0;
+	      
+	    }
+	    else{
+	      if (icount % 2 == 1) {
+		value = 0.;
+	      }
+	      else {
+		value = 0.5;
+	      }
+	      
+	    }
+	    alpha = (1.0 - value) / 6;
+
+	   temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+	  }
       for (int i = 1; i < nxn - 1; i++)
 	for (int j = 1; j < nyn - 1; j++)
 	  for (int k = 1; k < nzn - 1; k++)
@@ -8947,7 +9013,7 @@ double EMfields3D::BufferFactor(char Dir, int X, int Y, int Z, int BufLenX, int 
   }
 
   if (ret >1. or ret < 0.){
-    cout <<"Dramatic error in BufferFactor, i get " <<  ret <<". Aborting ...";
+    cout <<"Dramatic error in BufferFactor, size "<<  Dir <<" i get " <<  ret <<". Aborting ...";
     MPI_Abort(MPI_COMM_WORLD, -1);
   }
   return ret;
