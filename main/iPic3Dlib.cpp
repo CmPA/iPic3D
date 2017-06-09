@@ -123,6 +123,9 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
+  // added
+  EMf->SetLambda(grid, vct);
+
   MPI_Barrier(MPI_COMM_WORLD); // leave it here if init conditions for RG are interpolated
   int rr= vct->getCartesian_rank();
 
@@ -334,7 +337,7 @@ void c_Solver::UpdateCycleInfo(int cycle) {
   if (cycle == first_cycle) {
     if (col->getCase()=="Dipole") {
       EMf->SetDipole_2Bext(vct,grid,col);
-      EMf->SetLambda(grid);
+      EMf->SetLambda(grid, vct);
     }
   }
 

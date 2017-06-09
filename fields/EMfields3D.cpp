@@ -2884,13 +2884,63 @@ void EMfields3D::UpdateRHOcs(Grid * grid){
   //grid->interpN2C(rhocs, is, rhons);
 }
 
-void EMfields3D::SetLambda(Grid *grid){
+void EMfields3D::SetLambda(Grid *grid, VirtualTopology3D * vct){
+
+  bool SetDamping= false;
+
+  if (numGrid >0) SetDamping= true;
+
+  if (vct->getCartesian_rank() ==0 and SetDamping)
+    cout << "Grid " << numGrid << " is initialising a Lambda layer " << endl;
+
+  double Fac;
 
   for (int i=0; i < nxn; i++){
     for (int j=0; j < nyn; j++){
       for (int k=0; k < nzn; k++){
 
-	double x = grid->getXN(i,j,k);
+	Lambda[i][j][k]= 0.0;
+
+	// the buffering area left starts at 2, BufLen included
+	// the buffering area right starts at nxn-3, BufLen included
+	if (SetDamping){
+
+	  // X
+	  if (vct->getXleft_neighbor()== MPI_PROC_NULL and i>1 and i< 2+ BufX){
+	    Fac= BufferFactor('L', i, j, k, BufX, BufY, BufZ);
+	    Lambda[i][j][k]= 2.0*M_PI/dx * Fac;
+	  }
+
+	  if (vct->getXright_neighbor()== MPI_PROC_NULL and i< nxn -2 and i> nxn-3-BufX){
+	    Fac= BufferFactor('R', i, j, k, BufX, BufY, BufZ);
+	    Lambda[i][j][k]= 2.0*M_PI/dx * Fac;
+	  }
+
+	  // Y
+	  if (vct->getYleft_neighbor()== MPI_PROC_NULL and j>1 and j< 2+ BufY){
+	    Fac= BufferFactor('F', i, j, k, BufX, BufY, BufZ);
+	    Lambda[i][j][k]= 2.0*M_PI/dy * Fac;
+	  }
+
+	  if (vct->getYright_neighbor()== MPI_PROC_NULL and j< nyn -2 and j> nyn-3-BufY){
+	    Fac= BufferFactor('b', i, j, k, BufX, BufY, BufZ);
+	    Lambda[i][j][k]= 2.0*M_PI/dy * Fac;
+	  }
+
+	  // Z
+	  if (vct->getZleft_neighbor()== MPI_PROC_NULL and k>1 and k< 2+ BufZ){
+	    Fac= BufferFactor('B', i, j, k, BufX, BufY, BufZ);
+	    Lambda[i][j][k]= 2.0*M_PI/dz * Fac;
+	  }
+
+	  if (vct->getZright_neighbor()== MPI_PROC_NULL and k< nzn -2 and k> nzn-3-BufZ){
+	    Fac= BufferFactor('T', i, j, k, BufX, BufY, BufZ);
+	    Lambda[i][j][k]= 2.0*M_PI/dz * Fac;
+	    }
+
+	} // end SetDamping
+
+	/*double x = grid->getXN(i,j,k);
 	double y = grid->getYN(i,j,k);
 	double z = grid->getZN(i,j,k);
 
@@ -2899,7 +2949,7 @@ void EMfields3D::SetLambda(Grid *grid){
 
 	Lambda[i][j][k] = 0.0;
 
-	/*if (x > xmin_r) {
+	if (x > xmin_r) {
 	  if (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * 4.0 * M_PI / dx;
 	  else            Lambda[i][j][k] = 4.0 * M_PI / dx;
 	  }*/

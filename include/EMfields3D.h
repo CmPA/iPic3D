@@ -293,7 +293,7 @@ class EMfields3D                // :public Field
     void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
     void UpdateRHOcs(Grid * grid);
-    void SetLambda  (Grid * grid);
+    void SetLambda  (Grid * grid, VirtualTopology3D * vct);
     double ***GetLambda();
 
     /*! communicate ghost for densities and interp rho from node to center */
