@@ -96,9 +96,15 @@ xyzGDA_par: xyzGDA_par.cpp
 	xyzGDA_par.cpp  ${LIB_HDF5}  \
 ${HDF5LIBS}
 
+
 xyzHDF5_par: xyzHDF5_par.cpp
 	${CPP}  ${OPTFLAGS} -o  xyzHDF5_par ${INC_HDF5} \
 	xyzHDF5_par.cpp  ${LIB_HDF5}  \
+${HDF5LIBS}
+
+xyzHDF5_species: xyzHDF5_species.cpp
+	${CPP}  ${OPTFLAGS} -o  xyzHDF5_species ${INC_HDF5} \
+	xyzHDF5_species.cpp  ${LIB_HDF5}  \
 ${HDF5LIBS}
 
 read_ASCII: read_ASCII.cpp 

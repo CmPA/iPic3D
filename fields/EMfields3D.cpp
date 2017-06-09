@@ -263,9 +263,9 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   addscale(1 / th, -(1.0 - th) / th, Ez, Ezth, nxn, nyn, nzn);
 
   // apply to smooth to electric field 3 times
-  smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
+  smoothE(Smooth, Nvolte, vct, col);
+  //smoothE(Smooth, Nvolte, vct, col);
+  //smoothE(Smooth, Nvolte, vct, col);
 
   // communicate so the interpolation can have good values
   communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
@@ -308,7 +308,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
-  else if (Case=="GEM")       fixBgem(grid, vct);
+  else if (Case=="GEM" || Case=="GEMRelativity")       fixBgem(grid, vct);
   else if (Case=="HarrisSteps")       fixBgem(grid, vct);
   else if (Case=="GEMnoPert") fixBgem(grid, vct);
   else if (Case=="FluxRope") fixBrope(grid, vct);
@@ -515,9 +515,8 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
 
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
 
-  int nvolte = 6;
   for (int icount = 1; icount < nvolte + 1; icount++) {
 
     if (value != 1.0) {
@@ -559,9 +558,8 @@ void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, V
   }
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col) {
+void EMfields3D::smoothE(double value,  int nvolte, VirtualTopology3D * vct, Collective *col) {
 
-  int nvolte = 6;
   for (int icount = 1; icount < nvolte + 1; icount++) {
     if (value != 1.0) {
       double alpha;
@@ -612,7 +610,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 }
 
 /* SPECIES: Interpolation smoothing TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector type = 1 --> node based vector */
-void EMfields3D::smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::smooth(double value, int nvolte, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
   cout << "Smoothing for Species not implemented in 3D" << endl;
 }
 
@@ -1040,7 +1038,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
-    else if (Case=="GEM")       fixBgem(grid, vct);
+    else if (Case=="GEM" || Case=="GEMRelativity")       fixBgem(grid, vct);
     else if (Case=="HarrisSteps")       fixBgem(grid, vct);
     else if (Case=="GEMnoPert") fixBgem(grid, vct);
     else if (Case=="FluxRope") fixBrope(grid, vct);
@@ -1141,7 +1139,7 @@ void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, double E
 /*! Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
 void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
   // smoothing
-  smooth(Smooth, rhoc, 0, grid, vct);
+  smooth(Smooth, Nvolte, rhoc, 0, grid, vct);
   // calculate j hat
 
   for (int is = 0; is < ns; is++) {
@@ -1166,9 +1164,9 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
 
   }
   // smooth j
-  smooth(Smooth, Jxh, 1, grid, vct);
-  smooth(Smooth, Jyh, 1, grid, vct);
-  smooth(Smooth, Jzh, 1, grid, vct);
+  smooth(Smooth, Nvolte, Jxh, 1, grid, vct);
+  smooth(Smooth, Nvolte, Jyh, 1, grid, vct);
+  smooth(Smooth, Nvolte, Jzh, 1, grid, vct);
 
   // calculate rho hat = rho - (dt*theta)div(jhat)
   grid->divN2C(tempXC, Jxh, Jyh, Jzh);
@@ -1758,14 +1756,28 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
           Byc[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
           // guide field
           Bzc[i][j][k] = B0z;
-
         }
-    for (int is = 0; is < ns; is++)
-      grid->interpN2C(rhocs, is, rhons);
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
   }
+  // This needs to be outside the main if because it needs to happen also in the case of restart
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+  //     	Adds damping region padded near the edge of the y axis.
+       	double external_radius = L_outer;
+       	if(external_radius < Ly/2.0){
+       	double scale_decay = (Ly/2.0 - L_outer)/2.0;
+       	for (int i=0; i < nxn; i++)
+       		for (int j=0; j < nyn; j++)
+       			for (int k=0; k < nzn; k++){
+       				Lambda[i][j][k]  = 0.0;
+       				double r = sqrt( pow(grid->getYN(i,j,k)-Ly/2.0,2.0) );
+       				if(r>external_radius-scale_decay){
+       					Lambda[i][j][k]  = 1.0* tanh((r-(external_radius-scale_decay))/scale_decay);
+       				}
+       			}
+       	}
 }
 double floor0( double value )
   {
@@ -2247,7 +2259,7 @@ void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective 
 //Flux Rope based on pressure equilibrium
 void EMfields3D::initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *col)
 {
-
+    double xctr, yctr, r, teta, Bth;
 	if (restart1 ==0){
 		if (vct->getCartesian_rank() ==0){
 			cout << "----------------------------------------" << endl;
@@ -2267,8 +2279,11 @@ void EMfields3D::initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *co
 		for (int j=0; j < nyn; j++)
 		for (int k=0; k < nzn; k++){
 
-			double r = sqrt(pow(grid->getXN(i,j,k)-Lx/2.0,2.0) + pow(grid->getYN(i,j,k)-Ly/2.0,2.0));
-			double teta = atan2(grid->getYN(i,j,k)-Ly/2.0,grid->getXN(i,j,k)-Lx/2.0);
+			 xctr = Lx/2.0 + delta /10.0 * cos(grid->getZN(i,j,k)/Lz * 2.0*M_PI);
+			 yctr = Lx/2.0 + delta /10.0 * sin(grid->getZN(i,j,k)/Lz * 2.0*M_PI);
+
+			 r = sqrt(pow(grid->getXN(i,j,k)-xctr,2.0) + pow(grid->getYN(i,j,k)-yctr,2.0));
+			 teta = atan2(grid->getYN(i,j,k)-yctr,grid->getXN(i,j,k)-xctr);
 
 		   // initialize the density for species
 		   for (int is=0; is < ns; is++)
@@ -2280,7 +2295,7 @@ void EMfields3D::initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *co
 			Ez[i][j][k] =  0.0;
 			// Magnetic field
 
-			double Bth = B0x * r * delta /(r*r+ delta*delta);
+			 Bth = B0x * r * delta /(r*r+ delta*delta);
 			Bxn[i][j][k] = -Bth * sin(teta);
 			Byn[i][j][k] = Bth * cos (teta);
 			Bzn[i][j][k] = B0z;
@@ -2291,10 +2306,13 @@ void EMfields3D::initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *co
         for (int i = 0; i < nxc; i++)
           for (int j = 0; j < nyc; j++)
             for (int k = 0; k < nzc; k++) {
-    			double r = sqrt(pow(grid->getXC(i,j,k)-Lx/2.0,2.0) + pow(grid->getYC(i,j,k)-Ly/2.0,2.0));
-    			double teta = atan2(grid->getYC(i,j,k)-Ly/2.0,grid->getXC(i,j,k)-Lx/2.0);
+    			 xctr = Lx/2.0 + delta /10.0 * cos(grid->getZN(i,j,k)/Lz * 2.0*M_PI);
+    			 yctr = Lx/2.0 + delta /10.0 * sin(grid->getZN(i,j,k)/Lz * 2.0*M_PI);
 
-    			double Bth = B0x * r * delta /(r*r+ delta*delta);
+    			 r = sqrt(pow(grid->getXC(i,j,k)-xctr,2.0) + pow(grid->getYC(i,j,k)-yctr,2.0));
+    			 teta = atan2(grid->getYC(i,j,k)-yctr,grid->getXC(i,j,k)-xctr);
+
+    			 Bth = B0x * r * delta /(r*r+ delta*delta);
     			Bxc[i][j][k] = -Bth * sin(teta);
     			Byc[i][j][k] = Bth * cos (teta);
     			Bzc[i][j][k] = B0z;

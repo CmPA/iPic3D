@@ -94,6 +94,7 @@ int irot(int i);
 int MaxLevel;
 int DeltaT;
 int InitT;
+int Species;
 int nlevels;
 int initlevel;
 int NdimCode = 3;

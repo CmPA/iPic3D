@@ -546,7 +546,89 @@ void Particles3D::drift_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D *
 			}
 		}
 	}
+/** Maxellian random velocity and uniform spatial distribution */
+void Particles3D::relativistic_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+  double harvest;
+  double prob, fi, sign, gammap, mu, ep, denom, numerator;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+
+              //Generate speed in rest frame using Boltzmann energy distribution
+
+              // Generate first the particle energy
+              // We assume a Boltzmann energy distribution
+              // Only one thermal speed is considered: kT wich
+              // reinterprets vth from the input file
+              // This assumes uth is sqrt(kT / m_0 c^2)
+              //
+
+              harvest = rand() / (double) RAND_MAX;
+              prob = log(1.0 - .999999 * harvest);
+              gammap = 1.0 - uth * uth /abs(qom) * prob;
+
+              // Generate solid angle
+              harvest = rand() / (double) RAND_MAX;
+              mu = 2.0 * harvest - 1.0; //this is cos theta
+              harvest = rand() / (double) RAND_MAX;
+              fi = 2.0 * M_PI * harvest;
+
+
+              u[counter] = sqrt((1.0-1.0/gammap/gammap)) * sqrt(1-mu*mu) * cos(fi);
+              // v
+              v[counter] = sqrt((1.0-1.0/gammap/gammap)) * sqrt(1-mu*mu) * sin(fi);
+              // w
+              w[counter] = sqrt((1.0-1.0/gammap/gammap)) * mu;
+              // w
+
+
+              // Boost it from rest frame to lab frame
+              // This procedure is not correct in the opinion of Melzani.
+              // Further analysis is needed
+              // x direction
+              denom = (1.0 + u0 * u[counter]/c/c);
+              numerator = sqrt(1.0 - u0 * u0/c/c);
+              u[counter] = (u[counter] + u0)/ denom;
+              v[counter] *=  numerator/ denom;
+              w[counter] *=  numerator/ denom;
+
+              // y direction
+              denom = (1.0 + v0 * v[counter]/c/c);
+              numerator = sqrt(1.0 - v0 * v0/c/c);
+              v[counter] = (v[counter] + v0)/ denom;
+              u[counter] *=  numerator/ denom;
+              w[counter] *=  numerator/ denom;
+
+              // z direction
+              denom = (1.0 + w0 * w[counter]/c/c);
+              numerator = sqrt(1.0 - w0 * w0/c/c);
+              w[counter] = (w[counter] + w0)/ denom;
+              u[counter] *=  numerator/ denom;
+              v[counter] *=  numerator/ denom;
+
+
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+
+              counter++;
+            }
+
+
+}
 /** Force Free initialization (JxB=0) for particles */
 void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
@@ -1484,9 +1566,333 @@ int Particles3D::mover_PC_sub_cyl(Grid * grid, VirtualTopology3D * vct, Field * 
 }
 
 
-/** relativistic mover with a Predictor-Corrector scheme */
+/** relativistic with a Boris-like mover */
 int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
-  return (0);
+	  if (vct->getCartesian_rank() == 0) {
+	    cout << "*** MOVER species " << ns << " ***"<< " with " << nop << " particles ***"  << NiterMover << " ITERATIONS   ****" << endl;
+	  }
+	  double start_mover_PC = MPI_Wtime();
+	  double weights[2][2][2];
+	  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+	  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+	  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+	  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+	  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+	  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+
+	  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+	  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+	  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+	  double Fext = EMf->getFext();
+
+	  // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+	  // don't bother trying to push any particles simultaneously;
+	  // MIC already does vectorization automatically, and trying
+	  // to do it by hand only hurts performance.
+	//#pragma omp parallel for
+	//#pragma simd                    // this just slows things down (why?)
+
+	  for (long long rest = 0; rest < nop; rest++) {
+	    // copy the particle
+	    double xp = x[rest];
+	    double yp = y[rest];
+	    double zp = z[rest];
+	    double uxp = u[rest];
+	    double uyp = v[rest];
+	    double uzp = w[rest];
+	    double gamma0, gamma, gamma_new;
+	    // Assuming up, vp, wp to be VELOCITY and
+
+	    gamma0 = 1.0/sqrt(1.0 - uxp*uxp - uyp*uyp - uzp*uzp);
+	    uxp *= gamma0;
+	    uyp *= gamma0;
+	    uzp *= gamma0;
+	    const double xp0 = x[rest];
+	    const double yp0 = y[rest];
+	    const double zp0 = z[rest];
+	    double uxnew;
+	    double uynew;
+	    double uznew;
+
+	    double Exl = 0.0;
+	    double Eyl = 0.0;
+	    double Ezl = 0.0;
+	    double Bxl = 0.0;
+	    double Byl = 0.0;
+	    double Bzl = 0.0;
+	    int ix;
+	    int iy;
+	    int iz;
+
+	    // No subcyling in relativisitc case
+
+	    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+	    get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+
+	   // const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+	    //double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
+	    //const int    sub_cycles = int(dt/dt_sub) + 1;
+
+	    //dt_sub = dt/double(sub_cycles);
+	    double dt_sub = dt;
+	    const int sub_cycles = 1;
+
+	    const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
+
+	    // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
+
+	    for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
+
+	      // calculate the average velocity iteratively
+	      int nit = NiterMover;
+	      if (sub_cycles > 2*NiterMover) nit = 1;
+
+	      for (int innter = 0; innter < nit; innter++) {
+	        // interpolation G-->P
+
+	        get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+	        get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+	        get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+
+	        // end interpolation
+
+	        //relativistic mover
+
+	        // solve the position equation
+	        const double wx = uxp + qomdt2 * Exl;
+	        const double wy = uyp + qomdt2 * Eyl;
+	        const double wz = uzp + qomdt2 * Ezl;
+
+	        gamma = sqrt(1.0 + wx *wx + wy *wy + wz *wz);
+
+			  Bxl *=qomdt2 / gamma;
+			  Byl *=qomdt2 / gamma;
+			  Bzl *=qomdt2 / gamma;
+
+	        const double h2 = Bxl * Bxl + Byl * Byl + Bzl * Bzl;
+
+	        // solve the velocity equation (Relativistic Boris method)
+	        uxnew = -(pow(Byl,2)*wx) - pow(Bzl,2)*wx + Bxl*Byl*wy +
+	             2*Bzl*wy - 2*Byl*wz + Bxl*Bzl*wz,
+		    uynew = Bxl*Byl*wx - 2*Bzl*wx - pow(Bxl,2)*wy -
+	             pow(Bzl,2)*wy + 2*Bxl*wz + Byl*Bzl*wz;
+            uznew = 2*Byl*wx + Bxl*Bzl*wx - 2*Bxl*wy + Byl*Bzl*wy -
+	             pow(Bxl,2)*wz - pow(Byl,2)*wz;
+
+            uxnew = wx + uxnew *2.0/(1+h2) + qomdt2 * Exl;
+            uynew = wy + uynew *2.0/(1+h2) + qomdt2 * Eyl;
+            uznew = wz + uznew *2.0/(1+h2) + qomdt2 * Ezl;
+
+            gamma_new = sqrt(1.0 + uxnew *uxnew + uynew *uynew + uznew *uznew);
+
+            // update position (mid of the time step)
+	        xp = xp0 + (uxnew + uxp) /(gamma_new + gamma0) * dto2;
+	        yp = yp0 + (uynew + uyp) /(gamma_new + gamma0) * dto2;
+	        zp = zp0 + (uznew + uzp) /(gamma_new + gamma0) * dto2;
+	      }                           // end of iteration
+	      // update the final position and velocity
+
+
+	      u[rest] = uxnew/ gamma_new;
+	      v[rest] = uynew/ gamma_new;
+	      w[rest] = uznew/ gamma_new;
+
+
+	      x[rest] = xp0 +  (uxnew + uxp) /(gamma_new + gamma0) * dt;
+	      y[rest] = yp0 +  (uynew + uyp) /(gamma_new + gamma0) * dt;
+	      z[rest] = zp0 +  (uznew + uzp) /(gamma_new + gamma0) * dt;
+
+	    } // END  OF SUBCYCLING LOOP
+	  }                             // END OF ALL THE PARTICLES
+
+	  // ********************//
+	  // COMMUNICATION
+	  // *******************//
+	  // timeTasks.start_communicate();
+	  const int avail = communicate(vct);
+	  if (avail < 0)
+	    return (-1);
+	  MPI_Barrier(MPI_COMM_WORLD);
+	  // communicate again if particles are not in the correct domain
+	  while (isMessagingDone(vct) > 0) {
+	    // COMMUNICATION
+	    const int avail = communicate(vct);
+	    if (avail < 0)
+	      return (-1);
+	    MPI_Barrier(MPI_COMM_WORLD);
+	  }
+	  // timeTasks.addto_communicate();
+	  return (0);                   // exit succcesfully (hopefully)
+}
+
+/** relativistic mover with a scheme from the old but glorious Celeste3D */
+int Particles3D::mover_relativistic_celeste(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+	  if (vct->getCartesian_rank() == 0) {
+	    cout << "*** MOVER species " << ns << " ***"<< " with " << nop << " particles ***"  << NiterMover << " ITERATIONS   ****" << endl;
+	  }
+	  double start_mover_PC = MPI_Wtime();
+	  double weights[2][2][2];
+	  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+	  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+	  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+	  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+	  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+	  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+
+	  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+	  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+	  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+	  double Fext = EMf->getFext();
+
+	  // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+	  // don't bother trying to push any particles simultaneously;
+	  // MIC already does vectorization automatically, and trying
+	  // to do it by hand only hurts performance.
+	//#pragma omp parallel for
+	//#pragma simd                    // this just slows things down (why?)
+
+	  for (long long rest = 0; rest < nop; rest++) {
+	    // copy the particle
+	    double xp = x[rest];
+	    double yp = y[rest];
+	    double zp = z[rest];
+	    double pxp = u[rest];
+	    double pyp = v[rest];
+	    double pzp = w[rest];
+	    // Assuming up, vp, wp to be VELOCITY and
+
+	    double gamma0 = 1.0/sqrt(1.0 - (pxp*pxp - pyp*pyp - pzp*pzp)/c/c );
+	    pxp *= gamma0;
+	    pyp *= gamma0;
+	    pzp *= gamma0;
+	    const double xptilde = x[rest];
+	    const double yptilde = y[rest];
+	    const double zptilde = z[rest];
+	    double uptilde;
+	    double vptilde;
+	    double wptilde;
+
+	    double Exl = 0.0;
+	    double Eyl = 0.0;
+	    double Ezl = 0.0;
+	    double Bxl = 0.0;
+	    double Byl = 0.0;
+	    double Bzl = 0.0;
+	    int ix;
+	    int iy;
+	    int iz;
+
+	    // No subcyling in relativisitc case
+
+	    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+	    get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+
+	   // const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+	    //double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
+	    //const int    sub_cycles = int(dt/dt_sub) + 1;
+
+	    //dt_sub = dt/double(sub_cycles);
+	    double dt_sub = dt;
+	    const int sub_cycles = 1;
+
+	    const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
+
+	    // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
+
+	    for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
+
+	      // calculate the average velocity iteratively
+	      int nit = NiterMover;
+	      if (sub_cycles > 2*NiterMover) nit = 1;
+
+	      for (int innter = 0; innter < nit; innter++) {
+	        // interpolation G-->P
+
+	        get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+	        get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+	        get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+
+	        // end interpolation
+	        const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
+	        double denom = 1.0 / (1.0 + omdtsq);
+
+	        //relativistic correction
+
+			  Bxl /=gamma0;
+			  Byl /=gamma0;
+			  Bzl /=gamma0;
+			  denom /=gamma0;
+
+	        // solve the position equation
+	        const double ut = pxp + qomdt2 * Exl;
+	        const double vt = pyp + qomdt2 * Eyl;
+	        const double wt = pzp + qomdt2 * Ezl;
+	        const double udotb = ut * Bxl + vt * Byl + wt * Bzl;
+	        // solve the velocity equation
+	        uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
+	        vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
+	        wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
+	        // update position
+	        xp = xptilde + uptilde * dto2;
+	        yp = yptilde + vptilde * dto2;
+	        zp = zptilde + wptilde * dto2;
+	      }                           // end of iteration
+	      // update the final position and velocity
+
+
+
+	      // This needs to be revisited because it assumes c=1
+	      	double u02=pxp*pxp+pyp*pyp+pzp*pzp;
+	      	double v2=uptilde*uptilde+vptilde*vptilde+wptilde*wptilde;
+	      	double vdu=pxp*uptilde+pyp*vptilde+pzp*wptilde;
+
+	      	double cfa=1.0-v2;
+	      	double cfb=-2.0*(-vdu+gamma0*v2);
+	      	double cfc=-1.0-gamma0*gamma0*v2+2.0*gamma0*vdu-u02;
+
+	      	double delta=cfb*cfb-4.0*cfa*cfc;
+
+	      	if(delta<0.0) {
+	      		// this in pronciple should never happen. Yeah, right!
+	      		cout << "Relativity violated: gamma0=" << gamma0 << ",  vavg_sq=" << v2;
+	      		u[rest] = (gamma0*2.)*uptilde - u[rest]*gamma0;
+	      		v[rest] = (gamma0*2.)*vptilde - v[rest]*gamma0;
+	      		w[rest] = (gamma0*2.)*wptilde - w[rest]*gamma0;
+	      	}
+	      	else{
+	      		double gamma=(-cfb+sqrt(delta))/2.0/cfa;
+	      		u[rest] = ( (gamma+gamma0)*uptilde - pxp )/gamma;
+	      		v[rest] = ( (gamma+gamma0)*vptilde - pyp )/gamma;
+	      		w[rest] = ( (gamma+gamma0)*wptilde - pzp )/gamma;
+	      	}
+
+	      x[rest] = xptilde +  dt * uptilde;
+	      y[rest] = yptilde +  dt * vptilde;
+	      z[rest] = zptilde +  dt * wptilde;
+
+	    } // END  OF SUBCYCLING LOOP
+	  }                             // END OF ALL THE PARTICLES
+
+	  // ********************//
+	  // COMMUNICATION
+	  // *******************//
+	  // timeTasks.start_communicate();
+	  const int avail = communicate(vct);
+	  if (avail < 0)
+	    return (-1);
+	  MPI_Barrier(MPI_COMM_WORLD);
+	  // communicate again if particles are not in the correct domain
+	  while (isMessagingDone(vct) > 0) {
+	    // COMMUNICATION
+	    const int avail = communicate(vct);
+	    if (avail < 0)
+	      return (-1);
+	    MPI_Barrier(MPI_COMM_WORLD);
+	  }
+	  // timeTasks.addto_communicate();
+	  return (0);                   // exit succcesfully (hopefully)
 }
 
 int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is){

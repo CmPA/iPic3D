@@ -44,6 +44,10 @@ Smooth = 0.5                  # Smoothing value (5-points stencil)
 Lx =   75.0                 # Lx = simulation box length - x direction in m  
 Ly =   75.0                 # Ly = simulation box length - y direction in m
 Lz =   0.1                 # Lz = simulation box length - z direction in m  
+<<<<<<< HEAD
+cylindrical =	1
+=======
+>>>>>>> 6b63ea42a74dac68b2e253a8580c10bb4c3b8a10
 
 #GndWidth = 0				# width of the "grounded region"
 #GndHeight = 0				# height of the "grounded region"
