@@ -35,10 +35,7 @@ c = 1.0                      # c = light speed
 
 #  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
 Smooth = 1.0           # Smoothing value (5-points stencil)
-Nvolte = 6		#Cyles of smoothing and this must be even
-
-#  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
-Smooth = 0.5                  # Smoothing value (5-points stencil)
+Nvolte = 0		#Cyles of smoothing and this must be even
 
 # %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
 Lx =   75.0                 # Lx = simulation box length - x direction in m  
@@ -52,6 +49,7 @@ x_center =   37.5                  # center of initial square - x direction in m
 y_center =   37.5                  # center of initial square - y direction in m
 z_center =   37.5                   # center of initial square - z direction in m  
 L_square =   14.4		 # side of initial square 
+L_outer =   26.0
 
 CoilD = 25.2			#magnetic coil diameter -- Proposed WB8 simulation dimensions. 
 CoilSpacing= 40.0	                #spacing parameter for magnets 
