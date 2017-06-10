@@ -248,6 +248,7 @@ class EMfields3D                // :public Field
     void initLightWave(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! double GEM, mlmd ready */
     void initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initDoubleGEM_CentralPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initTestProjection(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initTestBC(VirtualTopology3D * vct, Grid * grid, Collective *col); 
     /*! add a perturbattion to charge density */
@@ -597,6 +598,7 @@ class EMfields3D                // :public Field
        RGBC_Info: the RGBC_Info struct (Active or Ghost)
        RG_numBCMessages: number of messages (Active or Ghost) */
     void setBC_Nodes(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
+    void setBC_Nodes_TwoLess(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
     /* for when I need to put the BC on the image */
     void setBC_NodesImage(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***vectX, double ***vectY, double ***vectZ, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
 

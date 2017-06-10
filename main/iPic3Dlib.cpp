@@ -110,6 +110,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
     else if (col->getCase()=="LightWave") EMf->initLightWave(vct,grid, col);
     else if (col->getCase()=="DoubleGEM") EMf->initDoubleGEM(vct,grid, col);
+    else if (col->getCase()=="DoubleGEM_CentralPerturbation") EMf->initDoubleGEM_CentralPerturbation(vct,grid, col);
     else if (col->getCase()=="initTestProjection") EMf->initTestProjection(vct,grid, col);
     else if (col->getCase()=="initTestBC") EMf->initTestBC(vct,grid, col);
     else {

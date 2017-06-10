@@ -254,6 +254,10 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   BufY=  ceil(RFy);
   BufZ=  ceil(RFz);
 
+  if (ceil(RFx) > nxn-1  or ceil(RFy) > nyn-1 or ceil(RFz) > nzn-1){
+    cout << "The number of cells per core must be > RF, aborting..." << endl;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
 
 }
 
@@ -351,7 +355,7 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
     setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
     if (MLMD_BCBufferArea){
-      setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      setBC_Nodes_TwoLess(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
       //AverageBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
     }
 
@@ -412,8 +416,8 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
     setBC_Nodes(vct, Ex, Ey, Ez, Ex_Active_BC, Ey_Active_BC, Ez_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
     if (MLMD_BCBufferArea){
-      setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-      setBC_Nodes(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      setBC_Nodes_TwoLess(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      setBC_Nodes_TwoLess(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
     }
 
     // NB: these BCs are at time n, here B is still at time n                                     
@@ -6883,6 +6887,56 @@ void EMfields3D::setBC_Nodes(VirtualTopology3D * vct, double ***Fx, double ***Fy
   return;
 }
 
+void EMfields3D::setBC_Nodes_TwoLess(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages){
+  for (int m=0; m<RG_numBCMessages; m++){
+    // points are included: <=
+    // remember one index is 0
+    // check here actually
+
+    // one direction has to be 1
+    int N0=0;
+    if (!(RGBC_Info[m].np_x==1)) N0++;
+    if (!(RGBC_Info[m].np_y==1)) N0++;
+    if (!(RGBC_Info[m].np_z==1)) N0++;
+
+    //if (N0 !=2) {cout << "WARNING: in setBC_Nodes N0!= 2 (but it may be ok)" << endl; }
+
+    int II= RGBC_Info[m].np_x;
+    int JJ= RGBC_Info[m].np_y;
+    int KK= RGBC_Info[m].np_z;
+
+    int ix_f= RGBC_Info[m].ix_first;
+    int iy_f= RGBC_Info[m].iy_first;
+    int iz_f= RGBC_Info[m].iz_first;
+
+    int count=0;
+    for (int i= 0; i<II; i++){
+      for (int j=0; j<JJ; j++){
+	for (int k=0; k<KK; k++){
+
+	  if (DirBuffer[m]=='L' and i>2 + BufX -2) continue; // left
+	  if (DirBuffer[m]=='B' and k>2 + BufZ -2) continue; // bottom
+	  if (DirBuffer[m]=='F' and j>2 + BufY -2) continue; // front
+	  if (DirBuffer[m]=='R' and i< nxn-3-BufX +2) continue; // right
+	  if (DirBuffer[m]=='T' and k< nzn-3-BufZ +2) continue; // top
+	  if (DirBuffer[m]=='b' and j< nyn-3-BufY +2) continue; // back
+
+	  //Ex_Ghost_BC= newArr2(double, RG_numBCMessages_Ghost, RG_MaxMsgSize); 	  
+	  Fx[ix_f + i][iy_f + j][iz_f + k]= Fx_BC[m][count];
+	  Fy[ix_f + i][iy_f + j][iz_f + k]= Fy_BC[m][count];
+	  Fz[ix_f + i][iy_f + j][iz_f + k]= Fz_BC[m][count];
+	  
+	  count ++;
+
+	} // end cycle k
+      } // end cycle j
+    } // end cycle i
+    //cout << "set BC Nodes: count " << count << endl;
+  } // end cycle on msg
+
+  return;
+}
+
 /* to average RG and CG interpolated solution
        Fx, Fy, Fz: the field where BC are applied                      
        Fx_BC, Fy_BC, Fz_BC: the BCs              
@@ -7323,7 +7377,7 @@ void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective 
               double sech_yBd = 1. / cosh(yBd);
               double sech_yTd = 1. / cosh(yTd);
               rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
-              rhons[is][i][j][k] += rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
+              rhons[is][i][j][k] = rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
             }
             else
               rhons[is][i][j][k] = rhoINIT[is] / FourPI;
@@ -7423,6 +7477,151 @@ void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective 
   }
 }
 
+
+void EMfields3D::initDoubleGEM_CentralPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  const double pertX = 0.4;
+  const double pertGEM = 0.0;
+
+  double globalx;
+  double globaly;
+  double globalz;
+
+  const double coarsedx= grid->getDx_mlmd(0) ;
+  const double coarsedy= grid->getDy_mlmd(0) ;
+  const double coarsedz= grid->getDz_mlmd(0) ;
+
+  // this local
+  double Lx= col->getLx_mlmd(0);
+  double Ly= col->getLy_mlmd(0);
+  // end local
+
+  const double deltax= Lx/2.0;
+  const double deltay= Ly/2.0;
+ 
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize DOUBLE GEM Challenge with Central Pertubation" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+	  globalx= grid->getXN(i, j, k) + grid->getOx_SW();
+	  globaly= grid->getYN(i, j, k) + grid->getOy_SW();
+	  globalz= grid->getZN(i, j, k) + grid->getOz_SW();
+         
+          double yB = globaly - .25 * Ly;
+	  double yT = globaly - .75 * Ly;
+          double yBd = yB / delta;
+          double yTd = yT / delta;
+
+	  double xB = globalx - .25 * Lx;
+	  double xT = globalx - .75 * Lx;
+	  double xBd = xB / delta;
+	  double xTd = xT / delta;
+	    
+	  double xpert;
+	  double ypert;
+	    
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is]) {
+              double sech_yBd = 1. / cosh(yBd);
+              double sech_yTd = 1. / cosh(yTd);
+              rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
+              rhons[is][i][j][k] = rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
+            }
+            else
+              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          Bxn[i][j][k] = B0x * (-1.0 + tanh(yBd) + tanh(-yTd));
+	  cout << "Bxn[i][j][k] "<< Bxn[i][j][k] <<endl;
+          // add the initial GEM perturbation
+          Bxn[i][j][k] += 0.;
+          Byn[i][j][k] = B0y;
+          // add the initial X perturbation
+          
+	  // add the second initial GEM perturbation                                                                     
+	  xpert = globalx- Lx/2;
+	  ypert = globaly- 3*Ly/4;
+	  if (xpert > Lx/4 and xpert <3*Lx/4 and ypert > Ly/2)
+	    {
+	      Bxn[i][j][k] +=(B0x*pertGEM)*(M_PI/deltay)*cos(2*M_PI*xpert/deltax)*sin(M_PI*ypert/deltay  );
+	      Byn[i][j][k] = B0y -(B0x*pertGEM)*(2*M_PI/deltax)*sin(2*M_PI*xpert/deltax)*cos(M_PI*ypert/deltay);
+	    }
+	  double exp_pert;
+
+	  // add the second initial X perturbation                                                                       
+	  xpert = globalx- Lx/2;
+	  ypert = globaly- 3*Ly/4;
+	  exp_pert = exp(-(xpert/delta)*(xpert/delta)-(ypert/delta)*(ypert/delta));
+
+	  Bxn[i][j][k] +=(-B0x*pertX)*exp_pert*(
+						-cos(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*2.0*ypert/delta
+						-cos(M_PI*xpert/10.0/delta)*sin(M_PI*ypert/10.0/delta)*M_PI/10.0
+						);
+
+	  Byn[i][j][k] +=(-B0x*pertX)*exp_pert*(
+						cos(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*2.0*xpert/delta
+						+sin(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*M_PI/10.0
+						);
+	  // guide field                                                                                                 
+	  Bzn[i][j][k] = B0z;
+        }
+    // communicate ghost
+    communicateNode(nxn, nyn, nzn, Bxn, vct);
+    communicateNode(nxn, nyn, nzn, Byn, vct);
+    communicateNode(nxn, nyn, nzn, Bzn, vct);
+    // initialize B on centers; same thing as on nodes but on centers
+
+    grid->interpN2C_GC(Bxc, Bxn);
+    grid->interpN2C_GC(Byc, Byn);
+    grid->interpN2C_GC(Bzc, Bzn);
+     
+    // end initialize B on centers 
+    communicateCenter(nxc, nyc, nzc, Bxc, vct);
+    communicateCenter(nxc, nyc, nzc, Byc, vct);
+    communicateCenter(nxc, nyc, nzc, Bzc, vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C_GC(rhocs, is, rhons);
+
+    // Lambda
+    
+    /*for (int i=0; i < nxn; i++)                   
+      for (int j=0; j < nyn; j++)                               
+	for (int k=0; k < nzn; k++){                          
+
+	  double yC1=  (grid->getOy_SW() +grid->getYN(i, j, k) - 1./4.*Ly)/ (10*delta); //Lambda[i][j][k]=2.0 * M_PI / dy* fabs(tanh(yC));
+	  double yC2=  (grid->getOy_SW() +grid->getYN(i, j, k) - 3./4.*Ly)/ (10*delta);
+	  Lambda[i][j][k]=2.0 * M_PI / dy* (-1 + fabs(tanh(yC1)) + fabs(tanh(yC2)) );
+	    
+	} 
+    */
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
 
 void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
 
