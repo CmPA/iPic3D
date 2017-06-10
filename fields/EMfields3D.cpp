@@ -350,9 +350,10 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
        when doing this, do not smooth active nodes */
     setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
-    /*if (MLMD_BCBufferArea){
-      AverageBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-      }*/
+    if (MLMD_BCBufferArea){
+      setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      //AverageBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+    }
 
 
     communicateNode(nxn, nyn, nzn, Exth, vct);
@@ -411,8 +412,8 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
     setBC_Nodes(vct, Ex, Ey, Ez, Ex_Active_BC, Ey_Active_BC, Ez_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
     if (MLMD_BCBufferArea){
-      AverageBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-      AverageBC_Nodes(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      setBC_Nodes(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
     }
 
     // NB: these BCs are at time n, here B is still at time n                                     
@@ -749,6 +750,8 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 
   if (numGrid>0) ExtraSmoothing= true;
   
+  ExtraSmoothing= false;
+
   if (vct->getCartesian_rank()==0 and numGrid >0){
     cout << "Grid " << numGrid <<" is doing extra boundary smoothing" << endl;
   }
@@ -790,7 +793,8 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	for (int j = j_s; j < j_e; j++)
 	  for (int k = k_s; k < k_e; k++){
 
-	    if ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL)){
+	    if ( ExtraSmoothing and  ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL))){
+
 	      value= 0;
 	      
 	    }
@@ -816,7 +820,9 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	for (int j = 1; j < nyn - 1; j++)
 	  for (int k = 1; k < nzn - 1; k++){
 
-	    if ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL)){
+	    if ( ExtraSmoothing and  ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL))){
+
+
 	      value= 0;
 	      
 	    }
@@ -833,23 +839,10 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 
 	    temp[i][j][k] = value * Ey[i][j][k] + alpha * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
 	  }
+
       for (int i = 1; i < nxn - 1; i++)
 	for (int j = 1; j < nyn - 1; j++)
 	  for (int k = 1; k < nzn - 1; k++){
-	    if ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL)){
-	      value= 0;
-	      
-	    }
-	    else{
-	      if (icount % 2 == 1) {
-		value = 0.;
-	      }
-	      else {
-		value = 0.5;
-	      }
-	      
-	    }
-	    alpha = (1.0 - value) / 6;
 
 	    Ey[i][j][k] = temp[i][j][k];
 	  }
@@ -858,7 +851,9 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	for (int j = 1; j < nyn - 1; j++)
 	  for (int k = 1; k < nzn - 1; k++){
 
-	    if ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL)){
+	    if ( ExtraSmoothing and  ((i < BBX and vct->getXleft_neighbor() == MPI_PROC_NULL) or (i>nxn-BBX and vct->getXright_neighbor() == MPI_PROC_NULL) or (j < BBY and vct->getYleft_neighbor() == MPI_PROC_NULL) or (j>nyn-BBY and vct->getYright_neighbor() == MPI_PROC_NULL) or (k < BBZ and vct->getZleft_neighbor() == MPI_PROC_NULL) or (k>nzn-BBZ and vct->getZright_neighbor() == MPI_PROC_NULL))){
+
+
 	      value= 0;
 	      
 	    }
@@ -872,8 +867,8 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 	      
 	    }
 	    alpha = (1.0 - value) / 6;
-
-	   temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+	    
+	    temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
 	  }
       for (int i = 1; i < nxn - 1; i++)
 	for (int j = 1; j < nyn - 1; j++)
@@ -1273,7 +1268,12 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
-    AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+    //AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+
+    if (MLMD_BCBufferArea){
+      setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+
+    }
 
     communicateNode(nxn, nyn, nzn, Bxn, vct);
     communicateNode(nxn, nyn, nzn, Byn, vct);
@@ -5723,7 +5723,9 @@ void EMfields3D::initWeightBCBuffer_Phase1(Grid *grid, VirtualTopology3D *vct, R
     i_s=0; i_e= nxn-1;
     j_s=0; j_e= nyn-1;
     k_s=2; k_e=k_s+ BufZ; 
-    if(k_e > nzn-1) {cout << "Tragic error in initWeightBCBuffer_Phase1, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
+    if(k_e > nzn-1) {
+      cout << "Tragic error in initWeightBCBuffer_Phase1 (k_e=" << k_e <<", nzn= " << nzn <<"max should be nzn-1, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);
+    }
 
 
     DIR= 'B';
@@ -5737,8 +5739,8 @@ void EMfields3D::initWeightBCBuffer_Phase1(Grid *grid, VirtualTopology3D *vct, R
     i_s=0; i_e= nxn-1;
     j_s=0; j_e= nyn-1;
     k_e= nzn-3; k_s= k_e- BufZ;
-    if(k_s <0) {cout << "Tragic error in initWeightBCBuffer_Phase1, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
-    
+    if(k_s <0) 
+    {cout << "Tragic error in initWeightBCBuffer_Phase1 (k_s=" << 0 <<", min should be 0, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
     DIR= 'T';
     Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
     
@@ -5750,7 +5752,10 @@ void EMfields3D::initWeightBCBuffer_Phase1(Grid *grid, VirtualTopology3D *vct, R
     j_s=0; j_e= nyn-1;
     k_s=0; k_e= nzn-1;
     i_s=2; i_e= i_s+ BufX;
-    if(i_e > nxn-1) {cout << "Tragic error in initWeightBCBuffer_Phase1, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
+    if(i_e > nxn-1) {
+      cout << "Tragic error in initWeightBCBuffer_Phase1 (i_e=" << i_e <<", nxn= " << nxn <<", max should be nxn-1 aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+
 
     DIR= 'L';
     Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
@@ -5763,7 +5768,8 @@ void EMfields3D::initWeightBCBuffer_Phase1(Grid *grid, VirtualTopology3D *vct, R
     j_s=0; j_e= nyn-1;
     k_s=0; k_e= nzn-1;
     i_e=nxn-3; i_s= i_e- BufX;
-    if(i_s <0) {cout << "Tragic error in initWeightBCBuffer_Phase1, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
+    if(i_s <0)
+      {cout << "Tragic error in initWeightBCBuffer_Phase1 (i_s=" << 0 <<", min should be 0, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
 
     DIR= 'R';
     Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
@@ -5776,8 +5782,10 @@ void EMfields3D::initWeightBCBuffer_Phase1(Grid *grid, VirtualTopology3D *vct, R
     i_s=0; i_e= nxn-1;
     k_s=0; k_e= nzn-1;
     j_s=2; j_e= j_s+ BufY;
-    if(j_e > nyn-1) {cout << "Tragic error in initWeightBCBuffer_Phase1, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
-    
+    if(j_e > nyn-1) 
+    {
+      cout << "Tragic error in initWeightBCBuffer_Phase1 (j_e=" << j_e <<", nyn= " << nyn <<", max should be nyn-1, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);
+    }
     DIR= 'F';
     Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
 
@@ -5789,7 +5797,9 @@ void EMfields3D::initWeightBCBuffer_Phase1(Grid *grid, VirtualTopology3D *vct, R
     i_s=0; i_e= nxn-1;
     k_s=0; k_e= nzn-1;
     j_e=nyn-3; j_s= j_e- BufY;
-    if(j_s <0) {cout << "Tragic error in initWeightBCBuffer_Phase1, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
+    if(j_s <0) 
+    {cout << "Tragic error in initWeightBCBuffer_Phase1 (j_s=" << 0 <<", min should be 0, aborting ..." << endl; MPI_Abort(MPI_COMM_WORLD, -1);}
+
 
     DIR= 'b';
     Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
