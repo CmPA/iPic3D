@@ -415,13 +415,13 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
     setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
     setBC_Nodes(vct, Ex, Ey, Ez, Ex_Active_BC, Ey_Active_BC, Ez_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
-    if (MLMD_BCBufferArea){
-      /*setBC_Nodes_TwoLess(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-	setBC_Nodes_TwoLess(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);*/
+    /*if (MLMD_BCBufferArea){
+      //setBC_Nodes_TwoLess(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      //setBC_Nodes_TwoLess(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
 
       AverageBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-      AverageBC_Nodes(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-    }
+      //AverageBC_Nodes(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      }*/
 
     // NB: these BCs are at time n, here B is still at time n                                     
     // impose BC B on ghost nodes, for particles                                                
