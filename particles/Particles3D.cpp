@@ -920,8 +920,8 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
 int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is){
 
   /* -- NOTE: Hardcoded option -- */
-  enum {LINEAR,INITIAL,FFIELD};
-  int rtype = INITIAL;
+  enum {LINEAR,INITIAL,FFIELD, GEM};
+  int rtype = GEM;
   /* -- END NOTE -- */
 
   if (vct->getCartesian_rank()==0){
@@ -930,7 +930,9 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   double  FourPI =16*atan(1.0);
   int avail;
   long long store_nop=nop;
-
+  double U=0;
+  double V=0;
+  double W=0;
   ////////////////////////
   // INJECTION FROM XLEFT
   ////////////////////////
@@ -967,24 +969,32 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 // q = charge
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
-                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
-                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+                   if (rtype==FFIELD)  {rho = EMf->getRHOcs(i,j,k,is); U=u0; V=v0; W=w0;}
+                   if (rtype==LINEAR)  {rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI; U=u0; V=v0; W=w0;}
+                   if (rtype==INITIAL) {rho = rhoINJECT/FourPI; U=u0; V=v0; W=w0;}
+		   if (rtype==GEM) {
+		     if (EMf->getDriftSpecies(is))
+		       {rho = ((rhoINJECT / (cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta()) * cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta())))) / FourPI;
+			 U=0; V=0; W=0;
+		       }
+		     else
+		       {rho = rhoINJECT / FourPI; U=u0; V= v0; W=w0; }
+		   }
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                u[particles_index] = u0 + uth*prob*cos(theta);
+                u[particles_index] = U + uth*prob*cos(theta);
                 // v
-                v[particles_index] = v0 + vth*prob*sin(theta);
+                v[particles_index] = V + vth*prob*sin(theta);
                 // w
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                w[particles_index] = w0 + wth*prob*cos(theta);
+                w[particles_index] = W + wth*prob*cos(theta);
 
                 if (TrackParticleID)
                   ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
@@ -1032,24 +1042,32 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 // q = charge
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
-                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
-                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+                   if (rtype==FFIELD)  {rho = EMf->getRHOcs(i,j,k,is); U=u0; V=v0; W=w0;}
+                   if (rtype==LINEAR)  {rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI; U=u0; V=v0; W=w0;}
+                   if (rtype==INITIAL) {rho = rhoINJECT/FourPI; U=u0; V=v0; W=w0;}
+		   if (rtype==GEM) {
+		     if (EMf->getDriftSpecies(is))
+		       {rho = ((rhoINJECT / (cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta()) * cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta())))) / FourPI;
+			 U=0; V=0; W=0;
+		       }
+		     else
+		       {rho = rhoINJECT / FourPI; U=u0; V= v0; W=w0; }
+		   }
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                u[particles_index] = u0 + uth*prob*cos(theta);
+                u[particles_index] = U + uth*prob*cos(theta);
                 // v
-                v[particles_index] = v0 + vth*prob*sin(theta);
+                v[particles_index] = V + vth*prob*sin(theta);
                 // w
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                w[particles_index] = w0 + wth*prob*cos(theta);
+                w[particles_index] = W + wth*prob*cos(theta);
                 if (TrackParticleID)
                   ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
 
@@ -1153,24 +1171,30 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 // q = charge
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
-                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
-                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+                   if (rtype==FFIELD)  {rho = EMf->getRHOcs(i,j,k,is); U=u0; V=v0; W=w0;}
+                   if (rtype==LINEAR)  {rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI; U=u0; V=v0; W=w0;}
+                   if (rtype==INITIAL) {rho = rhoINJECT/FourPI; U=u0; V=v0; W=w0;}
+		   if (rtype==GEM) {
+		     if (EMf->getDriftSpecies(is))
+		       {rho = ((rhoINJECT / (cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta()) * cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta())))) / FourPI;
+			 U=0.0; V=0.0; W=0.0;}
+		     else {
+		       rho = rhoINJECT / FourPI; U=u0; V=v0; W=w0; }}
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                u[particles_index] = u0 + uth*prob*cos(theta);
+                u[particles_index] = U + uth*prob*cos(theta);
                 // v
-                v[particles_index] = v0 + vth*prob*sin(theta);
+                v[particles_index] = V + vth*prob*sin(theta);
                 // w
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                w[particles_index] = w0 + wth*prob*cos(theta);
+                w[particles_index] = W + wth*prob*cos(theta);
                 if (TrackParticleID)
                   ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
 
@@ -1214,24 +1238,31 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 // q = charge
                 /* ATTENTION: OVther methods can be use, i.e. using the values close to the boundary: */
                    double rho = 1.0/FourPI;
-                   if (rtype==FFIELD)  rho = EMf->getRHOcs(i,j,k,is);
-                   if (rtype==LINEAR)  rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI;
-                   if (rtype==INITIAL) rho = rhoINJECT/FourPI;
+                   if (rtype==FFIELD)  {rho = EMf->getRHOcs(i,j,k,is); U=u0; V=v0; W=w0;}
+                   if (rtype==LINEAR)  {rho = (0.1 + 0.9*(grid->getXC(i, j, k)/Lx)) / FourPI; U=u0; V=v0; W=w0;}
+                   if (rtype==INITIAL) {rho = rhoINJECT/FourPI; U=u0; V=v0; W=w0;}
+		   if (rtype==GEM) {
+		     if (EMf->getDriftSpecies(is))
+		       {rho = ((rhoINJECT / (cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta()) * cosh((grid->getYN(i, j, k) - Ly / 2) / EMf->getDelta())))) / FourPI;
+			 U=0.0; V=0.0; W=0.0;}
+		     else {
+		       rho = rhoINJECT / FourPI; U=u0; V=v0; W=w0; }
+		   }
                    q[particles_index] = (qom / fabs(qom))*(fabs(rho)/npcel)*(1.0/grid->getInvVOL());
                 // u
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                u[particles_index] = u0 + uth*prob*cos(theta);
+                u[particles_index] = U + uth*prob*cos(theta);
                 // v
-                v[particles_index] = v0 + vth*prob*sin(theta);
+                v[particles_index] = V + vth*prob*sin(theta);
                 // w
                 harvest =   rand()/(double)RAND_MAX;
                 prob  = sqrt(-2.0*log(1.0-.999999*harvest));
                 harvest =   rand()/(double)RAND_MAX;
                 theta = 2.0*M_PI*harvest;
-                w[particles_index] = w0 + wth*prob*cos(theta);
+                w[particles_index] = W + wth*prob*cos(theta);
                 if (TrackParticleID)
                   ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
 

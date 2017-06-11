@@ -511,6 +511,12 @@ class EMfields3D                // :public Field
 
     // OpenBC
     void updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col);
+    bool getDriftSpecies(int is){
+      return DriftSpecies[is];
+    }
+    double getDelta(){
+      return delta;
+    }
 
     /*! mlmd specific functions */
     /* children: calculate which points they need to communicate to which parent core

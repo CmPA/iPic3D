@@ -754,7 +754,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
 
   if (numGrid>0) ExtraSmoothing= true;
   
-  ExtraSmoothing= false;
+  //  ExtraSmoothing= false;
 
   if (vct->getCartesian_rank()==0 and numGrid >0){
     cout << "Grid " << numGrid <<" is doing extra boundary smoothing" << endl;
@@ -2118,6 +2118,110 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
   // perturbation localized in X
   double pertX = 0.4;
   double xpert, ypert, exp_pert;
+
+
+  double globalx;
+  double globaly;
+  double globalz;
+
+  const double coarsedx= grid->getDx_mlmd(0) ;
+  const double coarsedy= grid->getDy_mlmd(0) ;
+  const double coarsedz= grid->getDz_mlmd(0) ;
+
+  // this local
+  double Lx= col->getLx_mlmd(0);
+  double Ly= col->getLy_mlmd(0);
+  // end local
+
+  const double deltax= Lx/2.0;
+  const double deltay= Ly/2.0;
+
+
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize GEM Challenge (MLMD-ready) with Pertubation" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+	cout << "rho species " << i << " = " << rhoINIT[i];
+	if (DriftSpecies[i])
+	  cout << " DRIFTING " << endl;
+	else
+	  cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+	for (int k = 0; k < nzn; k++) {
+
+	  globalx= grid->getXN(i, j, k) + grid->getOx_SW();
+	  globaly= grid->getYN(i, j, k) + grid->getOy_SW();
+	  globalz= grid->getZN(i, j, k) + grid->getOz_SW();
+         
+	  double xpert;
+	  double ypert;
+
+	  // initialize the density for species
+	  for (int is = 0; is < ns; is++) {
+	    if (DriftSpecies[is])
+	      rhons[is][i][j][k] = ((rhoINIT[is] / (cosh((globaly - Ly / 2) / delta) * cosh((globaly - Ly / 2) / delta)))) / FourPI;
+	    else
+	      rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+	  }
+	  // electric field
+	  Ex[i][j][k] = 0.0;
+	  Ey[i][j][k] = 0.0;
+	  Ez[i][j][k] = 0.0;
+	  // Magnetic field
+	  Bxn[i][j][k] = B0x * tanh((globaly - Ly / 2) / delta);
+	  // add the initial GEM perturbation
+	  // Bxn[i][j][k] += (B0x/10.0)*(M_PI/Ly)*cos(2*M_PI*grid->getXN(i,j,k)/Lx)*sin(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly );
+	  Byn[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXN(i,j,k)/Lx)*cos(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly); 
+	  // add the initial X perturbation
+	  xpert = globalx - Lx / 2;
+	  ypert = globaly - Ly / 2;
+	  exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
+	  Bxn[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+	  Byn[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+	  // guide field
+	  Bzn[i][j][k] = B0z;
+	}
+    // initialize B on centers
+   
+    communicateNode(nxn, nyn, nzn, Bxn, vct);
+    communicateNode(nxn, nyn, nzn, Byn, vct);
+    communicateNode(nxn, nyn, nzn, Bzn, vct);
+    // initialize B on centers; same thing as on nodes but on centers
+
+    grid->interpN2C_GC(Bxc, Bxn);
+    grid->interpN2C_GC(Byc, Byn);
+    grid->interpN2C_GC(Bzc, Bzn);
+     
+    // end initialize B on centers 
+    communicateCenter(nxc, nyc, nzc, Bxc, vct);
+    communicateCenter(nxc, nyc, nzc, Byc, vct);
+    communicateCenter(nxc, nyc, nzc, Bzc, vct);
+
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C_GC(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+
+/* non-mlmd version
+void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  double pertX = 0.4;
+  double xpert, ypert, exp_pert;
   if (restart1 == 0) {
     // initialize
     if (vct->getCartesian_rank() == 0) {
@@ -2189,8 +2293,9 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
-  }
-}
+    }
+    }*/
+
 
 void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
@@ -3226,6 +3331,7 @@ void EMfields3D::sustensorZ(double **suszx, double **suszy, double **suszz, int 
 
 /*! Perfect conductor boundary conditions: LEFT wall */
 void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double ***imageZ, double ***vectorX, double ***vectorY, double ***vectorZ, int dir, Grid * grid) {
+  // June 10: put known term to the right
   double** susxy;
   double** susyy;
   double** suszy;
@@ -3243,7 +3349,8 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
     sustensorX(susxx, susxy, susxz, 1);
     for (int i=1; i <  nyn-1;i++)
       for (int j=1; j <  nzn-1;j++){
-	imageX[1][i][j] = vectorX[1][i][j] - (Ex[1][i][j] - susxy[i][j]*vectorY[1][i][j] - susxz[i][j]*vectorZ[1][i][j] - Jxh[1][i][j]*dt*th*FourPI)/susxx[i][j];
+	//imageX[1][i][j] = vectorX[1][i][j] - (Ex[1][i][j] - susxy[i][j]*vectorY[1][i][j] - susxz[i][j]*vectorZ[1][i][j] - Jxh[1][i][j]*dt*th*FourPI)/susxx[i][j];
+	imageX[1][i][j] = vectorX[1][i][j] - ( - susxy[i][j]*vectorY[1][i][j] - susxz[i][j]*vectorZ[1][i][j] )/susxx[i][j];
 	imageY[1][i][j] = vectorY[1][i][j] - 0.0*vectorY[2][i][j];
 	imageZ[1][i][j] = vectorZ[1][i][j] - 0.0*vectorZ[2][i][j];
       }
@@ -3259,7 +3366,8 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
     for (int i=1; i < nxn-1;i++)
       for (int j=1; j <  nzn-1;j++){
 	imageX[i][1][j] = vectorX[i][1][j] - 0.0*vectorX[i][2][j];
-	imageY[i][1][j] = vectorY[i][1][j] - (Ey[i][1][j] - susyx[i][j]*vectorX[i][1][j] - susyz[i][j]*vectorZ[i][1][j] - Jyh[i][1][j]*dt*th*FourPI)/susyy[i][j];
+	//imageY[i][1][j] = vectorY[i][1][j] - (Ey[i][1][j] - susyx[i][j]*vectorX[i][1][j] - susyz[i][j]*vectorZ[i][1][j] - Jyh[i][1][j]*dt*th*FourPI)/susyy[i][j];
+	imageY[i][1][j] = vectorY[i][1][j] - (- susyx[i][j]*vectorX[i][1][j] - susyz[i][j]*vectorZ[i][1][j] )/susyy[i][j];
 	imageZ[i][1][j] = vectorZ[i][1][j] - 0.0*vectorZ[i][2][j];
       }
     delArr2(susyx,nxn);
@@ -3275,7 +3383,8 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
       for (int j=1; j <  nyn-1;j++){
 	imageX[i][j][1] = vectorX[i][j][1];
 	imageY[i][j][1] = vectorX[i][j][1];
-	imageZ[i][j][1] = vectorZ[i][j][1] - (Ez[i][j][1] - suszx[i][j]*vectorX[i][j][1] - suszy[i][j]*vectorY[i][j][1] - Jzh[i][j][1]*dt*th*FourPI)/suszz[i][j];
+	//imageZ[i][j][1] = vectorZ[i][j][1] - (Ez[i][j][1] - suszx[i][j]*vectorX[i][j][1] - suszy[i][j]*vectorY[i][j][1] - Jzh[i][j][1]*dt*th*FourPI)/suszz[i][j];
+	imageZ[i][j][1] = vectorZ[i][j][1] - (- suszx[i][j]*vectorX[i][j][1] - suszy[i][j]*vectorY[i][j][1] )/suszz[i][j];
       }
     delArr2(suszx,nxn);
     delArr2(suszy,nxn);
@@ -3305,7 +3414,8 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
     sustensorX(susxx, susxy, susxz, nxn-2);
     for (int i=1; i < nyn-1;i++)
       for (int j=1; j <  nzn-1;j++){
-	imageX[nxn-2][i][j] = vectorX[nxn-2][i][j] - (Ex[nxn-2][i][j] - susxy[i][j]*vectorY[nxn-2][i][j] - susxz[i][j]*vectorZ[nxn-2][i][j] - Jxh[nxn-2][i][j]*dt*th*FourPI)/susxx[i][j];
+	//imageX[nxn-2][i][j] = vectorX[nxn-2][i][j] - (Ex[nxn-2][i][j] - susxy[i][j]*vectorY[nxn-2][i][j] - susxz[i][j]*vectorZ[nxn-2][i][j] - Jxh[nxn-2][i][j]*dt*th*FourPI)/susxx[i][j];
+	imageX[nxn-2][i][j] = vectorX[nxn-2][i][j] - ( - susxy[i][j]*vectorY[nxn-2][i][j] - susxz[i][j]*vectorZ[nxn-2][i][j] )/susxx[i][j];
 	imageY[nxn-2][i][j] = vectorY[nxn-2][i][j] - 0.0 * vectorY[nxn-3][i][j];
 	imageZ[nxn-2][i][j] = vectorZ[nxn-2][i][j] - 0.0 * vectorZ[nxn-3][i][j];
       }
@@ -3321,7 +3431,8 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
     for (int i=1; i < nxn-1;i++)
       for (int j=1; j < nzn-1;j++){
 	imageX[i][nyn-2][j] = vectorX[i][nyn-2][j] - 0.0*vectorX[i][nyn-3][j];
-	imageY[i][nyn-2][j] = vectorY[i][nyn-2][j] - (Ey[i][nyn-2][j] - susyx[i][j]*vectorX[i][nyn-2][j] - susyz[i][j]*vectorZ[i][nyn-2][j] - Jyh[i][nyn-2][j]*dt*th*FourPI)/susyy[i][j];
+	//imageY[i][nyn-2][j] = vectorY[i][nyn-2][j] - (Ey[i][nyn-2][j] - susyx[i][j]*vectorX[i][nyn-2][j] - susyz[i][j]*vectorZ[i][nyn-2][j] - Jyh[i][nyn-2][j]*dt*th*FourPI)/susyy[i][j];
+	imageY[i][nyn-2][j] = vectorY[i][nyn-2][j] - ( - susyx[i][j]*vectorX[i][nyn-2][j] - susyz[i][j]*vectorZ[i][nyn-2][j] )/susyy[i][j];
 	imageZ[i][nyn-2][j] = vectorZ[i][nyn-2][j] - 0.0*vectorZ[i][nyn-3][j];
       }
     delArr2(susyx,nxn);
@@ -3337,7 +3448,8 @@ void EMfields3D::perfectConductorRight(double ***imageX, double ***imageY, doubl
       for (int j=1; j < nyn-1;j++){
 	imageX[i][j][nzn-2] = vectorX[i][j][nzn-2];
 	imageY[i][j][nzn-2] = vectorY[i][j][nzn-2];
-	imageZ[i][j][nzn-2] = vectorZ[i][j][nzn-2] - (Ez[i][j][nzn-2] - suszx[i][j]*vectorX[i][j][nzn-2] - suszy[i][j]*vectorY[i][j][nzn-2] - Jzh[i][j][nzn-2]*dt*th*FourPI)/suszz[i][j];
+	//imageZ[i][j][nzn-2] = vectorZ[i][j][nzn-2] - (Ez[i][j][nzn-2] - suszx[i][j]*vectorX[i][j][nzn-2] - suszy[i][j]*vectorY[i][j][nzn-2] - Jzh[i][j][nzn-2]*dt*th*FourPI)/suszz[i][j];
+	imageZ[i][j][nzn-2] = vectorZ[i][j][nzn-2] - (- suszx[i][j]*vectorX[i][j][nzn-2] - suszy[i][j]*vectorY[i][j][nzn-2] )/suszz[i][j];
       }
     delArr2(suszx,nxn);
     delArr2(suszy,nxn);       
@@ -3355,39 +3467,88 @@ void EMfields3D::perfectConductorLeftS(double ***vectorX, double ***vectorY, dou
   cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
   scale(ebc,-1.0,3);
 
+  double** susxy;
+  double** susyy;
+  double** suszy;
+  double** susxx;
+  double** susyx;
+  double** suszx;
+  double** susxz;
+  double** susyz;
+  double** suszz;
+
+
   switch(dir){
   case 0: // boundary condition on X-DIRECTION LEFT
+    susxx = newArr2(double,nyn,nzn);
+    susxy = newArr2(double,nyn,nzn);
+    susxz = newArr2(double,nyn,nzn);
+    sustensorX(susxx, susxy, susxz, 1);
+
     for (int i=1; i < nyn-1;i++)
       for (int j=1; j < nzn-1;j++){
-	vectorX[1][i][j] = 0.0;
+	vectorX[1][i][j] = -(  - (Ex[1][i][j]  - Jxh[1][i][j]*dt*th*FourPI)/susxx[i][j] );
 	vectorY[1][i][j] = ebc[1];
 	vectorZ[1][i][j] = ebc[2];
+
+	/*vectorX[1][i][j] = 0.0;
+	vectorY[1][i][j] = ebc[1];
+	vectorZ[1][i][j] = ebc[2];*/
 	//+//          vectorX[1][i][j] = 0.0;
 	//+//          vectorY[1][i][j] = 0.0;
 	//+//          vectorZ[1][i][j] = 0.0;
       }
+    delArr2(susxx,nxn);
+    delArr2(susxy,nxn);
+    delArr2(susxz,nxn);
+
     break;
   case 1: // boundary condition on Y-DIRECTION LEFT
+    susyx = newArr2(double,nxn,nzn);
+    susyy = newArr2(double,nxn,nzn);
+    susyz = newArr2(double,nxn,nzn);
+    sustensorY(susyx, susyy, susyz, 1);
+
     for (int i=1; i < nxn-1;i++)
       for (int j=1; j < nzn-1;j++){
 	vectorX[i][1][j] = ebc[0];
-	vectorY[i][1][j] = 0.0;
+	vectorY[i][1][j] = -( - (Ey[i][1][j]  - Jyh[i][1][j]*dt*th*FourPI)/susyy[i][j] );
 	vectorZ[i][1][j] = ebc[2];
+	
+	/*vectorX[i][1][j] = ebc[0];
+	vectorY[i][1][j] = 0.0;
+	vectorZ[i][1][j] = ebc[2];*/
 	//+//          vectorX[i][1][j] = 0.0;
 	//+//          vectorY[i][1][j] = 0.0;
 	//+//          vectorZ[i][1][j] = 0.0;
       }
+
+    delArr2(susyx,nxn);
+    delArr2(susyy,nxn);
+    delArr2(susyz,nxn);
     break;
   case 2: // boundary condition on Z-DIRECTION LEFT
+    suszx = newArr2(double,nxn,nyn);
+    suszy = newArr2(double,nxn,nyn);
+    suszz = newArr2(double,nxn,nyn);
+    sustensorZ(suszx, suszy, suszz, 1);
+    
     for (int i=1; i < nxn-1;i++)
       for (int j=1; j <  nyn-1;j++){
 	vectorX[i][j][1] = ebc[0];
 	vectorY[i][j][1] = ebc[1];
-	vectorZ[i][j][1] = 0.0;
+	vectorZ[i][j][1] = -( - (Ez[i][j][1] - Jzh[i][j][1]*dt*th*FourPI)/suszz[i][j]);
+	/* vectorX[i][j][1] = ebc[0];
+	vectorY[i][j][1] = ebc[1];
+	vectorZ[i][j][1] = 0.0; */
+	
 	//+//          vectorX[i][j][1] = 0.0;
 	//+//          vectorY[i][j][1] = 0.0;
 	//+//          vectorZ[i][j][1] = 0.0;
       }
+    delArr2(suszx,nxn);
+    delArr2(suszy,nxn);
+    delArr2(suszz,nxn);
     break;
   }
 }
@@ -3430,6 +3591,15 @@ void EMfields3D::MLMDSourceLeft(double ***vectorX, double ***vectorY, double ***
 void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir) {
 
   double ebc[3];
+  double** susxy;
+  double** susyy;
+  double** suszy;
+  double** susxx;
+  double** susyx;
+  double** suszx;
+  double** susxz;
+  double** susyz;
+  double** suszz;
 
   // Assuming E = - ve x B
   cross_product(ue0,ve0,we0,B0x,B0y,B0z,ebc);
@@ -3437,37 +3607,70 @@ void EMfields3D::perfectConductorRightS(double ***vectorX, double ***vectorY, do
 
   switch(dir){
   case 0: // boundary condition on X-DIRECTION RIGHT
+
+    susxx = newArr2(double,nyn,nzn);
+    susxy = newArr2(double,nyn,nzn);
+    susxz = newArr2(double,nyn,nzn);
+    sustensorX(susxx, susxy, susxz, nxn-2);
     for (int i=1; i < nyn-1;i++)
       for (int j=1; j < nzn-1;j++){
-	vectorX[nxn-2][i][j] = 0.0;
+	vectorX[nxn-2][i][j] = - ( - (Ex[nxn-2][i][j] - Jxh[nxn-2][i][j]*dt*th*FourPI)/susxx[i][j]);
 	vectorY[nxn-2][i][j] = ebc[1];
 	vectorZ[nxn-2][i][j] = ebc[2];
+	/*vectorX[nxn-2][i][j] = 0.0;
+	vectorY[nxn-2][i][j] = ebc[1];
+	vectorZ[nxn-2][i][j] = ebc[2];*/
 	//+//          vectorX[nxn-2][i][j] = 0.0;
 	//+//          vectorY[nxn-2][i][j] = 0.0;
 	//+//          vectorZ[nxn-2][i][j] = 0.0;
       }
+    delArr2(susxx,nxn);
+    delArr2(susxy,nxn);
+    delArr2(susxz,nxn);
     break;
   case 1: // boundary condition on Y-DIRECTION RIGHT
+    susyx = newArr2(double,nxn,nzn);
+    susyy = newArr2(double,nxn,nzn);
+    susyz = newArr2(double,nxn,nzn);
+    sustensorY(susyx, susyy, susyz, nyn-2);
+
     for (int i=1; i < nxn-1;i++)
       for (int j=1; j < nzn-1;j++){
 	vectorX[i][nyn-2][j] = ebc[0];
-	vectorY[i][nyn-2][j] = 0.0;
+	vectorY[i][nyn-2][j] = - ( - (Ey[i][nyn-2][j] - Jyh[i][nyn-2][j]*dt*th*FourPI)/susyy[i][j]);
 	vectorZ[i][nyn-2][j] = ebc[2];
+	/*vectorX[i][nyn-2][j] = ebc[0];
+	vectorY[i][nyn-2][j] = 0.0;
+	vectorZ[i][nyn-2][j] = ebc[2];*/
 	//+//          vectorX[i][nyn-2][j] = 0.0;
 	//+//          vectorY[i][nyn-2][j] = 0.0;
 	//+//          vectorZ[i][nyn-2][j] = 0.0;
       }
+    delArr2(susyx,nxn);
+    delArr2(susyy,nxn);
+    delArr2(susyz,nxn);
     break;
   case 2:
+    suszx = newArr2(double,nxn,nyn);
+    suszy = newArr2(double,nxn,nyn);
+    suszz = newArr2(double,nxn,nyn);
+    sustensorZ(suszx, suszy, suszz, nzn-2);
+
     for (int i=1; i <  nxn-1;i++)
       for (int j=1; j <  nyn-1;j++){
 	vectorX[i][j][nzn-2] = ebc[0];
 	vectorY[i][j][nzn-2] = ebc[1];
-	vectorZ[i][j][nzn-2] = 0.0;
+	vectorZ[i][j][nzn-2] = - ( - (Ez[i][j][nzn-2] - Jzh[i][j][nzn-2]*dt*th*FourPI)/suszz[i][j]);
+	/*vectorX[i][j][nzn-2] = ebc[0];
+	vectorY[i][j][nzn-2] = ebc[1];
+	vectorZ[i][j][nzn-2] = 0.0;*/
 	//+//          vectorX[i][j][nzn-2] = 0.0;
 	//+//          vectorY[i][j][nzn-2] = 0.0;
 	//+//          vectorZ[i][j][nzn-2] = 0.0;
       }
+    delArr2(suszx,nxn);
+    delArr2(suszy,nxn);
+    delArr2(suszz,nxn);
     break;
   }
 }
@@ -7377,7 +7580,7 @@ void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective 
               double sech_yBd = 1. / cosh(yBd);
               double sech_yTd = 1. / cosh(yTd);
               rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
-              rhons[is][i][j][k] = rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
+              rhons[is][i][j][k] += rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
             }
             else
               rhons[is][i][j][k] = rhoINIT[is] / FourPI;
@@ -7544,7 +7747,7 @@ void EMfields3D::initDoubleGEM_CentralPerturbation(VirtualTopology3D * vct, Grid
               double sech_yBd = 1. / cosh(yBd);
               double sech_yTd = 1. / cosh(yTd);
               rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
-              rhons[is][i][j][k] = rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
+              rhons[is][i][j][k] +=rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
             }
             else
               rhons[is][i][j][k] = rhoINIT[is] / FourPI;
