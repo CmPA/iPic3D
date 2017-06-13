@@ -1275,14 +1275,20 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
     setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
+    int NcellsX=1;
+    int NcellsY=1;
+    int NcellsZ=1;
+
     //AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
 
-    /*if (MLMD_BCBufferArea){
+    if (MLMD_BCBufferArea){
       //      setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
 
       AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-
-      }*/
+      NcellsX= BufX;
+      NcellsY= BufY;
+      NcellsZ= BufZ;
+    }
 
     communicateNode(nxn, nyn, nzn, Bxn, vct);
     communicateNode(nxn, nyn, nzn, Byn, vct);
@@ -1290,18 +1296,18 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
 
     // fix cells
     if (vct->getXleft_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Left(0, 1);
+      fixBghostCells_Left(0, NcellsX);
     if (vct->getYleft_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Left(1, 1);
+      fixBghostCells_Left(1, NcellsY);
     if (vct->getZleft_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Left(2, 1);
+      fixBghostCells_Left(2, NcellsZ);
 
     if (vct->getXright_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Right(0, 1);
+      fixBghostCells_Right(0, NcellsX);
     if (vct->getYright_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Right(1, 1);
+      fixBghostCells_Right(1, NcellsY);
     if (vct->getZright_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Right(2, 1);
+      fixBghostCells_Right(2, NcellsZ);
   }
 
   communicateCenter(nxc, nyc, nzc, Bxc, vct);
