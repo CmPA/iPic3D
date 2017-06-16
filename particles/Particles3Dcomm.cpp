@@ -376,11 +376,12 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // sizes of the PCGMsg values set here (but allocated only if needed) 
   // to have the send/ receive vectors with the same size, I cook up a number based 
   //   on the coarsest grid 
-  int MaxNopMLMD= npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0)) *4*4 ; 
+  // * start with a relatively low number, so it does not run out of memory *
+  int MaxNopMLMD= npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0)); // *4*4 ; 
 
   sizeCG_PBCMsg = MaxNopMLMD; // CG side
   sizeRG_PBCMsg = MaxNopMLMD; // RG side
-  MAXsizePBCMsg = 20*MaxNopMLMD;
+  MAXsizePBCMsg = 100*MaxNopMLMD; //20*MaxNopMLMD;
 
   // wether to allow resize of repopulated particle buffers
   AllowPMsgResize= col->getAllowPMsgResize();
@@ -1850,84 +1851,85 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
   
   // create communicators involving only the cores of the grid involved in particle BC communication
   if (true){
-  MPI_Barrier(vct->getComm());
-
-  // as a child, creation of a communicator of cores exchanging PBC
-  int color; 
-  int key=0; // so rank is assigned based on the 'old' rank
-  if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0) color=1; else color= MPI_UNDEFINED;
-  MPI_Comm_split(vct->getComm(), color, key, &COMM_RG_PBCSubset_P);
-
-  MPI_Barrier(vct->getComm()); // not sure it's needed
-  if (numChildren >0){
-    COMM_CG_PBCSubset_P= new MPI_Comm[numChildren];
-    CGSide_CGLeader_PBCSubset= new int[numChildren];
-  }
-  // as a parent, creation of a communicator of cores sending PBC
-  for (int ch=0; ch< numChildren; ch++){
-    if (vct->getCommToChild_P(ch, ns) != MPI_COMM_NULL and CG_numPBCMessages[ch]> 0) color=1; else color= MPI_UNDEFINED;
-    MPI_Comm_split(vct->getComm(), color, key, COMM_CG_PBCSubset_P+ch);
+    MPI_Barrier(vct->getComm());
+    
+    // as a child, creation of a communicator of cores exchanging PBC
+    int color; 
+    int key=0; // so rank is assigned based on the 'old' rank
+    if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0) color=1; else color= MPI_UNDEFINED;
+    MPI_Comm_split(vct->getComm(), color, key, &COMM_RG_PBCSubset_P);
+    
     MPI_Barrier(vct->getComm()); // not sure it's needed
-  }
-
-  /* the CG core EXCHANGING PBC which will be leader in the communication to the RG throught the 'usual' Parent-Child communicator
-     (which most probably will pass through another CG core) */
-  for (int ch=0; ch< numChildren; ch++){
-    int rankPC= vct->getRank_CommToChildren_P(ch, ns);
-    if (COMM_CG_PBCSubset_P[ch] != MPI_COMM_NULL)
-      MPI_Allreduce(&rankPC, CGSide_CGLeader_PBCSubset+ ch, 1, MPI_INT, MPI_MIN, COMM_CG_PBCSubset_P[ch]);
-  }
-
-  // build the list of RG cores to notify of the resize
-  if (AllowPMsgResize==true){
-    // build the list of RG cores to notify of the resize; each core has to receive only one msg
-    // hence this
-
-    bool Needed= false; // am i the spokeperson to any child?
-    int Max=0;
-    for (int ch=0; ch< numChildren; ch++){
-      if (COMM_CG_PBCSubset_P[ch] == MPI_COMM_NULL) continue;
-      int S; 
-      MPI_Comm_size(vct->getCommToChild_P(ch, ns), &S);
-      if (S> Max) Max=S;
-      if (CGSide_CGLeader_PBCSubset[ch]== vct->getRank_CommToChildren_P(ch, ns))
-	Needed = Needed or true;
+    if (numChildren >0){
+      COMM_CG_PBCSubset_P= new MPI_Comm[numChildren];
+      CGSide_CGLeader_PBCSubset= new int[numChildren];
     }
-    if (Needed){
-      numRcv= new int[numChildren];
-      RcvList= newArr2(int, numChildren, Max);
-    }
-
+    // as a parent, creation of a communicator of cores sending PBC
     for (int ch=0; ch< numChildren; ch++){
-      if (COMM_CG_PBCSubset_P[ch] == MPI_COMM_NULL) continue;
+      if (vct->getCommToChild_P(ch, ns) != MPI_COMM_NULL and CG_numPBCMessages[ch]> 0) color=1; else color= MPI_UNDEFINED;
+      MPI_Comm_split(vct->getComm(), color, key, COMM_CG_PBCSubset_P+ch);
+      MPI_Barrier(vct->getComm()); // not sure it's needed
+    }
+    
+    /* the CG core EXCHANGING PBC which will be leader in the communication to the RG throught the 'usual' Parent-Child communicator
+       (which most probably will pass through another CG core) */
+    for (int ch=0; ch< numChildren; ch++){
+      int rankPC= vct->getRank_CommToChildren_P(ch, ns);
+      if (COMM_CG_PBCSubset_P[ch] != MPI_COMM_NULL)
+	MPI_Allreduce(&rankPC, CGSide_CGLeader_PBCSubset+ ch, 1, MPI_INT, MPI_MIN, COMM_CG_PBCSubset_P[ch]);
+    }
+    
+    // build the list of RG cores to notify of the resize
+    if (AllowPMsgResize==true){
+      // build the list of RG cores to notify of the resize; each core has to receive only one msg
+      // hence this
       
-      int size;
-      MPI_Comm_size(vct->getCommToChild_P(ch, ns), &size);
-      bool *tmp= new bool[size];
-      bool *tmp_2= new bool[size];
-      for (int ss=0; ss< size; ss++){tmp[ss]=false; tmp_2[ss]=false; }
-
-      // list of RG cores this CG cores communicates with
-      for (int m=0; m< CG_numPBCMessages[ch]; m++){
-	tmp[CG_Info[ch][m].RG_core]= true;
+      bool Needed= false; // am i the spokeperson to any child?
+      int Max=0;
+      for (int ch=0; ch< numChildren; ch++){
+	if (COMM_CG_PBCSubset_P[ch] == MPI_COMM_NULL) continue;
+	int S; 
+	MPI_Comm_size(vct->getCommToChild_P(ch, ns), &S);
+	if (S> Max) Max=S;
+	if (CGSide_CGLeader_PBCSubset[ch]== vct->getRank_CommToChildren_P(ch, ns))
+	  Needed = Needed or true;
       }
-      // now i have to share it
-      MPI_Allreduce(tmp, tmp_2, size, MPI::BOOL, MPI_LOR, COMM_CG_PBCSubset_P[ch]);
+      if (Needed){
+	numRcv= new int[numChildren];
+	RcvList= newArr2(int, numChildren, Max);
+      }
+      
+      for (int ch=0; ch< numChildren; ch++){
+	if (COMM_CG_PBCSubset_P[ch] == MPI_COMM_NULL) continue;
 	
-      // i am the spokeperson
-      if (vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
-	cout << "Grid " << numGrid << " R "<< vct->getCartesian_rank() << "is spokeperson " << endl;
-	numRcv[ch]=0;
-	for (int i=0; i< size; i++){
-	  if (tmp_2[i] == true){ RcvList[ch][numRcv[ch]]=i;  numRcv[ch]++;}
-	} // end for (int i=0; i< size; i++){
-
-      }// end if (vct->getRank_CommToChildren_P(nc, ns) == CGSide_CGLeader_PBCSubset[ch]){
-    } // end for (int ch=0; ch< numChildren; ch++){
-  } // end if (AllowPMsgResize==true)
+	int size;
+	MPI_Comm_size(vct->getCommToChild_P(ch, ns), &size);
+	bool *tmp= new bool[size];
+	bool *tmp_2= new bool[size];
+	for (int ss=0; ss< size; ss++){tmp[ss]=false; tmp_2[ss]=false; }
+	
+	// list of RG cores this CG cores communicates with
+	for (int m=0; m< CG_numPBCMessages[ch]; m++){
+	  tmp[CG_Info[ch][m].RG_core]= true;
+	}
+	// now i have to share it
+	MPI_Allreduce(tmp, tmp_2, size, MPI::BOOL, MPI_LOR, COMM_CG_PBCSubset_P[ch]);
+	
+	// i am the spokeperson
+	if (vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
+	  cout << "Grid " << numGrid << " R "<< vct->getCartesian_rank() << "is spokeperson " << endl;
+	  numRcv[ch]=0;
+	  for (int i=0; i< size; i++){
+	    if (tmp_2[i] == true){ RcvList[ch][numRcv[ch]]=i;  numRcv[ch]++;}
+	  } // end for (int i=0; i< size; i++){
+	  
+	}// end if (vct->getRank_CommToChildren_P(nc, ns) == CGSide_CGLeader_PBCSubset[ch]){
+      } // end for (int ch=0; ch< numChildren; ch++){
+    } // end if (AllowPMsgResize==true)
+    
+  }
   
-}
-  
+  TrimInfoVector(vct);
 }
 
 /** commit the RGPBC structure for initial handshake between coarse and refined grids **/
@@ -3706,4 +3708,52 @@ void Particles3Dcomm::get_El(const double weights[2][2][2], int ix, int iy, int 
         l = l + 1;
       }
 
+}
+
+void Particles3Dcomm::TrimInfoVector(VirtualTopology3D *vct){
+  
+  int dim;
+  MPI_Comm CommToParent= vct->getCommToParent_P(ns);
+
+  // as a child
+  if (CommToParent != MPI_COMM_NULL){
+    dim= RG_numPBCMessages+1;
+
+    RGPBC_struct* tmp= new RGPBC_struct[dim];
+
+    for (int i=0; i< RG_numPBCMessages; i++){
+      tmp[i]= RGPBC_Info[i];
+    }
+    delete[]RGPBC_Info;
+    RGPBC_Info= new RGPBC_struct[dim];
+
+    for (int i=0; i< RG_numPBCMessages; i++){
+      RGPBC_Info[i]= tmp[i];
+    }
+    delete[]tmp;
+
+  } // end if (CommToParent != MPI_COMM_NULL){
+  if (numChildren>0){
+    dim=0;
+    for (int ch=0; ch< numChildren; ch++){
+      if (CG_numPBCMessages[ch] >dim) {dim= CG_numPBCMessages[ch];}
+    }
+    dim=dim+1;
+    RGPBC_struct **tmp2= newArr2(RGPBC_struct, numChildren, dim);
+    for (int ch=0; ch< numChildren; ch++){
+      for(int d=0; d<dim; d++){
+        tmp2[ch][d]= CG_Info[ch][d];
+      }
+    }
+    delArr2(CG_Info, numChildren);
+
+    CG_Info= newArr2(RGPBC_struct, numChildren, dim);
+    for (int ch=0; ch< numChildren; ch++){
+      for(int d=0; d<dim; d++){
+        CG_Info[ch][d]= tmp2[ch][d];
+      }
+    }
+
+    delArr2(tmp2, numChildren);
+  } // end if (numChildren>0){
 }

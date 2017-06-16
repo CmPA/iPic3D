@@ -309,7 +309,8 @@ public:
   void CheckSentReceivedParticles(VirtualTopology3D* vct);
   /* distribute split particles to the right RG core*/
   void communicateRepopulatedParticles(Grid* grid, VirtualTopology3D * vct);
-
+  /* trims the **_Info vectors used by the MLMD structure*/
+  void TrimInfoVector(VirtualTopology3D *vct);
   // moved here from Particles3D.h
   void get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]);
   void get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext);
