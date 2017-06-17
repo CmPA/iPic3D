@@ -235,16 +235,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   /*if (vct->getCartesian_rank() == 0)
     cout << "In EMfields3D.cpp, grid " << numGrid << ", MaxGridCoreN is " << MaxGridCoreN << endl;*/
   
-  //MAX_RG_numBCMessages= (int) (MaxGridCoreN*6+1); // something smarter has to be done with this guy
-  //MAX_size_LevelWide= MAX_RG_numBCMessages* 4;
-  int MaxGridPer= vct->getMaxGridPer();
-
-  // this number has to take into account projection as well, so keep it so big
-  // if the application passes init, then vectors are resized to the right size and everything is ok
-  MAX_RG_numBCMessages=  (int) (MaxGridCoreN*6+1);                
-  MAX_size_LevelWide= MAX_RG_numPBCMessages*4;  
-
-
+  MAX_RG_numBCMessages= (int) (MaxGridCoreN*6+1); // something smarter has to be done with this guy
+  MAX_size_LevelWide= MAX_RG_numBCMessages* 4;
+  
   int P= vct->getParentGridNum();
   // resolution of the parent
   DxP= grid->getDx_mlmd(P);
