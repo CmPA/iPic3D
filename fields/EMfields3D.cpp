@@ -238,8 +238,12 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   //MAX_RG_numBCMessages= (int) (MaxGridCoreN*6+1); // something smarter has to be done with this guy
   //MAX_size_LevelWide= MAX_RG_numBCMessages* 4;
   int MaxGridPer= vct->getMaxGridPer();
-  MAX_RG_numBCMessages=  vct->getMaxRF1()* vct->getMaxRF1(); //(int) (MaxGridCoreN*6+1);                
-  MAX_size_LevelWide= MAX_RG_numBCMessages* MaxGridPer; //MAX_RG_numPBCMessages*4;  
+
+  // this number has to take into account projection as well, so keep it so big
+  // if the application passes init, then vectors are resized to the right size and everything is ok
+  MAX_RG_numBCMessages=  (int) (MaxGridCoreN*6+1);                
+  MAX_size_LevelWide= MAX_RG_numPBCMessages*4;  
+
 
   int P= vct->getParentGridNum();
   // resolution of the parent
@@ -8141,6 +8145,12 @@ void EMfields3D::initWeightProj(Grid *grid, VirtualTopology3D *vct){
   MPI_Abort(MPI_COMM_WORLD, -1);
 
   MPI_Barrier(MPI_COMM_WORLD);*/
+
+  MPI_Barrier(vct->getComm());
+  if (rank_local==0){
+    cout << "I am grid " << numGrid <<", I am after the barrier at the end of initWeightProj" << endl;
+  }
+  
 }
 
 
