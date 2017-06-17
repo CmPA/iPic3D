@@ -235,9 +235,11 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   /*if (vct->getCartesian_rank() == 0)
     cout << "In EMfields3D.cpp, grid " << numGrid << ", MaxGridCoreN is " << MaxGridCoreN << endl;*/
   
-  MAX_RG_numBCMessages= (int) (MaxGridCoreN*6+1); // something smarter has to be done with this guy
-  MAX_size_LevelWide= MAX_RG_numBCMessages* 4;
-
+  //MAX_RG_numBCMessages= (int) (MaxGridCoreN*6+1); // something smarter has to be done with this guy
+  //MAX_size_LevelWide= MAX_RG_numBCMessages* 4;
+  int MaxGridPer= vct->getMaxGridPer();
+  MAX_RG_numBCMessages=  vct->getMaxRF1()* vct->getMaxRF1(); //(int) (MaxGridCoreN*6+1);                
+  MAX_size_LevelWide= MAX_RG_numBCMessages* MaxGridPer; //MAX_RG_numPBCMessages*4;  
 
   int P= vct->getParentGridNum();
   // resolution of the parent
@@ -7769,7 +7771,7 @@ void EMfields3D::initDoubleGEM_CentralPerturbation(VirtualTopology3D * vct, Grid
           Ez[i][j][k] = 0.0;
           // Magnetic field
           Bxn[i][j][k] = B0x * (-1.0 + tanh(yBd) + tanh(-yTd));
-	  cout << "Bxn[i][j][k] "<< Bxn[i][j][k] <<endl;
+	  //cout << "Bxn[i][j][k] "<< Bxn[i][j][k] <<endl;
           // add the initial GEM perturbation
           Bxn[i][j][k] += 0.;
           Byn[i][j][k] = B0y;

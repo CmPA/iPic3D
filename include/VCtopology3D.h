@@ -171,7 +171,8 @@ public:
 
   /* return the max number of cores used of a single grid */
   int getMaxGridCoreN() {return MaxGridCoreN;}
-
+  int getMaxGridPer() {return MaxGridPer;}
+  int getMaxRF1() {return MaxRF1;}
   /* return the values of the cartesian coordinate lookup table 
      NB: N is the rank number in the inter-communicator (CommToParent or CommToChildren)*/
   // for fields
@@ -309,7 +310,11 @@ private:
   /* here, the max number of cores used of a single grid; 
    needed to size communication buffers in EMfields*/
   int MaxGridCoreN;
-
+  /* here, the maximum perimeter of a single grid;
+     needed to size - smaller - communication buffers in fields and particles files */
+  int MaxGridPer;
+  /* the max RF in grid 1, to be used for sizing */
+  int MaxRF1;
   /* number of children of the current grid */
   int numChildren;
 

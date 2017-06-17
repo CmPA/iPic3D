@@ -130,6 +130,8 @@ public:
   virtual int getChildGridNum(int n) =0;
   
   virtual int getMaxGridCoreN()=0;
+  virtual int getMaxGridPer()=0;
+  virtual int getMaxRF1()=0;
 
   virtual int getRank_CommToChildren_P(int nc, int is) =0;
   /* return the values of the cartesian coordinate lookup table  

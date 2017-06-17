@@ -101,6 +101,8 @@ VCtopology3D::VCtopology3D(Collective *col) {
   ZLEN_mlmd= new int[Ngrids];
   
   MaxGridCoreN= 0;
+  MaxGridPer= 0;
+  MaxRF1= 1;
   for (int g=0; g< Ngrids; g++){
     XLEN_mlmd[g]= col->getXLEN_mlmd(g);
     YLEN_mlmd[g]= col->getYLEN_mlmd(g);
@@ -108,8 +110,29 @@ VCtopology3D::VCtopology3D(Collective *col) {
 
     if (XLEN_mlmd[g]*YLEN_mlmd[g]*ZLEN_mlmd[g] > MaxGridCoreN) 
       MaxGridCoreN= XLEN_mlmd[g]*YLEN_mlmd[g]*ZLEN_mlmd[g];
+
+    // max perimeter
+    int S1= XLEN_mlmd[g]*YLEN_mlmd[g];
+    int S2= XLEN_mlmd[g]*ZLEN_mlmd[g];
+    int S3= YLEN_mlmd[g]*ZLEN_mlmd[g];
+    int P= 2*S1+2*S2+2*S3;
+
+    if (P> MaxGridPer)
+      MaxGridPer= P;
+
+    if (g==1){
+      int RF0x= int (col->getDx_mlmd(0)/col->getDx_mlmd(1));
+      int RF0y= int (col->getDy_mlmd(0)/col->getDy_mlmd(1));
+      int RF0z= int (col->getDz_mlmd(0)/col->getDz_mlmd(1));
+      
+      MaxRF1= RF0x;
+      if (RF0y> MaxRF1) MaxRF1= RF0y;
+      if (RF0z> MaxRF1) MaxRF1= RF0z;
+    }
+    
   }
 
+  //cout << "MaxRF1: " << MaxRF1 << endl;
   int rr;
   MPI_Comm_rank(MPI_COMM_WORLD, &rr);
 

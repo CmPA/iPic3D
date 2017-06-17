@@ -370,8 +370,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
 
   int MaxGridCoreN= vct->getMaxGridCoreN();
-  MAX_RG_numPBCMessages= (int) (MaxGridCoreN*6+1);
-  MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages*4;
+  int MaxGridPer= vct->getMaxGridPer();
+  MAX_RG_numPBCMessages=  vct->getMaxRF1()* vct->getMaxRF1(); //(int) (MaxGridCoreN*6+1);
+  MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages * MaxGridPer; //MAX_RG_numPBCMessages*4;
 
   // sizes of the PCGMsg values set here (but allocated only if needed) 
   // to have the send/ receive vectors with the same size, I cook up a number based 
@@ -1758,7 +1759,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 
       delete[]RGPBC_Info_LevelWide;
       
-      delete[]RGPBC_Info_ToCGCore;
+      delArr2(RGPBC_Info_ToCGCore, ParentCoreNum);
       delete[]RG_numPBCMessages_ToCGCore;
       
     } // end if if (rank_local==HighestRank) 
