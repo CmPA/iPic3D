@@ -371,8 +371,8 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   int MaxGridCoreN= vct->getMaxGridCoreN();
   int MaxGridPer= vct->getMaxGridPer();
-  MAX_RG_numPBCMessages=  vct->getMaxRF1()* vct->getMaxRF1()* vct->getMaxRF1(); //(int) (MaxGridCoreN*6+1);
-  MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages * MaxGridPer; //MAX_RG_numPBCMessages*4;
+  MAX_RG_numPBCMessages= (vct->getMaxRF1()+8)* vct->getMaxRF1()* vct->getMaxRF1();
+  MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages * MaxGridPer; 
 
   // sizes of the PCGMsg values set here (but allocated only if needed) 
   // to have the send/ receive vectors with the same size, I cook up a number based 
@@ -1642,14 +1642,14 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       if (rank_local==HighestRank){ 
 	H_CRP_General= new CRP_struct[size_CRP];
 	H_CRP_General_ptr= H_CRP_General; // for resize
-	H_CRP_Msg= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
-	H_CRP_Msg_ptr= H_CRP_Msg;
+	/*H_CRP_Msg= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
+	  H_CRP_Msg_ptr= H_CRP_Msg;*/
 	H_num_CRP_nop= new int[XLEN*YLEN*ZLEN];
 	H_CRP_cores= new int[XLEN*YLEN*ZLEN];
 	for (int ii=0; ii< XLEN*YLEN*ZLEN; ii++){
 	  H_CRP_cores[ii]=0;
 	  H_num_CRP_nop[ii]=0;
-	}
+	  }
 	num_H_CRP_cores=0;
       }
       else{
@@ -1851,6 +1851,24 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
     }*/
   
   // create communicators involving only the cores of the grid involved in particle BC communication
+
+  /* finally instantiate H_CRP_Msg, but only the entries which are needed */
+
+  if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0 and rank_local==HighestRank) {
+    H_CRP_Msg= newArr2_PA(CRP_struct, XLEN*YLEN*ZLEN, size_CRP, H_CRP_cores);      
+    H_CRP_Msg_ptr= H_CRP_Msg;
+    /*for (int i=0; i< XLEN*YLEN*ZLEN; i++){
+      cout << i << " of " << XLEN*YLEN*ZLEN <<": H_CRP_cores[i]: "<< H_CRP_cores[i] << endl;
+      }*/
+    /*for (int i=0; i< XLEN*YLEN*ZLEN; i++){
+      if (H_CRP_cores[i]!=1)
+	cout << "Trying to provoke segm fault: " << H_CRP_Msg[i][3].q << endl;
+	}*/
+      
+
+  }
+  /* end finally instantiate H_CRP_Msg */
+
   
   MPI_Barrier(vct->getComm());
   
@@ -3416,20 +3434,20 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct){
     delete[]H_CRP_General_tmp;
 
     /* -- H_CRP_Msg -- */
-    CRP_struct ** H_CRP_Msg_tmp= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
+    CRP_struct ** H_CRP_Msg_tmp= newArr2_PA(CRP_struct, XLEN*YLEN*ZLEN, size_CRP, H_CRP_cores); 
     
     for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      //memcpy(&(H_CRP_Msg_tmp[i][0]), &(H_CRP_Msg[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      if (H_CRP_cores[i]!= 1) continue;
       for (int j=0; j< H_num_CRP_nop[i]; j++)
 	H_CRP_Msg_tmp[i][j]= H_CRP_Msg_ptr[i][j];
     }
 
     delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
-    H_CRP_Msg= newArr2(CRP_struct, XLEN*YLEN*ZLEN, NEW_size_CRP);
+    H_CRP_Msg= newArr2_PA(CRP_struct, XLEN*YLEN*ZLEN, NEW_size_CRP, H_CRP_cores); 
     H_CRP_Msg_ptr= H_CRP_Msg;
     
     for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      //memcpy(&(H_CRP_Msg[i][0]), &(H_CRP_Msg_tmp[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      if (H_CRP_cores[i]!= 1) continue;
       for (int j=0; j<  H_num_CRP_nop[i]; j++)
 	H_CRP_Msg[i][j]= H_CRP_Msg_tmp[i][j];
     }
@@ -3473,24 +3491,26 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct, int NewSize){
     delete[]H_CRP_General_tmp;
 
     /* -- H_CRP_Msg -- */
-    CRP_struct ** H_CRP_Msg_tmp= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
+    CRP_struct ** H_CRP_Msg_tmp= newArr2_PA(CRP_struct, XLEN*YLEN*ZLEN, size_CRP, H_CRP_cores); 
     
     for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      //memcpy(&(H_CRP_Msg_tmp[i][0]), &(H_CRP_Msg[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      if (H_CRP_cores[i]!= 1) continue;
       for (int j=0; j< H_num_CRP_nop[i]; j++)
-        H_CRP_Msg_tmp[i][j]= H_CRP_Msg_ptr[i][j];
+	H_CRP_Msg_tmp[i][j]= H_CRP_Msg_ptr[i][j];
     }
 
     delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
-    H_CRP_Msg= newArr2(CRP_struct, XLEN*YLEN*ZLEN, NewSize);
+    H_CRP_Msg= newArr2_PA(CRP_struct, XLEN*YLEN*ZLEN, NewSize, H_CRP_cores); 
     H_CRP_Msg_ptr= H_CRP_Msg;
     
     for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      for (int j=0; j< H_num_CRP_nop[i]; j++)
-        H_CRP_Msg[i][j]= H_CRP_Msg_tmp[i][j];
-      //memcpy(&(H_CRP_Msg[i][0]), &(H_CRP_Msg_tmp[i][0]), sizeof(CRP_struct)* H_num_CRP_nop[i]);
+      if (H_CRP_cores[i]!= 1) continue;
+      for (int j=0; j<  H_num_CRP_nop[i]; j++)
+	H_CRP_Msg[i][j]= H_CRP_Msg_tmp[i][j];
     }
     delArr2(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN);
+
+  
 
   } else{ 
     /* not HighestRank: resize & preserve CRP_ToCoreH */

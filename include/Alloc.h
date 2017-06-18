@@ -3,6 +3,15 @@
 #define ALLOC_H
 
 #include <stdlib.h>
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+
+using namespace std;
+using std::cerr;
+using std::endl;
+using std::ofstream;
 
 /*! The allocator for 4D array */
 template < class type > type **** _new_4_array(int sz1, int sz2, int sz3, int sz4) {
@@ -141,6 +150,32 @@ template < class type > type ** _new_2_array(int sz1, int sz2) {
 
 }
 
+/** **/
+/*! The allocator for 2D array */
+template < class type > type ** _new_2_array_PA_Test(int sz1, int sz2){ //, int * Which) {
+
+  type ** res= new type*[sz1];
+  for(int i = 0; i < sz1; i++) {
+    res[i]= new type[sz2];
+  }
+  return res;
+}
+template < class type > type ** _new_2_array_PA(int sz1, int sz2, int * Which) {
+
+
+  type ** res= new type*[sz1];
+  for(int i = 0; i < sz1; i++) {
+    if (Which[i]==1){
+      res[i] = new type[sz2];
+    }
+    else{
+      res[i] =NULL; // new type[1];
+    }
+  }
+  return res;
+}
+/** **/
+
 /*! The assignment for 2D array */
 template < class type > type ** _assign_2_array(int sz1, int sz2, type ** org) {
 
@@ -168,6 +203,9 @@ template < class type > void delArr2(type ** arr, int dummyx) {
 #define newArr4(type,sz1,sz2,sz3,sz4) _new_4_array<type>((sz1),(sz2),(sz3),(sz4))
 #define newArr3(type,sz1,sz2,sz3) _new_3_array<type>((sz1),(sz2),(sz3))
 #define newArr2(type,sz1,sz2) _new_2_array<type>((sz1),(sz2))
+
+#define newArr2_PA(type,sz1,sz2, Which) _new_2_array_PA<type>((sz1),(sz2),(Which))
+#define newArr2_PA_Test(type,sz1,sz2) _new_2_array_PA_Test<type>((sz1),(sz2)) 
 
 #define asgArr2(type,sz1,sz2,org) _assign_2_array<type>((sz1),(sz2),(org))
 #define asgArr3(type,sz1,sz2,sz3,org) _assign_3_array<type>((sz1),(sz2),(sz3),(org))

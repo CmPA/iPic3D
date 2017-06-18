@@ -758,7 +758,7 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
   
   ExtraSmoothing= false; // extra smoothing is actually worse, so DO NOT enable it 
 
-  if (vct->getCartesian_rank()==0 and numGrid >0){
+  if (vct->getCartesian_rank()==0 and numGrid >0 and ExtraSmoothing){
     cout << "Grid " << numGrid <<" is doing extra boundary smoothing" << endl;
   }
   int nvolte = 6;
