@@ -378,11 +378,11 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // to have the send/ receive vectors with the same size, I cook up a number based 
   //   on the coarsest grid 
   // * start with a relatively low number, so it does not run out of memory *
-  int MaxNopMLMD= npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0)); // *4*4 ; 
+  int MaxNopMLMD= ceil(npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0)) *0.05 ); // *4*4 ; 
 
   sizeCG_PBCMsg = MaxNopMLMD; // CG side
   sizeRG_PBCMsg = MaxNopMLMD; // RG side
-  MAXsizePBCMsg = 100*MaxNopMLMD; //20*MaxNopMLMD;
+  MAXsizePBCMsg = 200*MaxNopMLMD; //20*MaxNopMLMD;
 
   // wether to allow resize of repopulated particle buffers
   AllowPMsgResize= col->getAllowPMsgResize();
@@ -489,7 +489,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   PRA_PAdded=0;
   MAX_np_CRP= 10*npmax; // exagerated number
-  size_CRP=  nop;
+  size_CRP=  ceil(nop*0.05); // it just needs to survive the init, then it will be resized
 
   // I am instantiating here local copies of Ex, Ey, Ezm Bx, By, Bz, Bx_ext, By_ext, Bz_ext
   Ex= newArr3(double, nxn, nyn, nzn);
@@ -1851,84 +1851,84 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
     }*/
   
   // create communicators involving only the cores of the grid involved in particle BC communication
-  if (true){
-    MPI_Barrier(vct->getComm());
-    
-    // as a child, creation of a communicator of cores exchanging PBC
-    int color; 
-    int key=0; // so rank is assigned based on the 'old' rank
-    if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0) color=1; else color= MPI_UNDEFINED;
-    MPI_Comm_split(vct->getComm(), color, key, &COMM_RG_PBCSubset_P);
-    
-    MPI_Barrier(vct->getComm()); // not sure it's needed
-    if (numChildren >0){
-      COMM_CG_PBCSubset_P= new MPI_Comm[numChildren];
-      CGSide_CGLeader_PBCSubset= new int[numChildren];
-    }
-    // as a parent, creation of a communicator of cores sending PBC
-    for (int ch=0; ch< numChildren; ch++){
-      if (vct->getCommToChild_P(ch, ns) != MPI_COMM_NULL and CG_numPBCMessages[ch]> 0) color=1; else color= MPI_UNDEFINED;
-      MPI_Comm_split(vct->getComm(), color, key, COMM_CG_PBCSubset_P+ch);
-      MPI_Barrier(vct->getComm()); // not sure it's needed
-    }
-    
-    /* the CG core EXCHANGING PBC which will be leader in the communication to the RG throught the 'usual' Parent-Child communicator
-       (which most probably will pass through another CG core) */
-    for (int ch=0; ch< numChildren; ch++){
-      int rankPC= vct->getRank_CommToChildren_P(ch, ns);
-      if (COMM_CG_PBCSubset_P[ch] != MPI_COMM_NULL)
-	MPI_Allreduce(&rankPC, CGSide_CGLeader_PBCSubset+ ch, 1, MPI_INT, MPI_MIN, COMM_CG_PBCSubset_P[ch]);
-    }
-    
-    // build the list of RG cores to notify of the resize
-    if (AllowPMsgResize==true){
-      // build the list of RG cores to notify of the resize; each core has to receive only one msg
-      // hence this
-      
-      bool Needed= false; // am i the spokeperson to any child?
-      int Max=0;
-      for (int ch=0; ch< numChildren; ch++){
-	if (COMM_CG_PBCSubset_P[ch] == MPI_COMM_NULL) continue;
-	int S; 
-	MPI_Comm_size(vct->getCommToChild_P(ch, ns), &S);
-	if (S> Max) Max=S;
-	if (CGSide_CGLeader_PBCSubset[ch]== vct->getRank_CommToChildren_P(ch, ns))
-	  Needed = Needed or true;
-      }
-      if (Needed){
-	numRcv= new int[numChildren];
-	RcvList= newArr2(int, numChildren, Max);
-      }
-      
-      for (int ch=0; ch< numChildren; ch++){
-	if (COMM_CG_PBCSubset_P[ch] == MPI_COMM_NULL) continue;
-	
-	int size;
-	MPI_Comm_size(vct->getCommToChild_P(ch, ns), &size);
-	bool *tmp= new bool[size];
-	bool *tmp_2= new bool[size];
-	for (int ss=0; ss< size; ss++){tmp[ss]=false; tmp_2[ss]=false; }
-	
-	// list of RG cores this CG cores communicates with
-	for (int m=0; m< CG_numPBCMessages[ch]; m++){
-	  tmp[CG_Info[ch][m].RG_core]= true;
-	}
-	// now i have to share it
-	MPI_Allreduce(tmp, tmp_2, size, MPI::BOOL, MPI_LOR, COMM_CG_PBCSubset_P[ch]);
-	
-	// i am the spokeperson
-	if (vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
-	  cout << "Grid " << numGrid << " R "<< vct->getCartesian_rank() << "is spokeperson " << endl;
-	  numRcv[ch]=0;
-	  for (int i=0; i< size; i++){
-	    if (tmp_2[i] == true){ RcvList[ch][numRcv[ch]]=i;  numRcv[ch]++;}
-	  } // end for (int i=0; i< size; i++){
-	  
-	}// end if (vct->getRank_CommToChildren_P(nc, ns) == CGSide_CGLeader_PBCSubset[ch]){
-      } // end for (int ch=0; ch< numChildren; ch++){
-    } // end if (AllowPMsgResize==true)
-    
+  
+  MPI_Barrier(vct->getComm());
+  
+  // as a child, creation of a communicator of cores exchanging PBC
+  int color; 
+  int key=0; // so rank is assigned based on the 'old' rank
+  if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0) color=1; else color= MPI_UNDEFINED;
+  MPI_Comm_split(vct->getComm(), color, key, &COMM_RG_PBCSubset_P);
+  
+  MPI_Barrier(vct->getComm()); // not sure it's needed
+  if (numChildren >0){
+    COMM_CG_PBCSubset_P= new MPI_Comm[numChildren];
+    CGSide_CGLeader_PBCSubset= new int[numChildren];
   }
+  // as a parent, creation of a communicator of cores sending PBC
+  for (int ch=0; ch< numChildren; ch++){
+    if (vct->getCommToChild_P(ch, ns) != MPI_COMM_NULL and CG_numPBCMessages[ch]> 0) color=1; else color= MPI_UNDEFINED;
+    MPI_Comm_split(vct->getComm(), color, key, COMM_CG_PBCSubset_P+ch);
+    MPI_Barrier(vct->getComm()); // not sure it's needed
+  }
+  
+  /* the CG core EXCHANGING PBC which will be leader in the communication to the RG throught the 'usual' Parent-Child communicator
+     (which most probably will pass through another CG core) */
+  for (int ch=0; ch< numChildren; ch++){
+    int rankPC= vct->getRank_CommToChildren_P(ch, ns);
+    if (COMM_CG_PBCSubset_P[ch] != MPI_COMM_NULL)
+      MPI_Allreduce(&rankPC, CGSide_CGLeader_PBCSubset+ ch, 1, MPI_INT, MPI_MIN, COMM_CG_PBCSubset_P[ch]);
+  }
+  
+  // build the list of RG cores to notify of the resize
+  if (AllowPMsgResize==true){
+    // build the list of RG cores to notify of the resize; each core has to receive only one msg
+    // hence this
+    
+    bool Needed= false; // am i the spokeperson to any child?
+    int Max=0;
+    for (int ch=0; ch< numChildren; ch++){
+      if (COMM_CG_PBCSubset_P[ch] == MPI_COMM_NULL) continue;
+      int S; 
+      MPI_Comm_size(vct->getCommToChild_P(ch, ns), &S);
+      if (S> Max) Max=S;
+      if (CGSide_CGLeader_PBCSubset[ch]== vct->getRank_CommToChildren_P(ch, ns))
+	Needed = Needed or true;
+    }
+    if (Needed){
+      numRcv= new int[numChildren];
+      RcvList= newArr2(int, numChildren, Max);
+    }
+    
+    for (int ch=0; ch< numChildren; ch++){
+      if (COMM_CG_PBCSubset_P[ch] == MPI_COMM_NULL) continue;
+      
+      int size;
+      MPI_Comm_size(vct->getCommToChild_P(ch, ns), &size);
+      bool *tmp= new bool[size];
+      bool *tmp_2= new bool[size];
+      for (int ss=0; ss< size; ss++){tmp[ss]=false; tmp_2[ss]=false; }
+      
+      // list of RG cores this CG cores communicates with
+      for (int m=0; m< CG_numPBCMessages[ch]; m++){
+	tmp[CG_Info[ch][m].RG_core]= true;
+      }
+      // now i have to share it
+      MPI_Allreduce(tmp, tmp_2, size, MPI::BOOL, MPI_LOR, COMM_CG_PBCSubset_P[ch]);
+      
+      // i am the spokeperson
+      if (vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
+	cout << "Grid " << numGrid << " R "<< vct->getCartesian_rank() << "is spokeperson " << endl;
+	numRcv[ch]=0;
+	for (int i=0; i< size; i++){
+	  if (tmp_2[i] == true){ RcvList[ch][numRcv[ch]]=i;  numRcv[ch]++;}
+	} // end for (int i=0; i< size; i++){
+	
+      }// end if (vct->getRank_CommToChildren_P(nc, ns) == CGSide_CGLeader_PBCSubset[ch]){
+    } // end for (int ch=0; ch< numChildren; ch++){
+  } // end if (AllowPMsgResize==true)
+  
+  
   
   TrimInfoVector(vct);
 }
