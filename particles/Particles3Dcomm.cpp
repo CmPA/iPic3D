@@ -371,7 +371,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   int MaxGridCoreN= vct->getMaxGridCoreN();
   int MaxGridPer= vct->getMaxGridPer();
-  MAX_RG_numPBCMessages=  vct->getMaxRF1()* vct->getMaxRF1(); //(int) (MaxGridCoreN*6+1);
+  MAX_RG_numPBCMessages=  vct->getMaxRF1()* vct->getMaxRF1()* vct->getMaxRF1(); //(int) (MaxGridCoreN*6+1);
   MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages * MaxGridPer; //MAX_RG_numPBCMessages*4;
 
   // sizes of the PCGMsg values set here (but allocated only if needed) 
@@ -1931,6 +1931,11 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
   
   
   TrimInfoVector(vct);
+
+  MPI_Barrier(vct->getComm());
+  if (vct->getCartesian_rank()==0){
+    cout << "Grid " << numGrid <<" ns " << ns << " has finished initWeightPBC"<< endl;
+  }
 }
 
 /** commit the RGPBC structure for initial handshake between coarse and refined grids **/
