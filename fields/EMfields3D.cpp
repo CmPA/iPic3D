@@ -317,6 +317,47 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
 
   startEcalc(grid,vct, col);
 
+  // set B BC
+  if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC){ // this added here when removing the BC exchange before B
+    setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+    setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+    
+    int NcellsX=2;
+    int NcellsY=2;
+    int NcellsZ=2;
+    
+    //AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+    
+    if (MLMD_BCBufferArea){
+      //  setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      
+      AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      NcellsX= BufX;
+      NcellsY= BufY;
+      NcellsZ= BufZ;
+    }
+    
+    communicateNode(nxn, nyn, nzn, Bxn, vct);
+    communicateNode(nxn, nyn, nzn, Byn, vct);
+    communicateNode(nxn, nyn, nzn, Bzn, vct);
+    
+    // fix cells
+    if (vct->getXleft_neighbor() == MPI_PROC_NULL)
+      fixBghostCells_Left(0, NcellsX);
+    if (vct->getYleft_neighbor() == MPI_PROC_NULL)
+      fixBghostCells_Left(1, NcellsY);
+    if (vct->getZleft_neighbor() == MPI_PROC_NULL)
+      fixBghostCells_Left(2, NcellsZ);
+    
+    if (vct->getXright_neighbor() == MPI_PROC_NULL)
+      fixBghostCells_Right(0, NcellsX);
+    if (vct->getYright_neighbor() == MPI_PROC_NULL)
+      fixBghostCells_Right(1, NcellsY);
+    if (vct->getZright_neighbor() == MPI_PROC_NULL)
+      fixBghostCells_Right(2, NcellsZ);
+  }
+  
+  
   double *xkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 E components
   double *bkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
   eqValue(0.0, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
@@ -1271,44 +1312,47 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
     communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
     //cout << "End communicateNodeBC"<<endl;
   } else{ // i put new send/ receive BC for B, sent/ received just before calculateB
-    setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
-    setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
 
-    int NcellsX=1;
-    int NcellsY=1;
-    int NcellsZ=1;
-
-    //AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-
-    if (MLMD_BCBufferArea){
-      //      setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-
-      AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-      NcellsX= BufX;
-      NcellsY= BufY;
-      NcellsZ= BufZ;
+    if (false){ // i have removed the BC exchange before B; now B BC are set in calculateE
+      setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
+      setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+      
+      int NcellsX=1;
+      int NcellsY=1;
+      int NcellsZ=1;
+      
+      //AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      
+      if (MLMD_BCBufferArea){
+	//      setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+	
+	AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+	NcellsX= BufX;
+	NcellsY= BufY;
+	NcellsZ= BufZ;
+      }
+      
+      communicateNode(nxn, nyn, nzn, Bxn, vct);
+      communicateNode(nxn, nyn, nzn, Byn, vct);
+      communicateNode(nxn, nyn, nzn, Bzn, vct);
+      
+      // fix cells
+      if (vct->getXleft_neighbor() == MPI_PROC_NULL)
+	fixBghostCells_Left(0, NcellsX);
+      if (vct->getYleft_neighbor() == MPI_PROC_NULL)
+	fixBghostCells_Left(1, NcellsY);
+      if (vct->getZleft_neighbor() == MPI_PROC_NULL)
+	fixBghostCells_Left(2, NcellsZ);
+      
+      if (vct->getXright_neighbor() == MPI_PROC_NULL)
+	fixBghostCells_Right(0, NcellsX);
+      if (vct->getYright_neighbor() == MPI_PROC_NULL)
+	fixBghostCells_Right(1, NcellsY);
+      if (vct->getZright_neighbor() == MPI_PROC_NULL)
+	fixBghostCells_Right(2, NcellsZ);
     }
-
-    communicateNode(nxn, nyn, nzn, Bxn, vct);
-    communicateNode(nxn, nyn, nzn, Byn, vct);
-    communicateNode(nxn, nyn, nzn, Bzn, vct);
-
-    // fix cells
-    if (vct->getXleft_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Left(0, NcellsX);
-    if (vct->getYleft_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Left(1, NcellsY);
-    if (vct->getZleft_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Left(2, NcellsZ);
-
-    if (vct->getXright_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Right(0, NcellsX);
-    if (vct->getYright_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Right(1, NcellsY);
-    if (vct->getZright_neighbor() == MPI_PROC_NULL)
-      fixBghostCells_Right(2, NcellsZ);
   }
-
+  
   communicateCenter(nxc, nyc, nzc, Bxc, vct);
   communicateCenter(nxc, nyc, nzc, Byc, vct);     
   communicateCenter(nxc, nyc, nzc, Bzc, vct);
@@ -6491,9 +6535,8 @@ void EMfields3D::sendBC(Grid *grid, VirtualTopology3D *vct){
       sendOneBC(vct, grid, CG_Info_Ghost[ch][m], ch, -1);
     }
   } // end cycle on child
-
-  MPI_Barrier(vct->getComm());
   if (MLMD_BCBufferArea ){
+    MPI_Barrier(vct->getComm());
     // this barrier has to stay!!!
     for (int ch=0; ch< numChildren; ch ++){
       for (int m=0; m<CG_numBCMessages_Buffer[ch]; m++){
@@ -6503,10 +6546,10 @@ void EMfields3D::sendBC(Grid *grid, VirtualTopology3D *vct){
     
   }
 
-  MPI_Barrier(vct->getComm());
+  /*MPI_Barrier(vct->getComm());
   if (vct->getCartesian_rank()==0){
     cout << "grid " << numGrid << " Finished sending BC" << endl;
-  }
+    }*/
 
 }
 /* receiveBC: refined grids receive BCs from the coarse grids */
@@ -6670,10 +6713,12 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
     }
   } // end receive msg
 
-  MPI_Barrier(vct->getComm());
+  
 
   // buffer
   if (MLMD_BCBufferArea ){
+
+    MPI_Barrier(vct->getComm());
     for (int m=0; m< RG_numBCMessages_Buffer; m++){
       
       MPI_Recv(RGMsgBuffer, RG_MaxMsgBufferSize *NumF, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, CommToParent_BCBuffer, &status);
@@ -6740,7 +6785,7 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
     
   } // end if (MLMD_BCBufferArea)
 
-  MPI_Barrier(vct->getComm());
+  //MPI_Barrier(vct->getComm());
 }
 
 void EMfields3D::receiveInitialInterpolation(Grid *grid, VirtualTopology3D *vct){

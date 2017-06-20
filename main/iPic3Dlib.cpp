@@ -401,12 +401,12 @@ void c_Solver::CalculateBField() {
 
 
   // receive BC on  Bn 
-  if (MLMD_BC) {EMf->receiveBC(grid, vct);}
+  //if (MLMD_BC) {EMf->receiveBC(grid, vct);}
 
   EMf->calculateB(grid, vct, col);   // calculate the B field
 
   // send BC on Bn 
-  if (MLMD_BC) {EMf->sendBC(grid, vct);}
+  //if (MLMD_BC) {EMf->sendBC(grid, vct);}
 
   // timeTasks.end(TimeTasks::BFIELD);
 
