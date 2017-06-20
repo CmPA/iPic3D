@@ -291,15 +291,13 @@ bool c_Solver::ParticlesMover() {
 
 void c_Solver::InjectBoundaryParticles(){
 
-  if (col->getRHOinject(i)>0.0){
-
     /* --------------------------------------- */
     /* Remove particles from depopulation area */
     /* --------------------------------------- */
 
     if (col->getCase()=="Dipole") {
       for (int i=0; i < ns; i++)
-        Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+          Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
 
     }
 
@@ -307,7 +305,9 @@ void c_Solver::InjectBoundaryParticles(){
     /* Remove all old particles and inject new ones only in the injeciton faces */
     /* ------------------------------------------------------------------------ */
 
-    mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+    for (int i=0; i < ns; i++)
+      if (col->getRHOinject(i)>0.0){
+        mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
 
   }
 
