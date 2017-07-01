@@ -367,62 +367,63 @@ bool c_Solver::ParticlesMover() {
 
 void c_Solver::InjectBoundaryParticles(){
 
-  if (col->getCase()=="Dipole") {
-    for (int i=0; i < ns; i++){
-      if (col->getRHOinject(i)>0.0)
-        mem_avail   = part[i].particle_repopulator(grid,vct,EMf,i);
-        Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
 
-    }
-  }
-  else if (col->getCase()=="Coils") {
-    //Remove particles from outside the simulation box
-    for (int i=0; i < ns; i++){
-    //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
-    /* Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
-     if (col->getRHOinject(i) > 0.0)
-       mem_avail = part[i].injector_rand_box(grid,vct,EMf);
-    */
-      Qremoved[i] = part[i].ReturnToCenterCircle();
-    }
-  }
-  else if (col->getCase()=="TwoCoils") {
-    //Remove particles from outside the simulation box
-  	for (int i=0; i < ns; i++){
-  	// Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
-  	// Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
-  	/* Qremoved[i] = part[i].deleteParticlesOutsideSphere(L_outer, col->getx_center(), col->gety_center(), col->getz_center());
-  	   if (col->getRHOinject(i) > 0.0){
-  	     double x_center_inect = col->getx_center() ;
-  	     double y_center_inect = col->gety_center() + col->getcoilSpacing()/2.0;
-  	     double z_center_inect = col->getz_center() ;
-  	     mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
-         x_center_inect = col->getx_center() ;
-  	     y_center_inect = col->gety_center() - col->getcoilSpacing()/2.0;
-  	     z_center_inect = col->getz_center() ;
-  	     mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
-  	}
-  	*/
-  	  Qremoved[i] = part[i].ReturnToCenterCircle();
-    }
-  }
-  else if (col->getCase()=="CoilsMono") {
-    //Remove particles from outside the simulation box
-    for (int i=0; i < ns; i++){
-    //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
-      Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
-        if (col->getRHOinject(i) > 0.0)
-          mem_avail = part[i].injector_rand_box_mono(grid,vct,EMf);
-    }
-  }
-  
-  /* --------------------------------------- */
-  /* Remove particles from depopulation area */
-  /* --------------------------------------- */
-  for (int i=0; i < ns; i++){
-    mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
-  }
-  
+      if (col->getCase()=="Dipole") {
+        for (int i=0; i < ns; i++){
+            if (col->getRHOinject(i)>0.0)
+            	mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+          Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+
+      }
+      }
+      else if (col->getCase()=="Coils") {
+	  //Remove particles from outside the simulation box
+		for (int i=0; i < ns; i++){
+			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+/*			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+			if (col->getRHOinject(i) > 0.0)
+				mem_avail = part[i].injector_rand_box(grid,vct,EMf);
+				*/
+			Qremoved[i] = part[i].ReturnToCenterCircle();
+		}
+      }
+      else if (col->getCase()=="TwoCoils") {
+      	  //Remove particles from outside the simulation box
+      		for (int i=0; i < ns; i++){
+      			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+      			  // Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+      	/*		Qremoved[i] =part[i].deleteParticlesOutsideSphere(L_outer, col->getx_center(), col->gety_center(), col->getz_center());
+      			if (col->getRHOinject(i) > 0.0){
+      				double x_center_inect = col->getx_center() ;
+      				double y_center_inect = col->gety_center() + col->getcoilSpacing()/2.0;
+      				double z_center_inect = col->getz_center() ;
+      				mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
+     				x_center_inect = col->getx_center() ;
+      				y_center_inect = col->gety_center() - col->getcoilSpacing()/2.0;
+      				z_center_inect = col->getz_center() ;
+      				mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
+      			}
+      			*/
+      			Qremoved[i] = part[i].ReturnToCenterCircle();
+      		}
+            }
+      else if (col->getCase()=="CoilsMono") {
+	  //Remove particles from outside the simulation box
+		for (int i=0; i < ns; i++){
+			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+			if (col->getRHOinject(i) > 0.0)
+				mem_avail = part[i].injector_rand_box_mono(grid,vct,EMf);
+		}
+      }
+      else{
+    	     /* --------------------------------------- */
+    	      /* Remove particles from depopulation area */
+    	      /* --------------------------------------- */
+          for (int i=0; i < ns; i++){
+          mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+      }
+      }
 }
 
 
