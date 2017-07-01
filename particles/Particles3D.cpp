@@ -1899,7 +1899,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
 
   /* -- NOTE: Hardcoded option -- */
   enum {LINEAR,INITIAL,FFIELD};
-  int rtype = FFIELD;
+  int rtype = INITIAL;
   /* -- END NOTE -- */
 
   if (vct->getCartesian_rank()==0){
