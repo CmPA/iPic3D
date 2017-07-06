@@ -640,7 +640,32 @@ void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
         Bzc[i][2][k] = B0z;
       }
   }
+  if (vct->getXright_neighbor()==MPI_PROC_NULL){
+      for (int j=0; j < nyc;j++)
+	    for (int k=0; k < nzc;k++){
+			Bxc[nxc-1][j][k] = B0x*tanh((grid->getYC(nxc-1,j,k) - Ly/2)/delta);
+			Bxc[nxc-2][j][k] = Bxc[nxc-1][j][k];
+			Bxc[nxc-3][j][k] = Bxc[nxc-1][j][k];
+			Byc[nxc-1][j][k] = B0y;
+			Bzc[nxc-1][j][k] = B0z;
+			Bzc[nxc-2][j][k] = B0z;
+			Bzc[nxc-3][j][k] = B0z;
 
+		}
+
+	}
+  if (vct->getXleft_neighbor()==MPI_PROC_NULL){
+      for (int j=0; j < nyc;j++)
+	    for (int k=0; k < nzc;k++){
+			Bxc[0][j][k] = B0x*tanh((grid->getYC(0,j,k) - Ly/2)/delta);
+			Bxc[1][j][k] = Bxc[0][j][k];
+			Bxc[2][j][k] = Bxc[0][j][k];
+			Byc[0][j][k] = B0y;
+			Bzc[0][j][k] = B0z;
+			Bzc[1][j][k] = B0z;
+			Bzc[2][j][k] = B0z;
+		}
+	}
 }
 /*! fix the B boundary when running gem */
 void EMfields3D::fixBrope(Grid * grid, VirtualTopology3D * vct) {
