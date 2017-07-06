@@ -141,6 +141,7 @@ public:
   MPI_Comm getCommToParent() {return CommToParent; }
   MPI_Comm getCommToParent_BCGhost() {return CommToParent_BCGhost; }
   MPI_Comm getCommToParent_BCBuffer() {return CommToParent_BCBuffer; }
+  MPI_Comm getCommToParent_BCFix3B() {return CommToParent_BCFix3B; }
   MPI_Comm getCommToParent_Proj() {return CommToParent_Proj; }
   /*! return the communicator to the parent FOR PARTICLES; it's MPI_COMM_NULL for the coarse grid or if you chose other BC's*/ 
   MPI_Comm getCommToParent_P(int is) {return CommToParent_P[is]; }
@@ -150,6 +151,7 @@ public:
   MPI_Comm getCommToChild(int n) {return CommToChildren[n];}
   MPI_Comm getCommToChild_BCGhost(int n) {return CommToChildren_BCGhost[n];}
   MPI_Comm getCommToChild_BCBuffer(int n) {return CommToChildren_BCBuffer[n];}
+  MPI_Comm getCommToChild_BCFix3B(int n) {return CommToChildren_BCFix3B[n];}
   MPI_Comm getCommToChild_Proj(int n) {return CommToChildren_Proj[n];}
   /* return the rank as a parent of the n-th child */
   int getRank_CommToChildren(int nc){return rank_CommToChildren[nc];}
@@ -322,12 +324,14 @@ private:
   MPI_Comm CommToParent;
   MPI_Comm CommToParent_BCGhost;
   MPI_Comm CommToParent_BCBuffer;
+  MPI_Comm CommToParent_BCFix3B;
   MPI_Comm CommToParent_Proj;
 
   /* communicator to children */
   MPI_Comm *CommToChildren;
   MPI_Comm *CommToChildren_BCGhost;
   MPI_Comm *CommToChildren_BCBuffer;
+  MPI_Comm *CommToChildren_BCFix3B;
   MPI_Comm *CommToChildren_Proj;
   /* communicator to parent -- for Particles 
      != from MPI_COMM_NULL if the grid is a child which wants to receive PBC

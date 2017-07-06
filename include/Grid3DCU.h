@@ -122,10 +122,15 @@ public:
   /* mlmd: coordinate on your parent grid 
      NB: i want it to be able to manage also negative indexes or indexes > nxn/ nyn/ nzn 
      (for the phase 1 of particle init BC) */
-  double getXN_P(int X, int Y, int Z); //{ return node_xcoord[X]+ Ox;}
-  double getYN_P(int X, int Y, int Z); //{ return node_ycoord[Y]+ Oy;}
-  double getZN_P(int X, int Y, int Z); //{ return node_zcoord[Z]+ Oz;}
+  double getXN_P(int X, int Y, int Z); 
+  double getYN_P(int X, int Y, int Z); 
+  double getZN_P(int X, int Y, int Z); 
   /* end mlmd: coordinate on your parent grid */
+  /* mlmd: coordinate of centers on the parent grid */
+  double getXC_P(int X, int Y, int Z); 
+  double getYC_P(int X, int Y, int Z); 
+  double getZC_P(int X, int Y, int Z); 
+  /* end mlmd: coordinate of centers on the parent grid */
 
   /** get Xstart */
   double getXstart();
@@ -177,7 +182,10 @@ public:
   /* returns the rank IN THE PARENT-CHILD communicator of the coarse grid core where the point is hosted    
      only the active part of the parent grid is examined*/
   int getParentRankFromGridPoint(VirtualTopology3D * vct, int xn, int yn, int zn);
+  int getParentRankFromGridCenter(VirtualTopology3D * vct, int xn, int yn, int zn);
   void RGBCExploreDirection(VirtualTopology3D *vct,string FACE, int DIR, int i0_s, int i0_e, int i1, int i2, double *SPXperC, double *SPYperC, double *SPZperC, int *NPperC, int *rank, int* Ncores, int *IndexFirstPointperC);
+
+  void RGBCExploreDirection_Centers(VirtualTopology3D *vct,string FACE, int DIR, int i0_s, int i0_e, int i1, int i2, double *SPXperC, double *SPYperC, double *SPZperC, int *NPperC, int *rank, int* Ncores, int *IndexFirstPointperC);
   /** given the rank N on the PARENT-CHILD communicator of the core,
       it returns it physical extension of this PARENT core
       -- at the moment, used for debug only --**/

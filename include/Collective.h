@@ -313,6 +313,7 @@ class Collective
     bool getMLMD_ParticleREPOPULATION();
     bool getMLMD_InitialInterpolation();
     bool getMLMD_BCBufferArea();
+    bool getMLMD_fixBCenters();
 
     bool getAllowPMsgResize();
 
@@ -584,7 +585,8 @@ class Collective
     bool MLMD_ParticleREPOPULATION;
     bool MLMD_InitialInterpolation;
     bool MLMD_BCBufferArea;
-    
+    bool MLMD_fixBCenters;
+
     /* wether to allow the resize of the buffers containing the particles to send CG->RG for repopulation
        false may be heavy on memory consumption
        true may be heavy on performance */

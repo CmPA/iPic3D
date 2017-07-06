@@ -107,6 +107,7 @@ public:
   virtual MPI_Comm getCommToParent() = 0;
   virtual MPI_Comm getCommToParent_BCGhost() = 0;
   virtual MPI_Comm getCommToParent_BCBuffer() = 0;
+  virtual MPI_Comm getCommToParent_BCFix3B() = 0;
   virtual MPI_Comm getCommToParent_Proj() = 0;
   /*! returns the communicator to the parent grid for particles */
   virtual MPI_Comm getCommToParent_P(int is) = 0;
@@ -117,6 +118,7 @@ public:
   virtual MPI_Comm getCommToChild(int n) =0;
   virtual MPI_Comm getCommToChild_BCGhost(int n) =0;
   virtual MPI_Comm getCommToChild_BCBuffer(int n) =0;
+  virtual MPI_Comm getCommToChild_BCFix3B(int n) =0;
   virtual MPI_Comm getCommToChild_Proj(int n) =0;
   // for particles
   virtual MPI_Comm getCommToChild_P(int n, int is) =0;

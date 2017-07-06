@@ -113,6 +113,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="DoubleGEM_CentralPerturbation") EMf->initDoubleGEM_CentralPerturbation(vct,grid, col);
     else if (col->getCase()=="initTestProjection") EMf->initTestProjection(vct,grid, col);
     else if (col->getCase()=="initTestBC") EMf->initTestBC(vct,grid, col);
+    else if (col->getCase()=="TestFix3B") EMf->initTestFix3B(vct,grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
