@@ -2,7 +2,7 @@
 CPP=	mpicxx
 OPTFLAGS=  -O2 
 
-SYSTEM = discover
+SYSTEM = pleiades
 
 # Libraties needed for intel compiler
 HDF5LIBS = -lhdf5 -lhdf5_hl -mkl 
@@ -17,9 +17,12 @@ LIB_HDF5 = -L$(NOBACKUP)/hdf5-1.8.11serial/lib
 endif
 
 ifeq ($(SYSTEM),pleiades)
-CPP=icc
-INC_HDF5 = -I/nasa/hdf5/1.8.3/intel/mpt/include
-LIB_HDF5 = -L/nasa/hdf5/1.8.3/intel/mpt/lib
+CPP=icpc
+#INC_HDF5 = -I/nasa/hdf5/1.8.3/intel/mpt/include
+#LIB_HDF5 = -L/nasa/hdf5/1.8.3/intel/mpt/lib
+#INC_HDF5 = -I/nobackup/glapenta/Libraries/hdf5/1.8.11/include
+#LIB_HDF5 = -L/nobackup/glapenta/Libraries/hdf5/1.8.11/lib
+HDF5LIBS = -lhdf5 -lhdf5_hl -lmpi -mkl# -llapack -lblas
 endif
 
 ifeq ($(SYSTEM),mms)
