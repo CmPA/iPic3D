@@ -3145,7 +3145,7 @@ void EMfields3D::SetLambda(Grid *grid, VirtualTopology3D * vct){
 
   bool SetDamping= false;
 
-  if (numGrid >0 and 0) SetDamping= true;
+  if (numGrid >0 ) SetDamping= true;
 
   if (vct->getCartesian_rank() ==0 and SetDamping)
     cout << "Grid " << numGrid << " is initialising a Lambda layer " << endl;
