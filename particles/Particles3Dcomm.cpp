@@ -797,17 +797,17 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
 
     // mlmd: delete only particles that get out of the grid completely
-    if (bcPfaceXleft <0 and CommToParent_P!= MPI_COMM_NULL){
-      xMin= Coord_XLeft_Start; xMax= Coord_XRight_End;
-      yMin= Coord_YLeft_Start; yMax= Coord_YRight_End;
-      zMin= Coord_ZLeft_Start; zMax= Coord_ZRight_End;
-    }else{
-      // so, if periodic, particles are not deleted
-      xMin=-Lx; xMax=2*Lx;
-      yMin=-Ly; yMax=2*Ly;
-      zMin=-Lz; zMax=2*Lz;
-    }
-    
+    if (ptVCT->getPERIODICX_P()) { xMin=-Lx; xMax=2*Lx; } // so periodic particles will stay in the system and be communicate
+    else if (bcPfaceXleft <0 and CommToParent_P!= MPI_COMM_NULL) { xMin= Coord_XLeft_Start; xMax= Coord_XRight_End; } // mlmd
+    else {xMin= 0; xMax= Lx;} // non periodic, non mlmd
+
+    if (ptVCT->getPERIODICY_P()) { yMin=-Ly; yMax=2*Ly; }
+    else if (bcPfaceYleft <0 and CommToParent_P!= MPI_COMM_NULL) { yMin= Coord_YLeft_Start; yMax= Coord_YRight_End; }
+    else {yMin= 0; yMax= Ly;}
+
+    if (ptVCT->getPERIODICZ_P()) { zMin=-Lz; zMax=2*Lz; }
+    else if (bcPfaceZleft <0 and CommToParent_P!= MPI_COMM_NULL) { zMin= Coord_ZLeft_Start; zMax= Coord_ZRight_End; }
+    else {zMin= 0; zMax= Lz;}
 
     if (x[np_current] < xMin or x[np_current]> xMax or y[np_current] < yMin or y[np_current]> yMax or z[np_current] < zMin or z[np_current]> zMax){
       // particle to delete
@@ -948,7 +948,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
 int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
   // allocate buffers
 
-  if (! (CommToParent_P!= MPI_COMM_NULL and bcPfaceXleft <0)) return 0;
+  if (! (CommToParent_P!= MPI_COMM_NULL and (bcPfaceXleft <0 or bcPfaceXright <0 or bcPfaceYleft <0 or bcPfaceYright <0 or bcPfaceZleft <0 or bcPfaceZright <0 ))) return 0;
 
   MPI_Status status;
   int new_buffer_size;
@@ -2839,7 +2839,7 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	// i should really separate by direction but i will do that later
 	if (bcPfaceXleft== -1 ) { 
 	  /* this is when i repopulate all the PRA
-	     if you arrive here, you should be kep */
+	     if you arrive here, you should be kept */
 	  Keep= true;
 	}
 	else if (bcPfaceXleft== -2){ // here i keep only the particles that have entered in the last dt
@@ -3248,14 +3248,16 @@ void Particles3Dcomm::unpack_CRP(CRP_struct p, VirtualTopology3D * vct){
   // check if p.Destination corresponds to this core
   if (p.Destination != vct->getCartesian_rank()){
     cout << "Grid " << numGrid <<": FATAL ERROR in unpack_CRP, aborting ..." <<endl;
-    MPI_Abort(MPI_COMM_WORLD, -1);
+    //MPI_Abort(MPI_COMM_WORLD, -1);
+    cout << "now i am continuing, but check the inconsistency..." << endl; return;
   }
   // check if the particle belongs to this core- use xStart_GC, etc because must particles are going to be in GC
   bool RightCore= (p.x >= xStart_GC and p.x <= xEnd_GC) and (p.y >= yStart_GC and p.y <= yEnd_GC) and (p.z >= zStart_GC and p.z <= zEnd_GC);
 
   if (RightCore== false){
     cout << "Grid " << numGrid <<": FATAL ERROR in unpack_CRP, aborting ..." <<endl;
-    MPI_Abort(MPI_COMM_WORLD, -1);
+    //MPI_Abort(MPI_COMM_WORLD, -1);
+    cout << "now i am continuing, but check the inconsistency..." << endl; return;
   }
   
   // now i can add the particle
