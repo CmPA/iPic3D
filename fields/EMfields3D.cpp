@@ -459,29 +459,6 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   else{
     setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
     setBC_Nodes(vct, Ex, Ey, Ez, Ex_Active_BC, Ey_Active_BC, Ez_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
-
-    /*if (MLMD_BCBufferArea){
-      //setBC_Nodes_TwoLess(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-      //setBC_Nodes_TwoLess(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-
-      AverageBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-      //AverageBC_Nodes(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-      }*/
-
-    // NB: these BCs are at time n, here B is still at time n                                     
-    // impose BC B on ghost nodes, for particles                                                
-    // i am imposing them at the previous time step, BC at n+1
-    //setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Ghost_BC, Byn_Ghost_BC, Bzn_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost);
-    //setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Active_BC, Byn_Active_BC, Bzn_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active); // if i don't put this, i see dots in correspondance with RG boundaries                                                                                 
-    /*for (int i=1; i<2; i++)
-      for (int j=0; j< nyn; j++)
-	for (int k=0; k< nzn; k++){
-	  cout << "indexes: " << i << ", " <<j <<", " << k <<endl;
-	  cout << "coords: "  <<grid->getXN(i, j, k) <<", " << grid->getYN(i, j, k) << ", " << grid->getZN(i, j, k) << endl;
-	  cout << "coords on parent: "  <<grid->getXN_P(i, j, k) <<", " << grid->getYN_P(i, j, k) << ", " << grid->getZN_P(i, j, k) << endl;
-	  cout << "Ex (global X): " << Ex[i][j][k] <<" Ey (10+ global Y): " << Ey[i][j][k] <<" Ez (20+ global Z): " << Ez[i][j][k] << endl;
-	  cout << "Ox: " << grid->getOx() << " Oy: " << grid->getOy() << " Oz: " << grid->getOz() << endl;
-	  }*/
 	 
   }
 
@@ -804,6 +781,8 @@ void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, V
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col) {
+
+  //return; // I HAVE ELIMINATED SMOOTHING
 
   bool ExtraSmoothing= false;
 
@@ -6945,7 +6924,7 @@ void EMfields3D::buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_st
 	const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
 	
 	//                                                                                                                                                       
-	/*Exl += weight000 * (Ex[ix][iy][iz]             );
+	Exl += weight000 * (Ex[ix][iy][iz]             );
 	Exl += weight001 * (Ex[ix][iy][iz - 1]         );
 	Exl += weight010 * (Ex[ix][iy - 1][iz]         );
 	Exl += weight011 * (Ex[ix][iy - 1][iz - 1]     );
@@ -6970,9 +6949,9 @@ void EMfields3D::buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_st
 	Ezl += weight100 * (Ez[ix - 1][iy][iz]         );
 	Ezl += weight101 * (Ez[ix - 1][iy][iz - 1]     );
 	Ezl += weight110 * (Ez[ix - 1][iy - 1][iz]     );
-	Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] ); */
+	Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] ); 
 
-	Exl += weight000 * (Ex_BS[ix][iy][iz]             );
+	/*Exl += weight000 * (Ex_BS[ix][iy][iz]             );
         Exl += weight001 * (Ex_BS[ix][iy][iz - 1]         );
         Exl += weight010 * (Ex_BS[ix][iy - 1][iz]         );
         Exl += weight011 * (Ex_BS[ix][iy - 1][iz - 1]     );
@@ -6997,7 +6976,7 @@ void EMfields3D::buildBCMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC_st
         Ezl += weight100 * (Ez_BS[ix - 1][iy][iz]         );
         Ezl += weight101 * (Ez_BS[ix - 1][iy][iz - 1]     );
         Ezl += weight110 * (Ez_BS[ix - 1][iy - 1][iz]     );
-        Ezl += weight111 * (Ez_BS[ix - 1][iy - 1][iz - 1] );
+        Ezl += weight111 * (Ez_BS[ix - 1][iy - 1][iz - 1] ); */
 
 
 	// TH
@@ -9159,8 +9138,7 @@ void EMfields3D::applyProjection(Grid *grid, VirtualTopology3D *vct, Collective 
   }
   // and smooth
   smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
+
 }
 
 
