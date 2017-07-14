@@ -542,14 +542,6 @@ void Collective::ReadInput(string inputfile) {
     bcEz[4] = bcEMfaceZright == 0 ? 2 : 1;   bcBz[4] = bcEMfaceZright == 0 ? 1 : 2;
     bcEz[5] = bcEMfaceZleft  == 0 ? 2 : 1;   bcBz[5] = bcEMfaceZleft  == 0 ? 1 : 2;
 
-    // Particles Boundary condition --> became arrays in mlmd
-    /*bcPfaceXright = config.read < int >("bcPfaceXright");
-    bcPfaceXleft  = config.read < int >("bcPfaceXleft");
-    bcPfaceYright = config.read < int >("bcPfaceYright");
-    bcPfaceYleft  = config.read < int >("bcPfaceYleft");
-    bcPfaceZright = config.read < int >("bcPfaceZright");
-    bcPfaceZleft  = config.read < int >("bcPfaceZleft");*/
-
     array_int bcPfaceXleft0 = config.read < array_int > ("bcPfaceXleft");
     array_int bcPfaceXright0 = config.read < array_int > ("bcPfaceXright");
     array_int bcPfaceYleft0 = config.read < array_int > ("bcPfaceYleft");
@@ -563,6 +555,8 @@ void Collective::ReadInput(string inputfile) {
     bcPfaceYright = new int[Ngrids];
     bcPfaceZleft = new int[Ngrids];
     bcPfaceZright = new int[Ngrids];
+
+    FluidLikeRep= false;
 
     bool outBcP= false;
     bcPfaceXleft[0]= bcPfaceXleft0.a; if (bcPfaceXleft[0]==-1) outBcP= true;
@@ -597,6 +591,21 @@ void Collective::ReadInput(string inputfile) {
       if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
 	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
       }
+
+      if (FluidLikeRep or bcPfaceXleft[N]==-3 or bcPfaceXright[N]==-3 or bcPfaceYleft[N]==-3 or bcPfaceYright[N]==-3 or bcPfaceZleft[N]==-3 or bcPfaceZright[N]==-3){
+
+	FluidLikeRep= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-3;
+	bcPfaceXright[N]=-3;
+	bcPfaceYleft[N]=-3;
+	bcPfaceYright[N]=-3;
+	bcPfaceZleft[N]=-3;
+	bcPfaceZright[N]=-3;
+      }
+
+      
+
     }
 
     if (Ngrids >2) {
@@ -616,6 +625,19 @@ void Collective::ReadInput(string inputfile) {
       }
       if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
 	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+
+      
+      if (FluidLikeRep or bcPfaceXleft[N]==-3 or bcPfaceXright[N]==-3 or bcPfaceYleft[N]==-3 or bcPfaceYright[N]==-3 or bcPfaceZleft[N]==-3 or bcPfaceZright[N]==-3){
+
+	FluidLikeRep= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-3;
+	bcPfaceXright[N]=-3;
+	bcPfaceYleft[N]=-3;
+	bcPfaceYright[N]=-3;
+	bcPfaceZleft[N]=-3;
+	bcPfaceZright[N]=-3;
       }
 
     }
@@ -638,6 +660,18 @@ void Collective::ReadInput(string inputfile) {
       if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
 	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
       }
+            
+      if (FluidLikeRep or bcPfaceXleft[N]==-3 or bcPfaceXright[N]==-3 or bcPfaceYleft[N]==-3 or bcPfaceYright[N]==-3 or bcPfaceZleft[N]==-3 or bcPfaceZright[N]==-3){
+
+	FluidLikeRep= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-3;
+	bcPfaceXright[N]=-3;
+	bcPfaceYleft[N]=-3;
+	bcPfaceYright[N]=-3;
+	bcPfaceZleft[N]=-3;
+	bcPfaceZright[N]=-3;
+      }
     }
 
     if (Ngrids >4) {
@@ -658,9 +692,28 @@ void Collective::ReadInput(string inputfile) {
       if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
 	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
       }
+
+      if (FluidLikeRep or bcPfaceXleft[N]==-3 or bcPfaceXright[N]==-3 or bcPfaceYleft[N]==-3 or bcPfaceYright[N]==-3 or bcPfaceZleft[N]==-3 or bcPfaceZright[N]==-3){
+
+	FluidLikeRep= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-3;
+	bcPfaceXright[N]=-3;
+	bcPfaceYleft[N]=-3;
+	bcPfaceYright[N]=-3;
+	bcPfaceZleft[N]=-3;
+	bcPfaceZright[N]=-3;
+      }
+
     }
       
-  }
+  } // end if(!RESTART1)
+
+  if (AllowPMsgResize and FluidLikeRep){
+    AllowPMsgResize= false;
+    cout <<"----- SINCE I AM USING FLUID REPOPULATION, I AM OVERRRIDING AllowPMsgResize = TRUE -----" << endl;
+  } // end if (AllowPMsgResize and FluidLikeRep){   
+
   TrackParticleID = new bool[ns];
   array_bool TrackParticleID0 = config.read < array_bool > ("TrackParticleID");
   TrackParticleID[0] = TrackParticleID0.a;
@@ -1775,6 +1828,7 @@ bool Collective::getMLMD_BCBufferArea() {return MLMD_BCBufferArea;}
 bool Collective::getMLMD_fixBCenters() {return MLMD_fixBCenters;}
 
 bool Collective::getAllowPMsgResize() {return AllowPMsgResize;}
+bool Collective::getFluidLikeRep() {return FluidLikeRep;}
 
 /*! end MLMD gets */
 /*! a first sanity check on MLMD inputs, called at the end of the constructor */

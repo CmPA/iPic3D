@@ -19,6 +19,52 @@
 using std::cout;
 using std::endl;
 
+/** RGBC_struct and related handling functions, NOT members of the class**/
+
+struct RGBC_struct {  // when changing this, change MPI_RGBC_struct_commit also      
+  // indices, local to the RG core, of the first point of the message
+  // to send back again */
+  int ix_first;
+  int iy_first;
+  int iz_first;
+  // this message refers to bottom, top, left, right, front, back face?  
+  // this will become a character: 'b' (bottom) 't' (top) 'l' (left) 'r' (right) 'B' (Back) 'f' (front)  
+  int BCside;
+  // number of Refined Grid point in the x, y, z direction  
+  int np_x;
+  int np_y;
+  int np_z;
+  // CG coordinates corresponding to the first point for this GC core  
+  double CG_x_first;
+  double CG_y_first;
+  double CG_z_first;
+  // CG core which sends this set of BCs  
+  //   important: one core per message;  
+  //   the rank is the one on the PARENT-CHILD communicator  
+  int CG_core;
+  // RG core involved in the communication;  
+  //   i need it because i plan to have one RG core collecting all the info and   
+  //   sending it to one CG core, to minimise CG-RG communication;   
+  //   the rank is on the PARENT-CHILD communicator*/  
+  int RG_core; 
+  // so RG grid knows what she is dealing with   
+  // when sending BC, send it back as tag   
+  // NB: the MsgID is the order in which that particle RG core builds the msg in init Phase1;  
+  // used when actually receiving BCs
+  int MsgID;
+}; // end structure     
+
+
+// add one handshake msg to the list
+// this to use in field initialisation, when more variables have to be assigned
+void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp , int MsgID_tmp);
+// add one handshake msg to the list
+// this to use in particle initialisation, when less variables have to be assigned
+void Assign_RGBC_struct_Values(RGBC_struct *s, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int MsgID_tmp);
+
+
+/** end RGBC_struct **/
+
 /**
  * Uniform cartesian local grid 3D
  *
@@ -31,6 +77,7 @@ using std::endl;
 class Grid3DCU                  // :public Grid
 {
 public:
+
   /** constructor */
   Grid3DCU(Collective * col, VirtualTopology3D * vct);
   /** destructor */
@@ -191,6 +238,8 @@ public:
       -- at the moment, used for debug only --**/
   void getParentLimits(VirtualTopology3D *vct, int N, double *xmin, double *xmax, double *ymin, double *ymax, double *zmin, double *zmax);
   /*! end mlmd specific functions */
+  void Explore3DAndCommit_Centers(int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct , char  dir);
+
 
   // /////////// PRIVATE VARIABLES //////////////
 private:
@@ -265,6 +314,7 @@ private:
   double *Lz_mlmd;*/
 
   /*! end mlmd specific variables */
+
 };
 
 typedef Grid3DCU Grid;

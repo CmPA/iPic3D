@@ -219,6 +219,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
 
   /* create mlmd-related mpi datatypes */
   MPI_RGBC_struct_commit();
+
   /* end create mlmd-related mpi datatypes */
   /*! end mlmd specidic section */
 
@@ -805,6 +806,7 @@ void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, V
 void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col) {
 
   bool ExtraSmoothing= false;
+
 
   if (numGrid>0) ExtraSmoothing= true;
   
@@ -5289,381 +5291,7 @@ void EMfields3D::initWeightBC(Grid *grid, VirtualTopology3D *vct){
 
 }
 
-/* mlmd test functions */
-void EMfields3D::TEST__Assign_RG_BC_Values(VirtualTopology3D *vct){
-  //NB: this is specific to one input file
-  
-  //  AssignValues(int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp )
 
-  // CG core of destination
-  int CG_core= -1;
-  // number of test messages
-  int rank_local= vct->getCartesian_rank();  
-  
-  MPI_Comm PC_comm = vct->getCommToParent();
-  // my rank on the parent-child communicator
-  if (PC_comm== MPI_COMM_NULL) // this is only for children
-    return;
-
-  int rank_PC;
-  MPI_Comm_rank(PC_comm, &rank_PC);
-   
-  if (rank_PC==4 ) {CG_core= 0;}
-  if (rank_PC==5 ) {CG_core= 1;}
-  if (rank_PC==6 ) {CG_core= 2;}
-  if (rank_PC==7 ) {CG_core= 3;}
-  
-  Assign_RGBC_struct_Values(RGBC_Info_Ghost+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-  // to terminate reception
-
-  if (numGrid==1) {RG_numBCMessages_Ghost= 1; RGBC_Info_Ghost[RG_numBCMessages_Ghost].RG_core= -1; return;}
-  // grid one exits
-
-  if (rank_PC==4 ) {CG_core= 1;}
-  if (rank_PC==5 ) {CG_core= 2;}
-  if (rank_PC==6 ) {CG_core= 3;}
-  if (rank_PC==7 ) {CG_core= 0;}
-  
-  Assign_RGBC_struct_Values(RGBC_Info_Ghost+1, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-  
-  if (numGrid==2) {RG_numBCMessages_Ghost= 2; RGBC_Info_Ghost[RG_numBCMessages_Ghost].RG_core= -1; return;}
-  // grid two exits
-
-  if (rank_PC==4 ) {CG_core= 2;}
-  if (rank_PC==5 ) {CG_core= 3;}
-  if (rank_PC==6 ) {CG_core= 0;}
-  if (rank_PC==7 ) {CG_core= 1;}
-  
-  Assign_RGBC_struct_Values(RGBC_Info_Ghost+2, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-  
-  if (numGrid==3) {RG_numBCMessages_Ghost= 3; RGBC_Info_Ghost[RG_numBCMessages_Ghost].RG_core= -1; 
-
-    if (rank_local==1)
-      {
-	for (int m=0; m< RG_numBCMessages_Ghost+1; m++)
-	  {
-	    cout << "m: " << m <<"/" << RG_numBCMessages_Ghost << ", RG_core: " <<  RGBC_Info_Ghost[m].RG_core << endl;
-	  }
-      }
-
-    return;}
-  // grid three exits
-
-}
-
-
-void EMfields3D::TEST__Assign_RG_BC_Values(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which){
-  //NB: the -1 exitign condition is assigned outside this function
-  
-  //NB: this is specific to one input file, Test_SameNC.inp
-  
-  //  AssignValues(int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp )
-
-  // CG core of destination
-  int CG_core= -1;
-  // number of test messages
-  int rank_local= vct->getCartesian_rank();  
-  
-  MPI_Comm PC_comm = vct->getCommToParent();
-  // my rank on the parent-child communicator
-  if (PC_comm== MPI_COMM_NULL) // this is only for children
-    return;
-
-  int rank_PC;
-  MPI_Comm_rank(PC_comm, &rank_PC);
-   
-  if (which == -1) {
-
-    if (rank_PC==4 ) {CG_core= 0;}
-    if (rank_PC==5 ) {CG_core= 1;}
-    if (rank_PC==6 ) {CG_core= 2;}
-    if (rank_PC==7 ) {CG_core= 3;}
-  
-    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    
-    if (numGrid==1) {*RG_numBCMessages= 1; return;}
-    // grid one exits
-    
-    if (rank_PC==4 ) {CG_core= 1;}
-    if (rank_PC==5 ) {CG_core= 2;}
-    if (rank_PC==6 ) {CG_core= 3;}
-    if (rank_PC==7 ) {CG_core= 0;}
-    
-    Assign_RGBC_struct_Values(RGBC_Info+1, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    
-    if (numGrid==2) {*RG_numBCMessages= 2; return;}
-    // grid two exits
-
-    if (rank_PC==4 ) {CG_core= 2;}
-    if (rank_PC==5 ) {CG_core= 3;}
-    if (rank_PC==6 ) {CG_core= 0;}
-    if (rank_PC==7 ) {CG_core= 1;}
-    
-    Assign_RGBC_struct_Values(RGBC_Info+2, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    
-    if (numGrid==3) {*RG_numBCMessages= 3; return;}
-    // grid three exits
-  } // end if (which == -1)
-
-  // test for active nodes
-  if (which==0){
-    if (numGrid == 1) {
-      
-      if (rank_PC==4 ) {CG_core= 3;}
-      if (rank_PC==5 ) {CG_core= 2;}
-      if (rank_PC==6 ) {CG_core= 1;}
-      if (rank_PC==7 ) {CG_core= 0;}
-      
-      Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-      
-      if (rank_PC==4 ) {CG_core= 0;}
-      if (rank_PC==5 ) {CG_core= 0;}
-      if (rank_PC==6 ) {CG_core= 0;}
-      if (rank_PC==7 ) {CG_core= 0;}
-      
-      Assign_RGBC_struct_Values(RGBC_Info+1, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-      
-      *RG_numBCMessages= 2; return; }
-    
-    if (numGrid == 2) {
-      
-      if (rank_PC==4 ) {CG_core= 3;}
-      if (rank_PC==5 ) {CG_core= 2;}
-      if (rank_PC==6 ) {CG_core= 0;}
-      if (rank_PC==7 ) {CG_core= 1;}
-      
-      Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-      
-      *RG_numBCMessages= 1; return; }
-    
-    if (numGrid == 3) {
-      
-      if (rank_PC==4 ) {CG_core= 3;}
-      if (rank_PC==5 ) {CG_core= 3;}
-      if (rank_PC==6 ) {CG_core= 2;}
-      if (rank_PC==7 ) {CG_core= 2;}
-      
-      Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-      
-      *RG_numBCMessages= 1; return; }
-    
-  } // end if (which == 0)
-}
-
-void EMfields3D::TEST__Assign_RG_BC_Values_DNC(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which){
-  //NB: the -1 exitign condition is assigned outside this function
-  
-  //NB: this is specific to one input file, Test_DifferentNC.inp
-  
-  //  AssignValues(int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp )
-
-  int CG_core;
-  int rank_local= vct->getCartesian_rank();  
-  
-  MPI_Comm PC_comm = vct->getCommToParent();
-  // my rank on the parent-child communicator
-  if (PC_comm== MPI_COMM_NULL) // this is only for children
-    return;
-
-  int rank_PC;
-  MPI_Comm_rank(PC_comm, &rank_PC);
-
-
-  // ghost messages
-  // numGrid==1,  first message
-  if (which == -1 and numGrid==1 and (rank_PC== 1 or rank_PC== 3 or rank_PC== 4 or rank_PC== 8 )) {
-       
-    CG_core= 0;
-    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    *RG_numBCMessages= 1; 
-  }
-  // second
-  if (which == -1 and numGrid==1 and  rank_PC== 8){
-    CG_core= 0;
-    Assign_RGBC_struct_Values(RGBC_Info+1, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-  }
-  // second                                                                                                                
-  if (which == -1 and numGrid==1 and  rank_PC== 8){
-    CG_core= 0;
-    Assign_RGBC_struct_Values(RGBC_Info+2, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    *RG_numBCMessages= 3;
-  }
-
-  // numGrid==2
-  // first message
-  if (which == -1 and numGrid==2 and  (rank_PC== 1  )){
-    CG_core= 0;
-    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    *RG_numBCMessages= 1;  
-  }
-
-  // second message
-  if (which == -1 and numGrid==2 and rank_PC== 1){
-    CG_core= 0;
-    Assign_RGBC_struct_Values(RGBC_Info+1, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    *RG_numBCMessages= 2;  
-  }
-  
-  // numGrid== 3
-  if (which == -1 and numGrid==3 and  (rank_PC== 8 or rank_PC== 9 or rank_PC== 11 )){
-
-    switch(rank_PC){
-    case 8: CG_core= 0; break;
-    case 9: CG_core= 5; break;
-    case 11: CG_core= 1; break;
-    }
-    
-    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    *RG_numBCMessages= 1;
-
-  }
-  
-  // active messages, which==0
-  // numGrid==1
-  if (which == 0 and numGrid==1 and rank_PC== 1 ){
-    CG_core=0;
-    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-  }
-
-  if (which == 0 and numGrid==1 and rank_PC== 1 ){
-    CG_core=0;
-    Assign_RGBC_struct_Values(RGBC_Info+1, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    *RG_numBCMessages= 2;
-  }
-
-  if (which == 0 and numGrid==3 and rank_PC== 11 ){
-    CG_core=7;
-    Assign_RGBC_struct_Values(RGBC_Info+0, 0, 0, 0, 0, 1, 1, 1, 0.0, 0.0, 0.0, CG_core, rank_PC);
-    *RG_numBCMessages= 1;
-  }
-  
-}
-// END QUI
-
-
-/* end mlmd test functions */
-
-/* define mlmd-specific MPI_Datatypes */
-void EMfields3D::MPI_RGBC_struct_commit(){
-  /* 
-     int ix_first;
-     int iy_first;
-     int iz_first;
-     // this message refers to bottom, top, left, right, front, back face?                                   
-     int BCside;
-     // number of point in the x, y, z direction                                                             
-     int np_x;
-     int np_y;
-     int np_z;
-      
-     // CG coordinates corresponding to indices RGBC_i.._first                                               
-     double CG_x_first;
-     double CG_y_first;
-     double CG_z_first;
-
-     int CG_core;  
-     int RG_core; 
-
-     int MsgID;
-  */
-
-
-  RGBC_struct *a;
-
-  MPI_Datatype type[13]={MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT};
-  int blocklen[13]={1,1,1,1,1,1,1,1,1,1,1,1,1};
-  
-  // displacement in bytes
-  MPI_Aint disp[13];
-
-  disp[0]= (MPI_Aint) &(a->ix_first) - (MPI_Aint)a ;
-  disp[1]= (MPI_Aint) &(a->iy_first) - (MPI_Aint)a ; 
-  disp[2]= (MPI_Aint) &(a->iz_first) - (MPI_Aint)a ;
-
-  // BCside
-  disp[3]= (MPI_Aint) &(a->BCside) - (MPI_Aint)a ;
-  // np_*
-  disp[4]= (MPI_Aint) &(a->np_x) - (MPI_Aint)a ; 
-  disp[5]= (MPI_Aint) &(a->np_y) - (MPI_Aint)a ;
-  disp[6]= (MPI_Aint) &(a->np_z) - (MPI_Aint)a ;
-  // CG_*_first
-  disp[7]= (MPI_Aint) &(a->CG_x_first) - (MPI_Aint)a ;
-  disp[8]= (MPI_Aint) &(a->CG_y_first) - (MPI_Aint)a ;
-  disp[9]= (MPI_Aint) &(a->CG_z_first) - (MPI_Aint)a ;
-  // the cores
-  disp[10]= (MPI_Aint) &(a->CG_core) - (MPI_Aint)a ;
-  disp[11]= (MPI_Aint) &(a->RG_core) - (MPI_Aint)a ;
- 
-  // the msg id
-  disp[12]= (MPI_Aint) &(a->MsgID) - (MPI_Aint)a ;
-  //cout << "check" << endl;
-  //for (int i=0; i< 12; i++){cout << "disp i: " << i <<", disp[i]: " << disp[i] << endl;}
-
-
-  MPI_Type_create_struct(13, blocklen, disp, type, &MPI_RGBC_struct);
-  MPI_Type_commit(&MPI_RGBC_struct);
-}
-
-/* assign the values to RGBC_struct; use ONLY in initWeightBC*/
-void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp ) {
-
-  /// check the struct definition before assigning here!!!
-
-  s->ix_first= ix_first_tmp;
-  s->iy_first= iy_first_tmp;
-  s->iz_first= iz_first_tmp;
-  
-  s->BCside= BCside_tmp;
-
-  s->np_x= np_x_tmp;
-  s->np_y= np_y_tmp;
-  s->np_z= np_z_tmp;
-
-  s->CG_x_first= CG_x_first_tmp;
-  s->CG_y_first= CG_y_first_tmp;
-  s->CG_z_first= CG_z_first_tmp;
-  
-  s->CG_core= CG_core_tmp;
-  s->RG_core= RG_core_tmp;
-
-  return;
-}
-
-// also assign a msg ID
-void EMfields3D::Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp , int MsgID_tmp) {
-
-  /// check the struct definition before assigning here!!!
-
-  s->ix_first= ix_first_tmp;
-  s->iy_first= iy_first_tmp;
-  s->iz_first= iz_first_tmp;
-  
-  s->BCside= BCside_tmp;
-
-  s->np_x= np_x_tmp;
-  s->np_y= np_y_tmp;
-  s->np_z= np_z_tmp;
-
-  s->CG_x_first= CG_x_first_tmp;
-  s->CG_y_first= CG_y_first_tmp;
-  s->CG_z_first= CG_z_first_tmp;
-  
-  s->CG_core= CG_core_tmp;
-  s->RG_core= RG_core_tmp;
-
-  s->MsgID= MsgID_tmp;  
-
-  return;
-}
-
-
-/* end define mlmd-specific MPI_Datatypes */
-
-/*! end mlmd specific functions */
-/* fills the RGBC_Info_** and RGBC_numBCMessages_** structure-
-   depending of what you pass, ** would be Ghost or Active 
-   which is -1 for ghost, 0 for active (to decide at which node to start / end  )
-*/
 void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *RG_numBCMessages, int which){
 
   // this the size in the direction not used --- put 1 so i can cycle using <
@@ -6232,7 +5860,7 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
 
 
     DIR= 'B';
-    Explore3DAndCommit_Centers(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
 
   } // end bottom face
   
@@ -6244,7 +5872,7 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     k_e= nzc-1; k_s= nzc-3;
 
     DIR= 'T';
-    Explore3DAndCommit_Centers(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
     
   } // end top face
   
@@ -6256,7 +5884,7 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     i_s=0; i_e= 2;
 
     DIR= 'L';
-    Explore3DAndCommit_Centers(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
 
   } // end left face
   
@@ -6268,7 +5896,7 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     i_e=nxc-1; i_s= nxc-3;
 
     DIR= 'R';
-    Explore3DAndCommit_Centers(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
 
   } // end right face
   
@@ -6280,7 +5908,7 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     j_s=0; j_e= 2;
 
     DIR= 'F';
-    Explore3DAndCommit_Centers(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
 
   } // end front face
   
@@ -6292,7 +5920,7 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     j_e=nyc-1; j_s= nyc-3;
 
     DIR= 'b';
-    Explore3DAndCommit_Centers(grid, i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
 
   } // end back face
   
@@ -7487,14 +7115,16 @@ void EMfields3D::buildFix3BMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC
 	yp= y0 + j*dy_Ch[ch];
 	zp= z0 + k*dz_Ch[ch]; 
 	
-	// here, xp, yp, zp is the position of the CENTERS
+
+	// this is done centers to centers
+	/*// here, xp, yp, zp is the position of the CENTERS
 
 	//cout << "building msg, point " << xp << "; " <<yp <<"; " << zp << endl;
 
 	// this is copied from the mover
-	/*const double ixd = floor((xp - xStart) * inv_dx);
-	const double iyd = floor((yp - yStart) * inv_dy);
-	const double izd = floor((zp - zStart) * inv_dz);*/
+	//const double ixd = floor((xp - xStart) * inv_dx);
+	//const double iyd = floor((yp - yStart) * inv_dy);
+	//const double izd = floor((zp - zStart) * inv_dz);
 	const double ixd = floor((xp - (xStart +dx )) * inv_dx);
 	const double iyd = floor((yp - (yStart +dy )) * inv_dy);
 	const double izd = floor((zp - (zStart +dz )) * inv_dz);
@@ -7525,9 +7155,9 @@ void EMfields3D::buildFix3BMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC
 	eta [1] = grid->getYC(ix,iy,iz) - yp;
 	zeta[1] = grid->getZC(ix,iy,iz) - zp;
 
-	/*cout << "point: " << xp <<", " << yp <<", " << zp << endl;
-	cout << "xi[0] " << xi[0] << " xi[1] " << xi[1] << " eta[0] " << eta[0] << " eta[1] " << eta[1] << " zeta[0] " << zeta[0] << " zeta[1] " << zeta[1];
-	cout << "invVOL: " << invVOL << endl;*/
+	//cout << "point: " << xp <<", " << yp <<", " << zp << endl;
+	//cout << "xi[0] " << xi[0] << " xi[1] " << xi[1] << " eta[0] " << eta[0] << " eta[1] " << eta[1] << " zeta[0] " << zeta[0] << " zeta[1] " << zeta[1];
+	//cout << "invVOL: " << invVOL << endl;
 	
 	double Bxl = 0.0;
 	double Byl = 0.0;
@@ -7569,7 +7199,85 @@ void EMfields3D::buildFix3BMsg(VirtualTopology3D *vct, Grid * grid, int ch, RGBC
 	Bzl += weight101 * (Bzc[ix - 1][iy][iz - 1]     );
 	Bzl += weight110 * (Bzc[ix - 1][iy - 1][iz]     );
 	Bzl += weight111 * (Bzc[ix - 1][iy - 1][iz - 1] );
-	// end B
+	// end B*/
+
+	// this on nodes, still to test
+	// this is copied from the mover                                          
+        const double ixd = floor((xp - xStart) * inv_dx);
+        const double iyd = floor((yp - yStart) * inv_dy);
+        const double izd = floor((zp - zStart) * inv_dz);
+        int ix = 2 + int (ixd);
+        int iy = 2 + int (iyd);
+        int iz = 2 + int (izd);
+        if (ix < 1)
+          ix = 1;
+        if (iy < 1)
+          iy = 1;
+        if (iz < 1)
+          iz = 1;
+        if (ix > nxn - 1)
+          ix = nxn - 1;
+        if (iy > nyn - 1)
+          iy = nyn - 1;
+        if (iz > nzn - 1)
+          iz = nzn - 1;
+
+        double xi  [2];
+        double eta [2];
+        double zeta[2];
+
+	xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+        eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+        zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+        xi  [1] = grid->getXN(ix,iy,iz) - xp;
+        eta [1] = grid->getYN(ix,iy,iz) - yp;
+        zeta[1] = grid->getZN(ix,iy,iz) - zp;
+
+        /*cout << "point: " << xp <<", " << yp <<", " << zp << endl;              
+	  cout << "xi[0] " << xi[0] << " xi[1] " << xi[1] << " eta[0] " << eta[0] <\
+	  < " eta[1] " << eta[1] << " zeta[0] " << zeta[0] << " zeta[1] " << zeta[1];       
+	  cout << "invVOL: " << invVOL << endl;*/
+
+        double Bxl = 0.0;
+        double Byl = 0.0;
+        double Bzl = 0.0;
+
+	const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+        const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+        const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+        const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+        const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+        const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+        const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+        const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+
+	// B                                                                      
+        Bxl += weight000 * (Bxn[ix][iy][iz]             );
+        Bxl += weight001 * (Bxn[ix][iy][iz - 1]         );
+        Bxl += weight010 * (Bxn[ix][iy - 1][iz]         );
+        Bxl += weight011 * (Bxn[ix][iy - 1][iz - 1]     );
+        Bxl += weight100 * (Bxn[ix - 1][iy][iz]         );
+        Bxl += weight101 * (Bxn[ix - 1][iy][iz - 1]     );
+        Bxl += weight110 * (Bxn[ix - 1][iy - 1][iz]     );
+        Bxl += weight111 * (Bxn[ix - 1][iy - 1][iz - 1] );
+
+        Byl += weight000 * (Byn[ix][iy][iz]             );
+        Byl += weight001 * (Byn[ix][iy][iz - 1]         );
+        Byl += weight010 * (Byn[ix][iy - 1][iz]         );
+        Byl += weight011 * (Byn[ix][iy - 1][iz - 1]     );
+        Byl += weight100 * (Byn[ix - 1][iy][iz]         );
+        Byl += weight101 * (Byn[ix - 1][iy][iz - 1]     );
+        Byl += weight110 * (Byn[ix - 1][iy - 1][iz]     );
+        Byl += weight111 * (Byn[ix - 1][iy - 1][iz - 1] );
+
+        Bzl += weight000 * (Bzn[ix][iy][iz]             );
+        Bzl += weight001 * (Bzn[ix][iy][iz - 1]         );
+        Bzl += weight010 * (Bzn[ix][iy - 1][iz]         );
+        Bzl += weight011 * (Bzn[ix][iy - 1][iz - 1]     );
+        Bzl += weight100 * (Bzn[ix - 1][iy][iz]         );
+        Bzl += weight101 * (Bzn[ix - 1][iy][iz - 1]     );
+        Bzl += weight110 * (Bzn[ix - 1][iy - 1][iz]     );
+        Bzl += weight111 * (Bzn[ix - 1][iy - 1][iz - 1] );
 	
 	Msg[0*Size +count]= Bxl;
 	Msg[1*Size +count]= Byl;
@@ -8823,111 +8531,6 @@ void EMfields3D::Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j
 
 }
 
-/** Explore and commit -centers **/
-void EMfields3D::Explore3DAndCommit_Centers(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct , char  dir){
-  // here, the same as Explore3DAndCommit for particles
-  
-  // policy:
-  // explore Z dir
-  // for on the number of cores found there: explore Y dir
-  // for on the number of cores found there: explore X dir
-  // finally, commit  NB: all faces should have the same c
-
-  int MS= nxc; if (nyc>MS) MS= nyc; if (nzc>MS) MS= nzc;
-  int rank_CTP= vct->getRank_CommToParent();
-  /*******************************************************************/
-  // DIR1: starting point, in CG coordinates, per core                       
-  double *Dir1_SPXperC= new double[MS];
-  double *Dir1_SPYperC= new double[MS];
-  double *Dir1_SPZperC= new double[MS];
-  // DIR1: number of Refined grid point in this direction, per core     
-  int *Dir1_NPperC= new int[MS];  // this does not need to be this big, but anyway   
-  // DIR1: core ranks in the CommToParent communicator              
-  int *Dir1_rank= new int [MS]; // this does not need to be this big, but anyway      
-  int *Dir1_IndexFirstPointperC= new int [MS];
-  int Dir1_Ncores=0;
-
-  // DIR2: starting point, in CG coordinates, per core                                  
-  double *Dir2_SPXperC= new double[MS];
-  double *Dir2_SPYperC= new double[MS];
-  double *Dir2_SPZperC= new double[MS];
-  // DIR2: number of Refined grid point in this direction, per core     
-  int *Dir2_NPperC= new int[MS];  // this does not need to be this big, but anyway   
-  // DIR2: core ranks in the CommToParent communicator              
-  int *Dir2_rank= new int [MS]; // this does not need to be this big, but anyway      
-  int *Dir2_IndexFirstPointperC= new int [MS];
-  int Dir2_Ncores=0;
-
-  // DIR3: starting point, in CG coordinates, per core                     
-  double *Dir3_SPXperC= new double[MS];
-  double *Dir3_SPYperC= new double[MS];
-  double *Dir3_SPZperC= new double[MS];
-  // DIR3: number of Refined grid point in this direction, per core     
-  int *Dir3_NPperC= new int[MS];  // this does not need to be this big, but anyway   
-  // DIR3: core ranks in the CommToParent communicator              
-  int *Dir3_rank= new int [MS]; // this does not need to be this big, but anyway      
-  int *Dir3_IndexFirstPointperC= new int [MS];
-  int Dir3_Ncores=0;
-  /*******************************************************************/
-
-  string FACE="nn";
-  // Z dir / Dir 1
-  grid->RGBCExploreDirection_Centers(vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
-
-  for (int n=0; n<Dir1_Ncores; n++){ // it will find again the core in Dir 1, but it will also explore Dir 2 
-    // Y dir / Dir 2
-    grid->RGBCExploreDirection_Centers(vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n],  Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC); 
-    
-    for (int m=0; m< Dir2_Ncores; m++){ //it will find again the core in Dir 1, but it will also explore Dir 2 
-      // X dir / Dir 3
-      grid->RGBCExploreDirection_Centers(vct, FACE, 0, i_s, i_e, Dir2_IndexFirstPointperC[m],  Dir1_IndexFirstPointperC[n], Dir3_SPXperC, Dir3_SPYperC, Dir3_SPZperC, Dir3_NPperC, Dir3_rank, &Dir3_Ncores, Dir3_IndexFirstPointperC);
-
-      for (int NN=0; NN< Dir3_Ncores; NN++){
-	// using the function written for BCs, it's the same
-
-	Assign_RGBC_struct_Values(RGBC_Info + (*numMsg), Dir3_IndexFirstPointperC[NN], Dir2_IndexFirstPointperC[m], Dir1_IndexFirstPointperC[n], -1, Dir3_NPperC[NN], Dir2_NPperC[m], Dir1_NPperC[n], Dir3_SPXperC[NN], Dir3_SPYperC[NN], Dir3_SPZperC[NN], Dir3_rank[NN], rank_CTP, *numMsg);
-	
-	(*numMsg)++;
-
-	int tmp= Dir3_NPperC[NN]*Dir2_NPperC[m]*Dir1_NPperC[n];
-	if (tmp > (*MaxSizeMsg)) (*MaxSizeMsg)= tmp; 
-	  
-      } // end for (int NN=0; NN< Dir3_Ncores; NN++){
-    } // end  for (int m=0; m< Dir2_Ncores; m++){
-  } // end for (int n=0; n<Dir1_Ncores; n++){
-  // end here, the same as Explore3DAndCommit for particles
-
-
-  // the msg signaling the end
-  RGBC_Info[*numMsg].RG_core= -1;
-  RGBC_Info[*numMsg].CG_core= -1;
-  
-
-  // deletes
-  delete[]Dir1_SPXperC;
-  delete[]Dir1_SPYperC;
-  delete[]Dir1_SPZperC;
-  delete[]Dir1_NPperC;
-  delete[]Dir1_rank;
-  delete[]Dir1_IndexFirstPointperC;
-
-  delete[]Dir2_SPXperC;
-  delete[]Dir2_SPYperC;
-  delete[]Dir2_SPZperC;
-  delete[]Dir2_NPperC;
-  delete[]Dir2_rank;
-  delete[]Dir2_IndexFirstPointperC;
-
-  delete[]Dir3_SPXperC;
-  delete[]Dir3_SPYperC;
-  delete[]Dir3_SPZperC;
-  delete[]Dir3_NPperC;
-  delete[]Dir3_rank;
-  delete[]Dir3_IndexFirstPointperC;
-
-}
-
-/** end Explore and commit -centers **/
 
 void EMfields3D::Trim_Proj_Vectors(VirtualTopology3D *vct){
   int dim;
@@ -10239,4 +9842,57 @@ void EMfields3D::averageBC_BufferSource(VirtualTopology3D * vct, double *** SX, 
 
   return;
 
+}
+
+void EMfields3D::MPI_RGBC_struct_commit(){
+
+  RGBC_struct *a;
+  MPI_Datatype type[13]={MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT};
+  int blocklen[13]={1,1,1,1,1,1,1,1,1,1,1,1,1};
+  // displacement in bytes                                                                                                                                                     
+  MPI_Aint disp[13];
+
+  disp[0]= (MPI_Aint) &(a->ix_first) - (MPI_Aint)a ;
+  disp[1]= (MPI_Aint) &(a->iy_first) - (MPI_Aint)a ;
+  disp[2]= (MPI_Aint) &(a->iz_first) - (MPI_Aint)a ;
+  // BCside                                                                                                                                                                    
+  disp[3]= (MPI_Aint) &(a->BCside) - (MPI_Aint)a ;
+  // np_*                                                                                                                                                                      
+  disp[4]= (MPI_Aint) &(a->np_x) - (MPI_Aint)a ;
+  disp[5]= (MPI_Aint) &(a->np_y) - (MPI_Aint)a ;
+  disp[6]= (MPI_Aint) &(a->np_z) - (MPI_Aint)a ;
+  // CG_*_first                                                                                                                                                                
+  disp[7]= (MPI_Aint) &(a->CG_x_first) - (MPI_Aint)a ;
+  disp[8]= (MPI_Aint) &(a->CG_y_first) - (MPI_Aint)a ;
+  disp[9]= (MPI_Aint) &(a->CG_z_first) - (MPI_Aint)a ;
+  // the cores                                                                                                                                                                 
+  disp[10]= (MPI_Aint) &(a->CG_core) - (MPI_Aint)a ;
+  disp[11]= (MPI_Aint) &(a->RG_core) - (MPI_Aint)a ;
+  // the msg id                                                                                                                                                                
+  disp[12]= (MPI_Aint) &(a->MsgID) - (MPI_Aint)a ;
+
+  MPI_Type_create_struct(13, blocklen, disp, type, &MPI_RGBC_struct);
+  MPI_Type_commit(&MPI_RGBC_struct);
+
+}
+
+void EMfields3D::copyMoments(double ***P_rho, double ***P_Jx, double ***P_Jy, double ***P_Jz, double ***P_pxx, double ***P_pxy, double ***P_pxz, double ***P_pyy, double ***P_pyz, double ***P_pzz, int is){
+
+  for (int i=0; i<nxn; i++)
+    for (int j=0; j<nyn; j++)
+      for (int k=0; k<nzn; k++){
+	P_rho[i][j][k]= rhons[is][i][j][k];
+	
+	P_Jx[i][j][k]=Jxs[is][i][j][k];
+	P_Jy[i][j][k]=Jys[is][i][j][k];
+	P_Jz[i][j][k]=Jzs[is][i][j][k];
+
+	P_pxx[i][j][k]=pXXsn[is][i][j][k];
+	P_pxy[i][j][k]=pXYsn[is][i][j][k];
+	P_pxz[i][j][k]=pXZsn[is][i][j][k];
+	P_pyy[i][j][k]=pYYsn[is][i][j][k];
+	P_pyz[i][j][k]=pYZsn[is][i][j][k];
+	P_pzz[i][j][k]=pZZsn[is][i][j][k];
+      }
+	
 }

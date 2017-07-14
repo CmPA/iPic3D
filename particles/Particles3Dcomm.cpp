@@ -28,6 +28,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include <vector>
 #include <complex>
 
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -73,19 +74,53 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]Rank_CommToChildren_P;
 
   delete[]RGPBC_Info;
-  delArr3(PCGMsg, numChildren, MaxNumMsg);
-  delArr2(nopPCGMsg, numChildren);
-  delArr2(PRGMsg, RG_numPBCMessages);
-  delete[]nopPRGMsg;
-  delete[]PRGMsgArrived;
-  delete[]PRGMsg_General;
+  if (!FluidLikeRep){
+    // RG side
+    delArr2(PRGMsg, RG_numPBCMessages);
+    delete[]nopPRGMsg;
+    delete[]PRGMsgArrived;
+    delete[]PRGMsg_General;
+    // CG side
+    delArr3(PCGMsg, numChildren, MaxNumMsg);
+    delArr2(nopPCGMsg, numChildren);
+  }
+  if (RG_numPBCMessages and !FluidLikeRep){
+    // RG side
+    delete CRP_ToCoreH;  
+    delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
+    delete[]H_num_CRP_nop;
+    delete[]H_CRP_General;
+    delete[]H_CRP_cores;
+  }
 
-  delete CRP_ToCoreH;
-  delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
-  delete[]H_num_CRP_nop;
-  delete[]H_CRP_General;
-  delete[]H_CRP_cores;
+  if (RG_numPBCMessages and FluidLikeRep){
+    // RG side
+    delArr2(rho_FBC, RG_numPBCMessages);
+    delArr2(Jx_FBC, RG_numPBCMessages);
+    delArr2(Jy_FBC, RG_numPBCMessages);
+    delArr2(Jz_FBC, RG_numPBCMessages);
+    delArr2(Pxx_FBC, RG_numPBCMessages);
+    delArr2(Pxy_FBC, RG_numPBCMessages);
+    delArr2(Pxz_FBC, RG_numPBCMessages);
+    delArr2(Pyy_FBC, RG_numPBCMessages);
+    delArr2(Pyz_FBC, RG_numPBCMessages);
+    delArr2(Pzz_FBC, RG_numPBCMessages);
 
+    delArr3(RHOP, nxn-1, nyn-1);
+    delArr3(UP, nxn-1, nyn-1);
+    delArr3(VP, nxn-1, nyn-1);
+    delArr3(WP, nxn-1, nyn-1);
+    delArr3(UTHP, nxn-1, nyn-1);
+    delArr3(VTHP, nxn-1, nyn-1);
+    delArr3(WTHP, nxn-1, nyn-1);
+
+    delete[]RGFluidMsg;
+    delArr3(REPO, nxn-1, nyn-1);
+  }
+  // put another condition so this happens only on RG
+  if (FluidLikeRep){
+    delete[]CGFluidMsg;
+  }
   delArr3(Ex, nxn, nyn);
   delArr3(Ey, nxn, nyn);
   delArr3(Ez, nxn, nyn);
@@ -358,6 +393,16 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // here, mlmd stuff which does not necessarily need to be at the beginning
   numChildren= vct->getNumChildren();
 
+  dx_Ch=new double[numChildren];
+  dy_Ch=new double[numChildren];
+  dz_Ch=new double[numChildren];
+  for (int i=0; i< numChildren; i++){
+    c= vct->getChildGridNum(i);
+    dx_Ch[i]= col->getDx_mlmd(c) ;
+    dy_Ch[i]= col->getDy_mlmd(c);
+    dz_Ch[i]= col->getDz_mlmd(c);
+  }
+
   // communicators to parent/ children for this species
   CommToParent_P= vct->getCommToParent_P(ns);
   Rank_CommToParent_P= vct->getRank_CommToParent_P(ns);
@@ -371,7 +416,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   int MaxGridCoreN= vct->getMaxGridCoreN();
   int MaxGridPer= vct->getMaxGridPer();
-  MAX_RG_numPBCMessages= (vct->getMaxRF1()+8)* vct->getMaxRF1()* vct->getMaxRF1();
+  MAX_RG_numPBCMessages= (vct->getMaxRF1()+8)* vct->getMaxRF1()* vct->getMaxRF1() + 8;
   MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages * MaxGridPer; 
 
   // sizes of the PCGMsg values set here (but allocated only if needed) 
@@ -385,12 +430,18 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   MAXsizePBCMsg = 200*MaxNopMLMD; //20*MaxNopMLMD;
 
   // wether to allow resize of repopulated particle buffers
+  // NB: if the repopulation is fluid, AllowPMsgResize is set to false in Collective::ReadInput
   AllowPMsgResize= col->getAllowPMsgResize();
   
+  FluidLikeRep= col->getFluidLikeRep();
+  numFBC= 10;
+
   // end sizes of the PCGMsg values set here 
 
   // here, to be able to used RGPBC_struct as an MPI_Datatype
-  MPI_RGPBC_struct_commit();
+  //MPI_RGPBC_struct_commit(); -- after unifying RGBC_struct and RGPBC_stuct in Grid
+  MPI_RGPBC_struct_commit(); 
+
   // here, to be able to use the RepP_struct as an MPI_Datatype
   MPI_RepP_struct_commit();
   /* commit the structure for repopulated particle exchange within the RG */
@@ -400,7 +451,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // the # of PRA cells is a tmp variable
   //   the 'visible' variables are the index at which PRA starts/ ends 
   
-  int PRACells = int(RFx); 
+  PRACells = int(RFx); 
   if (RFy > RFx) PRACells= int (RFy);
 
   // added
@@ -492,6 +543,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   size_CRP=  ceil(nop*0.05); // it just needs to survive the init, then it will be resized
 
   // I am instantiating here local copies of Ex, Ey, Ezm Bx, By, Bz, Bx_ext, By_ext, Bz_ext
+  // - used in the mover and only in one repopulation method
   Ex= newArr3(double, nxn, nyn, nzn);
   Ey= newArr3(double, nxn, nyn, nzn);
   Ez= newArr3(double, nxn, nyn, nzn);
@@ -504,6 +556,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   By_ext= newArr3(double, nxn, nyn, nzn);
   Bz_ext= newArr3(double, nxn, nyn, nzn);
 
+
   // //FOR TEST:
   // nvDistLoc = 3;
   // vDist     = new c_vDist[nvDistLoc];
@@ -515,6 +568,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // vDist[1].init(species, 6.36, 11.00, 0.02625, 256, 256, 256, vR, vFact, col, grid);
   // vDist[2].init(species, 10.0, 15.0 , 0.02625, 256, 256, 256, vR, vFact, col, grid);
   // //END FOR TEST
+
 
 }
 
@@ -987,23 +1041,33 @@ int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
     else if (z[np_current] > zMax && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) //check it here
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
-
-    if (bcPfaceXleft==-1 and CommToParent_P!= MPI_COMM_NULL){
+    
+    if (ptVCT->getPERIODICX_P()) { xMin=-Lx; xMax=2*Lx; } // so periodic particles will stay in the system and be communicated    
+    else if ((bcPfaceXleft == -1 or bcPfaceXleft == -3) and CommToParent_P!= MPI_COMM_NULL) {
       xMin= Coord_XLeft_End; xMax= Coord_XRight_Start;
+    }
+    else if (bcPfaceXleft == -2 and CommToParent_P!= MPI_COMM_NULL) {
+      xMin= Coord_XLeft_Start; xMax= Coord_XRight_End;
+    }
+    else {xMin= 0; xMax= Lx;} // non periodic, non mlmd              
+
+    if (ptVCT->getPERIODICY_P()) { yMin=-Ly; yMax=2*Ly; } // so periodic particles will stay in the system and be communicated    
+    else if ((bcPfaceYleft == -1 or bcPfaceYleft == -3) and CommToParent_P!= MPI_COMM_NULL) {
       yMin= Coord_YLeft_End; yMax= Coord_YRight_Start;
+    }
+    else if (bcPfaceYleft == -2 and CommToParent_P!= MPI_COMM_NULL) {
+      yMin= Coord_YLeft_Start; yMax= Coord_YRight_End;
+    }
+    else {yMin= 0; yMax= Ly;} // non periodic, non mlmd     
+
+    if (ptVCT->getPERIODICZ_P()) { zMin=-Lz; zMax=2*Lz; } // so periodic particles will stay in the system and be communicated    
+    else if ((bcPfaceZleft == -1 or bcPfaceZleft == -3) and CommToParent_P!= MPI_COMM_NULL) {
       zMin= Coord_ZLeft_End; zMax= Coord_ZRight_Start;
     }
-    else if (bcPfaceXleft==-2 and CommToParent_P!= MPI_COMM_NULL){
-      xMin= Coord_XLeft_Start; xMax= Coord_XRight_End;
-      yMin= Coord_YLeft_Start; yMax= Coord_YRight_End;
+    else if (bcPfaceZleft == -2 and CommToParent_P!= MPI_COMM_NULL) {
       zMin= Coord_ZLeft_Start; zMax= Coord_ZRight_End;
     }
-    else{
-      // so, if periodic, particles are not deleted
-      xMin=-Lx; xMax=2*Lx;
-      yMin=-Ly; yMax=2*Ly;
-      zMin=-Lz; zMax=2*Lz;
-    }
+    else {zMin= 0; zMax= Lz;} // non periodic, non mlmd 
     
 
     if (x[np_current] < xMin or x[np_current]> xMax or y[np_current] < yMin or y[np_current]> yMax or z[np_current] < zMin or z[np_current]> zMax){
@@ -1585,6 +1649,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
   // Phase 2a: each GC core receives the msg and stores appropriate variables
 
   RG_numPBCMessages= 0;
+  MaxSizeCGFluidBCMsg= 0;
   int rank_local= vct->getCartesian_rank();  // on the grid communicator
   int HighestRank= XLEN*YLEN*ZLEN-1;
   MPI_Status status;
@@ -1594,8 +1659,14 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
   if (CommToParent_P != MPI_COMM_NULL) { // meaning: you are a child AND you want to receive PBC
     
     RGPBC_Info = new RGPBC_struct[MAX_RG_numPBCMessages];
-    
-    initWeightPBC_Phase1(grid, vct, RGPBC_Info, &RG_numPBCMessages);
+
+    RG_MaxFluidMsgSize=0;
+    if (FluidLikeRep){
+      initWeightFluidPBC_Phase1(grid, vct, RGPBC_Info, &RG_numPBCMessages, &RG_MaxFluidMsgSize);
+    }
+    else{ // this is the option to use with -1 and -2       
+      initWeightPBC_Phase1(grid, vct, RGPBC_Info, &RG_numPBCMessages);
+    }
     
     
     /**** check begins ****/
@@ -1631,19 +1702,21 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
     /**** check ends ****/
 
     // now i can instantiate the vector for receiving PBC 
-    // (but only if needed)
-    if (RG_numPBCMessages>0){
+    // (but only if needed) -- these are used for kinetic repopulation
+    if (RG_numPBCMessages>0 and !FluidLikeRep){
       PRGMsg= newArr2(RepP_struct, RG_numPBCMessages, sizeRG_PBCMsg);
       nopPRGMsg= new int[RG_numPBCMessages];
       PRGMsgArrived= new bool [RG_numPBCMessages];
       PRGMsg_General= new RepP_struct[sizeRG_PBCMsg];
 
-      // these are vectors needed to exchange repopulated particles inside the RG 
+    }
+
+    // these are vectors needed to exchange repopulated particles inside the RG
+    // needed only for kinetic repopulation
+    if (RG_numPBCMessages>0 and !FluidLikeRep){
       if (rank_local==HighestRank){ 
 	H_CRP_General= new CRP_struct[size_CRP];
 	H_CRP_General_ptr= H_CRP_General; // for resize
-	/*H_CRP_Msg= newArr2(CRP_struct, XLEN*YLEN*ZLEN, size_CRP);
-	  H_CRP_Msg_ptr= H_CRP_Msg;*/
 	H_num_CRP_nop= new int[XLEN*YLEN*ZLEN];
 	H_CRP_cores= new int[XLEN*YLEN*ZLEN];
 	for (int ii=0; ii< XLEN*YLEN*ZLEN; ii++){
@@ -1656,7 +1729,43 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 	CRP_ToCoreH= new CRP_struct[size_CRP];
 	CRP_ToCoreH_ptr= CRP_ToCoreH;
       }
-    }
+    } // end if (RG_numPBCMessages>0 and !FluidLikeRep): buffers for exchange of repopulated particles
+
+    if (RG_numPBCMessages>0 and FluidLikeRep){
+      // these are the vectors needed for the fluid repopulation
+      rho_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize); 
+      Jx_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
+      Jy_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
+      Jz_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
+      Pxx_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
+      Pxy_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
+      Pxz_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
+      Pyy_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
+      Pyz_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
+      Pzz_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
+
+      // this is the vector used in the receives
+      RGFluidMsg= new double[RG_MaxFluidMsgSize*numFBC];
+
+      // this can be done better, but the rationale is to avoid to repopulate mulitple times per cell
+      RHOP= newArr3(double, nxn-1, nyn-1, nzn-1);
+      
+      UP= newArr3(double, nxn-1, nyn-1, nzn-1);
+      VP= newArr3(double, nxn-1, nyn-1, nzn-1);
+      WP= newArr3(double, nxn-1, nyn-1, nzn-1);
+
+      UTHP= newArr3(double, nxn-1, nyn-1, nzn-1);
+      VTHP= newArr3(double, nxn-1, nyn-1, nzn-1);
+      WTHP= newArr3(double, nxn-1, nyn-1, nzn-1);
+
+      // for test
+      for (int i=0; i<nxn-1; i++)
+	for (int j=0; j<nyn-1; j++)
+	  for (int k=0; k<nzn-1; k++)
+	    RHOP[i][j][k]= -100.0;
+
+    } // end if (RG_numPBCMessages>0 and !FluidLikeRep)
+
   } // end if (CommToParent_P != MPI_COMM_NULL) { 
 
 
@@ -1669,7 +1778,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       /* send one message more; the last message has -1 in the RG_core   
 	 to signal end of 'valid' messages */
       int dest= XLEN*YLEN*ZLEN-1;
-      MPI_Send(RGPBC_Info, RG_numPBCMessages+1, MPI_RGPBC_struct, HighestRank, TAG_1b1c, vct->getComm());
+      MPI_Send(RGPBC_Info, RG_numPBCMessages+1, MPI_RGBC_struct, HighestRank, TAG_1b1c, vct->getComm());
     } // end phase 1b
    
     //Phase 1c: highest ranking core assembles the msg and sends and handshake msg to each CG core
@@ -1691,7 +1800,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       // i am receiveing XLEN*YLEN*ZLEN-1 --> HighestRank msg
       for (int c=0; c< HighestRank; c++){
 	int recv=0;
-	MPI_Recv(buffer_rcv, MAX_RG_numPBCMessages, MPI_RGPBC_struct, MPI_ANY_SOURCE, TAG_1b1c, vct->getComm(), &status);
+	MPI_Recv(buffer_rcv, MAX_RG_numPBCMessages, MPI_RGBC_struct, MPI_ANY_SOURCE, TAG_1b1c, vct->getComm(), &status);
 	src= status.MPI_SOURCE;
 	int recv_ThisMsg=0;
 	while(buffer_rcv[recv].RG_core != -1){
@@ -1707,15 +1816,17 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 	  
 	  recv_ThisMsg++;
 	} // end while
-	if (recv_ThisMsg>0){
+	if (recv_ThisMsg>0 and !FluidLikeRep){ // CRP ops only with kinetic repopulation
 	  H_CRP_cores[src]= 1;
 	}
 	
       } // end for (int c=0; c< HighestRank; c++){
 
-      num_H_CRP_cores=0;
-      for (int i=0; i<XLEN*YLEN*ZLEN; i++){
-	num_H_CRP_cores+= H_CRP_cores[i];
+      if (!FluidLikeRep){ // CRP ops only with kinetic repopulation 
+	num_H_CRP_cores=0;
+	for (int i=0; i<XLEN*YLEN*ZLEN; i++){
+	  num_H_CRP_cores+= H_CRP_cores[i];
+	}
       }
 
       delete[]buffer_rcv;
@@ -1753,7 +1864,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 
       //cout << "ParentCoreNum= "<< ParentCoreNum<< endl;
       for (int cg=0; cg< ParentCoreNum; cg++){
-	MPI_Send(&(RGPBC_Info_ToCGCore[cg][0]), RG_numPBCMessages_ToCGCore[cg]+1, MPI_RGPBC_struct, cg, TAG_CG_RG, CommToParent_P);
+	MPI_Send(&(RGPBC_Info_ToCGCore[cg][0]), RG_numPBCMessages_ToCGCore[cg]+1, MPI_RGBC_struct, cg, TAG_CG_RG, CommToParent_P);
 	//cout << "R " << rankAsChild << " on the PC communicator has just sent a msg to core " << cg << endl; 
       }
 
@@ -1785,19 +1896,23 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       int PCrank= Rank_CommToChildren_P[ch];
       
       //cout << "Grid " << numGrid << ", local rank on PC comm " << PCrank << " is trying to receive from ch " << ch << endl;
-
       // receive one msg from HighestRank on the PC comm
 
       // to put ChildHighestRank as source is just a precaution, MPI_ANY_Source should work
-      MPI_Recv(CG_buffer, MAX_RG_numPBCMessages, MPI_RGPBC_struct, ChildHighestRank, TAG_CG_RG, CommToChild_P[ch], &status);
+      MPI_Recv(CG_buffer, MAX_RG_numPBCMessages, MPI_RGBC_struct, ChildHighestRank, TAG_CG_RG, CommToChild_P[ch], &status);
 
       //cout << "Grid " << numGrid << ", local rank on PC comm " << PCrank << " has recevied from ch " << ch << " tag " << TAG_CG_RG << endl;
-
       
       // process update the msg structure
       while (CG_buffer[CG_numPBCMessages[ch]].RG_core!= -1){
 	//cout << "INSIDE WHILE: ch is " << ch << " CG_numPBCMessages[ch] is " << CG_numPBCMessages[ch] << " CG_buffer[CG_numPBCMessages[ch]].RG_core is " <<CG_buffer[CG_numPBCMessages[ch]].RG_core << endl;
 	CG_Info[ch][CG_numPBCMessages[ch]]= CG_buffer[CG_numPBCMessages[ch]];
+
+	/* used only for fluid PBC */
+	int MsgSize=  CG_Info[ch][CG_numPBCMessages[ch]].np_x * CG_Info[ch][CG_numPBCMessages[ch]].np_y * CG_Info[ch][CG_numPBCMessages[ch]].np_z;
+	if (MsgSize> MaxSizeCGFluidBCMsg) MaxSizeCGFluidBCMsg= MsgSize;
+	/* end used only for fluid PBC */
+
 	CG_numPBCMessages[ch]++;
       }
 
@@ -1814,13 +1929,19 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       if (CG_numPBCMessages[i]> MaxNumMsg) MaxNumMsg= CG_numPBCMessages[i];
     }
     
-    if (MaxNumMsg >0){ // otherwise, i am not sending PBC and i don't need to allocate
+    // MaxNumMsg >0: otherwise, i am not sending PBC and i don't need to allocate
+    // !FluidLikeRep: these are needed only for kinetic repopulation
+    if (MaxNumMsg >0 and !FluidLikeRep){       
       PCGMsg= newArr3(RepP_struct, numChildren, MaxNumMsg, sizeCG_PBCMsg);
       PCGMsg_ptr= PCGMsg; // for the resize
       nopPCGMsg = newArr2(int, numChildren, MaxNumMsg);
-      
       //cout << "Grid " << numGrid << " core " << vct->getCartesian_rank() << " nopPCGMsg has sizes " << numChildren << " x " <<MaxNumMsg << endl;  
     }
+
+    if (MaxNumMsg >0 and FluidLikeRep){
+      CGFluidMsg= new double[MaxSizeCGFluidBCMsg* numFBC];
+    }
+    
   } // end if (numChildren>0){
 
 
@@ -1853,8 +1974,8 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
   // create communicators involving only the cores of the grid involved in particle BC communication
 
   /* finally instantiate H_CRP_Msg, but only the entries which are needed */
-
-  if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0 and rank_local==HighestRank) {
+  // Fluid repopulation does not need communicate after repopulate
+  if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0 and rank_local==HighestRank and !FluidLikeRep) {
     H_CRP_Msg= newArr2_PA(CRP_struct, XLEN*YLEN*ZLEN, size_CRP, H_CRP_cores);      
     H_CRP_Msg_ptr= H_CRP_Msg;
     /*for (int i=0; i< XLEN*YLEN*ZLEN; i++){
@@ -1898,6 +2019,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       MPI_Allreduce(&rankPC, CGSide_CGLeader_PBCSubset+ ch, 1, MPI_INT, MPI_MIN, COMM_CG_PBCSubset_P[ch]);
   }
   
+  // NB: AllowPMsgResize is overriden to false if fluid repopulation
   // build the list of RG cores to notify of the resize
   if (AllowPMsgResize==true){
     // build the list of RG cores to notify of the resize; each core has to receive only one msg
@@ -1950,57 +2072,14 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
   
   TrimInfoVector(vct);
 
+  // allocate grid-sized vectors, according to the repopulation method choses
+
   MPI_Barrier(vct->getComm());
   if (vct->getCartesian_rank()==0){
     cout << "Grid " << numGrid <<" ns " << ns << " has finished initWeightPBC"<< endl;
   }
 }
 
-/** commit the RGPBC structure for initial handshake between coarse and refined grids **/
-void Particles3Dcomm::MPI_RGPBC_struct_commit(){
-
-  /* struct RGPBC_struct {  // when changing this, change MPI_RGPBC_struct_commit also   
-    int np_x;
-    int np_y;
-    int np_z;
-    double CG_x_first;
-    double CG_y_first;
-    double CG_z_first;
-    int CG_core;
-    int RG_core;
-    int MsgID;
-    };*/
-
-
-  RGPBC_struct *a;
-
-  MPI_Datatype type[9]={MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT};
-  int blocklen[9]={1,1,1,1,1,1,1,1,1};
-
-  // displacement in bytes      
-  MPI_Aint disp[9];
-
-  // np_*      
-  disp[0]= (MPI_Aint) &(a->np_x) - (MPI_Aint)a ;
-  disp[1]= (MPI_Aint) &(a->np_y) - (MPI_Aint)a ;
-  disp[2]= (MPI_Aint) &(a->np_z) - (MPI_Aint)a ;
-
-  // CG_*_first                                            
-  disp[3]= (MPI_Aint) &(a->CG_x_first) - (MPI_Aint)a ;
-  disp[4]= (MPI_Aint) &(a->CG_y_first) - (MPI_Aint)a ;
-  disp[5]= (MPI_Aint) &(a->CG_z_first) - (MPI_Aint)a ;
-
-  // the cores                                                                                          
-  disp[6]= (MPI_Aint) &(a->CG_core) - (MPI_Aint)a ;
-  disp[7]= (MPI_Aint) &(a->RG_core) - (MPI_Aint)a ;
-
-  // the msg id           
-  disp[8]= (MPI_Aint) &(a->MsgID) - (MPI_Aint)a ;
-
-  MPI_Type_create_struct(9, blocklen, disp, type, &MPI_RGPBC_struct);
-  MPI_Type_commit(&MPI_RGPBC_struct); 
-
-}
 
 /* commit the structure for the particle CG/RG exchange as MPI_Datatype */
 void Particles3Dcomm::MPI_RepP_struct_commit(){
@@ -2375,25 +2454,6 @@ void Particles3Dcomm::Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, 
   delete[]Dir3_rank;
   delete[]Dir3_IndexFirstPointperC;
 }
-/* add one handshake msg to the list */
-void Particles3Dcomm::Assign_RGBC_struct_Values(RGPBC_struct *s, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int MsgID_tmp ) {
-
-  s->np_x = np_x_tmp;
-  s->np_y = np_y_tmp;
-  s->np_z = np_z_tmp;
-
-  s->CG_x_first = CG_x_first_tmp;
-  s->CG_y_first = CG_y_first_tmp;
-  s->CG_z_first = CG_z_first_tmp;
-
-  s->CG_core = CG_core_tmp;
-  
-  s->RG_core = RG_core_tmp;
-
-  s->MsgID = MsgID_tmp;
-
-  return;
-}
 
 /* build and send particle BC msg -- CG to RG */
 void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
@@ -2406,8 +2466,9 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
     if (CommToChild_P[ch] != MPI_COMM_NULL and CG_numPBCMessages[ch]>0){ // this child wants PBC and this core participates
 
       // build all the PBC msgs that this core has to send 
-      buildPBCMsg(grid, vct, ch);
 
+      buildPBCMsg(grid, vct, ch);
+      
       if (AllowPMsgResize){
 	// the CG cores involved in PBC agree on the biggest buffer size
 	int MaxGrid_sizeCG_PBCMsg;
@@ -3785,3 +3846,642 @@ void Particles3Dcomm::TrimInfoVector(VirtualTopology3D *vct){
     delArr2(tmp2, numChildren);
   } // end if (numChildren>0){
 }
+
+void Particles3Dcomm::MPI_RGPBC_struct_commit(){
+
+  RGBC_struct *a;
+  MPI_Datatype type[13]={MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT};
+  int blocklen[13]={1,1,1,1,1,1,1,1,1,1,1,1,1};
+  // displacement in bytes                                                                                                                                                     
+  MPI_Aint disp[13];
+
+  disp[0]= (MPI_Aint) &(a->ix_first) - (MPI_Aint)a ;
+  disp[1]= (MPI_Aint) &(a->iy_first) - (MPI_Aint)a ;
+  disp[2]= (MPI_Aint) &(a->iz_first) - (MPI_Aint)a ;
+  // BCside                                                                                                                                                                    
+  disp[3]= (MPI_Aint) &(a->BCside) - (MPI_Aint)a ;
+  // np_*                                                                                                                                                                      
+  disp[4]= (MPI_Aint) &(a->np_x) - (MPI_Aint)a ;
+  disp[5]= (MPI_Aint) &(a->np_y) - (MPI_Aint)a ;
+  disp[6]= (MPI_Aint) &(a->np_z) - (MPI_Aint)a ;
+  // CG_*_first                                                                                                                                                                
+  disp[7]= (MPI_Aint) &(a->CG_x_first) - (MPI_Aint)a ;
+  disp[8]= (MPI_Aint) &(a->CG_y_first) - (MPI_Aint)a ;
+  disp[9]= (MPI_Aint) &(a->CG_z_first) - (MPI_Aint)a ;
+  // the cores                                                                                                                                                                 
+  disp[10]= (MPI_Aint) &(a->CG_core) - (MPI_Aint)a ;
+  disp[11]= (MPI_Aint) &(a->RG_core) - (MPI_Aint)a ;
+  // the msg id                                                                                                                                                                
+  disp[12]= (MPI_Aint) &(a->MsgID) - (MPI_Aint)a ;
+
+  MPI_Type_create_struct(13, blocklen, disp, type, &MPI_RGBC_struct);
+  MPI_Type_commit(&MPI_RGBC_struct);
+
+}
+
+void Particles3Dcomm::initWeightFluidPBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg){
+  int DNS=1;
+  bool DIR_0= true; // L/R  
+  bool DIR_1= true; // B/F
+  bool DIR_2= true; // top/ bottom  
+  int XLEN= vct->getXLEN();
+  int YLEN= vct->getYLEN();
+  int ZLEN= vct->getZLEN();
+
+  int rank_CTP= vct->getRank_CommToParent();
+  int rank_G= vct->getSystemWide_rank();
+  int rank_local= vct->getCartesian_rank();
+
+  // NB: _s and _e are included!!!, so <= in the for        
+  int i_s, i_e;
+  int j_s, j_e;
+  int k_s, k_e;
+
+  string FACE;
+
+  char DIR;
+
+  // since only nxn, nyn, nzn are class members
+  int nxc= nxn-1;
+  int nyc= nyn-1;
+  int nzc= nzn-1;
+
+
+  REPO= newArr3(bool, nxc, nyc, nzc);
+  for (int i=0; i<nxc; i++)
+    for (int j=0; j<nyc; j++)
+      for (int k=0; k<nzc; k++)
+	REPO[i][j][k]= false;
+
+
+
+  int CC=PRACells-1;
+  // this is the bottom face                                                                                     
+  if (vct->getCoordinates(2)==0 && vct->getZleft_neighbor_P()== MPI_PROC_NULL && DIR_2){
+    
+    i_s=0; i_e= nxc-1;
+    j_s=0; j_e= nyc-1;
+    k_s=0; k_e=CC;
+        
+    DIR= 'B';
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    
+    // porcheria per evitare di spezzare in troppi messaggi
+    for (int i=i_s; i<= i_e; i++ )
+      for (int j=j_s; j<= j_e; j++)
+	for (int k= k_s; k<= k_e; k++)
+	  REPO[i][j][k]= true;
+
+
+  } // end bottom face                                                                                           
+  
+  // this is the top face                                                                                        
+  if (vct->getCoordinates(2) ==ZLEN-1 && vct->getZright_neighbor_P() == MPI_PROC_NULL && DIR_2){
+    
+    i_s=0; i_e= nxc-1;
+    j_s=0; j_e= nyc-1;
+    k_e= nzc-1; k_s= nzc-1-CC;
+    
+    DIR= 'T';
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    
+    // porcheria per evitare di spezzare in troppi messaggi
+    for (int i=i_s; i<= i_e; i++ )
+      for (int j=j_s; j<= j_e; j++)
+	for (int k= k_s; k<= k_e; k++)
+	  REPO[i][j][k]= true;
+
+  } // end top face 
+
+  // this is the left face
+  if (vct->getCoordinates(0) ==0  && vct->getXleft_neighbor_P() == MPI_PROC_NULL && DIR_0){
+    
+    j_s=0; j_e= nyc-1;
+    k_s=0; k_e= nzc-1;
+    i_s=0; i_e= CC;
+    
+    DIR= 'L';
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    
+    // porcheria per evitare di spezzare in troppi messaggi
+    for (int i=i_s; i<= i_e; i++ )
+      for (int j=j_s; j<= j_e; j++)
+	for (int k= k_s; k<= k_e; k++)
+	  REPO[i][j][k]= true;
+    
+  } // end left face                                                                                             
+  
+  // this is the right face                                                                                      
+  if (vct->getCoordinates(0) ==XLEN-1 && vct->getXright_neighbor_P() == MPI_PROC_NULL && DIR_0){
+    
+    j_s=0; j_e= nyc-1;
+    k_s=0; k_e= nzc-1;
+    i_e=nxc-1; i_s= nxc-1-CC;
+    
+    DIR= 'R';
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    
+    // porcheria per evitare di spezzare in troppi messaggi
+    for (int i=i_s; i<= i_e; i++ )
+      for (int j=j_s; j<= j_e; j++)
+	for (int k= k_s; k<= k_e; k++)
+	  REPO[i][j][k]= true;
+    
+  } // end right face                                                                                            
+  
+  // this is the front face                                                                                      
+  if (vct->getCoordinates(1) ==0 && vct->getYleft_neighbor_P() == MPI_PROC_NULL && DIR_1){
+    
+    i_s=0; i_e= nxc-1;
+    k_s=0; k_e= nzc-1;
+    j_s=0; j_e= CC;
+    
+    DIR= 'F';
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    
+    // porcheria per evitare di spezzare in troppi messaggi
+    for (int i=i_s; i<= i_e; i++ )
+      for (int j=j_s; j<= j_e; j++)
+	for (int k= k_s; k<= k_e; k++)
+	  REPO[i][j][k]= true;
+
+  } // end front face 
+  // this is the back face                                                                                       
+  if (vct->getCoordinates(1) == YLEN-1 && vct->getYright_neighbor_P() == MPI_PROC_NULL && DIR_1){
+    
+    i_s=0; i_e= nxc-1;
+    k_s=0; k_e= nzc-1;
+    j_e=nyc-1; j_s= nyc-1-CC;
+    
+    DIR= 'b';
+    grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
+    
+    // porcheria per evitare di spezzare in troppi messaggi
+    for (int i=i_s; i<= i_e; i++ )
+      for (int j=j_s; j<= j_e; j++)
+	for (int k= k_s; k<= k_e; k++)
+	  REPO[i][j][k]= true;
+    
+  } // end back face                                                                                             
+  
+  RGBC_Info[*numMsg].RG_core= -1;
+  RGBC_Info[*numMsg].CG_core= -1;
+  
+  
+}
+
+void Particles3Dcomm::SendFluidPBC(Grid* grid, VirtualTopology3D * vct, Field * EMf){
+
+  if (numChildren==0) return;
+
+  rho= newArr3(double, nxn, nyn, nzn);
+  Jx= newArr3(double, nxn, nyn, nzn);
+  Jy= newArr3(double, nxn, nyn, nzn);
+  Jz= newArr3(double, nxn, nyn, nzn);
+  pxx= newArr3(double, nxn, nyn, nzn);
+  pxy= newArr3(double, nxn, nyn, nzn);
+  pxz= newArr3(double, nxn, nyn, nzn);
+  pyy= newArr3(double, nxn, nyn, nzn);
+  pyz= newArr3(double, nxn, nyn, nzn);
+  pzz= newArr3(double, nxn, nyn, nzn);
+
+  EMf->copyMoments(rho, Jx, Jy, Jz, pxx, pxy, pxz, pyy, pyz, pzz, ns);
+
+  int dest;
+  int tag;
+  MPI_Request request;
+  MPI_Status status;
+
+  for (int ch=0; ch < numChildren; ch++){
+    // this child wants PBC and this core participates
+    if (CommToChild_P[ch] != MPI_COMM_NULL and CG_numPBCMessages[ch]>0){ 
+
+      for (int m=0; m< CG_numPBCMessages[ch]; m++){
+
+	int Size= CG_Info[ch][m].np_x * CG_Info[ch][m].np_y * CG_Info[ch][m].np_z;
+	// build the fluid BC msg
+	buildFluidBCMsg(vct, grid, EMf, ch, CG_Info[ch][m], Size, CGFluidMsg );
+	
+	// send the fluid BC msg
+	dest= CG_Info[ch][m].RG_core;
+	tag= CG_Info[ch][m].MsgID;
+
+	MPI_Isend(CGFluidMsg, Size*numFBC, MPI_DOUBLE, dest, tag, CommToChild_P[ch], &request);
+	MPI_Wait(&request, &status);
+
+
+      }// end for (int m=0; m< CG_numPBCMessages[ch]; m++){
+      
+    } // end if (CommToChild_P[ch] != MPI_COMM_NULL and CG_numPBCMessages[ch]>0){
+    
+  }// end for (int ch=0; ch < numChildren; ch++){
+
+  // deletes
+  delArr3(rho, nxn, nyn);
+  delArr3(Jx, nxn, nyn);
+  delArr3(Jy, nxn, nyn);
+  delArr3(Jz, nxn, nyn);
+  delArr3(pxx, nxn, nyn);
+  delArr3(pxy, nxn, nyn);
+  delArr3(pxz, nxn, nyn);
+  delArr3(pyy, nxn, nyn);
+  delArr3(pyz, nxn, nyn);
+  delArr3(pzz, nxn, nyn);
+}
+
+
+void Particles3Dcomm::buildFluidBCMsg(VirtualTopology3D *vct, Grid * grid, Field * EMf, int ch, RGBC_struct RGInfo, int Size, double *Msg ){
+  
+  // NB: if i send more stuff, do all the interpolation here
+  // i use the three indexes, knowing that one will be zero
+
+  // position of the initial RG point in the CG grid
+  // points are displacement over this
+
+  //cout << "Building msg starting from " << RGInfo.CG_x_first <<", " << RGInfo.CG_y_first << ", " <<RGInfo.CG_z_first <<" size "<< RGInfo.np_x << ", "  << RGInfo.np_y <<", " << RGInfo.np_z << endl;
+
+  double x0= RGInfo.CG_x_first;
+  double y0= RGInfo.CG_y_first;
+  double z0= RGInfo.CG_z_first;
+
+  double inv_dx= 1./dx;
+  double inv_dy= 1./dy;
+  double inv_dz= 1./dz;
+
+  double xp, yp, zp;
+  int count =0;
+
+  //cout << "inside building msg RGInfo.np_x " << RGInfo.np_x << " RGInfo.np_y " << RGInfo.np_y << " RGInfo.np_z " << RGInfo.np_z <<endl;
+
+  //cout <<"building msg, starts @ " << x0 << "; " << y0 << "; " << z0 << endl;
+
+  for (int i= 0; i<RGInfo.np_x; i++){
+    for (int j=0; j<RGInfo.np_y; j++){
+      for (int k=0; k<RGInfo.np_z; k++){
+	
+	// ok, now each RG point is treated as a particle here
+	// and i need the E at the point position
+
+	xp= x0 + i*dx_Ch[ch];
+	yp= y0 + j*dy_Ch[ch];
+	zp= z0 + k*dz_Ch[ch]; 
+	
+	//cout << "building msg, point " << xp << "; " <<yp <<"; " << zp << endl;
+
+	// this is copied from the mover
+	const double ixd = floor((xp - xstart) * inv_dx);
+	const double iyd = floor((yp - ystart) * inv_dy);
+	const double izd = floor((zp - zstart) * inv_dz);
+	int ix = 2 + int (ixd);
+	int iy = 2 + int (iyd);
+	int iz = 2 + int (izd);
+	if (ix < 1)
+	  ix = 1;
+	if (iy < 1)
+	  iy = 1;
+	if (iz < 1)
+	  iz = 1;
+	if (ix > nxn - 1)
+	  ix = nxn - 1;
+	if (iy > nyn - 1)
+	  iy = nyn - 1;
+	if (iz > nzn - 1)
+	  iz = nzn - 1;
+
+	double xi  [2];
+	double eta [2];
+	double zeta[2];
+
+	xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+	eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+	zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+	xi  [1] = grid->getXN(ix,iy,iz) - xp;
+	eta [1] = grid->getYN(ix,iy,iz) - yp;
+	zeta[1] = grid->getZN(ix,iy,iz) - zp;
+
+	double rhol = 0.0;
+	double Jxl = 0.0;
+	double Jyl = 0.0;
+	double Jzl = 0.0;
+	double pxxl = 0.0;
+	double pxyl = 0.0;
+	double pxzl = 0.0;
+	double pyyl = 0.0;
+	double pyzl = 0.0;
+	double pzzl = 0.0;
+
+	const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+	const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+	const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+	const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+	const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+	const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+	const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+	const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+	
+	rhol += weight000 * (rho[ix][iy][iz]             );
+        rhol += weight001 * (rho[ix][iy][iz - 1]         );
+        rhol += weight010 * (rho[ix][iy - 1][iz]         );
+        rhol += weight011 * (rho[ix][iy - 1][iz - 1]     );
+        rhol += weight100 * (rho[ix - 1][iy][iz]         );
+        rhol += weight101 * (rho[ix - 1][iy][iz - 1]     );
+        rhol += weight110 * (rho[ix - 1][iy - 1][iz]     );
+        rhol += weight111 * (rho[ix - 1][iy - 1][iz - 1] );
+
+	Jxl += weight000 * (Jx[ix][iy][iz]             );
+        Jxl += weight001 * (Jx[ix][iy][iz - 1]         );
+        Jxl += weight010 * (Jx[ix][iy - 1][iz]         );
+        Jxl += weight011 * (Jx[ix][iy - 1][iz - 1]     );
+        Jxl += weight100 * (Jx[ix - 1][iy][iz]         );
+        Jxl += weight101 * (Jx[ix - 1][iy][iz - 1]     );
+        Jxl += weight110 * (Jx[ix - 1][iy - 1][iz]     );
+        Jxl += weight111 * (Jx[ix - 1][iy - 1][iz - 1] );
+
+	Jyl += weight000 * (Jy[ix][iy][iz]             );
+        Jyl += weight001 * (Jy[ix][iy][iz - 1]         );
+        Jyl += weight010 * (Jy[ix][iy - 1][iz]         );
+        Jyl += weight011 * (Jy[ix][iy - 1][iz - 1]     );
+        Jyl += weight100 * (Jy[ix - 1][iy][iz]         );
+        Jyl += weight101 * (Jy[ix - 1][iy][iz - 1]     );
+        Jyl += weight110 * (Jy[ix - 1][iy - 1][iz]     );
+        Jyl += weight111 * (Jy[ix - 1][iy - 1][iz - 1] );
+
+	Jzl += weight000 * (Jz[ix][iy][iz]             );
+        Jzl += weight001 * (Jz[ix][iy][iz - 1]         );
+        Jzl += weight010 * (Jz[ix][iy - 1][iz]         );
+        Jzl += weight011 * (Jz[ix][iy - 1][iz - 1]     );
+        Jzl += weight100 * (Jz[ix - 1][iy][iz]         );
+        Jzl += weight101 * (Jz[ix - 1][iy][iz - 1]     );
+        Jzl += weight110 * (Jz[ix - 1][iy - 1][iz]     );
+        Jzl += weight111 * (Jz[ix - 1][iy - 1][iz - 1] );
+
+	pxxl += weight000 * (pxx[ix][iy][iz]             );
+        pxxl += weight001 * (pxx[ix][iy][iz - 1]         );
+        pxxl += weight010 * (pxx[ix][iy - 1][iz]         );
+        pxxl += weight011 * (pxx[ix][iy - 1][iz - 1]     );
+        pxxl += weight100 * (pxx[ix - 1][iy][iz]         );
+        pxxl += weight101 * (pxx[ix - 1][iy][iz - 1]     );
+        pxxl += weight110 * (pxx[ix - 1][iy - 1][iz]     );
+        pxxl += weight111 * (pxx[ix - 1][iy - 1][iz - 1] );
+
+	pxyl += weight000 * (pxy[ix][iy][iz]             );
+        pxyl += weight001 * (pxy[ix][iy][iz - 1]         );
+        pxyl += weight010 * (pxy[ix][iy - 1][iz]         );
+        pxyl += weight011 * (pxy[ix][iy - 1][iz - 1]     );
+        pxyl += weight100 * (pxy[ix - 1][iy][iz]         );
+        pxyl += weight101 * (pxy[ix - 1][iy][iz - 1]     );
+        pxyl += weight110 * (pxy[ix - 1][iy - 1][iz]     );
+        pxyl += weight111 * (pxy[ix - 1][iy - 1][iz - 1] );
+
+	pxzl += weight000 * (pxz[ix][iy][iz]             );
+        pxzl += weight001 * (pxz[ix][iy][iz - 1]         );
+        pxzl += weight010 * (pxz[ix][iy - 1][iz]         );
+        pxzl += weight011 * (pxz[ix][iy - 1][iz - 1]     );
+        pxzl += weight100 * (pxz[ix - 1][iy][iz]         );
+        pxzl += weight101 * (pxz[ix - 1][iy][iz - 1]     );
+        pxzl += weight110 * (pxz[ix - 1][iy - 1][iz]     );
+        pxzl += weight111 * (pxz[ix - 1][iy - 1][iz - 1] );
+
+	pyyl += weight000 * (pyy[ix][iy][iz]             );
+        pyyl += weight001 * (pyy[ix][iy][iz - 1]         );
+        pyyl += weight010 * (pyy[ix][iy - 1][iz]         );
+        pyyl += weight011 * (pyy[ix][iy - 1][iz - 1]     );
+        pyyl += weight100 * (pyy[ix - 1][iy][iz]         );
+        pyyl += weight101 * (pyy[ix - 1][iy][iz - 1]     );
+        pyyl += weight110 * (pyy[ix - 1][iy - 1][iz]     );
+        pyyl += weight111 * (pyy[ix - 1][iy - 1][iz - 1] );
+
+	pyzl += weight000 * (pyz[ix][iy][iz]             );
+        pyzl += weight001 * (pyz[ix][iy][iz - 1]         );
+        pyzl += weight010 * (pyz[ix][iy - 1][iz]         );
+        pyzl += weight011 * (pyz[ix][iy - 1][iz - 1]     );
+        pyzl += weight100 * (pyz[ix - 1][iy][iz]         );
+        pyzl += weight101 * (pyz[ix - 1][iy][iz - 1]     );
+        pyzl += weight110 * (pyz[ix - 1][iy - 1][iz]     );
+        pyzl += weight111 * (pyz[ix - 1][iy - 1][iz - 1] );
+
+	pzzl += weight000 * (pzz[ix][iy][iz]             );
+        pzzl += weight001 * (pzz[ix][iy][iz - 1]         );
+        pzzl += weight010 * (pzz[ix][iy - 1][iz]         );
+        pzzl += weight011 * (pzz[ix][iy - 1][iz - 1]     );
+        pzzl += weight100 * (pzz[ix - 1][iy][iz]         );
+        pzzl += weight101 * (pzz[ix - 1][iy][iz - 1]     );
+        pzzl += weight110 * (pzz[ix - 1][iy - 1][iz]     );
+        pzzl += weight111 * (pzz[ix - 1][iy - 1][iz - 1] );
+
+
+	Msg[0*Size +count]= rhol;
+	
+	Msg[1*Size +count]= Jxl;
+	Msg[2*Size +count]= Jyl;
+	Msg[3*Size +count]= Jzl;
+
+	Msg[4*Size +count]= pxxl;
+	Msg[5*Size +count]= pxyl;
+	Msg[6*Size +count]= pxzl;
+	Msg[7*Size +count]= pyyl;
+	Msg[8*Size +count]= pyzl;
+	Msg[9*Size +count]= pzzl;
+
+	count ++;
+
+      }
+    }
+  }
+  //cout <<"R" << vct->getSystemWide_rank() << ", count " << count << "for child " << ch << endl;
+}
+
+/** refined grid receives fluid BCs from the coarse grid **/
+void Particles3Dcomm::ReceiveFluidBC(Grid *grid, VirtualTopology3D *vct){
+
+  PRA_PAdded=0;
+
+  MPI_Comm CommToParent= vct->getCommToParent_P(ns);
+
+  if (CommToParent == MPI_COMM_NULL) {return;}  // if you are not a refined grid, no need to be here
+
+  MPI_Status status;
+  bool found;
+  int countExp;
+  int count;
+
+  
+  bool Testing= true; // put to false during production
+
+  for (int m=0; m< RG_numPBCMessages; m++){
+
+    MPI_Recv(RGFluidMsg, RG_MaxFluidMsgSize*numFBC, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, CommToParent, &status);
+    MPI_Get_count(&status, MPI_DOUBLE, &count );
+    
+    found= false;
+    // check with stored msgs
+    for (int i=0; i< RG_numPBCMessages; i++){
+
+      if (RGPBC_Info[i].MsgID == status.MPI_TAG and RGPBC_Info[i].CG_core == status.MPI_SOURCE){ // NB: the tag gives you the msg position in the BC vector
+	
+	found= true;
+	  
+	countExp= RGPBC_Info[i].np_x * RGPBC_Info[i].np_y * RGPBC_Info[i].np_z  ;
+
+	if (Testing){
+	  if (countExp *numFBC  != count){
+	    cout << "R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent_P(ns) <<" : msg recv from core " << status.MPI_SOURCE <<" with tag " << status.MPI_TAG << " but fluid PBC msg size does not check: received: " << count << " expected " << countExp*numFBC << ", aborting ..." << endl;
+	    MPI_Abort(MPI_COMM_WORLD, -1);
+	  }
+	}
+	  
+	// put BC here
+	// the tag gives you the position in the BC vector
+	
+	// rho
+	memcpy(rho_FBC[status.MPI_TAG], RGFluidMsg, sizeof(double)*countExp );
+	// J
+	memcpy(Jx_FBC[status.MPI_TAG], RGFluidMsg +   countExp, sizeof(double)*countExp );
+	memcpy(Jy_FBC[status.MPI_TAG], RGFluidMsg + 2*countExp, sizeof(double)*countExp );
+	memcpy(Jz_FBC[status.MPI_TAG], RGFluidMsg + 3*countExp, sizeof(double)*countExp );
+	// P
+	memcpy(Pxx_FBC[status.MPI_TAG], RGFluidMsg + 4*countExp, sizeof(double)*countExp );
+	memcpy(Pxy_FBC[status.MPI_TAG], RGFluidMsg + 5*countExp, sizeof(double)*countExp );
+	memcpy(Pxz_FBC[status.MPI_TAG], RGFluidMsg + 6*countExp, sizeof(double)*countExp );
+	memcpy(Pyy_FBC[status.MPI_TAG], RGFluidMsg + 7*countExp, sizeof(double)*countExp );
+	memcpy(Pyz_FBC[status.MPI_TAG], RGFluidMsg + 8*countExp, sizeof(double)*countExp );
+	memcpy(Pzz_FBC[status.MPI_TAG], RGFluidMsg + 9*countExp, sizeof(double)*countExp );
+	break;
+
+      } // end if (RGBC_Info_Active[i].MsgID == status.MPI_TAG )
+              
+    } //for (int i=0; i< RG_numBCMessages_Active; i++){ // here end search of the msg
+
+    if (Testing){
+      if (found == false){
+	cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received an active msg I cannot match with my record, aborting..." << endl;
+	MPI_Abort(MPI_COMM_WORLD, -1);
+      }
+    }
+    
+  } // here is when i receive it 
+
+
+}
+
+void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct){
+
+  MPI_Comm CommToParent= vct->getCommToParent_P(ns);
+  
+  if (CommToParent == MPI_COMM_NULL or FluidLikeRep == false)
+    return;
+
+  for (int m=0; m< RG_numPBCMessages; m++ )  {
+    
+    int II= RGPBC_Info[m].np_x;
+    int JJ= RGPBC_Info[m].np_y;
+    int KK= RGPBC_Info[m].np_z;
+    
+    int ix_f= RGPBC_Info[m].ix_first;
+    int iy_f= RGPBC_Info[m].iy_first;
+    int iz_f= RGPBC_Info[m].iz_first;
+    
+    int countMsg=0;
+    
+    for (int i= 0; i<II; i++)
+      for (int j=0; j<JJ; j++)
+	for (int k=0; k<KK; k++){
+	  
+	  RHOP[ix_f + i][iy_f + j][iz_f + k]= rho_FBC[m][countMsg];
+	  
+	  UP[ix_f + i][iy_f + j][iz_f + k]= Jx_FBC[m][countMsg]/ rho_FBC[m][countMsg];
+	  VP[ix_f + i][iy_f + j][iz_f + k]= Jy_FBC[m][countMsg]/ rho_FBC[m][countMsg];
+	  WP[ix_f + i][iy_f + j][iz_f + k]= Jz_FBC[m][countMsg]/ rho_FBC[m][countMsg];
+
+	  double PTH_X= (Pxx_FBC[m][countMsg]- Jx_FBC[m][countMsg]*Jx_FBC[m][countMsg]/ rho_FBC[m][countMsg]  )/qom;
+          double PTH_Y= (Pyy_FBC[m][countMsg]- Jy_FBC[m][countMsg]*Jy_FBC[m][countMsg]/ rho_FBC[m][countMsg]  )/qom;
+          double PTH_Z= (Pzz_FBC[m][countMsg]- Jz_FBC[m][countMsg]*Jz_FBC[m][countMsg]/ rho_FBC[m][countMsg]  )/qom;
+
+	  UTHP[ix_f + i][iy_f + j][iz_f + k]= sqrt(abs(PTH_X/ rho_FBC[m][countMsg] *qom));
+	  VTHP[ix_f + i][iy_f + j][iz_f + k]= sqrt(abs(PTH_Y/ rho_FBC[m][countMsg] *qom));
+	  WTHP[ix_f + i][iy_f + j][iz_f + k]= sqrt(abs(PTH_Z/ rho_FBC[m][countMsg] *qom));
+
+	  countMsg++;
+	} // end cycle on i, j, k
+
+
+  } // end  for (int m=0; m< RG_numPBCMessages; m++ ) 
+
+  // now i have the data to regenerate
+  
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = nop;
+
+  int i_s=1, i_e= grid->getNXC() - 1;
+  int j_s=1, j_e= grid->getNYC() - 1;
+  int k_s=1, k_e= grid->getNZC() - 1;
+
+  if ( vct->getXleft_neighbor_P() == MPI_PROC_NULL) i_s=0;
+  if ( vct->getXright_neighbor_P() == MPI_PROC_NULL) i_e=grid->getNXC();
+
+  if ( vct->getYleft_neighbor_P() == MPI_PROC_NULL) j_s=0;
+  if ( vct->getYright_neighbor_P() == MPI_PROC_NULL) j_e=grid->getNYC();
+
+  if ( vct->getZleft_neighbor_P() == MPI_PROC_NULL) k_s=0;
+  if ( vct->getZright_neighbor_P() == MPI_PROC_NULL) k_e=grid->getNZC();
+
+  for (int i = i_s; i < i_e; i++)
+    for (int j = j_s; j < j_e; j++)
+      for (int k = k_s; k < k_e; k++){
+
+	if (REPO[i][j][k]== false) continue; // repopulate only the flagged cells
+
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+
+	      if (RHOP[i][j][k]== -100.0){
+		cout << "I have messed up in fluid repopulation aborting " << endl;
+		MPI_Abort(MPI_COMM_WORLD, -1);
+		return ;     
+	      }
+	      
+	      // init with random position in the cell
+	      double rX = ((double)rand() / (double)(RAND_MAX));
+	      double rY = ((double)rand() / (double)(RAND_MAX));
+	      double rZ = ((double)rand() / (double)(RAND_MAX));
+
+	      x[counter]= grid->getXN(i, j, k)+ dx*rX;
+	      y[counter]= grid->getYN(i, j, k)+ dy*rY;
+	      z[counter]= grid->getZN(i, j, k)+ dz*rZ;
+	            
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(RHOP[i][j][k]) / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = UP[i][j][k] + UTHP[i][j][k] * prob * cos(theta);
+              // v
+              v[counter] = VP[i][j][k] + VTHP[i][j][k] * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = WP[i][j][k] + WTHP[i][j][k] * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+
+              counter++;
+            }
+      }
+  // to set number of particles in allocate, keeping in mind that in mlmd there can be particles in the GC
+  nop= counter;
+  
+
+
+}
+
+

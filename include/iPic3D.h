@@ -37,6 +37,7 @@ namespace iPic3D {
     int Init(int argc, char **argv);
     void InjectBoundaryParticles();
     void GatherMoments();
+    void GatherMoments_Init();
     void CalculateField();
     void CalculateBField();
     bool ParticlesMover();
@@ -110,6 +111,9 @@ namespace iPic3D {
     int MLMD_BC;
     int MLMD_PROJECTION;
     int MLMD_ParticleREPOPULATION;
+    // if false, particle repopulation is done after mover
+    // if true, particle repopulation done after CG has calculated moments
+    bool FluidLikeRep;
     //int MLMD_InitialInterpolation;
 
     /*! end mlmd variables */

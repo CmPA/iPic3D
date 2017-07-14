@@ -4,39 +4,15 @@
 developers: Stefano Markidis, Giovanni Lapenta
  ********************************************************************************************/
 
-#ifndef Part3DCOMM_H
-#define Part3DCOMM_H
+#ifndef Particles3Dcomm_H
+#define Particles3Dcomm_H
 
 #include "Particles.h"
 
-/* mlmd-related struct: RG P BC */
-struct RGPBC_struct {  // when changing this, change MPI_RGPBC_struct_commit also           
 
-  // number of Refined Grid point in the x, y, z direction for which repopulation is needed
-  int np_x;
-  int np_y;
-  int np_z;
+// to recycle the definition in Grid3DCU.h for RG/CG handshake msg
+typedef RGBC_struct RGPBC_struct;
 
-  // CG coordinates corresponding to the first point for this GC core           
-  double CG_x_first;
-  double CG_y_first;
-  double CG_z_first;
-
-  /* CG core which sends this set of BCs                                                                                                      
-     important: one core per message;     
-     the rank is the one on the PARENT-CHILD communicator   
-  */
-  int CG_core;
-  /* RG core involved in the communication;      
-     i need it because i plan to have one RG core collecting all the info and   
-     sending it to one CG core, to minimise CG-RG communication;   
-     the rank is on the PARENT-CHILD communicator*/
-  int RG_core;
-  // so RG grid knows what she is dealing with  
-  // when sending BC, send it back as tag  
-  // NB: the MsgID is the order in which that particle RG core builds the msg in init Phase1;  
-  int MsgID;
-}; // end structure   
 
 // structure to send repopulated particles from the coarse to the refined grids
 struct RepP_struct{
@@ -262,7 +238,9 @@ public:
   /* some checks after initWeightPBC - comment for production runs */
   void CheckAfterInitWeightPBC(VirtualTopology3D * ptVCT);
   /* Phase 1: RG cores build their side of the map for PBC */
-  void initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, RGPBC_struct* RGPBC_Info, int *RG_numPBCMessages);   
+  void initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, RGPBC_struct* RGPBC_Info, int *RG_numPBCMessages);  
+  /* Phase 1 for Fluid-like particle repopulation */
+  void initWeightFluidPBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg);
   /* commit the structure created for initial CG/RG handshake as MPI_Datatype*/
   void MPI_RGPBC_struct_commit();
   /* commit the structure for the particle CG/RG exchange as MPI_Datatype */
@@ -271,12 +249,12 @@ public:
   void MPI_CRP_struct_commit();
   // each RG core buid its own PBC communication map
   void Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct);
-  /* add one handshake msg to the list */
-  void Assign_RGBC_struct_Values(RGPBC_struct *s, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int MsgID_tmp);
-  /* build and send particle BC msg -- CG to RG */
-  void SendPBC(Grid* grid, VirtualTopology3D * vct);
-  /* RG receives PBC msg and acts accordingly */
+  /* RG receives PBC msg and acts accordingly; used for both fluid and kinetic PBC */
   void ReceivePBC(Grid* grid, VirtualTopology3D * vct);
+  /* ------ kinetic repopulation methods + support functions  ------ */
+  /* build and send particle BC msg -- CG to RGC -- KINETIC REPOPULATION*/
+  /* kinetic repopulation: to minimise waiting times, build all messages then send then */
+  void SendPBC(Grid* grid, VirtualTopology3D * vct);
   /* prepares P BC msg to the refined grid */
   void buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch);
   /* add a particle to the PBC msg */
@@ -289,9 +267,7 @@ public:
   /* resize the buffers responsible for communicating repopulated particles -- called by addP_CRP*/
   void resize_CRP_buffers(VirtualTopology3D * vct);
   /* resize the buffers responsible for communicating repopulated particles -- when size is avaialble*/
-
   void resize_CRP_buffers(VirtualTopology3D * vct, int NewSize);
-
   /* add a particle for the exchange of the repopulated particles within the R*/
   void addP_CRP(CRP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, int DestinationRank, VirtualTopology3D* vct);			       
   /* add a particle packed into the CRP_struct into the core particle vectors 
@@ -309,6 +285,16 @@ public:
   void CheckSentReceivedParticles(VirtualTopology3D* vct);
   /* distribute split particles to the right RG core*/
   void communicateRepopulatedParticles(Grid* grid, VirtualTopology3D * vct);
+  /* ------ end kinetic repopulation methods + support functions  ------ */
+  /* ------ fluid repopulation methods + support functions  ------ */
+  /* build and send particle BC msg -- CG to RGC -- FLUID REPOPULATION*/
+  /* fluid repopulation: to minimise waiting times, build and send msg, before proceeding to the next one */
+  void SendFluidPBC(Grid* grid, VirtualTopology3D * vct, Field * EMf);
+  /* build one fluid BC msg */
+  void buildFluidBCMsg(VirtualTopology3D *vct, Grid * grid, Field * EMf, int ch, RGPBC_struct RGInfo, int Size, double *Msg );
+  void ReceiveFluidBC(Grid *grid, VirtualTopology3D *vct);
+  void ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct);
+  /* ------ end fluid repopulation methods + support functions  ------ */
   /* trims the **_Info vectors used by the MLMD structure*/
   void TrimInfoVector(VirtualTopology3D *vct);
   // moved here from Particles3D.h
@@ -490,6 +476,11 @@ protected:
   int YLEN;
   int ZLEN;
 
+  /* mlmd: i need dx, dy, dz of the children */
+  double *dx_Ch;
+  double *dy_Ch;
+  double *dz_Ch;
+
   /*! mlmd specific variables */
   /*! if true, mlmd related output */
   bool MLMDVerbose;
@@ -497,6 +488,8 @@ protected:
   int SpokePerson;
   /*! number of the current grid in the mlmd hierarchy */
   int numGrid;
+  /* number of Particle Repopulation Area cells */
+  int PRACells;
   /* CG SIDE */
   /*! number of children */
   int numChildren;
@@ -504,14 +497,6 @@ protected:
      [numChildren] [MAX_RG_numPBCMessages] */
   RGPBC_struct ** CG_Info;
   int *CG_numPBCMessages;
-  /* struct hosting info on particles to send to the RG 
-     [number of children][MaxNumMsg][sizeCG_PBCMsg] */
-  RepP_struct *** PCGMsg;
-  RepP_struct *** PCGMsg_ptr; // alias to make the resize
-  int MaxNumMsg;
-  /* number of particles to send to each child core
-     [number of children][MaxNumMsg] */
-  int ** nopPCGMsg;
   /* END CG SIDE */
   /* BOTH SIDES */
   /* size of the vector -- can be resized up to MAXsizePCMsg -- value set in initWeightPBC 
@@ -539,6 +524,8 @@ protected:
   int MAX_RG_numPBCMessages;
   /* intermediate, for handshake ops */
   int MAX_RG_numPBCMessages_LevelWide;
+  /* --------------- these are used only if FluidLikeRep = false (kinetic particle repopulation) --------------- */ 
+  /** RG side **/
   /* struct hosting particles received from the RG (here, they are not split yet)
      [RG_numPBCMessages][sizeRG_PCMsg]*/
   RepP_struct ** PRGMsg;
@@ -551,12 +538,25 @@ protected:
   /* general buffer to receive particles BC; before putting them in the proper slot in PRGMsg
      [sizeRG_PCMsg]*/
   RepP_struct* PRGMsg_General;
+  /** CG side **/
+  RepP_struct *** PCGMsg;
+  RepP_struct *** PCGMsg_ptr; // alias to make the resize
+  int MaxNumMsg;
+  /* number of particles to send to each child core
+     [number of children][MaxNumMsg] */
+  int ** nopPCGMsg;
+  /* -------------- end these are used only if FluidLikeRep = false (kinetic particle repopulation) -------------- */
+
   /* particles added to the PRA area from MLMD BC */
   int PRA_PAdded;
   /* number of particles in the core at the end of communicate */
   int nop_EndCommunicate;
   /* number of particles in the core AFTER ReceivePBC */
   int nop_AfterReceivePBC;
+  /* particles deleted at the end of communicate*/
+  int PRA_deleted;
+
+  /* --------- to exchange repopulated particles -- used only if FluidLikeRep = false --------- */
   /* number of particles to transfer to core HighestRank in communicateRepopulatedParticles*/
   int np_ToCoreH_CRP; 
   /* vectors to exchange repopulated particles within the RG */
@@ -583,9 +583,47 @@ protected:
   int num_H_CRP_cores;
   /* number of CRP particles receive by rank < HighestRank */
   int NH_num_CRP_nop;
-  /* particles deleted at the end of communicate*/
-  int PRA_deleted;
   /* END RG SIDE */
+  /* --------- end to exchange repopulated particles -- used only if FluidLikeRep = false --------- */
+
+  /* --------- these are used only if FluidLikeRep = true --------- */
+  bool FluidLikeRep;
+  /** RG side **/
+  int RG_MaxFluidMsgSize;
+  /** size: [RG_numPBCMessages][RG_MaxFluidMsgSize] **/
+  double ** rho_FBC;
+  double ** Jx_FBC;
+  double ** Jy_FBC;
+  double ** Jz_FBC;
+  double ** Pxx_FBC;
+  double ** Pxy_FBC;
+  double ** Pxz_FBC;
+  double ** Pyy_FBC;
+  double ** Pyz_FBC;
+  double ** Pzz_FBC;
+
+  double *** RHOP;
+  double *** UP;
+  double *** VP;
+  double *** WP;
+  double *** UTHP;
+  double *** VTHP;
+  double *** WTHP;
+  
+  /** CG side **/
+  // CG PBC msg accumulated here
+  // [MaxSizeCGFluidBCMsg * numFBC]
+  double *CGFluidMsg;
+  // the max size of the CGFluidMsg for this core
+  int MaxSizeCGFluidBCMsg; // calculated in initWeightPBC
+  // how many doubles for one entry: 1 rho + 3 J + 6 P
+  int numFBC;
+  // here is where RG receives fluid PBC from CG
+  // [RG_MaxFluidMsgSize*numFBC]
+  double *RGFluidMsg;
+  // check here to be sure you are repopulating only once
+  bool *** REPO;
+  /* --------- end these are used only if FluidLikeRep = true --------- */
 
   /* Index (NOT coordinates, not number of cells) at which PRA starts / ends 
      set in allocate */
@@ -618,7 +656,7 @@ protected:
   double Coord_ZRight_End;
 
   /* MPI Datatype associated to RGPBC_struct; init in MPI_RGBC_struct_commit  */
-  MPI_Datatype MPI_RGPBC_struct;
+  MPI_Datatype MPI_RGBC_struct;
   MPI_Datatype MPI_RepP_struct;
   MPI_Datatype MPI_CRP_struct;
 
@@ -663,8 +701,20 @@ protected:
   double ***Bz_ext;
 
   double Fext;
-  
 
+  // copies of moments, used for fluid repopulation
+  double *** rho;
+  double *** Jx;
+  double *** Jy;
+  double *** Jz;
+  double *** pxx;
+  double *** pxy;
+  double *** pxz;
+  double *** pyy;
+  double *** pyz;
+  double *** pzz;
+
+  
 };
 
 #endif

@@ -138,6 +138,8 @@ Grid3DCU::Grid3DCU(Collective * col, VirtualTopology3D * vct) {
   for(int j=0; j<nyc; j++) center_ycoord[j] = .5*(node_ycoord[j]+node_ycoord[j+1]);
   for(int k=0; k<nzc; k++) center_zcoord[k] = .5*(node_zcoord[k]+node_zcoord[k+1]);
 
+  // this type used in EMfields3D.cpp and Particles3Dcomm.cpp
+  //MPI_RGBC_struct_commit();
   
 }
 
@@ -1130,6 +1132,180 @@ double Grid3DCU::getZC_P(int X, int Y, int Z){
   if (Z>nzc-1)
     return Oz+ center_zcoord[nzn-1] + dz*(Z-(nzc-1));
 }
+
+void Grid3DCU::Explore3DAndCommit_Centers(int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct , char  dir){
+  // policy:    
+  // explore Z dir  
+  // for on the number of cores found there: explore Y dir  
+  // for on the number of cores found there: explore X dir   
+  // finally, commit  NB: all faces should have the same c 
+  int MS= nxc; if (nyc>MS) MS= nyc; if (nzc>MS) MS= nzc;
+  int rank_CTP= vct->getRank_CommToParent();
+  /*******************************************************************/
+  // DIR1: starting point, in CG coordinates, per core 
+  double *Dir1_SPXperC= new double[MS];
+  double *Dir1_SPYperC= new double[MS];
+  double *Dir1_SPZperC= new double[MS];
+  // DIR1: number of Refined grid point in this direction, per core   
+  int *Dir1_NPperC= new int[MS];  // this does not need to be this big, but anyway  
+  // DIR1: core ranks in the CommToParent communicator 
+  int *Dir1_rank= new int [MS]; // this does not need to be this big, but anyway   
+  int *Dir1_IndexFirstPointperC= new int [MS];
+  int Dir1_Ncores=0;
+
+  // DIR2: starting point, in CG coordinates, per core 
+  double *Dir2_SPXperC= new double[MS];
+  double *Dir2_SPYperC= new double[MS];
+  double *Dir2_SPZperC= new double[MS];
+  // DIR2: number of Refined grid point in this direction, per core   
+  int *Dir2_NPperC= new int[MS];  // this does not need to be this big, but anyway   
+  // DIR2: core ranks in the CommToParent communicator 
+  int *Dir2_rank= new int [MS]; // this does not need to be this big, but anyway   
+  int *Dir2_IndexFirstPointperC= new int [MS];
+  int Dir2_Ncores=0;
+
+  // DIR3: starting point, in CG coordinates, per core 
+  double *Dir3_SPXperC= new double[MS];
+  double *Dir3_SPYperC= new double[MS];
+  double *Dir3_SPZperC= new double[MS];
+  // DIR3: number of Refined grid point in this direction, per core   
+  int *Dir3_NPperC= new int[MS];  // this does not need to be this big, but anyway   
+  // DIR3: core ranks in the CommToParent communicator
+  int *Dir3_rank= new int [MS]; // this does not need to be this big, but anyway   
+  int *Dir3_IndexFirstPointperC= new int [MS];
+  int Dir3_Ncores=0;
+  /*******************************************************************/
+
+  string FACE="nn";
+  // Z dir / Dir 1  
+  RGBCExploreDirection_Centers(vct, FACE, 2, k_s, k_e, i_s, j_s, Dir1_SPXperC, Dir1_SPYperC, Dir1_SPZperC, Dir1_NPperC, Dir1_rank, &Dir1_Ncores, Dir1_IndexFirstPointperC);
+
+  for (int n=0; n<Dir1_Ncores; n++){ // it will find again the core in Dir 1, but it will also explore Dir 2    
+    // Y dir / Dir 2     
+      RGBCExploreDirection_Centers(vct, FACE, 1, j_s, j_e, i_s, Dir1_IndexFirstPointperC[n],  Dir2_SPXperC, Dir2_SPYperC, Dir2_SPZperC, Dir2_NPperC, Dir2_rank, &Dir2_Ncores, Dir2_IndexFirstPointperC);
+
+    for (int m=0; m< Dir2_Ncores; m++){ //it will find again the core in Dir 1, but it will also explore Dir 2
+      // X dir / Dir 3
+      RGBCExploreDirection_Centers(vct, FACE, 0, i_s, i_e, Dir2_IndexFirstPointperC[m],  Dir1_IndexFirstPointperC[n], Dir3_SPXperC, Dir3_SPYperC, Dir3_SPZperC, Dir3_NPperC, Dir3_rank, &Dir3_Ncores, Dir3_IndexFirstPointperC);
+
+      for (int NN=0; NN< Dir3_Ncores; NN++){
+        // using the function written for BCs, it's the same 
+        Assign_RGBC_struct_Values(RGBC_Info + (*numMsg), Dir3_IndexFirstPointperC[NN], Dir2_IndexFirstPointperC[m], Dir1_IndexFirstPointperC[n], -1, Dir3_NPperC[NN], Dir2_NPperC[m], Dir1_NPperC[n], Dir3_SPXperC[NN], Dir3_SPYperC[NN], Dir3_SPZperC[NN], Dir3_rank[NN], rank_CTP, *numMsg);
+
+        (*numMsg)++;
+
+        int tmp= Dir3_NPperC[NN]*Dir2_NPperC[m]*Dir1_NPperC[n];
+        if (tmp > (*MaxSizeMsg)) (*MaxSizeMsg)= tmp;
+
+      } // end for (int NN=0; NN< Dir3_Ncores; NN++){  
+    } // end  for (int m=0; m< Dir2_Ncores; m++){
+  } // end for (int n=0; n<Dir1_Ncores; n++){                                            
+  // end here, the same as Explore3DAndCommit for particles 
+
+
+  // the msg signaling the end      
+  RGBC_Info[*numMsg].RG_core= -1;
+  RGBC_Info[*numMsg].CG_core= -1;
+  // deletes                     
+  delete[]Dir1_SPXperC;
+  delete[]Dir1_SPYperC;
+  delete[]Dir1_SPZperC;
+  delete[]Dir1_NPperC;
+  delete[]Dir1_rank;
+  delete[]Dir1_IndexFirstPointperC;
+
+  delete[]Dir2_SPXperC;
+  delete[]Dir2_SPYperC;
+  delete[]Dir2_SPZperC;
+  delete[]Dir2_NPperC;
+  delete[]Dir2_rank;
+  delete[]Dir2_IndexFirstPointperC;
+
+  delete[]Dir3_SPXperC;
+  delete[]Dir3_SPYperC;
+  delete[]Dir3_SPZperC;
+  delete[]Dir3_NPperC;
+  delete[]Dir3_rank;
+  delete[]Dir3_IndexFirstPointperC;
+
+}
+// add one handshake msg to the list - to use in field initialisations, where you need to init more variables
+void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp,int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp , int MsgID_tmp) {
+  /// check the struct definition before assigning here!!!
+  s->ix_first= ix_first_tmp;
+  s->iy_first= iy_first_tmp;
+  s->iz_first= iz_first_tmp;
+
+  s->BCside= BCside_tmp;
+
+  s->np_x= np_x_tmp;
+  s->np_y= np_y_tmp;
+  s->np_z= np_z_tmp;
+
+  s->CG_x_first= CG_x_first_tmp;
+  s->CG_y_first= CG_y_first_tmp;
+  s->CG_z_first= CG_z_first_tmp;
+
+  s->CG_core= CG_core_tmp;
+  s->RG_core= RG_core_tmp;
+
+  s->MsgID= MsgID_tmp;
+
+  return;
+}
+
+// add one handshake msg to the list - to use in particle initialisations, where you need to init less variables
+void Assign_RGBC_struct_Values(RGBC_struct *s, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int MsgID_tmp ) {
+
+  s->np_x = np_x_tmp;
+  s->np_y = np_y_tmp;
+  s->np_z = np_z_tmp;
+
+  s->CG_x_first = CG_x_first_tmp;
+  s->CG_y_first = CG_y_first_tmp;
+  s->CG_z_first = CG_z_first_tmp;
+
+  s->CG_core = CG_core_tmp;
   
+  s->RG_core = RG_core_tmp;
+
+  s->MsgID = MsgID_tmp;
+
+  return;
+}
+
+
+/*void Grid3DCU::MPI_RGBC_struct_commit(){
+
+  RGBC_struct *a;
+  MPI_Datatype type[13]={MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_INT};
+  int blocklen[13]={1,1,1,1,1,1,1,1,1,1,1,1,1};
+  // displacement in bytes                                                                                                                                                   
+                                                                                                                                                                        
+  MPI_Aint disp[13];
+
+  disp[0]= (MPI_Aint) &(a->ix_first) - (MPI_Aint)a ;
+  disp[1]= (MPI_Aint) &(a->iy_first) - (MPI_Aint)a ;
+  disp[2]= (MPI_Aint) &(a->iz_first) - (MPI_Aint)a ;
+  // BCside                                                                                                                                                                    
+  disp[3]= (MPI_Aint) &(a->BCside) - (MPI_Aint)a ;
+  // np_*                                                                                                                                                                      
+  disp[4]= (MPI_Aint) &(a->np_x) - (MPI_Aint)a ;
+  disp[5]= (MPI_Aint) &(a->np_y) - (MPI_Aint)a ;
+  disp[6]= (MPI_Aint) &(a->np_z) - (MPI_Aint)a ;
+  // CG_*_first                                                                                                                                                                
+  disp[7]= (MPI_Aint) &(a->CG_x_first) - (MPI_Aint)a ;
+  disp[8]= (MPI_Aint) &(a->CG_y_first) - (MPI_Aint)a ;
+  disp[9]= (MPI_Aint) &(a->CG_z_first) - (MPI_Aint)a ;
+  // the cores                                                                                                                                                                 
+  disp[10]= (MPI_Aint) &(a->CG_core) - (MPI_Aint)a ;
+  disp[11]= (MPI_Aint) &(a->RG_core) - (MPI_Aint)a ;
+  // the msg id                                                                                                                                                                
+  disp[12]= (MPI_Aint) &(a->MsgID) - (MPI_Aint)a ;
+
+  MPI_Type_create_struct(13, blocklen, disp, type, &MPI_RGBC_struct);
+  MPI_Type_commit(&MPI_RGBC_struct);
+
+  }*/
 /** end mlmd specific functions **/
 

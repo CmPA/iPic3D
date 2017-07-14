@@ -3,7 +3,7 @@
 using namespace iPic3D;
 
 int c_Solver::Init(int argc, char **argv) {
-  
+
   MlmdVerbose= true;
 
   // initialize MPI environment
@@ -35,6 +35,8 @@ int c_Solver::Init(int argc, char **argv) {
   MLMD_BC = col->getMLMD_BC();
   MLMD_PROJECTION = col->getMLMD_PROJECTION();
   MLMD_ParticleREPOPULATION = col->getMLMD_ParticleREPOPULATION();
+  // the timing of particle repopulation ops depends on this
+  FluidLikeRep= col->getFluidLikeRep();
   //MLMD_InitialInterpolation = col->getMLMD_InitialInterpolation();
   /* end mlmd: to decide whether to perform mlmd ops */
   
@@ -304,6 +306,7 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
+// with mlmd ops
 void c_Solver::GatherMoments(){
   // timeTasks.resetCycle();
   // interpolation
@@ -312,10 +315,52 @@ void c_Solver::GatherMoments(){
 
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
-  
+
+  // if particle repopulation is fluid, ops are done here
+  if (MLMD_ParticleREPOPULATION and FluidLikeRep){
+    for (int i=0; i<ns; i ++){
+      part[i].ReceiveFluidBC(grid, vct);
+    }
+    for (int i=0; i< ns; i++){
+      part[i].ApplyFluidPBC(grid, vct);
+    }
+  }
+
+
   for (int i = 0; i < ns; i++)
     part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
 
+  // if particle repopulation is fluid, ops are done here
+  if (MLMD_ParticleREPOPULATION and FluidLikeRep){
+    for (int i=0; i<ns; i ++){
+      part[i].SendFluidPBC(grid, vct, EMf);
+    }
+  }
+
+
+  EMf->sumOverSpecies(vct);                 // sum all over the species
+  //
+  // Fill with constant charge the planet
+  if (col->getCase()=="Dipole") {
+    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+  }
+
+  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
+
+}
+
+// without mlmd ops
+void c_Solver::GatherMoments_Init(){
+  // timeTasks.resetCycle();
+  // interpolation
+  // timeTasks.start(TimeTasks::MOMENTS);
+
+
+  EMf->updateInfoFields(grid,vct,col);
+  EMf->setZeroDensities();                  // set to zero the densities
+
+  for (int i = 0; i < ns; i++)
+    part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
   //
@@ -458,7 +503,8 @@ bool c_Solver::ParticlesMover() {
 
   // CG sends PBC
   int RR= vct->getCartesian_rank();   
-  if (MLMD_ParticleREPOPULATION){
+  // particle repopulation ops are done here if the repopulation is kinetic
+  if (MLMD_ParticleREPOPULATION and !FluidLikeRep){
     for (int i = 0; i < ns; i++){
       // in practice, removes particles from the PRA
       part[i].communicateAfterMover(vct);
@@ -469,6 +515,16 @@ bool c_Solver::ParticlesMover() {
       //part[i].CheckSentReceivedParticles(vct);
     }
   }
+
+  // just to delete particles
+  if (MLMD_ParticleREPOPULATION and FluidLikeRep){
+    for (int i = 0; i < ns; i++){
+      // in practice, removes particles from the PRA
+      part[i].communicateAfterMover(vct);
+    }
+  }
+
+  
 
  
   return (false);

@@ -17,7 +17,8 @@ int main(int argc, char **argv) {
   KCode.Init(argc, argv);
     
   KCode.InjectBoundaryParticles();
-  KCode.GatherMoments();
+  // without mlmd ops
+  KCode.GatherMoments_Init();
 
 
   /* ------------ */
@@ -38,9 +39,10 @@ int main(int argc, char **argv) {
 
     b_err = KCode.ParticlesMover();
 
-    if (!b_err) KCode.CalculateBField();
-
+    // with mlmd ops
     if (!b_err) KCode.GatherMoments();
+
+    if (!b_err) KCode.CalculateBField();
 
     if ( b_err) i = KCode.LastCycle() + 1;
 

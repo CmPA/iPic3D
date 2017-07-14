@@ -57,25 +57,6 @@ class Collective
     double getz_center();
     /*! Get object size - cubic box */
     double getL_square();
-    /*! mlmd: use getNXC_mlmd insead */
-    /*! Get the number of cells - direction X */
-    //int getNxc();
-    /*! Get the number of cells - direction Y */
-    //int getNyc();
-    /*! Get the number of cells - direction Z */
-    //int getNzc();
-    /*! end mlmd: use getNXC_mlmd instead */
-    /* mlmd: use getPERIODICX_mlmd instead*/
-    //bool getPERIODICX() {return (PERIODICX);};
-    //bool getPERIODICY() {return (PERIODICY);};
-    //bool getPERIODICZ() {return (PERIODICZ);};
-    /*! mlmd: use getDx_mlmd instead */
-    /*! Get the grid spacing - direction X */
-    //double getDx();
-    /*! Get the grid spacing - direction Y */
-    //double getDy();
-    /*! Get the grid spacing - direction Z */
-    //double getDz();
     /*! get the light speed */
     double getC();
     /*! get the time step */
@@ -317,12 +298,14 @@ class Collective
 
     bool getAllowPMsgResize();
 
+    bool getFluidLikeRep();
     /*! returns MLMDVerbose */
     bool getMLMDVerbose();
     /*! end MLMD gets */
     /*! a first sanity check on MLMD inputs, called at the end of the constructor */
     void checkMLMDinputs();
     /*! end MLMD specific function */
+
 
   private:
     /*! inputfile */
@@ -591,7 +574,12 @@ class Collective
        false may be heavy on memory consumption
        true may be heavy on performance */
     bool AllowPMsgResize;
+    
+    /* wether to repopulate fluid-like or kinetically */
+    bool FluidLikeRep;
+
     // end MLMD variables
+    
 };
 
 #endif

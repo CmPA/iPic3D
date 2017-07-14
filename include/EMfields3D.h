@@ -29,55 +29,9 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+
 /*! Electromagnetic fields and sources defined for each local grid, and for an implicit maxwell's solver @date May 2008 @par Copyright: (C) 2008 KUL @author Stefano Markidis, Giovanni Lapenta. @version 3.0 */
 
-
-// mlmd-related structs
-/* RG BCs */
-struct RGBC_struct {  // when changing this, change MPI_RGBC_struct_commit also
-  /* indices, local to the RG core, of the first point of the message*/
-  /* to send back again */
-  int ix_first;
-  int iy_first;
-  int iz_first;
-  // this message refers to bottom, top, left, right, front, back face?
-  // this will become a character: 'b' (bottom) 't' (top) 'l' (left) 'r' (right) 'B' (Back) 'f' (front)
-  int BCside; 
-  // number of Refined Grid point in the x, y, z direction
-  int np_x;
-  int np_y;
-  int np_z;
-
-   // CG coordinates corresponding to the first point for this GC core
-  double CG_x_first;
-  double CG_y_first;
-  double CG_z_first;
-
-   /* CG core which sends this set of BCs
-     important: one core per message;
-     the rank is the one on the PARENT-CHILD communicator
-  */
-  int CG_core;
-  /* RG core involved in the communication;
-     i need it because i plan to have one RG core collecting all the info and 
-     sending it to one CG core, to minimise CG-RG communication;
-     the rank is on the PARENT-CHILD communicator*/
-  int RG_core;
-
-  // so RG grid knows what she is dealing with
-  // when sending BC, send it back as tag
-  // NB: the MsgID is the order in which that particle RG core builds the msg in init Phase1; 
-  // used when actually receiving BCs
-  int MsgID;
-  
-
-  
-}; // end structure
-
-/* MPI Datatype associated to RGBC_struct; init in MPI_RGBC_struct_commit  */
-//MPI_Datatype MPI_RGBC_struct;
-
-/* end mlmd-related structs */
 
 // class to accumulate node-centered species moments
 // 
@@ -216,6 +170,7 @@ inline void Moments::set_to_zero() {
 class EMfields3D                // :public Field
 {
   public:
+
     /*! constructor */
   /*! pre-mlmd:
     EMfields3D(Collective * col, Grid * grid); */
@@ -530,29 +485,13 @@ class EMfields3D                // :public Field
     void initWeightProj_Phase1(Grid *grid, VirtualTopology3D *vct);
     // used in initWeightProj_Phase1, initWeightBCBuffer_Phase1, copied form particles
     void Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct, char  FACE );
-    void Explore3DAndCommit_Centers(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct, char  FACE );
     void sendProjection(Grid *grid, VirtualTopology3D *vct);
     void receiveProjection(Grid *grid, VirtualTopology3D *vct);
     void applyProjection(Grid *grid, VirtualTopology3D *vct, Collective *col);
     void TestProjection(Grid *grid, VirtualTopology3D *vct);
+
     /* to create the MPI_Datatype associate to RGBC_struct */
     void MPI_RGBC_struct_commit();
-    /* to assign values to RGBC_struct 
-       remember to give the poiner to the position */
-    void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp );
-    /* to assign values to the RGBC struct */
-    void Assign_RGBC_struct_Values(RGBC_struct *s, int ix_first_tmp, int iy_first_tmp, int iz_first_tmp, int BCside_tmp, int np_x_tmp, int np_y_tmp, int np_z_tmp, double CG_x_first_tmp, double CG_y_first_tmp, double CG_z_first_tmp, int CG_core_tmp, int RG_core_tmp, int ID);
-    /* mlmd test functions */
-    /* to test communication when the RG communicates to the CG info regarding BC -
-       this before the big re-structuring; keep tmp but then delete */
-    void TEST__Assign_RG_BC_Values(VirtualTopology3D *vct);
-    /* to test communication when the RG communicates to the CG regarding BC - valid only wiht specific inputs
-     and when same number of cores in all grids*/
-    void TEST__Assign_RG_BC_Values(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which);
-    /*  test communication when the RG communicates to the CG regarding BC - valid only wiht specific inputs
-     the number of cores per grid is different */
-    void TEST__Assign_RG_BC_Values_DNC(VirtualTopology3D *vct, RGBC_struct * RGBC_Info, int * RG_numBCMessages, int which);
-    /* end mlmd test functions */
 
     /* different phases of initWeightBC */
     /* performs the real BC calculations; to be reused for ghost (which =-1, *_Ghost)
@@ -643,7 +582,8 @@ class EMfields3D                // :public Field
     /* end mlmd: BC related functions */
     /* a barrier on both parent and child side of the field communicator, to prevent messages from crossing */
     void MPI_Barrier_ParentChild(VirtualTopology3D* vct);    
-
+    /* copy moment vector, species ns */
+    void copyMoments(double ***P_rho, double ***P_Jx, double ***P_Jy, double ***P_Jz, double ***P_pxx, double ***P_pxy, double ***P_pxz, double ***P_pyy, double ***P_pyz, double ***P_pzz, int is);
     /*! end mlmd specific functions */
     /* ********************************* // VARIABLES ********************************* */
   private:
@@ -1063,9 +1003,6 @@ class EMfields3D                // :public Field
     int *CG_numBCMessages_Buffer;
     /* end in case MLMD_BCBufferArea= true */
 
-    /* MPI Datatype associated to RGBC_struct; init in MPI_RGBC_struct_commit  */
-    MPI_Datatype MPI_RGBC_struct;
-    
     /* tags for send/receive of BCs*/
     int TAG_BC_GHOST;
     int TAG_BC_ACTIVE;
@@ -1175,7 +1112,13 @@ class EMfields3D                // :public Field
     double *RGMsg_II;
 
     int NumF_II;
+
+    /* MPI Datatype associated to RGBC_struct; init in MPI_RGBC_struct_commit  */
+    MPI_Datatype MPI_RGBC_struct;
     /*! end mlmd specidic variables */
+
+
+
 };
 
 
