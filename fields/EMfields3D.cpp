@@ -308,7 +308,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
-  else if (Case=="GEM" || Case=="GEMRelativity")       fixBgem(grid, vct);
+  else if (Case=="GEM" || Case=="GEMRelativity" || Case=="GEMNoVelShear")       fixBgem(grid, vct);
   else if (Case=="HarrisSteps")       fixBgem(grid, vct);
   else if (Case=="GEMnoPert") fixBgem(grid, vct);
   else if (Case=="FluxRope") fixBrope(grid, vct);
@@ -1063,7 +1063,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
-    else if (Case=="GEM" || Case=="GEMRelativity")       fixBgem(grid, vct);
+    else if (Case=="GEM" || Case=="GEMRelativity" || Case=="GEMNoVelShear")       fixBgem(grid, vct);
     else if (Case=="HarrisSteps")       fixBgem(grid, vct);
     else if (Case=="GEMnoPert") fixBgem(grid, vct);
     else if (Case=="FluxRope") fixBrope(grid, vct);
@@ -1711,7 +1711,99 @@ void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective *c
   grid->interpC2N(Bzn,Bzc);
 #endif
 }
-
+/*! initiliaze Harris plus background but with less shear a-la Fujimoto */
+void EMfields3D::initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  double pertX = 0.4;
+  double xpert, ypert, exp_pert;
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize GEM Challenge with Pertubation" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is])
+              rhons[is][i][j][k] = ((rhoINIT[is] / (cosh((grid->getYN(i, j, k) - Ly / 2) / delta) * cosh((grid->getYN(i, j, k) - Ly / 2) / delta)))) / FourPI;
+            else
+              rhons[is][i][j][k] = rhoINIT[is] * (2.0  + tanh((grid->getYN(i, j, k) - Ly / 2 - 2.0* delta) / delta)
+            		  	  	  	  	  	  	  	  	   - tanh((grid->getYN(i, j, k) - Ly / 2 + 2.0* delta) / delta) )/ 2.0/FourPI;
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          Bxn[i][j][k] = B0x * tanh((grid->getYN(i, j, k) - Ly / 2) / delta);
+          // add the initial GEM perturbation
+          // Bxn[i][j][k] += (B0x/10.0)*(M_PI/Ly)*cos(2*M_PI*grid->getXN(i,j,k)/Lx)*sin(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly );
+          Byn[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXN(i,j,k)/Lx)*cos(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly);
+          // add the initial X perturbation
+          xpert = grid->getXN(i, j, k) - Lx / 2;
+          ypert = grid->getYN(i, j, k) - Ly / 2;
+          exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
+          Bxn[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          Byn[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          // guide field
+          Bzn[i][j][k] = B0z;
+        }
+    // initialize B on centers
+    for (int i = 0; i < nxc; i++)
+      for (int j = 0; j < nyc; j++)
+        for (int k = 0; k < nzc; k++) {
+          // Magnetic field
+          Bxc[i][j][k] = B0x * tanh((grid->getYC(i, j, k) - Ly / 2) / delta);
+          // add the initial GEM perturbation
+          // Bxc[i][j][k] += (B0x/10.0)*(M_PI/Ly)*cos(2*M_PI*grid->getXC(i,j,k)/Lx)*sin(M_PI*(grid->getYC(i,j,k)- Ly/2)/Ly );
+          Byc[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXC(i,j,k)/Lx)*cos(M_PI*(grid->getYC(i,j,k)- Ly/2)/Ly);
+          // add the initial X perturbation
+          xpert = grid->getXC(i, j, k) - Lx / 2;
+          ypert = grid->getYC(i, j, k) - Ly / 2;
+          exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
+          Bxc[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          Byc[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          // guide field
+          Bzc[i][j][k] = B0z;
+        }
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+  // This needs to be outside the main if because it needs to happen also in the case of restart
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+  //     	Adds damping region padded near the edge of the y axis.
+       	double external_radius = L_outer;
+       	if(external_radius < Ly/2.0){
+       	double scale_decay = (Ly/2.0 - L_outer)/2.0;
+       	for (int i=0; i < nxn; i++)
+       		for (int j=0; j < nyn; j++)
+       			for (int k=0; k < nzn; k++){
+       				Lambda[i][j][k]  = 0.0;
+       				double r = sqrt( pow(grid->getYN(i,j,k)-Ly/2.0,2.0) );
+       				if(r>external_radius-scale_decay){
+       					Lambda[i][j][k]  = 1.0* tanh((r-(external_radius-scale_decay))/scale_decay);
+       				}
+       			}
+       	}
+}
 /*! initiliaze EM for GEM challange */
 void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X

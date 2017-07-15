@@ -92,6 +92,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="CoilsMono")  EMf->initWB8(vct,grid,col);
     else if (col->getCase()=="TwoCoils")  EMf->initTwoCoils(vct,grid,col);
     else if (col->getCase()=="FluxRope")  EMf->initFluxRope(vct,grid,col);
+    else if (col->getCase()=="GEMNoVelShear")  EMf->initHarrisNoVelShear(vct, grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -142,7 +143,16 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="Whistler")    part[i].maxwellian_whistler(grid, EMf, vct);
         else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
         else if (col->getCase()=="GEMRelativity")    part[i].relativistic_maxwellian(grid, EMf, vct);
-else if (col->getCase()=="Coils"){
+        else if (col->getCase()=="GEM" || col->getCase()=="GEMNoVelShear"){
+        	if(i<2)
+        		part[i].maxwellian(grid, EMf, vct);
+        	else
+        		if(col->getPartInit()=="Kappa")
+        			part[i].kappa(grid, EMf, vct);
+        		else
+        			part[i].maxwellian(grid, EMf, vct);
+        }
+        else if (col->getCase()=="Coils"){
            	if (col->getRHOinit(i) > 0.0)
            		part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
            	else
