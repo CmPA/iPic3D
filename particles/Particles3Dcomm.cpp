@@ -106,16 +106,16 @@ Particles3Dcomm::~Particles3Dcomm() {
     delArr2(Pyz_FBC, RG_numPBCMessages);
     delArr2(Pzz_FBC, RG_numPBCMessages);
 
-    delArr3(RHOP, nxn-1, nyn-1);
-    delArr3(UP, nxn-1, nyn-1);
-    delArr3(VP, nxn-1, nyn-1);
-    delArr3(WP, nxn-1, nyn-1);
-    delArr3(UTHP, nxn-1, nyn-1);
-    delArr3(VTHP, nxn-1, nyn-1);
-    delArr3(WTHP, nxn-1, nyn-1);
+    delArr3(RHOP, nxc, nyc);
+    delArr3(UP, nxc, nyc);
+    delArr3(VP, nxc, nyc);
+    delArr3(WP, nxc, nyc);
+    delArr3(UTHP, nxc, nyc);
+    delArr3(VTHP, nxc, nyc);
+    delArr3(WTHP, nxc, nyc);
 
     delete[]RGFluidMsg;
-    delArr3(REPO, nxn-1, nyn-1);
+    delArr3(REPO, nxc, nyc);
   }
   // put another condition so this happens only on RG
   if (FluidLikeRep){
@@ -1735,7 +1735,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       }
     } // end if (RG_numPBCMessages>0 and !FluidLikeRep): buffers for exchange of repopulated particles
 
-    if (RG_numPBCMessages>0 and FluidLikeRep){
+    if  (FluidLikeRep){  //  (RG_numPBCMessages>0 and FluidLikeRep){
       // these are the vectors needed for the fluid repopulation
       rho_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize); 
       Jx_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
@@ -1752,20 +1752,20 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       RGFluidMsg= new double[RG_MaxFluidMsgSize*numFBC];
 
       // this can be done better, but the rationale is to avoid to repopulate mulitple times per cell
-      RHOP= newArr3(double, nxn-1, nyn-1, nzn-1);
+      RHOP= newArr3(double, nxc, nyc, nzc);
       
-      UP= newArr3(double, nxn-1, nyn-1, nzn-1);
-      VP= newArr3(double, nxn-1, nyn-1, nzn-1);
-      WP= newArr3(double, nxn-1, nyn-1, nzn-1);
+      UP= newArr3(double, nxc, nyc, nzc);
+      VP= newArr3(double, nxc, nyc, nzc);
+      WP= newArr3(double, nxc, nyc, nzc);
 
-      UTHP= newArr3(double, nxn-1, nyn-1, nzn-1);
-      VTHP= newArr3(double, nxn-1, nyn-1, nzn-1);
-      WTHP= newArr3(double, nxn-1, nyn-1, nzn-1);
+      UTHP= newArr3(double, nxc, nyc, nzc);
+      VTHP= newArr3(double, nxc, nyc, nzc);
+      WTHP= newArr3(double, nxc, nyc, nzc);
 
       // for test
-      for (int i=0; i<nxn-1; i++)
-	for (int j=0; j<nyn-1; j++)
-	  for (int k=0; k<nzn-1; k++)
+      for (int i=0; i<nxc; i++)
+	for (int j=0; j<nyc; j++)
+	  for (int k=0; k<nzc; k++)
 	    RHOP[i][j][k]= -100.0;
 
     } // end if (RG_numPBCMessages>0 and !FluidLikeRep)
@@ -4410,7 +4410,7 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * 
 
   } // end  for (int m=0; m< RG_numPBCMessages; m++ ) 
 
-  if (TEST_FLUID_BC){
+  if (TEST_FLUID_BC)   {// if (TEST_FLUID_BC  and RG_numPBCMessages>0 ){
     for (int i=0; i< nxc; i++)
       for (int j=0; j< nyc; j++)
 	for (int k=0; k< nzc; k++){

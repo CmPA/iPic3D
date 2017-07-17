@@ -5283,18 +5283,6 @@ void EMfields3D::initWeightBC(Grid *grid, VirtualTopology3D *vct){
     }
     }*/
 
-  // this is used in test for fluid repopulation
-  if (CommToParent!= MPI_COMM_NULL){
-    RHOINIT= newArr4(double, ns, nxc, nyc, nzc);
-
-    for (int is=0; is<ns; is ++)
-      for (int i=0; i< nxc; i++)
-	for (int j=0; j< nyc; j++)
-	  for (int k=0; k< nzc; k++)
-	    RHOINIT[is][i][j][k]= rhocs[is][i][j][k];
-	
-  } //end if (CommToParent!= MPI_COMM_NULL){
-    
 
 }
 
@@ -9910,9 +9898,12 @@ void EMfields3D::copyMoments(double ***P_rho, double ***P_Jx, double ***P_Jy, do
 
 
 void EMfields3D::PostInit(){
-  for (int is=0; is<ns; is++)
-    for (int i=0; i<nxc; i++)
-      for (int j=0; j<nyc; j++)
-	for (int k=0; k< nzc; k++)
+  for (int is=0; is < ns; is++)
+    for (int i=0; i < nxc; i++)
+      for (int j=0; j < nyc; j++)
+        for (int k=0; k < nzc; k++){
+
 	  RHOINIT[is][i][j][k] = rhocs[is][i][j][k];
+
+	}
 }
