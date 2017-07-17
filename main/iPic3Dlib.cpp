@@ -322,7 +322,7 @@ void c_Solver::GatherMoments(){
       part[i].ReceiveFluidBC(grid, vct);
     }
     for (int i=0; i< ns; i++){
-      part[i].ApplyFluidPBC(grid, vct);
+      part[i].ApplyFluidPBC(grid, vct, EMf);
     }
   }
 

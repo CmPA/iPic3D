@@ -4364,7 +4364,12 @@ void Particles3Dcomm::ReceiveFluidBC(Grid *grid, VirtualTopology3D *vct){
 
 }
 
-void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct){
+void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * EMf){
+  
+  /* if true, use initial profile for repopulation -
+     - do not use for production */
+  bool TEST_FLUID_BC= true; 
+
 
   MPI_Comm CommToParent= vct->getCommToParent_P(ns);
   
@@ -4406,6 +4411,27 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct){
 
 
   } // end  for (int m=0; m< RG_numPBCMessages; m++ ) 
+  int nxc=nxn-1;
+  int nyc=nyn-1;
+  int nzc=nzn-1;
+
+  if (TEST_FLUID_BC){
+    for (int i=0; i< nxc; i++)
+      for (int j=0; j< nyc; j++)
+	for (int k=0; k< nzc; k++){
+	  
+	  UTHP[i][j][k]= uth;
+	  VTHP[i][j][k]= vth;
+	  WTHP[i][j][k]= wth;
+
+	  UP[i][j][k]= u0;
+	  VP[i][j][k]= v0;
+	  WP[i][j][k]= w0;
+
+	  RHOP[i][j][k]= EMf->getRHOINIT(ns, i, j, k);
+	  
+	}
+  } // end if (TEST_FLUID_BC){
 
   // now i have the data to regenerate
   
@@ -4475,6 +4501,7 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct){
 
 
               counter++;
+	      PRA_PAdded++;
             }
       }
   // to set number of particles in allocate, keeping in mind that in mlmd there can be particles in the GC

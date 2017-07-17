@@ -397,6 +397,8 @@ class EMfields3D                // :public Field
     /** get Magnetic Field component Z */
     double ***getBz_ext();
 
+    double getRHOINIT(int is, int i, int j, int k);
+    
     double ***&getBxTot();
     double ***&getByTot();
     double ***&getBzTot();
@@ -1117,8 +1119,22 @@ class EMfields3D                // :public Field
     MPI_Datatype MPI_RGBC_struct;
     /*! end mlmd specidic variables */
 
+    // smooth the RG BC before applying them
+    bool SmoothRGBC;
 
+    // instantiated only if SmoothRGBC= true and 
+    double *** Ex_TH_SRGBC;
+    double *** Ey_TH_SRGBC;
+    double *** Ez_TH_SRGBC;
 
+    double *** Ex_SRGBC;
+    double *** Ey_SRGBC;
+    double *** Ez_SRGBC;
+
+    string getCase();
+
+    // at the moment, this is used only to test the fluid repopulation method
+    double **** RHOINIT;
 };
 
 

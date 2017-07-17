@@ -293,7 +293,7 @@ public:
   /* build one fluid BC msg */
   void buildFluidBCMsg(VirtualTopology3D *vct, Grid * grid, Field * EMf, int ch, RGPBC_struct RGInfo, int Size, double *Msg );
   void ReceiveFluidBC(Grid *grid, VirtualTopology3D *vct);
-  void ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct);
+  void ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * EMf);
   /* ------ end fluid repopulation methods + support functions  ------ */
   /* trims the **_Info vectors used by the MLMD structure*/
   void TrimInfoVector(VirtualTopology3D *vct);

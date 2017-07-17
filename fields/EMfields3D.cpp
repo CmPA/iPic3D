@@ -261,6 +261,10 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
     MPI_Abort(MPI_COMM_WORLD, -1);
   }
 
+  // wether to smooth RG BC before applying them
+  SmoothRGBC = true;
+
+
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -4537,6 +4541,11 @@ double ***EMfields3D::getJzsc(int is) {
 
   return arr;
 }
+
+double EMfields3D::getRHOINIT(int ns, int i, int j, int k){
+  return RHOINIT[ns][i][j][k];
+}
+
 /*! get the electric field energy */
 /*! mlmd: i need the communicator also
   double EMfields3D::getEenergy(void) { */
@@ -4704,6 +4713,10 @@ EMfields3D::~EMfields3D() {
     delArr3(Ey_BS, nxn, nyn);
     delArr3(Ez_BS, nxn, nyn);
   }   
+
+  if (numGrid >0)
+    delArr4(RHOINIT, ns, nxc, nyc);
+  
 
 
 }
@@ -5267,6 +5280,19 @@ void EMfields3D::initWeightBC(Grid *grid, VirtualTopology3D *vct){
       }
     }
     }*/
+
+  // this is used in test for fluid repopulation
+  if (CommToParent!= MPI_COMM_NULL){
+    RHOINIT= newArr4(double, ns, nxc, nyc, nzc);
+
+    for (int is=0; is<ns; is ++)
+      for (int i=0; i< nxc; i++)
+	for (int j=0; j< nyc; j++)
+	  for (int k=0; k< nzc; k++)
+	    RHOINIT[is][i][j][k]= rhocs[is][i][j][k];
+	
+  } //end if (CommToParent!= MPI_COMM_NULL){
+    
 
 }
 
@@ -6450,6 +6476,7 @@ void EMfields3D::sendBC(Grid *grid, VirtualTopology3D *vct){
     cout << "grid " << numGrid << " Finished sending BC" << endl;
     }*/
 
+
 }
 /* receiveBC: refined grids receive BCs from the coarse grids */
 void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
@@ -6745,7 +6772,11 @@ void EMfields3D::receiveBC(Grid *grid, VirtualTopology3D *vct){
 
   /** end fix3B **/
 
-  //MPI_Barrier(vct->getComm());
+  if (SmoothRGBC){
+    
+  }
+
+
 }
 
 void EMfields3D::receiveInitialInterpolation(Grid *grid, VirtualTopology3D *vct){
@@ -9874,3 +9905,8 @@ void EMfields3D::copyMoments(double ***P_rho, double ***P_Jx, double ***P_Jy, do
       }
 	
 }
+
+string EMfields3D::getCase() {
+  return (Case);
+}
+
