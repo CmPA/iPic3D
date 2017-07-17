@@ -152,6 +152,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   rhons = newArr4(double, ns, nxn, nyn, nzn);
   rhocs = newArr4(double, ns, nxc, nyc, nzc);
 
+  RHOINIT = newArr4(double, ns, nxc, nyc, nzc);
+
   // debug, to remove (you can use this to save stuff)
   Jxs = newArr4(double, ns, nxn, nyn, nzn);
   Jys = newArr4(double, ns, nxn, nyn, nzn);
@@ -4542,8 +4544,8 @@ double ***EMfields3D::getJzsc(int is) {
   return arr;
 }
 
-double EMfields3D::getRHOINIT(int ns, int i, int j, int k){
-  return RHOINIT[ns][i][j][k];
+double EMfields3D::getRHOINIT(int is, int i, int j, int k){
+  return (RHOINIT[is][i][j][k]);
 }
 
 /*! get the electric field energy */
@@ -4714,8 +4716,8 @@ EMfields3D::~EMfields3D() {
     delArr3(Ez_BS, nxn, nyn);
   }   
 
-  if (numGrid >0)
-    delArr4(RHOINIT, ns, nxc, nyc);
+
+  delArr4(RHOINIT, ns, nxc, nyc);
   
 
 
@@ -9906,7 +9908,11 @@ void EMfields3D::copyMoments(double ***P_rho, double ***P_Jx, double ***P_Jy, do
 	
 }
 
-string EMfields3D::getCase() {
-  return (Case);
-}
 
+void EMfields3D::PostInit(){
+  for (int is=0; is<ns; is++)
+    for (int i=0; i<nxc; i++)
+      for (int j=0; j<nyc; j++)
+	for (int k=0; k< nzc; k++)
+	  RHOINIT[is][i][j][k] = rhocs[is][i][j][k];
+}

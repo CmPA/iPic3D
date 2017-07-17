@@ -586,6 +586,9 @@ class EMfields3D                // :public Field
     void MPI_Barrier_ParentChild(VirtualTopology3D* vct);    
     /* copy moment vector, species ns */
     void copyMoments(double ***P_rho, double ***P_Jx, double ***P_Jy, double ***P_Jz, double ***P_pxx, double ***P_pxy, double ***P_pxz, double ***P_pyy, double ***P_pyz, double ***P_pzz, int is);
+
+    /* some ops done after all init **/
+    void PostInit();
     /*! end mlmd specific functions */
     /* ********************************* // VARIABLES ********************************* */
   private:
@@ -1130,8 +1133,6 @@ class EMfields3D                // :public Field
     double *** Ex_SRGBC;
     double *** Ey_SRGBC;
     double *** Ez_SRGBC;
-
-    string getCase();
 
     // at the moment, this is used only to test the fluid repopulation method
     double **** RHOINIT;

@@ -385,6 +385,7 @@ protected:
   /** number of grid 
           nodes */
   int nxn, nyn, nzn;
+  int nxc, nyc, nzc;
   /** buffers for communication */
   /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
   int buffer_size;

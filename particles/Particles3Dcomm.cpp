@@ -230,6 +230,10 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   nxn = grid->getNXN();
   nyn = grid->getNYN();
   nzn = grid->getNZN();
+
+  nxc = grid->getNXC();
+  nyc = grid->getNYC();
+  nzc = grid->getNZC();
   invVOL = grid->getInvVOL();
   // info from VirtualTopology3D
   cVERBOSE = vct->getcVERBOSE();
@@ -3901,12 +3905,6 @@ void Particles3Dcomm::initWeightFluidPBC_Phase1(Grid *grid, VirtualTopology3D *v
 
   char DIR;
 
-  // since only nxn, nyn, nzn are class members
-  int nxc= nxn-1;
-  int nyc= nyn-1;
-  int nzc= nzn-1;
-
-
   REPO= newArr3(bool, nxc, nyc, nzc);
   for (int i=0; i<nxc; i++)
     for (int j=0; j<nyc; j++)
@@ -4411,9 +4409,6 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * 
 
 
   } // end  for (int m=0; m< RG_numPBCMessages; m++ ) 
-  int nxc=nxn-1;
-  int nyc=nyn-1;
-  int nzc=nzn-1;
 
   if (TEST_FLUID_BC){
     for (int i=0; i< nxc; i++)

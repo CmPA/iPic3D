@@ -130,6 +130,9 @@ int c_Solver::Init(int argc, char **argv) {
   // added
   EMf->SetLambda(grid, vct);
 
+  EMf->PostInit();
+
+
   MPI_Barrier(MPI_COMM_WORLD); // leave it here if init conditions for RG are interpolated
   int rr= vct->getCartesian_rank();
 
