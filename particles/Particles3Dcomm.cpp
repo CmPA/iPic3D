@@ -560,6 +560,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   By_ext= newArr3(double, nxn, nyn, nzn);
   Bz_ext= newArr3(double, nxn, nyn, nzn);
 
+  TEST_FLUID_BC= true;
 
   // //FOR TEST:
   // nvDistLoc = 3;
@@ -4032,6 +4033,8 @@ void Particles3Dcomm::SendFluidPBC(Grid* grid, VirtualTopology3D * vct, Field * 
 
   if (numChildren==0) return;
 
+  if (TEST_FLUID_BC) return;
+
   rho= newArr3(double, nxn, nyn, nzn);
   Jx= newArr3(double, nxn, nyn, nzn);
   Jy= newArr3(double, nxn, nyn, nzn);
@@ -4303,31 +4306,33 @@ void Particles3Dcomm::ReceiveFluidBC(Grid *grid, VirtualTopology3D *vct){
   int countExp;
   int count;
 
+  if (TEST_FLUID_BC) return;
   
   bool Testing= true; // put to false during production
-
+  
+  
   for (int m=0; m< RG_numPBCMessages; m++){
-
+    
     MPI_Recv(RGFluidMsg, RG_MaxFluidMsgSize*numFBC, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, CommToParent, &status);
     MPI_Get_count(&status, MPI_DOUBLE, &count );
     
     found= false;
     // check with stored msgs
     for (int i=0; i< RG_numPBCMessages; i++){
-
+      
       if (RGPBC_Info[i].MsgID == status.MPI_TAG and RGPBC_Info[i].CG_core == status.MPI_SOURCE){ // NB: the tag gives you the msg position in the BC vector
 	
 	found= true;
-	  
+	
 	countExp= RGPBC_Info[i].np_x * RGPBC_Info[i].np_y * RGPBC_Info[i].np_z  ;
-
+	
 	if (Testing){
 	  if (countExp *numFBC  != count){
 	    cout << "R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent_P(ns) <<" : msg recv from core " << status.MPI_SOURCE <<" with tag " << status.MPI_TAG << " but fluid PBC msg size does not check: received: " << count << " expected " << countExp*numFBC << ", aborting ..." << endl;
 	    MPI_Abort(MPI_COMM_WORLD, -1);
 	  }
 	}
-	  
+	
 	// put BC here
 	// the tag gives you the position in the BC vector
 	
@@ -4345,11 +4350,11 @@ void Particles3Dcomm::ReceiveFluidBC(Grid *grid, VirtualTopology3D *vct){
 	memcpy(Pyz_FBC[status.MPI_TAG], RGFluidMsg + 8*countExp, sizeof(double)*countExp );
 	memcpy(Pzz_FBC[status.MPI_TAG], RGFluidMsg + 9*countExp, sizeof(double)*countExp );
 	break;
-
+	
       } // end if (RGBC_Info_Active[i].MsgID == status.MPI_TAG )
-              
+      
     } //for (int i=0; i< RG_numBCMessages_Active; i++){ // here end search of the msg
-
+    
     if (Testing){
       if (found == false){
 	cout <<"R" << vct->getSystemWide_rank() << " numGrid " << numGrid <<" PC rank " << vct->getRank_CommToParent() << " I have received an active msg I cannot match with my record, aborting..." << endl;
@@ -4358,8 +4363,8 @@ void Particles3Dcomm::ReceiveFluidBC(Grid *grid, VirtualTopology3D *vct){
     }
     
   } // here is when i receive it 
-
-
+  
+  
 }
 
 void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * EMf){
@@ -4374,43 +4379,43 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * 
   if (CommToParent == MPI_COMM_NULL or FluidLikeRep == false)
     return;
 
-  for (int m=0; m< RG_numPBCMessages; m++ )  {
+  if (!TEST_FLUID_BC) {
     
-    int II= RGPBC_Info[m].np_x;
-    int JJ= RGPBC_Info[m].np_y;
-    int KK= RGPBC_Info[m].np_z;
-    
-    int ix_f= RGPBC_Info[m].ix_first;
-    int iy_f= RGPBC_Info[m].iy_first;
-    int iz_f= RGPBC_Info[m].iz_first;
-    
-    int countMsg=0;
-    
-    for (int i= 0; i<II; i++)
-      for (int j=0; j<JJ; j++)
-	for (int k=0; k<KK; k++){
-	  
-	  RHOP[ix_f + i][iy_f + j][iz_f + k]= rho_FBC[m][countMsg];
-	  
-	  UP[ix_f + i][iy_f + j][iz_f + k]= Jx_FBC[m][countMsg]/ rho_FBC[m][countMsg];
-	  VP[ix_f + i][iy_f + j][iz_f + k]= Jy_FBC[m][countMsg]/ rho_FBC[m][countMsg];
-	  WP[ix_f + i][iy_f + j][iz_f + k]= Jz_FBC[m][countMsg]/ rho_FBC[m][countMsg];
-
-	  double PTH_X= (Pxx_FBC[m][countMsg]- Jx_FBC[m][countMsg]*Jx_FBC[m][countMsg]/ rho_FBC[m][countMsg]  )/qom;
-          double PTH_Y= (Pyy_FBC[m][countMsg]- Jy_FBC[m][countMsg]*Jy_FBC[m][countMsg]/ rho_FBC[m][countMsg]  )/qom;
-          double PTH_Z= (Pzz_FBC[m][countMsg]- Jz_FBC[m][countMsg]*Jz_FBC[m][countMsg]/ rho_FBC[m][countMsg]  )/qom;
-
-	  UTHP[ix_f + i][iy_f + j][iz_f + k]= sqrt(abs(PTH_X/ rho_FBC[m][countMsg] *qom));
-	  VTHP[ix_f + i][iy_f + j][iz_f + k]= sqrt(abs(PTH_Y/ rho_FBC[m][countMsg] *qom));
-	  WTHP[ix_f + i][iy_f + j][iz_f + k]= sqrt(abs(PTH_Z/ rho_FBC[m][countMsg] *qom));
-
-	  countMsg++;
-	} // end cycle on i, j, k
-
-
-  } // end  for (int m=0; m< RG_numPBCMessages; m++ ) 
-
-  if (TEST_FLUID_BC)   {// if (TEST_FLUID_BC  and RG_numPBCMessages>0 ){
+    for (int m=0; m< RG_numPBCMessages; m++ )  {
+      
+      int II= RGPBC_Info[m].np_x;
+      int JJ= RGPBC_Info[m].np_y;
+      int KK= RGPBC_Info[m].np_z;
+      
+      int ix_f= RGPBC_Info[m].ix_first;
+      int iy_f= RGPBC_Info[m].iy_first;
+      int iz_f= RGPBC_Info[m].iz_first;
+      
+      int countMsg=0;
+      
+      for (int i= 0; i<II; i++)
+	for (int j=0; j<JJ; j++)
+	  for (int k=0; k<KK; k++){
+	    
+	    RHOP[ix_f + i][iy_f + j][iz_f + k]= rho_FBC[m][countMsg];
+	    
+	    UP[ix_f + i][iy_f + j][iz_f + k]= Jx_FBC[m][countMsg]/ rho_FBC[m][countMsg];
+	    VP[ix_f + i][iy_f + j][iz_f + k]= Jy_FBC[m][countMsg]/ rho_FBC[m][countMsg];
+	    WP[ix_f + i][iy_f + j][iz_f + k]= Jz_FBC[m][countMsg]/ rho_FBC[m][countMsg];
+	    
+	    double PTH_X= (Pxx_FBC[m][countMsg]- Jx_FBC[m][countMsg]*Jx_FBC[m][countMsg]/ rho_FBC[m][countMsg]  )/qom;
+	    double PTH_Y= (Pyy_FBC[m][countMsg]- Jy_FBC[m][countMsg]*Jy_FBC[m][countMsg]/ rho_FBC[m][countMsg]  )/qom;
+	    double PTH_Z= (Pzz_FBC[m][countMsg]- Jz_FBC[m][countMsg]*Jz_FBC[m][countMsg]/ rho_FBC[m][countMsg]  )/qom;
+	    
+	    UTHP[ix_f + i][iy_f + j][iz_f + k]= sqrt(abs(PTH_X/ rho_FBC[m][countMsg] *qom));
+	    VTHP[ix_f + i][iy_f + j][iz_f + k]= sqrt(abs(PTH_Y/ rho_FBC[m][countMsg] *qom));
+	    WTHP[ix_f + i][iy_f + j][iz_f + k]= sqrt(abs(PTH_Z/ rho_FBC[m][countMsg] *qom));
+	    
+	    countMsg++;
+	  } // end cycle on i, j, k
+    } // end  for (int m=0; m< RG_numPBCMessages; m++ ) 
+  } else { // if TEST_FLUID_BC
+    // if (TEST_FLUID_BC  and RG_numPBCMessages>0 ){
     for (int i=0; i< nxc; i++)
       for (int j=0; j< nyc; j++)
 	for (int k=0; k< nzc; k++){
@@ -4418,21 +4423,21 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * 
 	  UTHP[i][j][k]= uth;
 	  VTHP[i][j][k]= vth;
 	  WTHP[i][j][k]= wth;
-
+	  
 	  UP[i][j][k]= u0;
 	  VP[i][j][k]= v0;
 	  WP[i][j][k]= w0;
-
+	  
 	  RHOP[i][j][k]= EMf->getRHOINIT(ns, i, j, k);
 	  
 	}
   } // end if (TEST_FLUID_BC){
-
+  
   // now i have the data to regenerate
   
   /* initialize random generator with different seed on different processor */
   srand(vct->getCartesian_rank() + 2);
-
+  
   double harvest;
   double prob, theta, sign;
   long long counter = nop;

@@ -715,6 +715,8 @@ protected:
   double *** pyz;
   double *** pzz;
 
+  // to test fluid repopulation
+  bool TEST_FLUID_BC;
   
 };
 
