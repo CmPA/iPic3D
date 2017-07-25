@@ -10,7 +10,7 @@
 #include "hdf5.h"
 #include "Alloc.h"
 #include "math.h"
-
+#include "Basic.h"
 
 #include <iostream>
 #include <fstream>
@@ -134,12 +134,21 @@ void extract_pressure(double qom, double*** BX, double*** BY, double*** BZ,
 					  double*** N, double*** pXX, double*** pXY,
 					  double*** pXZ, double*** pYY, double*** pYZ, double*** pZZ,
 					  double*** pPAR, double*** pPER1, double*** pPER2, double*** EPS);
-/* Computes Energy Flux (without heat flux) */
-void energy_flux(double qom, double*** QX, double*** QY, double*** QZ,
+/* Computes Bulk Energy Flux */
+void bulk_energy_flux(double*** Ubulk,
 					  double*** QXbulk, double*** QYbulk, double*** QZbulk,
+					  double*** VX, double*** VY, double*** VZ);
+/* Computes Intenal Energy Flux */
+void internal_energy_flux(double*** Uth,
+		              double*** QX, double*** QY, double*** QZ,
 					  double*** VX, double*** VY, double*** VZ,
-					  double*** N, double*** pXX, double*** pXY,
+					  double*** pXX, double*** pXY,
 					  double*** pXZ, double*** pYY, double*** pYZ, double*** pZZ);
+// Computes P:gradU
+void pgradU(double*** PgradU, double*** VX, double*** VY, double*** VZ,
+		double*** WX, double*** WY, double*** WZ,
+		double*** TXX, double***  TXY, double*** TXZ,
+		double*** TYY, double*** TYZ, double*** TZZ);
 
 void compute_energy(double qom, double*** Ubulk, double*** Uth,
 		  double*** JX, double*** JY, double*** JZ,
@@ -165,8 +174,8 @@ void divergenceN(double*** div, double*** JX, double*** JY, double*** JZ, double
 void divergenceNP(double*** div, double*** JX, double*** JY, double*** JZ, double*** N, double*** P);
 
 // Computes  U div (P) where P is hte pressure tensor
-void udivP(double*** OX, double*** OY, double*** OZ,
-		double*** JX, double*** JY, double*** JZ, double*** N,
+void udivP(double*** O, double*** OX, double*** OY, double*** OZ,
+		double*** JX, double*** JY, double*** JZ,
 		double*** pXX, double*** pXY,
 				  double*** pXZ, double*** pYY, double*** pYZ, double*** pZZ);
 
@@ -229,7 +238,11 @@ void dot(double*** dot,
           
 void dot(double*** dot, 
           double*** AX, double*** AY, double*** AZ, 
-          double*** BX, double*** BY, double*** BZ);            
+          double*** BX, double*** BY, double*** BZ);
+
+void adddot(double*** dot,
+          double*** AX, double*** AY, double*** AZ,
+          double*** BX, double*** BY, double*** BZ);
 
 // Computation of ExBfor 3D arrays
 void cross(double*** EX, double*** EY, double*** EZ,
@@ -1216,46 +1229,57 @@ void extract_pressure(double qom, double*** BX, double*** BY, double*** BZ,
 			}
 }
 
-void energy_flux(double qom, double*** QX, double*** QY, double*** QZ,
+void bulk_energy_flux(double*** Ubulk,
 		  	  	  	  double*** QXbulk, double*** QYbulk, double*** QZbulk,
+					  double*** VX, double*** VY, double*** VZ){
+
+	for (int kk=0; kk < nzn*ZLEN;kk++)
+		for (int jj=0; jj < nyn*YLEN;jj++)
+			for (int ii=0; ii < nxn*XLEN;ii++){
+
+
+				QXbulk[ii][jj][kk] = VX[ii][jj][kk]  * Ubulk[ii][jj][kk];
+
+				QYbulk[ii][jj][kk] = VY[ii][jj][kk]  * Ubulk[ii][jj][kk];
+
+				QZbulk[ii][jj][kk] = VZ[ii][jj][kk]  * Ubulk[ii][jj][kk];
+
+			}
+}
+
+void internal_energy_flux(double*** Uth,
+					  double*** QX, double*** QY, double*** QZ,
 					  double*** VX, double*** VY, double*** VZ,
-					  double*** N, double*** pXX, double*** pXY,
+					  double*** pXX, double*** pXY,
 					  double*** pXZ, double*** pYY, double*** pYZ, double*** pZZ){
 
 	for (int kk=0; kk < nzn*ZLEN;kk++)
 		for (int jj=0; jj < nyn*YLEN;jj++)
 			for (int ii=0; ii < nxn*XLEN;ii++){
 
-				double ux=VX[ii][jj][kk] / (N[ii][jj][kk]+1.e-10);
-				double uy=VY[ii][jj][kk] / (N[ii][jj][kk]+1.e-10);
-				double uz=VZ[ii][jj][kk] / (N[ii][jj][kk]+1.e-10);
+				QX[ii][jj][kk] = VX[ii][jj][kk] * Uth[ii][jj][kk];
+				QX[ii][jj][kk] += VX[ii][jj][kk] * pXX[ii][jj][kk] + VY[ii][jj][kk] *pXY[ii][jj][kk] + VZ[ii][jj][kk] *pXZ[ii][jj][kk];
 
-				QXbulk[ii][jj][kk] = .5*N[ii][jj][kk] / qom * ux * (ux*ux + uy*uy +uz*uz);
-				QX[ii][jj][kk] = QXbulk[ii][jj][kk] + .5* ux * (pXX[ii][jj][kk] + pYY[ii][jj][kk] + pZZ[ii][jj][kk]);
-				QX[ii][jj][kk] += ux * pXX[ii][jj][kk] + uy *pXY[ii][jj][kk] + uz *pXZ[ii][jj][kk];
+				QY[ii][jj][kk] = VY[ii][jj][kk] * Uth[ii][jj][kk] ;
+				QY[ii][jj][kk] += VX[ii][jj][kk] * pXY[ii][jj][kk] + VY[ii][jj][kk] *pYY[ii][jj][kk] + VZ[ii][jj][kk] *pYZ[ii][jj][kk];
 
-				QYbulk[ii][jj][kk] = .5*N[ii][jj][kk] / qom * uy * (ux*ux + uy*uy +uz*uz);
-				QY[ii][jj][kk] = QYbulk[ii][jj][kk]  + .5* uy * (pXX[ii][jj][kk] + pYY[ii][jj][kk] + pZZ[ii][jj][kk]);
-				QY[ii][jj][kk] += ux * pXY[ii][jj][kk] + uy *pYY[ii][jj][kk] + uz *pYZ[ii][jj][kk];
-
-				QZbulk[ii][jj][kk] = .5*N[ii][jj][kk] / qom * uz * (ux*ux + uy*uy +uz*uz);
-				QZ[ii][jj][kk] = QZbulk[ii][jj][kk] + .5* uz * (pXX[ii][jj][kk] + pYY[ii][jj][kk] + pZZ[ii][jj][kk]);
-				QZ[ii][jj][kk] += ux * pXZ[ii][jj][kk] + uy *pYZ[ii][jj][kk] + uz *pZZ[ii][jj][kk];
+				QZ[ii][jj][kk] = VZ[ii][jj][kk] * Uth[ii][jj][kk] ;
+				QZ[ii][jj][kk] += VX[ii][jj][kk] * pXZ[ii][jj][kk] + VY[ii][jj][kk] *pYZ[ii][jj][kk] + VZ[ii][jj][kk] *pZZ[ii][jj][kk];
 
 			}
 }
 
 void compute_energy(double qom, double*** Ubulk, double*** Uth,
-		  double*** JX, double*** JY, double*** JZ,
+		  double*** VX, double*** VY, double*** VZ,
 		  double*** N, double*** pXX, double*** pYY, double*** pZZ){
 	for (int kk=0; kk < nzn*ZLEN;kk++)
 		for (int jj=0; jj < nyn*YLEN;jj++)
 			for (int ii=0; ii < nxn*XLEN;ii++){
 
 				Ubulk[ii][jj][kk] = 0.5 *(
-						JX[ii][jj][kk] * JX[ii][jj][kk] +
-						JY[ii][jj][kk] * JY[ii][jj][kk] +
-						JZ[ii][jj][kk] * JZ[ii][jj][kk] ) / qom /(N[ii][jj][kk]+1e-10);
+						VX[ii][jj][kk] * VX[ii][jj][kk] +
+						VY[ii][jj][kk] * VY[ii][jj][kk] +
+						VZ[ii][jj][kk] * VZ[ii][jj][kk] ) * N[ii][jj][kk] /qom;
 
 				Uth[ii][jj][kk] = 0.5 *(
 						pXX[ii][jj][kk] + pYY[ii][jj][kk] + pZZ[ii][jj][kk]);
@@ -1362,22 +1386,43 @@ void divergenceNP(double*** div, double*** EX, double*** EY, double*** EZ, doubl
  }
 }
 
-void udivP(double*** OX, double*** OY, double*** OZ,
-		double*** JX, double*** JY, double*** JZ, double*** N,
+void udivP(double*** O, double*** OX, double*** OY, double*** OZ,
+		double*** VX, double*** VY, double*** VZ,
 		double*** pXX, double*** pXY,
 				  double*** pXZ, double*** pYY, double*** pYZ, double*** pZZ){
 
 		divergence(OX, pXX, pXY, pXZ);
-		divmult(OX, JX, N);
+		prod(O, 1.0, OX, VX, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
 
 		divergence(OY, pXY, pYY, pYZ);
-		divmult(OY, JY, N);
+		addprod(O, 1.0, OY, VY, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
 
 		divergence(OZ, pXZ, pYZ, pZZ);
-		divmult(OZ, JZ, N);
+		addprod(O, 1.0, OZ, VZ, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
 
 }
 
+/* Compute P:gradU */
+void pgradU(double*** PgradU, double*** VX, double*** VY, double*** VZ,
+		double*** WX, double*** WY, double*** WZ,
+		double*** TXX, double***  TXY, double*** TXZ,
+		double*** TYY, double*** TYZ, double*** TZZ){
+
+	gradient(WX, WY, WZ, VX);
+
+	dot(PgradU, WX, WY, WZ, TXX, TXY, TXZ);
+
+
+	gradient(WX, WY, WZ, VY);
+
+	adddot(PgradU, WX, WY, WZ, TXY, TYY, TYZ);
+
+
+	gradient(WX, WY, WZ, VZ);
+
+	adddot(PgradU, WX, WY, WZ, TXZ, TYZ, TZZ);
+
+}
 
 
 void LEBT(double*** BX, double*** BY, double*** BZ,
@@ -1764,6 +1809,22 @@ void divj(double qom, double*** divj,
      }
 }  
 
+void adddot(double*** dot,
+          double*** AX, double*** AY, double*** AZ,
+          double*** BX, double*** BY, double*** BZ){
+
+
+ for (int kk=0; kk < nzn*ZLEN;kk++)
+	for (int jj=0; jj < nyn*YLEN;jj++)
+		for (int ii=0; ii < nxn*XLEN;ii++){
+
+
+		dot[ii][jj][kk] += AX[ii][jj][kk] * BX[ii][jj][kk] +
+						  AY[ii][jj][kk] * BY[ii][jj][kk] +
+						  AZ[ii][jj][kk] * BZ[ii][jj][kk] ;
+			}
+
+}
 void dot(double*** dot,  
           double*** AX, double*** AY, double*** AZ, 
           double*** BX, double*** BY, double*** BZ){
@@ -2235,14 +2296,7 @@ void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
 	}
     delArr3(C,nx,ny);
 }
-/** method to set equal two vectors */
-void eq(double ***vect1, double ***vect2, int nx, int ny, int nz){
-    for (register int i=0; i<nx; i++)
-      for (register int j=0; j<ny; j++)
-       for (register int k=0; k<nz; k++)
-          vect1[i][j][k] = vect2[i][j][k];
 
-}
 
 void agyro(double*** agyro_scudder, double*** agyro_aunai, double*** nongyro_swisdak, double*** align,
 		double*** BX, double*** BY, double*** BZ,

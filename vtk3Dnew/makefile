@@ -2,7 +2,7 @@
 CPP=	mpicxx
 OPTFLAGS=  -O2 
 
-SYSTEM = pleiades
+SYSTEM = mac
 
 # Libraties needed for intel compiler
 HDF5LIBS = -lhdf5 -lhdf5_hl -mkl 
@@ -99,6 +99,10 @@ xyzGDA_par: xyzGDA_par.cpp
 	xyzGDA_par.cpp  ${LIB_HDF5}  \
 ${HDF5LIBS}
 
+energy_fluxes: energy_fluxes.cpp
+	${CPP}  ${OPTFLAGS} -o  energy_fluxes ${INC_HDF5} \
+	energy_fluxes.cpp  ${LIB_HDF5}  \
+${HDF5LIBS}
 
 xyzHDF5_par: xyzHDF5_par.cpp
 	${CPP}  ${OPTFLAGS} -o  xyzHDF5_par ${INC_HDF5} \
