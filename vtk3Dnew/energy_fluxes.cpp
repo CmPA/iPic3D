@@ -90,10 +90,8 @@ int main (int argc, char **argv) {
 	double*** PgradU = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 
 
-
-	
-
-	for (int it = initlevel; it < nlevels+1; it++){
+	for (int it = initlevel+rank; it < nlevels+1; it=it+size){
+	     printf( "Process %d doing level %d\n", rank, it );
 
     readvect(it, "/fields/","B", BX, BY, BZ);
 
