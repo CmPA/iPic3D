@@ -1,0 +1,4 @@
+rm *.eps
+rm *.png
+rm *.gif
+rm *.fig
