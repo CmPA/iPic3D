@@ -1,4 +1,4 @@
-function [V,Vx,Vy,Vz,dx,dy,dz]=read_vtk_3d(filename,old)
+function [nx,ny,nz,dx,dy,dz,V,Vx,Vy,Vz]=read_vtk_3d(filename,old)
 % set old=0 for new VTKs and 1 for old
 fid = fopen(filename,'r');
 fgetl(fid); % # vtk DataFile Version x.x

@@ -1,11 +1,11 @@
 close all
 addpath(genpath('../../ipic3d_toolbox'));
-dir='/Users/giovannilapenta/Desktop/ddd/nj17/vtk/';
+dir='/Users/gianni/Desktop/ddd/nj17/vtk/';
 
 NNcyc=27
 for cycle=NNcyc*1000:1000:NNcyc*1000
 
-leggo=0;
+leggo=1;
 if(leggo==1)
 
 [Bx,By,Bz,Nx,Ny,Nz]=read_binVTK_vector(dir,'B',cycle);

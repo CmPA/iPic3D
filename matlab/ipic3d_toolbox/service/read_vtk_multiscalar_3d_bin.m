@@ -1,9 +1,9 @@
-function [V,V2,V3,V4,V5,V6,V7,V8,V9,V10]=read_vtk_multiscalar_3d_bin(filename,numvar)
+function [nx,ny,nz,dx,dy,dz,V,V2,V3,V4,V5,V6,V7,V8,V9,V10]=read_vtk_multiscalar_3d_bin(filename,numvar)
 fid = fopen(filename,'r')
 fgetl(fid); % # vtk DataFile Version x.x
 fgetl(fid); % comments
 fgetl(fid); % ASCII
-fgetl(fid); % DATASET STRUCTURED_POINTS
+fgetl(fid) % DATASET STRUCTURED_POINTS
 
 s = fgetl(fid); % DIMENSIONS NX NY NZ
 sz = sscanf(s, '%*s%d%d%d').'
@@ -11,8 +11,11 @@ nx=sz(1);
 ny=sz(2);
 nz=sz(3);
 fgetl(fid); % ORIGIN OX OY OZ
-s=fgetl(fid); % SPACING SX SY SZ
-dd = sscanf(s, '%*s%d%d%d').'
+s=fgetl(fid) % SPACING SX SY SZ
+dd= sscanf(s, '%*s%f%f%f');
+dx=dd(1);
+dy=dd(2);
+dz=dd(3);
 s=fgetl(fid); % POINT_DATA NXNYNZ
 npoints = sscanf(s, '%*s%d%d%d').'
 
@@ -31,7 +34,9 @@ V=fread(fid,[npoints, 1],'float','b');
 V=reshape(V,sz(1),sz(2),sz(3));
 end
 
-
+if (numvar==1) 
+	  return 
+end
 
 s = fgetl(fid) % SCALARS/VECTORS name data_type (ex: SCALARS imagedata unsigned_char)
 s = fgetl(fid) % SCALARS/VECTORS name data_type (ex: SCALARS imagedata unsigned_char)

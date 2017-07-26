@@ -1,6 +1,6 @@
 close all
 addpath(genpath('../../ipic3d_toolbox'));
-dir='/Users/gianni/Desktop/BOW14/';
+dir='/Users/gianni/Desktop/BOW23/';
 
 global Lx Xgsmrange
 global Ly Zgsmrange
@@ -37,7 +37,7 @@ Jiz=squeeze(Jiz3d(:,:,iz));
 [Az3d,Nx,Ny,Nz]=read_binVTK_scalar(dir,'Az',cycle);
 Az=squeeze(Az3d(:,:,iz));
 
-[rhoe3d,rhoi3d,Nx,Ny,Nz]=read_binVTK_multiscalar(dir,'rhoHarris',cycle);
+[rhoe3d,rhoi3d,Nx,Ny,Nz]=read_binVTK_multiscalar(dir,'rho',cycle);
 rhoe=squeeze(rhoe3d(:,:,iz));
 rhoi=squeeze(rhoi3d(:,:,iz));
 
@@ -192,7 +192,7 @@ zc=linspace(0, Lz, Nz);
 yc=linspace(0, Ly, Ny);
 clear AAz;
 AAz=vecpot_uniform(yc,zc,By2d,Bz2d);
-tmp=single_image(Z(kr,jr)',Y(kr,jr)',-Vex2d(jr,kr)',['V_{eN}/c  x/R_E=' num2str(gsmx(ix*dx))],['VeXcutYZ' num2str(ix,'%06i')] ,[-1 1]*Vnorm/3, Nsm, 7);
+tmp=single_image(Z(kr,jr)',Y(kr,jr)',-Vex2d(jr,kr)',['V_{eN}/c  x/R_E=' num2str(gsmx(ix*dx))],['VeXcutYZ' num2str(ix,'%06i')] ,[-1 1]*0, Nsm, 7);
 end
 
 end

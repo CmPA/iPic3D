@@ -1386,6 +1386,7 @@ void divergenceNP(double*** div, double*** EX, double*** EY, double*** EZ, doubl
  }
 }
 
+/* Computing U dot div P */
 void udivP(double*** O, double*** OX, double*** OY, double*** OZ,
 		double*** VX, double*** VY, double*** VZ,
 		double*** pXX, double*** pXY,
