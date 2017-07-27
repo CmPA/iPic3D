@@ -82,7 +82,7 @@ y=1:ny;
 for i=1:nx
 for k=1:nz
 w=Pper1(i,:,k);
-w=1.0./sqrt(B2(i,:,k).^2+1e-10);
+%w=1.0./sqrt(B2(i,:,k).^2+1e-10);
 
 ymax(i,k)=round(sum(w.*y)./sum(w));
 
@@ -142,14 +142,17 @@ I2=p(1,1)*p(2,2)+p(1,1)*p(3,3)+p(2,2)*p(3,3);
 I2=I2-(p(1,2).^2+p(1,3).^2+p(2,3).^2);
 Q=1-4*I2./((Tr-Ppar).*(Tr+3*Ppar));
 Nongyro_swisdak(i,k)=sqrt(Q);
-Nongyro_aunai(i,k)=sqrt(8*(p(1,2).^2+p(1,3).^2+p(2,3).^2))./(Ppar+2*Pper);
+% The following formula form Swisdak paper is actually wrong
+%Nongyro_aunai(i,k)=sqrt(8*(p(1,2).^2+p(1,3).^2+p(2,3).^2))./(Ppar+2*Pper);
                                  
 end
 end
 
                       
-global color_choice
-color_choice=0
+global color_choice symmetric_color initial_time Dt
+symmetric_color=0;
+color_choice=0;
+                                 
 l1sm=immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),lambda1,['Lambda_1' ncycle1],[0 0],6,ncycle1,[],3,'x/R_E','y/R_E','Lambda_1');
 l2sm=immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),lambda2,['Lambda_2' ncycle1],[0 3]*1e-7,6,ncycle1,[],3,'x/R_E','y/R_E','Lambda_2');
 l3sm=immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),lambda3,['Lambda_3' ncycle1],[0 3]*1e-7,6,ncycle1,[],3,'x/R_E','y/R_E','Lambda_3');
@@ -159,7 +162,7 @@ immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),2*(l3sm-l2sm)./(l3sm+l2sm),['LambdaRatio
 immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Agyro,['Agyro' ncycle1],[0 .4],3,ncycle1,[],3,'x/R_E','y/R_E','Agyro');
 immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Agyro_aunai,['Agyro_Aunai' ncycle1],[0 .2],3,ncycle1,[],3,'x/R_E','y/R_E','Agyro');
 immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Nongyro_swisdak,['Nongyro_Swisdak' ncycle1],[0 .2],3,ncycle1,[],3,'x/R_E','y/R_E','NonGyro');
-immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Nongyro_aunai,['Nongyro_Aunai' ncycle1],[0 .2],3,ncycle1,[],3,'x/R_E','y/R_E','NonGyro');
+%immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Nongyro_aunai,['Nongyro_Aunai' ncycle1],[0 .2],3,ncycle1,[],3,'x/R_E','y/R_E','NonGyro');
 
 end
         

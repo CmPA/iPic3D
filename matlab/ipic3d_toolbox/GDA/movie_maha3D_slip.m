@@ -1,14 +1,27 @@
-%iz= round(Nz * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )
+maxp_common
+
+
+
+%xc=linspace(-45, -15, Nx);
+%yc=linspace(-9, 3, Ny);
+xc=linspace(0, Lx, Nx);
+yc=linspace(0, Ly, Ny);
+zc=linspace(0, Lz, Nz);
+x=[-15 -45];
+y=[-8.7 3.3];
+
+%iz=round(Nz*fraciz);
+iz = Nz-round(Nz*(9-Ygsm)/12);
+iz=iz-10:iz+10;
+%Ygsm=gsmz2y(Lz-zc(iz),3));
 
 
 for cycle=Ncyc_ini:1000:Ncyc_max
 
-for Ygsm=Ygsmrange(1)+.3:.3:Ygsmrange(2)-.3
-
-iz = round(Nz * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )
-
 ncycle=num2str(cycle)
 ncycle1=num2str(cycle,'%06d')
+
+
 
 global blowup contours
 blowup=0;
@@ -78,8 +91,6 @@ Jz=squeeze(mean(Jz(:,:,iz),3));
 
 B2=Bx.^2+By.^2+Bz.^2;
 
-Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./sqrt(B2);
-
 Vexbx = (Ey.* Bz - Ez.* By)./B2;
 Vexby = (Ez.* Bx - Ex.* Bz)./B2;
 Vexbz = (Ex.* By - Ey.* Bx)./B2;
@@ -146,100 +157,31 @@ Vpary=VparB.*By./B2;
 Vparz=VparB.*Bz./B2;
 
 
-x=fliplr(Xgsmrange);
-y=Zgsmrange;
-
-global blowup contours
-blowup=0;
-contours=1;
-
-if(contours)
-
-Ay=zeros(size(Bx));
-
-Ay=vecpot_uniform(xc,yc,Bx,By);
-%hold on
-%contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-end
-        
+immagine(x,y,JdotE,['JdotE' ncycle1],[-2 2]*1e-10,6,ncycle1, Ygsm)
+immagine(x,y,Zenitani,['Zenitani' ncycle1],[-1 1]*1e-10,6,ncycle1, Ygsm)
 
 
-immagine(x,y,Epar,['Epar' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-1 1]*1e-6,6,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Epar_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-        
+immagine(x,y,-(Vx)*code_V,['Ve,x' ncycle1],[-1 1]*1e3,3,ncycle1, Ygsm)
+immagine(x,y,(Vy)*code_V,['Ve,y' ncycle1],[-1 1]*1e3,3,ncycle1, Ygsm)
+immagine(x,y,(Vz)*code_V,['Ve,z' ncycle1],[-1 1]*1e3,3,ncycle1, Ygsm)
 
-
-immagine(x,y,JdotE,['JdotE' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e-10,6,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['JdotE_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
-immagine(x,y,Zenitani,['Zenitani' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-1 1]*1e-10,6,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Zenitani_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
-immagine(x,y,-(Vx)*code_V,['Ve,x(gsm)' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-1 1]*1e3,3,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Vex(gsm)_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
-immagine(x,y,(Vy)*code_V,['Ve,z(gsm)' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-1 1]*1e3,3,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Vez(gsm)_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
-immagine(x,y,(Vz)*code_V,['Ve,y(gsm)' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-1 1]*1e3,3,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Vey(gsm)_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
 
 
 Vslip=sqrt((Vx - Vexbx).^2+(Vy - Vexby).^2+ (Vz - Vexbz).^2);
 
-immagine(x,y,-(Vx - Vexbx)*code_V,['Vslip,x(gsm)' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e3,5,ncycle1, Ygsm);
-immagine(x,y,(Vy - Vexby)*code_V,['Vslip,z(gsm)' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e3,5,ncycle1, Ygsm);
-immagine(x,y,(Vz - Vexbz)*code_V,['Vslip,y(gsm)' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e3,5,ncycle1, Ygsm);
+immagine(x,y,-(Vx - Vexbx)*code_V,['Vslip,x' ncycle1],[-2 2]*1e3,5,ncycle1, Ygsm)
+immagine(x,y,(Vy - Vexby)*code_V,['Vslip,y' ncycle1],[-2 2]*1e3,5,ncycle1, Ygsm)
+immagine(x,y,(Vz - Vexbz)*code_V,['Vslip,z' ncycle1],[-2 2]*1e3,5,ncycle1, Ygsm)
 
-immagine(x,y,Vslip*code_V,['Vslip' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e3,5,ncycle1, Ygsm)
+immagine(x,y,Vslip*code_V,['Vslip' ncycle1],[-2 2]*1e3,5,ncycle1, Ygsm)
 
 Vslipperp = sqrt( (Vx - Vparx - Vexbx).^2 + (Vy - Vpary - Vexby).^2 + (Vz - Vparz - Vexbz).^2  );
 
-Vxslipsm=immagine(x,y,-(Vx - Vparx - Vexbx)*code_V,['Vslip,perpx(gsm)' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e3,5,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Vexslipperp(gsm)_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
-
-Vyslipsm=immagine(x,y,(Vy - Vpary - Vexby)*code_V,['Vslip,perpz(gsm)' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e3,5,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Vezslipperp(gsm)_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
-
-Vzslipsm=immagine(x,y,(Vz - Vparz - Vexbz)*code_V,['Vslip,perpy(gsm)' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e3,5,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Veyslipperp(gsm)_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
-
-immagine(x,y,Vslipperp*code_V,['Vslip,perp' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e3,5,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Veslipperp(gsm)_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
-immagine(x,y,sqrt(Vxslipsm.^2+Vyslipsm.^2+Vzslipsm.^2),['Vslip,perp,avg' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'],[-2 2]*1e3,5,ncycle1, Ygsm);
-hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Veslipperp(gsm)_avg_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
+immagine(x,y,-(Vx - Vparx - Vexbx)*code_V,['Vslip,perpx' ncycle1],[-2 2]*1e3,5,ncycle1, Ygsm)
+immagine(x,y,(Vy - Vpary - Vexby)*code_V,['Vslip,perpy' ncycle1],[-2 2]*1e3,5,ncycle1, Ygsm)
+immagine(x,y,(Vz - Vparz - Vexbz)*code_V,['Vslip,perpz' ncycle1],[-2 2]*1e3,5,ncycle1, Ygsm)
+immagine(x,y,Vslipperp*code_V,['Vslip,perp' ncycle1],[-2 2]*1e3,5,ncycle1, Ygsm)
 
 hold on
-contour(gsmx(xc),gsmy2z(yc),Ay',50,'w')
-print('-dpng','-r300',['Vslip_combo_' ncycle1 '_Ygsm_' num2str(Ygsm) '.png'])
-
-end
 
 end

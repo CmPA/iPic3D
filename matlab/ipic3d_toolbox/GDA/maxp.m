@@ -4,6 +4,9 @@ cuttone2=[];
 
 for cycle=Ncyc_ini:1000:Ncyc_max
 
+time=60*(cycle/75000.0) *4 %times four to correct for change in dt between 2D and 3D;
+ntime=num2str(time);
+
 ncycle=num2str(cycle)
 ncycle1=num2str(cycle,'%06d')
 
@@ -53,8 +56,6 @@ fid= fopen(file,'rb');
 Ez=fread(fid,'real*8');
 fclose(fid);
 Ez=reshape(Ez,Nx,Ny,Nz);
-
-Ej=(Ex.*Bz-Ez.*Bx)./sqrt(Bx.^2+Bz.^2);
 
 file=[dir 'Je_x_cycle' ncycle '.gda'];
 fid= fopen(file,'rb');
@@ -130,7 +131,6 @@ Bzmax(i,k)=Bz(i,round(ymax(i,k)),k);
 Exmax(i,k)=Ex(i,round(ymax(i,k)),k);
 Eymax(i,k)=Ey(i,round(ymax(i,k)),k);
 Ezmax(i,k)=Ez(i,round(ymax(i,k)),k);
-Ejmax(i,k)=Ej(i,round(ymax(i,k)),k);
 Vxmax(i,k)=Vx(i,round(ymax(i,k)),k);
 Vymax(i,k)=Vy(i,round(ymax(i,k)),k); 
 Vzmax(i,k)=Vz(i,round(ymax(i,k)),k);
@@ -162,6 +162,8 @@ tmp=smooth(Vxmax,3);
 cuttone2=[cuttone2; mean(tmp(round(ixcut-10:ixcut+10),:),1)];
 
 immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),gsmy2z(ymax*dy),['ZGSMmax' ncycle1],[0 0],5,ncycle1,[],1,'x/R_E','y/R_E','Zgsm [RE]');
+colorbar
+title(['time (s) = ' ntime])
 
 %load('ymax0_HRmaha3D1.mat')
 %immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),((ymax-ymax0)*dy),['deltaycode' ncycle1],[-1 1],5,ncycle1,[],99,'x/R_E','y/R_E','\deltaZgsm [RE]');
@@ -177,46 +179,34 @@ j2=Nz-10
         j2=Nz
         
 
-global color_choice symmetric_color initial_time Dt
-symmetric_color=0;
+global color_choice
 color_choice=0;
 
-
-Vzsm=immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Vzmax*code_V,['VeYgsm' ncycle1],[-2000 2000],3,ncycle1,[],3,'x/R_E','y/R_E','Vy[km/s]');
-
-
-Vxsm=immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),-Vxmax*code_V,['VeXgsm' ncycle1],[-2000 2000],3,ncycle1,[],3,'x/R_E','y/R_E','Vx [km/s]');
+immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Ezmax/B0^2,['EYgsm' ncycle1] ,[-0.1 0.1],0,ncycle1,[],2,'x/R_E','y/R_E','EYgsm /B_0/V_A');
 
 
-Vysm=immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Vymax*code_V,['VeZgsm' ncycle1],[-2000 2000],3,ncycle1,[],3,'x/R_E','y/R_E','Vz [km/s]');
+immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Bymax*code_B,['BZgsm' ncycle1],[-10 10],0,ncycle1,[],3,'x/R_E','y/R_E','Bx[nT]');
 
-ox=max(Xgsmrange);
-oy=min(Zgsmrange);
-oz=min(Ygsmrange);
-ddx=dx/Lx*(Xgsmrange(2)-Xgsmrange(1));
-ddy=dy/Ly*(Zgsmrange(2)-Zgsmrange(1));
-ddz=dz/Lz*(Ygsmrange(2)-Ygsmrange(1));
-savevtkvector(-Vxmax,Vymax,  Vzmax, ['Veonmaxp' ncycle1 '.vtk'],'Ve',ddx,ddy,ddz,ox,oy,oz)
+
+immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Emax*code_E,['E' ncycle1],[0 0],0,ncycle1,[],3,'x/R_E','y/R_E','E[mV/m]');
+immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Bmax*code_B,['B' ncycle1],[0 0],0,ncycle1,[],3,'x/R_E','y/R_E','B[nT]');
+immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Aymax,['Az' ncycle1],[0 0],0,ncycle1,[],3,'x/R_E','y/R_E','Az[nT]');
+
+close all
+contour(Aymax,30)
+print('-dpng',['Aycontrou' ncycle1]) 
+  
+immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Vzmax*code_V,['VeYgsm' ncycle1],[-2000 2000],3,ncycle1,[],3,'x/R_E','y/R_E','Vy[km/s]');
+
+        
+immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),-Vxmax*code_V,['VeXgsm' ncycle1],[-2000 2000],3,ncycle1,[],3,'x/R_E','y/R_E','Vx [km/s]');
+
+ 
+immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Vymax*code_V,['VeZgsm' ncycle1],[-2000 2000],3,ncycle1,[],3,'x/R_E','y/R_E','Vz [km/s]');
 
 immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Vmax*code_V,['Ve' ncycle1],[0 2000],3,ncycle1,[],3,'x/R_E','y/R_E','Ve [km/s]');
 
-
-
-immagine_xy_vel(gsmx([0 Lx]),gsmz2y([0 Lz]),Ejmax/B0^2,xc,zc,Vxsm,Vzsm,['ErecELE' ncycle1] ,[-0.2 0.2],0,ncycle1,[],2,'x/R_E','y/R_E','Erec /B_0/V_A');
-
-
-immagine_xy_vel(gsmx([0 Lx]),gsmz2y([0 Lz]),Bymax*code_B,xc,zc,Vxsm,Vzsm,['BZELEgsm' ncycle1],[-10 10],0,ncycle1,[],3,'x/R_E','y/R_E','Bx[nT]');
-
-
-%immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Emax*code_E,['E' ncycle1],[0 0],0,ncycle1,[],3,'x/R_E','y/R_E','E[mV/m]');
-%immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Bmax*code_B,['B' ncycle1],[0 0],0,ncycle1,[],3,'x/R_E','y/R_E','B[nT]');
-%immagine_xy(gsmx([0 Lx]),gsmz2y([0 Lz]),Aymax,['Az' ncycle1],[0 0],0,ncycle1,[],3,'x/R_E','y/R_E','Az[nT]');
-
-close all
-%contour(Aymax,30)
-%print('-dpng',['Aycontrou' ncycle1])
-  
-
+      
 figure(4)
 subplot(2,1,1)
 plot(mean(Ezmax,2)/B0^2)
@@ -226,7 +216,6 @@ grid on
 print('-dpng',['AVGalongcodez' ncycle1]) 
 end
 
-return
 figure
 [nt,ndummy]=size(cuttone);
 

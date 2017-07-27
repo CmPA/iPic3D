@@ -3,7 +3,7 @@ addpath(genpath('../../ipic3d_toolbox'));
 global Lx Ly Lz Xgsmrange Ygsmrange Zgsmrange dx dy dz XLEN YLEN ZLEN initial_time Nx Ny Nz
 
 %results_dir='/shared02/gianni/tred60/data1/';
-results_dir='/nobackup/glapenta/1mar08C/data3/';
+results_dir='/data1/gianni/iPic3D-open/dataMsphere/';
 
 filename=[results_dir 'settings.hdf'];
 XLEN=double(hdf5read(filename,'/topology/XLEN'))
@@ -29,17 +29,17 @@ Ygsmrange= [-4 15.8];
 
 
 ipx=XLEN/2;
-for  ipx=1:XLEN
+for  ipy=2:YLEN-1
 
-ipy=YLEN/2+1;
-ipz=ZLEN/2+1;
+%ipy=YLEN/2+1;
+ipz=ZLEN/2+1;ipz=1
 
-ipy=7;ipz=10;
-%Ygsm=10
-Ygsm=11
-ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )
-Zgsm=1
-ipy = round(YLEN * (Zgsm-Zgsmrange(1)) / (Zgsmrange(2)-Zgsmrange(1)) )
+%ipy=7;ipz=10;
+
+%Ygsm=12
+%ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )
+%Zgsm=1
+%ipy = round(YLEN * (Zgsm-Zgsmrange(1)) / (Zgsmrange(2)-Zgsmrange(1)) )
 
 ip=(ipx-1)*YLEN*ZLEN+(ipy-1)*ZLEN+ipz-1;
 
@@ -63,13 +63,13 @@ dz=double(zmax-zmin)/double(nz-1);
 close all
 
 
-for is=1:2
+for is=3
 
 if(mod(is,2)==0)
-vmax = .03/3;
+vmax = .4;
 vmin = -vmax;
 else
-vmax = .2/3;
+vmax = .6;
 vmin = -vmax;
 end
 
@@ -107,79 +107,47 @@ bxp=interpn(xg,yg,zg,permute(Bx,[3 2 1]),x,y,z);
 byp=interpn(xg,yg,zg,permute(By,[3 2 1]),x,y,z);
 bzp=interpn(xg,yg,zg,permute(Bz,[3 2 1]),x,y,z);
 bp=sqrt(bxp.^2+byp.^2+bzp.^2);
-
-david=0;
-if(david)
-%David's coordinates
 bp2D=sqrt(bxp.^2+byp.^2);
 perp2x=bzp.*bxp./(bp.*bp2D);
 perp2y=bzp.*byp./(bp.*bp2D);
 perp2z=-bp2D./bp;
-else
-% max p pane coordinates
-bp2D=sqrt(bxp.^2+byp.^2);
-perp1x=bzp./sqrt(bzp.^2+bxp.^2);
-perp1z=-bxp./sqrt(bzp.^2+bxp.^2);
-perp2x=-bxp.*byp;
-perp2y=(bxp.^2+bzp.^2);
-perp2z=-bzp.*byp;
-denom=sqrt(perp2x.^2+perp2y.^2+perp2z.^2);
-perp2x=perp2x./denom;
-perp2y=perp2y./denom;
-perp2z=perp2z./denom;
-end
 
 u=squeeze(hdf5read(info.GroupHierarchy.Groups(3).Groups(is).Groups(2).Datasets(it)));
 v=squeeze(hdf5read(info.GroupHierarchy.Groups(3).Groups(is).Groups(3).Datasets(it)));
 w=squeeze(hdf5read(info.GroupHierarchy.Groups(3).Groups(is).Groups(4).Datasets(it)));
 
-
 upar=(u.*bxp+v.*byp+w.*bzp)./(bp+1e-10);
-uper=sqrt(u.^2+v.^2+w.^2-upar.^2);
-
-david=0;
-if(david)
-%David's coordinates
 uperp1=(byp.*u-bxp.*v)./bp2D;
-uperp2=perp2x.*u+perp2y.*v+perp2z.*w;
-else
-uperp1=perp1x.*u+perp1z.*w;
-uperp2=perp2x.*u+perp2y.*v+perp2z.*w;
-end
 
-uperp1=uperp1-mean(uperp1);
-uperp2=uperp2-mean(uperp2);
-
-Eper=(uperp1.^2+uperp2.^2)/2;
-theta=atan2(uperp2,uperp1);
+uperp2=perp2x.*u+perp2y.*v+perp2z.*w;
 
 %
 %	Subdivide the processors
 %
-nsub=2;
-dxsub=(xmax-xmin)/nsub;
-dysub=(ymax-ymin)/nsub;
-dzsub=(zmax-zmin)/nsub;
+nsubx=1;
+nsuby=8;
+nsubz=1;;
+dxsub=(xmax-xmin)/nsubx;
+dysub=(ymax-ymin)/nsuby;
+dzsub=(zmax-zmin)/nsubz;
 ixsub=floor((x-xmin)/dxsub);
 iysub=floor((y-ymin)/dysub);
 izsub=floor((z-zmin)/dzsub);
 
 % choose the desired subdomain in y ans z, from 0 to nsub-1
-suby=0;subz=0;
-for subx=0:nsub-1
+subx=0;subz=0;
+for suby=0:nsuby-1
 ii=(ixsub==subx)&(iysub==suby)&(izsub==subz);
 
-bxscan((ipx-1)*nsub+subx+1)=mean(bxp(ii));
-byscan((ipx-1)*nsub+subx+1)=mean(byp(ii));
-bzscan((ipx-1)*nsub+subx+1)=mean(bzp(ii));
-xscan((ipx-1)*nsub+subx+1)=gsmx(mean(x(ii)));
-yscan((ipx-1)*nsub+subx+1)=gsmx(mean(y(ii)));
-zscan((ipx-1)*nsub+subx+1)=gsmx(mean(z(ii)));
+bxscan((ipx-1)*nsubx+subx+1)=mean(bxp(ii));
+byscan((ipx-1)*nsubx+subx+1)=mean(byp(ii));
+bzscan((ipx-1)*nsubx+subx+1)=mean(bzp(ii));
+xscan((ipx-1)*nsubx+subx+1)=(mean(x(ii)));
+yscan((ipx-1)*nsubx+subx+1)=(mean(y(ii)));
+zscan((ipx-1)*nsubx+subx+1)=(mean(z(ii)));
 
 ndiv=101;
-vdf_sp=spaziofasi3Dcyl(upar(ii),abs(uperp1(ii)),theta(ii),q(ii),vmin,vmax,0,vmax,0, 2*pi,ndiv);
-%vdf_sp=spaziofasi3Dcyl(upar(ii),Eper(ii)*2,theta(ii),q(ii),vmin,vmax,0,vmax^2/2,0, 2*pi,ndiv);
-
+vdf_sp=spaziofasi3D(u(ii),-v(ii),w(ii),q(ii),vmin,vmax,ndiv);
 vdf_sp=vdf_sp./sum(vdf_sp(:));
 
 % converting to physical units
@@ -190,59 +158,42 @@ rho=Qp./(xmax-xmin)/(ymax-ymin)/(zmax-zmin);
 
 vdf_sp=vdf_sp*rho*np/c^3;
 
-%filename=['THOR_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx) '.txt'];
-%saveTHOR(vdf_sp, xscan((ipx-1)*nsub+subx+1)*dp, filename, ...
-%         vmin*c,vmin*c,vmin*c,(vmax-vmin)*c,(vmax-vmin)*c,(vmax-vmin)*c, ...
-%         bxscan((ipx-1)*nsub+subx+1)*Bnorm,byscan((ipx-1)*nsub+subx+1)*Bnorm,bzscan((ipx-1)*nsub+subx+1)*Bnorm);
-
-
-vdf_sp=smooth3D(vdf_sp,3);
-vdf_sp=vdf_sp./sum(vdf_sp(:));
-dv=(vmax-vmin)/ndiv;
-%filename=['vdf_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx) '.vtk'];
-%savevtk_bin(vdf_sp,filename,'vdf',dv,dv,dv,vmin,vmin,vmin);
-
-
-
-
-
-global labelT square
-labelT='x/R_E=';
-
-global square color_choice symmetric_color
-square = 0
-symmetric_color=0
-color_choice=0
-immagine_dir([vmin vmax],[0 vmax],(1e-10+squeeze(sum(vdf_sp,3))), ...
-             ['vdfXY_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
-             [0 1.5e-3],0,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'v_{||}/c','v_{\perp}/c','vdf');
-
-
-
-vdf_sp=spaziofasi3Dcyl(upar(ii),uper(ii),theta(ii),q(ii),vmin,vmax,0, vmax, 0, 2*pi,ndiv);
-vdf_sp=vdf_sp./sum(vdf_sp(:));
-
-vdf_sp=vdf_sp*rho*np/c^3;
+% filename=['THOR_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx) '.txt'];
+% saveTHOR(vdf_sp, xscan((ipx-1)*nsub+subx+1)*dp, filename, ...
+%          vmin*c,vmin*c,vmin*c,(vmax-vmin)*c,(vmax-vmin)*c,(vmax-vmin)*c, ...
+%          bxscan((ipx-1)*nsub+subx+1)*Bnorm,byscan((ipx-1)*nsub+subx+1)*Bnorm,bzscan((ipx-1)*nsub+subx+1)*Bnorm);
+% 
 
 vdf_sp=smooth3D(vdf_sp,6);
 vdf_sp=vdf_sp./sum(vdf_sp(:));
+dv=(vmax-vmin)/ndiv;
+filename=['vdf_' 'species_' num2str(is) '_' num2str(ipy*nsuby+suby) '.vtk'];
+savevtk_bin(vdf_sp,filename,'vdf',dv,dv,dv,vmin,vmin,vmin);
 
 
-valore=(1e-10+squeeze(sum(vdf_sp,1)));
-valmean=repmat(mean(valore,2),1,ndiv);
-valore=(valore-valmean)./valmean;
 
-symmetric_color=0
-color_choice=1
-immagine_dir([-1 1], [0 1],valore', ...
-             ['vdfYZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
-             [-1 1],3,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'\theta_{gyro}/\pi','E_{\perp }/E_{max}','vdf');
+
+
+global labelT
+labelT='N/d_i=';
+
+%immagine_dir([vmin vmax],[vmin vmax],(1e-10+squeeze(sum(vdf_sp,3))), ...
+%             ['vdfXY_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
+%             [0 0],0,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'v_x/c','v_z/c','vdf');
+
+%immagine_dir([vmin vmax],[vmin vmax],(1e-10+squeeze(sum(vdf_sp,2))), ...
+%             ['vdfXZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
+%             [0 0],0,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'v_x/c','v_y/c','vdf');
+
+immagine_dir([vmin vmax],[vmin vmax],(1e-10+squeeze(sum(vdf_sp,1))), ...
+             ['vdfYZ_' 'species_' num2str(is) '_' num2str(ipy*nsuby+suby)], ...
+             [0 5e-3],0,num2str(yscan((ipx-1)*nsubx+subx+1)-2.5),0,1,'v_N/c','v_M/c','vdf');
 end
 
 
-plot(xscan,bxscan,xscan,byscan,xscan,bzscan)
-legend('Bx','By','Bz') 
-print -dpng scanni.png
+%plot(xscan,bxscan,xscan,byscan,xscan,bzscan)
+%legend('Bx','By','Bz') 
+%print -dpng scanni.png
 end
 
 end

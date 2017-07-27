@@ -4,6 +4,7 @@ global Lx Ly Lz Xgsmrange Ygsmrange Zgsmrange dx dy dz XLEN YLEN ZLEN initial_ti
 
 %results_dir='/shared02/gianni/tred60/data1/';
 results_dir='/nobackup/glapenta/1mar08C/data2/';
+results_dir='/gpfsm/dnb02/glapenta/new_jean12/data/';
 
 filename=[results_dir 'settings.hdf'];
 XLEN=double(hdf5read(filename,'/topology/XLEN'))
@@ -23,23 +24,21 @@ vth_ion=double(hdf5read(filename,'/collective/species_1/uth'))
 Dt=double(hdf5read(filename,'/collective/Dt'))
 
 
-Xgsmrange= [-39.8 -8];
-Zgsmrange= [-10.8 5];
-Ygsmrange= [-4 15.8];
+Xgsmrange= [7 11];
+Zgsmrange= [-4 4];
+Ygsmrange= [-0.08 0.08];
 
 
-ipx=XLEN/2;
-for  ipx=1:XLEN
 
-ipy=YLEN/2+1;
-ipz=ZLEN/2+1;
+for  ipx=XLEN/4:XLEN/2
 
-ipy=7;ipz=10;
+Ygsm=0
+ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )
+ipz=1
+Zgsm=0
+ipy = round(YLEN * (Zgsm-Zgsmrange(1)) / (Zgsmrange(2)-Zgsmrange(1)) )
+ipy=ipy
 
-%Ygsm=12
-%ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )
-%Zgsm=1
-%ipy = round(YLEN * (Zgsm-Zgsmrange(1)) / (Zgsmrange(2)-Zgsmrange(1)) )
 
 ip=(ipx-1)*YLEN*ZLEN+(ipy-1)*ZLEN+ipz-1;
 
@@ -66,10 +65,10 @@ close all
 for is=1:2
 
 if(mod(is,2)==0)
-vmax = .03/3;
+vmax = .1;
 vmin = -vmax;
 else
-vmax = .2/3;
+vmax = .2;
 vmin = -vmax;
 end
 
@@ -125,12 +124,16 @@ uperp2=perp2x.*u+perp2y.*v+perp2z.*w;
 %	Subdivide the processors
 %
 nsub=2;
+nsuby=1;
+nsubz=1;
 dxsub=(xmax-xmin)/nsub;
-dysub=(ymax-ymin)/nsub;
-dzsub=(zmax-zmin)/nsub;
+dysub=(ymax-ymin)/nsuby;
+dzsub=(zmax-zmin)/nsubz;
 ixsub=floor((x-xmin)/dxsub);
 iysub=floor((y-ymin)/dysub);
 izsub=floor((z-zmin)/dzsub);
+iysub=0;
+izsub=0;
 
 % choose the desired subdomain in y ans z, from 0 to nsub-1
 suby=0;subz=0;
@@ -141,8 +144,8 @@ bxscan((ipx-1)*nsub+subx+1)=mean(bxp(ii));
 byscan((ipx-1)*nsub+subx+1)=mean(byp(ii));
 bzscan((ipx-1)*nsub+subx+1)=mean(bzp(ii));
 xscan((ipx-1)*nsub+subx+1)=gsmx(mean(x(ii)));
-yscan((ipx-1)*nsub+subx+1)=gsmx(mean(y(ii)));
-zscan((ipx-1)*nsub+subx+1)=gsmx(mean(z(ii)));
+zscan((ipx-1)*nsub+subx+1)=gsmy2z(mean(y(ii)));
+yscan((ipx-1)*nsub+subx+1)=gsmz2y(mean(z(ii)))
 
 ndiv=51;
 vdf_sp=spaziofasi3D(-u(ii),v(ii),w(ii),q(ii),vmin,vmax,ndiv);
@@ -165,8 +168,8 @@ saveTHOR(vdf_sp, xscan((ipx-1)*nsub+subx+1)*dp, filename, ...
 vdf_sp=smooth3D(vdf_sp,3);
 vdf_sp=vdf_sp./sum(vdf_sp(:));
 dv=(vmax-vmin)/ndiv;
-filename=['vdf_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx) '.vtk'];
-savevtk_bin(vdf_sp,filename,'vdf',dv,dv,dv,vmin,vmin,vmin);
+%filename=['vdf_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx) '.vtk'];
+%savevtk_bin(vdf_sp,filename,'vdf',dv,dv,dv,vmin,vmin,vmin);
 
 
 
@@ -175,17 +178,20 @@ savevtk_bin(vdf_sp,filename,'vdf',dv,dv,dv,vmin,vmin,vmin);
 global labelT
 labelT='x/R_E=';
 
-immagine_dir([vmin vmax],[vmin vmax],(1e-10+squeeze(sum(vdf_sp,3))), ...
-             ['vdfXY_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
-             [0 0],0,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'v_x/c','v_z/c','vdf');
-
-immagine_dir([vmin vmax],[vmin vmax],(1e-10+squeeze(sum(vdf_sp,2))), ...
+immagine_dir([vmin vmax],[vmin vmax],log10(1e-10+squeeze(sum(vdf_sp,3))), ...
              ['vdfXZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
-             [0 0],0,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'v_x/c','v_y/c','vdf');
+             [0 0],0,[num2str(xscan((ipx-1)*nsub+subx+1)) ...
+	     '  Zgsm/R_E=' num2str(zscan((ipx-1)*nsub+subx+1))],0,1,'v_x/c','v_z/c','vdf');
 
-immagine_dir([vmin vmax],[vmin vmax],(1e-10+squeeze(sum(vdf_sp,1))), ...
-             ['vdfYZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
-             [0 0],0,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'v_z/c','v_y/c','vdf');
+immagine_dir([vmin vmax],[vmin vmax],log10(1e-10+squeeze(sum(vdf_sp,2))), ...
+             ['vdfXY_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
+             [0 0],0,[num2str(xscan((ipx-1)*nsub+subx+1)) ...
+		'  Zgsm/R_E=' num2str(zscan((ipx-1)*nsub+subx+1))],0,1,'v_x/c','v_y/c','vdf');
+
+immagine_dir([vmin vmax],[vmin vmax],log10(1e-10+squeeze(sum(vdf_sp,1))), ...
+             ['vdfYZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)],...
+             [0 0],0,[num2str(xscan((ipx-1)*nsub+subx+1))...
+	 '  Zgsm/R_E=' num2str(zscan((ipx-1)*nsub+subx+1))],0,1,'v_z/c','v_y/c','vdf');
 end
 
 
