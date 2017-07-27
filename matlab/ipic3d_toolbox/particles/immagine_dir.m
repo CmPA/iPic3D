@@ -54,6 +54,7 @@ xlabel(labelx,'fontsize',[14])
 ylabel(labely,'fontsize',[14])
 
 title([labelT Ncycle '  Npart=' num2str(Ygsm)], 'fontsize',[14])
+title([labelT Ncycle ], 'fontsize',[14])
 
         
 %axis image
