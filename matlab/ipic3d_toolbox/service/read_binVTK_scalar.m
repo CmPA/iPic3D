@@ -1,10 +1,15 @@
-function [V,Nx,Ny,Nz,dx,dy,dz] = read_binVTK_scalar(dir,name,cycle)
+function [V,Nx,Ny,Nz,dx,dy,dz] = read_binVTK_scalar(dir,name,cycle,zero)
 %Reads the binary VTKs
 
 ncycle=num2str(cycle);
-
 filename=[dir name '_xyz_cycle' ncycle '.vtk']
-%filename=[dir name  ncycle '.vtk']
+if(nargin>3) 
+if (zero==0) 
+    ncycle=num2str(cycle,'%06d');filename=[dir name  ncycle '.vtk']
+end    
+end    
+
+
 fid = fopen(filename,'r');
 fgetl(fid); % # vtk DataFile Version x.x
 fgetl(fid); % comments

@@ -58,6 +58,9 @@ tmp=common_image(X(jr,ir),Y(jr,ir),mean(JdotE(ir,jr,kr),3), mean(Az(ir,jr,kr),3)
 
 [Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
 savevtkvector_bin(Sx, Sy, Sz, [dir 'Poynting' ncycle '.vtk'],'Poynting',dx,dy,dz,0,0,0);
+tmp = divergence(x,y,z,permute(Qxth,[2 1 3]), permute(Qyth, [2 1 3]), permute(Qzth, [2,1,3]));
+tmp = permute(tmp, [2 1 3]);
+savevtk_bin(tmp,[dir 'divS' ncycle '.vtk'],'divS',dx,dy,dz,0,0,0);
 
 clear Sx Sy Sz
 % compute bulk energy
