@@ -88,6 +88,7 @@ int main (int argc, char **argv) {
 	double*** TPER1 = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** TPER2 = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** EPS = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
+
 	double*** agyro_scudder = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** agyro_aunai = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** nongyro_swisdak = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
@@ -106,6 +107,11 @@ int main (int argc, char **argv) {
     readvect(it, "/fields/","E", EX, EY, EZ);
     writeVTKvect_binary(it, "E", "", EX, EY, EZ);
 
+	delArr3(EX,nxn*XLEN,nyn*YLEN);
+	delArr3(EY,nxn*XLEN,nyn*YLEN);
+	delArr3(EZ,nxn*XLEN,nyn*YLEN);
+
+
 	//Magnetic field
     readvect(it,"/fields/","B", BX, BY, BZ);
     writeVTKvect_binary(it,"B", "", BX, BY, BZ);
@@ -116,6 +122,8 @@ int main (int argc, char **argv) {
     writeVTKscalar_binary(it, "Az", "", AZ);
     cout << recflux << endl;
     my_file << it * DeltaT << "   " << recflux << endl;
+
+    delArr3(AZ,nxn*XLEN,nyn*YLEN);
 
 	//Compute ExB
     //cross(BX, BY, BZ, EX, EY, EZ, VXBX, VXBY, VXBZ)
@@ -219,16 +227,12 @@ int main (int argc, char **argv) {
 	delArr3(BX,nxn*XLEN,nyn*YLEN);
 	delArr3(BY,nxn*XLEN,nyn*YLEN);
 	delArr3(BZ,nxn*XLEN,nyn*YLEN);
-	delArr3(EX,nxn*XLEN,nyn*YLEN);
-	delArr3(EY,nxn*XLEN,nyn*YLEN);
-	delArr3(EZ,nxn*XLEN,nyn*YLEN);
 	delArr3(NI,nxn*XLEN,nyn*YLEN);
 	delArr3(NE,nxn*XLEN,nyn*YLEN);
 	delArr3(NO,nxn*XLEN,nyn*YLEN);
 	delArr3(VX,nxn*XLEN,nyn*YLEN);
 	delArr3(VY,nxn*XLEN,nyn*YLEN);
 	delArr3(VZ,nxn*XLEN,nyn*YLEN);
-	delArr3(AZ,nxn*XLEN,nyn*YLEN);
 	delArr3(TXX,nxn*XLEN,nyn*YLEN);
 	delArr3(TXY,nxn*XLEN,nyn*YLEN);
 	delArr3(TXZ,nxn*XLEN,nyn*YLEN);

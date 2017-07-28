@@ -2418,9 +2418,6 @@ void mat2vet(int n, double** mat, double* vet){
 void vet2mat(int n, double** mat, double* vet, double* b, double* dot){
 	int counter =0;
 
-
-
-
 	for (int j=0; j<n; j++)
 		for (int i=0; i<n; i++){
 		mat[i][j] =  vet[counter];
