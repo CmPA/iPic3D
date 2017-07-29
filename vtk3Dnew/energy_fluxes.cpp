@@ -144,12 +144,12 @@ int main (int argc, char **argv) {
 	    writeVTKscalar_binary(it, "divQbulk", "e", divQbulk);
 
 		// Intenal Energy flux
-		internal_energy_flux(Uth,  QX, QY, QZ, VX, VY, VZ,
+		internal_enthalpy_flux(Uth,  QX, QY, QZ, VX, VY, VZ,
 					TXX, TXY, TXZ, TYY, TYZ, TZZ);
-		writeVTKvect_binary(it, "Qinternal", "e", QX, QY, QZ);
+		writeVTKvect_binary(it, "Qenth", "e", QX, QY, QZ);
 		// Computes its divergence
 		divergence(divQ, QX, QY, QZ);
-	    writeVTKscalar_binary(it, "divQinternal", "e", divQ);
+	    writeVTKscalar_binary(it, "divQenth", "e", divQ);
 
 	    // Computes u dot div P
 	    // ATTENTION it overwrites the internal energy flux using it as service variable
@@ -213,12 +213,12 @@ int main (int argc, char **argv) {
 	    writeVTKscalar_binary(it, "divQbulk", "i", divQbulk);
 
 		// Intenal Energy flux
-		internal_energy_flux(Uth,  QX, QY, QZ, VX, VY, VZ,
+		internal_enthalpy_flux(Uth,  QX, QY, QZ, VX, VY, VZ,
 					TXX, TXY, TXZ, TYY, TYZ, TZZ);
-		writeVTKvect_binary(it, "Qinternal", "i", QX, QY, QZ);
+		writeVTKvect_binary(it, "Qenth", "i", QX, QY, QZ);
 		// Computes its divergence
 		divergence(divQ, QX, QY, QZ);
-	    writeVTKscalar_binary(it, "divQinternal", "i", divQ);
+	    writeVTKscalar_binary(it, "divQenth", "i", divQ);
 
 	    // Computes u dot div P
 	    // ATTENTION it overwrites the internal energy flux using it as service variable

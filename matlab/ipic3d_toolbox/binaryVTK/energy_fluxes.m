@@ -52,7 +52,7 @@ if(part1)
 % Compute J dot E
 
 JdotE=dot(Jex,Jey,Jez,Ex,Ey,Ez);
-savevtk_bin(JdotE,[dir 'JedotT' ncycle '.vtk'],'JedotE',dx,dy,dz,0,0,0);
+savevtk_bin(JdotE,[dir 'JedotE' ncycle '.vtk'],'JedotE',dx,dy,dz,0,0,0);
 
 tmp=common_image(X(jr,ir),Y(jr,ir),mean(JdotE(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'JeE','JeE',[0 0], Nsm, 22);
 
@@ -114,10 +114,17 @@ tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qzenth(ir,jr,kr),3), mean(Az(ir,jr,kr),3
 
 tmp = divergence(x,y,z,permute(Qxth,[2 1 3]), permute(Qyth, [2 1 3]), permute(Qzth, [2,1,3]));
 tmp = permute(tmp, [2 1 3]);
-EULth = -tmp;
 
 savevtk_bin(tmp,[dir 'divQthe' ncycle '.vtk'],'divQthe',dx,dy,dz,0,0,0);
 tmp=common_image(X(jr,ir),Y(jr,ir),mean(tmp(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'divQthe','divQthe',[0 0], Nsm, 12);
+
+tmp = divergence(x,y,z,permute(Qxenth,[2 1 3]), permute(Qyenth, [2 1 3]), permute(Qzenth, [2,1,3]));
+tmp = permute(tmp, [2 1 3]);
+EULth = -tmp;
+
+savevtk_bin(tmp,[dir 'divQenthe' ncycle '.vtk'],'divQenthe',dx,dy,dz,0,0,0);
+tmp=common_image(X(jr,ir),Y(jr,ir),mean(tmp(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'divQenthe','divQenthe',[0 0], Nsm, 12);
+
 
 
 
