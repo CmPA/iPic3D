@@ -1257,14 +1257,11 @@ void internal_energy_flux(double*** Uth,
 		for (int jj=0; jj < nyn*YLEN;jj++)
 			for (int ii=0; ii < nxn*XLEN;ii++){
 
-				QX[ii][jj][kk] = VX[ii][jj][kk] * Uth[ii][jj][kk];
-				QX[ii][jj][kk] += VX[ii][jj][kk] * pXX[ii][jj][kk] + VY[ii][jj][kk] *pXY[ii][jj][kk] + VZ[ii][jj][kk] *pXZ[ii][jj][kk];
+				QX[ii][jj][kk] =  VX[ii][jj][kk] * pXX[ii][jj][kk] + VY[ii][jj][kk] *pXY[ii][jj][kk] + VZ[ii][jj][kk] *pXZ[ii][jj][kk];
 
-				QY[ii][jj][kk] = VY[ii][jj][kk] * Uth[ii][jj][kk] ;
-				QY[ii][jj][kk] += VX[ii][jj][kk] * pXY[ii][jj][kk] + VY[ii][jj][kk] *pYY[ii][jj][kk] + VZ[ii][jj][kk] *pYZ[ii][jj][kk];
+				QY[ii][jj][kk] =  VX[ii][jj][kk] * pXY[ii][jj][kk] + VY[ii][jj][kk] *pYY[ii][jj][kk] + VZ[ii][jj][kk] *pYZ[ii][jj][kk];
 
-				QZ[ii][jj][kk] = VZ[ii][jj][kk] * Uth[ii][jj][kk] ;
-				QZ[ii][jj][kk] += VX[ii][jj][kk] * pXZ[ii][jj][kk] + VY[ii][jj][kk] *pYZ[ii][jj][kk] + VZ[ii][jj][kk] *pZZ[ii][jj][kk];
+				QZ[ii][jj][kk] =  VX[ii][jj][kk] * pXZ[ii][jj][kk] + VY[ii][jj][kk] *pYZ[ii][jj][kk] + VZ[ii][jj][kk] *pZZ[ii][jj][kk];
 
 			}
 }
@@ -2259,10 +2256,10 @@ void smooth(int Nvolte, double*** A, double*** B, int nx, int ny, int nz){
 
 	double*** C = newArr3(double,nx, ny, nz);
 
+    eq(B, A, nx, ny, nz);
+
 	for (int ivolte=0; ivolte<Nvolte; ivolte++){
 
-
-    eq(B, A, nx, ny, nz);
     if(nx>2){
     for (int kk=0; kk < nz;kk++)
         for (int jj=0; jj < ny;jj++){
