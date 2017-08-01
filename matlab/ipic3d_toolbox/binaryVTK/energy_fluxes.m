@@ -94,29 +94,29 @@ tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qzbulk(ir,jr,kr),3), mean(Az(ir,jr,kr),3
 
 Qxth = dot( Jex, Jey, Jez, Pexx, Pexy, Pexz, rhoe);
 Qxenth = Qxth + Uth.*Jex ./rhoe;
-tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qxth(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'Qxthe','Qxteh',[0 0], Nsm, 6);
+%tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qxth(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'Qxthe','Qxteh',[0 0], Nsm, 6);
 tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qxenth(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'Qxenthe','Qxenthe',[0 0], Nsm, 7);
 
 Qyth = dot( Jex, Jey, Jez, Pexy, Peyy, Peyz, rhoe);
 Qyenth = Qyth + Uth.*Jey ./rhoe;
-tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qyth(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'Qythe','Qythe',[0 0], Nsm, 8);
+%tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qyth(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'Qythe','Qythe',[0 0], Nsm, 8);
 tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qyenth(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'Qyenthe','Qyenthe',[0 0], Nsm, 9);
 
 Qzth = dot( Jex, Jey, Jez, Pexz, Peyz, Pezz, rhoe);
 Qzenth = Qzth + Uth.*Jez ./rhoe;
 
-savevtkvector_bin(Qxth, Qyth, Qzth, [dir 'Qthe' ncycle '.vtk'],'Qthe',dx,dy,dz,0,0,0);
+%savevtkvector_bin(Qxth, Qyth, Qzth, [dir 'Qthe' ncycle '.vtk'],'Qthe',dx,dy,dz,0,0,0);
 savevtkvector_bin(Qxenth, Qyenth, Qzenth, [dir 'Qenthe' ncycle '.vtk'],'Qenthe',dx,dy,dz,0,0,0);
 
-tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qzth(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'Qzthe','Qzthe',[0 0], Nsm, 10);
+%tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qzth(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'Qzthe','Qzthe',[0 0], Nsm, 10);
 tmp=common_image(X(jr,ir),Y(jr,ir),mean(Qzenth(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'Qzenthe','Qzenthe',[0 0], Nsm, 11);
 
 
-tmp = divergence(x,y,z,permute(Qxth,[2 1 3]), permute(Qyth, [2 1 3]), permute(Qzth, [2,1,3]));
-tmp = permute(tmp, [2 1 3]);
+%tmp = divergence(x,y,z,permute(Qxth,[2 1 3]), permute(Qyth, [2 1 3]), permute(Qzth, [2,1,3]));
+%tmp = permute(tmp, [2 1 3]);
 
-savevtk_bin(tmp,[dir 'divQthe' ncycle '.vtk'],'divQthe',dx,dy,dz,0,0,0);
-tmp=common_image(X(jr,ir),Y(jr,ir),mean(tmp(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'divQthe','divQthe',[0 0], Nsm, 12);
+%savevtk_bin(tmp,[dir 'divQthe' ncycle '.vtk'],'divQthe',dx,dy,dz,0,0,0);
+%tmp=common_image(X(jr,ir),Y(jr,ir),mean(tmp(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'divQthe','divQthe',[0 0], Nsm, 12);
 
 tmp = divergence(x,y,z,permute(Qxenth,[2 1 3]), permute(Qyenth, [2 1 3]), permute(Qzenth, [2,1,3]));
 tmp = permute(tmp, [2 1 3]);
