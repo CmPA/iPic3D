@@ -144,7 +144,7 @@ int main (int argc, char **argv) {
 	    writeVTKscalar_binary(it, "divQbulk", "e", divQbulk);
 
 		// Intenal Energy flux
-		internal_enthalpy_flux(Uth,  QX, QY, QZ, VX, VY, VZ,
+		enthalpy_flux(Uth,  QX, QY, QZ, VX, VY, VZ,
 					TXX, TXY, TXZ, TYY, TYZ, TZZ);
 		writeVTKvect_binary(it, "Qenth", "e", QX, QY, QZ);
 		// Computes its divergence
@@ -213,7 +213,7 @@ int main (int argc, char **argv) {
 	    writeVTKscalar_binary(it, "divQbulk", "i", divQbulk);
 
 		// Intenal Energy flux
-		internal_enthalpy_flux(Uth,  QX, QY, QZ, VX, VY, VZ,
+		enthalpy_flux(Uth,  QX, QY, QZ, VX, VY, VZ,
 					TXX, TXY, TXZ, TYY, TYZ, TZZ);
 		writeVTKvect_binary(it, "Qenth", "i", QX, QY, QZ);
 		// Computes its divergence

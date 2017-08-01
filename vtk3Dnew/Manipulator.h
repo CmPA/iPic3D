@@ -139,7 +139,7 @@ void bulk_energy_flux(double*** Ubulk,
 					  double*** QXbulk, double*** QYbulk, double*** QZbulk,
 					  double*** VX, double*** VY, double*** VZ);
 /* Computes Intenal Energy Flux */
-void internal_enthalpy_flux(double*** Uth,
+void enthalpy_flux(double*** Uth,
 		              double*** QX, double*** QY, double*** QZ,
 					  double*** VX, double*** VY, double*** VZ,
 					  double*** pXX, double*** pXY,
@@ -1247,7 +1247,7 @@ void bulk_energy_flux(double*** Ubulk,
 			}
 }
 
-void internal_enthalpy_flux(double*** Uth,
+void enthalpy_flux(double*** Uth,
 					  double*** QX, double*** QY, double*** QZ,
 					  double*** VX, double*** VY, double*** VZ,
 					  double*** pXX, double*** pXY,
