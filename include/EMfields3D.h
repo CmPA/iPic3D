@@ -294,12 +294,9 @@ class EMfields3D                // :public Field
     void perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
 
     /*! Calculate the sysceptibility tensor on the boundary */
-    void sustensorRightX(double **susxx, double **susyx, double **suszx);
-    void sustensorLeftX (double **susxx, double **susyx, double **suszx);
-    void sustensorRightY(double **susxy, double **susyy, double **suszy);
-    void sustensorLeftY (double **susxy, double **susyy, double **suszy);
-    void sustensorRightZ(double **susxz, double **susyz, double **suszz);
-    void sustensorLeftZ (double **susxz, double **susyz, double **suszz);
+    void sustensorX(double **susxx, double **susxy, double **susxz, int N);
+    void sustensorY (double **susyx, double **susyy, double **susyz, int N);
+    void sustensorZ(double **suszx, double **suszy, double **suszz, int N);
 
     /*! get Potential array */
     double ***getPHI();
