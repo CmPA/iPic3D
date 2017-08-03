@@ -16,7 +16,7 @@ qom =10;
 % for initial vacuum field
 i=0
 % for WB later field
-%i=35000
+i=35000
 
     it=sprintf('%06.0f',i);
         
@@ -125,10 +125,27 @@ i=0
     
     if(Tend==t(end))
         % particle remains confined
-        plot(r,yout,r(1),yout(1),'go',r(end),yout(end),'kp')
+        
+        % this colors line by energy
+%         col = sum(y(:,4:6).^2,2);  % This is the color, vary with x in this case.
+%         surface([r,r],[yout,yout],[zeros(size(r)),zeros(size(r))],[col,col],...
+%         'facecol','no',...
+%         'edgecol','interp',...
+%         'linew',2);
+%         plot(r(1),yout(1),'go',r(end),yout(end),'kp')
+        plot(r,yout,r(1),yout(1),'go',r(end),yout(end),'kp','linew',2)
+
     else
         % particle lost
-        plot(r,yout,r(1),yout(1),'go',r(end),yout(end),'kx')
+        
+%                 col = sum(y(:,4:6).^2,2);  % This is the color, vary with x in this case.
+%         surface([r,r],[yout,yout],[zeros(size(r)),zeros(size(r))],[col,col],...
+%         'facecol','no',...
+%         'edgecol','interp',...
+%         'linew',2);
+%         plot(r(1),yout(1),'go',r(end),yout(end),'kx')
+        plot(r,yout,r(1),yout(1),'go',r(end),yout(end),'kx','linew',2)
+        
     end    
     pause(.1)
 %     if (sqrt(r(end).^2+(yout(end)-Ly/2).^2)<Rout-Rout/100) 
