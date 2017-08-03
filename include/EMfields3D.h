@@ -282,6 +282,13 @@ class EMfields3D                // :public Field
     /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
     void addJz(double weight[][2][2], int X, int Y, int Z, int is);
 
+    /*! add an amount of EF - direction X  at node X,Y,Z */
+    void addEFx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of EF - direction Y at node X,Y,Z */
+    void addEFy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of EF - direction Z at node X,Y,Z */
+    void addEFz(double weight[][2][2], int X, int Y, int Z, int is);
+
     /*! add an amount of pressure density - direction XX to current density field at node X,Y,Z */
     void addPxx(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction XY to current density field at node X,Y,Z */
@@ -413,6 +420,14 @@ class EMfields3D                // :public Field
     /*! get pressure tensor ZZ for species */
     double ****getpZZsn();
 
+    /* get the pressure tensor */
+    double ***getPxx(int is);
+    double ***getPxy(int is);
+    double ***getPxz(int is);
+    double ***getPyy(int is);
+    double ***getPyz(int is);
+    double ***getPzz(int is);
+
     /*! get Jx(X,Y,Z) */
     double &getJx(int indexX, int indexY, int indexZ) const;
     /*! get current -Direction X */
@@ -447,6 +462,11 @@ class EMfields3D                // :public Field
     double ***&getJxs(int is);
     double ***&getJys(int is);
     double ***&getJzs(int is);
+
+    /*! SPECIES: get Energy Fluxes  */
+    double ***&getEFxs(int is);
+    double ***&getEFys(int is);
+    double ***&getEFzs(int is);
 
     /*! get the electric field energy */
     double getEenergy();
@@ -616,6 +636,12 @@ class EMfields3D                // :public Field
     double ****Jys;
     /*! SPECIES: current density component-Z for species, defined on nodes */
     double ****Jzs;
+    /*! SPECIES: Energy Flux density component-X for species, defined on nodes */
+    double ****EFxs;
+    /*! SPECIES: Energy Flux density component-Y for species, defined on nodes */
+    double ****EFys;
+    /*! SPECIES: Energy Flux component-Z for species, defined on nodes */
+    double ****EFzs;
     /*! External magnetic field component-X, defined on nodes */
     double***  Bx_ext;
     /*! External magnetic field component-Y, defined on nodes */

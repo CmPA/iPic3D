@@ -41,9 +41,13 @@ Bp(1) = Br*cos(theta) - Btheta * sin(theta);
 Bp(3) = Br*sin(theta) + Btheta * cos(theta);
 
 
-Ep(1) = interp2(xg,yg,ex,r,xp(2));
-Ep(2) = interp2(xg,yg,ey,r,xp(2));
-Ep(3) = interp2(xg,yg,ez,r,xp(2));
+Er = interp2(xg,yg,ex,r,xp(2)); % Code x is cylindrical coordiante r
+Ep(2) = interp2(xg,yg,ey,r,xp(2)); % Code y is cylindrical coordiante z
+Etheta = interp2(xg,yg,ez,r,xp(2)); % Code z is cylindrical coordiante theta
+
+Ep(1) = Er*cos(theta) - Etheta * sin(theta);
+Ep(3) = Er*sin(theta) + Etheta * cos(theta);
+
 Fp=cross(vp,Bp);
 
 dx(4) = tdir*qom*(Ep(1) + Fp(1));

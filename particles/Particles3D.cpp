@@ -2344,6 +2344,7 @@ void Particles3D::interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * 
 void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
   double weight[2][2][2];
   double temp[2][2][2];
+  double ep;
   int ix, iy, iz, temp2, temp1, temp3;
   for (register long long i = 0; i < nop; i++) {
     ix = 2 + int (floor((x[i] - grid->getXstart()) / grid->getDX()));
@@ -2355,6 +2356,9 @@ void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * v
     ix = (int) max(temp1, 2);
     iy = (int) max(temp2, 2);
     iz = (int) max(temp3, 2);
+
+    ep = 0.5 / qom *( u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
+
     calculateWeights(weight, x[i], y[i], z[i], ix, iy, iz, grid);
     scale(weight, q[i], 2, 2, 2);
     // rho
@@ -2371,6 +2375,18 @@ void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * v
     eqValue(0.0, temp, 2, 2, 2);
     addscale(w[i], temp, weight, 2, 2, 2);
     EMf->addJz(temp, ix, iy, iz, ns);
+    // EFx
+    eqValue(0.0, temp, 2, 2, 2);
+    addscale(u[i]*ep, temp, weight, 2, 2, 2);
+    EMf->addEFx(temp, ix, iy, iz, ns);
+    // EFy
+    eqValue(0.0, temp, 2, 2, 2);
+    addscale(v[i]*ep, temp, weight, 2, 2, 2);
+    EMf->addEFy(temp, ix, iy, iz, ns);
+    // EFz
+    eqValue(0.0, temp, 2, 2, 2);
+    addscale(w[i]*ep, temp, weight, 2, 2, 2);
+    EMf->addEFz(temp, ix, iy, iz, ns);
 
   }
   // communicate contribution from ghost cells 
