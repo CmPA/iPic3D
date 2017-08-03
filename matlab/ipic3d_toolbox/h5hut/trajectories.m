@@ -16,7 +16,7 @@ qom =10;
 % for initial vacuum field
 i=0
 % for WB later field
-i=35000
+%i=35000
 
     it=sprintf('%06.0f',i);
         
@@ -121,11 +121,10 @@ i=35000
     zout=y(:,3);
     r = sqrt(xout.^2+zout.^2);
     dx=diff(xout); dy=diff(yout);dz=diff(zout);
-    mean_t=mean_t+t(end);
     traffic=sum(sqrt(dx.^2+dy.^2+dz.^2));
     
     if(Tend==t(end))
-        % particle remians confined
+        % particle remains confined
         plot(r,yout,r(1),yout(1),'go',r(end),yout(end),'kp')
     else
         % particle lost
@@ -136,8 +135,6 @@ i=35000
 %         return 
 %     end
     end
-      mean_t =mean_t/Npart;
-      
-    disp(['mean lifetime =', num2str(mean_t)])  
+       
     disp(['mean traffic =', num2str(traffic)]) 
 
