@@ -3,7 +3,7 @@ close all
 clc
 addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
-%folder_name = '/Users/gianni/Dropbox/Science/codes/build_cyl/wb2d_b/'
+folder_name = '/Users/gianni/Dropbox/Science/codes/build_cyl/wb2d_b/'
 namefile = 'TwoCoils-Fields';
 
 
@@ -17,6 +17,8 @@ qom =10;
 i=0
 % for WB later field
 i=35000
+i=4000
+%i=00
 
     it=sprintf('%06.0f',i);
         
@@ -59,6 +61,7 @@ i=35000
     
     b = sqrt (bx.^2 +by.^2 + bz.^2);
     
+   
     magnetic_damping=1;
     
      ii=b<mean(b(:))/10;
@@ -66,7 +69,11 @@ i=35000
      by(ii)=by(ii)*magnetic_damping;
      bz(ii)=bz(ii)*magnetic_damping;
      b = sqrt(bx.^2 +by.^2 + bz.^2);
-    
+   
+     rho = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(30).Datasets(1));
+
+     rho=permute(squeeze(rho(:,:,round(Nz/2))),[2 1])*electric_damping;
+
     
     global ex ey ez bx by bz xg yg  Lx Ly qom Rout
     
@@ -84,27 +91,31 @@ i=35000
     
     range1=[-10 -3]; 
     range2=[0 0];
-    coplot(i,xg,yg,log(b+1e-10),b,xlab,ylab,titolo,range1, range2)
+    %coplot(i,xg,yg,log(b+1e-10),b,xlab,ylab,titolo,range1, range2)
+    range1=[0 0];
+     coplot(i,xg,yg,rho,b,xlab,ylab,titolo,range1, range2)
+
     hold on
     
     %print(['frame_' it '.png'],'-dpng')
     %pause(.01)
     
-    Rout=30
+    Rout=20
     
     th = -pi/2:pi/50:pi/2;
     xunit = Rout * cos(th) ;
     yunit = Rout * sin(th) + Ly/2;
     plot(xunit, yunit);
     
-    xp=[0.5 Ly/2 0];
-    Npart=10;
+    Npart=100;
     
     mean_t=0;
     traffic=0;
     
     for ip=1:Npart
         
+        xp=[0.5 Ly/2 0]+rand(1,3)*3;
+
         vmono = .01;
         costh = rand(1,1)*2-1; sinth =1-costh^2;
         fi = 2*pi *rand(1,1);
@@ -112,7 +123,7 @@ i=35000
     
     opts=odeset('Events',@lostparticle); %,'OutputFcn',@odeplot);
      
-    Tend=15000;
+    Tend=30000;
     dt=1; % this is used onyl for graphics, the actual time stpe is adaptive 
     [t,y]=ode45(@newton,0:dt:Tend ,[xp vp],opts);
     
@@ -121,8 +132,9 @@ i=35000
     zout=y(:,3);
     r = sqrt(xout.^2+zout.^2);
     dx=diff(xout); dy=diff(yout);dz=diff(zout);
-    traffic=sum(sqrt(dx.^2+dy.^2+dz.^2));
+    traffic=traffic+sum(sqrt(dx.^2+dy.^2+dz.^2));
     
+    mean_t =mean_t + t(end);
     if(Tend==t(end))
         % particle remains confined
         
@@ -151,7 +163,10 @@ i=35000
 %     if (sqrt(r(end).^2+(yout(end)-Ly/2).^2)<Rout-Rout/100) 
 %         return 
 %     end
+    disp(['particles processed', num2str(ip)])
+    disp(['residence time=', num2str(mean_t/ip)])
+    disp(['mean traffic =', num2str(traffic/ip)]) 
     end
        
-    disp(['mean traffic =', num2str(traffic)]) 
+    
 
