@@ -1,6 +1,6 @@
 function [J]=common_image(x,y,J1,Az,nlabel,name,clmt, Nsm, nfig)
 
-global color_choice symmetric_color labelx labely Ncycle
+global color_choice symmetric_color labelx labely labelc reversex Ncycle
 
 
 J=smooth(J1,Nsm);
@@ -47,18 +47,25 @@ elseif (color_choice==-1)
         colormap parula
 end
 
-colorbar
+ch=colorbar
+set(get(ch,'title'),'string',labelc);
+
 set(gca,'fontsize',[14])
+
 
 xlabel(labelx,'fontsize',[14])
 ylabel(labely,'fontsize',[14])
-%title([ nlabel '   ' Ncycle],'fontsize',[14])
+
 
 title([ nlabel ],'fontsize',[14])
 
 
 axis image
 axis xy
+if(reversex==1) 
+    set(gca,'xdir','reverse')
+end
+
 %set(gca,'xdir','reverse','TickDir','out')
 %print('-depsc','-r300',[name '.eps'])
 print('-dpng','-r300',[name Ncycle '.png'])
