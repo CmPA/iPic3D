@@ -3,7 +3,8 @@ close all
 clc
 addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
-folder_name = '/Users/gianni/Dropbox/Science/codes/build_cyl/wb2d_b/'
+
+folder_name = '/shared/gianni/WB/base'
 namefile = 'TwoCoils-Fields';
 
 
@@ -17,7 +18,7 @@ qom =10;
 i=0
 % for WB later field
 i=35000
-i=4000
+%i=4000
 %i=00
 
     it=sprintf('%06.0f',i);
@@ -73,7 +74,10 @@ i=4000
      rho = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(30).Datasets(1));
 
      rho=permute(squeeze(rho(:,:,round(Nz/2))),[2 1])*electric_damping;
-
+     
+    xc=linspace(0, Lx, Nx);
+    yc=linspace(0, Ly, Ny);
+    ath=vecpot_cyl(xc,yc,bx,by);
     
     global ex ey ez bx by bz xg yg  Lx Ly qom Rout
     
@@ -86,14 +90,14 @@ i=4000
     
     xlab='x';
     ylab='y'
-    titolo=[ 'cycle=' num2str(i) '  B (color) B(contours)']
+    titolo=[ 'cycle=' num2str(i) '  B (color) Ath(contours)']
     
     
     range1=[-10 -3]; 
     range2=[0 0];
     %coplot(i,xg,yg,log(b+1e-10),b,xlab,ylab,titolo,range1, range2)
     range1=[0 0];
-     coplot(i,xg,yg,rho,b,xlab,ylab,titolo,range1, range2)
+     coplot(i,xg,yg,log(b),ath,xlab,ylab,titolo,range1, range2)
 
     hold on
     

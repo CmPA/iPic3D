@@ -3,7 +3,7 @@ close all
 clc
 addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
-%folder_name = '/Users/gianni/Dropbox/Science/codes/build_cyl/wb2d_b/'
+folder_name = '/shared/gianni/WB/hotter'
 namefile = 'TwoCoils-Fields';
 
 
@@ -11,7 +11,7 @@ Lx=37.5;
 Ly=75;
 
 
-i=35000
+i=135000
 
 
     it=sprintf('%06.0f',i);
