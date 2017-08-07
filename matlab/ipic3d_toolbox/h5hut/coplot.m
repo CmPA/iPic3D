@@ -18,6 +18,9 @@ if(range2(2)==range2(1))
     range2(2)=max(ay(:));
 end
 
+if(range1(2)==range1(1))
+    return
+end
 fmin=min(range1);
 fmax=max(range1);
 imagesc([min(x(:)) max(x(:))],[min(y(:)) max(y(:))],f);
@@ -36,7 +39,7 @@ caxis(range1)
 %ay2=((ay-range2(1))/(range2(2)-range2(1))*(range1(2)-range1(2))+range1(1));
 
 
-ff=contour(x,y,ay,linspace(range2(1),range2(2),20),'w');
+ff=contour(x,y,ay,linspace(range2(1),range2(2),60),'w');
 
 
 xlabel(xlab,'fontsize',[18])

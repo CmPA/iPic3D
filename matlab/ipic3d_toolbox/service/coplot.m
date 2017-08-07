@@ -42,7 +42,7 @@ ay2=((ay-aymin)/(aymax-aymin)*(fmax-fmin)+fmin);
 
 if contours
 if nargin<9
-ff=contour(x,y,ay2,10,'g');
+ff=contour(x,y,ay2,0,'g');
 max(ay2(:))
 else
 ff=contour(x(lmt(1):lmt(2),lmt(3):lmt(4)),y(lmt(1):lmt(2),lmt(3):lmt(4)),ay2(lmt(1):lmt(2),lmt(3):lmt(4)),10,'g');
