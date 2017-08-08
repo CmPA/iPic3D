@@ -194,7 +194,7 @@ int main (int argc, char **argv) {
 		if (ns >2) addreadscalar(it,"/moments/species_3/","pZZ",  TZZ);
 		
 		// Note: this call expects V to be the current for compatibility with other postprocessing tools
-		extract_pressure(qom[0], BX, BY, BZ, VX, VY, VZ, NI,
+		extract_pressure(qom[1], BX, BY, BZ, VX, VY, VZ, NI,
 						 TXX, TXY, TXZ, TYY, TYZ, TZZ, TPAR, TPER1, TPER2, EPS);
 
 		//Compute velocity from Current
@@ -203,7 +203,7 @@ int main (int argc, char **argv) {
 		div(VZ, NI, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
 
 		// Computes Energies
-		compute_energy(qom[1], Ubulk, Uth, VX, VY, VZ, NE,
+		compute_energy(qom[1], Ubulk, Uth, VX, VY, VZ, NI,
 				TXX, TYY, TZZ);
 		// Bulk Energy flux
 		bulk_energy_flux(Ubulk,  QXbulk, QYbulk, QZbulk, VX, VY, VZ);
