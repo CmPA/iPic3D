@@ -3,7 +3,7 @@ function [J]=common_image(x,y,J1,Az,nlabel,name,clmt, Nsm, nfig)
 global color_choice symmetric_color labelx labely labelc reversex Ncycle
 
 
-J=smooth(J1,Nsm);
+J=smoothbc(J1,Nsm);
 
 if(nargin>8)
 h=figure(nfig)
