@@ -2,7 +2,7 @@
 CPP=	mpicxx
 OPTFLAGS=  -O2 
 
-SYSTEM = mac
+SYSTEM = discover
 
 # Libraties needed for intel compiler
 HDF5LIBS = -lhdf5 -lhdf5_hl -mkl 
@@ -11,9 +11,9 @@ HDF5LIBS = -lhdf5 -lhdf5_hl -mkl
 ifeq ($(SYSTEM),discover)
 CPP = mpiicpc
 # include files
-INC_HDF5 = -I$(NOBACKUP)/hdf5-1.8.11serial/include
+INC_HDF5 = -I$(NOBACKUP)/Libraries/hdf5/1.8.11i-par/include
 # libs
-LIB_HDF5 = -L$(NOBACKUP)/hdf5-1.8.11serial/lib
+LIB_HDF5 = -L$(NOBACKUP)/Libraries/hdf5/1.8.11i-par/lib
 endif
 
 ifeq ($(SYSTEM),pleiades)
