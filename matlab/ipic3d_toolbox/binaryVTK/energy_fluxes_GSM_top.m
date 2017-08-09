@@ -5,6 +5,7 @@ addpath(genpath('~/iPic3D/matlab/ipic3d_toolbox')); % Point to the directory whe
 HRmaha3D3
 
 for cycle=80000:1000:80000
+%for cycle=118000:1000:118000
 
 % for HRmaha3D1:
  time=60*(cycle/75000.0*Dt/.125) %*4 %times four to correct for change in dt between 2D and 3D
@@ -61,7 +62,7 @@ Lx=dx*Nx;LZ=dy*Ny;Lz=Nz*dz;
 qom_ele = -256;
 
 bufferX=round(Nx/20);
-bufferZ=round(Ny/20);
+bufferY=round(Ny/20);
 bufferZ=round(Nz/20);
 ir=bufferX:Nx-bufferX;
 jr=bufferY:Ny-bufferY;
@@ -86,6 +87,11 @@ skip=10
 
 % Compute J dot E
 JedotE=dot(Jex,Jey,Jez,Ex,Ey,Ez);
+method='gaussian'
+radius=5;
+JedotEsm=dot(smooth3(Jex,method,radius),smooth3(Jey,method,radius),smooth3(Jez,method,radius), ...
+    smooth3(Ex,method,radius),smooth3(Ey,method,radius),smooth3(Ez,method,radius));
+
 
 JidotE=dot(Jix,Jiy,Jiz,Ex,Ey,Ez);
 
@@ -103,7 +109,7 @@ nWm3 = 1e9*Wm3;
 mWm2= Wm3*code_dp*1e3
 
 
-for iZ=135
+for iz=135
 %kr=-5:5
 %kr=kr+round(iz);
 Nsm=5
@@ -143,7 +149,7 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sperp2(ir,jr,kr),2)*1e
 
 end
 
-electrons=0
+electrons=1
 if(electrons)
 
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JedotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['JeE Z=' 'AVG_Z'],'JeE',[-1 1]*0e-10, Nsm,1+iz);
@@ -176,12 +182,32 @@ Nsm=10
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(UdivPe(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr) ,['UdivPe Z=' 'AVG_Z'],'UdivPe',[-1 1]*0e-9, Nsm, 2+iz);
 
+newsmooth=0
+if (newsmooth)
+radius=5
+method='gaussian';
+Vx=smooth3(Jex./rhoe,method,radius);
+Vy=smooth3(Jey./rhoe,method,radius);
+Vz=smooth3(Jez./rhoe,method,radius);
+tmp = divergence(x,y,z,smooth3(permute(Pexx,[2 1 3]),method,radius), smooth3(permute(Pexy, [2 1 3]),method,radius), smooth3(permute(Pexz, [2,1,3]),method,radius));
+tmp=permute(tmp,[2 1 3]);
+udivP = tmp.* Vx;
+tmp = divergence(x,y,z,smooth3(permute(Pexy,[2 1 3]),method,radius), smooth3(permute(Peyy, [2 1 3]),method,radius), smooth3(permute(Peyz, [2,1,3]),method,radius));
+tmp=permute(tmp,[2 1 3]);
+udivP = udivP + tmp.* Vy;
+tmp = divergence(x,y,z,smooth3(permute(Pexz,[2 1 3]),method,radius), smooth3(permute(Peyz, [2 1 3]),method,radius), smooth3(permute(Pezz, [2,1,3]),method,radius));
+tmp=permute(tmp,[2 1 3]);
+udivP = udivP + tmp.* Vz;
+
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(udivP(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr) ,['UdivPe Z=' 'AVG_Z'],'UdivPe2',[-1 1]*0e-9, Nsm, 2+iz);
 end
 
-ions=1
+end
+
+ions=0
 if(ions)
 labelc = 'mW/m^2'; Nsm=5;
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JedotE(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['JiE Z=' 'AVG_Z'],'JiE',[-1 1]*0e-10, Nsm,1+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JidotE(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['JiE Z=' 'AVG_Z'],'JiE',[-1 1]*0e-10, Nsm,1+iz);
 
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Qbulkix(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qbulkix Z=' 'AVG_Z'],'Qbulkix',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkiy(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qbulkiz Z=' 'AVG_Z'],'Qbulkiy',[-1 1]*0e-9, Nsm, 3+iz);
@@ -207,7 +233,7 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkiperp1(ir,jr,kr),
 Qbulkiperp2=perp2x.*Qbulkix+perp2y.*Qbulkiy+perp2z.*Qbulkiz;
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkiperp2(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qbulki \perp_2 Z=' 'AVG_Z'],'Qbulkiprp2',[-1 1]*0e-9, Nsm, 2+iz);
 
-Nsm=10
+Nsm=5
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(UdivPi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['UdivPi Z=' 'AVG_Z'],'UdivPi',[-1 1]*0e-9, Nsm, 2+iz);
 

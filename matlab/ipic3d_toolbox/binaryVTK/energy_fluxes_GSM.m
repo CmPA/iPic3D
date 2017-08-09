@@ -7,7 +7,7 @@ HRmaha3D3
 for cycle=80000:1000:80000
 
     ncycle = num2str(cycle,'%06d');
-leggo=0; 
+leggo=1; 
 if(leggo==1)
 
 

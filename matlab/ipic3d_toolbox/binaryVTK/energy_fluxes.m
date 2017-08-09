@@ -5,7 +5,7 @@ dir='/shared/gianni/tred70/'; %directory where the files are
 for cycle=21000:1000:21000
 
     ncycle = num2str(cycle,'%06d');
-leggo=0; part1 =1; part2 =1;
+leggo=0; part1 =0; part2 =1;
 if(leggo==1)
 
 
@@ -46,7 +46,6 @@ Nsm=0
 %
 % Electrons
 %
-
 
 if(part1)
 % Compute J dot E
@@ -171,20 +170,26 @@ end
 
 if(part2)
 % Computing u . div(P)
-
-tmp = divergence(x,y,z,permute(Pexx,[2 1 3]), permute(Pexy, [2 1 3]), permute(Pexz, [2,1,3]));
+%dir='/data1/gianni/HRmaha3D3/data3/'
+radius=5
+method='gaussian';
+Vx=smooth3(Jex./rhoe,method,radius);
+Vy=smooth3(Jey./rhoe,method,radius);
+Vz=smooth3(Jez./rhoe,method,radius);
+tmp = divergence(x,y,z,smooth3(permute(Pexx,[2 1 3]),method,radius), smooth3(permute(Pexy, [2 1 3]),method,radius), smooth3(permute(Pexz, [2,1,3]),method,radius));
 tmp=permute(tmp,[2 1 3]);
 udivP = tmp.* Vx;
-tmp = divergence(x,y,z,permute(Pexy,[2 1 3]), permute(Peyy, [2 1 3]), permute(Peyz, [2,1,3]));
+tmp = divergence(x,y,z,smooth3(permute(Pexy,[2 1 3]),method,radius), smooth3(permute(Peyy, [2 1 3]),method,radius), smooth3(permute(Peyz, [2,1,3]),method,radius));
 tmp=permute(tmp,[2 1 3]);
 udivP = udivP + tmp.* Vy;
-tmp = divergence(x,y,z,permute(Pexz,[2 1 3]), permute(Peyz, [2 1 3]), permute(Pezz, [2,1,3]));
+tmp = divergence(x,y,z,smooth3(permute(Pexz,[2 1 3]),method,radius), smooth3(permute(Peyz, [2 1 3]),method,radius), smooth3(permute(Pezz, [2,1,3]),method,radius));
 tmp=permute(tmp,[2 1 3]);
 udivP = udivP + tmp.* Vz;
+Nsm=5
 
-savevtk_bin(udivP,[dir 'udivPe' ncycle '.vtk'],'udivPe',dx,dy,dz,0,0,0);
+savevtk_bin(udivP,[dir 'MATudivPe' ncycle '.vtk'],'udivPe',dx,dy,dz,0,0,0);
 tmp=common_image(X(jr,ir),Y(jr,ir),mean(udivP(ir,jr,kr),3), mean(Az(ir,jr,kr),3),'UdivPe','UdivPe',[0 0], Nsm, 20);
-
+return
 LAGbulk = LAGbulk - udivP ;
 EULbulk = EULbulk - udivP ;
 EULth = EULth + udivP;

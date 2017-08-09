@@ -2,7 +2,8 @@ addpath(genpath('../ipic3d_toolbox'));
 
 %clearvars -except Ncyc_ini Ncyc_max dir results_dir fraciz Ygsm
 
-dir='/data1/gianni/HRmaha3D3/vtk/'
+%dir='/data1/gianni/HRmaha3D3/vtk/'
+dir='/data1/gianni/HRmaha3D3/data3/'
 
 global Lx Ly Lz Xgsmrange Ygsmrange Zgsmrange dx dy dz XLEN YLEN ZLEN initial_time Nx Ny Nz Dt
 Xgsmrange= [-45 -15];
