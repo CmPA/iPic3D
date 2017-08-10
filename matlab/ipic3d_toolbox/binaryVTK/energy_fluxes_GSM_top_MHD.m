@@ -112,7 +112,7 @@ mWm2= 1e3;  % to have mW/m^2
 Nsm=5
 skip=3
 iz=1
-poynting=0
+poynting=1
 if(poynting)
 
 labelc = 'nW/m^3';
