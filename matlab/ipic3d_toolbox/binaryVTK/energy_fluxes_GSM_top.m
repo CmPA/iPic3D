@@ -99,11 +99,19 @@ JdotE=JedotE+JidotE;
 
 [Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
 Sx=Sx*code_E*code_B/mu0;
-SZ=Sy*code_E*code_B/mu0;
+Sy=Sy*code_E*code_B/mu0;
 Sz=Sz*code_E*code_B/mu0;
+% the poynting flux is not in W/m^2 that is in SI unit.
 
 xc=Lx-linspace(0, Lx, Nx);
 zc=linspace(0, Lz, Nz);
+
+%
+% n, J and p from the code need to be multiplied by 4pi and then
+% renormalized because of the 4pi division in the code from the MHD density
+% By the same token, all particle energy fluxes need the 4 pi
+% multiplication, but not the Poynting flux that is based on the fields.
+%
 Wm3 = code_E*code_J*4*pi; %4pi is due to the usal division by 4pi of the dencity
 nWm3 = 1e9*Wm3;
 mWm2= Wm3*code_dp*1e3
@@ -136,6 +144,8 @@ labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JdotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['JE Z=' 'AVG_Z'],'JE',[-1 1]*0e-10, Nsm,1+iz);
 
 labelc = 'mW/m^2';
+% The poynting flux is in SI units, W/m^3 so we need multiplication by 1e3
+% to have it in mW/m^2
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Sx(ir,jr,kr),2)*1e3,Vex(ir,kr),Vez(ir,kr) ,['Sx Z=' 'AVG_Z'],'Sx',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sy(ir,jr,kr),2)*1e3,Vex(ir,kr),Vez(ir,kr) ,['Sz Z=' 'AVG_Z'],'Sy',[-1 1]*0e-9, Nsm, 3+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sz(ir,jr,kr),2)*1e3,Vex(ir,kr),Vez(ir,kr) ,['Sy Z=' 'AVG_Z'],'Sz',[-1 1]*0e-9, Nsm, 4+iz);
@@ -151,9 +161,10 @@ end
 
 electrons=1
 if(electrons)
-
+labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JedotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['JeE Z=' 'AVG_Z'],'JeE',[-1 1]*0e-10, Nsm,1+iz);
 
+labelc = 'mW/m^2';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Qbulkex(ir,jr,kr),2)*mWm2,Vex(ir,kr),Vez(ir,kr) ,['Qbulkex Z=' 'AVG_Z'],'Qbulkex',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkey(ir,jr,kr),2)*mWm2,Vex(ir,kr),Vez(ir,kr) ,['Qbulkez Z=' 'AVG_Z'],'Qbulkey',[-1 1]*0e-9, Nsm, 3+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkez(ir,jr,kr),2)*mWm2,Vex(ir,kr),Vez(ir,kr) ,['Qbulkey Z=' 'AVG_Z'],'Qbulkez',[-1 1]*0e-9, Nsm, 4+iz);
@@ -206,9 +217,10 @@ end
 
 ions=0
 if(ions)
-labelc = 'mW/m^2'; Nsm=5;
+Nsm=5;labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JidotE(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['JiE Z=' 'AVG_Z'],'JiE',[-1 1]*0e-10, Nsm,1+iz);
 
+labelc = 'mW/m^2'; 
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Qbulkix(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qbulkix Z=' 'AVG_Z'],'Qbulkix',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkiy(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qbulkiz Z=' 'AVG_Z'],'Qbulkiy',[-1 1]*0e-9, Nsm, 3+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkiz(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qbulkiy Z=' 'AVG_Z'],'Qbulkiz',[-1 1]*0e-9, Nsm, 4+iz);

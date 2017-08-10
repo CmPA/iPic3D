@@ -39,7 +39,7 @@ x2=x(:,:,1);
 y2=y(:,:,1);
  
  
-Vx=permute(reshape(a(:,7),Nz,Ny,Nx),[3 2 1])*1e3;
+Vx=permute(reshape(a(:,7),Nz,Ny,Nx),[3 2 1])*1e3; %from Km/s to m/s
 Vy=permute(reshape(a(:,8),Nz,Ny,Nx),[3 2 1])*1e3;
 Vz=permute(reshape(a(:,9),Nz,Ny,Nx),[3 2 1])*1e3;
  
@@ -49,7 +49,7 @@ Vavgx=-squeeze(mean(Vx,2));
 Vavgy=squeeze(mean(Vy,2));
 Vavgz=squeeze(mean(Vz,2));
  
-Bx=permute(reshape(a(:,4),Nz,Ny,Nx),[3 2 1])*1e-9;
+Bx=permute(reshape(a(:,4),Nz,Ny,Nx),[3 2 1])*1e-9; %from nT to T
 By=permute(reshape(a(:,5),Nz,Ny,Nx),[3 2 1])*1e-9;
 Bz=permute(reshape(a(:,6),Nz,Ny,Nx),[3 2 1])*1e-9;
 B=sqrt(Bx.^2+By.^2+Bz.^2);
@@ -60,11 +60,11 @@ perp2z=-B2D./B;
 [Ex  Ey Ez] = cross_prod(-Vx, -Vy, -Vz, Bx, By, Bz);
  
  
-n=permute(reshape(a(:,10),Nz,Ny,Nx),[3 2 1])*1e6;
+n=permute(reshape(a(:,10),Nz,Ny,Nx),[3 2 1])*1e6; %from cm^-3 to m^-3
 
-p=permute(reshape(a(:,11),Nz,Ny,Nx),[3 2 1])*1e-12;
+p=permute(reshape(a(:,11),Nz,Ny,Nx),[3 2 1])*1e-12; %from pPa to Pa
 
-Jx=permute(reshape(a(:,12),Nz,Ny,Nx),[3 2 1])*1e-9;
+Jx=permute(reshape(a(:,12),Nz,Ny,Nx),[3 2 1])*1e-9; %from nA to A
 Jy=permute(reshape(a(:,13),Nz,Ny,Nx),[3 2 1])*1e-9;
 Jz=permute(reshape(a(:,14),Nz,Ny,Nx),[3 2 1])*1e-9;
 end  
@@ -104,9 +104,9 @@ Sz=Sz/mu0;
 
 xc=Lx-linspace(0, Lx, Nx);
 zc=linspace(0, Lz, Nz);
-Wm3 = 1; %4pi is due to the usal division by 4pi of the dencity
-nWm3 = 1e9*Wm3;
-mWm2= 1e3;
+Wm3 = 1; % All units are already SI
+nWm3 = 1e9*Wm3; % to have nW/M^3
+mWm2= 1e3;  % to have mW/m^2
 
 
 Nsm=5
@@ -120,16 +120,16 @@ labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),squeeze(mean(JdotE(ir,jr,kr),2))*nWm3,Vavgx(ir,kr),Vavgz(ir,kr),['JE Z=' 'AVG_Z'],'JE',[-1 1]*0e-10, Nsm,1+iz);
 
 labelc = 'mW/m^2';
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Sx(ir,jr,kr),2)*1e3,Vavgx(ir,kr),Vavgz(ir,kr) ,['Sx Z=' 'AVG_Z'],'Sx',[-1 1]*0e-9, Nsm, 2+iz);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sy(ir,jr,kr),2)*1e3,Vavgx(ir,kr),Vavgz(ir,kr) ,['Sz Z=' 'AVG_Z'],'Sy',[-1 1]*0e-9, Nsm, 3+iz);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sz(ir,jr,kr),2)*1e3,Vavgx(ir,kr),Vavgz(ir,kr) ,['Sy Z=' 'AVG_Z'],'Sz',[-1 1]*0e-9, Nsm, 4+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Sx(ir,jr,kr),2)*mWm2,Vavgx(ir,kr),Vavgz(ir,kr) ,['Sx Z=' 'AVG_Z'],'Sx',[-1 1]*0e-9, Nsm, 2+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sy(ir,jr,kr),2)*mWm2,Vavgx(ir,kr),Vavgz(ir,kr) ,['Sz Z=' 'AVG_Z'],'Sy',[-1 1]*0e-9, Nsm, 3+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sz(ir,jr,kr),2)*mWm2,Vavgx(ir,kr),Vavgz(ir,kr) ,['Sy Z=' 'AVG_Z'],'Sz',[-1 1]*0e-9, Nsm, 4+iz);
 
 %Spar= dot(Sx,Sy,Sz,Bx,By,Bz)./B;
-%tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Spar(ir,jr,kr),2)*1e3,AAz(ir,kr) ,['S_{||} Z=' 'AVG_Z'],'Spar',[-1 1]*0e-9, Nsm, 2+iz);
+%tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Spar(ir,jr,kr),2)*mWm2,AAz(ir,kr) ,['S_{||} Z=' 'AVG_Z'],'Spar',[-1 1]*0e-9, Nsm, 2+iz);
 Sperp1=(By.*Sx-Bx.*Sy)./B2D;
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sperp1(ir,jr,kr),2)*1e3,Vavgx(ir,kr),Vavgz(ir,kr) ,['S \perp_1 Z=' 'AVG_Z'],'Sperp1',[-1 1]*0e-9, Nsm, 2+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sperp1(ir,jr,kr),2)*mWm2,Vavgx(ir,kr),Vavgz(ir,kr) ,['S \perp_1 Z=' 'AVG_Z'],'Sperp1',[-1 1]*0e-9, Nsm, 2+iz);
 Sperp2=perp2x.*Sx+perp2y.*Sy+perp2z.*Sz;
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sperp2(ir,jr,kr),2)*1e3,Vavgx(ir,kr),Vavgz(ir,kr) ,['S \perp_2 Z=' 'AVG_Z'],'Sperp2',[-1 1]*0e-9, Nsm, 2+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sperp2(ir,jr,kr),2)*mWm2,Vavgx(ir,kr),Vavgz(ir,kr) ,['S \perp_2 Z=' 'AVG_Z'],'Sperp2',[-1 1]*0e-9, Nsm, 2+iz);
 
 end
 
