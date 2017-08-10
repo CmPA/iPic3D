@@ -2,12 +2,13 @@ close all
 addpath(genpath('~/iPic3D/matlab/ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
-HRmaha3D3
+%HRmaha3D3
+BOW25
 
-for cycle=80000:1000:80000
+for cycle=8000:1000:8000
 
     ncycle = num2str(cycle,'%06d');
-leggo=1; 
+leggo=0; 
 if(leggo==1)
 
 
@@ -46,8 +47,8 @@ Lx=dx*Nx;Ly=dy*Ny;Lz=Nz*dz;
 
 qom_ele = -256;
 
-bufferX=round(Nx/6);
-bufferY=round(Ny/6);
+bufferX=round(Nx/20);
+bufferY=round(Ny/20);
 ir=bufferX:Nx-bufferX;
 jr=bufferY:Ny-bufferY;
 

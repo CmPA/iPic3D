@@ -4,7 +4,7 @@ addpath(genpath('~/iPic3D/matlab/ipic3d_toolbox')); % Point to the directory whe
 
 
 
-leggo=0; 
+leggo=1; 
 if(leggo==1)
 HRmaha3D3
 
