@@ -10,25 +10,22 @@ Xgsmrange= [-15 -7];
 Zgsmrange= [-2.5 2.5];
 Ygsmrange= [-1 1];
 
-P4 = [-9.8, 3.6, -2.2]
-
-[x_P4 y_P4 z_P4 ix_P4 iy_P4 iz_P4 ipx ipy ipz ip_P4] = gsm2code(P4(1),P4(2),P4(3));
 
 initial_time=(03*60+48)*60
 
 B0=0.0026
 
-code_E = 2060.21;
-code_B = 6.87213e-06;
+code_E = 240.398;
+code_B = 8.01882e-07
 %code_B=code_B *1e9; % to convert from Tesla to nT
 code_J = 1.20082e-05;
 %code_J = code_J*4*pi;
 %code_J = code_J*1e9; % to convert to nA/m^2
-code_V = 2.99792e+08;
+code_V = 2.99792e+08; %this is c
 %code_V=code_V/1e3; %to convert to Km/s
-code_T = 1.50326e-10;
+code_T = 2.0468e-12; %this is mp c^2
 code_n = 0.25;
-code_dp = 4.5541e+05; %ion skin depth for code unit conversion
+code_dp = 5.3140e+04; %ion skin depth for code unit conversion
 e=1.6e-19;
 mu0 = 4*pi*1e-7;
 %convert to keV
