@@ -28,7 +28,9 @@ end
 
 Ncut=max(Nsm*3,1)
 
-imagesc(x(1,:),y(:,1),J(Ncut:end-Ncut,Ncut:end-Ncut)',clmt)
+%imagesc(x(1,:),y(:,1),J(Ncut:end-Ncut,Ncut:end-Ncut)',clmt)
+imagesc(x(1,:),y(:,1),J',clmt)
+
 hold on
 contour(x,y,Az',30,'k')
 caxis(clmt)
