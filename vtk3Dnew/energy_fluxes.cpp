@@ -279,6 +279,7 @@ int main (int argc, char **argv) {
 	delete[] temp_storageZ;
 	
 	
+    MPI_Finalize();
 	return(0);
 }
 
