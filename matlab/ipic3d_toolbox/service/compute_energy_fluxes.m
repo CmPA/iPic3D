@@ -14,4 +14,5 @@ Qenthz = Jz./N.* Uth + (Jx .* Pxz + Jy.* Pyz + Jz.* Pzz) ./N;
 Qhfx= Qx - Qbulkx - Qenthx;
 Qhfy= Qy - Qbulky - Qenthy;
 Qhfz= Qz - Qbulkz - Qenthz;
+
 end
