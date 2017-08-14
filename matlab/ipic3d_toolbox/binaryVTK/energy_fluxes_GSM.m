@@ -4,11 +4,66 @@ addpath(genpath('~/iPic3D/matlab/ipic3d_toolbox')); % Point to the directory whe
 
 HRmaha3D3
 %BOW25
+TRED60
 
-for cycle=80000:1000:80000
+for cycle=20010:1000:20010
 
     ncycle = num2str(cycle,'%06d');
-leggo=1; poynting=1; ions=1; electrons=1;
+leggo=2; poynting=1; ions=1; electrons=1;
+if(leggo==2)
+    namefile = 'GEM-Fields';
+    fn=[dir,namefile,'_',ncycle,'.h5'];
+
+    hinfo=hdf5info(fn);
+    Nx= hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1).Dims(1);
+    Ny= hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1).Dims(2);
+    Nz= hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1).Dims(3)
+    % uncomment this for a list of varibales available
+    %hinfo.GroupHierarchy.Groups.Groups.Groups(:).Name
+    
+
+    Bx = hdf5read(fn,'/Step#0/Block/Bx/0/');
+    By = hdf5read(fn,'/Step#0/Block/By/0/');
+    Bz = hdf5read(fn,'/Step#0/Block/Bz/0/');
+    Ex = hdf5read(fn,'/Step#0/Block/Ex/0/');
+    Ey = hdf5read(fn,'/Step#0/Block/Ey/0/');
+    Ez = hdf5read(fn,'/Step#0/Block/Ez/0/');
+    Jex = hdf5read(fn,'/Step#0/Block/Jx_0/0/')+hdf5read(fn,'/Step#0/Block/Jx_2/0/');
+    Jey = hdf5read(fn,'/Step#0/Block/Jy_0/0/')+hdf5read(fn,'/Step#0/Block/Jy_2/0/');
+    Jez = hdf5read(fn,'/Step#0/Block/Jz_0/0/')+hdf5read(fn,'/Step#0/Block/Jz_2/0/');
+    Jix = hdf5read(fn,'/Step#0/Block/Jx_1/0/')+hdf5read(fn,'/Step#0/Block/Jx_3/0/');
+    Jiy = hdf5read(fn,'/Step#0/Block/Jy_1/0/')+hdf5read(fn,'/Step#0/Block/Jy_3/0/');
+    Jiz = hdf5read(fn,'/Step#0/Block/Jz_1/0/')+hdf5read(fn,'/Step#0/Block/Jz_3/0/');
+    
+    rhoe = hdf5read(fn,'/Step#0/Block/rho_0/0/')+hdf5read(fn,'/Step#0/Block/rho_2/0/');
+    rhoi = hdf5read(fn,'/Step#0/Block/rho_1/0/')+hdf5read(fn,'/Step#0/Block/rho_3/0/');
+
+    Pexx = hdf5read(fn,'/Step#0/Block/Pxx_0/0/')+hdf5read(fn,'/Step#0/Block/Pxx_2/0/');
+    Peyy = hdf5read(fn,'/Step#0/Block/Pyy_0/0/')+hdf5read(fn,'/Step#0/Block/Pyy_2/0/');
+    Pezz = hdf5read(fn,'/Step#0/Block/Pzz_0/0/')+hdf5read(fn,'/Step#0/Block/Pzz_2/0/');
+    Pexy = hdf5read(fn,'/Step#0/Block/Pxy_0/0/')+hdf5read(fn,'/Step#0/Block/Pxy_2/0/');    
+    Pexz = hdf5read(fn,'/Step#0/Block/Pxz_0/0/')+hdf5read(fn,'/Step#0/Block/Pxz_2/0/');
+    Peyz = hdf5read(fn,'/Step#0/Block/Pyz_0/0/')+hdf5read(fn,'/Step#0/Block/Pyz_2/0/');
+    
+    Pixx = hdf5read(fn,'/Step#0/Block/Pxx_1/0/')+hdf5read(fn,'/Step#0/Block/Pxx_3/0/');
+    Piyy = hdf5read(fn,'/Step#0/Block/Pyy_1/0/')+hdf5read(fn,'/Step#0/Block/Pyy_3/0/');
+    Pizz = hdf5read(fn,'/Step#0/Block/Pzz_1/0/')+hdf5read(fn,'/Step#0/Block/Pzz_3/0/');
+    Pixy = hdf5read(fn,'/Step#0/Block/Pxy_1/0/')+hdf5read(fn,'/Step#0/Block/Pxy_3/0/');    
+    Pixz = hdf5read(fn,'/Step#0/Block/Pxz_1/0/')+hdf5read(fn,'/Step#0/Block/Pxz_3/0/');
+    Piyz = hdf5read(fn,'/Step#0/Block/Pyz_1/0/')+hdf5read(fn,'/Step#0/Block/Pyz_3/0/');
+    B=sqrt(Bx.*Bx+By.*By+Bz.*Bz);
+    B2D=sqrt(Bx.^2+By.^2);
+    perp2x=Bz.*Bx./(B.*B2D);
+    perp2y=Bz.*By./(B.*B2D);
+    perp2z=-B2D./B;
+    Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./B;
+
+    [Pexx,Peyy,Pezz,Pexy,Pexz,Peyz]=compute_pressure(Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Jex,Jey,Jez,rhoe, qom);
+    [Pixx,Piyy,Pizz,Pixy,Pixz,Piyz]=compute_pressure(Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Jix,Jiy,Jiz,rhoi, 1.0);
+
+    %compute_energy_fluxes
+end
+
 if(leggo==1)
 
 
@@ -89,7 +144,7 @@ nWm3 = 1e9*Wm3;
 mWm2= Wm3*code_dp*1e3
 
 
-for iz=135 %round(Nz/2)%135
+for iz=round(Nz/2)%135
 kr=-5:5
 kr=kr+round(iz);
 Nsm=5
