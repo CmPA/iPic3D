@@ -9875,7 +9875,7 @@ void EMfields3D::MPI_RGBC_struct_commit(){
 
 }
 
-void EMfields3D::copyMoments(double ***P_rho, double ***P_Jx, double ***P_Jy, double ***P_Jz, double ***P_pxx, double ***P_pxy, double ***P_pxz, double ***P_pyy, double ***P_pyz, double ***P_pzz, int is){
+void EMfields3D::copyMoments(Grid * grid, VirtualTopology3D * vct, double ***P_rho, double ***P_Jx, double ***P_Jy, double ***P_Jz, double ***P_pxx, double ***P_pxy, double ***P_pxz, double ***P_pyy, double ***P_pyz, double ***P_pzz, int is){
 
   for (int i=0; i<nxn; i++)
     for (int j=0; j<nyn; j++)
@@ -9894,6 +9894,17 @@ void EMfields3D::copyMoments(double ***P_rho, double ***P_Jx, double ***P_Jy, do
 	P_pzz[i][j][k]=pZZsn[is][i][j][k];
       }
 	
+  smooth(Smooth, P_rho, 1, grid, vct);                                                                                                      
+  smooth(Smooth, P_Jx, 1, grid, vct);  
+  smooth(Smooth, P_Jy, 1, grid, vct);  
+  smooth(Smooth, P_Jz, 1, grid, vct);                                                                
+  smooth(Smooth, P_pxx, 1, grid, vct);
+  smooth(Smooth, P_pxy, 1, grid, vct);  
+  smooth(Smooth, P_pxz, 1, grid, vct);     
+  smooth(Smooth, P_pyy, 1, grid, vct);   
+  smooth(Smooth, P_pyz, 1, grid, vct);  
+  smooth(Smooth, P_pzz, 1, grid, vct);
+
 }
 
 

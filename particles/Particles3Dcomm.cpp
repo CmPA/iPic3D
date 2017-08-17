@@ -560,7 +560,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   By_ext= newArr3(double, nxn, nyn, nzn);
   Bz_ext= newArr3(double, nxn, nyn, nzn);
 
-  TEST_FLUID_BC= true;
+  TEST_FLUID_BC= false;
 
   // //FOR TEST:
   // nvDistLoc = 3;
@@ -1736,7 +1736,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       }
     } // end if (RG_numPBCMessages>0 and !FluidLikeRep): buffers for exchange of repopulated particles
 
-    if  (FluidLikeRep){  //  (RG_numPBCMessages>0 and FluidLikeRep){
+    if   (RG_numPBCMessages>0 and FluidLikeRep){
       // these are the vectors needed for the fluid repopulation
       rho_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize); 
       Jx_FBC = newArr2(double, RG_numPBCMessages, RG_MaxFluidMsgSize);
@@ -4046,7 +4046,7 @@ void Particles3Dcomm::SendFluidPBC(Grid* grid, VirtualTopology3D * vct, Field * 
   pyz= newArr3(double, nxn, nyn, nzn);
   pzz= newArr3(double, nxn, nyn, nzn);
 
-  EMf->copyMoments(rho, Jx, Jy, Jz, pxx, pxy, pxz, pyy, pyz, pzz, ns);
+  EMf->copyMoments(grid, vct, rho, Jx, Jy, Jz, pxx, pxy, pxz, pyy, pyz, pzz, ns);
 
   int dest;
   int tag;
@@ -4371,12 +4371,12 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * 
   
   /* if true, use initial profile for repopulation -
      - do not use for production */
-  bool TEST_FLUID_BC= true; 
+  
 
 
   MPI_Comm CommToParent= vct->getCommToParent_P(ns);
   
-  if (CommToParent == MPI_COMM_NULL or FluidLikeRep == false)
+  if (CommToParent == MPI_COMM_NULL or FluidLikeRep == false or RG_numPBCMessages <1 )
     return;
 
   if (!TEST_FLUID_BC) {
