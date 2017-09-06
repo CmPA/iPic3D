@@ -267,7 +267,10 @@ class EMfields3D                // :public Field
     void smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
     /*! smooth the electric field */
     void smoothE(double value, VirtualTopology3D * vct, Collective *col);
-
+    /*! without communication, to use in applyProjection */
+    void smoothE_NoComm(double value, VirtualTopology3D * vct, Collective *col);
+    /* smoothing applied specifically to external faces */
+    void smoothFaces(double value, double *** F, VirtualTopology3D * vct);
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
@@ -863,6 +866,7 @@ class EMfields3D                // :public Field
     bool MLMD_PROJECTION;
     bool ParticleREPOPULATION;
     bool MLMD_BCBufferArea;
+    // to test the new CG-RG mixing at RG level
     bool MLMD_fixBCenters;
 
     /* number of fields I am sending as BC: Ex, Ey, Ez, Exth, Eyth, Ezth, Bxn, Byn, Bzn */

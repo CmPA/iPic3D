@@ -179,6 +179,11 @@ public:
   double getZC_P(int X, int Y, int Z); 
   /* end mlmd: coordinate of centers on the parent grid */
 
+  // like getXN, but managing also the extremes
+  double getXN_XT(int X, int Y, int Z);
+  double getYN_XT(int X, int Y, int Z);
+  double getZN_XT(int X, int Y, int Z);
+
   /** get Xstart */
   double getXstart();
   /** get Xend */

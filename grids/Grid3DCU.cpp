@@ -1133,6 +1133,41 @@ double Grid3DCU::getZC_P(int X, int Y, int Z){
     return Oz+ center_zcoord[nzn-1] + dz*(Z-(nzc-1));
 }
 
+
+double Grid3DCU::getXN_XT(int X, int Y, int Z){ 
+  double dx= node_xcoord[1]-node_xcoord[0];
+
+  if (X>-1 and X<nxn) {
+    return node_xcoord[X];} // "normal" case
+  if (X<0){
+    return node_xcoord[0]+ dx*X;}
+  if (X>nxn-1){
+    return node_xcoord[nxn-1] + dx*(X-(nxn-1));}
+
+}
+
+double Grid3DCU::getYN_XT(int X, int Y, int Z){ 
+  double dy= node_ycoord[1]-node_ycoord[0];
+  
+  if (Y>-1 and Y<nyn) 
+    return node_ycoord[Y]; // "normal" case
+  if (Y<0)
+    return node_ycoord[0]+ dy*Y;
+  if (Y>nyn-1)
+    return node_ycoord[nyn-1] + dy*(Y-(nyn-1));
+}
+
+double Grid3DCU::getZN_XT(int X, int Y, int Z){ 
+  double dz= node_zcoord[1]-node_zcoord[0];
+  
+  if (Z>-1 and Z<nzn) 
+    return node_zcoord[Z]; // "normal" case
+  if (Z<0)
+    return node_zcoord[0]+ dz*Z;
+  if (Z>nzn-1)
+    return node_zcoord[nzn-1] + dz*(Z-(nzn-1));
+}
+
 void Grid3DCU::Explore3DAndCommit_Centers(int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct , char  dir){
   // policy:    
   // explore Z dir  

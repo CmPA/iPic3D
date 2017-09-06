@@ -839,7 +839,7 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   while (np_current < nplast+1){
      
     xMin=0; yMin=0; zMin=0;
-    xMax=Lx; yMax=Ly; zMax=Ly;
+    xMax=Lx; yMax=Ly; zMax=Lz;
 
     // BC on particles
     if (x[np_current] < xMin && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
@@ -1031,7 +1031,7 @@ int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
   while (np_current < nplast+1){
      
     xMin=0; yMin=0; zMin=0;
-    xMax=Lx; yMax=Ly; zMax=Ly;
+    xMax=Lx; yMax=Ly; zMax=Lz;
 
     // BC on particles
     if (x[np_current] < xMin && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
@@ -2730,7 +2730,7 @@ void Particles3Dcomm::ApplyPBC(VirtualTopology3D* vct, Grid* grid){
     }
     nopPRGMsg[m]= count;
 
-    //cout <<"G"<<numGrid << "R" <<RR << " ns " << ns  << " m " << m << " nopPRGMsg[m] " << nopPRGMsg[m] << endl;
+    //cout <<"G"<<numGrid << "R" <<RR << " ns " << ns  << " m " << m << " nopPRGMsg[m] " << nopPRGMsg[m] << Endl;
   } // end for (int m=0; m< RG_numPBCMessages; m++){
 
   //cout << "R" << RR <<" G" << numGrid << ", nop after applying BC: " << nop <<endl;
@@ -2856,6 +2856,9 @@ void Particles3Dcomm::CheckSentReceivedParticles(VirtualTopology3D* vct){
 /** split each received particles **/
 void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p){
   // to prevent the repopulation of particles which would try to accumulate outside the grid
+  double inv_dx= 1./dx;
+  double inv_dy= 1./dy;
+  double inv_dz= 1./dz;
 
   double PM= 0.0001;
 
@@ -2865,6 +2868,17 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
   double qTmp;
   
   bool StX, StY, StZ;
+
+  double Sign= -1;
+  double *Perc = new double[4];
+  Perc[0]= 0.05; 
+  Perc[1]= 0.01;
+  Perc[2]= 0.15;
+  Perc[3]= 0.2;
+  // with any of the two true, nothing seems to change
+  bool KickVelocity= false;
+  bool KickPosition= false;
+  int Index;
 
   for (int i=0; i< ceil(RFx); i++){
     xTmp= p.x - DxP/2.0 + dx*(1./2. + i)- grid->getOx();
@@ -2933,9 +2947,57 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	    ParticleID[nop]= p.ID;
 	  
 	  // end add to core particle system 
-	  // check nop is not exceeded                                                                                              
-	  nop++;
-	  
+	  // check nop is not exceeded                                                    
+	  if (KickVelocity){
+	    if (Sign== -1){
+	      Index= rand() % 4;
+	    }
+	    //cout << "old u: " << u[nop] <<"; " ;
+	    u[nop]= u[nop]*(1+Sign*Perc[Index]);
+	    v[nop]= v[nop]*(1+Sign*Perc[Index]);
+	    w[nop]= w[nop]*(1+Sign*Perc[Index]);
+	    Sign= Sign*(-1); // for the next round
+	    //cout << "new u: " << u[nop] << endl;
+
+	    /*if (u[nop]== 0){
+	      cout << "u: " << u[nop] << ", v: "<< v[nop] << ", w: " << w[nop] << ", x: " <<x[nop] << ", y: " <<y[nop] << ", z: "<< z[nop] << endl;
+	      cout << "Original p: u: " << p.u << ", v: " << p.v << ", w: "<< p.w <<endl;
+	      }*/
+	  }
+	  if (KickPosition){
+	    const double ixd = floor((x[nop] - xstart) * inv_dx);
+	    const double iyd = floor((y[nop] - ystart) * inv_dy);
+	    const double izd = floor((z[nop] - zstart) * inv_dz);
+	    int ix = 2 + int (ixd)-1; // -1, not sure about this
+	    int iy = 2 + int (iyd)-1;
+	    int iz = 2 + int (izd)-1;
+	    
+	    double rX = ((double)rand() / (double)(RAND_MAX));
+	    double rY = ((double)rand() / (double)(RAND_MAX));
+	    double rZ = ((double)rand() / (double)(RAND_MAX));
+
+	    x[nop]= grid->getXN_XT(ix, iy, iz)+ dx*rX;
+	    y[nop]= grid->getYN_XT(ix, iy, iz)+ dy*rY;
+	    z[nop]= grid->getZN_XT(ix, iy, iz)+ dz*rZ;
+
+	    const double ixd2 = floor((x[nop] - xstart) * inv_dx);
+	    const double iyd2 = floor((y[nop] - ystart) * inv_dy);
+	    const double izd2 = floor((z[nop] - zstart) * inv_dz);
+
+	    if (ixd != ixd2 or iyd != iyd2 or izd != izd2){
+	      cout <<"ixd: " << ixd <<", ixd2: " << ixd2 << endl;
+	      cout <<"iyd: " << iyd <<", iyd2: " << iyd2 << endl;
+	      cout <<"izd: " << izd <<", izd2: " << izd2 << endl;
+	    }
+	    
+	    /* ok, this i check and nobody ends up here
+	    if (x[nop]< -dx or y[nop]< -dy or z[nop]< -dz){
+	      cout << "The particle is outside the PRA " << endl;
+	      }*/
+	  }
+                                          
+	  nop++; 
+	 	 
 	  if (nop > npmax) {
 	    cout << "Grid " << numGrid <<": Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
 	    cout << "Aborting ..." << endl;
@@ -2946,6 +3008,8 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
       } // end for (int k=0; k< ceil(RFz); k++){
     } // end for (int j=0; j< ceil(RFy); j++){
   } // end for (int i=0; i< ceil(RFx); i++){
+
+  delete[]Perc;
 
 }
 
