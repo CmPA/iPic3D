@@ -245,7 +245,7 @@ class EMfields3D                // :public Field
     /*! Calculate the three components of Pi(implicit pressure) cross image vector */
     void PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid);
     /*! Calculate the three components of mu (implicit permeattivity) cross image vector */
-    void MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid);
+    void MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid, VirtualTopology3D * vct);
     /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
     void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
@@ -270,9 +270,13 @@ class EMfields3D                // :public Field
     /*! without communication, to use in applyProjection */
     void smoothE_NoComm(double value, VirtualTopology3D * vct, Collective *col);
     /* smoothing applied specifically to external faces */
-    void smoothFaces(double value, double *** F, VirtualTopology3D * vct);
+    void smoothFaces(double value, double *** F, Grid * grid, VirtualTopology3D * vct, int type);
+    void smoothFaces(double value, double **** F, Grid * grid, VirtualTopology3D * vct, int is, int type);
+    /* external faces + interior */
+    void smoothAll(double value, double **** F, Grid * grid, VirtualTopology3D * vct, int is, int type);
+    void smoothAll(double value, double *** F, Grid * grid, VirtualTopology3D * vct, int type);
     /*! communicate ghost for grid -> Particles interpolation */
-    void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct);
+    void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct, Grid * grid);
     /*! add accumulated moments to the moments for a given species */
     void addToSpeciesMoments(const Moments & in, int is);
     /*! add an amount of charge density to charge density field at node X,Y,Z */
@@ -592,6 +596,10 @@ class EMfields3D                // :public Field
 
     /* some ops done after all init **/
     void PostInit();
+    /* this for testing purposes */
+
+    void TESTGhost( double **** vec);
+    void TESTGhost (double **** dest, double **** source); 
     /*! end mlmd specific functions */
     /* ********************************* // VARIABLES ********************************* */
   private:
@@ -1140,6 +1148,8 @@ class EMfields3D                // :public Field
 
     // at the moment, this is used only to test the fluid repopulation method
     double **** RHOINIT;
+
+    bool NewSmoothing;
 };
 
 

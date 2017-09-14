@@ -557,6 +557,8 @@ void Collective::ReadInput(string inputfile) {
     bcPfaceZright = new int[Ngrids];
 
     FluidLikeRep= false;
+    RepopulateBeforeMover= false;
+
 
     bool outBcP= false;
     bcPfaceXleft[0]= bcPfaceXleft0.a; if (bcPfaceXleft[0]==-1) outBcP= true;
@@ -604,6 +606,18 @@ void Collective::ReadInput(string inputfile) {
 	bcPfaceZright[N]=-3;
       }
 
+      if (RepopulateBeforeMover or bcPfaceXleft[N]==-4 or bcPfaceXright[N]==-4 or bcPfaceYleft[N]==-4 or bcPfaceYright[N]==-4 or bcPfaceZleft[N]==-4 or bcPfaceZright[N]==-4){
+
+	RepopulateBeforeMover= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-4;
+	bcPfaceXright[N]=-4;
+	bcPfaceYleft[N]=-4;
+	bcPfaceYright[N]=-4;
+	bcPfaceZleft[N]=-4;
+	bcPfaceZright[N]=-4;
+      }
+
       
 
     }
@@ -640,6 +654,18 @@ void Collective::ReadInput(string inputfile) {
 	bcPfaceZright[N]=-3;
       }
 
+      if (RepopulateBeforeMover or bcPfaceXleft[N]==-4 or bcPfaceXright[N]==-4 or bcPfaceYleft[N]==-4 or bcPfaceYright[N]==-4 or bcPfaceZleft[N]==-4 or bcPfaceZright[N]==-4){
+
+	RepopulateBeforeMover= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-4;
+	bcPfaceXright[N]=-4;
+	bcPfaceYleft[N]=-4;
+	bcPfaceYright[N]=-4;
+	bcPfaceZleft[N]=-4;
+	bcPfaceZright[N]=-4;
+      }
+
     }
 
     if (Ngrids >3) {
@@ -671,6 +697,18 @@ void Collective::ReadInput(string inputfile) {
 	bcPfaceYright[N]=-3;
 	bcPfaceZleft[N]=-3;
 	bcPfaceZright[N]=-3;
+      }
+
+      if (RepopulateBeforeMover or bcPfaceXleft[N]==-4 or bcPfaceXright[N]==-4 or bcPfaceYleft[N]==-4 or bcPfaceYright[N]==-4 or bcPfaceZleft[N]==-4 or bcPfaceZright[N]==-4){
+
+	RepopulateBeforeMover= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-4;
+	bcPfaceXright[N]=-4;
+	bcPfaceYleft[N]=-4;
+	bcPfaceYright[N]=-4;
+	bcPfaceZleft[N]=-4;
+	bcPfaceZright[N]=-4;
       }
     }
 
@@ -705,6 +743,17 @@ void Collective::ReadInput(string inputfile) {
 	bcPfaceZright[N]=-3;
       }
 
+      if (RepopulateBeforeMover or bcPfaceXleft[N]==-4 or bcPfaceXright[N]==-4 or bcPfaceYleft[N]==-4 or bcPfaceYright[N]==-4 or bcPfaceZleft[N]==-4 or bcPfaceZright[N]==-4){
+
+	RepopulateBeforeMover= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-4;
+	bcPfaceXright[N]=-4;
+	bcPfaceYleft[N]=-4;
+	bcPfaceYright[N]=-4;
+	bcPfaceZleft[N]=-4;
+	bcPfaceZright[N]=-4;
+      }
     }
       
   } // end if(!RESTART1)
@@ -1829,6 +1878,7 @@ bool Collective::getMLMD_fixBCenters() {return MLMD_fixBCenters;}
 
 bool Collective::getAllowPMsgResize() {return AllowPMsgResize;}
 bool Collective::getFluidLikeRep() {return FluidLikeRep;}
+bool Collective::getRepopulateBeforeMover() {return RepopulateBeforeMover;}
 
 /*! end MLMD gets */
 /*! a first sanity check on MLMD inputs, called at the end of the constructor */

@@ -37,6 +37,9 @@ int c_Solver::Init(int argc, char **argv) {
   MLMD_ParticleREPOPULATION = col->getMLMD_ParticleREPOPULATION();
   // the timing of particle repopulation ops depends on this
   FluidLikeRep= col->getFluidLikeRep();
+  // wether to repopulate before or after the mover
+  RepopulateBeforeMover= col->getRepopulateBeforeMover();
+
   //MLMD_InitialInterpolation = col->getMLMD_InitialInterpolation();
   /* end mlmd: to decide whether to perform mlmd ops */
   
@@ -58,6 +61,9 @@ int c_Solver::Init(int argc, char **argv) {
   
   if (myrank==0){
     cout << "I am grid " << numGrid << ", running on " << nprocs << "cores" << endl; }
+
+  if (RepopulateBeforeMover and myrank==0)
+    cout << "I am repopulating before mover " << endl;
 
   // Check if we can map the processes into a matrix ordering defined in Collective.cpp
  
@@ -472,6 +478,18 @@ bool c_Solver::ParticlesMover() {
 
   if (ns==0) mem_avail=1; // otherwise crashes
 
+  if (RepopulateBeforeMover){
+    for (int i=0; i<ns; i++){
+      // CG: send particle BC
+      part[i].SendPBC(grid, vct);
+      // RG: delete particles in PRA area
+      part[i].communicateAfterMover(vct);
+      // RG: accept BC particles in PRA area
+      part[i].ReceivePBC(grid, vct);
+    }
+    }
+
+
   // timeTasks.start(TimeTasks::PARTICLES);
   for (int i = 0; i < ns; i++)  // move each species
   {
@@ -507,7 +525,7 @@ bool c_Solver::ParticlesMover() {
   // CG sends PBC
   int RR= vct->getCartesian_rank();   
   // particle repopulation ops are done here if the repopulation is kinetic
-  if (MLMD_ParticleREPOPULATION and !FluidLikeRep){
+  if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
     for (int i = 0; i < ns; i++){
       // in practice, removes particles from the PRA
       part[i].communicateAfterMover(vct);
@@ -520,7 +538,7 @@ bool c_Solver::ParticlesMover() {
   }
 
   // just to delete particles
-  if (MLMD_ParticleREPOPULATION and FluidLikeRep){
+  if (MLMD_ParticleREPOPULATION and FluidLikeRep and !RepopulateBeforeMover){
     for (int i = 0; i < ns; i++){
       // in practice, removes particles from the PRA
       part[i].communicateAfterMover(vct);

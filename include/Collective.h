@@ -299,6 +299,7 @@ class Collective
     bool getAllowPMsgResize();
 
     bool getFluidLikeRep();
+    bool getRepopulateBeforeMover();
     /*! returns MLMDVerbose */
     bool getMLMDVerbose();
     /*! end MLMD gets */
@@ -577,7 +578,8 @@ class Collective
     
     /* wether to repopulate fluid-like or kinetically */
     bool FluidLikeRep;
-
+    /* wether to repopulate before or after the mover */
+    bool RepopulateBeforeMover;
     // end MLMD variables
     
 };

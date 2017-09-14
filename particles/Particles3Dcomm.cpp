@@ -811,7 +811,7 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   }
   // communicate contribution from ghost cells 
 
-  EMf->communicateGhostP2G(ns, bcPfaceXright, bcPfaceXleft, bcPfaceYright, bcPfaceYleft, bcPfaceZright, bcPfaceZleft, vct);
+  EMf->communicateGhostP2G(ns, bcPfaceXright, bcPfaceXleft, bcPfaceYright, bcPfaceYleft, bcPfaceZright, bcPfaceZleft, vct, grid);
 }
 
 /** communicate buffers */
@@ -1048,7 +1048,7 @@ int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
       BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
     
     if (ptVCT->getPERIODICX_P()) { xMin=-Lx; xMax=2*Lx; } // so periodic particles will stay in the system and be communicated    
-    else if ((bcPfaceXleft == -1 or bcPfaceXleft == -3) and CommToParent_P!= MPI_COMM_NULL) {
+    else if ((bcPfaceXleft == -1 or bcPfaceXleft == -3 or bcPfaceXleft == -4) and CommToParent_P!= MPI_COMM_NULL) {
       xMin= Coord_XLeft_End; xMax= Coord_XRight_Start;
     }
     else if (bcPfaceXleft == -2 and CommToParent_P!= MPI_COMM_NULL) {
@@ -1057,7 +1057,7 @@ int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
     else {xMin= 0; xMax= Lx;} // non periodic, non mlmd              
 
     if (ptVCT->getPERIODICY_P()) { yMin=-Ly; yMax=2*Ly; } // so periodic particles will stay in the system and be communicated    
-    else if ((bcPfaceYleft == -1 or bcPfaceYleft == -3) and CommToParent_P!= MPI_COMM_NULL) {
+    else if ((bcPfaceYleft == -1 or bcPfaceYleft == -3 or bcPfaceYleft == -4) and CommToParent_P!= MPI_COMM_NULL) {
       yMin= Coord_YLeft_End; yMax= Coord_YRight_Start;
     }
     else if (bcPfaceYleft == -2 and CommToParent_P!= MPI_COMM_NULL) {
@@ -1066,7 +1066,7 @@ int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
     else {yMin= 0; yMax= Ly;} // non periodic, non mlmd     
 
     if (ptVCT->getPERIODICZ_P()) { zMin=-Lz; zMax=2*Lz; } // so periodic particles will stay in the system and be communicated    
-    else if ((bcPfaceZleft == -1 or bcPfaceZleft == -3) and CommToParent_P!= MPI_COMM_NULL) {
+    else if ((bcPfaceZleft == -1 or bcPfaceZleft == -3 or bcPfaceZleft == -4) and CommToParent_P!= MPI_COMM_NULL) {
       zMin= Coord_ZLeft_End; zMax= Coord_ZRight_Start;
     }
     else if (bcPfaceZleft == -2 and CommToParent_P!= MPI_COMM_NULL) {
@@ -2917,7 +2917,7 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	// if i am inside any PRA (if i arrived here i am inside the extended domain)
 	bool Keep= false;
 	// i should really separate by direction but i will do that later
-	if (bcPfaceXleft== -1 ) { 
+	if (bcPfaceXleft== -1 or bcPfaceXleft== -4 ) { 
 	  /* this is when i repopulate all the PRA
 	     if you arrive here, you should be kept */
 	  Keep= true;
@@ -3667,20 +3667,190 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct, int NewSize){
   size_CRP= NewSize;
 }
 
+/*bool Particles3Dcomm::RepopulatedParticleHasEnteredRG(Grid* grid, double xTmp, double yTmp, double zTmp, double u, double v, double w){
+  // implementation based on the old mover //
+
+  const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+  const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+  // don't bother trying to push any particles simultaneously;                                                                          
+  // MIC already does vectorization automatically, and trying                                                                           
+  // to do it by hand only hurts performance.                                                                                           
+  double xp = xTmp;
+  double yp = yTmp;
+  double zp = zTmp;
+  double up = u;
+  double vp = v;
+  double wp = w;
+  const double xptilde = xTmp;
+  const double yptilde = yTmp;
+  const double zptilde = zTmp;
+  double uptilde;
+  double vptilde;
+  double wptilde;
+  // calculate the average velocity iteratively
+  for (int innter = 0; innter < NiterMover; innter++) {
+    // interpolation G-->P                                                                                                            
+    const double ixd = floor((xp - xstart) * inv_dx);
+    const double iyd = floor((yp - ystart) * inv_dy);
+    const double izd = floor((zp - zstart) * inv_dz);
+    int ix = 2 + int (ixd);
+    int iy = 2 + int (iyd);
+    int iz = 2 + int (izd);
+    if (ix < 1)
+      ix = 1;
+    if (iy < 1)
+      iy = 1;
+    if (iz < 1)
+      iz = 1;
+    if (ix > nxn - 1)
+      ix = nxn - 1;
+    if (iy > nyn - 1)
+      iy = nyn - 1;
+    if (iz > nzn - 1)
+      iz = nzn - 1;
+    
+    double xi  [2];
+    double eta [2];
+    double zeta[2];
+    
+    xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+    eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+    zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+    xi  [1] = grid->getXN(ix,iy,iz) - xp;
+    eta [1] = grid->getYN(ix,iy,iz) - yp;
+    zeta[1] = grid->getZN(ix,iy,iz) - zp;
+    
+    double Exl = 0.0;
+    double Eyl = 0.0;
+    double Ezl = 0.0;
+    double Bxl = 0.0;
+    double Byl = 0.0;
+    double Bzl = 0.0;
+    
+    const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+    const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+    const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+    const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+    const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+    const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+    const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+    const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+    //                                                                                                                                
+    Bxl += weight000 * (Bx[ix][iy][iz]             + Fext*Bx_ext[ix][iy][iz]);
+    Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Fext*Bx_ext[ix][iy][iz-1]);
+    Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Fext*Bx_ext[ix][iy-1][iz]);
+    Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Fext*Bx_ext[ix][iy-1][iz-1]);
+    Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Fext*Bx_ext[ix-1][iy][iz]);
+    Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Fext*Bx_ext[ix-1][iy][iz-1]);
+    Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Fext*Bx_ext[ix-1][iy-1][iz]);
+    Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Fext*Bx_ext[ix-1][iy-1][iz-1]);
+    //                                                                                                                                
+    Byl += weight000 * (By[ix][iy][iz]             + Fext*By_ext[ix][iy][iz]);
+    Byl += weight001 * (By[ix][iy][iz - 1]         + Fext*By_ext[ix][iy][iz-1]);
+    Byl += weight010 * (By[ix][iy - 1][iz]         + Fext*By_ext[ix][iy-1][iz]);
+    Byl += weight011 * (By[ix][iy - 1][iz - 1]     + Fext*By_ext[ix][iy-1][iz-1]);
+    Byl += weight100 * (By[ix - 1][iy][iz]         + Fext*By_ext[ix-1][iy][iz]);
+    Byl += weight101 * (By[ix - 1][iy][iz - 1]     + Fext*By_ext[ix-1][iy][iz-1]);
+    Byl += weight110 * (By[ix - 1][iy - 1][iz]     + Fext*By_ext[ix-1][iy-1][iz]);
+    Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + Fext*By_ext[ix-1][iy-1][iz-1]);
+    //                                                                                                                                
+    Bzl += weight000 * (Bz[ix][iy][iz]             + Fext*Bz_ext[ix][iy][iz]);
+    Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Fext*Bz_ext[ix][iy][iz-1]);
+    Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Fext*Bz_ext[ix][iy-1][iz]);
+    Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Fext*Bz_ext[ix][iy-1][iz-1]);
+    Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Fext*Bz_ext[ix-1][iy][iz]);
+    Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Fext*Bz_ext[ix-1][iy][iz-1]);
+    Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
+    Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
+    
+    Exl += weight000 * Ex[ix][iy][iz];
+    Exl += weight001 * Ex[ix][iy][iz - 1];
+    Exl += weight010 * Ex[ix][iy - 1][iz];
+    Exl += weight011 * Ex[ix][iy - 1][iz - 1];
+    Exl += weight100 * Ex[ix - 1][iy][iz];
+    Exl += weight101 * Ex[ix - 1][iy][iz - 1];
+    Exl += weight110 * Ex[ix - 1][iy - 1][iz];
+    Exl += weight111 * Ex[ix - 1][iy - 1][iz - 1];
+    //                                                                                                                                
+    Eyl += weight000 * Ey[ix][iy][iz];
+    Eyl += weight001 * Ey[ix][iy][iz - 1];
+    Eyl += weight010 * Ey[ix][iy - 1][iz];
+    Eyl += weight011 * Ey[ix][iy - 1][iz - 1];
+    Eyl += weight100 * Ey[ix - 1][iy][iz];
+    Eyl += weight101 * Ey[ix - 1][iy][iz - 1];
+    Eyl += weight110 * Ey[ix - 1][iy - 1][iz];
+    Eyl += weight111 * Ey[ix - 1][iy - 1][iz - 1];
+    
+    Ezl += weight000 * Ez[ix][iy][iz];
+    Ezl += weight001 * Ez[ix][iy][iz - 1];
+    Ezl += weight010 * Ez[ix][iy - 1][iz];
+    Ezl += weight011 * Ez[ix][iy - 1][iz - 1];
+    Ezl += weight100 * Ez[ix - 1][iy][iz];
+    Ezl += weight101 * Ez[ix - 1][iy][iz - 1];
+    Ezl += weight110 * Ez[ix - 1][iy - 1][iz];
+    Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
+    
+    // end interpolation                                                                                                              
+    const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
+    const double denom = 1.0 / (1.0 + omdtsq);
+    // solve the position equation                                                                                                    
+    //const double ut = up + qomdt2 * Exl;
+    //const double vt = vp + qomdt2 * Eyl;
+    //const double wt = wp + qomdt2 * Ezl;
+
+    const double ut = up - qomdt2 * Exl;
+    const double vt = vp - qomdt2 * Eyl;
+    const double wt = wp - qomdt2 * Ezl;
+    const double udotb = ut * Bxl + vt * Byl + wt * Bzl;
+    // solve the velocity equation                                                                                                    
+    //uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
+    //vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
+    //wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
+    uptilde = (ut - qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
+    vptilde = (vt - qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
+    wptilde = (wt - qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
+    // update position                                                                                                                
+    //xp = xptilde + uptilde * dto2;
+    //yp = yptilde + vptilde * dto2;
+    //zp = zptilde + wptilde * dto2;
+    xp = xptilde - uptilde * dto2;
+    yp = yptilde - vptilde * dto2;
+    zp = zptilde - wptilde * dto2;
+  }                          // end of iteration                                                                                     
+  // update the final position
+  //xp = xptilde + uptilde * dt;
+  //yp = yptilde + vptilde * dt;
+  //zp = zptilde + wptilde * dt;
+  xp = xptilde - uptilde * dt;
+  yp = yptilde - vptilde * dt;
+  zp = zptilde - wptilde * dt;
+ 
+
+  // if the reconstructed past particle was inside, kill it
+  if ((xp > Coord_XLeft_Start and xp < Coord_XRight_End) and (yp > Coord_YLeft_Start and yp < Coord_YRight_End) and (zp > Coord_ZLeft_Start and zp < Coord_ZRight_End) )
+  return false;
+
+  return true;
+ 
+
+}*/
+
 
 bool Particles3Dcomm::RepopulatedParticleHasEnteredRG(Grid* grid, double xTmp, double yTmp, double zTmp, double u, double v, double w){
+   // implementation based on the new mover; tested vs the implementation based on the old mover; they are the same
+
   // this is for repopulation method -2
   // i want to check if the repopulated particle has entered during the last dt
   // i return a false if the particle was already inside RG last dt
   // otherwise true
 
-  /* this method is too simplestic and does not work
-  double xB= xTmp- u*dt;
-  double yB= yTmp- v*dt;
-  double zB= zTmp- w*dt;
+  // this method is too simplestic and does not work
+  //double xB= xTmp- u*dt;
+  //double yB= yTmp- v*dt;
+  //double zB= zTmp- w*dt;
 
-  if ((xB > Coord_XLeft_Start and xB < Coord_XRight_End) and (yB > Coord_YLeft_Start and yB < Coord_YRight_End) and (zB > Coord_ZLeft_Start and zB < Coord_ZRight_End) )
-  return false;*/
+  //if ((xB > Coord_XLeft_Start and xB < Coord_XRight_End) and (yB > Coord_YLeft_Start and yB < Coord_YRight_End) and (zB > Coord_ZLeft_Start and zB < Coord_ZRight_End) )
+  //return false;
 
   // copied from mover BUT in the mover i have xn, vn and i want to go to xn+1 vn+1; here the opposite
   // so i have to put -'s (see calculations)
@@ -3741,9 +3911,9 @@ bool Particles3Dcomm::RepopulatedParticleHasEnteredRG(Grid* grid, double xTmp, d
       const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
       const double denom = 1.0 / (1.0 + omdtsq);
       // solve the position equation
-      /*const double ut = up + qomdt2 * Exl;
-      const double vt = vp + qomdt2 * Eyl;
-      const double wt = wp + qomdt2 * Ezl;*/
+      //const double ut = up + qomdt2 * Exl;
+      //const double vt = vp + qomdt2 * Eyl;
+      //const double wt = wp + qomdt2 * Ezl;
       // BACKWARDS
       const double ut = up - qomdt2 * Exl;
       const double vt = vp - qomdt2 * Eyl;
@@ -3751,17 +3921,17 @@ bool Particles3Dcomm::RepopulatedParticleHasEnteredRG(Grid* grid, double xTmp, d
 
       const double udotb = ut * Bxl + vt * Byl + wt * Bzl;
       // solve the velocity equation 
-      /*uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
-      vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
-      wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;*/
+      //uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
+      //vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
+      //wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
       // BACKWARDS
       uptilde = (ut - qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
       vptilde = (vt - qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
       wptilde = (wt - qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
       // update position
-      /*xp = xptilde + uptilde * dto2;
-      yp = yptilde + vptilde * dto2;
-      zp = zptilde + wptilde * dto2;*/
+      //xp = xptilde + uptilde * dto2;
+      //yp = yptilde + vptilde * dto2;
+      //zp = zptilde + wptilde * dto2;
       // BACKWARDS
       xp = xptilde - uptilde * dto2;
       yp = yptilde - vptilde * dto2;
@@ -3769,12 +3939,12 @@ bool Particles3Dcomm::RepopulatedParticleHasEnteredRG(Grid* grid, double xTmp, d
     }                           // end of iteration
     // update the final position and velocity
     // BACKWARDS -> i don't need velocity
-    /*up = 2.0 * uptilde - u[rest];
-    vp = 2.0 * vptilde - v[rest];
-    wp = 2.0 * wptilde - w[rest];
-    xp = xptilde + uptilde * dt_sub;
-    yp = yptilde + vptilde * dt_sub;
-    zp = zptilde + wptilde * dt_sub;*/
+    //up = 2.0 * uptilde - u[rest];
+    //vp = 2.0 * vptilde - v[rest];
+    //wp = 2.0 * wptilde - w[rest];
+    //xp = xptilde + uptilde * dt_sub;
+    //yp = yptilde + vptilde * dt_sub;
+    //zp = zptilde + wptilde * dt_sub;
     // BACKWARDS
     xp = xptilde - uptilde * dt_sub;
     yp = yptilde - vptilde * dt_sub;

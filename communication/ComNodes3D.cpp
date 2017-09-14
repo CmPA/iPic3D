@@ -726,6 +726,36 @@ void communicateCenterBoxStencilBC(int nx, int ny, int nz, double ***vector, int
   delete[]ghostZleftFace;
   // timeTasks.addto_communicate();
 }
+
+void communicateCenterBoxStencil(int nx, int ny, int nz, double ***vector,  VirtualTopology3D * vct) {
+  // timeTasks.start_communicate();
+  // allocate 6 ghost cell Faces
+  double *ghostXrightFace = new double[(ny - 2) * (nz - 2)];
+  double *ghostXleftFace = new double[(ny - 2) * (nz - 2)];
+  double *ghostYrightFace = new double[(nx - 2) * (nz - 2)];
+  double *ghostYleftFace = new double[(nx - 2) * (nz - 2)];
+  double *ghostZrightFace = new double[(nx - 2) * (ny - 2)];
+  double *ghostZleftFace = new double[(nx - 2) * (ny - 2)];
+  // apply boundary condition to 6 Ghost Faces and communicate if necessary to 6 processors: along 3 DIRECTIONS
+  makeCenterFace(nx, ny, nz, vector, ghostXrightFace, ghostXleftFace, ghostYrightFace, ghostYleftFace, ghostZrightFace, ghostZleftFace);
+    
+  communicateGhostFace((ny - 2) * (nz - 2), vct->getCartesian_rank(), vct->getXright_neighbor(), vct->getXleft_neighbor(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostXrightFace, ghostXleftFace, vct->getCommGrid());
+  communicateGhostFace((nx - 2) * (nz - 2), vct->getCartesian_rank(), vct->getYright_neighbor(), vct->getYleft_neighbor(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostYrightFace, ghostYleftFace, vct->getCommGrid());
+  communicateGhostFace((nx - 2) * (ny - 2), vct->getCartesian_rank(), vct->getZright_neighbor(), vct->getZleft_neighbor(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), ghostZrightFace, ghostZleftFace, vct->getCommGrid());
+  parseFace( vct, nx, ny, nz, vector, ghostXrightFace, ghostXleftFace, ghostYrightFace, ghostYleftFace, ghostZrightFace, ghostZleftFace);
+  
+ 
+
+  // deallocate
+  delete[]ghostXrightFace;
+  delete[]ghostXleftFace;
+  delete[]ghostYrightFace;
+  delete[]ghostYleftFace;
+  delete[]ghostZrightFace;
+  delete[]ghostZleftFace;
+  // timeTasks.addto_communicate();
+}
+
 // particles
 /** communicate ghost cells (FOR CENTERS) with BOX stencil*/
 void communicateCenterBoxStencilBC_P(int nx, int ny, int nz, double ***vector, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {

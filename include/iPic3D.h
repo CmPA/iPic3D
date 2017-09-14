@@ -116,6 +116,9 @@ namespace iPic3D {
     bool FluidLikeRep;
     //int MLMD_InitialInterpolation;
 
+    // to repopulate before the mover rather than later
+    bool RepopulateBeforeMover;
+
     /*! end mlmd variables */
 
     #ifdef __PETSC_SOLVER__
