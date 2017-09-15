@@ -534,6 +534,8 @@ bool c_Solver::ParticlesMover() {
 
       // comment during production
       //part[i].CheckSentReceivedParticles(vct);
+
+      part[i].MPI_Barrier_ParentChild(vct);
     }
   }
 

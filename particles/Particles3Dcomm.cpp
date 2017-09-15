@@ -462,6 +462,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   if (bcPfaceXleft== -1 )
     PRACells= 4;
 
+  PRACells= 4;
+  cout << "PRACells= " << PRACells << endl;
+
   // Index at which the PRA starts/ ends
   // 
   PRA_XLeft_Start= 0;
@@ -2482,7 +2485,7 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 	// CGSide_CGLeader_PBCSubset[ch] sends down to all RG grid cores involved in the communication
 	if (vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
 	  for (int i= 0; i< numRcv[ch]; i++){
-	    MPI_Isend(&MaxGrid_sizeCG_PBCMsg, 1, MPI_INT, RcvList[ch][i], 200, CommToChild_P[ch], &request);
+	    MPI_Isend(&MaxGrid_sizeCG_PBCMsg, 1, MPI_INT, RcvList[ch][i], 200+ns, CommToChild_P[ch], &request);
 	    MPI_Wait(&request, &status);
 	  }
 	}
@@ -2545,7 +2548,7 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct){
     if (AllowPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
       int NEW_sizePBCMsg;
       // as it is set now, each RG core receives a msg, so just do a rcv 
-      MPI_Recv(&NEW_sizePBCMsg, 1, MPI_INT, MPI_ANY_SOURCE, 200, CommToParent_P, &status);
+      MPI_Recv(&NEW_sizePBCMsg, 1, MPI_INT, MPI_ANY_SOURCE, 200+ns, CommToParent_P, &status);
 
       // in case, resize
       if (NEW_sizePBCMsg > sizeRG_PBCMsg){
