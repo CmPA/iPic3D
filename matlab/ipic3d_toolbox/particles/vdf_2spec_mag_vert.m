@@ -1,9 +1,14 @@
-addpath(genpath('../../ipic3d_toolbox'));
 
+close all
+clear all
+
+addpath(genpath('../../ipic3d_toolbox'));
 global Lx Ly Lz Xgsmrange Ygsmrange Zgsmrange dx dy dz XLEN YLEN ZLEN initial_time Nx Ny Nz
 
-%results_dir='/shared02/gianni/tred60/data1/';
-results_dir='/nobackup/glapenta/1mar08C/data3/';
+
+results_dir='/shared02/gianni/tred60/data1/';
+%results_dir='/nobackup/glapenta/1mar08C/data3/';
+results_dir='/Users/gianni/Documents/iPic3D-open/data/';
 results_dir='/data1/gianni/HRmaha3D3/restart/';
 
 filename=[results_dir 'settings.hdf'];
@@ -13,7 +18,7 @@ ZLEN=double(hdf5read(filename,'/topology/ZLEN'))
 Lx=double(hdf5read(filename,'/collective/Lx'))
 Ly=double(hdf5read(filename,'/collective/Ly'))
 Lz=double(hdf5read(filename,'/collective/Lz'))
-B0x=double(hdf5read(filename,'/collective/Bx0'))
+B0x=double(hdf5read(filename,'/collective/Bx0'));
 Nxc=double(hdf5read(filename,'/collective/Nxc'))
 Nyc=double(hdf5read(filename,'/collective/Nyc'))
 Nzc=double(hdf5read(filename,'/collective/Nzc'))
@@ -22,32 +27,38 @@ vth_ion=double(hdf5read(filename,'/collective/species_1/uth'))
 
 
 Dt=double(hdf5read(filename,'/collective/Dt'))
-
+% converting to physical units
+tail
 
 Xgsmrange= [-39.8 -8];
 Zgsmrange= [-10.8 5];
 Ygsmrange= [-4 15.8];
 
+%HRMaha3D3
+Xgsmrange= [-45 -15];
+Zgsmrange= [-8.7 3.3];
+Ygsmrange= [-3 9];
 
-ipx=XLEN/2;
-for  ipx=1:XLEN
+Zgsm=-3.2
+ipystart = round(YLEN * (Zgsm-Zgsmrange(1)) / (Zgsmrange(2)-Zgsmrange(1)) )
+for  ipy=ipystart:ipystart+1
+Xgsm=-32
+xcode=-(Xgsm-Xgsmrange(2))*Lx/(Xgsmrange(2)-Xgsmrange(1));
+ipx=round(xcode/Lx*XLEN)+1
 
-ipy=YLEN/2+1;
-ipz=ZLEN/2+1;
 
-ipy=7;ipz=10;
-%Ygsm=10
-Ygsm=11
-ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )
-Zgsm=1
-ipy = round(YLEN * (Zgsm-Zgsmrange(1)) / (Zgsmrange(2)-Zgsmrange(1)) )
+%1 mar08C
+%ipy=7;ipz=10;
+Ygsm=6
+ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )+1
+
 
 ip=(ipx-1)*YLEN*ZLEN+(ipy-1)*ZLEN+ipz-1;
 
 xmin=double(0+(ipx-1)*Lx/XLEN)
 xmax=double(xmin+Lx/XLEN)
 ymin=double(0+(ipy-1)*Ly/YLEN)
-ymax=double(ymin+double(Ly/YLEN))
+ymax=double(ymin+double(Ly/YLEN));
 zmin=double(0+(ipz-1)*Lz/ZLEN)
 zmax=double(zmin+double(Lz/ZLEN))
 
@@ -61,16 +72,17 @@ dz=double(zmax-zmin)/double(nz-1);
 
 [xg,yg,zg]=ndgrid(xmin:dx:xmax,ymin:dy:ymax,zmin:dz:zmax);
 
-close all
 
 
-for is=1:2
+for is=1:1
 
 if(mod(is,2)==0)
-vmax = .03/3;
+%vmax = .03/3;
+vmax=.07*3;
 vmin = -vmax;
 else
-vmax = .2/3;
+%vmax = .2/3;
+vmax=.1
 vmin = -vmax;
 end
 
@@ -109,7 +121,7 @@ byp=interpn(xg,yg,zg,permute(By,[3 2 1]),x,y,z);
 bzp=interpn(xg,yg,zg,permute(Bz,[3 2 1]),x,y,z);
 bp=sqrt(bxp.^2+byp.^2+bzp.^2);
 
-david=0;
+david=1;
 if(david)
 %David's coordinates
 bp2D=sqrt(bxp.^2+byp.^2);
@@ -134,11 +146,8 @@ u=squeeze(hdf5read(info.GroupHierarchy.Groups(3).Groups(is).Groups(2).Datasets(i
 v=squeeze(hdf5read(info.GroupHierarchy.Groups(3).Groups(is).Groups(3).Datasets(it)));
 w=squeeze(hdf5read(info.GroupHierarchy.Groups(3).Groups(is).Groups(4).Datasets(it)));
 
-
 upar=(u.*bxp+v.*byp+w.*bzp)./(bp+1e-10);
-uper=sqrt(u.^2+v.^2+w.^2-upar.^2);
 
-david=0;
 if(david)
 %David's coordinates
 uperp1=(byp.*u-bxp.*v)./bp2D;
@@ -147,44 +156,43 @@ else
 uperp1=perp1x.*u+perp1z.*w;
 uperp2=perp2x.*u+perp2y.*v+perp2z.*w;
 end
-
-uperp1=uperp1-mean(uperp1);
-uperp2=uperp2-mean(uperp2);
-
-Eper=(uperp1.^2+uperp2.^2)/2;
-theta=atan2(uperp2,uperp1);
-
 %
 %	Subdivide the processors
 %
-nsub=2;
-dxsub=(xmax-xmin)/nsub;
-dysub=(ymax-ymin)/nsub;
-dzsub=(zmax-zmin)/nsub;
+nsubx=4;
+nsuby=16;
+nsubz=4;
+dxsub=(xmax-xmin)/nsubx;
+dysub=(ymax-ymin)/nsuby;
+dzsub=(zmax-zmin)/nsubz;
 ixsub=floor((x-xmin)/dxsub);
 iysub=floor((y-ymin)/dysub);
 izsub=floor((z-zmin)/dzsub);
 
 % choose the desired subdomain in y ans z, from 0 to nsub-1
-suby=0;subz=0;
-for subx=0:nsub-1
+subx=0;subz=0;
+for suby=0:nsuby-1
 ii=(ixsub==subx)&(iysub==suby)&(izsub==subz);
 
-bxscan((ipx-1)*nsub+subx+1)=mean(bxp(ii));
-byscan((ipx-1)*nsub+subx+1)=mean(byp(ii));
-bzscan((ipx-1)*nsub+subx+1)=mean(bzp(ii));
-xscan((ipx-1)*nsub+subx+1)=gsmx(mean(x(ii)));
-yscan((ipx-1)*nsub+subx+1)=gsmx(mean(y(ii)));
-zscan((ipx-1)*nsub+subx+1)=gsmx(mean(z(ii)));
+bxscan((ipy-1)*nsuby+suby+1)=mean(bxp(ii));
+byscan((ipy-1)*nsuby+suby+1)=mean(byp(ii));
+bzscan((ipy-1)*nsuby+suby+1)=mean(bzp(ii));
+xscan((ipy-1)*nsuby+suby+1)=gsmx(mean(x(ii)));
+zscan((ipy-1)*nsuby+suby+1)=gsmy2z(mean(y(ii)));
+yscan((ipy-1)*nsuby+suby+1)=gsmz2y(mean(z(ii)));
+block=[std(x(ii)) std(z(ii)) std(y(ii))]
 
-ndiv=101;
-vdf_sp=spaziofasi3Dcyl(upar(ii),abs(uperp1(ii)),theta(ii),q(ii),vmin,vmax,0,vmax,0, 2*pi,ndiv);
-%vdf_sp=spaziofasi3Dcyl(upar(ii),Eper(ii)*2,theta(ii),q(ii),vmin,vmax,0,vmax^2/2,0, 2*pi,ndiv);
 
+%xscan((ipx-1)*nsub+subx+1)=gsmx(mean(x(ii)));
+%yscan((ipx-1)*nsub+subx+1)=gsmx(mean(y(ii)));
+%zscan((ipx-1)*nsub+subx+1)=gsmx(mean(z(ii)));
+
+ndiv=51;
+vdf_sp=spaziofasi3D(upar(ii),uperp1(ii),uperp2(ii),q(ii),vmin,vmax,ndiv);
 vdf_sp=vdf_sp./sum(vdf_sp(:));
 
 % converting to physical units
-tail
+%tail
 
 Qp=abs(sum(q(ii)));
 rho=Qp./(xmax-xmin)/(ymax-ymin)/(zmax-zmin);
@@ -197,6 +205,7 @@ vdf_sp=vdf_sp*rho*np/c^3;
 %         bxscan((ipx-1)*nsub+subx+1)*Bnorm,byscan((ipx-1)*nsub+subx+1)*Bnorm,bzscan((ipx-1)*nsub+subx+1)*Bnorm);
 
 
+%vdf_sp=smooth3(vdf_sp,'gaussian',3);
 vdf_sp=smooth3D(vdf_sp,3);
 vdf_sp=vdf_sp./sum(vdf_sp(:));
 dv=(vmax-vmin)/ndiv;
@@ -207,43 +216,43 @@ dv=(vmax-vmin)/ndiv;
 
 
 
-global labelT square
+global labelT symmetric_color color_choice
 labelT='x/R_E=';
+labelT='x/d_i=';
+labelT=' ';
+symmetric_color=0;
+color_choice=0;
 
-global square color_choice symmetric_color
-square = 0
-symmetric_color=0
-color_choice=0
-immagine_dir([vmin vmax],[0 vmax],(1e-10+squeeze(sum(vdf_sp,3))), ...
-             ['vdfXY_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
-             [0 1.5e-3],0,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'v_{||}/c','v_{\perp}/c','vdf');
+% for 101x101 plots
+if(is==1)
+crange=[-8 -2];
+else
+crange=[-8 -2];
+end 
+crange=[-6 -2];
 
+pos_label = ['Npart=' num2str(sum(ii)) '  X=' num2str(xscan((ipy-1)*nsuby+suby+1)) '  Y=' num2str(yscan((ipy-1)*nsuby+suby+1)) '  Z=' num2str(zscan((ipy-1)*nsuby+suby+1))];
 
+immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,3))), ...
+             ['vdfParPerp_' 'species_' num2str(is) '_' num2str(ipy*nsuby+suby)], ...
+             crange,0,pos_label,max(size(q(ii))),1,'v_{||}/c','v_{\perp 1}/c','vdf');
 
-vdf_sp=spaziofasi3Dcyl(upar(ii),uper(ii),theta(ii),q(ii),vmin,vmax,0, vmax, 0, 2*pi,ndiv);
-vdf_sp=vdf_sp./sum(vdf_sp(:));
+%immagine_dir([vmin vmax],[vmin vmax],(1e-10+squeeze(sum(vdf_sp,2))+squeeze(sum(vdf_sp,3)))/2, ...
+%             ['vdfXZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
+%             [0 0],0,num2str(xscan((ipx-1)*nsub+subx+1)),max(size(q(ii))),1,'v_{||}/c','v_{\perp,avg}/c','vdf');
 
-vdf_sp=vdf_sp*rho*np/c^3;
-
-vdf_sp=smooth3D(vdf_sp,6);
-vdf_sp=vdf_sp./sum(vdf_sp(:));
-
-
-valore=(1e-10+squeeze(sum(vdf_sp,1)));
-valmean=repmat(mean(valore,2),1,ndiv);
-valore=(valore-valmean)./valmean;
-
-symmetric_color=0
-color_choice=1
-immagine_dir([-1 1], [0 1],valore', ...
-             ['vdfYZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
-             [-1 1],3,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'\theta_{gyro}/\pi','E_{\perp }/E_{max}','vdf');
+immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,1))), ...
+             ['vdfPerp1Perp2_' 'species_' num2str(is) '_' num2str(ipy*nsuby+suby)], ...
+             crange,0,pos_label,max(size(q(ii))),2,'v_{\perp 1}/c','v_{\perp 2}/c','vdf');
 end
 
 
-plot(xscan,bxscan,xscan,byscan,xscan,bzscan)
+
+end
+
+end
+figure(3)
+ii=zscan~=0;
+plot(zscan(ii),bxscan(ii),zscan(ii),byscan(ii),zscan(ii),bzscan(ii))
 legend('Bx','By','Bz') 
 print -dpng scanni.png
-end
-
-end

@@ -6,9 +6,9 @@ load cm_multi4
 
 J=smooth(J1,Nsm);
 
-h=figure(nfig)
+h=figure(nfig);
 %set(h,'Position',[167 51 500*max(x)/max(y)*1.2 500])
-Ncut=max(Nsm*3,1)
+Ncut=max(Nsm*3,1);
 
 if(lmt(1) == lmt(2))
 lmt(1)=min(J(:));
@@ -28,10 +28,11 @@ lmt(1)=0.0
 end
 end
 
-imagesc(x,y,J(Ncut:end-Ncut,Ncut:end-Ncut)',lmt)
+ax=imagesc(x,y,J(Ncut:end-Ncut,Ncut:end-Ncut)',lmt);
 %[nx,ny]=size(J(Ncut:end-Ncut,Ncut:end-Ncut)')
 %v=linspace(min(lmt),max(lmt),20)
-%contourf(linspace(min(y),max(y),ny),linspace(min(x),max(x),nx),J(Ncut:end-Ncut,Ncut:end-Ncut)',v)
+%ax=contourf(linspace(min(y),max(y),ny),linspace(min(x),max(x),nx),J(Ncut:end-Ncut,Ncut:end-Ncut)',v)
+
 
         if(color_choice==0)
         colormap jet
@@ -46,7 +47,7 @@ imagesc(x,y,J(Ncut:end-Ncut,Ncut:end-Ncut)',lmt)
         end
         
         
-        c = colorbar
+        c = colorbar;
         ylabel(c,labelc)
         set(gca,'fontsize',[14])
 set(gca,'fontsize',[14])
@@ -59,6 +60,17 @@ title([labelT Ncycle ], 'fontsize',[14])
         
 %axis image
 axis xy
+axis square
+
+
+
+grid on
+ax=gca;
+ax.GridColor='w';
+ax.GridAlpha=1;
+ax.YTick=ax.XTick;
+%ax.LineWidth=1;
+
 %set(gca,'xdir','reverse','TickDir','out')
 %set(gca,'TickDir','out')
 %print('-depsc','-r300',[name '.eps'])

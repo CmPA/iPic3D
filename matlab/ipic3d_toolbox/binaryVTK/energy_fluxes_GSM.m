@@ -2,15 +2,18 @@ close all
 addpath(genpath('~/iPic3D/matlab/ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
-%HRmaha3D3
-%BOW25
-TRED60
+
 
 for cycle=20010:1000:20010
 
     ncycle = num2str(cycle,'%06d');
-leggo=2; poynting=1; ions=1; electrons=1;saveVTK=0
+leggo=2; poynting=1; ions=1; electrons=1;saveVTK=0;
 if(leggo==2)
+    
+    %HRmaha3D3
+%BOW25
+TRED60
+    
     namefile = 'GEM-Fields';
     fn=[dir,namefile,'_',ncycle,'.h5'];
 
@@ -77,7 +80,9 @@ if(leggo==2)
 end
 
 if(leggo==1)
-
+%HRmaha3D3
+%BOW25
+TRED60
 
 [Bx,By,Bz,Nx,Ny,Nz]=read_binVTK_vector(dir,'B',cycle);
 [Ex,Ey,Ez,Nx,Ny,Nz]=read_binVTK_vector(dir,'E',cycle);
@@ -169,7 +174,7 @@ if(poynting)
 
 [Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
 
-divS = compute_div(Sx,Sy,Sz);
+divS = compute_div(x,y,z,Sx,Sy,Sz);
 
 Sx=Sx*code_E*code_B/mu0;
 Sy=Sy*code_E*code_B/mu0;
@@ -200,13 +205,13 @@ tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),-mean(Qbulkex(ir,jr,kr),3)*mWm2
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qbulkey(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qbulkez Y=' num2str(gsmz2y(z(1,1,iz)))],'Qbulkez',[-1 1]*0e-9, Nsm, 3+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qbulkez(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qbulkey Y=' num2str(gsmz2y(z(1,1,iz)))],'Qbulkey',[-1 1]*0e-9, Nsm, 4+iz);
 
-divQbulke = compute_div(Qbulkex,Qbulkey,Qbulkez);
+divQbulke = compute_div(x,y,z,Qbulkex,Qbulkey,Qbulkez);
 
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),-mean(Qenthex(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qenthex Y=' num2str(gsmz2y(z(1,1,iz)))],'Qenthex',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qenthey(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qenthez Y=' num2str(gsmz2y(z(1,1,iz)))],'Qenthez',[-1 1]*0e-9, Nsm, 3+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qenthez(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qenthey Y=' num2str(gsmz2y(z(1,1,iz)))],'Qenthey',[-1 1]*0e-9, Nsm, 4+iz);
 
-divQenthe = compute_div(Qenthex,Qenthey,Qenthez);
+divQenthe = compute_div(x,y,z,Qenthex,Qenthey,Qenthez);
 
 Qenthepar= dot(Qenthex,Qenthey,Qenthez,Bx,By,Bz)./B;
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qenthepar(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qenthe || Y=' num2str(gsmz2y(z(1,1,iz)))],'Qenthepar',[-1 1]*0e-9, Nsm, 2+iz);
@@ -227,15 +232,15 @@ tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),-mean(Qhfex(ir,jr,kr),3)*mWm2,A
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qhfey(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qhfez Y=' num2str(gsmz2y(z(1,1,iz)))],'Qhfez',[-1 1]*0e-9, Nsm, 3+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qhfez(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qhfey Y=' num2str(gsmz2y(z(1,1,iz)))],'Qhfey',[-1 1]*0e-9, Nsm, 4+iz);
 
-divQhfe = compute_div(Qhfex,Qhfey,Qhfez);
+divQhfe = compute_div(x,y,z,Qhfex,Qhfey,Qhfez);
 
-udivPe = compute_udivP(Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Jex,Jey,Jez, rhoe)
+udivPe = compute_udivP(x,y,z,Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Jex,Jey,Jez, rhoe);
 Nsm=10
 labelc = 'nW/m^3';
 %tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(UdivPi(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['UdivPi Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPi',[-1 1]*0e-9, Nsm, 2+iz);
 %tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(UdivPe(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['UdivPe Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPe',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JedotEsm(ir,jr,kr),3)*nWm3,AAz(ir,jr),['JeE Y=' num2str(gsmz2y(z(1,1,iz)))],'JeE',[-1 1]*0e-10, Nsm,1+iz);
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQbuke(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQbulke Y=' num2str(gsmz2y(z(1,1,iz)))],'divQbulke',[-1 1]*0e-10, Nsm,1+iz);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQbulke(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQbulke Y=' num2str(gsmz2y(z(1,1,iz)))],'divQbulke',[-1 1]*0e-10, Nsm,1+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQenthe(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQenthe Y=' num2str(gsmz2y(z(1,1,iz)))],'divQenthe',[-1 1]*0e-10, Nsm,1+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQhfe(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQhfe Y=' num2str(gsmz2y(z(1,1,iz)))],'divQhfe',[-1 1]*0e-10, Nsm,1+iz);
 
@@ -251,9 +256,9 @@ tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),-mean(Qenthix(ir,jr,kr),3)*mWm2
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qenthiy(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qenthiz Y=' num2str(gsmz2y(z(1,1,iz)))],'Qenthiz',[-1 1]*0e-9, Nsm, 3+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qenthiz(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qenthiy Y=' num2str(gsmz2y(z(1,1,iz)))],'Qenthiy',[-1 1]*0e-9, Nsm, 4+iz);
 
-divQbulki = compute_div(Qbulkix,Qbulkiy,Qbulkiz);
+divQbulki = compute_div(x,y,z,Qbulkix,Qbulkiy,Qbulkiz);
 
-divQenthi = compute_div(Qenthix,Qenthiy,Qenthiz);
+divQenthi = compute_div(x,y,z,Qenthix,Qenthiy,Qenthiz);
 
 Qenthipar= dot(Qenthix,Qenthiy,Qenthiz,Bx,By,Bz)./B;
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qenthipar(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qenthi || Y=' num2str(gsmz2y(z(1,1,iz)))],'Qenthipar',[-1 1]*0e-9, Nsm, 2+iz);
@@ -274,15 +279,15 @@ tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),-mean(Qhfix(ir,jr,kr),3)*mWm2,A
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qhfiy(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qhfiz Y=' num2str(gsmz2y(z(1,1,iz)))],'Qhfiz',[-1 1]*0e-9, Nsm, 3+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qhfiz(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qhfiy Y=' num2str(gsmz2y(z(1,1,iz)))],'Qhfiy',[-1 1]*0e-9, Nsm, 4+iz);
 
-divQhfi = compute_div(Qhfix,Qhfiy,Qhfiz);
+divQhfi = compute_div(x,y,z,Qhfix,Qhfiy,Qhfiz);
 
-udivPi = compute_udivP(Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Jix,Jiy,Jiz, rhoi)
+udivPi = compute_udivP(x,y,z,Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Jix,Jiy,Jiz, rhoi);
 
 Nsm=10
 labelc = 'nW/m^3';
 %tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(UdivPi(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['UdivPi Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPi',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JidotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['JiE Y=' num2str(gsmz2y(z(1,1,iz)))],'JiE',[-1 1]*0e-10, Nsm,1+iz);
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQbuki(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQbulki Y=' num2str(gsmz2y(z(1,1,iz)))],'divQbulki',[-1 1]*0e-10, Nsm,1+iz);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQbulki(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQbulki Y=' num2str(gsmz2y(z(1,1,iz)))],'divQbulki',[-1 1]*0e-10, Nsm,1+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQenthi(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQenthi Y=' num2str(gsmz2y(z(1,1,iz)))],'divQenthi',[-1 1]*0e-10, Nsm,1+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQhfi(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQhfi Y=' num2str(gsmz2y(z(1,1,iz)))],'divQhfi',[-1 1]*0e-10, Nsm,1+iz);
 

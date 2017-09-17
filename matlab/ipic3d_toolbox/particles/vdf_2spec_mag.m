@@ -6,6 +6,7 @@ close all
 results_dir='/shared02/gianni/tred60/data1/';
 %results_dir='/nobackup/glapenta/1mar08C/data3/';
 results_dir='/Users/gianni/Documents/iPic3D-open/data/';
+results_dir='/data1/gianni/HRmaha3D3/restart/';
 
 filename=[results_dir 'settings.hdf'];
 XLEN=double(hdf5read(filename,'/topology/XLEN'))
@@ -29,20 +30,23 @@ Xgsmrange= [-39.8 -8];
 Zgsmrange= [-10.8 5];
 Ygsmrange= [-4 15.8];
 
+%HRMaha3D3
+Xgsmrange= [-45 -15];
+Zgsmrange= [-8.7 3.3];
+Ygsmrange= [-3 9];
 
-ipx=XLEN/2;
-for  ipx=1:XLEN
+Xgsm=-28
+xcode=-(Xgsm-Xgsmrange(2))*Lx/(Xgsmrange(2)-Xgsmrange(1));
+ipxstart=round(xcode/Lx*XLEN)
+for  ipx=ipxstart:XLEN
 
-ipy=YLEN/2+1;
-ipz=ZLEN/2+1;
-ipz=1
 
 %1 mar08C
 %ipy=7;ipz=10;
-%Ygsm=11
-%ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )
-%Zgsm=1
-%ipy = round(YLEN * (Zgsm-Zgsmrange(1)) / (Zgsmrange(2)-Zgsmrange(1)) )
+Ygsm=6
+ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )+1
+Zgsm=-3.2
+ipy = round(YLEN * (Zgsm-Zgsmrange(1)) / (Zgsmrange(2)-Zgsmrange(1)) )
 
 ip=(ipx-1)*YLEN*ZLEN+(ipy-1)*ZLEN+ipz-1;
 
@@ -73,7 +77,7 @@ vmax=.07*3;
 vmin = -vmax;
 else
 %vmax = .2/3;
-vmax=.4
+vmax=.1
 vmin = -vmax;
 end
 
@@ -150,9 +154,9 @@ end
 %
 %	Subdivide the processors
 %
-nsubx=8;
+nsubx=2;
 nsuby=4;
-nsubz=1;
+nsubz=2;
 dxsub=(xmax-xmin)/nsubx;
 dysub=(ymax-ymin)/nsuby;
 dzsub=(zmax-zmin)/nsubz;
@@ -169,9 +173,9 @@ bxscan((ipx-1)*nsubx+subx+1)=mean(bxp(ii));
 byscan((ipx-1)*nsubx+subx+1)=mean(byp(ii));
 bzscan((ipx-1)*nsubx+subx+1)=mean(bzp(ii));
 
-xscan((ipx-1)*nsubx+subx+1)=(mean(x(ii)));
-yscan((ipx-1)*nsubx+subx+1)=(mean(y(ii)));
-zscan((ipx-1)*nsubx+subx+1)=(mean(z(ii)));
+xscan((ipx-1)*nsubx+subx+1)=gsmx(mean(x(ii)));
+zscan((ipx-1)*nsubx+subx+1)=gsmy2z(mean(y(ii)));
+yscan((ipx-1)*nsubx+subx+1)=gsmz2y(mean(z(ii)));
 
 
 %xscan((ipx-1)*nsub+subx+1)=gsmx(mean(x(ii)));
@@ -196,6 +200,7 @@ vdf_sp=vdf_sp*rho*np/c^3;
 %         bxscan((ipx-1)*nsub+subx+1)*Bnorm,byscan((ipx-1)*nsub+subx+1)*Bnorm,bzscan((ipx-1)*nsub+subx+1)*Bnorm);
 
 
+%vdf_sp=smooth3(vdf_sp,'gaussian',3);
 vdf_sp=smooth3D(vdf_sp,3);
 vdf_sp=vdf_sp./sum(vdf_sp(:));
 dv=(vmax-vmin)/ndiv;
@@ -209,8 +214,9 @@ dv=(vmax-vmin)/ndiv;
 global labelT
 labelT='x/R_E=';
 labelT='x/d_i=';
+labelT=' ';
 symmetric_color=0
-color_choice=4
+color_choice=0
 
 % for 101x101 plots
 if(is==1)
@@ -218,11 +224,13 @@ crange=[-8 -2];
 else
 crange=[-8 -2];
 end 
-crange=[-6 -2];
+crange=[-6 -3];
+
+pos_label = ['Npart=' num2str(sum(ii)) '  X=' num2str(xscan((ipx-1)*nsubx+subx+1)) '  Y=' num2str(yscan((ipx-1)*nsubx+subx+1)) '  Z=' num2str(zscan((ipx-1)*nsubx+subx+1))]
 
 immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,3))), ...
              ['vdfParPerp_' 'species_' num2str(is) '_' num2str(ipx*nsubx+subx)], ...
-             crange,0,num2str(xscan((ipx-1)*nsubx+subx+1)),max(size(q(ii))),1,'v_{||}/c','v_{\perp 1}/c','vdf');
+             crange,0,pos_label,max(size(q(ii))),1,'v_{||}/c','v_{\perp 1}/c','vdf');
 
 %immagine_dir([vmin vmax],[vmin vmax],(1e-10+squeeze(sum(vdf_sp,2))+squeeze(sum(vdf_sp,3)))/2, ...
 %             ['vdfXZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
@@ -230,7 +238,7 @@ immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,3))), ...
 
 immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,1))), ...
              ['vdfPerp1Perp2_' 'species_' num2str(is) '_' num2str(ipx*nsubx+subx)], ...
-             crange,0,num2str(xscan((ipx-1)*nsubx+subx+1)),max(size(q(ii))),2,'v_{\perp 1}/c','v_{\perp 2}/c','vdf');
+             crange,0,pos_label,max(size(q(ii))),2,'v_{\perp 1}/c','v_{\perp 2}/c','vdf');
 end
 
 
