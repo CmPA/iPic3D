@@ -307,6 +307,8 @@ void Collective::ReadInput(string inputfile) {
     MLMD_fixBCenters = config.read < bool > ("MLMD_fixBCenters");
 
     AllowPMsgResize= config.read < bool > ("AllowPMsgResize");
+    PRA = config.read < int > ("PRA");
+    Buf = config.read < int > ("Buf");
     //cout << "MLMD_BC: " << MLMD_BC <<endl;
     
     // end MLMD reads
@@ -582,18 +584,8 @@ void Collective::ReadInput(string inputfile) {
       bcPfaceZleft[1]= bcPfaceZleft0.b;
       bcPfaceZright[1]= bcPfaceZright0.b;
 
-      // here, if particle periodicity is specified as periodic, I change PBC to 0, not to active MLMDPBC
       int N=1;
-      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-
+      
       if (FluidLikeRep or bcPfaceXleft[N]==-3 or bcPfaceXright[N]==-3 or bcPfaceYleft[N]==-3 or bcPfaceYright[N]==-3 or bcPfaceZleft[N]==-3 or bcPfaceZright[N]==-3){
 
 	FluidLikeRep= true;
@@ -618,7 +610,19 @@ void Collective::ReadInput(string inputfile) {
 	bcPfaceZright[N]=-4;
       }
 
-      
+      // here, if particle periodicity is specified as periodic, I change PBC to 0, not to active MLMDPBC 
+      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+	RepopulateBeforeMover= false;
+	FluidLikeRep= false;
+      }
+      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+
 
     }
 
@@ -631,61 +635,6 @@ void Collective::ReadInput(string inputfile) {
       bcPfaceZright[2]= bcPfaceZright0.c;
 
       int N=2;
-      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-
-      
-      if (FluidLikeRep or bcPfaceXleft[N]==-3 or bcPfaceXright[N]==-3 or bcPfaceYleft[N]==-3 or bcPfaceYright[N]==-3 or bcPfaceZleft[N]==-3 or bcPfaceZright[N]==-3){
-
-	FluidLikeRep= true;
-	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
-	bcPfaceXleft[N]=-3;
-	bcPfaceXright[N]=-3;
-	bcPfaceYleft[N]=-3;
-	bcPfaceYright[N]=-3;
-	bcPfaceZleft[N]=-3;
-	bcPfaceZright[N]=-3;
-      }
-
-      if (RepopulateBeforeMover or bcPfaceXleft[N]==-4 or bcPfaceXright[N]==-4 or bcPfaceYleft[N]==-4 or bcPfaceYright[N]==-4 or bcPfaceZleft[N]==-4 or bcPfaceZright[N]==-4){
-
-	RepopulateBeforeMover= true;
-	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
-	bcPfaceXleft[N]=-4;
-	bcPfaceXright[N]=-4;
-	bcPfaceYleft[N]=-4;
-	bcPfaceYright[N]=-4;
-	bcPfaceZleft[N]=-4;
-	bcPfaceZright[N]=-4;
-      }
-
-    }
-
-    if (Ngrids >3) {
-      bcPfaceXleft[3]= bcPfaceXleft0.d;
-      bcPfaceXright[3]= bcPfaceXright0.d;
-      bcPfaceYleft[3]= bcPfaceYleft0.d;
-      bcPfaceYright[3]= bcPfaceYright0.d;
-      bcPfaceZleft[3]= bcPfaceZleft0.d;
-      bcPfaceZright[3]= bcPfaceZright0.d;
-
-      int N=3;
-      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
             
       if (FluidLikeRep or bcPfaceXleft[N]==-3 or bcPfaceXright[N]==-3 or bcPfaceYleft[N]==-3 or bcPfaceYright[N]==-3 or bcPfaceZleft[N]==-3 or bcPfaceZright[N]==-3){
 
@@ -710,6 +659,67 @@ void Collective::ReadInput(string inputfile) {
 	bcPfaceZleft[N]=-4;
 	bcPfaceZright[N]=-4;
       }
+
+      // here, if particle periodicity is specified as periodic, I change PBC to 0, not to active MLMDPBC 
+      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+	RepopulateBeforeMover= false;
+	FluidLikeRep= false;
+      }
+      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+
+    }
+
+    if (Ngrids >3) {
+      bcPfaceXleft[3]= bcPfaceXleft0.d;
+      bcPfaceXright[3]= bcPfaceXright0.d;
+      bcPfaceYleft[3]= bcPfaceYleft0.d;
+      bcPfaceYright[3]= bcPfaceYright0.d;
+      bcPfaceZleft[3]= bcPfaceZleft0.d;
+      bcPfaceZright[3]= bcPfaceZright0.d;
+
+      int N=3;
+            
+      if (FluidLikeRep or bcPfaceXleft[N]==-3 or bcPfaceXright[N]==-3 or bcPfaceYleft[N]==-3 or bcPfaceYright[N]==-3 or bcPfaceZleft[N]==-3 or bcPfaceZright[N]==-3){
+
+	FluidLikeRep= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-3;
+	bcPfaceXright[N]=-3;
+	bcPfaceYleft[N]=-3;
+	bcPfaceYright[N]=-3;
+	bcPfaceZleft[N]=-3;
+	bcPfaceZright[N]=-3;
+      }
+
+      if (RepopulateBeforeMover or bcPfaceXleft[N]==-4 or bcPfaceXright[N]==-4 or bcPfaceYleft[N]==-4 or bcPfaceYright[N]==-4 or bcPfaceZleft[N]==-4 or bcPfaceZright[N]==-4){
+
+	RepopulateBeforeMover= true;
+	// and now be sure also the others are at -3, otherwise problems in communicateAfterMover
+	bcPfaceXleft[N]=-4;
+	bcPfaceXright[N]=-4;
+	bcPfaceYleft[N]=-4;
+	bcPfaceYright[N]=-4;
+	bcPfaceZleft[N]=-4;
+	bcPfaceZright[N]=-4;
+      }
+// here, if particle periodicity is specified as periodic, I change PBC to 0, not to active MLMDPBC 
+      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+	RepopulateBeforeMover= false;
+	FluidLikeRep= false;
+      }
+      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
     }
 
     if (Ngrids >4) {
@@ -721,15 +731,6 @@ void Collective::ReadInput(string inputfile) {
       bcPfaceZright[4]= bcPfaceZright0.e;
 
       int N=4;
-      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
-      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
-	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
-      }
 
       if (FluidLikeRep or bcPfaceXleft[N]==-3 or bcPfaceXright[N]==-3 or bcPfaceYleft[N]==-3 or bcPfaceYright[N]==-3 or bcPfaceZleft[N]==-3 or bcPfaceZright[N]==-3){
 
@@ -753,6 +754,19 @@ void Collective::ReadInput(string inputfile) {
 	bcPfaceYright[N]=-4;
 	bcPfaceZleft[N]=-4;
 	bcPfaceZright[N]=-4;
+      }
+
+      // here, if particle periodicity is specified as periodic, I change PBC to 0, not to active MLMDPBC 
+      if (PERIODICX_P_mlmd[N]== 1) {bcPfaceXleft[N]= 0;  bcPfaceXright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+	RepopulateBeforeMover= false;
+	FluidLikeRep= false;
+      }
+      if (PERIODICY_P_mlmd[N]== 1) {bcPfaceYleft[N]= 0;  bcPfaceYright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
+      }
+      if (PERIODICZ_P_mlmd[N]== 1) {bcPfaceZleft[N]= 0;  bcPfaceZright[N]= 0;
+	cout << "ReadInput: since grid " << N <<" has periodic PBC, your preference for particle boundary condition has been overridden to periodic" <<endl;
       }
     }
       
@@ -784,6 +798,17 @@ void Collective::ReadInput(string inputfile) {
 
   /*! this will be eventually in inputfile */
   MLMDVerbose = true; 
+
+
+  if (RepopulateBeforeMover){
+    MLMD_fixBCenters= true;
+    MLMD_BCBufferArea= true;
+    // Buf nodes are on top of ghost and active; to move repopulated particles in completely interpolated fields, reset Buf
+    Buf= PRA-1; 
+
+    cout << "If particles are repopulated before the mover, I force MLMD_fixBCenters and MLMD_BCBufferArea to true, irrespectively of their inputfiel values " << endl;
+    cout << "Also, i force Buf = PRA-1 (consider ghost and active)" << endl;
+  }
 
 }
 /*! Read the collective information from the RESTART file in HDF5 format There are three restart status: restart_status = 0 ---> new inputfile restart_status = 1 ---> RESTART and restart and result directories does not coincide restart_status = 2 ---> RESTART and restart and result directories coincide */
@@ -1089,7 +1114,6 @@ Collective::Collective(int argc, char **argv) {
   // here, I calculate the grid number (in a rather crude way, by rank)
   // and then I propagate it to VCtolopoly
 
-  // QUI
   int * comulativeSize= new int[Ngrids];
   LowestRankOfGrid= new int[Ngrids];
   HighestRankOfGrid= new int[Ngrids];
@@ -1879,6 +1903,8 @@ bool Collective::getMLMD_fixBCenters() {return MLMD_fixBCenters;}
 bool Collective::getAllowPMsgResize() {return AllowPMsgResize;}
 bool Collective::getFluidLikeRep() {return FluidLikeRep;}
 bool Collective::getRepopulateBeforeMover() {return RepopulateBeforeMover;}
+int Collective::getPRA() {return PRA;}
+int Collective::getBuf() {return Buf;}
 
 /*! end MLMD gets */
 /*! a first sanity check on MLMD inputs, called at the end of the constructor */

@@ -395,6 +395,11 @@ public:
       this->output_adaptor.write("/collective/c", _col->getC());
       this->output_adaptor.write("/collective/Smooth", _col->getSmooth());
 
+      /** adding PRA and Buf **/
+      this->output_adaptor.write("/collective/PRA", _col->getPRA());
+      this->output_adaptor.write("/collective/Buf", _col->getBuf());
+      /** end adding PRA and Buf **/
+
       this->output_adaptor.write("/collective/bc/PfaceXright", _col->getBcPfaceXright());
       this->output_adaptor.write("/collective/bc/PfaceXleft", _col->getBcPfaceXleft());
       this->output_adaptor.write("/collective/bc/PfaceYright", _col->getBcPfaceYright());
@@ -574,6 +579,7 @@ public:
     if (tag.find("rhos", 0) != string::npos) {
 
       for (int i = 0; i < ns; ++i) {
+      //for (int i = 0; i < 8; i++){ // this is for debug
         stringstream ii;
         ii << i;
         this->output_adaptor.write("/moments/species_" + ii.str() + "/rho/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getRHOns());

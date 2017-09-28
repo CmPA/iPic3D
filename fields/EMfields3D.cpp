@@ -255,9 +255,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   RFz= DzP/dz;
 
   /* length over which to do the buffering */
-  BufX=  ceil(RFx);
-  BufY=  ceil(RFy);
-  BufZ=  ceil(RFz);
+  BufX= col->getBuf();
+  BufY= col->getBuf();
+  BufZ= col->getBuf();
 
   // NB: one cell in the inputfile means nzn=4
   if ((ceil(RFx) > nxn-1 and nxn>4)  or (ceil(RFy) > nyn-1 and nyn>4) or (ceil(RFz) > nzn-1 and nzn>4)){
@@ -265,10 +265,15 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
     MPI_Abort(MPI_COMM_WORLD, -1);
   }
 
-  // wether to smooth RG BC before applying them
-  SmoothRGBC = true;
-
   BSNeeded= false;
+
+
+  RepopulateBeforeMover= col->getRepopulateBeforeMover();
+
+  if (vct->getCartesian_rank() == 0){
+    cout << "Grid " << numGrid <<", nxn= " << nxn << " ,BufX= " << BufX <<", nyn= " << nyn << " ,BufY= "<< BufY <<", nzn= " << nzn << " ,BufZ= "<< BufZ << endl;
+  }
+
 
 }
 
@@ -340,14 +345,14 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
     
     //AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
     
-    if (MLMD_BCBufferArea){
-      //  setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+    /*if (MLMD_BCBufferArea){
+      setBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
       
-      AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      //AverageBC_Nodes(vct, Bxn, Byn, Bzn, Bxn_Buffer_BC, Byn_Buffer_BC, Bzn_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
       NcellsX= BufX;
       NcellsY= BufY;
       NcellsZ= BufZ;
-    }
+      }*/
     
     communicateNode(nxn, nyn, nzn, Bxn, vct);
     communicateNode(nxn, nyn, nzn, Byn, vct);
@@ -387,9 +392,10 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   phys2solver(xkrylov, Ex, Ey, Ez, nxn, nyn, nzn);
   // solver
 
+  if (Case!="MAX_Show_RG_BC"){
+    GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this);
+  }
 
-  GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this);
-  
   endEcalc(xkrylov, grid, vct, col);
 
   // deallocate temporary arrays
@@ -412,9 +418,10 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
     smoothFaces(Smooth, Eyth, grid, vct, 1);
     smoothFaces(Smooth, Ezth, grid, vct, 1);*/
 
+    
     if (MLMD_BCBufferArea){
-      //setBC_Nodes_TwoLess(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
-      AverageBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      setBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+      //AverageBC_Nodes(vct, Exth, Eyth, Ezth, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
     }
 
 
@@ -470,6 +477,10 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
 
      setBC_Nodes(vct, Ex, Ey, Ez, Ex_Active_BC, Ey_Active_BC, Ez_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active); 
      setBC_Nodes(vct, Ex, Ey, Ez, Ex_Ghost_BC, Ey_Ghost_BC, Ez_Ghost_BC, RGBC_Info_Ghost, RG_numBCMessages_Ghost); 
+
+     if(MLMD_BCBufferArea) {
+       setBC_Nodes(vct, Ex, Ey, Ez, Ex_Buffer_BC, Ey_Buffer_BC, Ez_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+     }
 
        /*smoothFaces(Smooth, Ex, grid, vct, 1);
      smoothFaces(Smooth, Ey, grid, vct, 1);
@@ -567,6 +578,11 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
 
      // put the BC on the soure and in the image = intermediate solution
      setBC_Nodes(vct, tempX, tempY, tempZ, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+
+
+     if (MLMD_BCBufferArea){
+      setBC_Nodes(vct, tempX, tempY, tempZ, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+     }
 
      // smoothFaces
      /*smoothFaces(Smooth, tempX, grid, vct, 1);
@@ -673,6 +689,10 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
      //cout << "setBC_NodesImage in Active " << endl;
      //set what you have to set, in the active nodes
      setBC_NodesImage(vct, imageX, imageY, imageZ, vectX, vectY, vectZ, Exth_Active_BC, Eyth_Active_BC, Ezth_Active_BC, RGBC_Info_Active, RG_numBCMessages_Active);
+
+     if (MLMD_BCBufferArea){ 
+       setBC_NodesImage(vct, imageX, imageY, imageZ, vectX, vectY, vectZ, Exth_Buffer_BC, Eyth_Buffer_BC, Ezth_Buffer_BC, RGBC_Info_Buffer, RG_numBCMessages_Buffer);
+     }
 
    }else {
 
@@ -3300,7 +3320,7 @@ void EMfields3D::SetLambda(Grid *grid, VirtualTopology3D * vct){
 
   bool SetDamping= false;
 
-  if (numGrid >0 ) SetDamping= true;
+  //if (numGrid >0 ) SetDamping= true;
 
   if (vct->getCartesian_rank() ==0 and SetDamping)
     cout << "Grid " << numGrid << " is initialising a Lambda layer " << endl;
@@ -6024,13 +6044,17 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
 
     i_s=0; i_e= nxc-1;
     j_s=0; j_e= nyc-1;
-    k_s=0; k_e=2; 
+    k_s=0; k_e=2;  
 
+    // the particles, repopulated before moving them, are moved in fields completely interpolated; here, (+ Buf-1)
+    // considering that Buf nodes are ON TOP OF ghost + active, and all cells are included
+    if (RepopulateBeforeMover) k_e= k_e+BufZ-1;
 
     DIR= 'B';
     grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
 
   } // end bottom face
+  
   
   // this is the top face
   if (vct->getCoordinates(2) ==ZLEN-1 && vct->getZright_neighbor() == MPI_PROC_NULL && DIR_2){ 
@@ -6038,6 +6062,10 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     i_s=0; i_e= nxc-1;
     j_s=0; j_e= nyc-1;
     k_e= nzc-1; k_s= nzc-3;
+
+    // the particles, repopulated before moving them, are moved in fields completely interpolated; here, (+ Buf-1)
+    // considering that Buf nodes are ON TOP OF ghost + active, and all cells are included
+    if (RepopulateBeforeMover) k_s= k_s-(BufZ-1);
 
     DIR= 'T';
     grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
@@ -6051,6 +6079,10 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     k_s=0; k_e= nzc-1;
     i_s=0; i_e= 2;
 
+    // the particles, repopulated before moving them, are moved in fields completely interpolated; here, (+ Buf-1)
+    // considering that Buf nodes are ON TOP OF ghost + active, and all cells are included
+    if (RepopulateBeforeMover) i_e= i_e+BufX-1;
+
     DIR= 'L';
     grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
 
@@ -6062,6 +6094,10 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     j_s=0; j_e= nyc-1;
     k_s=0; k_e= nzc-1;
     i_e=nxc-1; i_s= nxc-3;
+
+    // the particles, repopulated before moving them, are moved in fields completely interpolated; here, (+ Buf-1)
+    // considering that Buf nodes are ON TOP OF ghost + active, and all cells are included
+    if (RepopulateBeforeMover) i_s= i_s-(BufX-1);
 
     DIR= 'R';
     grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
@@ -6075,6 +6111,10 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     k_s=0; k_e= nzc-1;
     j_s=0; j_e= 2;
 
+    // the particles, repopulated before moving them, are moved in fields completely interpolated; here, (+ Buf-1)
+    // considering that Buf nodes are ON TOP OF ghost + active, and all cells are included
+    if (RepopulateBeforeMover) j_e= j_e+BufY-1;
+
     DIR= 'F';
     grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
 
@@ -6086,6 +6126,10 @@ void EMfields3D::initWeightBCfix3B_Phase1(Grid *grid, VirtualTopology3D *vct, RG
     i_s=0; i_e= nxc-1;
     k_s=0; k_e= nzc-1;
     j_e=nyc-1; j_s= nyc-3;
+
+    // the particles, repopulated before moving them, are moved in fields completely interpolated; here, (+ Buf-1)
+    // considering that Buf nodes are ON TOP OF ghost + active, and all cells are included
+    if (RepopulateBeforeMover) j_s= j_s-(BufY-1);
 
     DIR= 'b';
     grid->Explore3DAndCommit_Centers(i_s, i_e, j_s, j_e, k_s, k_e, RGBC_Info, numMsg, MaxSizeMsg, vct, DIR);
@@ -8122,6 +8166,69 @@ void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective 
 
 }
 
+
+// *** //
+void EMfields3D::initMAX_Show_RG_BC(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize MAX_Show_RG_BC" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+         }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+	    
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+	    rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          Bxn[i][j][k] = B0y;
+          Byn[i][j][k] = B0y;
+	  Bzn[i][j][k] = B0z;
+          
+        }
+    // communicate ghost
+    communicateNode(nxn, nyn, nzn, Bxn, vct);
+    communicateNode(nxn, nyn, nzn, Byn, vct);
+    communicateNode(nxn, nyn, nzn, Bzn, vct);
+    // initialize B on centers; same thing as on nodes but on centers
+
+    grid->interpN2C_GC(Bxc, Bxn);
+    grid->interpN2C_GC(Byc, Byn);
+    grid->interpN2C_GC(Bzc, Bzn);
+     
+    // end initialize B on centers 
+    communicateCenter(nxc, nyc, nzc, Bxc, vct);
+    communicateCenter(nxc, nyc, nzc, Byc, vct);
+    communicateCenter(nxc, nyc, nzc, Bzc, vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C_GC(rhocs, is, rhons);
+
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+
+}
+
+// *** //
 
 void EMfields3D::initDoubleGEM_CentralPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X

@@ -300,6 +300,8 @@ class Collective
 
     bool getFluidLikeRep();
     bool getRepopulateBeforeMover();
+    int getPRA();
+    int getBuf();
     /*! returns MLMDVerbose */
     bool getMLMDVerbose();
     /*! end MLMD gets */
@@ -580,6 +582,10 @@ class Collective
     bool FluidLikeRep;
     /* wether to repopulate before or after the mover */
     bool RepopulateBeforeMover;
+    /* number of RG cells to repopulate with particles */
+    int PRA;
+    /* number of RG buffer cells; adjusted to fit PRA values if RepopulateBeforeMover */
+    int Buf;
     // end MLMD variables
     
 };

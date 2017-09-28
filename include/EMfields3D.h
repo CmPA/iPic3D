@@ -207,6 +207,8 @@ class EMfields3D                // :public Field
     void initTestProjection(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initTestBC(VirtualTopology3D * vct, Grid * grid, Collective *col); 
     void initTestFix3B(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! inits all the fields to 0, particles only on CG, disables GMRES on RG*/
+    void initMAX_Show_RG_BC(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! add a perturbattion to charge density */
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */
@@ -1134,9 +1136,6 @@ class EMfields3D                // :public Field
     MPI_Datatype MPI_RGBC_struct;
     /*! end mlmd specidic variables */
 
-    // smooth the RG BC before applying them
-    bool SmoothRGBC;
-
     // instantiated only if SmoothRGBC= true and 
     double *** Ex_TH_SRGBC;
     double *** Ey_TH_SRGBC;
@@ -1150,6 +1149,7 @@ class EMfields3D                // :public Field
     double **** RHOINIT;
 
     bool NewSmoothing;
+    bool RepopulateBeforeMover;
 };
 
 

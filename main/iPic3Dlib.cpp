@@ -122,6 +122,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="initTestProjection") EMf->initTestProjection(vct,grid, col);
     else if (col->getCase()=="initTestBC") EMf->initTestBC(vct,grid, col);
     else if (col->getCase()=="TestFix3B") EMf->initTestFix3B(vct,grid, col);
+    else if (col->getCase()=="MAX_Show_RG_BC" ) EMf->initMAX_Show_RG_BC(vct, grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -208,6 +209,7 @@ int c_Solver::Init(int argc, char **argv) {
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
 	else if (col->getPartInit()=="DoubleGEM") part[i].MaxwellianDoubleGEM(grid, EMf, vct, col);
+	else if (col->getPartInit()=="MAX_Show_RG_BC") part[i].initMAX_Show_RG_BC(grid, EMf, vct);
         else                                  part[i].maxwellian(grid, EMf, vct);
 
     }

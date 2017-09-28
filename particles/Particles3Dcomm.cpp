@@ -455,14 +455,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // the # of PRA cells is a tmp variable
   //   the 'visible' variables are the index at which PRA starts/ ends 
   
-  PRACells = int(RFx); 
-  if (RFy > RFx) PRACells= int (RFy);
-
-  // added
-  if (bcPfaceXleft== -1 )
-    PRACells= 4;
-
-  PRACells= 4;
+  PRACells= col->getPRA();  
   cout << "PRACells= " << PRACells << endl;
 
   // Index at which the PRA starts/ ends

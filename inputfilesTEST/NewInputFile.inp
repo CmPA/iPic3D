@@ -1,0 +1,167 @@
+# INPUT FILE for GEM challenge case
+# 2 Species
+
+#  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
+SaveDirName    = NewInputFile     # Output directory
+RestartDirName = NewInputFile    # Restart directory (for WriteMethod=default)
+
+#  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
+
+Case              = MAX_Show_RG_BC #  LightWave                             # Case [ GEM | Dipole | ... ] # Init: won't recognise case, and go into default initialisation with no fields
+FieldsInit        = ./data/Initial-Fields_000000.h5 # Initial fields h5 file
+PartInit          = MAX_Show_RG_BC                         # Initial particles [ Maxwell | File ]
+WriteMethod       = default                         # Output method [ default | Parallel ]
+PoissonCorrection = no                             # Poisson correction [ yes | no ]
+SimulationName    = GEMNoPert                             # Simulation name for the output
+
+#  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
+B0x = 0.0
+B0y = 0.00
+B0z = 0.00
+
+# External magnetic field parameters:
+B1x = 0.000
+B1y = 0.000
+B1z = 0.000
+
+delta = 1
+
+#  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
+dt = 0.15 #0.0625 # 0.5               # dt = time step  
+ncycles = 21 # 401 #  1001 # 1001          # cycles
+th = 1.0               # th =   decentering parameter
+c = 1.0                # c = light speed 
+
+#  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
+Smooth = 1           # Smoothing value (5-points stencil) // with 1, no smoothing
+
+
+# %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
+
+x_center =   1.        # Lx = simulation box length - x direction in m  
+y_center =   1.        # Ly = simulation box length - y direction in m
+z_center =   1.        # Lz = simulation box length - z direction in m  
+L_square =   .1
+
+
+# %%%%%%%%%%%%%%%%%%%% MLMD topology %%%%%%%%%%%%%%%
+Ngrids = 2              # number of MLMD grids; coarsest level will go first
+
+gridLevel       = 0 1 1 2       # from level 0 (Coarser grid) onwards
+
+Lx_mlmd = 84.0 14.0   		  # 10.0 2.5 1.67 1.25
+Ly_mlmd = 2.625 0.4375     	    # 10.0 2.5 1.67 1.25
+Lz_mlmd = 2.625 0.4375         # 2.5 0.625 1.67 1.25
+
+parentGrid = -1 0 0 1          	# the parent grid; the ID of a grid is the order
+
+nxc_mlmd = 256 256 #16 # 256 64 16 32         	# nxc = number of cells - x direction
+nyc_mlmd = 8 8 #16 # 256 64 64 16        	# nyc = number of cells - y direction
+nzc_mlmd = 8 8 #4 # 64 16 64 16           	# nzc = number of cells - z direction
+
+Ox_SW  = 0.0  35.0 # 6.25  7.0 2.5      # coordinate of origin of the grid, with respect to the
+Oy_SW  = 0.0  1.09375 # 6.25  7.7 1.4     	# COARSEST grid
+Oz_SW  = 0.0  1.09375 # 0.9375  6.5 5.0
+ 
+TopologyType = 0		#0: one piece of each grid per core; 
+	      			#1: each core hosts a part of a single grid only	 
+
+MLMD_BC = 1			# whether to perform BC exchange with multiple grids; 0 or 1
+MLMD_PROJECTION = 0		# whether to perform field projection with multiple grids; 0 or 1
+MLMD_ParticleREPOPULATION = 1	# whether to repopulate particles with multiple grids; 0 or 1
+MLMD_InitialInterpolation = 0
+AllowPMsgResize = 1	    	# wether to allow resize of the buffes containing repopulated particles
+MLMD_BCBufferArea =0	        # buffer area where E and B are interpolated from CG; default with REPOPULATE BEFORE MOVER
+MLMD_fixBCenters =0		# interpolate 3 RG centers
+PRA= 4				# number of celles where particle repopulation
+Buf= 3				# number of buffer nodes (on top of ghost and active); adjusted to PRA if REPOPULATE BEFORE MOVER
+# %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
+XLEN_mlmd =4 4 #2 # 16 16 1 1 #1 1 1 1             # Number of subdomains in the X direction
+YLEN_mlmd =1 1 #2 # 16 16 2 1 #2 2 2 2             # Number of subdomains in the X direction
+ZLEN_mlmd =1 1 #1 # 4 4 1 4 #2 2 2 2 
+# %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+#    0 = electrons
+#    1 = protons
+#    2,3,4,5,... = ions
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ns = 2                               # Number of particles
+rhoINIT         = 1.0  1.0 0.1 0.1          # Initial density (make sure you are neutral)
+rhoINJECT       = 0.0  0.0 0.0 0.0          # Injection density (make sure you are neutral)
+TrackParticleID = 0    0    0 0         # TrackParticleID[species] = 1=true, 0=false 
+
+npcelx          = 6    6   3 3          # Particles per cell in X
+npcely          = 6    6   3 3        # Particles per cell in Y
+npcelz          = 6    6   3 3         # Particles per cell in Z
+NpMaxNpRatio    = 10.0                # Maximum number of particles allocated
+
+qom             = -1  0.0005446623 -10.0 1.0        # Charge/mass ratio
+uth             = 0.05 0.00116690 #0.045   0.0201  0.045   0.0201    # Thermal velocity in X
+vth             = 0.05 0.00116690 #0.045   0.0201  0.045   0.0201    # Thermal velocity in Y
+wth             = 0.05 0.00116690 #0.045   0.0201  0.045   0.0201    # Thermal velocity in Z
+u0              = 0.0     0.0  0.0 0.0      # Drift velocity in X
+v0              = 0.0     0.0  0.0 0.0      # Drift velocity in X
+w0              = 0.0 0.0 #0.005196  -0.0259807 0.0 0.0   # Drift velocity in X
+
+# %%%%%%%%%%%% Periodicity in each direction FOR EACH GRID LEVEL %%%%%%%%%%%%%%%
+### for the mlmd machinery to work, you want to put the children grids to 0
+### use 1 also in children grids for testing
+PERIODICX       = 1 0 0 0               	     # In direction X (1=true, 0=false)
+PERIODICY       = 1 0 0 0                     	     # In direction Y (1=true, 0=false)
+PERIODICZ       = 1 0 0 0               	     # In direction Z (1=true, 0=false)
+
+# same for particles
+PERIODICX_P       = 1 0 0 0                          # In direction X (1=true, 0=false)
+PERIODICY_P       = 1 0 0 0                          # In direction Y (1=true, 0=false)
+PERIODICZ_P       = 1 0 0 0                          # In direction Z (1=true, 0=false)
+
+
+# %%%%%%%%%%%% boundary conditions %%%%%%%%%%%%%%%
+# If the PERIODIC flag is active in the previous section
+# periodic boundary conditions will be imposed
+#
+# PHI Electrostatic Potential     
+# 0,1 = Dirichilet boundary condition ;     
+# 2   = Neumann boundary condition
+    bcPHIfaceXright = 1
+    bcPHIfaceXleft  = 1
+    bcPHIfaceYright = 1
+    bcPHIfaceYleft  = 1
+    bcPHIfaceZright = 1
+    bcPHIfaceZleft  = 1
+    
+#    EM field boundary condition
+#    0 = perfect conductor
+#    1 = magnetic mirror
+    bcEMfaceXright = 0
+    bcEMfaceXleft =  0
+    bcEMfaceYright = 0
+    bcEMfaceYleft =  0
+    bcEMfaceZright = 0
+    bcEMfaceZleft =  0
+    
+#    Particles Boundary condition
+#    0 = exit
+#    1 = perfect mirror
+#    2 = riemission
+#    -1 = complete kinetic repopulation
+#    -2 = partial kinetic repopulation
+#    -3 = fluid repopulation
+#    -4 = complete kinetic repopulation BEFORE MOVER; repopulated particles move in fully interpolated E and B fields
+    bcPfaceXright = 0 -3
+    bcPfaceXleft =  0 -3
+    bcPfaceYright = 0 -3
+    bcPfaceYleft =  0 -3
+    bcPfaceZright = 0 -3
+    bcPfaceZleft =  0 -3
+
+# %%%%%%%%%%%% Numerics options %%%%%%%%%%%%%%%
+verbose                = 1        # Print to video results
+Vinj                   = 0.0      # Velocity of the injection from the wall
+CGtol                  = 1E-3     # CG solver stopping criterium tolerance
+GMREStol               = 1E-6     # GMRES solver stopping criterium tolerance
+NiterMover             = 3        # mover predictor corrector iteration
+FieldOutputCycle       = 1      # Output for field
+ParticlesOutputCycle   = 1      # Output for particles if 1 it doesnt save particles data
+RestartOutputCycle     = 1000     # restart cycle
+DiagnosticsOutputCycle = 10        # Diagnostics cycle

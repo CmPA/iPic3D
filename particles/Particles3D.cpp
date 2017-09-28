@@ -333,6 +333,101 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
 }
 
+/** **/
+void Particles3D::initMAX_Show_RG_BC(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+
+  if (vct->getCartesian_rank() == 0) {
+    cout << "------------------------------------------" << endl;
+    cout << "Initialize PARTICLE Maxwellian, with MAX_Show_RG_BC " << endl;
+    cout << "------------------------------------------" << endl;
+  }
+
+  if (numGrid>0){
+    nop=0;
+    int Tot_nop;
+    MPI_Allreduce(&nop, &Tot_nop, 1, MPI_INT, MPI_SUM, vct->getComm());
+
+    if (vct->getComm()==0){
+      cout << "I am initializing 0 particles on grid " << numGrid << endl;
+    }
+
+    return;
+  }
+
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+
+  int i_s=1, i_e= grid->getNXC() - 1;
+  int j_s=1, j_e= grid->getNYC() - 1;
+  int k_s=1, k_e= grid->getNZC() - 1;
+
+  if (bcPfaceXleft<0 and vct->getXleft_neighbor_P() == MPI_PROC_NULL) i_s=0;
+  if (bcPfaceXright<0 and vct->getXright_neighbor_P() == MPI_PROC_NULL) i_e=grid->getNXC();
+
+  if (bcPfaceYleft<0 and vct->getYleft_neighbor_P() == MPI_PROC_NULL) j_s=0;
+  if (bcPfaceYright<0 and vct->getYright_neighbor_P() == MPI_PROC_NULL) j_e=grid->getNYC();
+
+  if (bcPfaceZleft<0 and vct->getZleft_neighbor_P() == MPI_PROC_NULL) k_s=0;
+  if (bcPfaceZright<0 and vct->getZright_neighbor_P() == MPI_PROC_NULL) k_e=grid->getNZC();
+
+  for (int i = i_s; i < i_e; i++)
+    for (int j = j_s; j < j_e; j++)
+      for (int k = k_s; k < k_e; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+
+	      // init with random position in the cell
+	      double rX = ((double)rand() / (double)(RAND_MAX));
+	      double rY = ((double)rand() / (double)(RAND_MAX));
+	      double rZ = ((double)rand() / (double)(RAND_MAX));
+
+	      x[counter]= grid->getXN(i, j, k)+ dx*rX;
+	      y[counter]= grid->getYN(i, j, k)+ dy*rY;
+	      z[counter]= grid->getZN(i, j, k)+ dz*rZ;
+	      
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = w0 + wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+
+              counter++;
+            }
+  // to set number of particles in allocate, keeping in mind that in mlmd there can be particles in the GC
+  nop= counter;
+
+  // number of particles after the allocation
+  int Tot_nop;
+  MPI_Allreduce(&nop, &Tot_nop, 1, MPI_INT, MPI_SUM, vct->getComm());
+  /*if (vct->getCartesian_rank()==XLEN*YLEN*ZLEN-1){
+    cout << "Grid " << numGrid << " ns " << ns << " Particles after Maxwellian: " <<Tot_nop << endl;
+    }*/
+
+}
+
+/** **/
+
 /** Force Free initialization (JxB=0) for particles */
 void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
