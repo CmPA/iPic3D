@@ -32,7 +32,7 @@ if(leggo==1)
 % 
 [Az,Nx,Ny,Nz,dx,dy,dz]=read_binVTK_scalar(dir,'Az',cycle);
 [rhoe,rhoi,Nx,Ny,Nz]=read_binVTK_multiscalar(dir,'rho',cycle);
-%[Pixx,Pixy,Pixz,Piyy,Piyz,Pizz,Pipar,Piper1,Piper2,Pieps,Nx,Ny,Nz] = read_binVTK_pressure(dir,'Pi',cycle);
+[Pixx,Pixy,Pixz,Piyy,Piyz,Pizz,Pipar,Piper1,Piper2,Pieps,Nx,Ny,Nz] = read_binVTK_pressure(dir,'Pi',cycle);
 [Pexx,Pexy,Pexz,Peyy,Peyz,Pezz,Pepar,Peper1,Peper2,Peeps,Nx,Ny,Nz] = read_binVTK_pressure(dir,'Pe',cycle);
 % 
 B=sqrt(Bx.*Bx+By.*By+Bz.*Bz);
@@ -90,7 +90,7 @@ skip=10
 % Compute J dot E
 JedotE=dot(Jex,Jey,Jez,Ex,Ey,Ez);
 method='gaussian'
-radius=5;
+radius=7;
 JedotEsm=dot(smooth3(Jex,method,radius),smooth3(Jey,method,radius),smooth3(Jez,method,radius), ...
     smooth3(Ex,method,radius),smooth3(Ey,method,radius),smooth3(Ez,method,radius));
 
@@ -100,8 +100,7 @@ JidotE=dot(Jix,Jiy,Jiz,Ex,Ey,Ez);
 JdotE=JedotE+JidotE;
 
 [Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
-radius=5
-method='gaussian';
+
 divS = compute_div(x,y,z,smooth3(Sx,method,radius),smooth3(Sy,method,radius),smooth3(Sz,method,radius));
 
 divS = divS*nWm3;
@@ -157,29 +156,37 @@ end
 electrons=1
 if(electrons)
     
-Tepar = code_T * Pepar/(-rhoe);   
-Teperp = code_T * .5*(Peper1+Peper2)/(-rhoe); 
-    
+Tepar = code_T * Pepar./(-rhoe) /e/1e3;   
+Teperp = code_T * .5*(Peper1+Peper2)./(-rhoe)/e/1e3; 
+Te = code_T *(Pexx+Peyy+Pezz)./(-rhoe) /e/1e3;
+
+ 
 divQbulke = compute_div(x,y,z,smooth3(Qbulkex,method,radius),smooth3(Qbulkey,method,radius),smooth3(Qbulkez,method,radius));    
 divQenthe = compute_div(x,y,z,smooth3(Qenthex,method,radius),smooth3(Qenthey,method,radius),smooth3(Qenthez,method,radius));
+
 
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JedotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['JeE Z=' 'AVG_Z'],'JeE',[-1 1]*0e-10, Nsm,3+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQbulke(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['divQbulke Z=' 'AVG_Z'],'divQbulke',[-1 1]*0e-10, Nsm,4+iz);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQenthe(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['divQenthe Z=' 'AVG_Z'],'divQenthe',[-1 1]*0e-10, Nsm,5+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQenthe(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['divQenthe Z=' 'AVG_Z'],'divQenthe',[-1 1]*5e-2, Nsm,5+iz);
 
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Tepar(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['Tepar Z=' 'AVG_Z'],'Tepar',[-1 1]*0e-10, Nsm,5+iz);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Teperp(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['Teperp Z=' 'AVG_Z'],'Teperp',[-1 1]*0e-10, Nsm,5+iz);
+symmetric_color=0;
+color_choice =0;
+labelc = 'keV';
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Tepar(ir,jr,kr),2),Vex(ir,kr),Vez(ir,kr),['Tepar Z=' 'AVG_Z'],'Tepar',[-1 1]*0e-10, Nsm,5+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Teperp(ir,jr,kr),2),Vex(ir,kr),Vez(ir,kr),['Teperp Z=' 'AVG_Z'],'Teperp',[-1 1]*0e-10, Nsm,5+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Te(ir,jr,kr),2),Vex(ir,kr),Vez(ir,kr),['Te Z=' 'AVG_Z'],'Te',[-1 1]*0e-10, Nsm,5+iz);
 
-
+symmetric_color=1;
+color_choice =3;
 Nsm=10
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(UdivPe(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr) ,['UdivPe Z=' 'AVG_Z'],'UdivPe',[-1 1]*0e-9, Nsm, 6+iz);
 
 newsmooth=0
 if (newsmooth)
-radius=5
-method='gaussian';
+%radius=5
+%method='gaussian';
 Vx=smooth3(Jex./rhoe,method,radius);
 Vy=smooth3(Jey./rhoe,method,radius);
 Vz=smooth3(Jez./rhoe,method,radius);
@@ -200,16 +207,29 @@ end
 
 ions=1
 if(ions)
-divQbulki = compute_div(x,y,z,Qbulkix,Qbulkiy,Qbulkiz);
+divQbulki = compute_div(x,y,z,smooth3(Qbulkix,method,radius),smooth3(Qbulkiy,method,radius),smooth3(Qbulkiz,method,radius));
 
-divQenthi = compute_div(x,y,z,Qenthix,Qenthiy,Qenthiz);
+divQenthi = compute_div(x,y,z,smooth3(Qenthix,method,radius),smooth3(Qenthiy,method,radius),smooth3(Qenthiz,method,radius));
+
+
+Tipar = code_T * Pipar./(rhoi) /e/1e3;   
+Tiperp = code_T * .5*(Piper1+Piper2)./(rhoi)/e/1e3; 
+Ti = code_T *(Pixx+Piyy+Pizz)./(rhoi) /e/1e3;
 
 Nsm=5;labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JidotE(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['JiE Z=' 'AVG_Z'],'JiE',[-1 1]*0e-10, Nsm,8+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQbulki(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['divQbulki Z=' 'AVG_Z'],'divQbulki',[-1 1]*0e-10, Nsm,9+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQenthi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['divQenthi Z=' 'AVG_Z'],'divQenthi',[-1 1]*0e-10, Nsm,10+iz);
 
+symmetric_color=0;
+color_choice =0;
+labelc = 'keV';
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Tipar(ir,jr,kr),2),Vex(ir,kr),Vez(ir,kr),['Tipar Z=' 'AVG_Z'],'Tipar',[-1 1]*0e-10, Nsm,5+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Tiperp(ir,jr,kr),2),Vex(ir,kr),Vez(ir,kr),['Tiperp Z=' 'AVG_Z'],'Tiperp',[-1 1]*0e-10, Nsm,5+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Ti(ir,jr,kr),2),Vex(ir,kr),Vez(ir,kr),['Ti Z=' 'AVG_Z'],'Ti',[-1 1]*0e-10, Nsm,5+iz);
 
+symmetric_color=1;
+color_choice =3;
 Nsm=5
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(UdivPi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['UdivPi Z=' 'AVG_Z'],'UdivPi',[-1 1]*0e-9, Nsm, 11+iz);
