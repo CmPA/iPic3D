@@ -20,7 +20,7 @@ ntime = datestr(time/86400,'HH:MM:SS UT')
 
 
     ncycle = num2str(cycle,'%06d');
-leggo=1; 
+leggo=0; 
 if(leggo==1)
 
 
@@ -100,7 +100,7 @@ JidotE=dot(Jix,Jiy,Jiz,Ex,Ey,Ez);
 JdotE=JedotE+JidotE;
 
 [Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
-divS = compute_div(x,y,z,Sx,Sy,Sz);
+divS = compute_div(x,y,z,smooth3(Sx,'box',5),smooth3(Sy,'box',5),smooth3(Sz,'box',5));
 
 Sx=Sx*code_E*code_B/mu0;
 Sy=Sy*code_E*code_B/mu0;
@@ -174,7 +174,7 @@ end
 electrons=1
 if(electrons)
     
-divQbulke = compute_div(x,y,z,Qbulkex,Qbulkey,Qbulkez);    
+divQbulke = compute_div(x,y,z,smooth3(Qbulkex,'box',5),smooth3(Qbulkey,'box',5),smooth3(Qbulkez,'box',5));    
 divQenthe = compute_div(x,y,z,Qenthex,Qenthey,Qenthez);
 
 labelc = 'nW/m^3';
