@@ -68,7 +68,9 @@ ir=bufferX:Nx-bufferX;
 jr=bufferY:Ny-bufferY;
 kr=bufferZ:Nz-bufferZ;
 
-
+Wm3 = code_E*code_J*4*pi; %4pi is due to the usal division by 4pi of the density
+nWm3 = 1e9*Wm3;
+mWm2= Wm3*code_dp*1e3
 %
 % Electrons
 %
@@ -98,9 +100,12 @@ JidotE=dot(Jix,Jiy,Jiz,Ex,Ey,Ez);
 JdotE=JedotE+JidotE;
 
 [Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
+divS = compute_div(x,y,z,Sx,Sy,Sz);
+
 Sx=Sx*code_E*code_B/mu0;
 Sy=Sy*code_E*code_B/mu0;
 Sz=Sz*code_E*code_B/mu0;
+divS = divS*nWm3;
 % the poynting flux is not in W/m^2 that is in SI unit.
 %
 % I verified that if instead one computes from code units, then divides it
@@ -146,13 +151,16 @@ if(poynting)
 labelc = 'nW/m^3';
 %tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JdotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['JE Z=' 'AVG_Z'],'JE',[-1 1]*0e-10, Nsm,1+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JdotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['JE Z=' 'AVG_Z'],'JE',[-1 1]*0e-10, Nsm,1+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divS(ir,jr,kr),2),Vex(ir,kr),Vez(ir,kr) ,['divS Z=' 'AVG_Z'],'divS',[-1 1]*0e-9, Nsm, 4+iz);
 
-labelc = 'mW/m^2';
+
 % The poynting flux is in SI units, W/m^3 so we need multiplication by 1e3
 % to have it in mW/m^2
+labelc = 'mW/m^2';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Sx(ir,jr,kr),2)*1e3,Vex(ir,kr),Vez(ir,kr) ,['Sx Z=' 'AVG_Z'],'Sx',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sy(ir,jr,kr),2)*1e3,Vex(ir,kr),Vez(ir,kr) ,['Sz Z=' 'AVG_Z'],'Sy',[-1 1]*0e-9, Nsm, 3+iz);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sz(ir,jr,kr),2)*1e3,Vex(ir,kr),Vez(ir,kr) ,['Sy Z=' 'AVG_Z'],'Sz',[-1 1]*0e-9, Nsm, 4+iz);
+
 
 %Spar= dot(Sx,Sy,Sz,Bx,By,Bz)./B;
 %tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Spar(ir,jr,kr),2)*1e3,AAz(ir,kr) ,['S_{||} Z=' 'AVG_Z'],'Spar',[-1 1]*0e-9, Nsm, 2+iz);
@@ -165,8 +173,14 @@ end
 
 electrons=1
 if(electrons)
+    
+divQbulke = compute_div(x,y,z,Qbulkex,Qbulkey,Qbulkez);    
+divQenthe = compute_div(x,y,z,Qenthex,Qenthey,Qenthez);
+
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JedotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['JeE Z=' 'AVG_Z'],'JeE',[-1 1]*0e-10, Nsm,1+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQbulke(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['divQbulke Z=' 'AVG_Z'],'divQbulke',[-1 1]*0e-10, Nsm,1+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQenthe(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['divQenthe Z=' 'AVG_Z'],'divQenthe',[-1 1]*0e-10, Nsm,1+iz);
 
 labelc = 'mW/m^2';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Qbulkex(ir,jr,kr),2)*mWm2,Vex(ir,kr),Vez(ir,kr) ,['Qbulkex Z=' 'AVG_Z'],'Qbulkex',[-1 1]*0e-9, Nsm, 2+iz);
@@ -221,8 +235,14 @@ end
 
 ions=1
 if(ions)
+divQbulki = compute_div(x,y,z,Qbulkix,Qbulkiy,Qbulkiz);
+
+divQenthi = compute_div(x,y,z,Qenthix,Qenthiy,Qenthiz);
+
 Nsm=5;labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JidotE(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['JiE Z=' 'AVG_Z'],'JiE',[-1 1]*0e-10, Nsm,1+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQbulki(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['divQbulki Z=' 'AVG_Z'],'divQbulki',[-1 1]*0e-10, Nsm,1+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQenthi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['divQenthi Z=' 'AVG_Z'],'divQenthi',[-1 1]*0e-10, Nsm,1+iz);
 
 labelc = 'mW/m^2'; 
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Qbulkix(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qbulkix Z=' 'AVG_Z'],'Qbulkix',[-1 1]*0e-9, Nsm, 2+iz);
