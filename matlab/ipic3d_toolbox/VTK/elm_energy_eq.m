@@ -1,7 +1,7 @@
-addpath('/home/gianni/matlab2/matlab-parsek');
+addpath(genpath('../../ipic3d_toolbox'))
 global contours
 contours = 1;
-for i=20000:1000:20000
+for i=18000:1000:18000
 disp(['CYCLE = ' num2str(i)])
 ncyc=num2str(i);
 read=1;
@@ -71,9 +71,10 @@ plot(xxx,JEiint,'m')
 divSint=sum(divScut);
 plot(xxx,divSint,'k')
 
-plot(xxx,-B2int+JEeint+JEiint,'g:')
-plot(xxx,-divSint-B2int+JEeint+JEiint,'y')
-legend('dB^2dt','Je.E','Ji.E','divS','balance','dE^2dt','Location','BestOutside')
+%plot(xxx,-B2int+JEeint+JEiint,'g:')
+plot(xxx,divSint-B2int+JEeint+JEiint,'y')
+grid on
+legend('dB^2dt','Je.E','Ji.E','divS','dE^2dt','Location','BestOutside')
 print('-depsc',['energy_terms_x_' ncyc '.eps'])
 
 

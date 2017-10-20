@@ -44,7 +44,7 @@ ff=contour(x,y,ay,linspace(range2(1),range2(2),30),'w');
 
 xlabel(xlab,'fontsize',[18])
 ylabel(ylab,'fontsize',[18])
-colormap hsv
+colormap jet
 
 axis equal
 axis tight

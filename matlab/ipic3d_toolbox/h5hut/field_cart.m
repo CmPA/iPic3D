@@ -3,7 +3,7 @@ close all
 clc
 addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
-folder_name = '/shared/gianni/tred74_2D/data_smoothLambda/'
+folder_name = '/shared/gianni/tred74_2D/data_rhofromJ_periodic/'
 namefile = 'GEM-Fields';
 
 
