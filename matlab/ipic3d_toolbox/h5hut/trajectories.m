@@ -4,10 +4,10 @@ clc
 addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
 
-folder_name = '/shared/gianni/WB/base'
-namefile = 'TwoCoils-Fields';
-
-
+%folder_name = '/shared/gianni/WB/base'
+%namefile = 'TwoCoils-Fields';
+folder_name = '/Users/gianni/Downloads/matlab test/'
+namefile = 'TwoCoils2D-Fields';
 
 Lx=37.5;
 Ly=75;
@@ -17,7 +17,7 @@ qom =10;
 % for initial vacuum field
 i=0
 % for WB later field
-i=35000
+i=500
 %i=4000
 %i=00
 
@@ -111,25 +111,37 @@ i=35000
     yunit = Rout * sin(th) + Ly/2;
     plot(xunit, yunit);
     
-    Npart=100;
+    Npart=500;
     
     mean_t=0;
     traffic=0;
-    
+    tic
     for ip=1:Npart
         
+        random=1
+        if(random)
+        % random
         xp=[0.5 Ly/2 0]+rand(1,3)*3;
-
         vmono = .01;
         costh = rand(1,1)*2-1; sinth =1-costh^2;
         fi = 2*pi *rand(1,1);
         vp = vmono * [sinth*cos(fi) costh sinth*sin(fi)] ;
-    
+        else
+       % deterministic
+        xp=[0.5 Ly/2 0]+ ip * ones(1,3)/Npart*3;
+        vmono = .01;
+        costh = ip/Npart*2-1; sinth =1-costh^2;
+        fi = 2*pi*ip/Npart;
+        vp = vmono * [sinth*cos(fi) costh sinth*sin(fi)] ;
+        end
     opts=odeset('Events',@lostparticle); %,'OutputFcn',@odeplot);
      
     Tend=30000;
     dt=1; % this is used onyl for graphics, the actual time stpe is adaptive 
-    [t,y]=ode45(@newton,0:dt:Tend ,[xp vp],opts);
+    % Slow matlab intrinsic
+    %[t,y]=ode45(@newton,0:dt:Tend ,[xp vp],opts);
+    % Fast implementation 
+    [t,y]=ode45(@newton_interp,0:dt:Tend ,[xp vp],opts);
     
     xout=y(:,1);
     yout=y(:,2);
@@ -171,6 +183,6 @@ i=35000
     disp(['residence time=', num2str(mean_t/ip)])
     disp(['mean traffic =', num2str(traffic/ip)]) 
     end
-       
+      toc 
     
 
