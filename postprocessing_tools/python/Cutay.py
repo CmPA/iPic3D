@@ -105,23 +105,27 @@ def read_variables(f):
     return True
 
 def vecpot(dx,dy,bx,by):
-    nx = bx.shape[0]
-    ny = bx.shape[1]
-    nymezzo = int(np.ceil(ny/2))
-    print('vecpot',nx,ny,nymezzo)
-    az=np.zeros((nx,ny))
+    ny = bx.shape[0]
+    nx = bx.shape[1]
+    nymezzo = ny-1 #int(np.ceil(ny/2))
+    print('vecpot1',nx,ny)
+    az=np.zeros((ny,nx))
+    ny = az.shape[0]
+    nx = az.shape[1]
+    print('vecpotaz',nx,ny)
     for i in range(1,nx):
-      az[nymezzo,i] = az[nymezzo,i-1]+ (by[nymezzo,i-1]+by[nymezzo,i])*dx/2.0
-
+        az[nymezzo,i] = az[nymezzo,i-1]- (by[nymezzo,i-1]+by[nymezzo,i])*dx/2.0
+    
     for ind in range(nymezzo+1,ny):
         for j in range(0,nx):
-            az[ind,j]=az[ind-1,j]- (bx[ind,j] + bx[ind-1,j])*dy/2.0
-	
-    for ind in range(nymezzo-1,-1,-1):
-        for j in range(0,nx):
-            az[ind,j]=az[ind+1,j]+ (bx[ind+1,j] + bx[ind,j])*dy/2.0
+            az[ind,j]=az[ind-1,j]+ (bx[ind-1,j] + bx[ind-1,j])*dy/2.0
 
+for ind in range(nymezzo-1,0,-1):
+    for j in range(0,nx):
+        az[ind,j]=az[ind+1,j]- (bx[ind+1,j] + bx[ind,j])*dy/2.0
+    
     return az
+
   
 import math
 def round_to_n(x, n):
