@@ -63,6 +63,8 @@ ff=contour(x,y,ay,linspace(range2(1),range2(2),60),color);
 xlabel(xlab,'fontsize',[18])
 ylabel(ylab,'fontsize',[18])
 %colormap hsv % hsv prefers black contour lines, not white
+colormap jet
+
 
 axis equal
 axis tight

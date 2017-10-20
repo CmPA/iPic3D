@@ -6,6 +6,10 @@ folder_name = pwd;
 folder_name = '/Users/gianni/Dropbox/Reconnection_results/sim5_lowT_th1_256ppc_dt0p1'
 namefile = 'data-Fields';
 
+% folder_name = '/shared/gianni/tred74_2D/data_rhofromJ_periodic/'
+% namefile = 'GEM-Fields';
+
+
 
 
 Lx=40;

@@ -1,4 +1,8 @@
 function [V,Vx,Vy,Vz,dx,dy,dz]=read_vtk(filename)
+V=[];
+Vx=[];
+Vy=[];
+Vz=[];
 fid = fopen(filename,'r');
 fgetl(fid); % # vtk DataFile Version x.x
 fgetl(fid); % comments
@@ -42,9 +46,11 @@ end
 end
 
 V=V';
-Vx=Vx';
-Vy=Vy';
-Vz=Vz';
+
+    Vx=Vx';
+    Vy=Vy';
+    Vz=Vz';
+   
 dx=dd(1);
 dy=dd(2);
 dz=dd(3);
