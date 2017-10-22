@@ -3,8 +3,12 @@ close all
 clc
 addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
-folder_name = '/shared/gianni/tred74_2D/data_rhofromJ_periodic/'
-namefile = 'GEM-Fields';
+folder_name = '/Users/gianni/Dropbox/Reconnection_results/sim5_lowT_th1_256ppc_dt0p1'
+namefile = 'data-Fields';
+
+% folder_name = '/shared/gianni/tred74_2D/data_rhofromJ_periodic/'
+% namefile = 'GEM-Fields';
+
 
 
 
@@ -13,7 +17,7 @@ Ly=30;
 
 
 
-for i=20000:1000:20000
+for i=48000:1000:48000
 
 
     it=sprintf('%06.0f',i);
@@ -99,10 +103,39 @@ for i=20000:1000:20000
 
     divE=divergence(xc,yc,ex,ey);
     range1=[-1 1]*0e-2; 
-    figure(1)
-    coplot(i,xg,yg,divE,AAz,xlab,ylab,titolo,range1, range2)
-    figure(2)
-    coplot(i,xg,yg,rho,AAz,xlab,ylab,titolo,range1, range2)
-    figure(3)
-    coplot(i,xg,yg,4*pi*rho-divE,AAz,xlab,ylab,titolo,range1, range2)
+%     figure(1)
+%     coplot(i,xg,yg,divE,AAz,xlab,ylab,titolo,range1, range2)
+%     figure(2)
+%     coplot(i,xg,yg,rho,AAz,xlab,ylab,titolo,range1, range2)
+%     figure(3)
+%     coplot(i,xg,yg,4*pi*rho-divE,AAz,xlab,ylab,titolo,range1, range2)
+    h=figure(1)
+    set(h,'Position',[123 336 1264 469])
+        subplot(1,2,1)
+        titolo=[ 'cycle=' num2str(i) '  Ex (color) B(contours)']
+    coplot(i,xg,yg,ex,AAz,xlab,ylab,titolo,range1, range2)
+    subplot(1,2,2)
+            titolo=[ 'cycle=' num2str(i) '  Bx (color) B(contours)']
+    coplot(i,xg,yg,bx,AAz,xlab,ylab,titolo,range1, range2)
+        print('-dpng', 'figure1.png')
+        
+        h=figure(2)
+    set(h,'Position',[123 336 1264 469])
+        subplot(1,2,1)
+        titolo=[ 'cycle=' num2str(i) '  Ey (color) B(contours)']
+    coplot(i,xg,yg,ey,AAz,xlab,ylab,titolo,range1, range2)
+    subplot(1,2,2)
+            titolo=[ 'cycle=' num2str(i) '  By (color) B(contours)']
+    coplot(i,xg,yg,by,AAz,xlab,ylab,titolo,range1, range2)
+            print('-dpng', 'figure2.png')
+            
+        h=figure(3)
+    set(h,'Position',[123 336 1264 469])
+        subplot(1,2,1)
+        titolo=[ 'cycle=' num2str(i) '  Ez (color) B(contours)']
+    coplot(i,xg,yg,ez,AAz,xlab,ylab,titolo,range1, range2)
+    subplot(1,2,2)
+            titolo=[ 'cycle=' num2str(i) '  Bz (color) B(contours)']
+    coplot(i,xg,yg,bz,AAz,xlab,ylab,titolo,range1, range2)
+            print('-dpng', 'figure3.png')
 end 

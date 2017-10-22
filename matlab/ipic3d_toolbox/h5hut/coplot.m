@@ -1,5 +1,5 @@
 function [ym] = coplot(it,x,y,f,ay,xlab,ylab,titolo,range1,range2)
-global contours
+global contours dx dy
 
 f=double(f);
 ay=double(ay);
@@ -39,12 +39,12 @@ caxis(range1)
 %ay2=((ay-range2(1))/(range2(2)-range2(1))*(range1(2)-range1(2))+range1(1));
 
 
-ff=contour(x,y,ay,linspace(range2(1),range2(2),30),'w');
+ff=contour(x,y,ay,linspace(range2(1),range2(2),60),'w');
 
 
 xlabel(xlab,'fontsize',[18])
 ylabel(ylab,'fontsize',[18])
-colormap jet
+%colormap hsv
 
 axis equal
 axis tight

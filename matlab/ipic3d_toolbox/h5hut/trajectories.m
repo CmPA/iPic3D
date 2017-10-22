@@ -4,22 +4,22 @@ clc
 addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
 
-folder_name = '/shared/gianni/WB/cone1'
-namefile = 'TwoCoils-Fields';
+%folder_name = '/shared/gianni/WB/base'
+%namefile = 'TwoCoils-Fields';
+folder_name = '/Users/gianni/Downloads/matlab test/'
+namefile = 'TwoCoils2D-Fields';
 
-
-
-Lx=30;
-Ly=60;
+Lx=37.5;
+Ly=75;
 
 qom =10;
 
 % for initial vacuum field
 i=0
 % for WB later field
-i=5000
+i=500
 %i=4000
-i=130000*0
+%i=00
 
     it=sprintf('%06.0f',i);
         
@@ -56,9 +56,9 @@ i=130000*0
     ey=permute(squeeze(ey(:,:,round(Nz/2))),[2 1])*electric_damping;
     ez=permute(squeeze(ez(:,:,round(Nz/2))),[2 1])*electric_damping;
     
-    bx=permute(squeeze(bx(:,:,round(Nz/2))),[2 1])*electric_damping;
-    by=permute(squeeze(by(:,:,round(Nz/2))),[2 1])*electric_damping;
-    bz=permute(squeeze(bz(:,:,round(Nz/2))),[2 1])*electric_damping;
+    bx=permute(squeeze(bx(:,:,round(Nz/2))),[2 1]);
+    by=permute(squeeze(by(:,:,round(Nz/2))),[2 1]);
+    bz=permute(squeeze(bz(:,:,round(Nz/2))),[2 1]);
     
     b = sqrt (bx.^2 +by.^2 + bz.^2);
     
@@ -99,7 +99,6 @@ i=130000*0
     range1=[0 0];
      coplot(i,xg,yg,log(b),ath,xlab,ylab,titolo,range1, range2)
 
-
     hold on
     
     %print(['frame_' it '.png'],'-dpng')
@@ -116,33 +115,40 @@ i=130000*0
     
     mean_t=0;
     traffic=0;
-    counts=0;
-    
+    tic
     for ip=1:Npart
         
+        random=1
+        if(random)
+        % random
         xp=[0.5 Ly/2 0]+rand(1,3)*3;
-
         vmono = .01;
         costh = rand(1,1)*2-1; sinth =1-costh^2;
         fi = 2*pi *rand(1,1);
         vp = vmono * [sinth*cos(fi) costh sinth*sin(fi)] ;
-    
-    opts=odeset('Events',@lostparticle,'RelTol',1e-3); %,'OutputFcn',@odeplot);
+        else
+       % deterministic
+        xp=[0.5 Ly/2 0]+ ip * ones(1,3)/Npart*3;
+        vmono = .01;
+        costh = ip/Npart*2-1; sinth =1-costh^2;
+        fi = 2*pi*ip/Npart;
+        vp = vmono * [sinth*cos(fi) costh sinth*sin(fi)] ;
+        end
+    opts=odeset('Events',@lostparticle); %,'OutputFcn',@odeplot);
      
     Tend=30000;
-    dt=10; % this is used onyl for graphics, the actual time stpe is adaptive 
-    [t,y]=ode15s(@newton,0:dt:Tend ,[xp vp],opts);
+    dt=1; % this is used onyl for graphics, the actual time stpe is adaptive 
+    % Slow matlab intrinsic
+    %[t,y]=ode45(@newton,0:dt:Tend ,[xp vp],opts);
+    % Fast implementation 
+    [t,y]=ode45(@newton_interp,0:dt:Tend ,[xp vp],opts);
     
     xout=y(:,1);
     yout=y(:,2);
     zout=y(:,3);
-    r=sqrt(xout.^2+zout.^2);
-    R = sqrt(r.^2+(yout-Ly/2).^2);
+    r = sqrt(xout.^2+zout.^2);
     dx=diff(xout); dy=diff(yout);dz=diff(zout);
     traffic=traffic+sum(sqrt(dx.^2+dy.^2+dz.^2));
-    
-    ii=R<3;jj=R>3
-    counts = counts + sum(ii)/sum(jj);
     
     mean_t =mean_t + t(end);
     if(Tend==t(end))
@@ -169,8 +175,6 @@ i=130000*0
         plot(r,yout,r(1),yout(1),'go',r(end),yout(end),'kx','linew',2)
         
     end    
-    xlim([0 Lx/2])
-    ylim([Ly/2-Ly/4 Ly/2+Ly/4])
     pause(.1)
 %     if (sqrt(r(end).^2+(yout(end)-Ly/2).^2)<Rout-Rout/100) 
 %         return 
@@ -178,8 +182,7 @@ i=130000*0
     disp(['particles processed', num2str(ip)])
     disp(['residence time=', num2str(mean_t/ip)])
     disp(['mean traffic =', num2str(traffic/ip)]) 
-    disp(['counts =', num2str(counts/ip)]) 
     end
-       
+      toc 
     
 

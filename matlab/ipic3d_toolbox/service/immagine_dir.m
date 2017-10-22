@@ -38,7 +38,7 @@ imagesc(x,y,J(Ncut:end-Ncut,Ncut:end-Ncut)',lmt);
         colormap(cool)
         elseif (color_choice==3)
         colormap(cm_cool_hot_2)
-        elseis (color_choice==4)
+        elseif (color_choice==4)
         colormap(flipud(hot))
         end
         
@@ -50,15 +50,19 @@ set(gca,'fontsize',[14])
 xlabel(labelx,'fontsize',[14])
 ylabel(labely,'fontsize',[14])
 
-if isempty(titolo)
-        title(['\omega_{ci}t= ' Ncycle], 'fontsize',[14])       
-else
+%if isempty(titolo)
+%        title(['\omega_{ci}t= ' Ncycle], 'fontsize',[14])       
+%else
         title(titolo, 'fontsize',[14])
-end
+%end
 
         
-if (square) axis image
+if (square) 
+    axis xy
+    axis square 
+else
 axis xy
+end
 %set(gca,'xdir','reverse','TickDir','out')
 %set(gca,'TickDir','out')
 %print('-depsc','-r300',[name '.eps'])
