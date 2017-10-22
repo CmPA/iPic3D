@@ -3,8 +3,9 @@ addpath(genpath('~/iPic3D/matlab/ipic3d_toolbox')); % Point to the directory whe
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-
-for cycle=20010:1000:20010
+%use for tred60
+%for cycle=20010:1000:20010
+for cycle=15000:1000:15000
 
     ncycle = num2str(cycle,'%06d');
 leggo=2; poynting=1; ions=1; electrons=1;saveVTK=0;
@@ -12,7 +13,7 @@ if(leggo==2)
     
     %HRmaha3D3
 %BOW25
-TRED60
+TRED77
     
     namefile = 'GEM-Fields';
     fn=[dir,namefile,'_',ncycle,'.h5'];
@@ -139,6 +140,8 @@ symmetric_color=1;
 color_choice =3;
 labelx ='x/R_E';
 labely ='z/R_E';
+labelx ='x/d_i';
+labely ='z/d_i';
 labelc = 'mW/m^2';
 
 % Compute J dot E
@@ -238,7 +241,7 @@ udivPe = compute_udivP(x,y,z,Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Jex,Jey,Jez, rhoe);
 Nsm=10
 labelc = 'nW/m^3';
 %tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(UdivPi(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['UdivPi Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPi',[-1 1]*0e-9, Nsm, 2+iz);
-%tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(UdivPe(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['UdivPe Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPe',[-1 1]*0e-9, Nsm, 2+iz);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(udivPe(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['UdivPe Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPe',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JedotEsm(ir,jr,kr),3)*nWm3,AAz(ir,jr),['JeE Y=' num2str(gsmz2y(z(1,1,iz)))],'JeE',[-1 1]*0e-10, Nsm,1+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQbulke(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQbulke Y=' num2str(gsmz2y(z(1,1,iz)))],'divQbulke',[-1 1]*0e-10, Nsm,1+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQenthe(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQenthe Y=' num2str(gsmz2y(z(1,1,iz)))],'divQenthe',[-1 1]*0e-10, Nsm,1+iz);
@@ -285,7 +288,7 @@ udivPi = compute_udivP(x,y,z,Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Jix,Jiy,Jiz, rhoi);
 
 Nsm=10
 labelc = 'nW/m^3';
-%tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(UdivPi(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['UdivPi Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPi',[-1 1]*0e-9, Nsm, 2+iz);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(udivPi(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['UdivPi Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPi',[-1 1]*0e-9, Nsm, 2+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JidotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['JiE Y=' num2str(gsmz2y(z(1,1,iz)))],'JiE',[-1 1]*0e-10, Nsm,1+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQbulki(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQbulki Y=' num2str(gsmz2y(z(1,1,iz)))],'divQbulki',[-1 1]*0e-10, Nsm,1+iz);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQenthi(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divQenthi Y=' num2str(gsmz2y(z(1,1,iz)))],'divQenthi',[-1 1]*0e-10, Nsm,1+iz);
