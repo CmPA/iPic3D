@@ -52,14 +52,14 @@ end
 ch=colorbar
 set(get(ch,'title'),'string',labelc);
 
-set(gca,'fontsize',[14])
+set(gca,'fontsize',[20])
 
 
-xlabel(labelx,'fontsize',[14])
-ylabel(labely,'fontsize',[14])
+xlabel(labelx,'fontsize',[20])
+ylabel(labely,'fontsize',[20])
 
 
-title([ nlabel ],'fontsize',[14])
+title([ nlabel ],'fontsize',[20])
 
 
 axis image
@@ -70,5 +70,6 @@ end
 
 %set(gca,'xdir','reverse','TickDir','out')
 %print('-depsc','-r300',[name '.eps'])
+%set(gcf, 'Renderer', 'zbuffer');
 print('-dpng','-r300',[name Ncycle '.png'])
 %saveas(gcf,[name '.fig'])

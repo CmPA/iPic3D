@@ -80,6 +80,9 @@ i=500
     ath=vecpot_cyl(xc,yc,bx,by);
     
     global ex ey ez bx by bz xg yg  Lx Ly qom Rout
+    global contours dx dy lprint
+    contours = 1 ;
+    lprint=1;
     
     [xg,yg]=meshgrid(0:Nx-1,0:Ny-1);
     xg=xg/Nx*Lx;
@@ -104,14 +107,14 @@ i=500
     %print(['frame_' it '.png'],'-dpng')
     %pause(.01)
     
-    Rout=20
+    Rout=Lx*.9
     
     th = -pi/2:pi/50:pi/2;
     xunit = Rout * cos(th) ;
     yunit = Rout * sin(th) + Ly/2;
     plot(xunit, yunit);
     
-    Npart=100;
+    Npart=10;
     
     mean_t=0;
     traffic=0;
@@ -146,11 +149,20 @@ i=500
     xout=y(:,1);
     yout=y(:,2);
     zout=y(:,3);
+    vxout=y(:,4);
+    vyout=y(:,5);
+    vzout=y(:,6);
+    
     r = sqrt(xout.^2+zout.^2);
     dx=diff(xout); dy=diff(yout);dz=diff(zout);
     traffic=traffic+sum(sqrt(dx.^2+dy.^2+dz.^2));
     
+    kex=vxout.^2;
+    key=vyout.^2;
+    kez=vzout.^2;
+    ke=kex+key+kez;
     mean_t =mean_t + t(end);
+    figure(1)
     if(Tend==t(end))
         % particle remains confined
         
@@ -175,6 +187,79 @@ i=500
         plot(r,yout,r(1),yout(1),'go',r(end),yout(end),'kx','linew',2)
         
     end    
+    
+    figure(100+ip)
+    subplot(4,2,[1 3 5 7])
+
+    lprint=0
+    contour(xg,yg,ath,60,'k');
+
+    hold on
+        if(Tend==t(end))
+        % particle remains confined
+        
+        % this colors line by energy
+%         col = sum(y(:,4:6).^2,2);  % This is the color, vary with x in this case.
+%         surface([r,r],[yout,yout],[zeros(size(r)),zeros(size(r))],[col,col],...
+%         'facecol','no',...
+%         'edgecol','interp',...
+%         'linew',2);
+%         plot(r(1),yout(1),'go',r(end),yout(end),'kp')
+       
+surface([r';r'],[yout';yout'],[yout'*0;yout'*0],[t';t'],...
+        'facecol','no',...
+        'edgecol','interp',...
+        'linew',2);
+    else
+        % particle lost
+        
+%                 col = sum(y(:,4:6).^2,2);  % This is the color, vary with x in this case.
+%         surface([r,r],[yout,yout],[zeros(size(r)),zeros(size(r))],[col,col],...
+%         'facecol','no',...
+%         'edgecol','interp',...
+%         'linew',2);
+%         plot(r(1),yout(1),'go',r(end),yout(end),'kx')
+ surface([r';r'],[yout';yout'],[yout'*0;yout'*0],[t';t'],...
+        'facecol','no',...
+        'edgecol','interp',...
+        'linew',2);
+        
+    end  
+    subplot(4,2,2)
+    surface([t';t'],[kex';kex'],[kex'*0;kex'*0],[t';t'],...
+        'facecol','no',...
+        'edgecol','interp',...
+        'linew',2);
+    %plot(t,kex)
+    xlabel('t (c.u.)')
+    ylabel('KE_x (c.u.)')
+    subplot(4,2,4)
+        surface([t';t'],[key';key'],[kex'*0;kex'*0],[t';t'],...
+        'facecol','no',...
+        'edgecol','interp',...
+        'linew',2);
+    %plot(t,key)
+    xlabel('t (c.u.)')
+    ylabel('KE_y (c.u.)')
+        subplot(4,2,6)
+            surface([t';t'],[kez';kez'],[kex'*0;kex'*0],[t';t'],...
+        'facecol','no',...
+        'edgecol','interp',...
+        'linew',2);
+    %plot(t,kez)
+    xlabel('t (c.u.)')
+    ylabel('KE_z (c.u.)')
+    
+    subplot(4,2,8)
+        surface([t';t'],[ke';ke'],[kex'*0;kex'*0],[t';t'],...
+        'facecol','no',...
+        'edgecol','interp',...
+        'linew',2);
+    xlabel('t (c.u.)')
+    ylabel('KE (c.u.)')
+
+    print('-dpng',['trajectory_' num2str(ip) '.png'])
+    
     pause(.1)
 %     if (sqrt(r(end).^2+(yout(end)-Ly/2).^2)<Rout-Rout/100) 
 %         return 

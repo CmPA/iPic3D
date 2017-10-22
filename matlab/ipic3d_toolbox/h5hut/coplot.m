@@ -1,5 +1,5 @@
 function [ym] = coplot(it,x,y,f,ay,xlab,ylab,titolo,range1,range2)
-global contours dx dy
+global contours dx dy lprint
 
 f=double(f);
 ay=double(ay);
@@ -48,8 +48,10 @@ ylabel(ylab,'fontsize',[18])
 
 axis equal
 axis tight
+if(lprint)
 set(gcf, 'Renderer', 'zbuffer');
 print('-dpng',[titolo '_cycle' num2str(it) '.png'])
 print('-depsc','-painters',[titolo '_cycle' num2str(it) '.eps'])
 %saveas(gcf,[tit '.fig'])
+end
 
