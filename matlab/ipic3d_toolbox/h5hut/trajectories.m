@@ -7,6 +7,8 @@ folder_name = pwd;
 %folder_name = '/shared/gianni/WB/base'
 %namefile = 'TwoCoils-Fields';
 folder_name = '/Users/gianni/Downloads/matlab test/'
+folder_name = '/Users/gianni/Dropbox/Science/san_diego/high-res-steady-state'
+
 namefile = 'TwoCoils2D-Fields';
 
 Lx=37.5;
@@ -19,7 +21,7 @@ i=0
 % for WB later field
 i=500
 %i=4000
-%i=00
+i=72000
 
     it=sprintf('%06.0f',i);
         
@@ -33,22 +35,22 @@ i=500
     %hinfo.GroupHierarchy.Groups.Groups.Groups(:).Name
     
     
-    
-    bx = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(1).Datasets(1));
-    by = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1));
-    bz = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(5).Datasets(1));
-    bx_ext = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(2).Datasets(1));
-    by_ext = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(4).Datasets(1));
-    bz_ext = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(6).Datasets(1));
+    bx = hdf5read(fn, 'Step#0/Block/Bx/0');
+    by = hdf5read(fn, 'Step#0/Block/By/0');
+    bz = hdf5read(fn, 'Step#0/Block/Bz/0');
+    bx_ext = hdf5read(fn, 'Step#0/Block/Bx_ext/0');
+    by_ext = hdf5read(fn, 'Step#0/Block/By_ext/0');
+    bz_ext = hdf5read(fn, 'Step#0/Block/Bz_ext/0');
     bx=bx+bx_ext;
     by=by+by_ext;
     bz=bz+bz_ext;
     
     
     
-    ex = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(7).Datasets(1));
-    ey = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(8).Datasets(1));
-    ez = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(9).Datasets(1));
+    ex = hdf5read(fn, 'Step#0/Block/Ex/0');
+    ey = hdf5read(fn, 'Step#0/Block/Ey/0');
+    ez = hdf5read(fn, 'Step#0/Block/Ez/0');
+
     
     electric_damping=1;
     
@@ -61,15 +63,15 @@ i=500
     bz=permute(squeeze(bz(:,:,round(Nz/2))),[2 1]);
     
     b = sqrt (bx.^2 +by.^2 + bz.^2);
-    
+    e = sqrt (ex.^2 +ey.^2 + ez.^2);
    
-    magnetic_damping=1;
-    
-     ii=b<mean(b(:))/10;
-     bx(ii)=bx(ii)*magnetic_damping;
-     by(ii)=by(ii)*magnetic_damping;
-     bz(ii)=bz(ii)*magnetic_damping;
-     b = sqrt(bx.^2 +by.^2 + bz.^2);
+%     magnetic_damping=1;
+%     
+%      ii=b<mean(b(:))/10;
+%      bx(ii)=bx(ii)*magnetic_damping;
+%      by(ii)=by(ii)*magnetic_damping;
+%      bz(ii)=bz(ii)*magnetic_damping;
+%      b = sqrt(bx.^2 +by.^2 + bz.^2);
    
      rho = hdf5read(hinfo.GroupHierarchy.Groups.Groups.Groups(30).Datasets(1));
 
@@ -85,8 +87,8 @@ i=500
     lprint=1;
     
     [xg,yg]=meshgrid(0:Nx-1,0:Ny-1);
-    xg=xg/Nx*Lx;
-    yg=yg/Ny*Ly;
+    xg=xg/(Nx-1)*Lx;
+    yg=yg/(Ny-1)*Ly;
     
     h=figure(1)
     set(h,'Position',[677 70 627 910])
@@ -100,7 +102,13 @@ i=500
     range2=[0 0];
     %coplot(i,xg,yg,log(b+1e-10),b,xlab,ylab,titolo,range1, range2)
     range1=[0 0];
+    figure(1)
      coplot(i,xg,yg,log(b),ath,xlab,ylab,titolo,range1, range2)
+
+     range1=[0 0]; 
+    range2=[0 0];
+     figure(2)
+     coplot(i,xg,yg,e,ath,xlab,ylab,titolo,range1, range2)
 
     hold on
     
@@ -121,7 +129,7 @@ i=500
     tic
     for ip=1:Npart
         
-        random=1
+        random=0
         if(random)
         % random
         xp=[0.5 Ly/2 0]+rand(1,3)*3;
