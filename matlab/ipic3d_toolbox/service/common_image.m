@@ -32,7 +32,7 @@ Ncut=max(Nsm*3,1)
 imagesc(x(1,:),y(:,1),J',clmt)
 
 hold on
-contour(x,y,Az',30,'k')
+contour(x,y,Az',100,'k')
 caxis(clmt)
 
 if(color_choice==0)
@@ -71,5 +71,7 @@ end
 %set(gca,'xdir','reverse','TickDir','out')
 %print('-depsc','-r300',[name '.eps'])
 %set(gcf, 'Renderer', 'zbuffer');
+
 print('-dpng','-r300',[name Ncycle '.png'])
+
 %saveas(gcf,[name '.fig'])
