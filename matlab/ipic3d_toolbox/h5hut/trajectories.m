@@ -14,6 +14,8 @@ namefile = 'TwoCoils2D-Fields';
 Lx=37.5;
 Ly=75;
 
+methodflag=2;
+
 qom =10;
 
 % for initial vacuum field
@@ -108,6 +110,7 @@ i=72000
      range1=[0 0]; 
     range2=[0 0];
      figure(2)
+     titolo=[ 'cycle=' num2str(i) '  E (color) Ath(contours)']
      coplot(i,xg,yg,e,ath,xlab,ylab,titolo,range1, range2)
 
     hold on
@@ -162,6 +165,20 @@ i=72000
     vzout=y(:,6);
     
     r = sqrt(xout.^2+zout.^2);
+    theta = atan2(zout,xout);
+    bpr = qinterp2(xg,yg,bx,r,yout,methodflag); % Code x is cylindrical coordiante r
+    bpy = qinterp2(xg,yg,by,r,yout,methodflag); % Code y is cylindrical coordiante z
+    bptheta = qinterp2(xg,yg,bz,r,yout,methodflag); % Code z is cylindrical coordiante theta
+
+    bpx = bpr.*cos(theta) - bptheta .* sin(theta);
+    bpz = bpr.*sin(theta) + bptheta .* cos(theta);
+    bp=sqrt(bpx.^2+bpy.^2+bpz.^2);
+    vpar=(bpx.*vxout+bpy.*vyout+bpz.*vzout)./bp;
+    vperpx= vxout - vpar .* bpx./bp;
+    vperpy= vyout - vpar .* bpy./bp;
+    vperpz= vzout - vpar .* bpz./bp;
+    mu=(vperpx.^2+vperpy.^2+vperpz.^2)./bp;
+    
     dx=diff(xout); dy=diff(yout);dz=diff(zout);
     traffic=traffic+sum(sqrt(dx.^2+dy.^2+dz.^2));
     
@@ -197,7 +214,7 @@ i=72000
     end    
     
     figure(100+ip)
-    subplot(4,2,[1 3 5 7])
+    subplot(5,2,[1 3 5 7 9])
 
     lprint=0
     contour(xg,yg,ath,60,'k');
@@ -233,7 +250,7 @@ surface([r';r'],[yout';yout'],[yout'*0;yout'*0],[t';t'],...
         'linew',2);
         
     end  
-    subplot(4,2,2)
+    subplot(5,2,2)
     surface([t';t'],[kex';kex'],[kex'*0;kex'*0],[t';t'],...
         'facecol','no',...
         'edgecol','interp',...
@@ -241,7 +258,7 @@ surface([r';r'],[yout';yout'],[yout'*0;yout'*0],[t';t'],...
     %plot(t,kex)
     xlabel('t (c.u.)')
     ylabel('KE_x (c.u.)')
-    subplot(4,2,4)
+    subplot(5,2,4)
         surface([t';t'],[key';key'],[kex'*0;kex'*0],[t';t'],...
         'facecol','no',...
         'edgecol','interp',...
@@ -249,7 +266,7 @@ surface([r';r'],[yout';yout'],[yout'*0;yout'*0],[t';t'],...
     %plot(t,key)
     xlabel('t (c.u.)')
     ylabel('KE_y (c.u.)')
-        subplot(4,2,6)
+        subplot(5,2,6)
             surface([t';t'],[kez';kez'],[kex'*0;kex'*0],[t';t'],...
         'facecol','no',...
         'edgecol','interp',...
@@ -258,13 +275,22 @@ surface([r';r'],[yout';yout'],[yout'*0;yout'*0],[t';t'],...
     xlabel('t (c.u.)')
     ylabel('KE_z (c.u.)')
     
-    subplot(4,2,8)
+    subplot(5,2,8)
         surface([t';t'],[ke';ke'],[kex'*0;kex'*0],[t';t'],...
         'facecol','no',...
         'edgecol','interp',...
         'linew',2);
     xlabel('t (c.u.)')
     ylabel('KE (c.u.)')
+    
+    
+    subplot(5,2,10)
+        surface([t';t'],log([mu';mu']),[kex'*0;kex'*0],[t';t'],...
+        'facecol','no',...
+        'edgecol','interp',...
+        'linew',2);
+    xlabel('t (c.u.)')
+    ylabel('\mu (c.u.)')
 
     print('-dpng',['trajectory_' num2str(ip) '.png'])
     

@@ -4,7 +4,7 @@ addpath(genpath('../../ipic3d_toolbox')); % Point to the directory where the iPi
 %clear all
 leggo=2; poynting=1; ions=1; electrons=1;saveVTK=0;
 
-for cycle=40010
+for cycle=70010
 
 if(leggo==2)   
 ncycle = num2str(cycle,'%06d');
@@ -224,9 +224,9 @@ tmp=common_image((X(jr,ir)),(Y(jr,ir)),mean(Qbulkeperp1(ir,jr,kr),3)*mWm2,AAz(ir
 Qbulkeperp2=divfactor.*(perp2x.*Qbulkex+perp2y.*Qbulkey+perp2z.*Qbulkez);
 tmp=common_image((X(jr,ir)),(Y(jr,ir)),mean(Qbulkeperp2(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['r Qbulk \perp_2 Y=' num2str((z(1,1,iz)))],'Qbulkeprp2',range, Nsm, 2+iz);
 
-tmp=common_image((X(jr,ir)),(Y(jr,ir)),signx*mean(Qhfex(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['r Qhfex Y=' num2str((z(1,1,iz)))],'Qhfex',range, Nsm, 2+iz);
-tmp=common_image((X(jr,ir)),(Y(jr,ir)),mean(Qhfey(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['r Qhfey Y=' num2str((z(1,1,iz)))],'Qhfey',range, Nsm, 3+iz);
-tmp=common_image((X(jr,ir)),(Y(jr,ir)),mean(Qhfez(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['r Qhfez Y=' num2str((z(1,1,iz)))],'Qhfez',range, Nsm, 4+iz);
+tmp=common_image((X(jr,ir)),(Y(jr,ir)),signx*mean(Qhfex(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qhfex Y=' num2str((z(1,1,iz)))],'Qhfex',range, Nsm, 2+iz);
+tmp=common_image((X(jr,ir)),(Y(jr,ir)),mean(Qhfey(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qhfey Y=' num2str((z(1,1,iz)))],'Qhfey',range, Nsm, 3+iz);
+tmp=common_image((X(jr,ir)),(Y(jr,ir)),mean(Qhfez(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Qhfez Y=' num2str((z(1,1,iz)))],'Qhfez',range, Nsm, 4+iz);
 
 Qhfepar= divfactor.*dot(Qhfex,Qhfey,Qhfez,Bx,By,Bz)./B;
 tmp=common_image((X(jr,ir)),(Y(jr,ir)),mean(Qhfepar(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['r Qhfe || Y=' num2str((z(1,1,iz)))],'Qhfepar',range, Nsm, 2+iz);
