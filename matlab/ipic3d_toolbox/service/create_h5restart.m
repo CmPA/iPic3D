@@ -18,13 +18,15 @@ z = linspace(0,Lz,nzc+1);
 
 
 ns=2;
-B0=1; L=0.1; 
+B0=0.0097; L=0.1; 
 
 N0=[1;1]/4/pi;
 qom=[-256;1];
 
 U0=[0;0];V0=[0;0];W0=[.00325;-.01624];
-
+UTH=[0.045   0.0063];
+VTH=UTH;
+WTH=UTH;
 
 Bx=B0*tanh((Y-Ly/2)./L);
 By=zeros(Nx,Ny,Nz);
@@ -34,7 +36,7 @@ Ex=zeros(Nx,Ny,Nz);
 Ey=zeros(Nx,Ny,Nz);
 Ez=zeros(Nx,Ny,Nz);
 
-rho = sech((Y-Ly/2)./L).^2;
+rho = .01+sech((Y-Ly/2)./L).^2;
 
 
 !rm Initial-Fields_000000.h5
@@ -47,6 +49,15 @@ h5write(opath,'/Step#0/Block/By/0',By)
 
 h5create(opath,'/Step#0/Block/Bz/0',[Nx, Ny, Nz]);
 h5write(opath,'/Step#0/Block/Bz/0',Bz)
+
+h5create(opath,'/Step#0/Block/Bx_ext/0',[Nx, Ny, Nz]);
+h5write(opath,'/Step#0/Block/Bx_ext/0',zeros(Nx,Ny,Nz))
+
+h5create(opath,'/Step#0/Block/By_ext/0',[Nx, Ny, Nz]);
+h5write(opath,'/Step#0/Block/By_ext/0',zeros(Nx,Ny,Nz))
+
+h5create(opath,'/Step#0/Block/Bz_ext/0',[Nx, Ny, Nz]);
+h5write(opath,'/Step#0/Block/Bz_ext/0',zeros(Nx,Ny,Nz))
 
 h5create(opath,'/Step#0/Block/Ex/0',[Nx, Ny, Nz]);
 h5write(opath,'/Step#0/Block/Ex/0',Ex)
@@ -69,5 +80,14 @@ h5write(opath,['/Step#0/Block/Jz_' num2str(is-1) '/0'],N0(is)*rho*W0(is)*qom(is)
 
 h5create(opath,['/Step#0/Block/rho_' num2str(is-1) '/0'],[Nx, Ny, Nz]);
 h5write(opath,['/Step#0/Block/rho_' num2str(is-1) '/0'],N0(is)*rho*qom(is))
+
+h5create(opath,['/Step#0/Block/Pxx_' num2str(is-1) '/0'],[Nx, Ny, Nz]);
+h5write(opath,['/Step#0/Block/Pxx_' num2str(is-1) '/0'],N0(is)*rho*(U0(is).^2+UTH(is).^2)*qom(is))
+
+h5create(opath,['/Step#0/Block/Pyy_' num2str(is-1) '/0'],[Nx, Ny, Nz]);
+h5write(opath,['/Step#0/Block/Pyy_' num2str(is-1) '/0'],N0(is)*rho*(V0(is).^2+VTH(is).^2)*qom(is))
+
+h5create(opath,['/Step#0/Block/Pzz_' num2str(is-1) '/0'],[Nx, Ny, Nz]);
+h5write(opath,['/Step#0/Block/Pzz_' num2str(is-1) '/0'],N0(is)*rho*(W0(is).^2+WTH(is).^2)*qom(is))
 end
 h5writeatt(opath,'/Step#0','nspec',int32(ns));

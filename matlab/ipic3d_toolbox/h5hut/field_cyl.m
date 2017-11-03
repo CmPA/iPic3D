@@ -4,16 +4,18 @@ clc
 addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
 folder_name = '/Users/gianni/Dropbox/Science/san_diego/high-res-steady-state'
-namefile = 'TwoCoils2D-Fields';
+folder_name = '/Users/gianni/Downloads/pressure-anisotropy'
+
+namefile = 'PF4-Fields';
 
 
 Lx=25;
-Ly=50;
-qom_0 = -40;
-qom_1 = 2.5;
+Ly=32;
+qom_0 = -16;
+qom_1 = 1;
 
 
-i = 72000
+i = 2900
 
 
     it=sprintf('%06.0f',i);
@@ -27,39 +29,50 @@ i = 72000
     % uncomment this for a list of varibales available
     %hinfo.GroupHierarchy.Groups.Groups.Groups(:).Name
     
-    n = hdf5read(fn,'/Step#0/Block/rho_0/0/');
+    ne = hdf5read(fn,'/Step#0/Block/rho_0/0/');
     jx = hdf5read(fn,'/Step#0/Block/Jx_0/0/');
     pxx = hdf5read(fn,'/Step#0/Block/Pxx_0/0/');
-    pxx = (pxx - jx.*jx./(n+1e-10))/qom_0;
+    pexx = (pxx - jx.*jx./(ne-1e-10))/qom_0;
     jy = hdf5read(fn,'/Step#0/Block/Jy_0/0/');
     pyy = hdf5read(fn,'/Step#0/Block/Pyy_0/0/');
-    pyy = (pyy - jy.*jy./(n+1e-10))/qom_0;
+    peyy = (pyy - jy.*jy./(ne-1e-10))/qom_0;
     jz = hdf5read(fn,'/Step#0/Block/Jz_0/0/');
     pzz = hdf5read(fn,'/Step#0/Block/Pzz_0/0/');
-    pzz = (pzz - jz.*jz./(n+1e-10))/qom_0;
+    pezz = (pzz - jz.*jz./(ne-1e-10))/qom_0;
     
-    pe = pxx + pyy + pzz;
+   
+    pe = pexx + peyy + pezz;
     
-    n = hdf5read(fn,'/Step#0/Block/rho_1/0/');
+    ni = hdf5read(fn,'/Step#0/Block/rho_1/0/');
     jx = hdf5read(fn,'/Step#0/Block/Jx_1/0/');
     pxx = hdf5read(fn,'/Step#0/Block/Pxx_1/0/');
-    pxx = (pxx - jx.*jx./(n+1e-10))/qom_1;
+    pixx = (pxx - jx.*jx./(ni+1e-10))/qom_1;
     jy = hdf5read(fn,'/Step#0/Block/Jy_1/0/');
     pyy = hdf5read(fn,'/Step#0/Block/Pyy_1/0/');
-    pyy = (pyy - jy.*jy./(n+1e-10))/qom_1;
+    piyy = (pyy - jy.*jy./(ni+1e-10))/qom_1;
     jz = hdf5read(fn,'/Step#0/Block/Jz_1/0/');
     pzz = hdf5read(fn,'/Step#0/Block/Pzz_1/0/');
-    pzz = (pzz - jz.*jz./(n+1e-10))/qom_1;
+    pizz = (pzz - jz.*jz./(ni+1e-10))/qom_1;
     
-    pion = pxx + pyy + pzz;
+    pi = pixx + piyy + pizz;
     
-    p = pe + pion;
+    p = pe + pi;
     
-    vtheta=jz./n;
+    vtheta=jz./(ni+1e-10);
     
     p=permute(squeeze(p(:,:,round(Nz/2))),[2 1]);
+    pe=permute(squeeze(pe(:,:,round(Nz/2))),[2 1]);
+    pi=permute(squeeze(pi(:,:,round(Nz/2))),[2 1]);
+    pexx=permute(squeeze(pexx(:,:,round(Nz/2))),[2 1]);
+    peyy=permute(squeeze(peyy(:,:,round(Nz/2))),[2 1]);
+    pezz=permute(squeeze(pezz(:,:,round(Nz/2))),[2 1]);
+
+    pixx=permute(squeeze(pixx(:,:,round(Nz/2))),[2 1]);
+    piyy=permute(squeeze(piyy(:,:,round(Nz/2))),[2 1]);
+    pizz=permute(squeeze(pizz(:,:,round(Nz/2))),[2 1]);
     
-    n=permute(squeeze(n(:,:,round(Nz/2))),[2 1]);
+    ne=permute(squeeze(ne(:,:,round(Nz/2))),[2 1]);
+    ni=permute(squeeze(ni(:,:,round(Nz/2))),[2 1]);
     
     vtheta=permute(squeeze(vtheta(:,:,round(Nz/2))),[2 1]);
     
@@ -91,6 +104,9 @@ i = 72000
    
      epar=dot(ex,ey,ez,bx,by,bz)./b;
 
+     
+    lde = sqrt(pe./4./3.14./(ne.^2+1e-10));
+    rhoe = sqrt(pe./ne./qom_0./b.^2);
     
     global contours dx dy
     
@@ -111,15 +127,17 @@ i = 72000
     
     xlab='x';
     ylab='y'
-    titolo=[ 'cycle=' num2str(i) '  p(int) (color) A(contours)']
+    titolo=[ 'cycle=' num2str(i) '  \lambda_{De}(int) (color) A(contours)']
     
     
-    range1=[0 1]*5e-7*3; 
+    range1=[0 .1]; 
     range2=[0 0];
  
-    ptot=p+ben;
-  coplot(i,xg,yg,ptot,ath,xlab,ylab,titolo,range1, range2)
-  
+%    ptot=p+ben;
+  coplot(i,xg,yg,lde,ath,xlab,ylab,titolo,range1, range2)
+  titolo=[ 'cycle=' num2str(i) '  \rho_e(int) (color) A(contours)']
+    figure(3)
+  coplot(i,xg,yg,rhoe,ath,xlab,ylab,titolo,range1, range2)
   
 
   figure(2)
