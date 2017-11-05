@@ -12,7 +12,7 @@ function [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] = 
  B_ref = 20e-9;
 
 %mass ratio code
- mrcode = 25;
+ mrcode = 256;
 % mrcode = 1836;
 % boost = 100;
 
@@ -25,9 +25,9 @@ function [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] = 
 %physical electorns
  me=9.1094e-31;
  mp = me * mrcode;
-% physical ions with boost
-% mp=1.6726e-27/boost;
-% me = mp / mrcode;
+% physical ions 
+ mp=1.6726e-27;
+ me = mp / mrcode;
 
 % Convert to SI
  np=n_ref*1e6; % puts ni in m^-3

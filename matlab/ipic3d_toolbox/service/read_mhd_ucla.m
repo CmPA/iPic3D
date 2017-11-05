@@ -11,6 +11,7 @@ nome='~/Dropbox/Science/ucla/7feb09/feb0709iPICBox.035800UT.dat'; %Jean12
 e= 1.6022e-19;
 
 Tratio=[1/5,1];
+qom=[-256,1];segno=qom./abs(qom);
  
 readdo=0;
 if(readdo)
@@ -26,7 +27,7 @@ s=fscanf(fid,'%s',4);
 x =  fscanf(fid,'%f',4);
 ymin=x(1); ymax=x(2); dy=x(3); Ny= x(4);
 s=fscanf(fid,'%s',4);
-x =  fscanf(fid,'%f',4);;
+x =  fscanf(fid,'%f',4);
 zmin=x(1); zmax=x(2); dz=x(3); Nz= x(4);
 
 
@@ -71,13 +72,12 @@ p=reshape(a(:,11),Nz,Ny,Nx)*1e-12;
 
 T = (p ./ n  ) ./ code_T ./(1.0+Tratio(1)/Tratio(2));
 
-n= n/ code_n;
+n= n/ code_n/4/pi;
 
-xpic=linspace(xmin,xmax,Nxpic);
-pcolor(squeeze(x(Nz/2,:,:)),squeeze(y(Nz/2,:,:)),squeeze(T(Nz/2,:,:))); colorbar; shading interp
+Lx=xmax-xmin
+Ly=ymax-ymin
 
-
-Nxpic=501;Nypic=101; Nzpic=2;
+Nxpic=101;Nypic=51; Nzpic=2;
 
 
 dx=(xmax-xmin)/Nxpic;
@@ -95,6 +95,84 @@ end
 
 [Xpic,Ypic,Zpic]=ndgrid(xpic,ypic,zpic);
 
-Tpic=interpmio(x,y,z,T,Xpic,Ypic,Zpic); imagesc(squeeze(Tpic(:,:,1)))
+Tpic=interpmio(x,y,z,T,Xpic,Ypic,Zpic); 
+
+imagesc(squeeze(sqrt(256*Tratio(1)*Tpic(:,:,1))));axis image;colorbar
+
+npic=interpmio(x,y,z,n,Xpic,Ypic,Zpic);
+
+Bxpic=interpmio(x,y,z,Bx,Xpic,Ypic,Zpic);
+Bypic=interpmio(x,y,z,By,Xpic,Ypic,Zpic);
+Bzpic=interpmio(x,y,z,Bz,Xpic,Ypic,Zpic);
+
+Expic=interpmio(x,y,z,Ex,Xpic,Ypic,Zpic);
+Eypic=interpmio(x,y,z,Ey,Xpic,Ypic,Zpic);
+Ezpic=interpmio(x,y,z,Ez,Xpic,Ypic,Zpic);
+
+Jxpic(1:Nxpic,1:Nypic,1:Nzpic,1)=interpmio(x,y,z,n.*Vex,Xpic,Ypic,Zpic);
+Jypic(1:Nxpic,1:Nypic,1:Nzpic,1)=interpmio(x,y,z,n.*Vey,Xpic,Ypic,Zpic);
+Jzpic(1:Nxpic,1:Nypic,1:Nzpic,1)=interpmio(x,y,z,n.*Vez,Xpic,Ypic,Zpic);
+
+Jxpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Vix,Xpic,Ypic,Zpic);
+Jypic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Vy,Xpic,Ypic,Zpic);
+Jzpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viz,Xpic,Ypic,Zpic);
+
+ns=2;
+!rm Initial-Fields_000000.h5
+opath='Initial-Fields_000000.h5'
+h5create(opath,'/Step#0/Block/Bx/0',[Nxpic, Nypic, Nzpic]);
+h5write(opath,'/Step#0/Block/Bx/0',Bxpic)
+
+h5create(opath,'/Step#0/Block/By/0',[Nxpic, Nypic, Nzpic]);
+h5write(opath,'/Step#0/Block/By/0',Bypic)
+
+h5create(opath,'/Step#0/Block/Bz/0',[Nxpic, Nypic, Nzpic]);
+h5write(opath,'/Step#0/Block/Bz/0',Bzpic)
+
+h5create(opath,'/Step#0/Block/Bx_ext/0',[Nxpic, Nypic, Nzpic]);
+h5write(opath,'/Step#0/Block/Bx_ext/0',zeros(Nxpic, Nypic, Nzpic))
+
+h5create(opath,'/Step#0/Block/By_ext/0',[Nxpic, Nypic, Nzpic]);
+h5write(opath,'/Step#0/Block/By_ext/0',zeros(Nxpic, Nypic, Nzpic))
+
+h5create(opath,'/Step#0/Block/Bz_ext/0',[Nxpic, Nypic, Nzpic]);
+h5write(opath,'/Step#0/Block/Bz_ext/0',zeros(Nxpic, Nypic, Nzpic))
+
+h5create(opath,'/Step#0/Block/Ex/0',[Nxpic, Nypic, Nzpic]);
+h5write(opath,'/Step#0/Block/Ex/0',Expic)
+
+h5create(opath,'/Step#0/Block/Ey/0',[Nxpic, Nypic, Nzpic]);
+h5write(opath,'/Step#0/Block/Ey/0',Eypic)
+
+h5create(opath,'/Step#0/Block/Ez/0',[Nxpic, Nypic, Nzpic]);
+h5write(opath,'/Step#0/Block/Ez/0',Ezpic)
+
+for is=1:ns
+h5create(opath,['/Step#0/Block/Jx_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
+h5write(opath,['/Step#0/Block/Jx_' num2str(is-1) '/0'],Jxpic(1:Nxpic,1:Nypic,1:Nzpic,is)*segno(is))
+
+h5create(opath,['/Step#0/Block/Jy_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
+h5write(opath,['/Step#0/Block/Jy_' num2str(is-1) '/0'],Jypic(1:Nxpic,1:Nypic,1:Nzpic,is)*segno(is))
+
+h5create(opath,['/Step#0/Block/Jz_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
+h5write(opath,['/Step#0/Block/Jz_' num2str(is-1) '/0'],Jzpic(1:Nxpic,1:Nypic,1:Nzpic,is)*segno(is))
+
+h5create(opath,['/Step#0/Block/rho_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
+h5write(opath,['/Step#0/Block/rho_' num2str(is-1) '/0'],npic*segno(is))
+
+h5create(opath,['/Step#0/Block/Pxx_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
+h5write(opath,['/Step#0/Block/Pxx_' num2str(is-1) '/0'], ...
+    Jxpic(1:Nxpic,1:Nypic,1:Nzpic,is).^2./npic*segno(is)+ qom(is) * Tratio(is) * Tpic .*npic );
+
+h5create(opath,['/Step#0/Block/Pyy_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
+h5write(opath,['/Step#0/Block/Pyy_' num2str(is-1) '/0'], ...
+    Jypic(1:Nxpic,1:Nypic,1:Nzpic,is).^2./npic*segno(is)+ qom(is) * Tratio(is) * Tpic .*npic );
 
 
+h5create(opath,['/Step#0/Block/Pzz_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
+h5write(opath,['/Step#0/Block/Pzz_' num2str(is-1) '/0'], ...
+    Jzpic(1:Nxpic,1:Nypic,1:Nzpic,is).^2./npic*segno(is)+ qom(is) * Tratio(is) * Tpic .*npic );
+
+
+end
+h5writeatt(opath,'/Step#0','nspec',int32(ns));
