@@ -6,24 +6,26 @@ folder_name = pwd;
 
 %folder_name = '/shared/gianni/WB/base'
 %namefile = 'TwoCoils-Fields';
-folder_name = '/Users/gianni/Downloads/matlab test/'
-folder_name = '/Users/gianni/Dropbox/Science/san_diego/high-res-steady-state'
+folder_name = '/Users/gianni/Downloads/2-coil-quasi-steady'
+%folder_name = '/Users/gianni/Dropbox/Science/san_diego/high-res-steady-state'
 
 namefile = 'TwoCoils2D-Fields';
 
-Lx=37.5;
-Ly=75;
+Lx=30;
+Ly=60;
+CoilD = 20.0;			 
+CoilSpacing= 10.0;
 
 methodflag=2;
 
-qom =10;
+qom =1;
 
 % for initial vacuum field
 i=0
 % for WB later field
 i=500
 %i=4000
-i=72000
+i=1200
 
     it=sprintf('%06.0f',i);
         
@@ -64,8 +66,10 @@ i=72000
     by=permute(squeeze(by(:,:,round(Nz/2))),[2 1]);
     bz=permute(squeeze(bz(:,:,round(Nz/2))),[2 1]);
     
-    b = sqrt (bx.^2 +by.^2 + bz.^2);
+    b = sqrt (bx.^2 +by.^2 + bz.^2);bmax=max(b(:));
     e = sqrt (ex.^2 +ey.^2 + ez.^2);
+    
+
    
 %     magnetic_damping=1;
 %     
@@ -92,6 +96,23 @@ i=72000
     xg=xg/(Nx-1)*Lx;
     yg=yg/(Ny-1)*Ly;
     
+
+    
+    figure(200)
+    N=100;
+    [xn, yn, zn] = ndgrid(0:N,0:N,0:N);
+    xn=xn/(N)*Lx*2-Lx;
+    yn=yn/(N)*Ly;
+    zn=zn/(N)*Lx*2-Lx;
+    r=sqrt(xn.^2+zn.^2);
+    methodflag=2;
+    r1=reshape(r,(N+1)*(N+1)*(N+1),1);
+    z1=reshape(yn,(N+1)*(N+1)*(N+1),1);
+    bn= interp2(xg,yg,b,r1,z1);
+    bn=reshape(bn,(N+1),(N+1),(N+1));
+    isosurface(permute(xn, [2 1 3]),permute(yn, [2 1 3]),permute(zn, [2 1 3]),permute(bn, [2 1 3]),bmax/40)
+hold on
+    
     h=figure(1)
     set(h,'Position',[677 70 627 910])
     
@@ -112,8 +133,21 @@ i=72000
      figure(2)
      titolo=[ 'cycle=' num2str(i) '  E (color) Ath(contours)']
      coplot(i,xg,yg,e,ath,xlab,ylab,titolo,range1, range2)
-
+     xlim([-CoilD/2*1.1 CoilD/2*1.1])
+     ylim([Ly/2-CoilSpacing/2*1.1 Lx+CoilSpacing/2*1.1])
+     zlim([-CoilD/2*1.1 CoilD/2*1.1])
     hold on
+             %
+    %   Adding potential well along the axis
+    ey=ey-(yg-Ly/2)/Lx*bmax/40000;
+    ex=ex-xg/Lx*bmax/40000;
+    %
+        de = (sqrt (ex.^2 +ey.^2 + ez.^2)-e);
+    
+             figure(3)
+     titolo=[ 'cycle=' num2str(i) '  dE (color) Ath(contours)']
+     coplot(i,xg,yg,de,ath,xlab,ylab,titolo,range1, range2)
+
     
     %print(['frame_' it '.png'],'-dpng')
     %pause(.01)
@@ -132,18 +166,18 @@ i=72000
     tic
     for ip=1:Npart
         
-        random=0
+        random=1
         if(random)
         % random
         xp=[0.5 Ly/2 0]+rand(1,3)*3;
-        vmono = .01;
+        vmono = 8e-3;
         costh = rand(1,1)*2-1; sinth =1-costh^2;
         fi = 2*pi *rand(1,1);
         vp = vmono * [sinth*cos(fi) costh sinth*sin(fi)] ;
         else
        % deterministic
         xp=[0.5 Ly/2 0]+ ip * ones(1,3)/Npart*3;
-        vmono = .01;
+        vmono = 8e-3;%.01;
         costh = ip/Npart*2-1; sinth =1-costh^2;
         fi = 2*pi*ip/Npart;
         vp = vmono * [sinth*cos(fi) costh sinth*sin(fi)] ;
@@ -199,6 +233,12 @@ i=72000
 %         'linew',2);
 %         plot(r(1),yout(1),'go',r(end),yout(end),'kp')
         plot(r,yout,r(1),yout(1),'go',r(end),yout(end),'kp','linew',2)
+              figure(200)
+        plot3(xout,yout,zout)
+        hold on
+             xlim([-CoilD/2*1.1 CoilD/2*1.1])
+     ylim([Ly/2-CoilSpacing/2*1.5 Lx+CoilSpacing/2*1.5])
+     zlim([-CoilD/2*1.1 CoilD/2*1.1])
 
     else
         % particle lost
@@ -210,7 +250,12 @@ i=72000
 %         'linew',2);
 %         plot(r(1),yout(1),'go',r(end),yout(end),'kx')
         plot(r,yout,r(1),yout(1),'go',r(end),yout(end),'kx','linew',2)
-        
+                      figure(200)
+        plot3(xout,yout,zout)
+        hold on
+             xlim([-CoilD/2*1.1 CoilD/2*1.1])
+     ylim([Ly/2-CoilSpacing/2*1.5 Lx+CoilSpacing/2*1.5])
+     zlim([-CoilD/2*1.1 CoilD/2*1.1])
     end    
     
     figure(100+ip)
@@ -302,6 +347,11 @@ surface([r';r'],[yout';yout'],[yout'*0;yout'*0],[t';t'],...
     disp(['residence time=', num2str(mean_t/ip)])
     disp(['mean traffic =', num2str(traffic/ip)]) 
     end
+    
+    figure(1)
+    print('-dpng',['trajectory_summary_2D.png'])
+        figure(200)
+    print('-dpng',['trajectory_summary_3D.png'])
       toc 
     
 

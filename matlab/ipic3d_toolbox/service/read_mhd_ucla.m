@@ -13,7 +13,7 @@ e= 1.6022e-19;
 Tratio=[1/5,1];
 qom=[-256,1];segno=qom./abs(qom);
  
-readdo=0;
+readdo=1;
 if(readdo)
 % Data structure:
 %x(RE) y(RE) z(RE) bx(nT) by(nT) bz(nT) vx(km/s) vy(km/s) vz(km/s)
@@ -77,7 +77,7 @@ n= n/ code_n/4/pi;
 Lx=xmax-xmin
 Ly=ymax-ymin
 
-Nxpic=101;Nypic=51; Nzpic=2;
+Nxpic=129;Nypic=65; Nzpic=2;
 
 
 dx=(xmax-xmin)/Nxpic;
@@ -114,7 +114,7 @@ Jypic(1:Nxpic,1:Nypic,1:Nzpic,1)=interpmio(x,y,z,n.*Vey,Xpic,Ypic,Zpic);
 Jzpic(1:Nxpic,1:Nypic,1:Nzpic,1)=interpmio(x,y,z,n.*Vez,Xpic,Ypic,Zpic);
 
 Jxpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Vix,Xpic,Ypic,Zpic);
-Jypic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Vy,Xpic,Ypic,Zpic);
+Jypic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viy,Xpic,Ypic,Zpic);
 Jzpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viz,Xpic,Ypic,Zpic);
 
 ns=2;

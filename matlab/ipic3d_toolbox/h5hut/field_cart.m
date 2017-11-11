@@ -9,15 +9,18 @@ namefile = 'data-Fields';
 % folder_name = '/shared/gianni/tred74_2D/data_rhofromJ_periodic/'
 % namefile = 'GEM-Fields';
 
+folder_name = '/Users/gianni/Dropbox/Science/san_diego/6-coil-Nov-2017/'
+namefile = 'SixCoils-Fields';
 
 
 
-Lx=40;
-Ly=30;
+Lx=70;
+Ly=70;
+Lz=70;
 
 
 
-for i=48000:1000:48000
+for i=4000:1000:4000
 
 
     it=sprintf('%06.0f',i);
@@ -65,8 +68,8 @@ for i=48000:1000:48000
     
    
      epar=dot(ex,ey,ez,bx,by,bz)./b;
-     rho_i = hdf5read(fn,'/Step#0/Block/rho_1/0/') + hdf5read(fn,'/Step#0/Block/rho_3/0/') ; 
-     rho_e = hdf5read(fn,'/Step#0/Block/rho_0/0/') + hdf5read(fn,'/Step#0/Block/rho_2/0/') ; 
+     rho_i = hdf5read(fn,'/Step#0/Block/rho_1/0/'); %+ hdf5read(fn,'/Step#0/Block/rho_3/0/') ; 
+     rho_e = hdf5read(fn,'/Step#0/Block/rho_0/0/'); %+ hdf5read(fn,'/Step#0/Block/rho_2/0/') ; 
      rho=rho_e+rho_i;
      rho=permute(squeeze(rho(:,:,round(Nz/2))),[2 1]);
      rho_i=permute(squeeze(rho_i(:,:,round(Nz/2))),[2 1]);
@@ -138,4 +141,14 @@ for i=48000:1000:48000
             titolo=[ 'cycle=' num2str(i) '  Bz (color) B(contours)']
     coplot(i,xg,yg,bz,AAz,xlab,ylab,titolo,range1, range2)
             print('-dpng', 'figure3.png')
+            
+            h=figure(4)
+    set(h,'Position',[123 336 1264 469])
+        subplot(1,2,1)
+        titolo=[ 'cycle=' num2str(i) '  rho_e (color) B(contours)']
+    coplot(i,xg,yg,rho_e*4*pi,AAz,xlab,ylab,titolo,range1, range2)
+    subplot(1,2,2)
+            titolo=[ 'cycle=' num2str(i) '  rho_i (color) B(contours)']
+    coplot(i,xg,yg,rho_i*4*pi,AAz,xlab,ylab,titolo,range1, range2)
+            print('-dpng', 'figure4.png')
 end 
