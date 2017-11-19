@@ -8,13 +8,14 @@ folder_name = pwd;
 %namefile = 'TwoCoils-Fields';
 folder_name = '/Users/gianni/Downloads/2-coil-quasi-steady'
 %folder_name = '/Users/gianni/Dropbox/Science/san_diego/high-res-steady-state'
+folder_name = '/Users/gianni/Desktop'
 
 namefile = 'TwoCoils2D-Fields';
 
 Lx=30;
 Ly=60;
 CoilD = 20.0;			 
-CoilSpacing= 10.0;
+CoilSpacing= 17.0;
 
 methodflag=2;
 
@@ -25,7 +26,7 @@ i=0
 % for WB later field
 i=500
 %i=4000
-i=1200
+i=5000
 
     it=sprintf('%06.0f',i);
         
@@ -137,10 +138,18 @@ hold on
      ylim([Ly/2-CoilSpacing/2*1.1 Lx+CoilSpacing/2*1.1])
      zlim([-CoilD/2*1.1 CoilD/2*1.1])
     hold on
+
              %
     %   Adding potential well along the axis
+    
+    well_inside=0
+    if(well_inside)
     ey=ey-(yg-Ly/2)/Lx*bmax/40000;
     ex=ex-xg/Lx*bmax/40000;
+    else
+    ey=ey-10*max(0.0,abs(yg-Ly/2)-CoilSpacing/2).*sign(yg-Ly/2)/Ly*bmax/40000;
+    ex=ex-10*max(0.0,xg-CoilD/2)/Lx*bmax/40000;
+    end
     %
         de = (sqrt (ex.^2 +ey.^2 + ez.^2)-e);
     
@@ -349,9 +358,9 @@ surface([r';r'],[yout';yout'],[yout'*0;yout'*0],[t';t'],...
     end
     
     figure(1)
-    print('-dpng',['trajectory_summary_2D.png'])
+    print('-dpng',['trajectory_summary_2D_out.png'])
         figure(200)
-    print('-dpng',['trajectory_summary_3D.png'])
+    print('-dpng',['trajectory_summary_3D_out.png'])
       toc 
     
 
