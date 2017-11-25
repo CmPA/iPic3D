@@ -6,11 +6,13 @@ folder_name = pwd;
 
 %folder_name = '/shared/gianni/WB/base'
 %namefile = 'TwoCoils-Fields';
-folder_name = '/Users/gianni/Downloads/2-coil-quasi-steady'
+%folder_name = '/Users/gianni/Downloads/2-coil-quasi-steady'
 %folder_name = '/Users/gianni/Dropbox/Science/san_diego/high-res-steady-state'
-folder_name = '/Users/gianni/Desktop'
+%folder_name = '/Users/gianni/Desktop'
+folder_name = '/Users/gianni/Downloads/PF-V3-d2'
 
 namefile = 'TwoCoils2D-Fields';
+namefile = 'PF4-Fields';
 
 Lx=30;
 Ly=60;
