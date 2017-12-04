@@ -28,6 +28,7 @@ lmt(1)=0.0;
 end
 end
 
+lmt
 imagesc(x,y,J(Ncut:end-Ncut,Ncut:end-Ncut)',lmt);
 
         if(color_choice==0)
