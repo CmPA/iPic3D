@@ -7,7 +7,9 @@ load cm_multi4
 J=smooth(J1,Nsm);
 
 h=figure(nfig)
-subplot(1,3,nplot)
+if (nplot>1) 
+    subplot(1,3,nplot) 
+end
 if(nplot==1) 
     set(h,'Position',[167 51 3*500*max(x)/max(y) 500]);
 end
