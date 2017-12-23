@@ -6,12 +6,14 @@ load cm_multi4
 
 J=smooth(J1,Nsm);
 
+[nplot nfig]
+
 h=figure(nfig)
-if (nplot>1) 
-    subplot(1,3,nplot) 
+if (nplot(2)>1) 
+    subplot(1,nplot(2),nplot(1)) 
 end
-if(nplot==1) 
-    set(h,'Position',[167 51 3*500*max(x)/max(y) 500]);
+if(nplot(1)==1) 
+    set(h,'Position',[167 51 nplot(2)*500*max(x)/max(y) 500]);
 end
 
 Ncut=max(Nsm*3,1);

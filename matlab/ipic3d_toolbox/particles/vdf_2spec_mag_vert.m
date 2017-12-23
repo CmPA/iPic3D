@@ -39,18 +39,18 @@ Xgsmrange= [-45 -15];
 Zgsmrange= [-8.7 3.3];
 Ygsmrange= [-3 9];
 
-Zgsm=-3.2
+Zgsm=-3.5 % -3.2
 ipystart = round(YLEN * (Zgsm-Zgsmrange(1)) / (Zgsmrange(2)-Zgsmrange(1)) )
-for  ipy=ipystart:ipystart+1
-Xgsm=-32
+for  ipy=ipystart+1:ipystart+1
+Xgsm=-31.237 %-32
 xcode=-(Xgsm-Xgsmrange(2))*Lx/(Xgsmrange(2)-Xgsmrange(1));
-ipx=round(xcode/Lx*XLEN)+1
+ipx=round(xcode/Lx*XLEN)
 
 
 %1 mar08C
 %ipy=7;ipz=10;
-Ygsm=6
-ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )+1
+Ygsm= 5.812%6
+ipz = round(ZLEN * (Ygsm-Ygsmrange(1)) / (Ygsmrange(2)-Ygsmrange(1)) )
 
 
 ip=(ipx-1)*YLEN*ZLEN+(ipy-1)*ZLEN+ipz-1;
@@ -170,7 +170,7 @@ iysub=floor((y-ymin)/dysub);
 izsub=floor((z-zmin)/dzsub);
 
 % choose the desired subdomain in y ans z, from 0 to nsub-1
-subx=0;subz=0;
+subx=3;subz=3;
 for suby=0:nsuby-1
 ii=(ixsub==subx)&(iysub==suby)&(izsub==subz);
 
@@ -206,22 +206,23 @@ vdf_sp=vdf_sp*rho*np/c^3;
 
 
 %vdf_sp=smooth3(vdf_sp,'gaussian',3);
-vdf_sp=smooth3D(vdf_sp,3);
+vdf_sp=smooth3D(vdf_sp,3*3);
 vdf_sp=vdf_sp./sum(vdf_sp(:));
 dv=(vmax-vmin)/ndiv;
-%filename=['vdf_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx) '.vtk'];
-%savevtk_bin(vdf_sp,filename,'vdf',dv,dv,dv,vmin,vmin,vmin);
+filename=['vdf_' 'species_' num2str(is) '_' num2str(ipy*nsuby+suby) '.vtk'];
+savevtk_bin(vdf_sp,filename,'vdf',dv,dv,dv,vmin,vmin,vmin);
 
 
 
 
 
-global labelT symmetric_color color_choice
+global labelT symmetric_color color_choice square
 labelT='x/R_E=';
 labelT='x/d_i=';
 labelT=' ';
 symmetric_color=0;
 color_choice=0;
+square=1;
 
 % for 101x101 plots
 if(is==1)
@@ -235,7 +236,7 @@ pos_label = ['Npart=' num2str(sum(ii)) '  X=' num2str(xscan((ipy-1)*nsuby+suby+1
 
 immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,3))), ...
              ['vdfParPerp_' 'species_' num2str(is) '_' num2str(ipy*nsuby+suby)], ...
-             crange,0,pos_label,max(size(q(ii))),1,'v_{||}/c','v_{\perp 1}/c','vdf');
+             crange,0,pos_label,max(size(q(ii))),1,[1 2],'v_{||}/c','v_{\perp 1}/c','vdf');
 
 %immagine_dir([vmin vmax],[vmin vmax],(1e-10+squeeze(sum(vdf_sp,2))+squeeze(sum(vdf_sp,3)))/2, ...
 %             ['vdfXZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
@@ -243,7 +244,11 @@ immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,3))), ...
 
 immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,1))), ...
              ['vdfPerp1Perp2_' 'species_' num2str(is) '_' num2str(ipy*nsuby+suby)], ...
-             crange,0,pos_label,max(size(q(ii))),2,'v_{\perp 1}/c','v_{\perp 2}/c','vdf');
+             crange,0,pos_label,max(size(q(ii))),1, [2 2],'v_{\perp 1}/c','v_{\perp 2}/c','vdf');
+         
+  current_fig=gcf
+  title(current_fig.Children(end),pos_label)
+  print('-dpng','-r300',['vdf_species_' num2str(is) '_' num2str(ipy*nsuby+suby) '.png'])
 end
 
 

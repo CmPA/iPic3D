@@ -216,7 +216,7 @@ symmetric_color=0
 color_choice=0
 immagine_dir([vmin vmax],[0 vmax],(1e-10+squeeze(sum(vdf_sp,3))), ...
              ['vdfXY_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
-             [0 1.5e-3],0,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'v_{||}/c','v_{\perp}/c','vdf');
+             [0 1.5e-3],0,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,0,'v_{||}/c','v_{\perp}/c','vdf');
 
 
 
@@ -237,7 +237,7 @@ symmetric_color=0
 color_choice=1
 immagine_dir([-1 1], [0 1],valore', ...
              ['vdfYZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
-             [-1 1],3,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,'\theta_{gyro}/\pi','E_{\perp }/E_{max}','vdf');
+             [-1 1],3,num2str(xscan((ipx-1)*nsub+subx+1)),0,1,0,'\theta_{gyro}/\pi','E_{\perp }/E_{max}','vdf');
 end
 
 
