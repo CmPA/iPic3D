@@ -1,4 +1,4 @@
-function [J]=immagine_dir(x,y,J1,name,lmt, Nsm, Ncycle, Ygsm, nfig, labelx,labely, labelc)
+function [J]=immagine_dir(x,y,J1,name,lmt, Nsm, Ncycle, Ygsm, nfig, nplot, labelx,labely, labelc)
 global color_choice symmetric_color titolo square
 
 load cm_new
@@ -7,7 +7,11 @@ load cm_multi4
 J=smooth(J1,Nsm);
 
 h=figure(nfig)
-set(h,'Position',[167 51 500*max(x)/max(y)*1.2 500]);
+subplot(1,3,nplot)
+if(nplot==1) 
+    set(h,'Position',[167 51 3*500*max(x)/max(y) 500]);
+end
+
 Ncut=max(Nsm*3,1);
 
 if(lmt(1) == lmt(2))
@@ -67,5 +71,5 @@ end
 %set(gca,'xdir','reverse','TickDir','out')
 %set(gca,'TickDir','out')
 %print('-depsc','-r300',[name '.eps'])
-print('-dpng','-r300',[name '.png'])
+%print('-dpng','-r300',[name '.png'])
 %saveas(gcf,[name '.fig'])
