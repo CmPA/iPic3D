@@ -159,6 +159,9 @@ h5write(opath,'/Step#0/Block/Ey_ext/0',zeros(Nxpic, Nypic, Nzpic))
 h5create(opath,'/Step#0/Block/Ez_ext/0',[Nxpic, Nypic, Nzpic]);
 h5write(opath,'/Step#0/Block/Ez_ext/0',zeros(Nxpic, Nypic, Nzpic))
 
+h5create(opath,['/Step#0/Block/rho_avg/0'],[Nxpic, Nypic, Nzpic]);
+h5write(opath,['/Step#0/Block/rho_avg/0'],zeros(Nxpic, Nypic, Nzpic))
+
 for is=1:ns
 h5create(opath,['/Step#0/Block/Jx_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
 h5write(opath,['/Step#0/Block/Jx_' num2str(is-1) '/0'],Jxpic(1:Nxpic,1:Nypic,1:Nzpic,is)*segno(is))
