@@ -23,11 +23,14 @@ function [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] = 
  k=1.3807e-23;
  e= 1.6022e-19;
 %physical electorns
- me=9.1094e-31;
- mp = me * mrcode;
+% me=9.1094e-31;
+% mp = me * mrcode;
 % physical ions 
  mp=1.6726e-27;
  me = mp / mrcode;
+ 
+ mo = mp *16;
+ 
 
 % Convert to SI
  np=n_ref*1e6; % puts ni in m^-3
@@ -51,6 +54,13 @@ function [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] = 
  wce=e*B_ref/me;
  rhoe=vthe/wce;
  lde=sqrt(eps0*k*Te/ne/e*e);
+ 
+ %disp('Oxygen')
+ wpo=sqrt(np*e^2/mo/eps0);
+ do=cphys/wpo;
+ vtho=sqrt(k*Tp/mo);
+ wco=e*B_ref/mo;
+ rhoo=vtho/wco;
 
 % Normalisations
 %To convert 1 in the code to SI multiply by this

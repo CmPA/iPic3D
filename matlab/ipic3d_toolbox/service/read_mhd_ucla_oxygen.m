@@ -11,10 +11,11 @@ nome='~/Dropbox/Science/ucla/7feb09/feb0709iPICBox.035800UT.dat'; %7feb09
 [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] =   code_units();
 e= 1.6022e-19;
 
-Tratio=[1/5,1];
-qom=[-256,1];segno=qom./abs(qom);
+Tratio=[1/5,1,1];
+qom=[-256,1,1/16];segno=qom./abs(qom);
+concentration=[-1.0,0.95,0.05];
  
-readdo=1;
+readdo=0;
 if(readdo)
 % Data structure:
 %x(RE) y(RE) z(RE) bx(nT) by(nT) bz(nT) vx(km/s) vy(km/s) vz(km/s)
@@ -119,9 +120,13 @@ Jxpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Vix,Xpic,Ypic,Zpic);
 Jypic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viy,Xpic,Ypic,Zpic);
 Jzpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viz,Xpic,Ypic,Zpic);
 
-ns=2;
-!rm Initial-Fields_000000.h5
-opath='Initial-Fields_000000.h5'
+Jxpic(1:Nxpic,1:Nypic,1:Nzpic,3)=interpmio(x,y,z,n.*Vix,Xpic,Ypic,Zpic);
+Jypic(1:Nxpic,1:Nypic,1:Nzpic,3)=interpmio(x,y,z,n.*Viy,Xpic,Ypic,Zpic);
+Jzpic(1:Nxpic,1:Nypic,1:Nzpic,3)=interpmio(x,y,z,n.*Viz,Xpic,Ypic,Zpic);
+
+ns=3;
+!rm Oxygen-Initial-Fields_000000.h5
+opath='Oxygen-Initial-Fields_000000.h5'
 h5create(opath,'/Step#0/Block/Bx/0',[Nxpic, Nypic, Nzpic]);
 h5write(opath,'/Step#0/Block/Bx/0',Bxpic)
 
@@ -164,30 +169,32 @@ h5write(opath,['/Step#0/Block/rho_avg/0'],zeros(Nxpic, Nypic, Nzpic))
 
 for is=1:ns
 h5create(opath,['/Step#0/Block/Jx_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
-h5write(opath,['/Step#0/Block/Jx_' num2str(is-1) '/0'],Jxpic(1:Nxpic,1:Nypic,1:Nzpic,is)*segno(is))
+h5write(opath,['/Step#0/Block/Jx_' num2str(is-1) '/0'],Jxpic(1:Nxpic,1:Nypic,1:Nzpic,is)*concentration(is))
 
 h5create(opath,['/Step#0/Block/Jy_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
-h5write(opath,['/Step#0/Block/Jy_' num2str(is-1) '/0'],Jypic(1:Nxpic,1:Nypic,1:Nzpic,is)*segno(is))
+h5write(opath,['/Step#0/Block/Jy_' num2str(is-1) '/0'],Jypic(1:Nxpic,1:Nypic,1:Nzpic,is)*concentration(is))
 
 h5create(opath,['/Step#0/Block/Jz_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
-h5write(opath,['/Step#0/Block/Jz_' num2str(is-1) '/0'],Jzpic(1:Nxpic,1:Nypic,1:Nzpic,is)*segno(is))
+h5write(opath,['/Step#0/Block/Jz_' num2str(is-1) '/0'],Jzpic(1:Nxpic,1:Nypic,1:Nzpic,is)*concentration(is))
 
 h5create(opath,['/Step#0/Block/rho_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
-h5write(opath,['/Step#0/Block/rho_' num2str(is-1) '/0'],npic*segno(is))
+h5write(opath,['/Step#0/Block/rho_' num2str(is-1) '/0'],npic*concentration(is))
 
+vth2= abs(qom(is)) * Tratio(is) * Tpic; 
+v0= Jxpic(1:Nxpic,1:Nypic,1:Nzpic,is)./(npic+1e-10);
 h5create(opath,['/Step#0/Block/Pxx_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
 h5write(opath,['/Step#0/Block/Pxx_' num2str(is-1) '/0'], ...
-    Jxpic(1:Nxpic,1:Nypic,1:Nzpic,is).^2./npic*segno(is)+ qom(is) * Tratio(is) * Tpic .*npic );
+    (v0.^2 + vth2).* npic.*concentration(is));
 
+v0 = Jypic(1:Nxpic,1:Nypic,1:Nzpic,is)./npic;
 h5create(opath,['/Step#0/Block/Pyy_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
 h5write(opath,['/Step#0/Block/Pyy_' num2str(is-1) '/0'], ...
-    Jypic(1:Nxpic,1:Nypic,1:Nzpic,is).^2./npic*segno(is)+ qom(is) * Tratio(is) * Tpic .*npic );
+    (v0.^2 + vth2).* npic.*concentration(is));
 
-
+v0 = Jzpic(1:Nxpic,1:Nypic,1:Nzpic,is)./npic;
 h5create(opath,['/Step#0/Block/Pzz_' num2str(is-1) '/0'],[Nxpic, Nypic, Nzpic]);
 h5write(opath,['/Step#0/Block/Pzz_' num2str(is-1) '/0'], ...
-    Jzpic(1:Nxpic,1:Nypic,1:Nzpic,is).^2./npic*segno(is)+ qom(is) * Tratio(is) * Tpic .*npic );
-
+    (v0.^2 + vth2).* npic.*concentration(is));
 
 end
 h5writeatt(opath,'/Step#0','nspec',int32(ns));
