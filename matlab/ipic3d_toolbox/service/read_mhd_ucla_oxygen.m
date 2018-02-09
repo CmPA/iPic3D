@@ -8,7 +8,9 @@
 nome='~/Dropbox/Science/ucla/7feb09/feb0709iPICBox.035800UT.dat'; %7feb09
 %nome='/Users/gianni/Documents/storage/ucla/ucla/HRmaha3D3/feb1508iPIC.034800UT.dat'; %HRmaha3D3
 
-[code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] =   code_units();
+% call it with mass ratio followed by physical electrons or ions (1 =
+% physcoal electrons, 0= physical ions)
+[code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] =   code_units(256,0);
 e= 1.6022e-19;
 
 Tratio=[1/5,1,1];

@@ -1,4 +1,4 @@
-function [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] =   code_units()
+function [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] =   code_units(mrcode,phys_el)
 % Refernce Density in cc
  n_ref = .25;
 
@@ -12,7 +12,8 @@ function [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] = 
  B_ref = 20e-9;
 
 %mass ratio code
- mrcode = 256;
+% mrcode = 256;
+ 
 % mrcode = 1836;
 % boost = 100;
 
@@ -22,12 +23,15 @@ function [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] = 
  cphys=1/sqrt(mu0*eps0);
  k=1.3807e-23;
  e= 1.6022e-19;
+ if(phys_el==1)
 %physical electorns
-% me=9.1094e-31;
-% mp = me * mrcode;
+    me=9.1094e-31;
+    mp = me * mrcode;
+ else   
 % physical ions 
- mp=1.6726e-27;
- me = mp / mrcode;
+    mp=1.6726e-27;
+    me = mp / mrcode;
+ end
  
  mo = mp *16;
  
