@@ -18,6 +18,22 @@ inline void solver2phys(double ***vectPhys, double *vectSolver, int nx, int ny, 
         vectPhys[i][j][k] = *vectSolver++;
 
 }
+
+/** method to convert a 1D field in a 2D field not considering guard cells - for Poisson face*/
+inline void solver2phys(double **vectPhys, double *vectSolver, int nx, int ny) {
+  for (register int i = 1; i < nx - 1; i++)
+    for (register int j = 1; j < ny - 1; j++)
+        vectPhys[i][j] = *vectSolver++;
+
+}
+/** method to convert a 1D field in a 3D field, specifying first and last cell -- included -- **/
+inline void solver2phys(double ***vectPhys, double *vectSolver, int iS, int iE, int jS, int jE, int kS, int kE) {
+  for (register int i = iS; i <= iE; i++)
+    for (register int j = jS; j <= jE; j++)
+      for (register int k = kS; k <= kE; k++)
+        vectPhys[i][j][k] = *vectSolver++;
+
+}
 /** method to convert a 1D field in a 3D field not considering guard cells*/
 inline void solver2phys(double ***vectPhys1, double ***vectPhys2, double ***vectPhys3, double *vectSolver, int nx, int ny, int nz) {
   for (register int i = 1; i < nx - 1; i++)
@@ -37,6 +53,25 @@ inline void phys2solver(double *vectSolver, double ***vectPhys, int nx, int ny, 
 
 
 }
+
+/** method to convert a 2D field in a 1D field not considering guard cells - for face Poisson*/
+inline void phys2solver(double *vectSolver, double **vectPhys, int nx, int ny) {
+  for (register int i = 1; i < nx - 1; i++)
+    for (register int j = 1; j < ny - 1; j++)
+        *vectSolver++ = vectPhys[i][j];
+
+
+}
+
+/** method to convert a 3D field in a 1D field , specifying first and last cell -- included -- **/
+inline void phys2solver(double *vectSolver, double ***vectPhys, int iS, int iE, int jS, int jE, int kS, int kE) {
+  for (register int i = iS; i <= iE; i++)
+    for (register int j = jS; j <= jE; j++)
+      for (register int k = kS; k <= kE; k++)
+        *vectSolver++ = vectPhys[i][j][k];
+
+
+}
 /** method to convert a 3D field in a 1D field not considering guard cells*/
 inline void phys2solver(double *vectSolver, double ***vectPhys1, double ***vectPhys2, double ***vectPhys3, int nx, int ny, int nz) {
   for (register int i = 1; i < nx - 1; i++)
@@ -47,5 +82,43 @@ inline void phys2solver(double *vectSolver, double ***vectPhys1, double ***vectP
         *vectSolver++ = vectPhys3[i][j][k];
       }
 
+}
+
+/** method to convert a 3D field in a 1D field not considering guard cells*/
+inline void phys2solver(double *vectSolver, double ***vectPhys1, double ***vectPhys2, double ***vectPhys3, double ***vectPhys4, double ***vectPhys5, double ***vectPhys6, int nx, int ny, int nz) {
+  for (register int i = 1; i < nx - 1; i++)
+    for (register int j = 1; j < ny - 1; j++)
+      for (register int k = 1; k < nz - 1; k++) {
+        *vectSolver++ = vectPhys1[i][j][k];
+        *vectSolver++ = vectPhys2[i][j][k];
+	*vectSolver++ = vectPhys3[i][j][k];
+      }
+  for (register int i = 1; i < nx - 2; i++)
+    for (register int j = 1; j < ny - 2; j++)
+      for (register int k = 1; k < nz - 2; k++) {
+        *vectSolver++ = vectPhys4[i][j][k];
+        *vectSolver++ = vectPhys5[i][j][k];
+        *vectSolver++ = vectPhys6[i][j][k];
+      }
+
+}
+
+inline void solver2phys(double ***vectPhys1, double ***vectPhys2, double ***vectPhys3,
+                        double ***vectPhys4, double ***vectPhys5, double ***vectPhys6,
+                        double *vectSolver, int nx, int ny, int nz) {
+  for (register int i = 1; i < nx - 1; i++)
+    for (register int j = 1; j < ny - 1; j++)
+      for (register int k = 1; k < nz - 1; k++) {
+        vectPhys1[i][j][k] = *vectSolver++;
+        vectPhys2[i][j][k] = *vectSolver++;
+        vectPhys3[i][j][k] = *vectSolver++;
+      }
+  for (register int i = 1; i < nx - 2; i++)
+    for (register int j = 1; j < ny - 2; j++)
+      for (register int k = 1; k < nz - 2; k++) {
+        vectPhys4[i][j][k] = *vectSolver++;
+        vectPhys5[i][j][k] = *vectSolver++;
+        vectPhys6[i][j][k] = *vectSolver++;
+      }
 }
 #endif

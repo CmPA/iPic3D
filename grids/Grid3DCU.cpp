@@ -181,6 +181,30 @@ void Grid3DCU::gradC2N(double ***gradXN, double ***gradYN, double ***gradZN, dou
 }
 
 /** calculate gradient on nodes, given a scalar field defined on central points  */
+void Grid3DCU::gradC2N(double ***gradXN, double ***gradYN, double ***gradZN, double ***scFieldC, int nxn, int nyn, int nzn) {
+  for (register int i = 1; i < nxn - 1; i++)
+    for (register int j = 1; j < nyn - 1; j++)
+      for (register int k = 1; k < nzn - 1; k++) {
+        gradXN[i][j][k] = .25 * (scFieldC[i][j][k] - scFieldC[i - 1][j][k]) * invdx + .25 * (scFieldC[i][j][k - 1] - scFieldC[i - 1][j][k - 1]) * invdx + .25 * (scFieldC[i][j - 1][k] - scFieldC[i - 1][j - 1][k]) * invdx + .25 * (scFieldC[i][j - 1][k - 1] - scFieldC[i - 1][j - 1][k - 1]) * invdx;
+        gradYN[i][j][k] = .25 * (scFieldC[i][j][k] - scFieldC[i][j - 1][k]) * invdy + .25 * (scFieldC[i][j][k - 1] - scFieldC[i][j - 1][k - 1]) * invdy + .25 * (scFieldC[i - 1][j][k] - scFieldC[i - 1][j - 1][k]) * invdy + .25 * (scFieldC[i - 1][j][k - 1] - scFieldC[i - 1][j - 1][k - 1]) * invdy;
+        gradZN[i][j][k] = .25 * (scFieldC[i][j][k] - scFieldC[i][j][k - 1]) * invdz + .25 * (scFieldC[i - 1][j][k] - scFieldC[i - 1][j][k - 1]) * invdz + .25 * (scFieldC[i][j - 1][k] - scFieldC[i][j - 1][k - 1]) * invdz + .25 * (scFieldC[i - 1][j - 1][k] - scFieldC[i - 1][j - 1][k - 1]) * invdz;
+      }
+}
+
+/** calculate gradient on nodes, given a scalar field defined on central points  -
+    2D, for Poisson face */
+void Grid3DCU::gradC2N_XSide(double **gradXN, double **gradYN, double **gradZN, double **scFieldC) {
+
+    for (register int j = 1; j < nyn - 1; j++)
+      for (register int k = 1; k < nzn - 1; k++) {
+        gradXN[j][k] = 0.0;
+        gradYN[j][k] = .5 * (scFieldC[j][k] - scFieldC[j - 1][k]) * invdy + .5 * (scFieldC[j][k - 1] - scFieldC[j - 1][k - 1]) * invdy;
+	gradZN[j][k] = .25 * (scFieldC[j][k] - scFieldC[j][k - 1]) * invdz + .25 * (scFieldC[j - 1][k] - scFieldC[j - 1][k - 1]) * invdz ;
+
+      }
+}
+
+/** calculate gradient on nodes, given a scalar field defined on central points  */
 void Grid3DCU::gradN2C(double ***gradXC, double ***gradYC, double ***gradZC, double ***scFieldN) {
   for (register int i = 1; i < nxc - 1; i++)
     for (register int j = 1; j < nyc - 1; j++)
@@ -204,6 +228,41 @@ void Grid3DCU::divN2C(double ***divC, double ***vecFieldXN, double ***vecFieldYN
         compZ = .25 * (vecFieldZN[i][j][k + 1] - vecFieldZN[i][j][k]) * invdz + .25 * (vecFieldZN[i + 1][j][k + 1] - vecFieldZN[i + 1][j][k]) * invdz + .25 * (vecFieldZN[i][j + 1][k + 1] - vecFieldZN[i][j + 1][k]) * invdz + .25 * (vecFieldZN[i + 1][j + 1][k + 1] - vecFieldZN[i + 1][j + 1][k]) * invdz;
         divC[i][j][k] = compX + compY + compZ;
       }
+}
+
+/** calculate divergence on central points, given a vector field defined on nodes  -
+    on vectors with side redefined **/
+void Grid3DCU::divN2C(double ***divC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN, int nxc, int nyc, int nzc) {
+  double compX;
+  double compY;
+  double compZ;
+  for (register int i = 1; i < nxc - 1; i++)
+    for (register int j = 1; j < nyc - 1; j++)
+      for (register int k = 1; k < nzc - 1; k++) {
+        compX = .25 * (vecFieldXN[i + 1][j][k] - vecFieldXN[i][j][k]) * invdx + .25 * (vecFieldXN[i + 1][j][k + 1] - vecFieldXN[i][j][k + 1]) * invdx + .25 * (vecFieldXN[i + 1][j + 1][k] - vecFieldXN[i][j + 1][k]) * invdx + .25 * (vecFieldXN[i + 1][j + 1][k + 1] - vecFieldXN[i][j + 1][k + 1]) * invdx;
+        compY = .25 * (vecFieldYN[i][j + 1][k] - vecFieldYN[i][j][k]) * invdy + .25 * (vecFieldYN[i][j + 1][k + 1] - vecFieldYN[i][j][k + 1]) * invdy + .25 * (vecFieldYN[i + 1][j + 1][k] - vecFieldYN[i + 1][j][k]) * invdy + .25 * (vecFieldYN[i + 1][j + 1][k + 1] - vecFieldYN[i + 1][j][k + 1]) * invdy;
+        compZ = .25 * (vecFieldZN[i][j][k + 1] - vecFieldZN[i][j][k]) * invdz + .25 * (vecFieldZN[i + 1][j][k + 1] - vecFieldZN[i + 1][j][k]) * invdz + .25 * (vecFieldZN[i][j + 1][k + 1] - vecFieldZN[i][j + 1][k]) * invdz + .25 * (vecFieldZN[i + 1][j + 1][k + 1] - vecFieldZN[i + 1][j + 1][k]) * invdz;
+        divC[i][j][k] = compX + compY + compZ;
+      }
+}
+/** calculate divergence on central points, given a vector field defined on nodes                     
+    - for the face with CELL coordinate= I  */
+void Grid3DCU::divN2C_XSide(double **divC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN, int I){ 
+  double compX;
+  double compY;
+  double compZ;
+  
+  int i=I;
+
+  for (register int j = 1; j < nyc - 1; j++)
+    for (register int k = 1; k < nzc - 1; k++) {
+      compX = .25 * (vecFieldXN[i + 1][j][k] - vecFieldXN[i][j][k]) * invdx + .25 * (vecFieldXN[i + 1][j][k + 1] - vecFieldXN[i][j][k + 1]) * invdx + .25 * (vecFieldXN[i + 1][j + 1][k] - vecFieldXN[i][j + 1][k]) * invdx + .25 * (vecFieldXN[i + 1][j + 1][k + 1] - vecFieldXN[i][j + 1][k + 1]) * invdx;
+      compY = .25 * (vecFieldYN[i][j + 1][k] - vecFieldYN[i][j][k]) * invdy + .25 * (vecFieldYN[i][j + 1][k + 1] - vecFieldYN[i][j][k + 1]) * invdy + .25 * (vecFieldYN[i + 1][j + 1][k] - vecFieldYN[i + 1][j][k]) * invdy + .25 * (vecFieldYN[i + 1][j + 1][k + 1] - vecFieldYN[i + 1][j][k + 1]) * invdy;
+      compZ = .25 * (vecFieldZN[i][j][k + 1] - vecFieldZN[i][j][k]) * invdz + .25 * (vecFieldZN[i + 1][j][k + 1] - vecFieldZN[i + 1][j][k]) * invdz + .25 * (vecFieldZN[i][j + 1][k + 1] - vecFieldZN[i][j + 1][k]) * invdz + .25 * (vecFieldZN[i + 1][j + 1][k + 1] - vecFieldZN[i + 1][j + 1][k]) * invdz;
+      //divC[i][j][k] = compX + compY + compZ;
+      
+      divC[j][k] = compX + compY + compZ; 
+    }
 }
 
 /** calculate divergence on central points, given a Tensor field defined on nodes  */
@@ -339,11 +398,13 @@ void Grid3DCU::lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vc
   double ***gradYC = newArr3(double, nxc, nyc, nzc);
   double ***gradZC = newArr3(double, nxc, nyc, nzc);
 
+  // ghost not updated
   gradN2C(gradXC, gradYC, gradZC, scFieldN);
-  // communicate with BC
+  // communicate with BC - 1: ghost set to 0
   communicateCenterBC(nxc, nyc, nzc, gradXC, 1, 1, 1, 1, 1, 1, vct);
   communicateCenterBC(nxc, nyc, nzc, gradYC, 1, 1, 1, 1, 1, 1, vct);
   communicateCenterBC(nxc, nyc, nzc, gradZC, 1, 1, 1, 1, 1, 1, vct);
+  // ghost updated
   divC2N(lapN, gradXC, gradYC, gradZC);
   // deallocate
   delArr3(gradXC, nxc, nyc);
@@ -420,6 +481,19 @@ void Grid3DCU::lapC2Cpoisson(double ***lapC, double ***scFieldC, VirtualTopology
     for (register int j = 1; j < nyc - 1; j++)
       for (register int k = 1; k < nzc - 1; k++)
         lapC[i][j][k] = (scFieldC[i - 1][j][k] - 2 * scFieldC[i][j][k] + scFieldC[i + 1][j][k]) * invdx * invdx + (scFieldC[i][j - 1][k] - 2 * scFieldC[i][j][k] + scFieldC[i][j + 1][k]) * invdy * invdy + (scFieldC[i][j][k - 1] - 2 * scFieldC[i][j][k] + scFieldC[i][j][k + 1]) * invdz * invdz;
+}
+
+void Grid3DCU::lapC2Cpoisson(double ***lapC, double ***scFieldC, VirtualTopology3D * vct, int nxc, int nyc, int nzc) {
+  // communicate first the scFieldC
+  //communicateCenterBoxStencilBC(nxc, nyc, nzc, scFieldC, 1, 1, 1, 1, 1, 1, vct);
+  cout << "I have to do a communication in lapC2Cpoisson, now nothing there" << endl;
+  for (register int i = 1; i < nxc - 1; i++)
+    for (register int j = 1; j < nyc - 1; j++)
+      for (register int k = 1; k < nzc - 1; k++) {
+        lapC[i][j][k] = (scFieldC[i - 1][j][k] - 2 * scFieldC[i][j][k] + scFieldC[i + 1][j][k]) * invdx * invdx + (scFieldC[i][j - 1][k] - 2 * scFieldC[i][j][k] + scFieldC[i][j + 1][k]) * invdy * invdy + (scFieldC[i][j][k - 1] - 2 * scFieldC[i][j][k] + scFieldC[i][j][k + 1]) * invdz * invdz;
+
+
+      }
 }
 
 /** calculate divergence on  boundaries */

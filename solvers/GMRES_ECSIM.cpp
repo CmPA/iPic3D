@@ -1,7 +1,7 @@
 
 #include "GMRES.h"
 
-void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b, int m, int max_iter, double tol, Grid * grid, VirtualTopology3D * vct, Field * field) {
+void GMRES_ECSIM(FIELD_IMAGE_ECSIM FunctionImage, double *xkrylov, int xkrylovlen, double *b, int m, int max_iter, double tol, Grid * grid, VirtualTopology3D * vct,Collective *col, Field * field) {
   if (m > xkrylovlen) {
     if (vct->getCartesian_rank() == 0)
       cerr << "In GMRES the dimension of Krylov space(m) can't be > (length of krylov vector)/(# processors)" << endl;
@@ -40,40 +40,30 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
 
 
   if (GMRESVERBOSE && vct->getCartesian_rank() == 0) {
-    /*cout << "------------------------------------" << endl;
+    cout << "------------------------------------" << endl;
     cout << "-             GMRES                -" << endl;
     cout << "------------------------------------" << endl;
-    cout << endl; */
-    cout << "--------------------------------------------" << endl;
-    cout << "-             Grid " << grid->getNumGrid() <<": GMRES                -" << endl;
-    cout << "--------------------------------------------" << endl;
     cout << endl;
   }
 
   for (register int itr = 0; itr < max_iter; itr++) {
 
     // r = b - A*x
-    (field->*FunctionImage) (im, xkrylov, grid, vct);
+    (field->*FunctionImage) (im, xkrylov, grid, vct, col);
     sub(r, b, im, xkrylovlen);
-    /*! pre mlmd: used to be in Basic.h                                                                  
-      mlmd: in topology becuase the grid communicator is needed */
-    //initial_error = normP(r, xkrylovlen);
     initial_error = normP(r, xkrylovlen, vct->getCommGrid());
-    //normb = normP(b, xkrylovlen);
-    normb = normP(b, xkrylovlen, vct->getCommGrid()); 
+    normb = normP(b, xkrylovlen, vct->getCommGrid());
     if (normb == 0.0)
       normb = 1.0;
 
     if (itr == 0) {
       if (vct->getCartesian_rank() == 0)
-        //cout << "Initial residual: " << initial_error << " norm b vector (source) = " << normb << endl;
-	cout << "G" << grid->getNumGrid() << ": Initial residual: " << initial_error << " norm b vector (source) = " << normb << endl;
+        cout << "Initial residual: " << initial_error << " norm b vector (source) = " << normb << endl;
       rho_tol = initial_error * tol;
 
       if ((initial_error / normb) <= tol) {
         if (vct->getCartesian_rank() == 0)
-          //cout << "GMRES converged without iterations: initial error < tolerance" << endl;
-	  cout <<"G" << grid->getNumGrid() <<": GMRES converged without iterations: initial error < tolerance" << endl;
+          cout << "GMRES converged without iterations: initial error < tolerance" << endl;
         delete[]r;
         delete[]im;
         delete[]s;
@@ -83,7 +73,7 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
         delete[]w;
         delete[]y;
         delArr2(H, m + 1);
-        delArr2(V, xkrylovlen); 
+        delArr2(V, xkrylovlen);
 
         return;
       }
@@ -98,44 +88,29 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
 
       // w= A*V(:,k)
       getColumn(v, V, k, xkrylovlen);
-      (field->*FunctionImage) (w, v, grid, vct);
+      (field->*FunctionImage) (w, v, grid, vct, col);
       putColumn(V, w, k + 1, xkrylovlen);
-      /*! pre mlmd: used to be in Basic.h               
-	mlmd: in topology becuase the grid communicator is needed */
-      //av = normP(w, xkrylovlen);
       av = normP(w, xkrylovlen, vct->getCommGrid());
 
       for (register int j = 0; j <= k; j++) {
         getColumn(v, V, j, xkrylovlen);
-	/*! pre mlmd: used to be in Basic.h
-	  mlmd: in topology becuase the grid communicator is needed */
-        //H[j][k] = dotP(w, v, xkrylovlen);
-	H[j][k] = dotP(w, v, xkrylovlen, vct->getCommGrid());
+        H[j][k] = dotP(w, v, xkrylovlen, vct->getCommGrid());
         addscale(-H[j][k], w, v, xkrylovlen);
 
       }
       putColumn(V, w, k + 1, xkrylovlen);
-      /*! pre mlmd: used to be in Basic.h                          
-        mlmd: in topology becuase the grid communicator is needed */
-      //H[k + 1][k] = normP(w, xkrylovlen);
       H[k + 1][k] = normP(w, xkrylovlen, vct->getCommGrid());
 
       if (av + delta * H[k + 1][k] == av) {
 
         for (register int j = 0; j <= k; j++) {
           getColumn(v, V, j, xkrylovlen);
-	  /*! pre mlmd: used to be in Basic.h    
-	    mlmd: in topology becuase the grid communicator is needed */
-          //htmp = dotP(w, v, xkrylovlen);
-	  htmp = dotP(w, v, xkrylovlen, vct->getCommGrid()); 
+          htmp = dotP(w, v, xkrylovlen, vct->getCommGrid());
           H[j][k] = H[j][k] + htmp;
           addscale(-htmp, w, v, xkrylovlen);
         }
         putColumn(V, w, k + 1, xkrylovlen);
 
-	/*! pre mlmd: used to be in Basic.h                                                                
-	  mlmd: in topology becuase the grid communicator is needed */
-	//H[k + 1][k] = normP(w, xkrylovlen);
         H[k + 1][k] = normP(w, xkrylovlen, vct->getCommGrid());
       }
       scale(w, (1.0 / H[k + 1][k]), xkrylovlen);
@@ -181,22 +156,8 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
     }
 
     if (initial_error <= rho_tol) {
-      if (vct->getCartesian_rank() == 0){
-        //cout << "GMRES converged at restart # " << itr << "; iteration #" << k << " with error: " << initial_error / rho_tol * tol << endl;
-	cout <<"G" << grid->getNumGrid() << ": GMRES converged at restart # " << itr << "; iteration #" << k << " with error: " << initial_error / rho_tol * tol << endl;
-	
-	if (vct->getNprocs()==1 and 0){ // extra test
-	  cout << "Extra test, meaninful only with one core per grid: ";
-	  
-	  (field->*FunctionImage) (im, xkrylov, grid, vct);
-	  double Diff=0;
-	  for (int i=0; i< xkrylovlen; i++){
-	    double tmp= im[i]- b[i];
-	    Diff+= (tmp*tmp);
-	  }
-	  cout << "G" << grid->getNumGrid() << " residual calculated by hand inside GMRES before exiting: " << sqrt(Diff) <<endl;
-	}// end extra test
-      }
+      if (vct->getCartesian_rank() == 0)
+        cout << "GMRES converged at restart # " << itr << "; iteration #" << k << " with error: " << initial_error / rho_tol * tol << endl;
       delete[]r;
       delete[]im;
       delete[]s;
@@ -210,15 +171,13 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
       return;
     }
     if (vct->getCartesian_rank() == 0 && GMRESVERBOSE)
-      //cout << "Restart: " << itr << " error: " << initial_error / rho_tol * tol << endl;
-      cout <<"G" <<grid->getNumGrid() << ": Restart: " << itr << " error: " << initial_error / rho_tol * tol << endl;
+      cout << "Restart: " << itr << " error: " << initial_error / rho_tol * tol << endl;
 
   }
 
 
   if (vct->getCartesian_rank() == 0)
-    //cout << "GMRES not converged !! Final error: " << initial_error / rho_tol * tol << endl;
-    cout <<"G" << grid->getNumGrid() << ": GMRES not converged !! Final error: " << initial_error / rho_tol * tol << endl;
+    cout << "GMRES not converged !! Final error: " << initial_error / rho_tol * tol << endl;
 
   delete[]r;
   delete[]im;
@@ -234,8 +193,8 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
 }
 
 
-void ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn) {
+/*void ApplyPlaneRotation(double &dx, double &dy, double &cs, double &sn) {
   double temp = cs * dx + sn * dy;
   dy = -sn * dx + cs * dy;
   dx = temp;
-}
+  }*/

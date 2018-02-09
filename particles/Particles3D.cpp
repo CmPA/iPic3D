@@ -604,9 +604,12 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // end mlmd check
 
   double start_mover_PC = MPI_Wtime();
-  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+  /*double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
   double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
-  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());*/
+  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getExth());
+  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEyth());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEzth());
   double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
   double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
   double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
@@ -844,6 +847,10 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   MPI_Allreduce(&ppc, &TotalP, 1, MPI_INT, MPI_SUM, vct->getCommGrid());
   if (vct->getCartesian_rank()==0){
     cout << "Grid " << numGrid << " ns " <<ns  <<": total number of particles BEFORE mover: " << TotalP << endl;
+
+    ofstream my_file(parInfo.c_str(), fstream::app);
+    my_file << TotalP <<" " ;
+    my_file.close();
   }
   // end mlmd check
 
@@ -996,11 +1003,15 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   }
 
   // mlmd: as a check, print # particles
-  ppc=nop; TotalP=0;
+  /*ppc=nop; TotalP=0;
   MPI_Allreduce(&ppc, &TotalP, 1, MPI_INT, MPI_SUM, vct->getCommGrid());
   if (vct->getCartesian_rank()==0){
     cout << "Grid " << numGrid << " ns " <<ns  <<": total number of particles AFTER mover: " << TotalP << endl;
-  }
+
+    ofstream my_file(parInfo.c_str(), fstream::app);
+    my_file << TotalP <<" " << endl;
+    my_file.close(); 
+    }*/
   // end mlmd check
 
   // timeTasks.addto_communicate();

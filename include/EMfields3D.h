@@ -201,6 +201,7 @@ class EMfields3D                // :public Field
     void initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta);
     /*! initialized with Light Wave */
     void initLightWave(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initTestIntProj(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! double GEM, mlmd ready */
     void initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initDoubleGEM_CentralPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
@@ -209,6 +210,7 @@ class EMfields3D                // :public Field
     void initTestFix3B(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! inits all the fields to 0, particles only on CG, disables GMRES on RG*/
     void initMAX_Show_RG_BC(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initTestBBoundary(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! add a perturbattion to charge density */
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */
@@ -222,13 +224,28 @@ class EMfields3D                // :public Field
     /*! Calculate Electric field using the implicit Maxwell solver */
     void startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col);
     void endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
+    void endEcalc_ECSIM(double* xkrylov, VirtualTopology3D * vct, Collective *col, Grid* grid);
+    /* implement divE correction, on faces (to be used in RG) */
+    void divECorrection_AllFaces(double *** FX, double *** FY, double *** FZ, Grid * grid, VirtualTopology3D * vct);
+    void divECorrection_OneFace(double *** FX, double *** FY, double *** FZ, Grid * grid, VirtualTopology3D * vct, int nxn, int nyn, int nzn, int DIR, int SIDE);
     void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);
+    // ECSIM
+    void calculateEB_ECSIM(Grid * grid, VirtualTopology3D * vct, Collective *col, int cycle); 
     /*! Image of Poisson Solver (for SOLVER) */
     void PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);
+    /*! Image of Poisson solver (for FACE SOLVER) */
+    void PoissonImage_2D(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);
+    void PoissonImage_2D(double *image, double *vector, Grid * grid, VirtualTopology3D * vct, int nxc, int nyc, int nzc);
     /*! Image of Maxwell Solver (for Solver) */
     void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct);
     /*! Maxwell source term (for SOLVER) */
     void MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
+    /* Maxwell source term for ECSIM solver */
+    void MaxwellSource_ECSIM(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
+    /* Image of Maxwell Solver for ECSIM */
+    void MaxwellImage_ECSIM(double *im, double *vector, Grid * grid, VirtualTopology3D * vct, Collective *col);
+    /* interpolate B field centers to nodes - for ECSIM */
+    void centers2nodesB(VirtualTopology3D * vct, Grid *grid, Collective * col);
     /*! Impose a constant charge inside a spherical zone of the domain */
     void ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, double R, double x_center, double y_center, double z_center);
     /*! Impose a constant charge in the OpenBC boundaries */
@@ -236,7 +253,7 @@ class EMfields3D                // :public Field
     /*! Impose a constant charge in the OpenBC boundaries */
     void ConstantChargeOpenBCv2(Grid * grid, VirtualTopology3D * vct);
     /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
-    void calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col);
+    void calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col, int cycle);
     /*! fix B on the boundary for gem challange */
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for gem challange */
@@ -560,6 +577,10 @@ class EMfields3D                // :public Field
     void setBC_Nodes_TwoLess(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
     /* for when I need to put the BC on the image */
     void setBC_NodesImage(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***vectX, double ***vectY, double ***vectZ, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
+    /* this function is exactly the same as the previous setBC_NodesImage 
+ only differences: unnecessary inputs deleted & vector size included
+ (this just for the safety check, to be deleted in later versions)*/
+    void setBC_NodesImage(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double ***vectX, double ***vectY, double ***vectZ, RGBC_struct * RGBC_Info, int RG_numBCMessages, int nx, int ny, int nz);
 
     void setBC_Nodes_RENORM(VirtualTopology3D * vct, double ***Fx, double ***Fy, double ***Fz, double **Fx_BC, double **Fy_BC, double **Fz_BC, RGBC_struct * RGBC_Info, int RG_numBCMessages);
     /* for when I need to put the BC on the image */
@@ -602,6 +623,10 @@ class EMfields3D                // :public Field
 
     void TESTGhost( double **** vec);
     void TESTGhost (double **** dest, double **** source); 
+    /* to enforce divB= 0 on B centers */
+    void correctDivB(Grid * grid, VirtualTopology3D * vct);
+    /* Image for the divB=0 correction */
+    void BPoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);
     /*! end mlmd specific functions */
     /* ********************************* // VARIABLES ********************************* */
   private:
@@ -615,6 +640,8 @@ class EMfields3D                // :public Field
     double th;
     /*! Smoothing value */
     double Smooth;
+    /* wether to smooth */
+    bool SmoothGrid;
     /*! delt = c*th*dt */
     double delt;
     /*! number of particles species */
@@ -724,6 +751,12 @@ class EMfields3D                // :public Field
     double ***imageX;
     double ***imageY;
     double ***imageZ;
+    double ***imageEX;
+    double ***imageEY;
+    double ***imageEZ;
+    double ***imageBX;
+    double ***imageBY;
+    double ***imageBZ;
     double ***Dx;
     double ***Dy;
     double ***Dz;
@@ -835,6 +868,7 @@ class EMfields3D                // :public Field
 
     /*! boolean for divergence cleaning */
     bool PoissonCorrection;
+    bool PoissonCorrection_RGFace;
     /*! RESTART BOOLEAN */
     int restart1;
     /*! String with the directory for the restart file */
@@ -863,7 +897,10 @@ class EMfields3D                // :public Field
 
     void BoundaryConditionsB(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
     void BoundaryConditionsE(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
-    void BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
+    void BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);    
+    void BoundaryConditionsECSIMImage(double*** imageNX, double*** imageNY, double*** imageNZ, double*** imageCX, double*** imageCY, double*** imageCZ, double*** vectNX, double*** vectNY, double*** vectNZ, double***vectCX, double *** vectCY, double***vectCZ, int nxn, int nyn, int nzn, VirtualTopology3D * vct, Grid * grid);
+    void BoundaryConditionsECSIMSource(double *** vectNX, double *** vectNY, double *** vectNZ, double *** vectCX, double *** vectCY, double *** vectCZ, VirtualTopology3D *vct, Grid *grid);
+
 
     /*! mlmd specific variables */
     /*! MLMDVerbose: when true, MLMD-related output */
@@ -878,6 +915,9 @@ class EMfields3D                // :public Field
     bool MLMD_BCBufferArea;
     // to test the new CG-RG mixing at RG level
     bool MLMD_fixBCenters;
+    /* interpolates B cells BEFORE solving for E n+th -
+       predates on MLMD_fixBCenters because I'm lazy */
+    bool MLMD_InterpolateOldBCell;
 
     /* number of fields I am sending as BC: Ex, Ey, Ez, Exth, Eyth, Ezth, Bxn, Byn, Bzn */
     int NumF;
@@ -1150,6 +1190,15 @@ class EMfields3D                // :public Field
 
     bool NewSmoothing;
     bool RepopulateBeforeMover;
+
+    /* used in function related to divB cleaning for the RG */
+    int iStart_BP; int iEnd_BP; int lenX_BP;
+    int jStart_BP; int jEnd_BP; int lenY_BP;
+    int kStart_BP; int kEnd_BP; int lenZ_BP;
+
+    double sumEzBC;
+    
+    bool SmoothFaces;
 };
 
 

@@ -682,7 +682,28 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
   } // end if (numChildren > 0){
 
   // end particle part
+
+  /* communicators for the boundary processors for FIELDS */
+  int color;
+  if (xleft_neighbor== MPI_PROC_NULL) color=1; else color=MPI_UNDEFINED;
+  MPI_Comm_split(CART_COMM, color, cartesian_rank, &CommField_XLeft); 
+
+  if (xright_neighbor== MPI_PROC_NULL) color=1; else color=MPI_UNDEFINED;
+  MPI_Comm_split(CART_COMM, color, cartesian_rank, &CommField_XRight);
   
+  if (yleft_neighbor== MPI_PROC_NULL) color=1; else color=MPI_UNDEFINED;
+  MPI_Comm_split(CART_COMM, color, cartesian_rank, &CommField_YLeft);
+
+  if (yright_neighbor== MPI_PROC_NULL) color=1; else color=MPI_UNDEFINED;
+  MPI_Comm_split(CART_COMM, color, cartesian_rank, &CommField_YRight);
+  
+  if (zleft_neighbor== MPI_PROC_NULL) color=1; else color=MPI_UNDEFINED;
+  MPI_Comm_split(CART_COMM, color, cartesian_rank, &CommField_ZLeft);
+
+  if (zright_neighbor== MPI_PROC_NULL) color=1; else color=MPI_UNDEFINED;
+  MPI_Comm_split(CART_COMM, color, cartesian_rank, &CommField_ZRight);
+
+
 
   /* quick test to check that the same info is shared on the parent and child side,
      check that the outputs are the same 

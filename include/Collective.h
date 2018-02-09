@@ -240,6 +240,8 @@ class Collective
     double getOz_SW(int numgrid);
     /*! end: in terms of the COARSEST grid */
 
+    bool getSmoothGrid(int numgrid);
+
     double getDx_mlmd(int numgrid);
     double getDy_mlmd(int numgrid);
     double getDz_mlmd(int numgrid);
@@ -295,6 +297,7 @@ class Collective
     bool getMLMD_InitialInterpolation();
     bool getMLMD_BCBufferArea();
     bool getMLMD_fixBCenters();
+    bool getMLMD_InterpolateOldBCell();
 
     bool getAllowPMsgResize();
 
@@ -534,6 +537,9 @@ class Collective
     double *Ox_SW; // in terms of the COARSEST grid, at the moment used only for output
     double *Oy_SW;
     double *Oz_SW;
+    
+    /* wether to perform smoothign on this grid */
+    bool *SmoothGrid;
 
     int *nxc_mlmd;
     int *nyc_mlmd;
@@ -572,6 +578,7 @@ class Collective
     bool MLMD_InitialInterpolation;
     bool MLMD_BCBufferArea;
     bool MLMD_fixBCenters;
+    bool MLMD_InterpolateOldBCell;
 
     /* wether to allow the resize of the buffers containing the particles to send CG->RG for repopulation
        false may be heavy on memory consumption
@@ -588,6 +595,7 @@ class Collective
     int Buf;
     // end MLMD variables
     
+ 
 };
 
 #endif

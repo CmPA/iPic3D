@@ -39,7 +39,9 @@ namespace iPic3D {
     void GatherMoments();
     void GatherMoments_Init();
     void CalculateField();
-    void CalculateBField();
+    void CalculateField_ECSIM(int i);
+    void interpBC2N_ECSIM(int i);
+    void CalculateBField(int i);
     bool ParticlesMover();
     void WriteOutput(int cycle);
     void WriteConserved(int cycle);
@@ -77,7 +79,7 @@ namespace iPic3D {
     string RestartDirName;
     string cqsat;
     string cq;
-    string ds;
+    string *ds;
     stringstream num_proc; // mlmd: my_rank, hence local to the grid
     int restart_cycle;
     int restart;
@@ -96,13 +98,17 @@ namespace iPic3D {
     double TOTenergy;
     double TOTmomentum;
 
+    /* wether to print the distribution function*/
+    bool WriteDistrFun;
+
+
     /*! mlmd variables */
     /*! number of the current grid in the mlmd hierarchy */
     int numGrid;
     /*! stringstream with grid number, for output-related ops 
      analogous to stringstream num_proc*/
     stringstream num_grid_STR;
-    
+
     bool MlmdVerbose;
 
     /* whether to perform mlmd operations; 0 or 1 -
@@ -124,8 +130,7 @@ namespace iPic3D {
     #ifdef __PETSC_SOLVER__
       PetscSolver *petscSolver;
     #endif
-
-
+    
   };
 
   inline int c_Solver::FirstCycle() {

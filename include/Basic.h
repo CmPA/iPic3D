@@ -172,6 +172,16 @@ inline void sub(double ***vect1, double ***vect2, int nx, int ny, int nz) {
 
 
 }
+/** method to calculate the subtraction of two vectors vector1 = vector1 - vector2,
+    giving limits (included) **/
+inline void sub(double ***vect1, double ***vect2, int iS, int iE, int jS, int jE, int kS, int kE) {
+  for (register int i = iS; i <= iE; i++)
+    for (register int j = jS; j <= jE; j++)
+      for (register int k = kS; k <= kE; k++)
+        vect1[i][j][k] -= vect2[i][j][k];
+
+
+}
 
 /** method to calculate the subtraction of two vectors vector1 = vector1 - vector2*/
 inline void sub(double ***vect1, double ***vect2, int nx, int ny) {

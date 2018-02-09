@@ -215,12 +215,8 @@ public:
   //double getKe();
   double getKe(MPI_Comm Comm);
   /** return the maximum kinetic energy */
-  /*! mlmd: now i need the communicator also */
-  //double getMaxVelocity();
   double getMaxVelocity(MPI_Comm Comm); 
   /** return energy distribution */
-  /*! mlmd: now i need the communicator also */
-  //unsigned long *getVelocityDistribution(int nBins, double maxVel);
   unsigned long *getVelocityDistribution(int nBins, double maxVel, MPI_Comm Comm);
   /** return the momentum */
   /*! mlmd: now I need the communicator also */
@@ -717,6 +713,9 @@ protected:
 
   // to test fluid repopulation
   bool TEST_FLUID_BC;
+  
+  // text file for particle-related output
+  string parInfo;
   
 };
 

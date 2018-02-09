@@ -5,6 +5,8 @@ using namespace iPic3D;
 int c_Solver::Init(int argc, char **argv) {
 
   MlmdVerbose= true;
+  /* wether to print the distribution function */
+  WriteDistrFun= true;
 
   // initialize MPI environment
   // nprocs = number of processors
@@ -123,6 +125,8 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="initTestBC") EMf->initTestBC(vct,grid, col);
     else if (col->getCase()=="TestFix3B") EMf->initTestFix3B(vct,grid, col);
     else if (col->getCase()=="MAX_Show_RG_BC" ) EMf->initMAX_Show_RG_BC(vct, grid, col);
+    else if (col->getCase()=="TestBBoundary" ) EMf->initTestBBoundary(vct,grid, col);
+    else if (col->getCase()=="initTestIntProj") EMf->initTestIntProj(vct, grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -225,6 +229,7 @@ int c_Solver::Init(int argc, char **argv) {
   num_grid_STR << numGrid;  //mlmd  
   num_proc << myrank; // mlmd: @grid level 
   
+
   if (col->getWriteMethod() == "default") {
     // Initialize the output (simulation results and restart file)
     // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
@@ -275,16 +280,21 @@ int c_Solver::Init(int argc, char **argv) {
     my_file.close();
   }
   
-  // // Distribution functions
-  // nDistributionBins = 1000;
-  // VelocityDist = new unsigned long[nDistributionBins];
-  // ds = SaveDirName + "/DistributionFunctions.txt";
-  // if (myrank == 0) {
-  //   ofstream my_file(ds.c_str());
-  //   my_file.close();
-  // }
-  /*! pre_mlmd
-    cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt"; */
+  // Distribution functions
+  if (WriteDistrFun){
+    nDistributionBins = 200; //1000;
+    VelocityDist = new unsigned long [nDistributionBins];  
+    ds = new string[ns];
+    for (int is=0; is<ns; is++){
+      stringstream is_STR;
+      is_STR << is;
+      ds[is] = SaveDirName + "/DistributionFunctions_G"  +num_grid_STR.str() +"_sp" + is_STR.str() + ".txt";
+      if (myrank == 0) {
+	ofstream my_file(ds[is].c_str());
+	my_file.close();
+      }
+    }
+  }
   cqsat = SaveDirName + "/VirtualSatelliteTraces_G" +num_grid_STR.str() +"_" + num_proc.str() + ".txt";
   // if(myrank==0){
   ofstream my_file(cqsat.c_str(), fstream::binary);
@@ -309,11 +319,8 @@ int c_Solver::Init(int argc, char **argv) {
   
   if (RR==0){
     cout << "Init finished "<< endl;
-  }				   
-				
-
-
-
+  }	
+			   
   return 0;
 }
 
@@ -449,7 +456,7 @@ void c_Solver::CalculateField() {
   }
 }
 
-void c_Solver::CalculateBField() {
+void c_Solver::CalculateBField(int cycle) {
   /* --------------------- */
   /* Calculate the B field */
   /* --------------------- */
@@ -460,7 +467,7 @@ void c_Solver::CalculateBField() {
   // receive BC on  Bn 
   //if (MLMD_BC) {EMf->receiveBC(grid, vct);}
 
-  EMf->calculateB(grid, vct, col);   // calculate the B field
+  EMf->calculateB(grid, vct, col, cycle);   // calculate the B field
 
   // send BC on Bn 
   //if (MLMD_BC) {EMf->sendBC(grid, vct);}
@@ -523,9 +530,9 @@ bool c_Solver::ParticlesMover() {
     }
     return (true);              // exit from the time loop
   }
-
   // CG sends PBC
   int RR= vct->getCartesian_rank();   
+
   // particle repopulation ops are done here if the repopulation is kinetic
   if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
     for (int i = 0; i < ns; i++){
@@ -615,19 +622,28 @@ void c_Solver::WriteConserved(int cycle) {
       my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
       my_file.close();
     }
-    // // Velocity distribution
-    // for (int is = 0; is < ns; is++) {
-    //   double maxVel = part[is].getMaxVelocity();
-    //   VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel);
-    //   if (myrank == 0) {
-    //     ofstream my_file(ds.c_str(), fstream::app);
-    //     my_file << cycle << "\t" << is << "\t" << maxVel;
-    //     for (int i = 0; i < nDistributionBins; i++)
-    //       my_file << "\t" << VelocityDist[i];
-    //     my_file << endl;
-    //     my_file.close();
-    //   }
-    // }
+
+    if (WriteDistrFun){
+      // Velocity distribution
+      for (int is = 0; is < ns; is++) {
+	// it actually returns the max u^2 + v^2 + w^3
+	// per Grid
+	//double maxVel = part[is].getMaxVelocity(vct->getCommGrid());
+	// use the same maxVel in the re system
+	//double maxVel = part[is].getMaxVelocity(MPI_COMM_WORLD);
+	// use the same max vel at all times (to compare d.f. without normalizing)
+	double maxVel= col->getUth(is)*7;
+	VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel, vct->getCommGrid());
+	if (myrank == 0) {
+	  ofstream my_file(ds[is].c_str(), fstream::app);
+	  my_file << cycle << "\t" << is << "\t" << maxVel;
+	  for (int i = 0; i < nDistributionBins; i++)
+	    my_file << "\t" << VelocityDist[i];
+	  my_file << endl;
+	  my_file.close();
+	}
+      }
+    }
   }
   
   //if (cycle%(col->getFieldOutputCycle())==0){
@@ -711,4 +727,61 @@ void c_Solver::Finalize() {
   delete[]momentum;
   // close MPI
   mpi->finalize_mpi();
+}
+
+void c_Solver::CalculateField_ECSIM(int cycle) {
+
+  //NN if (col->getStaticField()) return;
+
+  //NN MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(vct->getCommGrid());
+
+  /* NN
+  // Divergence cleanning                       
+  if (col->getPoissonCorrection() == "yes" and (cycle % col->getPoissonFreq()) == 0){
+    #ifdef __WITH_PETSC__
+    petscSolver_Poisson->solveE();
+    #else
+    if (myrank == 0) printf("WARNING: Poisson correction not available without PETSc\n");
+    #endif
+    } */
+
+  /* mlmd: BC */
+  // receive BC on En+theta, Bn                                              
+  if (MLMD_BC) {EMf->receiveBC(grid, vct);}
+  /* end mlmd: BC */
+
+  EMf->calculateEB_ECSIM(grid, vct, col, cycle); 
+
+  /* mlmd: BC */
+  // send BC on En+theta, Bn                    
+  if (MLMD_BC) {EMf->sendBC(grid, vct);}
+  /* end mlmd: BC */
+  
+  /* NN
+  // MAXWELL'S SOLVER            
+  #ifdef __WITH_PETSC__
+  petscSolver_Maxwell->solveE();
+  #else
+  EMf->calculateEB(grid, vct, col);               // calculate the E field 
+  #endif
+  // Impose MHD Buffer Zone                                  
+  if (col->getCase()=="MHDUCLA"){
+    EMf->setMHDBufferZone(grid, col);
+  }
+
+  // Compute the charge density as the divergence of the current   
+  #ifdef _CHARGE_FROM_CURRENT_
+  //for (int i = 0; i < ns; i++)                             
+  //part[i].computeCurrent(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)   
+  EMf->chargeFromCurrent(grid, vct);
+  #endif
+  */
+
+}
+
+void c_Solver::interpBC2N_ECSIM(int cycle){
+
+  EMf->centers2nodesB(vct, grid, col);
+  
 }

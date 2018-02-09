@@ -92,10 +92,21 @@ public:
   void derivN(double ***derN, double ****scFieldC, int ns, int dir);
   /** calculate gradient on nodes, given a scalar field defined on central points  */
   void gradC2N(double ***gradXN, double ***gradYN, double ***gradZN, double ***scFieldC);
+  /** calculate gradient on nodes, given a scalar field defined on central points  -
+      on vectors ridefined in size **/
+  void gradC2N(double ***gradXN, double ***gradYN, double ***gradZN, double ***scFieldC, int nxn, int nyn, int nzn); 
+  /** for Poisson face **/
+  void gradC2N_XSide(double ** gradPHIX_F, double ** gradPHIY_F, double ** gradPHIZ_F, double ** PHI);
   /** calculate gradient on nodes, given a scalar field defined on central points  */
   void gradN2C(double ***gradXC, double ***gradYC, double ***gradZC, double ***scFieldN);
   /** calculate divergence on central points, given a vector field defined on nodes  */
   void divN2C(double ***divC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN);
+  /** calculate divergence on central points, given a vector field defined on nodes
+      - for the face with CELL coordinate= I  */
+  void divN2C_XSide(double **divC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN, int I);
+  /** calculate divergence on central points, given a vector field defined on nodes  -
+      number of cells redefined **/
+  void divN2C(double ***divC, double ***vecFieldXN, double ***vecFieldYN, double ***vecFieldZN, int nxc, int nyc, int nzc);
   /** calculate divergence on nodes, given a vector field defined on central points  */
   void divC2N(double ***divN, double ***vecFieldXC, double ***vecFieldYC, double ***vecFieldZC);
   /** calculate curl on nodes, given a vector field defined on central points  */
@@ -114,6 +125,7 @@ public:
   void lapN2N_mlmd(double ***lapN, double ***scFieldN, VirtualTopology3D * vct);
   /** calculate laplacian on central points, given a scalar field defined on central points for Poisson */
   void lapC2Cpoisson(double ***lapC, double ***scFieldC, VirtualTopology3D * vct);
+  void lapC2Cpoisson(double ***lapC, double ***scFieldC, VirtualTopology3D * vct, int nxc, int nyc, int nzc);
   /** calculate laplacian on central points, given a scalar field defined on central points */
   void lapC2C(double ***lapC, double ***scFieldC, VirtualTopology3D * vct);
 

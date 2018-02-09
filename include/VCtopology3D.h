@@ -123,6 +123,13 @@ public:
   /** get the MPI communicator */
   MPI_Comm getComm() {return(CART_COMM);};    /*! pre-mlmd: cartesian communicator for the entire system
 						mlmd: cartesian communicator per grid level */
+  /** get communicators acting of boundaries for FIELDS, at grid level **/
+  MPI_Comm getCommField_XLeft() {return CommField_XLeft;}
+  MPI_Comm getCommField_XRight() {return CommField_XRight;}
+  MPI_Comm getCommField_YLeft() {return CommField_YLeft;}
+  MPI_Comm getCommField_YRight() {return CommField_YRight;}
+  MPI_Comm getCommField_ZLeft() {return CommField_ZLeft;}
+  MPI_Comm getCommField_Zright() {return CommField_ZRight;}
   /*! specific MLMD functions */
   /*! mlmd gets */
   /*! returns the non cartesian communicator per grid;
@@ -402,6 +409,17 @@ private:
     int *** Zcoord_CommToChildren_P;
     int *** numGrid_CommToChildren_P; // this is redundant, just to check   
     /* end use these variables as a look-up table to find the core you need to communicate to on the inter-grid communicators */ 
+
+    /* communicator for FIELD boundaries -
+       used in the divE correction for the BC */
+    MPI_Comm CommField_XLeft;
+    MPI_Comm CommField_XRight;
+    MPI_Comm CommField_YLeft;
+    MPI_Comm CommField_YRight;
+    MPI_Comm CommField_ZLeft;
+    MPI_Comm CommField_ZRight;
+
+    
 };
 
 #endif

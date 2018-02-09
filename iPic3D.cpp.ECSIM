@@ -20,8 +20,9 @@ int main(int argc, char **argv) {
   // without mlmd ops
   KCode.GatherMoments_Init();
 
-  // added to compare with ECSIM        
+  // added to compare with ECSIM    
   KCode.WriteOutput(KCode.FirstCycle());
+
   /* ------------ */
   /* 1- Main loop */
   /* ------------ */
@@ -36,14 +37,19 @@ int main(int argc, char **argv) {
     /* ----------------------------------------------------- */
 
     KCode.UpdateCycleInfo(i);
-    KCode.CalculateField();
-
-    b_err = KCode.ParticlesMover(); 
 
     // with mlmd ops
     if (!b_err) KCode.GatherMoments();
 
-    if (!b_err) KCode.CalculateBField(i); 
+    if (!b_err) KCode.CalculateField_ECSIM(i);
+
+    b_err = KCode.ParticlesMover(); 
+
+    // particles have to be moved with En+theta, Bn
+    // B n+1 calculated on the centers in CalculateField_ECSIM
+    // the interpolation to the nodes (used to move particles)
+    // is done after the mover
+    KCode.interpBC2N_ECSIM(i);
 
     if ( b_err) i = KCode.LastCycle() + 1;
 

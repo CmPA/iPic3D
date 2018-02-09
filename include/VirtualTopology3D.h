@@ -143,6 +143,12 @@ public:
   virtual int getZcoord_CommToParent(int N)=0;
   /*! end mlmd specific functions */
 
+  virtual MPI_Comm getCommField_XLeft() =0; 
+  virtual MPI_Comm getCommField_XRight() =0; 
+  virtual MPI_Comm getCommField_YLeft() =0; 
+  virtual MPI_Comm getCommField_YRight() =0; 
+  virtual MPI_Comm getCommField_ZLeft() =0; 
+  virtual MPI_Comm getCommField_Zright() =0; 
 
 };
 #endif

@@ -111,6 +111,8 @@ void Collective::ReadInput(string inputfile) {
     array_double Oy0 = config.read < array_double > ("Oy_SW");
     array_double Oz0 = config.read < array_double > ("Oz_SW");
 
+    array_bool SmoothGrid0 = config.read < array_bool > ("SmoothGrid");
+
     // mlmd topology
     array_int XLEN_mlmd0 = config.read < array_int > ("XLEN_mlmd");
     array_int YLEN_mlmd0 = config.read < array_int > ("YLEN_mlmd");
@@ -136,6 +138,8 @@ void Collective::ReadInput(string inputfile) {
     Ox_SW = new double[Ngrids];
     Oy_SW = new double[Ngrids];
     Oz_SW = new double[Ngrids];
+
+    SmoothGrid = new bool[Ngrids];
 
     XLEN_mlmd = new int[Ngrids];
     YLEN_mlmd = new int[Ngrids];
@@ -163,6 +167,8 @@ void Collective::ReadInput(string inputfile) {
     Ox_SW[0] = Ox0.a;
     Oy_SW[0] = Oy0.a;
     Oz_SW[0] = Oz0.a;
+    
+    SmoothGrid[0] = SmoothGrid0.a;
 
     XLEN_mlmd[0] = XLEN_mlmd0.a;
     YLEN_mlmd[0] = YLEN_mlmd0.a;
@@ -191,6 +197,8 @@ void Collective::ReadInput(string inputfile) {
       Ox_SW[1]= Ox0.b;
       Oy_SW[1]= Oy0.b;
       Oz_SW[1]= Oz0.b;
+
+      SmoothGrid[1] = SmoothGrid0.b;
 
       XLEN_mlmd[1] = XLEN_mlmd0.b;
       YLEN_mlmd[1] = YLEN_mlmd0.b;
@@ -221,6 +229,8 @@ void Collective::ReadInput(string inputfile) {
       Oy_SW[2]= Oy0.c;
       Oz_SW[2]= Oz0.c;
 
+      SmoothGrid[2] = SmoothGrid0.c;
+
       XLEN_mlmd[2] = XLEN_mlmd0.c;
       YLEN_mlmd[2] = YLEN_mlmd0.c;
       ZLEN_mlmd[2] = ZLEN_mlmd0.c;
@@ -249,6 +259,8 @@ void Collective::ReadInput(string inputfile) {
       Ox_SW[3]= Ox0.d;
       Oy_SW[3]= Oy0.d;
       Oz_SW[3]= Oz0.d;
+
+      SmoothGrid[3] = SmoothGrid0.d;
 
       XLEN_mlmd[3] = XLEN_mlmd0.d;
       YLEN_mlmd[3] = YLEN_mlmd0.d;
@@ -279,6 +291,8 @@ void Collective::ReadInput(string inputfile) {
       Oy_SW[4]= Oy0.e;
       Oz_SW[4]= Oz0.e;
 
+      SmoothGrid[4] = SmoothGrid0.e;
+
       XLEN_mlmd[4] = XLEN_mlmd0.e;
       YLEN_mlmd[4] = YLEN_mlmd0.e;
       ZLEN_mlmd[4] = ZLEN_mlmd0.e;
@@ -300,11 +314,13 @@ void Collective::ReadInput(string inputfile) {
     
     /* whether to perform mlmd operations */
     MLMD_BC = config.read < bool > ("MLMD_BC");
-    MLMD_PROJECTION = config.read < bool > ("MLMD_PROJECTION");
+    MLMD_PROJECTION = config.read < bool > ("MLMD_PROJECTION", 0);
     MLMD_ParticleREPOPULATION = config.read < bool > ("MLMD_ParticleREPOPULATION");
-    MLMD_InitialInterpolation = config.read < bool > ("MLMD_InitialInterpolation");
-    MLMD_BCBufferArea = config.read < bool > ("MLMD_BCBufferArea");
-    MLMD_fixBCenters = config.read < bool > ("MLMD_fixBCenters");
+    MLMD_InitialInterpolation = config.read < bool > ("MLMD_InitialInterpolation", 0);
+    MLMD_BCBufferArea = config.read < bool > ("MLMD_BCBufferArea", 0);
+    MLMD_fixBCenters = config.read < bool > ("MLMD_fixBCenters", 0);
+    // default to zero
+    MLMD_InterpolateOldBCell = config.read < bool > ("MLMD_InterpolateOldBCell", 0);
 
     AllowPMsgResize= config.read < bool > ("AllowPMsgResize");
     PRA = config.read < int > ("PRA");
@@ -1826,6 +1842,9 @@ double Collective::getOy_SW(int numgrid) {
 double Collective::getOz_SW(int numgrid) {
   return Oz_SW[numgrid];
 }
+bool Collective::getSmoothGrid(int numgrid) {
+  return SmoothGrid[numgrid];
+}
 double Collective::getOx_P(int numgrid) {
   return Ox_P[numgrid];
 }
@@ -1899,6 +1918,7 @@ bool Collective::getMLMD_ParticleREPOPULATION() {return MLMD_ParticleREPOPULATIO
 bool Collective::getMLMD_InitialInterpolation() {return MLMD_InitialInterpolation;}
 bool Collective::getMLMD_BCBufferArea() {return MLMD_BCBufferArea;}
 bool Collective::getMLMD_fixBCenters() {return MLMD_fixBCenters;}
+bool Collective::getMLMD_InterpolateOldBCell() {return MLMD_InterpolateOldBCell;}
 
 bool Collective::getAllowPMsgResize() {return AllowPMsgResize;}
 bool Collective::getFluidLikeRep() {return FluidLikeRep;}
