@@ -38,6 +38,10 @@ private:
   PC pc;
   // Context for the A*x product
   CtxSolver ctx;
+  // Tolerances
+  double tolRel, tolAbs;
+  // Maximum number of iterations
+  int iter_max;
 };
 
 #endif
