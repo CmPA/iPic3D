@@ -29,7 +29,9 @@ PetscSolver::PetscSolver(EMfields3D *EMf, Grid* grid, VirtualTopology3D *vct, Co
   int nzn = grid->getNZN();
   dim = 3*(nxn-2)*(nyn-2)*(nzn-2);
 
-  double tol = col->getGMREStol();
+  tolRel = col->getGMREStol();
+  tolAbs = 1e-16;
+  iter_max = 5000;
 
   // Create the coefficient matrix
   MatCreateShell(PETSC_COMM_WORLD ,dim ,dim, PETSC_DETERMINE, PETSC_DETERMINE, &ctx, &A);
@@ -52,7 +54,7 @@ PetscSolver::PetscSolver(EMfields3D *EMf, Grid* grid, VirtualTopology3D *vct, Co
   //PCSetType(pc, PCJACOBI);
   
   // Tolerance and number of iterations
-  KSPSetTolerances(ksp,1e-20,tol,10000,2000);
+  KSPSetTolerances(ksp,tolRel,tolAbs,10000,iter_max);
 
   KSPSetFromOptions(ksp);
 
