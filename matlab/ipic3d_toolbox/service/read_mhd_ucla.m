@@ -6,8 +6,8 @@
 %nome='psy400.iPic_mp_box_ttcor.0015.dat'; %Jean13
 %nome='psy501.iPic_mp_gbox.0020.dat'; %Jean17
 nome='~/Dropbox/Science/ucla/7feb09/feb0709iPICBox.035800UT.dat'; %7feb09
-%nome='/Users/gianni/Documents/storage/ucla/ucla/HRmaha3D3/feb1508iPIC.034800UT.dat'; %HRmaha3D3
-nome='~/psy501.mp_EC_3DT01_box.0020.dat'
+nome='~/Documents/storage/ucla/ucla/HRmaha3D3/feb1508iPIC.034800UT.dat'; %HRmaha3D3
+%nome='~/psy501.mp_EC_3DT01_box.0020.dat'
 
 [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] =   code_units(25,1);
 e= 1.6022e-19;
