@@ -4,7 +4,7 @@ addpath(genpath('../ipic3d_toolbox'));
 
 %dir='/data1/gianni/HRmaha3D3/vtk/'
 dir='/data1/gianni/HRmaha3D3/data3/'
-dir='~/MHDUCLA/'
+%dir='~/MHDUCLA/'
 
 global Lx Ly Lz Xgsmrange Ygsmrange Zgsmrange dx dy dz XLEN YLEN ZLEN initial_time Nx Ny Nz Dt
 Xgsmrange= [-45 -15];
