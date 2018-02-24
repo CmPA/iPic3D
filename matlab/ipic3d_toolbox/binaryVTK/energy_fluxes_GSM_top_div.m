@@ -2,8 +2,7 @@ close all
 addpath(genpath('~/iPic3D-github/matlab/ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
-cyl=1 % this means it is cartesian
-global cyl
+
 
 HRmaha3D3
 
@@ -149,6 +148,8 @@ mWm2= Wm3*code_dp*1e3
 % Electrons
 %
 
+cyl=1 % this means it is cartesian
+global cyl Nsm_div
 
 global color_choice symmetric_color labelx labely labelc reversex reversey Ncycle skip
 reversex=1;
@@ -259,7 +260,7 @@ symmetric_color=1;
 color_choice =3;
 
 labelc = 'nW/m^3';
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(UdivPe(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr) ,['UdivPe Z=' 'AVG_Z'],'UdivPe',[-1 1]*3e-2, Nsm, 6+iz);
+%tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(UdivPe(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr) ,['UdivPe Z=' 'AVG_Z'],'UdivPe',[-1 1]*3e-2, Nsm, 6+iz);
 
 newsmooth=1
 if (newsmooth)
@@ -280,7 +281,7 @@ udivP = udivP + tmp.* Vz;
 
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(udivP(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr) ,['UdivPe Z=' 'AVG_Z'],'UdivPe2',[-1 1]*3e-2, Nsm, 7+iz);
 end
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),(-mean(divQenthe(ir,jr,kr),2)+mean(UdivPe(ir,jr,kr),2))*nWm3,Vex(ir,kr),Vez(ir,kr) ,['Source Z=' 'AVG_Z'],'Source',[-1 1]*3e-2, Nsm, 7+iz);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),(-mean(divQenthe(ir,jr,kr),2)+mean(udivP(ir,jr,kr),2))*nWm3,Vex(ir,kr),Vez(ir,kr) ,['Source Z=' 'AVG_Z'],'Source',[-1 1]*3e-2, Nsm, 7+iz);
 end
 
 end
@@ -313,7 +314,7 @@ symmetric_color=1;
 color_choice =3;
 
 labelc = 'nW/m^3';
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(UdivPi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['UdivPi Z=' 'AVG_Z'],'UdivPi',[-1 1]*0e-9, Nsm, 11+iz);
+%tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(UdivPi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['UdivPi Z=' 'AVG_Z'],'UdivPi',[-1 1]*0e-9, Nsm, 11+iz);
 
 end
 
