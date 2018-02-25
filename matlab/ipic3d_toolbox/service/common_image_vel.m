@@ -64,7 +64,7 @@ xlabel(labelx,'fontsize',[14])
 ylabel(labely,'fontsize',[14])
 
 
-title([ nlabel ],'fontsize',[14])
+title([name '  ' nlabel ],'fontsize',[14])
 
 
 axis image
