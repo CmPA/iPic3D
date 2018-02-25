@@ -1,9 +1,9 @@
-function [J]=common_image_vel(x,y,J1,Ax,Ay,nlabel,name,clmt, Nsm, nfig)
+function [J]=common_image_vel(x,y,J1,Ax,Ay,nlabel,name,clmt, radius, nfig)
 
 global color_choice symmetric_color labelx labely labelc reversex reversey Ncycle skip
 
 
-J=smoothbc(squeeze(J1),Nsm);
+J=imgaussfilt(squeeze(J1),radius);
 size(J)
 
 if(nargin>8)
@@ -27,7 +27,7 @@ clmt(2)=-clmt(1);
 end
 end
 
-Ncut=max(Nsm*3,1)
+%Ncut=max(Nsm*3,1)
 Ncut=1
 
 %imagesc(x(1,:),(y(:,1)),J(Ncut:end-Ncut,Ncut:end-Ncut)',clmt)
