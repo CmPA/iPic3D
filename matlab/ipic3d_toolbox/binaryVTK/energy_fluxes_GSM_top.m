@@ -265,13 +265,13 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkiperp2(ir,jr,kr),
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(udivP(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr) ,'AVG_Z','UdivPi',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(PgradV(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr) , 'AVG_Z','PgradVi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Ubulk(ir,jr,kr).*divVi(ir,jr,kr),2)*nWm3,Vex(ir,kr),Viz(ir,kr) , 'AVG_Z','UbulkdivVi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Uth(ir,jr,kr).*divVi(ir,jr,kr),2)*nWm3,Vex(ir,kr),Viz(ir,kr) , 'AVG_Z','UthdivVi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Ubulk(ir,jr,kr).*divVi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr) , 'AVG_Z','UbulkdivVi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Uth(ir,jr,kr).*divVi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr) , 'AVG_Z','UthdivVi',[-1 1]*0e-9, radius, 2);
 
-DUbulkDt = JidotE - Ubulk.*divVe - udivP;
-DUthDt = -Uth.*divVe -PgradV;
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUbulkDt(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr), 'AVG_Z','DUbulkiDt',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUthDt(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr), 'AVG_Z','DUthiDt',[-1 1]*0e-9, radius, 2);
+DUbulkDt = JidotE - Ubulk.*divVi - udivP;
+DUthDt = -Uth.*divVi -PgradV;
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUbulkDt(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr), 'AVG_Z','DUbulkiDt',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUthDt(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr), 'AVG_Z','DUthiDt',[-1 1]*0e-9, radius, 2);
 
 end
 
