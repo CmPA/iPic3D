@@ -8,7 +8,7 @@ divQbulk = compute_div(x,y,z,Qbulkx,Qbulky,Qbulkz);
 divQenth = compute_div(x,y,z,Qenthx,Qenthy,Qenthz);
 divQhf = compute_div(x,y,z,Qhfx,Qhfy,Qhfz);
 Uth = (Pxx + Pyy + Pzz)/2;
-Ubulk = ((Jx./rho).^2 + (Jy./rho).^2 + (Jz./rho).^2) * qom .* rho /2;  
+Ubulk = ((Jx./rho).^2 + (Jy./rho).^2 + (Jz./rho).^2) .* rho /2/qom;  
     
    
 radius=5

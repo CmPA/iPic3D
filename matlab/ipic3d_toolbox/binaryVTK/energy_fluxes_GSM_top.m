@@ -233,7 +233,7 @@ Nsm=5;labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JidotE(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),'AVG_Z','JiE',[-1 1]*0e-10, Nsm,1);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQbulk(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr), 'AVG_Z','divQbulki',[-1 1]*0e-10, Nsm,1);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQenth(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),'AVG_Z','divQenthi',[-1 1]*0e-10, Nsm,1);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQhf(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr), 'AVG_Z','divhfi',[-1 1]*0e-10, Nsm,1);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divQhf(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr), 'AVG_Z','divQhfi',[-1 1]*0e-10, Nsm,1);
 
 labelc = 'mW/m^2'; 
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Qbulkix(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) , 'AVG_Z','Qbulkix',[-1 1]*0e-9, Nsm, 2);
