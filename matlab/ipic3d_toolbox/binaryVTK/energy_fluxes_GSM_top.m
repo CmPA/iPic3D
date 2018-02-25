@@ -52,7 +52,7 @@ nWm3 = 1e9*Wm3;
 mWm2= Wm3*code_dp*1e3
 
 
-radius=8;
+radius=4/2;
 
 
 
@@ -112,7 +112,6 @@ mWm2= Wm3*code_dp*1e3
 %for iz=135
 %kr=-5:5
 %kr=kr+round(iz);
-radius=5
 
 
 % Vix=Jix./rhoi;Viz=Jiz./rhoi;
@@ -168,7 +167,7 @@ if(electrons)
 [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
     rhoe, Jex, Jey, Jez,... 
     Qbulkex, Qbulkey, Qbulkez, Qenthex, Qenthey, Qenthez, Qhfex, Qhfey, Qhfez, ...
-    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom_ele);
+    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom_ele, radius);
 
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JedotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),'AVG_Z','JeE',[-1 1]*0e-10, radius,1);
@@ -225,7 +224,7 @@ if(ions)
 [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
     rhoi, Jix, Jiy, Jiz,... 
     Qbulkix, Qbulkiy, Qbulkiz, Qenthix, Qenthiy, Qenthiz, Qhfix, Qhfiy, Qhfiz, ...
-    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0);
+    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius);
 
 radius=5;labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JidotE(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),'AVG_Z','JiE',[-1 1]*0e-10, radius,1);
