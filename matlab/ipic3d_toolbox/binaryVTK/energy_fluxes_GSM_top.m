@@ -170,7 +170,7 @@ if(electrons)
 [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
     rhoe, Jex, Jey, Jez,... 
     Qbulkex, Qbulkey, Qbulkez, Qenthex, Qenthey, Qenthez, Qhfex, Qhfey, Qhfez, ...
-    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, dx, dy, dz, qom_ele)
+    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom_ele);
 
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JedotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),['JeE Z=' 'AVG_Z'],'JeE',[-1 1]*0e-10, Nsm,1);
@@ -223,7 +223,7 @@ if(ions)
 [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
     rhoi, Jix, Jiy, Jiz,... 
     Qbulkix, Qbulkiy, Qbulkiz, Qenthix, Qenthiy, Qenthiz, Qhfix, Qhfiy, Qhfiz, ...
-    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, dx, dy, dz, 1.0)
+    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0);
 
 Nsm=5;labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JidotE(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),['JiE Z=' 'AVG_Z'],'JiE',[-1 1]*0e-10, Nsm,1);
@@ -241,8 +241,8 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qenthiy(ir,jr,kr),2)*m
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qenthiz(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qenthiy Z=' 'AVG_Z'],'Qenthiz',[-1 1]*0e-9, Nsm, 4);
 
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),-mean(Qhfix(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qhfix Z=' 'AVG_Z'],'Qhfix',[-1 1]*0e-9, Nsm, 2);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(hfiy(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qhfiz Z=' 'AVG_Z'],'Qhfiy',[-1 1]*0e-9, Nsm, 3);
-tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(hfiz(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qhfiy Z=' 'AVG_Z'],'Qhfiz',[-1 1]*0e-9, Nsm, 4);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qhfiy(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qhfiz Z=' 'AVG_Z'],'Qhfiy',[-1 1]*0e-9, Nsm, 3);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qhfiz(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,['Qhfiy Z=' 'AVG_Z'],'Qhfiz',[-1 1]*0e-9, Nsm, 4);
 
 
 Qenthipar= dot(Qenthix,Qenthiy,Qenthiz,Bx,By,Bz)./B;
