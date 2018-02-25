@@ -120,17 +120,22 @@ Nsm=5
 % Vix=Jix./rhoi;Viz=Jiz./rhoi;
 % AAzi=vecpot(xc,zc,-squeeze(mean(Vix(:,jr,:),2)),squeeze(mean(Viz(:,jr,:),2)));
 
-Vex=Jex./rhoe;Vez=Jez./rhoe;
-Vex=-smoothbc(squeeze(mean(Vex(:,jr,:),2)),Nsm);
-Vez=smoothbc(squeeze(mean(Vez(:,jr,:),2)),Nsm);
-AAze=vecpot(xc,zc,Vex,Vez);
+Vex=Jex./rhoe;Vey=Jey./rhoe;Vez=Jez./rhoe;
 divVe = compute_div(x,y,z,Vex,Vey,Vez);
 
-Vix=Jix./rhoi;Viz=Jiz./rhoi;
+Vex=-smoothbc(squeeze(mean(Vex(:,jr,:),2)),Nsm);
+Vey=smoothbc(squeeze(mean(Vey(:,jr,:),2)),Nsm);
+Vez=smoothbc(squeeze(mean(Vez(:,jr,:),2)),Nsm);
+AAze=vecpot(xc,zc,Vex,Vez);
+
+
+Vix=Jix./rhoi;Viy=Jiy./rhoi;Viz=Jiz./rhoi;
+divVi = compute_div(x,y,z,Vix,Viy,Viz);
+
 Vix=-smoothbc(squeeze(mean(Vix(:,jr,:),2)),Nsm);
+Viy=smoothbc(squeeze(mean(Viy(:,jr,:),2)),Nsm);
 Viz=smoothbc(squeeze(mean(Viz(:,jr,:),2)),Nsm);
 AAze=vecpot(xc,zc,Vix,Viz);
-divVi = compute_div(x,y,z,Vix,Viy,Viz);
 
 poynting=1
 if(poynting)
