@@ -52,7 +52,7 @@ nWm3 = 1e9*Wm3;
 mWm2= Wm3*code_dp*1e3
 
 
-radius=4/4;
+radius=4;
 
 
 
@@ -261,7 +261,7 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkiperp1(ir,jr,kr),
 Qbulkiperp2=perp2x.*Qbulkix+perp2y.*Qbulkiy+perp2z.*Qbulkiz;
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Qbulkiperp2(ir,jr,kr),2)*mWm2,Vix(ir,kr),Viz(ir,kr) ,'AVG_Z','Qbulkiprp2',[-1 1]*0e-9, radius, 2);
 
-radius=5
+
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(udivP(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr) ,'AVG_Z','UdivPi',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(PgradV(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr) , 'AVG_Z','PgradVi',[-1 1]*0e-9, radius, 2);
