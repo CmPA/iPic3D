@@ -218,6 +218,10 @@ public:
   double getMaxVelocity(MPI_Comm Comm); 
   /** return energy distribution */
   unsigned long *getVelocityDistribution(int nBins, double maxVel, MPI_Comm Comm);
+  /** return energy distribution, only of repopulated particles */
+  unsigned long *getVelocityDistribution_RepPart(int nBins, double maxVel, MPI_Comm Comm);
+  /** return energy distribution, only of NON repopulated particles */
+  unsigned long *getVelocityDistribution_NonRepPart(int nBins, double maxVel, MPI_Comm Comm);
   /** return the momentum */
   /*! mlmd: now I need the communicator also */
   //double getP();
@@ -246,7 +250,7 @@ public:
   // each RG core buid its own PBC communication map
   void Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct);
   /* RG receives PBC msg and acts accordingly; used for both fluid and kinetic PBC */
-  void ReceivePBC(Grid* grid, VirtualTopology3D * vct);
+  void ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle);
   /* ------ kinetic repopulation methods + support functions  ------ */
   /* build and send particle BC msg -- CG to RGC -- KINETIC REPOPULATION*/
   /* kinetic repopulation: to minimise waiting times, build all messages then send then */
@@ -270,9 +274,9 @@ public:
      -- lots of checks inside, which can be disabled */
   void unpack_CRP(CRP_struct p, VirtualTopology3D * vct);
   /* ApplyPBC: RG, after receiving PBC, applies them */
-  void ApplyPBC(VirtualTopology3D* vct, Grid* grid);
+  void ApplyPBC(VirtualTopology3D* vct, Grid* grid, int cycle);
   /* split a particle received form the CG into RG particles */
-  void SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p);
+  void SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p, int cycle);
   /* for repopulation method -2 */
   bool RepopulatedParticleHasEnteredRG(Grid* grid, double xTmp, double yTmp, double zTmp, double u, double v, double w);
   /* a barrier on both parent and child side of the particle communicator, to prevent messages for different particle speciesfrom crossing */
@@ -550,6 +554,8 @@ protected:
   int nop_EndCommunicate;
   /* number of particles in the core AFTER ReceivePBC */
   int nop_AfterReceivePBC;
+  /* number of particles in the core BEFORE Recieve PBC */
+  int nop_BeforeReceivePBC;
   /* particles deleted at the end of communicate*/
   int PRA_deleted;
 
@@ -716,7 +722,11 @@ protected:
   
   // text file for particle-related output
   string parInfo;
-  
+
+  // text file for repopulation-related operations
+  bool saveRepParFile;
+  string RepopulatedPar;
+  int DiagnosticsOutputCycle;
 };
 
 #endif

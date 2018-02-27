@@ -204,6 +204,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   RFx= DxP/dx;
   RFy= DyP/dy;
   RFz= DzP/dz;
+  //cout << "numGrid: " << numGrid << ", RFx: "<< RFx <<", RFy: "<< RFy << ", RFz: " << RFz <<endl;
   delta = col->getDelta();
   TrackParticleID = col->getTrackParticleID(species);
   c = col->getC();
@@ -456,7 +457,10 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   //   the 'visible' variables are the index at which PRA starts/ ends 
   
   PRACells= col->getPRA();  
-  cout << "PRACells= " << PRACells << endl;
+
+  /*cout << "I AM CHANGING PRA NUMBER FOR IONS" << endl;
+    if (qom>0) PRACells=2;*/
+  cout << "Species " << ns <<" qom " << qom << "PRACells= " << PRACells << endl;
 
   // Index at which the PRA starts/ ends
   // 
@@ -515,6 +519,28 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   Coord_ZRight_End   = Lz+dz;
   Coord_ZRight_Start = Lz+dz -dz*(PRACells);
 
+
+  if (vct->getPERIODICX_P()){  
+    Coord_YLeft_Start=0;
+    Coord_XLeft_End=0;
+    Coord_XRight_Start=Lx;
+    Coord_XRight_End=Lx;
+  }
+
+  if (vct->getPERIODICY_P()){  
+    Coord_YLeft_Start=0;
+    Coord_YLeft_End=0;
+    Coord_YRight_Start=Ly;
+    Coord_YRight_End=Ly;
+  }
+
+  if (vct->getPERIODICZ_P()){  
+    Coord_ZLeft_Start=0;
+    Coord_ZLeft_End=0;
+    Coord_ZRight_Start=Lz;
+    Coord_ZRight_End=Lz;
+  }
+
   // for extreme testing
   /*Coord_XLeft_Start  = -dx;
   Coord_XLeft_End    = Lx/2;
@@ -560,14 +586,28 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   string SaveDirName=col->getSaveDirName();
   stringstream num_grid_STR; num_grid_STR  << numGrid;
   stringstream num_sp_STR; num_sp_STR  << ns;
+  stringstream num_rank_STR; num_rank_STR  << vct->getCartesian_rank();
   parInfo = SaveDirName + "/parInfo_G" + num_grid_STR.str() + "_sp" + num_sp_STR.str() + ".txt";
   if (vct->getCartesian_rank() == 0) {
     ofstream my_file(parInfo.c_str());
     my_file.close();
   }
 
+  saveRepParFile= false;
+  // to save repopulated particles
+  if (saveRepParFile and numGrid >0){
+    RepopulatedPar = SaveDirName + "/RepParInfo_G" + num_grid_STR.str() + "_sp" + num_sp_STR.str() + "_c" + num_rank_STR.str() + ".txt";
+
+    ofstream my_file(RepopulatedPar.c_str());
+    my_file.close();    
+  }
+  DiagnosticsOutputCycle= col->getDiagnosticsOutputCycle();
+
   TEST_FLUID_BC= false;
 
+  // with this, the first d.f. of repopulated particles is = to the total distribution function
+  nop_BeforeReceivePBC=0; 
+  
   // //FOR TEST:
   // nvDistLoc = 3;
   // vDist     = new c_vDist[nvDistLoc];
@@ -766,62 +806,72 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       //weight[1][1][0] = q[i] * xi[1] * eta[1] * zeta[0] * invVOL;
       //weight[1][1][1] = q[i] * xi[1] * eta[1] * zeta[1] * invVOL;
       // add charge density
-      //EMf->addRho(weight, ix, iy, iz, ns);
-      EMf->addRho(weight, ix, iy, iz, ns, vct, x[i], y[i], z[i]);
+      EMf->addRho(weight, ix, iy, iz, ns);
+      //EMf->addRho(weight, ix, iy, iz, ns, vct, x[i], y[i], z[i]);
+      //EMf->addRho(weight, ix, iy, iz, ns, nxn, nyn, nzn);
       // add current density - X
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
       EMf->addJx(temp, ix, iy, iz, ns);
+      //EMf->addJx(temp, ix, iy, iz, ns, nxn, nyn, nzn);
       // add current density - Y
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
       EMf->addJy(temp, ix, iy, iz, ns);
+      //EMf->addJy(temp, ix, iy, iz, ns, nxn, nyn, nzn);
       // add current density - Z
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
       EMf->addJz(temp, ix, iy, iz, ns);
+      //EMf->addJz(temp, ix, iy, iz, ns, nxn, nyn, nzn);  
       // Pxx - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
       EMf->addPxx(temp, ix, iy, iz, ns);
+      //EMf->addPxx(temp, ix, iy, iz, ns, nxn, nyn, nzn);
       // Pxy - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
       EMf->addPxy(temp, ix, iy, iz, ns);
+      //EMf->addPxy(temp, ix, iy, iz, ns, nxn, nyn, nzn);
       // Pxz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
       EMf->addPxz(temp, ix, iy, iz, ns);
+      //EMf->addPxz(temp, ix, iy, iz, ns, nxn, nyn, nzn);
       // Pyy - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
       EMf->addPyy(temp, ix, iy, iz, ns);
+      //EMf->addPyy(temp, ix, iy, iz, ns, nxn, nyn, nzn);
       // Pyz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
       EMf->addPyz(temp, ix, iy, iz, ns);
+      //EMf->addPyz(temp, ix, iy, iz, ns, nxn, nyn, nzn);
       // Pzz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
       EMf->addPzz(temp, ix, iy, iz, ns);
+      //EMf->addPzz(temp, ix, iy, iz, ns, nxn, nyn, nzn);  
     }
     // change this to allow more parallelization after implementing array class
     //#pragma omp critical
@@ -840,8 +890,25 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
 
     ofstream my_file(parInfo.c_str(), fstream::app);
     my_file << endl << QMIN <<" " << QMAX <<" " << nop_InsideActive_TOT <<" ";
+    cout << "QMIN: " << QMIN << " QMAX: " <<QMAX << endl;
     my_file.close();
   }
+
+
+
+  // for future memory: the ghost node carries only half of the expected charge etc
+  // but IT DOES NOT MATTER because that value is never used
+  /*cout << "TEST FOR MOMENTS: " << endl;
+  for (int i=0; i< nxn; i++){
+    if (i==0 and vct->getXleft_neighbor_P()== MPI_PROC_NULL and numGrid==1) {
+      cout << "rhons[0][0][5][5]: " << EMf->getRHOns(0, 5, 5, 0) << endl
+	   << "rhons[0][1][5][5]: " << EMf->getRHOns(1, 5, 5, 0) << endl
+	   << "rhons[0][2][5][5]: " << EMf->getRHOns(2, 5, 5, 0) << endl
+	   << "rhons[0][3][5][5]: " << EMf->getRHOns(3, 5, 5, 0) << endl;
+    }
+    }*/
+
+     
 
 }
 
@@ -1069,7 +1136,7 @@ int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
     }
     else {yMin= 0; yMax= Ly;} // non periodic, non mlmd     
 
-    if (ptVCT->getPERIODICZ_P()) { zMin=-Lz; zMax=2*Lz; } // so periodic particles will stay in the system and be communicated    
+    if (ptVCT->getPERIODICZ_P() ) { zMin=-Lz; zMax=2*Lz; } // so periodic particles will stay in the system and be communicated    
     else if ((bcPfaceZleft == -1 or bcPfaceZleft == -3 or bcPfaceZleft == -4) and CommToParent_P!= MPI_COMM_NULL) {
       zMin= Coord_ZLeft_End; zMax= Coord_ZRight_Start;
     }
@@ -1521,7 +1588,81 @@ unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel
 
   return f;
 }
+/* distribution function only of the repopulated particles -
+   i test also the ones in the Ghost Cells */
+unsigned long *Particles3Dcomm::getVelocityDistribution_RepPart(int nBins, double maxVel, MPI_Comm Comm) {
+  unsigned long *f = new unsigned long[nBins];
+  for (int i = 0; i < nBins; i++)
+    f[i] = 0;
+  double Vel = 0.0;
+  double dv = maxVel / nBins;
+  int bin = 0;
 
+  cout << "repopulated distribution function: " << (nop-nop_BeforeReceivePBC) <<" particles vs " << nop << " in this core " << endl;
+  //cout << "NB: the first d.f. of repopulated particles is actually the entire d.f. of the RG" <<endl;
+  /* test only the particles added after repopulation */
+  for (long long i = nop_BeforeReceivePBC; i < nop; i++) {
+    /** cosider only particles in the active part of the grid **/
+
+    if (nop_BeforeReceivePBC==0){ // this happens only the first time
+      // manually exclude everybody from the active area
+      if ( (x[i]> -dx+PRACells*dx and x[i]<Lx+dx-PRACells*dx and y[i]> -dy+PRACells*dy and y[i]<Ly+dy-PRACells*dy and z[i]> -dz+PRACells*dx and z[i]<Lz+dz-PRACells*dz))
+	continue;
+    }
+    Vel = sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    bin = int (floor(Vel / dv));
+    if (bin >= nBins)
+      f[nBins - 1] += 1;
+    else
+      f[bin] += 1;
+  }
+
+  MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_LONG, MPI_SUM, Comm);
+
+  return f;
+}
+
+
+/* distribution function only of the NON- repopulated particles -
+   i test also the ones in the Ghost Cells */
+unsigned long *Particles3Dcomm::getVelocityDistribution_NonRepPart(int nBins, double maxVel, MPI_Comm Comm) {
+  unsigned long *f = new unsigned long[nBins];
+  for (int i = 0; i < nBins; i++)
+    f[i] = 0;
+  double Vel = 0.0;
+  double dv = maxVel / nBins;
+  int bin = 0;
+
+  cout << "NON repopulated distribution function: " << (nop_BeforeReceivePBC) <<" particles vs " << nop << " in this core " << endl;
+  /* test only the particles added after repopulation */
+
+  int END;
+  bool ExtraCheck= false;
+  END= nop_BeforeReceivePBC;
+  if (END==0){    END=nop; ExtraCheck= true;}
+  // so that the first time it prints initial distribution 
+
+  for (long long i = 0; i < END; i++) {
+    /** cosider only particles in the non-repopulation part of the grid -
+	this only for the initial distribution, the others come automatically **/
+    if (ExtraCheck){
+      if (! (x[i]> -dx+PRACells*dx and x[i]<Lx+dx-PRACells*dx and y[i]> -dy+PRACells*dy and y[i]<Ly+dy-PRACells*dy and z[i]> -dz+PRACells*dx and z[i]<Lz+dz-PRACells*dz))
+
+	continue;
+    }
+
+    Vel = sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    bin = int (floor(Vel / dv));
+    if (bin >= nBins)
+      f[nBins - 1] += 1;
+    else
+      f[bin] += 1;
+  }
+
+  MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_LONG, MPI_SUM, Comm);
+
+  return f;
+}
 
 /** print particles info */
 void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
@@ -2116,9 +2257,18 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(2)==0 && vct->getZleft_neighbor_P()== MPI_PROC_NULL && DIR_2){
 
     FACE= "BOTTOM";
-    i_s= 0-1; i_e= nxn-1+1;
+    // with extra RG dx
+    /*i_s= 0-1; i_e= nxn-1+1;
     j_s= 0-1; j_e= nyn-1+1;
-    k_s= PRA_ZLeft_Start-1; k_e= PRA_ZLeft_End+1;
+    k_s= PRA_ZLeft_Start-1; k_e= PRA_ZLeft_End+1;*/
+    // just RG extension - add +/- 0.5 while building the CG msg
+    i_s= 0; i_e= nxn-1;
+    j_s= 0; j_e= nyn-1;
+    k_s= PRA_ZLeft_Start; k_e= PRA_ZLeft_End;
+    // RG + CG extension - remove that while building the CG msg
+    /*i_s= 0; i_e= nxn-1;
+    j_s= 0; j_e= nyn-1;
+    k_s= PRA_ZLeft_Start; k_e= PRA_ZLeft_End;*/
 
     /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
   cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
@@ -2133,9 +2283,13 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(2) ==ZLEN-1 && vct->getZright_neighbor_P() == MPI_PROC_NULL && DIR_2){
     
     FACE= "TOP";
-    i_s=0-1; i_e= nxn-1+1;
+    /*i_s=0-1; i_e= nxn-1+1;
     j_s=0-1; j_e= nyn-1+1;
-    k_s= PRA_ZRight_Start-1; k_e= PRA_ZRight_End +1;
+    k_s= PRA_ZRight_Start-1; k_e= PRA_ZRight_End +1;*/
+    i_s=0; i_e= nxn-1;
+    j_s=0; j_e= nyn-1;
+    k_s= PRA_ZRight_Start; k_e= PRA_ZRight_End;
+   
 
     /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
   cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
@@ -2150,9 +2304,12 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(0) ==0  && vct->getXleft_neighbor_P() == MPI_PROC_NULL && DIR_0){
 
     FACE= "LEFT";
-    i_s= PRA_XLeft_Start-1; i_e= PRA_XLeft_End +1;
+    /*i_s= PRA_XLeft_Start-1; i_e= PRA_XLeft_End +1;
     j_s= 0-1; j_e= nyn-1+1;
-    k_s= 0-1; k_e= nzn-1+1;
+    k_s= 0-1; k_e= nzn-1+1;*/
+    i_s= PRA_XLeft_Start; i_e= PRA_XLeft_End;
+    j_s= 0; j_e= nyn-1;
+    k_s= 0; k_e= nzn-1;
 
     /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
   cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
@@ -2167,9 +2324,12 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(0) ==XLEN-1 && vct->getXright_neighbor_P() == MPI_PROC_NULL && DIR_0){
 
     FACE= "RIGHT";
-    i_s= PRA_XRight_Start-1; i_e= PRA_XRight_End+1;
+    /*i_s= PRA_XRight_Start-1; i_e= PRA_XRight_End+1;
     j_s= 0-1; j_e= nyn-1+1;
-    k_s= 0-1; k_e= nzn-1+1;
+    k_s= 0-1; k_e= nzn-1+1;*/
+    i_s= PRA_XRight_Start; i_e= PRA_XRight_End;
+    j_s= 0; j_e= nyn-1;
+    k_s= 0; k_e= nzn-1;
 
     /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
   cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
@@ -2184,9 +2344,12 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(1) ==0 && vct->getYleft_neighbor_P() == MPI_PROC_NULL && DIR_1){ 
 
     FACE= "FRONT";
-    i_s= 0-1; i_e= nxn-1+1;
+    /*i_s= 0-1; i_e= nxn-1+1;
     j_s= PRA_YLeft_Start-1; j_e= PRA_YLeft_End+1;
-    k_s= 0-1; k_e= nzn-1+1;
+    k_s= 0-1; k_e= nzn-1+1;*/
+    i_s= 0; i_e= nxn-1;
+    j_s= PRA_YLeft_Start; j_e= PRA_YLeft_End;
+    k_s= 0; k_e= nzn-1;
 
     /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
   cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
@@ -2201,9 +2364,12 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
   if (vct->getCoordinates(1) == YLEN-1 && vct->getYright_neighbor_P() == MPI_PROC_NULL && DIR_1 ){
 
     FACE= "BACK";
-    i_s= 0-1; i_e= nxn-1+1;
+    /*i_s= 0-1; i_e= nxn-1+1;
     j_s= PRA_YRight_Start-1; j_e= PRA_YRight_End+1;
-    k_s= 0-1; k_e= nzn-1+1;
+    k_s= 0-1; k_e= nzn-1+1;*/
+    i_s= 0; i_e= nxn-1;
+    j_s= PRA_YRight_Start; j_e= PRA_YRight_End;
+    k_s= 0; k_e= nzn-1;
     
     /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
   cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
@@ -2422,8 +2588,16 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 }
 
 /* RG receives PBC msg and acts accordingly */
-void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct){
-  
+void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle){
+
+  if (saveRepParFile and numGrid >0 and (cycle % DiagnosticsOutputCycle == 1)){
+    ofstream my_file(RepopulatedPar.c_str(), fstream::app);
+    my_file <<endl<< "Cycle "<< cycle <<endl;
+    my_file.close();
+
+  }
+
+  nop_BeforeReceivePBC=nop;
   PRA_PAdded=0;
 
 
@@ -2499,7 +2673,7 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct){
 
     // here, PBC have been successfully received
     // now I have to apply them (split the particles )
-    ApplyPBC(vct, grid);
+    ApplyPBC(vct, grid, cycle);
 
   } // end if (CommToParent_P!= MPI_COMM_NULL and RG_numPBCMessages >0){
   
@@ -2511,14 +2685,16 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct){
   if (false){
     int ToTPRA_PAdded;
     int TotPRA_deleted;
+    int TotNOP;
     MPI_Allreduce(&PRA_PAdded, &ToTPRA_PAdded, 1, MPI_INT, MPI_SUM, vct->getComm());
     MPI_Allreduce(&PRA_deleted, &TotPRA_deleted, 1, MPI_INT, MPI_SUM, vct->getComm());
+    MPI_Allreduce(&nop, &TotNOP, 1, MPI_INT, MPI_SUM, vct->getComm());
     if (RR== XLEN*YLEN*ZLEN-1){
-      cout << "Grid " << numGrid << " ns " << ns << " added " << ToTPRA_PAdded << " particles, deleted " << TotPRA_deleted << " (this before communicateRepopulatedParticles)" << endl;
+      cout << "Grid " << numGrid << " ns " << ns << " added " << ToTPRA_PAdded << " particles, deleted " << TotPRA_deleted << " (this before communicateRepopulatedParticles)" << ", total nop: " << TotNOP << endl;
     }
   } // end debug stuff
 
-  if (CommToParent_P!= MPI_COMM_NULL) {
+  if (CommToParent_P!= MPI_COMM_NULL and XLEN*YLEN*ZLEN>1) {
     communicateRepopulatedParticles(grid, vct);
   }
 
@@ -2530,13 +2706,20 @@ void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
   
   /* returns the number - not the level or the order in the children vector - of the child grid n */
   int childNum= vct->getChildGridNum(ch);
+  // This is a fundamental mistake! i need to pass 0.5 DX more
   // these are the dx, dy, dz of the child
-  double dx= grid->getDx_mlmd(childNum);
-  double dy= grid->getDy_mlmd(childNum);
-  double dz= grid->getDz_mlmd(childNum);
+  //double dx= grid->getDx_mlmd(childNum);
+  //double dy= grid->getDy_mlmd(childNum);
+  //double dz= grid->getDz_mlmd(childNum);
 
   double x_min, x_max, y_min, y_max, z_min, z_max;
-  
+  /*double EXTRAL=0; // 0 should be the "good" value; put extra for experimenting
+  EXTRAL=-0.5; // like this i repopulate all with RF=8
+  double EXTRAR=0;
+  EXTRAR=-0.5;
+  //EXTRA=0.5;
+  cout << "EXTRAL: " << EXTRAL << " EXTRAR: " << EXTRAR << endl;*/
+
   if (CG_numPBCMessages[ch]>0){ // this particular core has to send BC
 
     // pre
@@ -2549,16 +2732,34 @@ void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
       // here, i have to check all the msgs in else if, to make sure that I am sending 
       // this particular particle only to one core
       
+      // first, coarse check (this goes together with using OR not AND)
+      
+
       for (int n=0; n< CG_numPBCMessages[ch]; n++){ 
 	// send an extra dx; this is needed in case one refined grid core superimpose to more coarse grid cores-- do not touch this!!!
-	x_min= CG_Info[ch][n].CG_x_first -dx ;
-	x_max= CG_Info[ch][n].CG_x_first+ dx*(CG_Info[ch][n].np_x);
-	y_min= CG_Info[ch][n].CG_y_first -dy;
-	y_max= CG_Info[ch][n].CG_y_first+ dy*(CG_Info[ch][n].np_y);
-	z_min= CG_Info[ch][n].CG_z_first -dz;
-	z_max= CG_Info[ch][n].CG_z_first+ dz*(CG_Info[ch][n].np_z);
+
+	/*x_min= CG_Info[ch][n].CG_x_first -dx -dx*EXTRAL ;
+	x_max= CG_Info[ch][n].CG_x_first+ dx*(CG_Info[ch][n].np_x) +dx*EXTRAR;
+	y_min= CG_Info[ch][n].CG_y_first -dy -dy*EXTRAL;
+	y_max= CG_Info[ch][n].CG_y_first+ dy*(CG_Info[ch][n].np_y) +dy*EXTRAR;
+	z_min= CG_Info[ch][n].CG_z_first -dz -dz*EXTRAL;
+	z_max= CG_Info[ch][n].CG_z_first+ dz*(CG_Info[ch][n].np_z) +dz*EXTRAR;
 	
+
+	//if (x_min <= x[p] && x_max >= x[p] && y_min <= y[p] && y_max >= y[p] && z_min <= z[p] && z_max >= z[p]){ // to use for PBC
+	if (x_min <= x[p] && x_max >= x[p] || y_min <= y[p] && y_max >= y[p] || z_min <= z[p] && z_max >= z[p]){ // to use for PBC*/
+
+	// NB: dx*(CG_Info[ch][n].np_x) gives you the extra DX; then i remove 1/2
+	x_min= CG_Info[ch][n].CG_x_first -0.5*dx;
+	x_max= CG_Info[ch][n].CG_x_first+ dx*(CG_Info[ch][n].np_x) -0.5*dx;
+	y_min= CG_Info[ch][n].CG_y_first -0.5*dy;
+	y_max= CG_Info[ch][n].CG_y_first+ dy*(CG_Info[ch][n].np_y) -0.5*dy;
+	z_min= CG_Info[ch][n].CG_z_first -0.5*dz;
+	z_max= CG_Info[ch][n].CG_z_first+ dz*(CG_Info[ch][n].np_z) -0.5*dz;
+	
+
 	if (x_min <= x[p] && x_max >= x[p] && y_min <= y[p] && y_max >= y[p] && z_min <= z[p] && z_max >= z[p]){ // to use for PBC
+	
 	  //cout << "adding " << p << " to " << n << endl;
 	  unsigned long ID;
 	  if (TrackParticleID) {ID= ParticleID[p];} else {ID=0;}
@@ -2581,6 +2782,7 @@ void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
   } // end f (CG_numPBCMessages[ch]>0){ // this particular core has to send BC   
   
 }
+
 
 void Particles3Dcomm::addP(int ch, int n, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, VirtualTopology3D* vct){
 
@@ -2614,7 +2816,7 @@ void Particles3Dcomm::addP(int ch, int n, double x, double y, double z, double u
 
 }
 
-void Particles3Dcomm::ApplyPBC(VirtualTopology3D* vct, Grid* grid){
+void Particles3Dcomm::ApplyPBC(VirtualTopology3D* vct, Grid* grid, int cycle){
 
   int RR= vct->getCartesian_rank();
   /*if (RR==0){
@@ -2627,7 +2829,7 @@ void Particles3Dcomm::ApplyPBC(VirtualTopology3D* vct, Grid* grid){
 
     while (fabs(PRGMsg[m][count].q) > 1.1*EXIT_VAL){
       //cout << "m: " <<m << " count "<< count <<" PRGMsg[m][count].q: " << PRGMsg[m][count].q << endl;
-      SplitPBC(vct, grid, PRGMsg[m][count]);
+      SplitPBC(vct, grid, PRGMsg[m][count], cycle);
       count ++;
     }
     nopPRGMsg[m]= count;
@@ -2635,7 +2837,7 @@ void Particles3Dcomm::ApplyPBC(VirtualTopology3D* vct, Grid* grid){
     //cout <<"G"<<numGrid << "R" <<RR << " ns " << ns  << " m " << m << " nopPRGMsg[m] " << nopPRGMsg[m] << Endl;
   } // end for (int m=0; m< RG_numPBCMessages; m++){
 
-  //cout << "R" << RR <<" G" << numGrid << ", nop after applying BC: " << nop <<endl;
+  cout << "R" << RR <<" G" << numGrid << ", nop after applying BC: " << nop <<endl;
 }
 
 void Particles3Dcomm::MPI_Barrier_ParentChild(VirtualTopology3D* vct){
@@ -2756,13 +2958,13 @@ void Particles3Dcomm::CheckSentReceivedParticles(VirtualTopology3D* vct){
   }
 }
 /** split each received particles **/
-void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p){
+void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p, int cycle){
   // to prevent the repopulation of particles which would try to accumulate outside the grid
   double inv_dx= 1./dx;
   double inv_dy= 1./dy;
   double inv_dz= 1./dz;
 
-  double PM= 0.0001;
+  double PM= 0.0; // 0.0001; // 0.0001; i put the - becasue i inverted the sign down
 
   double xTmp;
   double yTmp;
@@ -2786,33 +2988,36 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
     xTmp= p.x - DxP/2.0 + dx*(1./2. + i)- grid->getOx();
         
     // if outside the domain, no  point in continuing splitting
-    if (xTmp < Coord_XLeft_Start+dx*PM or xTmp>Coord_XRight_End-dx*PM)
+    if (xTmp < Coord_XLeft_Start-dx*PM or xTmp>Coord_XRight_End+dx*PM)
       continue;
     
     // am i inside a X PRA?
-    StX= (xTmp> Coord_XLeft_Start+dx*PM and xTmp < Coord_XLeft_End) or (xTmp> Coord_XRight_Start and xTmp < Coord_XRight_End-dx*PM);
-    /*if (! StX ) continue;*/
+    StX= (xTmp> Coord_XLeft_Start-dx*PM and xTmp <= Coord_XLeft_End) or (xTmp>= Coord_XRight_Start and xTmp < Coord_XRight_End+dx*PM);
+    //if (! StX ) continue; DO NOT DARE UNCOMMENTING THIS ALL HELL BREAKS LOSE (AND IT STOPS REPOPUALTING)
 
     for (int j=0; j< ceil(RFy); j++){
       yTmp= p.y - DyP/2.0 + dy*(1./2. + j)- grid->getOy();
 
       // if outside the domain, no  point in continuing splitting
-      if (yTmp < Coord_YLeft_Start+dy*PM or yTmp>Coord_YRight_End-dy*PM)
+      if (yTmp < Coord_YLeft_Start-dy*PM or yTmp>Coord_YRight_End+dy*PM)
 	continue;
       
       // am i inside a Y PRA?
-      StY= (yTmp> Coord_YLeft_Start+dy*PM and yTmp < Coord_YLeft_End) or (yTmp> Coord_YRight_Start and yTmp < Coord_YRight_End-dy*PM);
-      /*if (! StY ) continue;*/
+      StY= (yTmp> Coord_YLeft_Start-dy*PM and yTmp <= Coord_YLeft_End) or (yTmp>= Coord_YRight_Start and yTmp < Coord_YRight_End+dy*PM);
+      //if (! StY ) continue; DO NOT DARE UNCOMMENTING THIS ALL HELL BREAKS LOSE (AND IT STOPS REPOPUALTING)
 
       for (int k=0; k< ceil(RFz); k++){
 	zTmp= p.z - DzP/2.0 + dz*(1./2. + k)- grid->getOz();
 	
 	// if outside the domain, no  point in continuing splitting
-	if (zTmp < Coord_ZLeft_Start+dz*PM or zTmp>Coord_ZRight_End-dz*PM)
+	if (zTmp < Coord_ZLeft_Start-dz*PM or zTmp>Coord_ZRight_End+dz*PM)
 	  continue;
 
 	// am i inside a Z PRA?
-	StZ= (zTmp> Coord_ZLeft_Start+dz*PM and zTmp < Coord_ZLeft_End) or (zTmp> Coord_ZRight_Start and zTmp < Coord_ZRight_End-dz*PM);
+	StZ= (zTmp> Coord_ZLeft_Start-dz*PM and zTmp <= Coord_ZLeft_End) or (zTmp>= Coord_ZRight_Start and zTmp < Coord_ZRight_End+dz*PM);
+
+	
+	//if (! StZ ) continue; DO NOT DARE UNCOMMENTING THIS ALL HELL BREAKS LOSE (AND IT STOPS REPOPUALTING)
 	
 	//cout << " Coord_ZLeft_Start " << Coord_ZLeft_Start << " Coord_ZLeft_End " << Coord_ZLeft_End << " Coord_ZRight_Start " << Coord_ZRight_Start << " Coord_ZRight_End " << Coord_ZRight_End << endl;
 
@@ -2899,6 +3104,16 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	  }
                                           
 	  nop++; 
+	  //cout << "Particle accepted, x: "<<x[nop] << ", y: " << y[nop] <<", z: "<< z[nop] << "(Lz: " << Lz << ")" << endl;
+
+	  /* save data regarding this particle */
+	  if (saveRepParFile and (cycle % DiagnosticsOutputCycle == 1)){
+	    ofstream my_file(RepopulatedPar.c_str(), fstream::app);
+	    my_file << endl << x[nop] <<" "<< y[nop] <<" "<< z[nop] <<" "<< u[nop] <<" "<< v[nop] <<" "<< w[nop] <<" "<< q[nop] <<" "  <<" ";
+	    my_file.close();
+
+	  }
+	  /* end save data regarding this particle */
 	 	 
 	  if (nop > npmax) {
 	    cout << "Grid " << numGrid <<": Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
@@ -4432,6 +4647,7 @@ void Particles3Dcomm::buildFluidBCMsg(VirtualTopology3D *vct, Grid * grid, Field
 void Particles3Dcomm::ReceiveFluidBC(Grid *grid, VirtualTopology3D *vct){
 
   PRA_PAdded=0;
+  nop_BeforeReceivePBC=nop;
 
   MPI_Comm CommToParent= vct->getCommToParent_P(ns);
 
