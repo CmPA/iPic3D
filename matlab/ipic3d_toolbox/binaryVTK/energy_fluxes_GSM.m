@@ -3,120 +3,30 @@ addpath(genpath('../../ipic3d_toolbox')); % Point to the directory where the iPi
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
+HRmaha3D3
+cycle = 80002  % for h5
+%cycle = 80000  % for vtk binary
+
+%BOW25
+
+
+%TRED77
+%cycle=15000
 %use for tred60
 %for cycle=20010:1000:20010
-for cycle=15000:1000:15000
 
-    ncycle = num2str(cycle,'%06d');
-leggo=0; poynting=1; ions=1; electrons=1;saveVTK=0;
-if(leggo==2)
-    
-    %HRmaha3D3
-%BOW25
-TRED77
-    
-    namefile = 'GEM-Fields';
-    fn=[dir,namefile,'_',ncycle,'.h5'];
 
-    hinfo=hdf5info(fn);
-    Nx= hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1).Dims(1);
-    Ny= hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1).Dims(2);
-    Nz= hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1).Dims(3);
-    % uncomment this for a list of varibales available
-    %hinfo.GroupHierarchy.Groups.Groups.Groups(:).Name
-    
+ncycle = num2str(cycle,'%06d');
+poynting=1; ions=1; electrons=1;saveVTK=0;
 
-    Bx = hdf5read(fn,'/Step#0/Block/Bx/0/');
-    By = hdf5read(fn,'/Step#0/Block/By/0/');
-    Bz = hdf5read(fn,'/Step#0/Block/Bz/0/');
-    Ex = hdf5read(fn,'/Step#0/Block/Ex/0/');
-    Ey = hdf5read(fn,'/Step#0/Block/Ey/0/');
-    Ez = hdf5read(fn,'/Step#0/Block/Ez/0/');
-    Jex = hdf5read(fn,'/Step#0/Block/Jx_0/0/')+hdf5read(fn,'/Step#0/Block/Jx_2/0/');
-    Jey = hdf5read(fn,'/Step#0/Block/Jy_0/0/')+hdf5read(fn,'/Step#0/Block/Jy_2/0/');
-    Jez = hdf5read(fn,'/Step#0/Block/Jz_0/0/')+hdf5read(fn,'/Step#0/Block/Jz_2/0/');
-    Jix = hdf5read(fn,'/Step#0/Block/Jx_1/0/')+hdf5read(fn,'/Step#0/Block/Jx_3/0/');
-    Jiy = hdf5read(fn,'/Step#0/Block/Jy_1/0/')+hdf5read(fn,'/Step#0/Block/Jy_3/0/');
-    Jiz = hdf5read(fn,'/Step#0/Block/Jz_1/0/')+hdf5read(fn,'/Step#0/Block/Jz_3/0/');
-    
-    rhoe = hdf5read(fn,'/Step#0/Block/rho_0/0/')+hdf5read(fn,'/Step#0/Block/rho_2/0/');
-    rhoi = hdf5read(fn,'/Step#0/Block/rho_1/0/')+hdf5read(fn,'/Step#0/Block/rho_3/0/');
 
-    Pexx = hdf5read(fn,'/Step#0/Block/Pxx_0/0/')+hdf5read(fn,'/Step#0/Block/Pxx_2/0/');
-    Peyy = hdf5read(fn,'/Step#0/Block/Pyy_0/0/')+hdf5read(fn,'/Step#0/Block/Pyy_2/0/');
-    Pezz = hdf5read(fn,'/Step#0/Block/Pzz_0/0/')+hdf5read(fn,'/Step#0/Block/Pzz_2/0/');
-    Pexy = hdf5read(fn,'/Step#0/Block/Pxy_0/0/')+hdf5read(fn,'/Step#0/Block/Pxy_2/0/');    
-    Pexz = hdf5read(fn,'/Step#0/Block/Pxz_0/0/')+hdf5read(fn,'/Step#0/Block/Pxz_2/0/');
-    Peyz = hdf5read(fn,'/Step#0/Block/Pyz_0/0/')+hdf5read(fn,'/Step#0/Block/Pyz_2/0/');
-    
-    Pixx = hdf5read(fn,'/Step#0/Block/Pxx_1/0/')+hdf5read(fn,'/Step#0/Block/Pxx_3/0/');
-    Piyy = hdf5read(fn,'/Step#0/Block/Pyy_1/0/')+hdf5read(fn,'/Step#0/Block/Pyy_3/0/');
-    Pizz = hdf5read(fn,'/Step#0/Block/Pzz_1/0/')+hdf5read(fn,'/Step#0/Block/Pzz_3/0/');
-    Pixy = hdf5read(fn,'/Step#0/Block/Pxy_1/0/')+hdf5read(fn,'/Step#0/Block/Pxy_3/0/');    
-    Pixz = hdf5read(fn,'/Step#0/Block/Pxz_1/0/')+hdf5read(fn,'/Step#0/Block/Pxz_3/0/');
-    Piyz = hdf5read(fn,'/Step#0/Block/Pyz_1/0/')+hdf5read(fn,'/Step#0/Block/Pyz_3/0/');
-    B=sqrt(Bx.*Bx+By.*By+Bz.*Bz);
-    B2D=sqrt(Bx.^2+By.^2);
-    perp2x=Bz.*Bx./(B.*B2D);
-    perp2y=Bz.*By./(B.*B2D);
-    perp2z=-B2D./B;
-    Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./B;
+import_h5_binvtk  
 
-    [Pexx,Peyy,Pezz,Pexy,Pexz,Peyz]=compute_pressure(Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Jex,Jey,Jez,rhoe, qom);
-    [Pixx,Piyy,Pizz,Pixy,Pixz,Piyz]=compute_pressure(Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Jix,Jiy,Jiz,rhoi, 1.0);
-    
-    Qex = hdf5read(fn,'/Step#0/Block/EFx_0/0/')+hdf5read(fn,'/Step#0/Block/EFx_2/0/');
-    Qey = hdf5read(fn,'/Step#0/Block/EFy_0/0/')+hdf5read(fn,'/Step#0/Block/EFy_2/0/');
-    Qez = hdf5read(fn,'/Step#0/Block/EFz_0/0/')+hdf5read(fn,'/Step#0/Block/EFz_2/0/');    
-    Qix = hdf5read(fn,'/Step#0/Block/EFx_1/0/')+hdf5read(fn,'/Step#0/Block/EFx_3/0/');
-    Qiy = hdf5read(fn,'/Step#0/Block/EFy_1/0/')+hdf5read(fn,'/Step#0/Block/EFy_3/0/');
-    Qiz = hdf5read(fn,'/Step#0/Block/EFz_1/0/')+hdf5read(fn,'/Step#0/Block/EFz_3/0/'); 
-  
-    [Qenthex,Qenthey,Qenthez,Qbulkex,Qbulkey,Qbulkez,Qhfex,Qhfey,Qhfez] = ...
-    compute_energy_fluxes(Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Qex,Qey,Qez,Jex,Jey,Jez,rhoe, qom);
-
-    [Qenthix,Qenthiy,Qenthiz,Qbulkix,Qbulkiy,Qbulkiz,Qhfix,Qhfiy,Qhfiz] = ...
-    compute_energy_fluxes(Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Qix,Qiy,Qiz,Jix,Jiy,Jiz,rhoi, 1.0);
-
-end
-
-if(leggo==1)
-%HRmaha3D3
-%BOW25
-TRED60
-
-[Bx,By,Bz,Nx,Ny,Nz]=read_binVTK_vector(dir,'B',cycle);
-[Ex,Ey,Ez,Nx,Ny,Nz]=read_binVTK_vector(dir,'E',cycle);
-[Jex,Jey,Jez,Nx,Ny,Nz]=read_binVTK_vector(dir,'Je',cycle);
-[Jix,Jiy,Jiz,Nx,Ny,Nz]=read_binVTK_vector(dir,'Ji',cycle);
-
-% 
-[Az,Nx,Ny,Nz,dx,dy,dz]=read_binVTK_scalar(dir,'Az',cycle);
-[rhoe,rhoi,Nx,Ny,Nz]=read_binVTK_multiscalar(dir,'rho',cycle);
-[Pixx,Pixy,Pixz,Piyy,Piyz,Pizz,Pipar,Piper1,Piper2,Pieps,Nx,Ny,Nz] = read_binVTK_pressure(dir,'Pi',cycle);
-[Pexx,Pexy,Pexz,Peyy,Peyz,Pezz,Pepar,Peper1,Peper2,Peeps,Nx,Ny,Nz] = read_binVTK_pressure(dir,'Pe',cycle);
-% 
-B=sqrt(Bx.*Bx+By.*By+Bz.*Bz);
-B2D=sqrt(Bx.^2+By.^2);
-perp2x=Bz.*Bx./(B.*B2D);
-perp2y=Bz.*By./(B.*B2D);
-perp2z=-B2D./B;
-Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./B;
- [Qbulkex,Qbulkey,Qbulkez,Nx,Ny,Nz]=read_binVTK_vector(dir,'Qbulke',cycle);
- [Qenthex,Qenthey,Qenthez,Nx,Ny,Nz]=read_binVTK_vector(dir,'Qenthe',cycle);
- [Qbulkix,Qbulkiy,Qbulkiz,Nx,Ny,Nz]=read_binVTK_vector(dir,'Qbulki',cycle);
- [Qenthix,Qenthiy,Qenthiz,Nx,Ny,Nz]=read_binVTK_vector(dir,'Qenthi',cycle);
-[UdivPe,Nx,Ny,Nz,dx,dy,dz]=read_binVTK_scalar(dir,'UdivPe',cycle);
-[UdivPi,Nx,Ny,Nz,dx,dy,dz]=read_binVTK_scalar(dir,'UdivPi',cycle);
-% 
-% Te=(Pexx+Peyy+Pezz)./(-rhoe);
-% Ti=(Pixx+Piyy+Pizz)./rhoi;
-end
 
 
 Lx=dx*Nx;Ly=dy*Ny;Lz=Nz*dz;
 
-[x,y,z]=meshgrid(0:dx:Lx-dx,0:dy:Ly-dy,0:dz:Lz-dz);
+[x,y,z]=meshgrid(0:dx:Lx,0:dy:Ly,0:dz:Lz);
 
 [X Y] = meshgrid(0:dx:Lx-dx,0:dy:Ly-dy);
 
@@ -184,22 +94,19 @@ Sy=Sy*code_E*code_B/mu0;
 Sz=Sz*code_E*code_B/mu0;
     
 labelc = 'nW/m^3'; range=[-20 20]
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JdotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['JE Y=' num2str(gsmz2y(z(1,1,iz)))],'JE',range, Nsm,1+iz);
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divS(ir,jr,kr),3)*nWm3,AAz(ir,jr),['divS Y=' num2str(gsmz2y(z(1,1,iz)))],'divS',range, Nsm,1+iz);
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divS(ir,jr,kr)+JdotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['dEEMF/dt Y=' num2str(gsmz2y(z(1,1,iz)))],'dEEMF_dt',range, Nsm,1+iz);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JdotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JE',range, Nsm,1+iz);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divS(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'divS',range, Nsm,1+iz);
 
 
 labelc = 'mW/m^2';
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),-mean(Sx(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Sx Y=' num2str(gsmz2y(z(1,1,iz)))],'Sx',[-1 1]*0e-9, Nsm, 2+iz);
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sy(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Sz Y=' num2str(gsmz2y(z(1,1,iz)))],'Sz',[-1 1]*0e-9, Nsm, 3+iz);
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sz(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Sy Y=' num2str(gsmz2y(z(1,1,iz)))],'Sy',[-1 1]*0e-9, Nsm, 4+iz);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),-mean(Sx(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Sx',[-1 1]*0e-9, Nsm, 2+iz);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sy(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Sz',[-1 1]*0e-9, Nsm, 3+iz);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sz(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Sy',[-1 1]*0e-9, Nsm, 4+iz);
 
-%Spar= dot(Sx,Sy,Sz,Bx,By,Bz)./B;
-%tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Spar(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['S_{||} Y=' num2str(gsmz2y(z(1,1,iz)))],'Spar',[-1 1]*0e-9, Nsm, 2+iz);
-Sperp1=(By.*Sx-Bx.*Sy)./B2D;
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sperp1(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['S \perp_1 Y=' num2str(gsmz2y(z(1,1,iz)))],'Sperp1',[-1 1]*0e-9, Nsm, 2+iz);
-Sperp2=perp2x.*Sx+perp2y.*Sy+perp2z.*Sz;
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sperp2(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['S \perp_2 Y=' num2str(gsmz2y(z(1,1,iz)))],'Sperp2',[-1 1]*0e-9, Nsm, 2+iz);
+%Sperp1=(By.*Sx-Bx.*Sy)./B2D;
+%tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sperp1(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Sperp1',[-1 1]*0e-9, Nsm, 2+iz);
+%Sperp2=perp2x.*Sx+perp2y.*Sy+perp2z.*Sz;
+%tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sperp2(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Sperp2',[-1 1]*0e-9, Nsm, 2+iz);
 
 end
 
@@ -321,4 +228,3 @@ if(saveVTK)
     savevtk_bin(udivPi,[dir 'UdivPi' ncycle '.vtk'],'UdivPi',dx,dy,dz,0,0,0);
 end
 
-end

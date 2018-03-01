@@ -4,7 +4,6 @@ global color_choice symmetric_color labelx labely labelc reversex reversey Ncycl
 
 
 J=imgaussfilt(squeeze(J1),radius);
-size(J)
 
 if(nargin>8)
 h=figure(nfig)

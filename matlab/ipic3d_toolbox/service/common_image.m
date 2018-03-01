@@ -1,9 +1,9 @@
-function [J]=common_image(x,y,J1,Az,nlabel,name,clmt, Nsm, nfig)
+function [J]=common_image(x,y,J1,Az,nlabel,name,clmt, radius, nfig)
 
 global color_choice symmetric_color labelx labely labelc reversex Ncycle
 
 
-J=smoothbc(J1,Nsm);
+J=imgaussfilt(squeeze(J1),radius);
 
 if(nargin>8)
 h=figure(nfig)
@@ -59,8 +59,7 @@ xlabel(labelx,'fontsize',[20])
 ylabel(labely,'fontsize',[20])
 
 
-title([ nlabel ],'fontsize',[20])
-
+title([name '  ' nlabel ],'fontsize',[14])
 
 axis image
 axis xy
