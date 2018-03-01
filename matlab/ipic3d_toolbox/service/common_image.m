@@ -26,13 +26,14 @@ clmt(2)=-clmt(1)
 end
 end
 
-Ncut=max(Nsm*3,1)
+%Ncut=max(Nsm*3,1)
+Ncut=1
 
 %imagesc(x(1,:),y(:,1),J(Ncut:end-Ncut,Ncut:end-Ncut)',clmt)
 imagesc(x(1,:),y(:,1),J',clmt)
 
 hold on
-contour(x,y,Az',100,'k')
+contour(x,y,Az',50,'k')
 caxis(clmt)
 
 if(color_choice==0)
@@ -71,6 +72,6 @@ end
 %print('-depsc','-r300',[name '.eps'])
 %set(gcf, 'Renderer', 'zbuffer');
 
-print('-dpng','-r300',[name Ncycle '.png'])
+print('-dpng','-r300',[name nlabel Ncycle '.png'])
 
 %saveas(gcf,[name '.fig'])
