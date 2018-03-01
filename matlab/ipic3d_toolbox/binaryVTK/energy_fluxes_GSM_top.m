@@ -42,7 +42,7 @@ qom_ele = -256;
 
 bufferX=round(Nx/20);
 bufferY=round(Ny/20);
-bufferZ=round(Nz/20);
+bufferZ=round(Nz/10);
 ir=bufferX:Nx-bufferX;
 jr=bufferY:Ny-bufferY;
 kr=bufferZ:Nz-bufferZ;
@@ -134,7 +134,9 @@ Viy=imgaussfilt(squeeze(mean(Viy(:,jr,:),2)),radius);
 Viz=imgaussfilt(squeeze(mean(Viz(:,jr,:),2)),radius);
 AAze=vecpot(xc,zc,Vix,Viz);
 
-poynting=1
+poynting=true
+electrons=true
+ions=true
 if(poynting)
 
 labelc = 'nW/m^3';
@@ -160,7 +162,6 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sperp2(ir,jr,kr),2)*1e
 
 end
 
-electrons=1
 if(electrons)
 
 
@@ -219,7 +220,7 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUthDt(ir,jr,kr),2)*nW
 
 end
 
-ions=1
+
 if(ions)
 [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
     rhoi, Jix, Jiy, Jiz,... 
