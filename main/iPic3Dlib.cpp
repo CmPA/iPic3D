@@ -231,19 +231,35 @@ int c_Solver::Init(int argc, char **argv) {
   //   ofstream my_file(ds.c_str());
   //   my_file.close();
   // }
+
+  num_proc << myrank;
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
   ofstream my_file(cqsat.c_str(), fstream::binary);
-  nsat = 3;
-  for (int isat = 0; isat < nsat; isat++) {
-    for (int jsat = 0; jsat < nsat; jsat++) {
-      for (int ksat = 0; ksat < nsat; ksat++) {
-        int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
-        int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
-        int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
-        my_file << grid->getXC(index1, index2, index3) << "\t" << grid->getYC(index1, index2, index3) << "\t" << grid->getZC(index1, index2, index3) << endl;
+
+  nsatx=3;
+  nsaty=3;
+  nsatz=3;
+  if(vct->getXLEN() == 1){
+	  nsatx=1;
+  }
+  if(vct->getYLEN() == 1){
+	  nsaty=1;
+  }
+  if(vct->getZLEN() == 1){
+	  nsatz=1;
+  }
+  my_file << nsatx*nsaty*nsatz << "\t" <<nsatx << "\t" <<nsaty << "\t" <<nsatz << endl;
+  for (int isat=0; isat < nsatx; isat++){
+      for (int jsat=0; jsat < nsaty; jsat++){
+    	  for (int ksat=0; ksat < nsatz; ksat++){
+      	    int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+      	    int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+      	    int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
+    	    my_file <<  grid->getXC(index1,index2,index3) << "\t" << grid->getYC(index1,index2,index3) << "\t" << grid->getZC(index1,index2,index3) << endl;
       }}}
   my_file.close();
+
 
   Qremoved = new double[ns];
 
@@ -540,16 +556,77 @@ void c_Solver::WriteOutput(int cycle) {
       output_mgr.output("position + velocity + q ", cycle, 1);
       hdf5_agent.close();
     }
+  }
     // write the virtual satellite traces
 
+    bool binary_satellites = true;
+    if(binary_satellites){
+	float time_counter = cycle;
+	float trace_counter = 0.0;
+	float outta = 0.0;
+    ofstream my_file(cqsat.c_str(),ofstream::app | ofstream::binary );
+		             for (int isat=0; isat < nsatx; isat++)
+			             for (int jsat=0; jsat < nsaty; jsat++)
+				             for (int ksat=0; ksat < nsatz; ksat++){
+			             	int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+			             	int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+			              	int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
+			              		 trace_counter = trace_counter +1.0;
+				            	 my_file.write((char*)&time_counter,sizeof(float));
+				            	 my_file.write((char*)&trace_counter,sizeof(float));
+				            	 //my_file << time_counter << "\t" <<trace_counter << "\t";
+
+				            	 outta = EMf->getBx(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+				            	 outta = EMf->getBy(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+				            	 outta = EMf->getBz(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+
+				            	 outta = EMf->getEx(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+				            	 outta = EMf->getEy(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+				            	 outta = EMf->getEz(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+
+				            	 for (int is=0;is<2; is++){
+				            		 outta = EMf->getRHOns(index1,index2,index3,is);
+				            		 if(ns>3)outta += EMf->getRHOns(index1,index2,index3,is+2);
+				            		 my_file.write((char*)&outta,sizeof(float));
+					            	 //my_file << outta << "\t";
+				            		 outta = EMf->getJxs(index1,index2,index3,is);
+				            		 if(ns>3)outta += EMf->getJxs(index1,index2,index3,is+2);
+				            		 my_file.write((char*)&outta,sizeof(float));
+					            	 //my_file << outta << "\t";
+				            		 outta = EMf->getJys(index1,index2,index3,is);
+				            		 if(ns>3)outta += EMf->getJys(index1,index2,index3,is+2);
+				            		 my_file.write((char*)&outta,sizeof(float));
+					            	 //my_file << outta << "\t";
+				            		 outta = EMf->getJzs(index1,index2,index3,is);
+				            		 if(ns>3)outta += EMf->getJzs(index1,index2,index3,is+2);
+				            		 my_file.write((char*)&outta,sizeof(float));
+				            		 //my_file << outta << "\t"
+				            	 }
+				            	 //my_file  << endl;
+				             }
+			         my_file.close();
+    }
+    else {
     if (ns > 2) {
       ofstream my_file(cqsat.c_str(), fstream::app);
-      for (int isat = 0; isat < nsat; isat++)
-        for (int jsat = 0; jsat < nsat; jsat++)
-          for (int ksat = 0; ksat < nsat; ksat++) {
-            int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
-            int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
-            int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
+      for (int isat = 0; isat < nsatx; isat++)
+        for (int jsat = 0; jsat < nsaty; jsat++)
+          for (int ksat = 0; ksat < nsatz; ksat++) {
+         	int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+         	int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+          	int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
             my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
             my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
             my_file << EMf->getJxs(index1, index2, index3, 0) + EMf->getJxs(index1, index2, index3, 2) << "\t" << EMf->getJys(index1, index2, index3, 0) + EMf->getJys(index1, index2, index3, 2) << "\t" << EMf->getJzs(index1, index2, index3, 0) + EMf->getJzs(index1, index2, index3, 2) << "\t";
@@ -562,12 +639,12 @@ void c_Solver::WriteOutput(int cycle) {
         }
       if (ns == 2) {
               ofstream my_file(cqsat.c_str(), fstream::app);
-              for (int isat = 0; isat < nsat; isat++)
-                for (int jsat = 0; jsat < nsat; jsat++)
-                  for (int ksat = 0; ksat < nsat; ksat++) {
-                    int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
-                    int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
-                    int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
+              for (int isat = 0; isat < nsatx; isat++)
+                for (int jsat = 0; jsat < nsaty; jsat++)
+                  for (int ksat = 0; ksat < nsatz; ksat++) {
+                   	int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+                   	int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+                    	int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
                     my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
                     my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
                     my_file << EMf->getJxs(index1, index2, index3, 0)  << "\t" << EMf->getJys(index1, index2, index3, 0)  << "\t" << EMf->getJzs(index1, index2, index3, 0)  << "\t";
@@ -579,7 +656,7 @@ void c_Solver::WriteOutput(int cycle) {
       my_file << endl;
       my_file.close();
     }
-  }
+    }
 }
 
 void c_Solver::Finalize() {
