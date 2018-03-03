@@ -33,6 +33,7 @@ import_h5_binvtk
 poynting=true
 electrons=true
 ions=true
+saveVTK=true
 
 %Lx=dx*Nx;LZ=dy*Ny;Lz=Nz*dz;
 
