@@ -445,6 +445,10 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   MAX_RG_numPBCMessages= (vct->getMaxRF1()+8)* vct->getMaxRF1()* vct->getMaxRF1() + 8;
   MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages * MaxGridPer; 
 
+  // wether to allow resize of repopulated particle buffers
+  // NB: if the repopulation is fluid, AllowPMsgResize is set to false in Collective::ReadInput
+  AllowPMsgResize= col->getAllowPMsgResize();
+
   // sizes of the PCGMsg values set here (but allocated only if needed) 
   // to have the send/ receive vectors with the same size, I cook up a number based 
   //   on the coarsest grid 
@@ -455,9 +459,15 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   sizeRG_PBCMsg = MaxNopMLMD; // RG side
   MAXsizePBCMsg = 200*MaxNopMLMD; //20*MaxNopMLMD;
 
-  // wether to allow resize of repopulated particle buffers
-  // NB: if the repopulation is fluid, AllowPMsgResize is set to false in Collective::ReadInput
-  AllowPMsgResize= col->getAllowPMsgResize();
+  if (!AllowPMsgResize){
+    // since i cannot resize, i have to start with a larger number
+    MaxNopMLMD= ceil(npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0)) *1 );
+
+    sizeCG_PBCMsg = MaxNopMLMD; // CG side
+    sizeRG_PBCMsg = MaxNopMLMD; // RG side
+    MAXsizePBCMsg = 200*MaxNopMLMD; //20*MaxNopMLMD;
+  }
+
   
   FluidLikeRep= col->getFluidLikeRep();
   numFBC= 10;
