@@ -305,6 +305,7 @@ public:
   void get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext);
   void get_El(const double weights[2][2][2], int ix, int iy, int iz, double& Exl, double& Eyl, double& Ezl, double*** Ex, double*** Ey, double*** Ez);
 
+  bool getAllowPMsgResize() { return AllowPMsgResize; }
 protected:
   /** number of species */
   /*! comment: the number of THIS species, not the total number of particle species */

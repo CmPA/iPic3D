@@ -587,7 +587,13 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   PRA_PAdded=0;
   MAX_np_CRP= 10*npmax; // exagerated number
-  size_CRP=  ceil(nop*0.05); // it just needs to survive the init, then it will be resized
+
+  if (AllowPMsgResize){
+    size_CRP=  ceil(nop*0.05); // it just needs to survive the init, then it will be resized
+  }else{
+    size_CRP=  ceil(nop*0.5); // i do not allow resize, so i have to start with large number  
+  }
+
 
   // I am instantiating here local copies of Ex, Ey, Ezm Bx, By, Bz, Bx_ext, By_ext, Bz_ext
   // - used in the mover and only in one repopulation method
@@ -3055,7 +3061,7 @@ void Particles3Dcomm::ApplyPBC(VirtualTopology3D* vct, Grid* grid, int cycle){
     //cout <<"G"<<numGrid << "R" <<RR << " ns " << ns  << " m " << m << " nopPRGMsg[m] " << nopPRGMsg[m] << Endl;
   } // end for (int m=0; m< RG_numPBCMessages; m++){
 
-  cout << "R" << RR <<" G" << numGrid << ", nop after applying BC: " << nop <<endl;
+  //cout << "R" << RR <<" G" << numGrid << ", nop after applying BC: " << nop <<endl;
 }
 
 void Particles3Dcomm::MPI_Barrier_ParentChild(VirtualTopology3D* vct){

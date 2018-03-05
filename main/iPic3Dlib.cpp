@@ -580,7 +580,11 @@ bool c_Solver::ParticlesMover(int cycle) {
       // comment during production
       //part[i].CheckSentReceivedParticles(vct);
 
-      part[i].MPI_Barrier_ParentChild(vct);
+      // this one is needed only if AllowPMsgResize=1 
+      // (see notes in postEPS2017.rtfd)
+      if (part[i].getAllowPMsgResize()){
+	part[i].MPI_Barrier_ParentChild(vct);
+      }
     }
   }
 
