@@ -22,6 +22,7 @@ int main(int argc, char **argv) {
 
   // added to compare with ECSIM        
   KCode.WriteOutput(KCode.FirstCycle());
+  KCode.WriteConserved(KCode.FirstCycle());
   /* ------------ */
   /* 1- Main loop */
   /* ------------ */
@@ -38,7 +39,7 @@ int main(int argc, char **argv) {
     KCode.UpdateCycleInfo(i);
     KCode.CalculateField();
 
-    b_err = KCode.ParticlesMover(); 
+    b_err = KCode.ParticlesMover(i); 
 
     // with mlmd ops
     if (!b_err) KCode.GatherMoments();

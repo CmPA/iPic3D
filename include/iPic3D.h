@@ -42,7 +42,7 @@ namespace iPic3D {
     void CalculateField_ECSIM(int i);
     void interpBC2N_ECSIM(int i);
     void CalculateBField(int i);
-    bool ParticlesMover();
+    bool ParticlesMover(int i);
     void WriteOutput(int cycle);
     void WriteConserved(int cycle);
     void WriteRestart(int cycle);
@@ -71,6 +71,12 @@ namespace iPic3D {
     unsigned long *VelocityDist;
     Timing        *my_clock;
 
+    /* only for children grids */
+    /* velocity distribution of repopulated particles */
+    unsigned long *VelocityDist_RepPart;
+    /* velocity distribution of everybody else */
+    unsigned long *VelocityDist_NonRepPart;
+
     PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
     myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent;  // Create an Output Agent for HDF5 output
 
@@ -80,6 +86,8 @@ namespace iPic3D {
     string cqsat;
     string cq;
     string *ds;
+    string *ds_RepPart;
+    string *ds_NonRepPart;
     stringstream num_proc; // mlmd: my_rank, hence local to the grid
     int restart_cycle;
     int restart;
@@ -100,7 +108,8 @@ namespace iPic3D {
 
     /* wether to print the distribution function*/
     bool WriteDistrFun;
-
+    /* wether to print the distribution function for repopulated particles */
+    bool WriteDistrFun_RepPart;
 
     /*! mlmd variables */
     /*! number of the current grid in the mlmd hierarchy */

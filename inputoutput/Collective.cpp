@@ -826,6 +826,24 @@ void Collective::ReadInput(string inputfile) {
     cout << "Also, i force Buf = PRA-1 (consider ghost and active)" << endl;
   }
 
+  /* from tests with maxwellian plasmas (e.g. OldSend_ParticleTest_PRA2_PF_NPP_1_LONG_OtherVth series) it emerges that PERIODIC FIELDS and NON PERIODIC, REPOPULATED particles are a bad combintation; rule it out here 
+   PS: not really sure why; it may be a bug it how things are managed
+   or something more deep */
+
+  for (int g=1; g< Ngrids; g++){
+    bool PF= PERIODICX_mlmd[g] or PERIODICY_mlmd[g] or PERIODICZ_mlmd[g];
+    bool RepParticles= (! (PERIODICX_P_mlmd[g] and PERIODICY_P_mlmd[g] and PERIODICZ_P_mlmd[g]) and MLMD_ParticleREPOPULATION);
+
+    if (PF and RepParticles){
+      cout << "Periodic fields and repopulated particles are NOT a good idea (see tests on Maxwellian plasma, periodic field, repopulated particles)"
+	   << endl
+	   << "Aborting now, you can override this by commenting this piece of code if you are sure of what you are doing" << endl; 
+      MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+  
+  }
+
+
 }
 /*! Read the collective information from the RESTART file in HDF5 format There are three restart status: restart_status = 0 ---> new inputfile restart_status = 1 ---> RESTART and restart and result directories does not coincide restart_status = 2 ---> RESTART and restart and result directories coincide */
 

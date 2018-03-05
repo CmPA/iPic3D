@@ -239,6 +239,9 @@ public:
   void CheckAfterInitWeightPBC(VirtualTopology3D * ptVCT);
   /* Phase 1: RG cores build their side of the map for PBC */
   void initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, RGPBC_struct* RGPBC_Info, int *RG_numPBCMessages);  
+  /* Phase 1 new: DX/2 is included here, not to be added when building the CG msg -
+     this does not work with more than one core- use the old initWeightPBC_Phase1 */
+  void initWeightPBC_Phase1_New(Grid *grid, VirtualTopology3D * vct, RGPBC_struct* RGPBC_Info, int *RG_numPBCMessages); 
   /* Phase 1 for Fluid-like particle repopulation */
   void initWeightFluidPBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg);
   /* commit the structure created for initial CG/RG handshake as MPI_Datatype*/
@@ -481,6 +484,16 @@ protected:
   double *dx_Ch;
   double *dy_Ch;
   double *dz_Ch;
+
+  /* mlmd: origin of the children in terms of the coordinates of this grid */
+  double *Ox_Ch;
+  double *Oy_Ch;
+  double *Oz_Ch;
+
+  /* mlmd: length of the children */
+  double *Lx_Ch;
+  double *Ly_Ch;
+  double *Lz_Ch;
 
   /*! mlmd specific variables */
   /*! if true, mlmd related output */

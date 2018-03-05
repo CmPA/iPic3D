@@ -260,7 +260,8 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
   }
 
   /* initialize random generator with different seed on different processor */
-  srand(vct->getCartesian_rank() + 2);
+  // i add +ns not to have the same seed for different species
+  srand(vct->getCartesian_rank() + 2+ns);
 
   double harvest;
   double prob, theta, sign;
@@ -297,7 +298,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
 	      x[counter]= grid->getXN(i, j, k)+ dx*rX;
 	      y[counter]= grid->getYN(i, j, k)+ dy*rY;
-	      z[counter]= grid->getZN(i, j, k)+ dz*rZ;
+	      z[counter]= grid->getZN(i, j, k)+ dz*rZ; 
 	      
               // q = charge
               q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
@@ -327,9 +328,9 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
   // number of particles after the allocation
   int Tot_nop;
   MPI_Allreduce(&nop, &Tot_nop, 1, MPI_INT, MPI_SUM, vct->getComm());
-  /*if (vct->getCartesian_rank()==XLEN*YLEN*ZLEN-1){
+  if (vct->getCartesian_rank()==XLEN*YLEN*ZLEN-1){
     cout << "Grid " << numGrid << " ns " << ns << " Particles after Maxwellian: " <<Tot_nop << endl;
-    }*/
+  }
 
 }
 
@@ -837,6 +838,21 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
 /** mover with a Predictor-Corrector scheme */
 int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+  
+  
+  /*if (numGrid > 0){
+    cout << "Grid " <<  numGrid << "I am removing all particles" << endl;
+    nop=0;
+    return 1;
+    }*/
+  /*if (numGrid==0){
+    cout << "Grid " << numGrid << " I am not moving particles" <<endl;
+    return 1;
+    }*/
+
+  //cout << "Grid " << numGrid << " I am not moving particles" <<endl;
+  //return 1;
+
   if (vct->getCartesian_rank() == 0) {
     //cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
     cout << "*** G" << numGrid <<": MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;

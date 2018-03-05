@@ -401,11 +401,32 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   dx_Ch=new double[numChildren];
   dy_Ch=new double[numChildren];
   dz_Ch=new double[numChildren];
+
+  Ox_Ch=new double[numChildren];
+  Oy_Ch=new double[numChildren];
+  Oz_Ch=new double[numChildren];
+
+  Lx_Ch=new double[numChildren];
+  Ly_Ch=new double[numChildren];
+  Lz_Ch=new double[numChildren];
+
   for (int i=0; i< numChildren; i++){
+    // c: number of the child i in the SW  hierarchy
     c= vct->getChildGridNum(i);
+
     dx_Ch[i]= col->getDx_mlmd(c) ;
     dy_Ch[i]= col->getDy_mlmd(c);
     dz_Ch[i]= col->getDz_mlmd(c);
+
+    // getOx_P(c) is the origin of grid c in the parent's coords
+    // hence, these coordinates
+    Ox_Ch[i]= col->getOx_P(c) ;
+    Oy_Ch[i]= col->getOy_P(c);
+    Oz_Ch[i]= col->getOz_P(c);
+
+    Lx_Ch[i]= col->getLx_mlmd(c) ;
+    Ly_Ch[i]= col->getLy_mlmd(c);
+    Lz_Ch[i]= col->getLz_mlmd(c);
   }
 
   // communicators to parent/ children for this species
@@ -1713,10 +1734,13 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       initWeightFluidPBC_Phase1(grid, vct, RGPBC_Info, &RG_numPBCMessages, &RG_MaxFluidMsgSize);
     }
     else{ // this is the option to use with -1 and -2       
+
+      // change buildPBC accordingly
       initWeightPBC_Phase1(grid, vct, RGPBC_Info, &RG_numPBCMessages);
+      // CAREFUL: initWeightPBC_Phase1_New does not work with many COARSE GRID cores- fix before using
+      //initWeightPBC_Phase1_New(grid, vct, RGPBC_Info, &RG_numPBCMessages); 
     }
-    
-    
+
     /**** check begins ****/
     // checks, aborting if checks fails
     int PG= vct->getParentGridNum();
@@ -2265,10 +2289,6 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
     i_s= 0; i_e= nxn-1;
     j_s= 0; j_e= nyn-1;
     k_s= PRA_ZLeft_Start; k_e= PRA_ZLeft_End;
-    // RG + CG extension - remove that while building the CG msg
-    /*i_s= 0; i_e= nxn-1;
-    j_s= 0; j_e= nyn-1;
-    k_s= PRA_ZLeft_Start; k_e= PRA_ZLeft_End;*/
 
     /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
   cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
@@ -2390,6 +2410,166 @@ void Particles3Dcomm::initWeightPBC_Phase1(Grid *grid, VirtualTopology3D * vct, 
  
 
 }
+
+
+/* Phase 1: RG cores build their side of the map for PBC,
+differently form before, it also includes the DX/2, which should NOT be present anymore when building the CG msg-
+this version should work also in the (unlikely) case that the extra DX/2 is outside the CG core in the msg */
+void Particles3Dcomm::initWeightPBC_Phase1_New(Grid *grid, VirtualTopology3D * vct, RGPBC_struct *RGPBC_Info, int *RG_numPBCMessages){
+
+  // NB: when build the PBC msg on the CG side, I have to pay attention not to replicate the info; that was not a problem with fields, but it is now
+  
+  int SW_rank=vct->getSystemWide_rank();
+
+  string FACE;
+
+  bool DIR_0=true;
+  bool DIR_1=true;
+  bool DIR_2=true;
+
+  int MS= nxn; if (nyn>MS) MS= nyn; if (nzn>MS) MS= nzn;
+
+  int i_s, i_e;
+  int j_s, j_e;
+  int k_s, k_e;
+  // careful when copying from the initWeight in fields: getXXX_neighbor_P !!!
+  // (so i can have different periodicities in fields and particles)
+
+  // this is the bottom face
+  if (vct->getCoordinates(2)==0 && vct->getZleft_neighbor_P()== MPI_PROC_NULL && DIR_2){
+
+    FACE= "BOTTOM";
+    // just RG extension - add +/- 0.5 while building the CG msg
+    /*i_s= 0; i_e= nxn-1;
+    j_s= 0; j_e= nyn-1;
+    k_s= PRA_ZLeft_Start; k_e= PRA_ZLeft_End;*/
+    // RG + CG extension - remove that while building the CG msg
+    i_s= 0-ceil(RFx/2); i_e= nxn-1+ceil(RFx/2);
+    j_s= 0-ceil(RFy/2); j_e= nyn-1+ceil(RFy/2);
+    k_s= PRA_ZLeft_Start-ceil(RFz/2); k_e= PRA_ZLeft_End+ceil(RFz/2);
+
+    /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
+  cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
+  cout << "PRA_YLeft_Start " << PRA_YLeft_Start << " PRA_YLeft_End " << PRA_YLeft_End << " PRA_YRight_End " << PRA_YRight_End << " PRA_YRight_Start " << PRA_YRight_Start <<endl; 
+  cout << "PRA_ZLeft_Start " << PRA_ZLeft_Start << " PRA_ZLeft_End " << PRA_ZLeft_End << " PRA_ZRight_End " << PRA_ZRight_End << " PRA_ZRight_Start " << PRA_ZRight_Start <<endl; 
+  cout <<"FACE " << FACE << " i_s " << i_s << " i_e " << i_e << " j_s " << j_s << " j_e " << j_e << " k_s " << k_s << " k_e " <<k_e <<endl;*/
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    //cout <<"FACE " << FACE << endl;
+  } // end bottom face
+  
+  // this is the top face
+  if (vct->getCoordinates(2) ==ZLEN-1 && vct->getZright_neighbor_P() == MPI_PROC_NULL && DIR_2){
+    
+    FACE= "TOP";
+    /*i_s=0; i_e= nxn-1;
+    j_s=0; j_e= nyn-1;
+    k_s= PRA_ZRight_Start; k_e= PRA_ZRight_End;*/
+    i_s=0-ceil(RFx/2); i_e= nxn-1+ceil(RFx/2);
+    j_s=0-ceil(RFy/2); j_e= nyn-1+ceil(RFy/2);
+    k_s= PRA_ZRight_Start-ceil(RFz/2); k_e= PRA_ZRight_End+ceil(RFz/2);
+   
+
+    /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
+  cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
+  cout << "PRA_YLeft_Start " << PRA_YLeft_Start << " PRA_YLeft_End " << PRA_YLeft_End << " PRA_YRight_End " << PRA_YRight_End << " PRA_YRight_Start " << PRA_YRight_Start <<endl; 
+  cout << "PRA_ZLeft_Start " << PRA_ZLeft_Start << " PRA_ZLeft_End " << PRA_ZLeft_End << " PRA_ZRight_End " << PRA_ZRight_End << " PRA_ZRight_Start " << PRA_ZRight_Start <<endl; 
+  cout <<"FACE " << FACE << " i_s " << i_s <<" i_e "<< i_e << " j_s " << j_s << " j_e " << j_e << " k_s " << k_s <<" k_e "<<k_e <<endl;*/
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    //cout<<"FACE " << FACE << endl;
+  } // end top face
+
+  // this is the left face
+  if (vct->getCoordinates(0) ==0  && vct->getXleft_neighbor_P() == MPI_PROC_NULL && DIR_0){
+
+    FACE= "LEFT";
+    /*i_s= PRA_XLeft_Start; i_e= PRA_XLeft_End;
+    j_s= 0; j_e= nyn-1;
+    k_s= 0; k_e= nzn-1;*/
+    i_s= PRA_XLeft_Start-ceil(RFx/2); i_e= PRA_XLeft_End+ceil(RFx/2);
+    j_s= 0-ceil(RFy/2); j_e= nyn-1+ceil(RFy/2);
+    k_s= 0-ceil(RFz/2); k_e= nzn-1+ceil(RFz/2);
+
+    /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
+  cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
+  cout << "PRA_YLeft_Start " << PRA_YLeft_Start << " PRA_YLeft_End " << PRA_YLeft_End << " PRA_YRight_End " << PRA_YRight_End << " PRA_YRight_Start " << PRA_YRight_Start <<endl; 
+  cout << "PRA_ZLeft_Start " << PRA_ZLeft_Start << " PRA_ZLeft_End " << PRA_ZLeft_End << " PRA_ZRight_End " << PRA_ZRight_End << " PRA_ZRight_Start " << PRA_ZRight_Start <<endl; 
+  cout <<"FACE " << FACE << " i_s " << i_s <<" i_e "<< i_e << " j_s " << j_s << " j_e " << j_e << " k_s " << k_s <<" k_e "<<k_e <<endl;*/
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    //cout<<"FACE " << FACE << endl;
+  } // end left face
+
+  // this is the right face
+  if (vct->getCoordinates(0) ==XLEN-1 && vct->getXright_neighbor_P() == MPI_PROC_NULL && DIR_0){
+
+    FACE= "RIGHT";
+    /*i_s= PRA_XRight_Start; i_e= PRA_XRight_End;
+    j_s= 0; j_e= nyn-1;
+    k_s= 0; k_e= nzn-1;*/
+    i_s= PRA_XRight_Start-ceil(RFx/2); i_e= PRA_XRight_End+ceil(RFx/2);
+    j_s= 0-ceil(RFy/2); j_e= nyn-1+ceil(RFy/2);
+    k_s= 0-ceil(RFz/2); k_e= nzn-1+ceil(RFz/2);
+
+    /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
+  cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
+  cout << "PRA_YLeft_Start " << PRA_YLeft_Start << " PRA_YLeft_End " << PRA_YLeft_End << " PRA_YRight_End " << PRA_YRight_End << " PRA_YRight_Start " << PRA_YRight_Start <<endl; 
+  cout << "PRA_ZLeft_Start " << PRA_ZLeft_Start << " PRA_ZLeft_End " << PRA_ZLeft_End << " PRA_ZRight_End " << PRA_ZRight_End << " PRA_ZRight_Start " << PRA_ZRight_Start <<endl; 
+  cout <<"FACE " << FACE << " i_s " << i_s <<" i_e "<< i_e << " j_s " << j_s << " j_e " << j_e << " k_s " << k_s <<" k_e "<<k_e <<endl;*/
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    //cout<<"FACE " << FACE << endl;
+  } // end right face
+  
+  // this is the front face
+  if (vct->getCoordinates(1) ==0 && vct->getYleft_neighbor_P() == MPI_PROC_NULL && DIR_1){ 
+
+    FACE= "FRONT";
+    /*i_s= 0; i_e= nxn-1;
+    j_s= PRA_YLeft_Start; j_e= PRA_YLeft_End;
+    k_s= 0; k_e= nzn-1;*/
+    i_s= 0-ceil(RFx/2); i_e= nxn-1+ceil(RFx/2);
+    j_s= PRA_YLeft_Start-ceil(RFy/2); j_e= PRA_YLeft_End+ceil(RFy/2);
+    k_s= 0-ceil(RFz/2); k_e= nzn-1+ceil(RFz/2);
+
+    /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
+  cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
+  cout << "PRA_YLeft_Start " << PRA_YLeft_Start << " PRA_YLeft_End " << PRA_YLeft_End << " PRA_YRight_End " << PRA_YRight_End << " PRA_YRight_Start " << PRA_YRight_Start <<endl; 
+  cout << "PRA_ZLeft_Start " << PRA_ZLeft_Start << " PRA_ZLeft_End " << PRA_ZLeft_End << " PRA_ZRight_End " << PRA_ZRight_End << " PRA_ZRight_Start " << PRA_ZRight_Start <<endl; 
+  cout <<"FACE " << FACE << " i_s " << i_s <<" i_e "<< i_e << " j_s " << j_s << " j_e " << j_e << " k_s " << k_s <<" k_e "<<k_e <<endl;*/
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    //cout<<"FACE " << FACE << endl;
+  } // end front face
+
+  // this is the back face
+  if (vct->getCoordinates(1) == YLEN-1 && vct->getYright_neighbor_P() == MPI_PROC_NULL && DIR_1 ){
+
+    FACE= "BACK";
+    /*i_s= 0; i_e= nxn-1;
+    j_s= PRA_YRight_Start; j_e= PRA_YRight_End;
+    k_s= 0; k_e= nzn-1;*/
+    i_s= 0-ceil(RFx/2); i_e= nxn-1+ceil(RFx/2);
+    j_s= PRA_YRight_Start-ceil(RFy/2); j_e= PRA_YRight_End+ceil(RFy/2);
+    k_s= 0-ceil(RFz/2); k_e= nzn-1+ceil(RFz/2);
+    
+    /*cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
+  cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
+  cout << "PRA_YLeft_Start " << PRA_YLeft_Start << " PRA_YLeft_End " << PRA_YLeft_End << " PRA_YRight_End " << PRA_YRight_End << " PRA_YRight_Start " << PRA_YRight_Start <<endl; 
+  cout << "PRA_ZLeft_Start " << PRA_ZLeft_Start << " PRA_ZLeft_End " << PRA_ZLeft_End << " PRA_ZRight_End " << PRA_ZRight_End << " PRA_ZRight_Start " << PRA_ZRight_Start <<endl; 
+  cout <<"FACE " << FACE << " i_s " << i_s <<" i_e "<< i_e << " j_s " << j_s << " j_e " << j_e << " k_s " << k_s <<" k_e "<<k_e <<endl;*/
+    Explore3DAndCommit(grid, i_s, i_e, j_s, j_e, k_s, k_e, RG_numPBCMessages, &MAX_RG_numPBCMessages, vct);
+    //cout<<"FACE " << FACE << endl;
+  } // end back face
+  
+  /* for further use, i need to set the RG_core field of the first unused slot to -1  
+     but DO NOT MODIFY THE NUMBER OF MSGs;                             
+     I will just send a +1 */
+
+  //cout << "R" <<SW_rank <<" RG_numPBCMessages= " <<*RG_numPBCMessages <<endl;
+  RGPBC_Info[*RG_numPBCMessages].RG_core= -1;
+  RGPBC_Info[*RG_numPBCMessages].CG_core= -1;
+ 
+
+}
+
+
 
 void Particles3Dcomm::Explore3DAndCommit(Grid *grid, int i_s, int i_e, int j_s, int j_e, int k_s, int k_e, int *numMsg, int *MaxSizeMsg, VirtualTopology3D * vct ){
 
@@ -2536,6 +2716,7 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
   MPI_Status status;
   
   for (int ch=0; ch < numChildren; ch++){
+
     if (CommToChild_P[ch] != MPI_COMM_NULL and CG_numPBCMessages[ch]>0){ // this child wants PBC and this core participates
 
       // build all the PBC msgs that this core has to send 
@@ -2732,24 +2913,17 @@ void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
       // here, i have to check all the msgs in else if, to make sure that I am sending 
       // this particular particle only to one core
       
-      // first, coarse check (this goes together with using OR not AND)
+      // first, coarse check to avoid spending too much time here
+      if (x[p]< Ox_Ch[ch]- dx or x[p]> Ox_Ch[ch]+Lx_Ch[ch] + dx or y[p]< Oy_Ch[ch]- dy or y[p]> Oy_Ch[ch]+Ly_Ch[ch] + dy or z[p]< Oz_Ch[ch]- dz or z[p]> Oz_Ch[ch]+Lz_Ch[ch] + dz)
+	continue;
       
 
       for (int n=0; n< CG_numPBCMessages[ch]; n++){ 
-	// send an extra dx; this is needed in case one refined grid core superimpose to more coarse grid cores-- do not touch this!!!
 
-	/*x_min= CG_Info[ch][n].CG_x_first -dx -dx*EXTRAL ;
-	x_max= CG_Info[ch][n].CG_x_first+ dx*(CG_Info[ch][n].np_x) +dx*EXTRAR;
-	y_min= CG_Info[ch][n].CG_y_first -dy -dy*EXTRAL;
-	y_max= CG_Info[ch][n].CG_y_first+ dy*(CG_Info[ch][n].np_y) +dy*EXTRAR;
-	z_min= CG_Info[ch][n].CG_z_first -dz -dz*EXTRAL;
-	z_max= CG_Info[ch][n].CG_z_first+ dz*(CG_Info[ch][n].np_z) +dz*EXTRAR;
-	
-
-	//if (x_min <= x[p] && x_max >= x[p] && y_min <= y[p] && y_max >= y[p] && z_min <= z[p] && z_max >= z[p]){ // to use for PBC
-	if (x_min <= x[p] && x_max >= x[p] || y_min <= y[p] && y_max >= y[p] || z_min <= z[p] && z_max >= z[p]){ // to use for PBC*/
 
 	// NB: dx*(CG_Info[ch][n].np_x) gives you the extra DX; then i remove 1/2
+
+	// use this with initWeightPBC_Phase1
 	x_min= CG_Info[ch][n].CG_x_first -0.5*dx;
 	x_max= CG_Info[ch][n].CG_x_first+ dx*(CG_Info[ch][n].np_x) -0.5*dx;
 	y_min= CG_Info[ch][n].CG_y_first -0.5*dy;
@@ -2757,6 +2931,50 @@ void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
 	z_min= CG_Info[ch][n].CG_z_first -0.5*dz;
 	z_max= CG_Info[ch][n].CG_z_first+ dz*(CG_Info[ch][n].np_z) -0.5*dz;
 	
+	// with this, there is a risk if x_min is < xstart, x_max > xend
+	// put a warning and exit in case
+	// this is needed only with initWeightPBC_Phase1, not with _New (when it works)
+	if (x_min < xstart and (Ox_Ch[ch]> xstart and Ox_Ch[ch]-0.5*dx < xstart ) ) {
+	  cout << "Move child " << ch <<" of grid " << numGrid << " to the right in x"<<endl;
+	  cout << "Aborting now" <<endl;
+	  MPI_Abort(MPI_COMM_WORLD, -1);}
+	
+	if (x_max > xend and (Ox_Ch[ch] + Lx_Ch[ch] < xend and Ox_Ch[ch] + Lx_Ch[ch]+ 0.5*dx > xend)){
+	  cout << "Move child " << ch <<" of grid " << numGrid << " to the left in x"<<endl;
+	  cout << "Aborting now" <<endl;
+	  MPI_Abort(MPI_COMM_WORLD, -1);}
+
+	if (y_min < ystart and (Oy_Ch[ch]> ystart and Oy_Ch[ch]-0.5*dy < ystart ) ) {
+	  cout << "Move child " << ch <<" of grid " << numGrid << " to the right in y"<<endl;
+	  cout << "Aborting now" <<endl;
+	  MPI_Abort(MPI_COMM_WORLD, -1);}
+	
+	if (y_max > yend and (Oy_Ch[ch] + Ly_Ch[ch] < yend and Oy_Ch[ch] + Ly_Ch[ch]+ 0.5*dy > yend)){
+	  cout << "Move child " << ch <<" of grid " << numGrid << " to the left in y"<<endl;
+	  cout << "Aborting now" <<endl;
+	  MPI_Abort(MPI_COMM_WORLD, -1);}
+
+	if (z_min < zstart and (Oz_Ch[ch]> zstart and Oz_Ch[ch]-0.5*dz < zstart ) ) {
+	  cout << "Move child " << ch <<" of grid " << numGrid << " to the right in z"<<endl;
+	  cout << "Aborting now" <<endl;
+	  MPI_Abort(MPI_COMM_WORLD, -1);}
+	
+	if (z_max > zend and (Oz_Ch[ch] + Lz_Ch[ch] < zend and Oz_Ch[ch] + Lz_Ch[ch]+ 0.5*dz > zend)){
+	  cout << "Move child " << ch <<" of grid " << numGrid << " to the left in z"<<endl;
+	  cout << "z_max " << z_max << " Lz_Ch[ch]+ 0.5*dz: " << Lz_Ch[ch]+ 0.5*dz << endl;
+	  cout << "Aborting now" <<endl;
+	  MPI_Abort(MPI_COMM_WORLD, -1);}
+	
+	  
+
+	
+	// use this with initWeightPBC_Phase1_New: careful at the moment it does not work with multiple cores	
+	/*x_min= CG_Info[ch][n].CG_x_first ;
+	x_max= CG_Info[ch][n].CG_x_first+ dx*(CG_Info[ch][n].np_x) -dx;
+	y_min= CG_Info[ch][n].CG_y_first ;
+	y_max= CG_Info[ch][n].CG_y_first+ dy*(CG_Info[ch][n].np_y) -dy;
+	z_min= CG_Info[ch][n].CG_z_first ;
+	z_max= CG_Info[ch][n].CG_z_first+ dz*(CG_Info[ch][n].np_z) -dz;*/
 
 	if (x_min <= x[p] && x_max >= x[p] && y_min <= y[p] && y_max >= y[p] && z_min <= z[p] && z_max >= z[p]){ // to use for PBC
 	
@@ -2964,7 +3182,8 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
   double inv_dy= 1./dy;
   double inv_dz= 1./dz;
 
-  double PM= 0.0; // 0.0001; // 0.0001; i put the - becasue i inverted the sign down
+  // there is no need to add an extra buffer here; keep it 0
+  double PM= 0.0; 
 
   double xTmp;
   double yTmp;
@@ -2993,7 +3212,7 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
     
     // am i inside a X PRA?
     StX= (xTmp> Coord_XLeft_Start-dx*PM and xTmp <= Coord_XLeft_End) or (xTmp>= Coord_XRight_Start and xTmp < Coord_XRight_End+dx*PM);
-    //if (! StX ) continue; DO NOT DARE UNCOMMENTING THIS ALL HELL BREAKS LOSE (AND IT STOPS REPOPUALTING)
+    //if (! StX ) continue; DO NOT DARE UNCOMMENTING THIS; I will lose particles which are not in the X PRA, but are in an other
 
     for (int j=0; j< ceil(RFy); j++){
       yTmp= p.y - DyP/2.0 + dy*(1./2. + j)- grid->getOy();
@@ -3004,7 +3223,7 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
       
       // am i inside a Y PRA?
       StY= (yTmp> Coord_YLeft_Start-dy*PM and yTmp <= Coord_YLeft_End) or (yTmp>= Coord_YRight_Start and yTmp < Coord_YRight_End+dy*PM);
-      //if (! StY ) continue; DO NOT DARE UNCOMMENTING THIS ALL HELL BREAKS LOSE (AND IT STOPS REPOPUALTING)
+      //if (! StY ) continue; DO NOT DARE UNCOMMENTING THIS; I will lose particles which are in another PRA but not in thos
 
       for (int k=0; k< ceil(RFz); k++){
 	zTmp= p.z - DzP/2.0 + dz*(1./2. + k)- grid->getOz();
@@ -3017,9 +3236,8 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	StZ= (zTmp> Coord_ZLeft_Start-dz*PM and zTmp <= Coord_ZLeft_End) or (zTmp>= Coord_ZRight_Start and zTmp < Coord_ZRight_End+dz*PM);
 
 	
-	//if (! StZ ) continue; DO NOT DARE UNCOMMENTING THIS ALL HELL BREAKS LOSE (AND IT STOPS REPOPUALTING)
+	//if (! StZ ) continue; DO NOT DARE UNCOMMENTING THIS
 	
-	//cout << " Coord_ZLeft_Start " << Coord_ZLeft_Start << " Coord_ZLeft_End " << Coord_ZLeft_End << " Coord_ZRight_Start " << Coord_ZRight_Start << " Coord_ZRight_End " << Coord_ZRight_End << endl;
 
 	// if i am inside any PRA (if i arrived here i am inside the extended domain)
 	bool Keep= false;
@@ -3032,7 +3250,9 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	else if (bcPfaceXleft== -2){ // here i keep only the particles that have entered in the last dt
 	  Keep= RepopulatedParticleHasEnteredRG(grid, xTmp, yTmp, zTmp, p.u, p.v, p.w);
 	}
-
+	
+	// this is an OR not an AND; notice i have already filtered out particles
+	// outside the RG
 	if ((StX or StY or StZ) and Keep){
 	  //cout << "Grid "<< numGrid <<" R" <<vct->getCartesian_rank() <<" Particle split and accepted " <<endl; 
 	  
@@ -4379,6 +4599,9 @@ void Particles3Dcomm::initWeightFluidPBC_Phase1(Grid *grid, VirtualTopology3D *v
   
   
 }
+
+
+
 
 void Particles3Dcomm::SendFluidPBC(Grid* grid, VirtualTopology3D * vct, Field * EMf){
 

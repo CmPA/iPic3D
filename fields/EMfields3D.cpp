@@ -437,10 +437,10 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   }
   // solver
 
-  if (Case!="MAX_Show_RG_BC" and Case !="initTestBC" and Case!="TestBBoundary"  and Case!= "initTestIntProj"){
+  if (Case!="MAX_Show_RG_BC" and Case !="initTestBC" and Case!="TestBBoundary"  and Case!= "initTestIntProj"  ){
     GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this);
   }else{
-    cout << "No GMRES" << endl;
+    cout << "Grid " << numGrid <<"No GMRES" << endl;
   }
 
   endEcalc(xkrylov, grid, vct, col);
@@ -1256,7 +1256,7 @@ void EMfields3D::smoothE_NoComm(double value, VirtualTopology3D * vct, Collectiv
  void EMfields3D::adjustNonPeriodicDensities(int is, int bcPfaceXright, int bcPfaceXleft, int bcPfaceYright, int bcPfaceYleft, int bcPfaceZright, int bcPfaceZleft, VirtualTopology3D * vct) {
    /* this function is needed only if i do not have particles in GC; 
       with mlmd, bcPface... <0 they are there, hence skip it */
-   if (vct->getXleft_neighbor_P() == MPI_PROC_NULL and bcPfaceXleft > -1 ) {
+   if (vct->getXleft_neighbor_P() == MPI_PROC_NULL and (! (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceXleft <0 ))) {
      for (int i = 1; i < nyn - 1; i++)
        for (int k = 1; k < nzn - 1; k++) {
 	 rhons[is][1][i][k] += rhons[is][1][i][k];
@@ -1271,7 +1271,7 @@ void EMfields3D::smoothE_NoComm(double value, VirtualTopology3D * vct, Collectiv
 	 pZZsn[is][1][i][k] += pZZsn[is][1][i][k];
        }
    }
-   if (vct->getYleft_neighbor_P() == MPI_PROC_NULL and bcPfaceYleft > -1 ) {
+   if (vct->getYleft_neighbor_P() == MPI_PROC_NULL and (! (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceYleft <0 ))) {
      for (int i = 1; i < nxn - 1; i++)
        for (int k = 1; k < nzn - 1; k++) {
 	 rhons[is][i][1][k] += rhons[is][i][1][k];
@@ -1286,7 +1286,7 @@ void EMfields3D::smoothE_NoComm(double value, VirtualTopology3D * vct, Collectiv
 	 pZZsn[is][i][1][k] += pZZsn[is][i][1][k];
        }
    }
-   if (vct->getZleft_neighbor_P() == MPI_PROC_NULL and bcPfaceZleft > -1) {
+   if (vct->getZleft_neighbor_P() == MPI_PROC_NULL and (! (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceZleft <0 ))) {
      for (int i = 1; i < nxn - 1; i++)
        for (int j = 1; j < nyn - 1; j++) {
 	 rhons[is][i][j][1] += rhons[is][i][j][1];
@@ -1301,7 +1301,8 @@ void EMfields3D::smoothE_NoComm(double value, VirtualTopology3D * vct, Collectiv
 	 pZZsn[is][i][j][1] += pZZsn[is][i][j][1];
        }
    }
-   if (vct->getXright_neighbor_P() == MPI_PROC_NULL and bcPfaceXright > -1) {
+   if (vct->getXright_neighbor_P() == MPI_PROC_NULL and (! (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceXright <0 ))) {
+
      for (int i = 1; i < nyn - 1; i++)
        for (int k = 1; k < nzn - 1; k++) {
 	 rhons[is][nxn - 2][i][k] += rhons[is][nxn - 2][i][k];
@@ -1316,7 +1317,8 @@ void EMfields3D::smoothE_NoComm(double value, VirtualTopology3D * vct, Collectiv
 	 pZZsn[is][nxn - 2][i][k] += pZZsn[is][nxn - 2][i][k];
        }
    }
-   if (vct->getYright_neighbor_P() == MPI_PROC_NULL and bcPfaceYright > -1) {
+   if (vct->getYright_neighbor_P() == MPI_PROC_NULL and (! (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceYright <0 ))) {
+
      for (int i = 1; i < nxn - 1; i++)
        for (int k = 1; k < nzn - 1; k++) {
 	 rhons[is][i][nyn - 2][k] += rhons[is][i][nyn - 2][k];
@@ -1331,7 +1333,8 @@ void EMfields3D::smoothE_NoComm(double value, VirtualTopology3D * vct, Collectiv
 	 pZZsn[is][i][nyn - 2][k] += pZZsn[is][i][nyn - 2][k];
        }
    }
-   if (vct->getZright_neighbor_P() == MPI_PROC_NULL and bcPfaceZright > -1) {
+   if (vct->getZright_neighbor_P() == MPI_PROC_NULL and (! (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceZright <0 ))) {
+
      for (int i = 1; i < nxn - 1; i++)
        for (int j = 1; j < nyn - 1; j++) {
 	 rhons[is][i][j][nzn - 2] += rhons[is][i][j][nzn - 2];
@@ -1346,6 +1349,106 @@ void EMfields3D::smoothE_NoComm(double value, VirtualTopology3D * vct, Collectiv
 	 pZZsn[is][i][j][nzn - 2] += pZZsn[is][i][j][nzn - 2];
        }
    }
+
+
+   /*cout << "APPLYING MOMENT PATCH, PROBABLY TO REMOVE: " << endl;
+     // as expected, this does not influence results 
+
+   // careful: I have changed the ! in the condition  and the index 
+
+   if (vct->getXleft_neighbor_P() == MPI_PROC_NULL and ( (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceXleft <0 ))) {
+     for (int i = 1; i < nyn - 1; i++)
+       for (int k = 1; k < nzn - 1; k++) {
+	 rhons[is][0][i][k] += rhons[is][0][i][k];
+	 Jxs  [is][0][i][k] += Jxs  [is][0][i][k];
+	 Jys  [is][0][i][k] += Jys  [is][0][i][k];
+	 Jzs  [is][0][i][k] += Jzs  [is][0][i][k];
+	 pXXsn[is][0][i][k] += pXXsn[is][0][i][k];
+	 pXYsn[is][0][i][k] += pXYsn[is][0][i][k];
+	 pXZsn[is][0][i][k] += pXZsn[is][0][i][k];
+	 pYYsn[is][0][i][k] += pYYsn[is][0][i][k];
+	 pYZsn[is][0][i][k] += pYZsn[is][0][i][k];
+	 pZZsn[is][0][i][k] += pZZsn[is][0][i][k];
+       }
+   }
+   if (vct->getYleft_neighbor_P() == MPI_PROC_NULL and ( (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceYleft <0 ))) {
+     for (int i = 1; i < nxn - 1; i++)
+       for (int k = 1; k < nzn - 1; k++) {
+	 rhons[is][i][0][k] += rhons[is][i][0][k];
+	 Jxs  [is][i][0][k] += Jxs  [is][i][0][k];
+	 Jys  [is][i][0][k] += Jys  [is][i][0][k];
+	 Jzs  [is][i][0][k] += Jzs  [is][i][0][k];
+	 pXXsn[is][i][0][k] += pXXsn[is][i][0][k];
+	 pXYsn[is][i][0][k] += pXYsn[is][i][0][k];
+	 pXZsn[is][i][0][k] += pXZsn[is][i][0][k];
+	 pYYsn[is][i][0][k] += pYYsn[is][i][0][k];
+	 pYZsn[is][i][0][k] += pYZsn[is][i][0][k];
+	 pZZsn[is][i][0][k] += pZZsn[is][i][0][k];
+       }
+   }
+   if (vct->getZleft_neighbor_P() == MPI_PROC_NULL and ( (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceZleft <0 ))) {
+     for (int i = 1; i < nxn - 1; i++)
+       for (int j = 1; j < nyn - 1; j++) {
+	 rhons[is][i][j][0] += rhons[is][i][j][0];
+	 Jxs  [is][i][j][0] += Jxs  [is][i][j][0];
+	 Jys  [is][i][j][0] += Jys  [is][i][j][0];
+	 Jzs  [is][i][j][0] += Jzs  [is][i][j][0];
+	 pXXsn[is][i][j][0] += pXXsn[is][i][j][0];
+	 pXYsn[is][i][j][0] += pXYsn[is][i][j][0];
+	 pXZsn[is][i][j][0] += pXZsn[is][i][j][0];
+	 pYYsn[is][i][j][0] += pYYsn[is][i][j][0];
+	 pYZsn[is][i][j][0] += pYZsn[is][i][j][0];
+	 pZZsn[is][i][j][0] += pZZsn[is][i][j][0];
+       }
+   }
+   if (vct->getXright_neighbor_P() == MPI_PROC_NULL and ( (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceXright <0 ))) {
+
+     for (int i = 1; i < nyn - 1; i++)
+       for (int k = 1; k < nzn - 1; k++) {
+	 rhons[is][nxn - 1][i][k] += rhons[is][nxn - 1][i][k];
+	 Jxs  [is][nxn - 1][i][k] += Jxs  [is][nxn - 1][i][k];
+	 Jys  [is][nxn - 1][i][k] += Jys  [is][nxn - 1][i][k];
+	 Jzs  [is][nxn - 1][i][k] += Jzs  [is][nxn - 1][i][k];
+	 pXXsn[is][nxn - 1][i][k] += pXXsn[is][nxn - 1][i][k];
+	 pXYsn[is][nxn - 1][i][k] += pXYsn[is][nxn - 1][i][k];
+	 pXZsn[is][nxn - 1][i][k] += pXZsn[is][nxn - 1][i][k];
+	 pYYsn[is][nxn - 1][i][k] += pYYsn[is][nxn - 1][i][k];
+	 pYZsn[is][nxn - 1][i][k] += pYZsn[is][nxn - 1][i][k];
+	 pZZsn[is][nxn - 1][i][k] += pZZsn[is][nxn - 1][i][k];
+       }
+   }
+   if (vct->getYright_neighbor_P() == MPI_PROC_NULL and ( (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceYright <0 ))) {
+
+     for (int i = 1; i < nxn - 1; i++)
+       for (int k = 1; k < nzn - 1; k++) {
+	 rhons[is][i][nyn - 1][k] += rhons[is][i][nyn - 1][k];
+	 Jxs  [is][i][nyn - 1][k] += Jxs  [is][i][nyn - 1][k];
+	 Jys  [is][i][nyn - 1][k] += Jys  [is][i][nyn - 1][k];
+	 Jzs  [is][i][nyn - 1][k] += Jzs  [is][i][nyn - 1][k];
+	 pXXsn[is][i][nyn - 1][k] += pXXsn[is][i][nyn - 1][k];
+	 pXYsn[is][i][nyn - 1][k] += pXYsn[is][i][nyn - 1][k];
+	 pXZsn[is][i][nyn - 1][k] += pXZsn[is][i][nyn - 1][k];
+	 pYYsn[is][i][nyn - 1][k] += pYYsn[is][i][nyn - 1][k];
+	 pYZsn[is][i][nyn - 1][k] += pYZsn[is][i][nyn - 1][k];
+	 pZZsn[is][i][nyn - 1][k] += pZZsn[is][i][nyn - 1][k];
+       }
+   }
+   if (vct->getZright_neighbor_P() == MPI_PROC_NULL and ( (vct->getCommToParent_P(is)!= MPI_COMM_NULL and ParticleREPOPULATION and bcPfaceZright <0 ))) {
+
+     for (int i = 1; i < nxn - 1; i++)
+       for (int j = 1; j < nyn - 1; j++) {
+	 rhons[is][i][j][nzn - 1] += rhons[is][i][j][nzn - 1];
+	 Jxs  [is][i][j][nzn - 1] += Jxs  [is][i][j][nzn - 1];
+	 Jys  [is][i][j][nzn - 1] += Jys  [is][i][j][nzn - 1];
+	 Jzs  [is][i][j][nzn - 1] += Jzs  [is][i][j][nzn - 1];
+	 pXXsn[is][i][j][nzn - 1] += pXXsn[is][i][j][nzn - 1];
+	 pXYsn[is][i][j][nzn - 1] += pXYsn[is][i][j][nzn - 1];
+	 pXZsn[is][i][j][nzn - 1] += pXZsn[is][i][j][nzn - 1];
+	 pYYsn[is][i][j][nzn - 1] += pYYsn[is][i][j][nzn - 1];
+	 pYZsn[is][i][j][nzn - 1] += pYZsn[is][i][j][nzn - 1];
+	 pZZsn[is][i][j][nzn - 1] += pZZsn[is][i][j][nzn - 1];
+       }
+       }*/
 
  }
 
@@ -1543,6 +1646,29 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
    if (Case != "TestFix3B"){
      grid->curlN2C(tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
      
+     if (vct->getCommToParent() != MPI_COMM_NULL and MLMD_BC and (MLMD_fixBCenters or MLMD_InterpolateOldBCell)){       
+       if (vct->getCartesian_rank() == 0)
+	 cout << "I am NOT updating the first active cell in B" << endl;
+       
+       for (int i=0; i< nxc; i++)
+	 for (int j=0; j< nyc; j++)
+	   for (int k=0; k< nzc; k++){
+	     bool CASEX1= (vct->getXleft_neighbor() == MPI_PROC_NULL and (i==0 or i==1));
+	     bool CASEX2= (vct->getXright_neighbor() == MPI_PROC_NULL and (i==nxc-1 or i==nxc-2));
+	     bool CASEY1= (vct->getYleft_neighbor() == MPI_PROC_NULL and (j==0 or j==1));
+	     bool CASEY2= (vct->getYright_neighbor() == MPI_PROC_NULL and (j==nyc-1 or j==nyc-2));
+	     bool CASEZ1= (vct->getZleft_neighbor() == MPI_PROC_NULL and (k==0 or k==1));
+	     bool CASEZ2= (vct->getZright_neighbor() == MPI_PROC_NULL and (k==nzc-1 or k==nzc-2));
+
+	     if (CASEX1 or CASEX2 or CASEY1 or CASEY2 or CASEZ1 or CASEZ2){
+	       tempXC[i][j][k]=0.0;
+	       tempYC[i][j][k]=0.0;
+	       tempZC[i][j][k]=0.0;
+	     }
+	   }
+     } // end of non-updating curl E at the boundaries
+
+
      // update the magnetic field
      addscale(-c * dt, 1, Bxc, tempXC, nxc, nyc, nzc);
      addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
@@ -2186,6 +2312,7 @@ void Moments::addRho(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+
 	rho[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2195,6 +2322,7 @@ void Moments::addJx(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+
 	Jx[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2204,6 +2332,7 @@ void Moments::addJy(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+
 	Jy[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2213,6 +2342,7 @@ void Moments::addJz(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+
 	Jz[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2222,6 +2352,7 @@ void Moments::addPxx(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+	
 	pXX[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2231,6 +2362,7 @@ void Moments::addPxy(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+
 	pXY[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2240,6 +2372,7 @@ void Moments::addPxz(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+
 	pXZ[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2249,6 +2382,7 @@ void Moments::addPyy(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+
 	pYY[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2258,6 +2392,7 @@ void Moments::addPyz(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+	
 	pYZ[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2267,6 +2402,7 @@ void Moments::addPzz(double weight[][2][2], int X, int Y, int Z) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++) {
 	const double temp = weight[i][j][k] * invVOL;
+
 	pZZ[X - i][Y - j][Z - k] += temp;
       }
 }
@@ -2299,6 +2435,20 @@ void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
 	rhons[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+   
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+
+	// added, to avoid segm fault of repopulated particles                
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+
+	rhons[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
 }
 
 /*! add an amount of charge density to charge density field at node X,Y */
@@ -2409,7 +2559,123 @@ void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is) {
 	pZZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
+/*! add an amount of charge density to current density - direction X to current density field on the node */
+void EMfields3D::addJx(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
 
+	// added, to avoid segm fault of repopulated particles                  
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+	
+	Jxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
+}
+/*! add an amount of current density - direction Y to current density field on the node */
+void EMfields3D::addJy(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+
+	// added, to avoid segm fault of repopulated particles            
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+
+	Jys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
+}
+/*! add an amount of current density - direction Z to current density field on the node */
+void EMfields3D::addJz(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+
+	// added, to avoid segm fault of repopulated particles                
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+
+	Jzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
+}
+/*! add an amount of pressure density - direction XX to current density field on the node */
+void EMfields3D::addPxx(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+
+	// added, to avoid segm fault of repopulated particles         
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+
+	pXXsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
+}
+/*! add an amount of pressure density - direction XY to current density field on the node */
+void EMfields3D::addPxy(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+
+	// added, to avoid segm fault of repopulated particles            
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+
+	pXYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
+}
+/*! add an amount of pressure density - direction XZ to current density field on the node */
+void EMfields3D::addPxz(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+
+	// added, to avoid segm fault of repopulated particles
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+
+	pXZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
+}
+/*! add an amount of pressure density - direction YY to current density field on the node */
+void EMfields3D::addPyy(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+
+	// added, to avoid segm fault of repopulated particles
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+
+	pYYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
+}
+/*! add an amount of pressure density - direction YZ to current density field on the node */
+void EMfields3D::addPyz(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+
+	// added, to avoid segm fault of repopulated particles
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+
+	pYZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
+}
+/*! add an amount of pressure density - direction ZZ to current density field on the node */
+void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++){
+
+	// added, to avoid segm fault of repopulated particles
+	if (X-i<0 or Y - j<0 or Z - k<0 ) continue;
+	if (X-i>nxn-1 or Y - j> nyn-1 or Z - k> nzn-1) continue;
+
+	pZZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+      }
+}
 
 /*! set to 0 all the densities fields */
 void EMfields3D::setZeroDensities() {

@@ -322,6 +322,17 @@ class EMfields3D                // :public Field
     /*! add an amount of pressure density - direction ZZ to current density field at node X,Y,Z */
     void addPzz(double weight[][2][2], int X, int Y, int Z, int is);
 
+    void addRho(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+    void addJx(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+    void addJy(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+    void addJz(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+    void addPxx(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+    void addPxy(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+    void addPxz(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+    void addPyy(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+    void addPyz(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+    void addPzz(double weight[][2][2], int X, int Y, int Z, int is, int nxn, int nyn, int nzn);
+
     /*! adjust densities on boundaries that are not periodic */
     void adjustNonPeriodicDensities(int is, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct);
 

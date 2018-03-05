@@ -7,6 +7,7 @@ int c_Solver::Init(int argc, char **argv) {
   MlmdVerbose= true;
   /* wether to print the distribution function */
   WriteDistrFun= true;
+  WriteDistrFun_RepPart= true;
 
   // initialize MPI environment
   // nprocs = number of processors
@@ -214,6 +215,9 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
 	else if (col->getPartInit()=="DoubleGEM") part[i].MaxwellianDoubleGEM(grid, EMf, vct, col);
 	else if (col->getPartInit()=="MAX_Show_RG_BC") part[i].initMAX_Show_RG_BC(grid, EMf, vct);
+	else if (col->getPartInit()=="initTestREPExistence" and numGrid >0) {
+	  cout << "Grid " << numGrid << " is not initializaing particles" << endl;
+	}
         else                                  part[i].maxwellian(grid, EMf, vct);
 
     }
@@ -295,6 +299,38 @@ int c_Solver::Init(int argc, char **argv) {
       }
     }
   }
+  // distribution function of repopulated particles - using the same bin # and v max as the 'general' d.f.
+  if (WriteDistrFun_RepPart and numGrid >0){
+
+    // distribution function of the repopulated particles
+    VelocityDist_RepPart = new unsigned long [nDistributionBins];
+    ds_RepPart = new string[ns];
+    
+    for (int is=0; is<ns; is++){
+      stringstream is_STR;
+      is_STR << is;
+      ds_RepPart[is] = SaveDirName + "/DistributionFunctions_RepPart_G"  +num_grid_STR.str() +"_sp" + is_STR.str() + ".txt";
+      if (myrank == 0) {
+	ofstream my_file(ds_RepPart[is].c_str());
+	my_file.close();
+      } 
+    } 
+    
+    // distribution function of the NON-repopulated particles
+    VelocityDist_NonRepPart = new unsigned long [nDistributionBins];
+    ds_NonRepPart = new string[ns];
+    
+    for (int is=0; is<ns; is++){
+      stringstream is_STR;
+      is_STR << is;
+      ds_NonRepPart[is] = SaveDirName + "/DistributionFunctions_NonRepPart_G"  +num_grid_STR.str() +"_sp" + is_STR.str() + ".txt";
+      if (myrank == 0) {
+	ofstream my_file(ds_NonRepPart[is].c_str());
+	my_file.close();
+      } 
+    }
+    
+  } //end if (WriteDistrFun_RepPart and numGrid >0){
   cqsat = SaveDirName + "/VirtualSatelliteTraces_G" +num_grid_STR.str() +"_" + num_proc.str() + ".txt";
   // if(myrank==0){
   ofstream my_file(cqsat.c_str(), fstream::binary);
@@ -479,7 +515,7 @@ void c_Solver::CalculateBField(int cycle) {
 
 }
 
-bool c_Solver::ParticlesMover() {
+bool c_Solver::ParticlesMover(int cycle) {
   
   /*  -------------- */
   /*  Particle mover */
@@ -494,9 +530,9 @@ bool c_Solver::ParticlesMover() {
       // RG: delete particles in PRA area
       part[i].communicateAfterMover(vct);
       // RG: accept BC particles in PRA area
-      part[i].ReceivePBC(grid, vct);
+      part[i].ReceivePBC(grid, vct, cycle);
     }
-    }
+  }
 
 
   // timeTasks.start(TimeTasks::PARTICLES);
@@ -539,7 +575,7 @@ bool c_Solver::ParticlesMover() {
       // in practice, removes particles from the PRA
       part[i].communicateAfterMover(vct);
       part[i].SendPBC(grid, vct);
-      part[i].ReceivePBC(grid, vct);
+      part[i].ReceivePBC(grid, vct, cycle);
 
       // comment during production
       //part[i].CheckSentReceivedParticles(vct);
@@ -619,7 +655,12 @@ void c_Solver::WriteConserved(int cycle) {
     }
     if (myrank == 0) {
       ofstream my_file(cq.c_str(), fstream::app);
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy <<"\t" ;
+      for (int is=0; is< ns; is++){
+	my_file << Ke[is] << "\t";
+      }
+      my_file << endl;
+
       my_file.close();
     }
 
@@ -643,8 +684,40 @@ void c_Solver::WriteConserved(int cycle) {
 	  my_file.close();
 	}
       }
-    }
-  }
+
+    } // end if (WriteDistrFun)
+    if (WriteDistrFun_RepPart and numGrid >0){
+      // this the repopulated particles
+      for (int is = 0; is < ns; is++) {
+	double maxVel= col->getUth(is)*7;
+	VelocityDist_RepPart = part[is].getVelocityDistribution_RepPart(nDistributionBins, maxVel, vct->getCommGrid());
+	if (myrank == 0) {
+	  ofstream my_file(ds_RepPart[is].c_str(), fstream::app);
+	  my_file << cycle << "\t" << is << "\t" << maxVel;
+	  for (int i = 0; i < nDistributionBins; i++)
+	    my_file << "\t" << VelocityDist_RepPart[i];
+	  my_file << endl;
+	  my_file.close();
+	}
+      }
+
+      // this the NON repopulated particles
+      for (int is = 0; is < ns; is++) {
+	double maxVel= col->getUth(is)*7;
+	VelocityDist_NonRepPart = part[is].getVelocityDistribution_NonRepPart(nDistributionBins, maxVel, vct->getCommGrid());
+	if (myrank == 0) {
+	  ofstream my_file(ds_NonRepPart[is].c_str(), fstream::app);
+	  my_file << cycle << "\t" << is << "\t" << maxVel;
+	  for (int i = 0; i < nDistributionBins; i++)
+	    my_file << "\t" << VelocityDist_NonRepPart[i];
+	  my_file << endl;
+	  my_file.close();
+	}
+      }
+      
+    } // end if (WriteDistrFun_RepPart)
+
+  } // end check on diagnostic cycle
   
   //if (cycle%(col->getFieldOutputCycle())==0){
   //  for (int is = 0; is < ns; is++) {
