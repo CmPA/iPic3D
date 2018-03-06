@@ -773,10 +773,10 @@ int Collective::ReadRestart(string inputfile) {
   // if RestartDirName == SaveDirName overwrite dt,Th,Smooth (append to old hdf files)
   if (RestartDirName == SaveDirName) {
     restart_status = 2;
-    // read dt
-    dataset_id = H5Dopen2(file_id, "/collective/Dt", H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &dt);
-    status = H5Dclose(dataset_id);
+    // read dt (no it is better to take it form the input file so one can change dt in the restart)
+   // dataset_id = H5Dopen2(file_id, "/collective/Dt", H5P_DEFAULT); // HDF 1.8.8
+   // status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &dt);
+   // status = H5Dclose(dataset_id);
     // read th 
     dataset_id = H5Dopen2(file_id, "/collective/Th", H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &th);
