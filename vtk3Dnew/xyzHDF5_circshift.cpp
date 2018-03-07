@@ -25,15 +25,15 @@ int main (int argc, char **argv) {
 	sscanf(argv[3],"%d",&DeltaT);
 
 
+			NdimCode = 3;
+			xshift = 0;
+			yshift = 0;
+			zshift = 0; 
 	if(argc>3) {
 			sscanf(argv[4], "%d", &NdimCode);
 			sscanf(argv[5],"%d",&xshift);
 			sscanf(argv[6],"%d",&yshift);
 			sscanf(argv[7],"%d",&zshift);
-		}
-		else
-		{
-			NdimCode = 3;
 		}
 
     int rank, size;
