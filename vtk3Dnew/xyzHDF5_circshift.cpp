@@ -35,7 +35,7 @@ int main (int argc, char **argv) {
 			sscanf(argv[6],"%d",&yshift);
 			sscanf(argv[7],"%d",&zshift);
 		}
-
+	printf( "Shift in x is set to %d ", xshift);
     int rank, size;
 
    MPI_Init (&argc, &argv);	/* starts MPI */
