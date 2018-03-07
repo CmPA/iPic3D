@@ -25,6 +25,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "Particles3Dcomm.h"
 
 #include "hdf5.h"
+#include "MyClock.h"
 #include <vector>
 #include <complex>
 
@@ -46,6 +47,8 @@ using std::endl;
  * @version 2.0
  *
  */
+
+extern MyClock *clocks;
 
 /** constructor */
 Particles3Dcomm::Particles3Dcomm() {
@@ -2736,9 +2739,18 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
     if (CommToChild_P[ch] != MPI_COMM_NULL and CG_numPBCMessages[ch]>0){ // this child wants PBC and this core participates
 
       // build all the PBC msgs that this core has to send 
-
-      buildPBCMsg(grid, vct, ch);
       
+      #ifdef __PROFILING__
+      clocks->start(12);
+      #endif
+      buildPBCMsg(grid, vct, ch);
+      #ifdef __PROFILING__
+      clocks->stop(12);
+      #endif
+      
+      #ifdef __PROFILING__
+      clocks->start(13);
+      #endif
       if (AllowPMsgResize){
 	// the CG cores involved in PBC agree on the biggest buffer size
 	int MaxGrid_sizeCG_PBCMsg;
@@ -2753,6 +2765,10 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 	}
       } // end if (AllowPMsgResize){
 
+      #ifdef __PROFILING__
+      clocks->stop(13);
+      #endif
+
       // now send; send an extra msg to signal the end of the meaningful part
       // cycle on all the msgs this core has to send
 
@@ -2764,6 +2780,11 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 	}
 	}*/
 
+
+      #ifdef __PROFILING__
+      clocks->start(14);
+      #endif
+
       for (int m=0; m< CG_numPBCMessages[ch]; m++){
 	int dest= CG_Info[ch][m].RG_core;
 	int tag= CG_Info[ch][m].MsgID;
@@ -2771,6 +2792,11 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 	MPI_Isend(PCGMsg[ch][m], nopPCGMsg[ch][m]+1, MPI_RepP_struct, dest, tag, CommToChild_P[ch], &request );
 	MPI_Wait(&request, &status);
       } // end for (int m=0; m< CG_numPBCMessages[ch]; m++)
+
+      #ifdef __PROFILING__
+      clocks->stop(14);
+      #endif
+
 
     } //  if (CommToChild_P[ch] != MPI_COMM_NULL){ 
     
@@ -2815,6 +2841,9 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle)
 
     MPI_Status status;
 
+    #ifdef __PROFILING__
+    clocks->start(15);
+    #endif
     if (AllowPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
       int NEW_sizePBCMsg;
       // as it is set now, each RG core receives a msg, so just do a rcv 
@@ -2825,7 +2854,15 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle)
 	resize_RG_MLMD_buffers(NEW_sizePBCMsg);
       }
     } // end if (AllowPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
-    
+    #ifdef __PROFILING__
+    clocks->stop(15);
+    #endif
+
+
+    #ifdef __PROFILING__
+      clocks->start(16);
+    #endif
+
     for (int i=0; i<RG_numPBCMessages; i++ ){
       PRGMsgArrived[i]= false;
       nopPRGMsg[i]=0;
@@ -2833,6 +2870,8 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle)
     
     int count, src, MsgID;;
     for (int i=0; i< RG_numPBCMessages; i++){
+
+
       MPI_Recv(PRGMsg_General, sizeRG_PBCMsg, MPI_RepP_struct, MPI_ANY_SOURCE, MPI_ANY_TAG, CommToParent_P, &status);
       MPI_Get_count( &status, MPI_RepP_struct, &count );
       
@@ -2868,10 +2907,20 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle)
       
     } // end for (int i=0; i< RG_numPBCMessages; i++){
 
+    #ifdef __PROFILING__
+    clocks->stop(16);
+    #endif
+
+    #ifdef __PROFILING__
+    clocks->start(17);
+    #endif
     // here, PBC have been successfully received
     // now I have to apply them (split the particles )
     ApplyPBC(vct, grid, cycle);
 
+    #ifdef __PROFILING__
+    clocks->stop(17);
+    #endif
   } // end if (CommToParent_P!= MPI_COMM_NULL and RG_numPBCMessages >0){
   
   nop_AfterReceivePBC= nop;

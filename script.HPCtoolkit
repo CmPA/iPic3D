@@ -1,0 +1,24 @@
+module load valgrind/3.12.0
+module load hpctoolkit/2017.6
+module load cmake
+
+NAME="OldSend_RF8_4ppc_32cube_Instr2"
+mkdir dataMLMD
+cp inputfilesTEST/${NAME}.inp dataMLMD
+
+
+### NB do not use & to send in BG if you want to do the mv at the end
+
+mpirun -n 9 hpcrun -t ./iPic3D inputfilesTEST/${NAME}.inp >> dataMLMD/output.txt
+#mpirun  -n 10 ./iPic3D inputfilesTEST/${NAME}.inp >> dataMLMD/output.txt
+
+#mpirun -n 8 valgrind --error-limit=no  ./iPic3D inputfilesTEST/${NAME}.inp 2>>dataMLMD/error.txt 1>>dataMLMD/output.txt 
+
+mv dataMLMD ${NAME}
+mv hpctoolkit-iPic3D-measurements ${NAME}
+
+hpcstruct iPic3D
+mv iPic3D.hpcstruct ${NAME}
+
+mpirun hpcprof-mpi -S ${NAME}/iPic3D.hpcstruct -I ./ ${NAME}/hpctoolkit-iPic3D-measurements
+mv hpctoolkit-iPic3D-database ${NAME}

@@ -1,6 +1,9 @@
 #include "iPic3D.h"
+#include "MyClock.h"
 
 using namespace iPic3D;
+
+extern MyClock *clocks;
 
 int c_Solver::Init(int argc, char **argv) {
 
@@ -17,14 +20,16 @@ int c_Solver::Init(int argc, char **argv) {
   //nprocs = mpi->nprocs;
   //myrank = mpi->rank;
 
+  // random size
+  clocks = new MyClock(20);
+  clocks->start(0);
+
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
 
   /*MPI_Barrier(MPI_COMM_WORLD);
   cout << "after the collective init" << endl;
   cout << "exiting now..."<< endl;
   mpi->finalize_mpi(); exit(EXIT_SUCCESS);*/
-  
-
 
   verbose = col->getVerbose();
   restart_cycle = col->getRestartOutputCycle();
@@ -356,6 +361,8 @@ int c_Solver::Init(int argc, char **argv) {
   if (RR==0){
     cout << "Init finished "<< endl;
   }	
+
+  clocks->stop(0);
 			   
   return 0;
 }
@@ -534,14 +541,18 @@ bool c_Solver::ParticlesMover(int cycle) {
     }
   }
 
+  #ifdef __PROFILING__
+  clocks->start(6);  
+  #endif
 
-  // timeTasks.start(TimeTasks::PARTICLES);
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
     mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
-  // timeTasks.end(TimeTasks::PARTICLES);
+  #ifdef __PROFILING__
+  clocks->stop(6);
+  #endif
 
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -570,23 +581,56 @@ bool c_Solver::ParticlesMover(int cycle) {
   int RR= vct->getCartesian_rank();   
 
   // particle repopulation ops are done here if the repopulation is kinetic
+  #ifdef __PROFILING__
+  clocks->start(7);
+  #endif
+
   if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
     for (int i = 0; i < ns; i++){
       // in practice, removes particles from the PRA
+      #ifdef __PROFILING__
+      clocks->start(8);
+      #endif
       part[i].communicateAfterMover(vct);
-      part[i].SendPBC(grid, vct);
-      part[i].ReceivePBC(grid, vct, cycle);
+      #ifdef __PROFILING__
+      clocks->stop(8);
+      #endif
 
+      #ifdef __PROFILING__
+      clocks->start(9);
+      #endif
+      part[i].SendPBC(grid, vct);
+      #ifdef __PROFILING__
+      clocks->stop(9);
+      #endif
+
+      #ifdef __PROFILING__
+      clocks->start(10);
+      #endif
+      part[i].ReceivePBC(grid, vct, cycle);
+      #ifdef __PROFILING__
+      clocks->stop(10);
+      #endif
       // comment during production
       //part[i].CheckSentReceivedParticles(vct);
 
       // this one is needed only if AllowPMsgResize=1 
       // (see notes in postEPS2017.rtfd)
+      
+      #ifdef __PROFILING__
+      clocks->start(11);
+      #endif
       if (part[i].getAllowPMsgResize()){
 	part[i].MPI_Barrier_ParentChild(vct);
       }
+      #ifdef __PROFILING__
+      clocks->stop(11);
+      #endif
     }
   }
+  #ifdef __PROFILING__
+  clocks->stop(7);
+  #endif
 
   // just to delete particles
   if (MLMD_ParticleREPOPULATION and FluidLikeRep and !RepopulateBeforeMover){

@@ -22,6 +22,11 @@ list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 # Options
 #
 
+option(PROFILING "Measure the times in each stage" ON)
+if(PROFILING)
+  add_definitions( -D__PROFILING__ )
+endif()
+
 option(IPIC_TESTS "Set up the code tests" OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
