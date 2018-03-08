@@ -1872,3 +1872,31 @@ void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3
     cout << "numGrid "<< numGrid << " after DoubleGem init, nop total= " << nop_tot << endl;
   }
 }
+
+
+int Particles3D::communicate_NoMover_DepopulatePRA(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+  
+  // ********************//
+  // COMMUNICATION 
+  // *******************//
+  // timeTasks.start_communicate();
+  const int avail = communicate_DepopulatePRA(vct);
+  if (avail < 0)
+    return (-1);
+  /*! mlmd: barrier at grid level */
+  //MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(vct->getCommGrid()); 
+  // communicate again if particles are not in the correct domain
+  while (isMessagingDone(vct) > 0) {
+    // COMMUNICATION
+    const int avail = communicate_DepopulatePRA(vct);
+    if (avail < 0)
+      return (-1);
+    /*! mlmd: barrier at grid level */
+    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(vct->getCommGrid());
+  }
+
+
+  return (0);
+}

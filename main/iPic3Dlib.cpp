@@ -947,9 +947,9 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
       part[i].ReceivePBC_NoApply(grid, vct, cycle);
     }
     /* end 1.1 */
-    
-    /* 1.2 move particles, without communicating them */
-    
+  }    
+
+  for (int i=0; i< ns; i++){ 
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
     mem_avail = part[i].mover_PC_sub_NoCommunicate(grid, vct, EMf); // use the Predictor Corrector scheme 
         
@@ -964,20 +964,13 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
     
     /* end 1.2 */
     
-    /* 1.3 send PBC */
-    
-    if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
-      
-      part[i].SendPBC(grid, vct);
-    }
-    /* end 1.3 */
   } // end cycle on species 
 
 
   for (int i=0; i< ns; i++){
     /* 2.1 communicate (the part scorporate from the mover) */
 
-    mem_avail=part[i].communicate_NoMover(grid, vct, EMf) ;
+    mem_avail=part[i].communicate_NoMover_DepopulatePRA(grid, vct, EMf) ;
     /* end 2.1 */
     
     if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
@@ -989,18 +982,16 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
       MPI_Abort(MPI_COMM_WORLD, -1);              // exit from the time loop
     }
 
-
-    /* there is actually no communication here, only removes particles outside the domain -
-       check: it may be remover */
-    if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
-      part[i].communicateAfterMover(vct);
-    }
-
     /* -------------------------------------- */
     /* Repopulate the buffer zone at the edge */
     /* -------------------------------------- */
     
     InjectBoundaryParticles_Sp(i);    
+
+    if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
+      
+      part[i].SendPBC(grid, vct);
+    }
   } // end cycle on particles
 
   for (int i=0; i< ns; i++){

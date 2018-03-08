@@ -70,6 +70,7 @@ class Particles3D:public Particles3Dcomm {
     int mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     int mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     int mover_PC_sub_NoCommunicate(Grid * grid, VirtualTopology3D * vct, Field * EMf); 
+    int communicate_NoMover_DepopulatePRA(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** relativistic mover with a Predictor-Corrector scheme */
     int mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** the communicate part in the mover, scorporated from the mover **/
