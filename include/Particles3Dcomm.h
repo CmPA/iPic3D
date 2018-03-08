@@ -278,6 +278,12 @@ public:
   void unpack_CRP(CRP_struct p, VirtualTopology3D * vct);
   /* ApplyPBC: RG, after receiving PBC, applies them */
   void ApplyPBC(VirtualTopology3D* vct, Grid* grid, int cycle);
+  /* receive PBC, does not apply them */
+  void ReceivePBC_NoApply(Grid* grid, VirtualTopology3D * vct, int cycle);
+  /* apply PBC, does not receive them */
+  void ApplyPBC_NoReceive(Grid* grid, VirtualTopology3D * vct, int cycle);
+  /* ApplyPBC, does not receive them nore communicate after applying PBC */
+  void ApplyPBC_NoReceive_NoCommunicate(Grid* grid, VirtualTopology3D * vct, int cycle);
   /* split a particle received form the CG into RG particles */
   void SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct p, int cycle);
   /* for repopulation method -2 */
@@ -288,6 +294,7 @@ public:
   void CheckSentReceivedParticles(VirtualTopology3D* vct);
   /* distribute split particles to the right RG core*/
   void communicateRepopulatedParticles(Grid* grid, VirtualTopology3D * vct);
+  void communicateRepopulatedParticles_Wrap(Grid* grid, VirtualTopology3D * vct, int cycle);
   /* ------ end kinetic repopulation methods + support functions  ------ */
   /* ------ fluid repopulation methods + support functions  ------ */
   /* build and send particle BC msg -- CG to RGC -- FLUID REPOPULATION*/
@@ -304,6 +311,11 @@ public:
   void get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]);
   void get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext);
   void get_El(const double weights[2][2][2], int ix, int iy, int iz, double& Exl, double& Eyl, double& Ezl, double*** Ex, double*** Ey, double*** Ez);
+
+  /* with AllowPMsgResize= true, buffer dimensions are synched at each cycle, very expensive; 
+     if in the inputfile AllowPMsgResize= true, this is done each cycle
+     if it is false, done only the first three cycles to reach suitable buffer sizes, then stop */
+  void UpdateAllowPMsgResize(Collective * col, int cycle);
 
   bool getAllowPMsgResize() { return AllowPMsgResize; }
 protected:
@@ -564,6 +576,8 @@ protected:
 
   /* particles added to the PRA area from MLMD BC */
   int PRA_PAdded;
+  /* number of particles in the core at the end of the mover */
+  //int nop_EndMover;
   /* number of particles in the core at the end of communicate */
   int nop_EndCommunicate;
   /* number of particles in the core AFTER ReceivePBC */

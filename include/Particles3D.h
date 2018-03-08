@@ -69,8 +69,11 @@ class Particles3D:public Particles3Dcomm {
     /** mover with a Predictor-Corrector Scheme */
     int mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     int mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    int mover_PC_sub_NoCommunicate(Grid * grid, VirtualTopology3D * vct, Field * EMf); 
     /** relativistic mover with a Predictor-Corrector scheme */
     int mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /** the communicate part in the mover, scorporated from the mover **/
+    int communicate_NoMover(Grid * grid, VirtualTopology3D * vct, Field * EMf) ;
     /** particle repopulator */
     int particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is);
     /** interpolation Particle->Grid only charge density, current */

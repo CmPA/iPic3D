@@ -22,7 +22,7 @@ list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 # Options
 #
 
-option(PROFILING "Measure the times in each stage" ON)
+option(PROFILING "With on, several global reduce to calculate total number of particles(NB name is misleading)" OFF)
 if(PROFILING)
   add_definitions( -D__PROFILING__ )
 endif()

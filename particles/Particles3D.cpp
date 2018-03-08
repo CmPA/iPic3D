@@ -836,23 +836,9 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   return (0);                   // exit succcesfully (hopefully) 
 }
 
-/** mover with a Predictor-Corrector scheme */
-int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+int Particles3D::mover_PC_sub_NoCommunicate(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   
   
-  /*if (numGrid > 0){
-    cout << "Grid " <<  numGrid << "I am removing all particles" << endl;
-    nop=0;
-    return 1;
-    }*/
-  /*if (numGrid==0){
-    cout << "Grid " << numGrid << " I am not moving particles" <<endl;
-    return 1;
-    }*/
-
-  //cout << "Grid " << numGrid << " I am not moving particles" <<endl;
-  //return 1;
-
   if (vct->getCartesian_rank() == 0) {
     //cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
     cout << "*** G" << numGrid <<": MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
@@ -860,14 +846,16 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
   // mlmd: as a check, print # particles
   int ppc=nop; int TotalP=0;
+#ifdef __PROFILING__
   MPI_Allreduce(&ppc, &TotalP, 1, MPI_INT, MPI_SUM, vct->getCommGrid());
   if (vct->getCartesian_rank()==0){
     cout << "Grid " << numGrid << " ns " <<ns  <<": total number of particles BEFORE mover: " << TotalP << endl;
-
+    
     ofstream my_file(parInfo.c_str(), fstream::app);
     my_file << TotalP <<" " ;
     my_file.close();
   }
+#endif
   // end mlmd check
 
   if (true){ // to experiment without mover
@@ -997,6 +985,14 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   }                             // END OF ALL THE PARTICLES
 
   } else { cout <<"Grid " << numGrid << "I am not moving particles " << endl;}
+
+
+
+  return (0);
+}
+
+int Particles3D::communicate_NoMover(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+  
   // ********************//
   // COMMUNICATION 
   // *******************//
@@ -1031,6 +1027,17 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   // end mlmd check
 
   // timeTasks.addto_communicate();
+
+  return (0);
+}
+
+/** mover with a Predictor-Corrector scheme */
+int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+ 
+  mover_PC_sub_NoCommunicate(grid, vct, EMf) ;
+
+  communicate_NoMover(grid, vct, EMf);
+
   return (0);                   // exit succcesfully (hopefully) 
 }
 

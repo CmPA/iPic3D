@@ -22,7 +22,6 @@ int c_Solver::Init(int argc, char **argv) {
 
   // random size
   clocks = new MyClock(20);
-  clocks->start(0);
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
 
@@ -362,8 +361,21 @@ int c_Solver::Init(int argc, char **argv) {
     cout << "Init finished "<< endl;
   }	
 
-  clocks->stop(0);
-			   
+
+
+  /* this i need to decide if i can use _Interleaved */
+
+  InterleavedPossible= false;
+
+  if (numGrid==0){
+    InterleavedPossible= true;
+  }else{
+    if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
+      // this is simply because i have not tested it with InterleavedPossible or RepopulateBeforeMover
+      InterleavedPossible= true;
+    }
+  }
+
   return 0;
 }
 
@@ -435,6 +447,12 @@ void c_Solver::GatherMoments_Init(){
 }
 
 void c_Solver::UpdateCycleInfo(int cycle) {
+
+  // to decide whather synchronization of buffer sizes has to be done or  not
+  for (int i=0; i< ns; i++){
+    part[i].UpdateAllowPMsgResize(col, cycle);
+  }
+
 
   EMf->UpdateCycle(cycle);
   return;
@@ -541,18 +559,13 @@ bool c_Solver::ParticlesMover(int cycle) {
     }
   }
 
-  #ifdef __PROFILING__
-  clocks->start(6);  
-  #endif
 
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
     mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
-  #ifdef __PROFILING__
-  clocks->stop(6);
-  #endif
+
 
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -581,56 +594,30 @@ bool c_Solver::ParticlesMover(int cycle) {
   int RR= vct->getCartesian_rank();   
 
   // particle repopulation ops are done here if the repopulation is kinetic
-  #ifdef __PROFILING__
-  clocks->start(7);
-  #endif
 
   if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
     for (int i = 0; i < ns; i++){
       // in practice, removes particles from the PRA
-      #ifdef __PROFILING__
-      clocks->start(8);
-      #endif
+
       part[i].communicateAfterMover(vct);
-      #ifdef __PROFILING__
-      clocks->stop(8);
-      #endif
 
-      #ifdef __PROFILING__
-      clocks->start(9);
-      #endif
       part[i].SendPBC(grid, vct);
-      #ifdef __PROFILING__
-      clocks->stop(9);
-      #endif
 
-      #ifdef __PROFILING__
-      clocks->start(10);
-      #endif
       part[i].ReceivePBC(grid, vct, cycle);
-      #ifdef __PROFILING__
-      clocks->stop(10);
-      #endif
+
       // comment during production
       //part[i].CheckSentReceivedParticles(vct);
 
       // this one is needed only if AllowPMsgResize=1 
       // (see notes in postEPS2017.rtfd)
       
-      #ifdef __PROFILING__
-      clocks->start(11);
-      #endif
       if (part[i].getAllowPMsgResize()){
 	part[i].MPI_Barrier_ParentChild(vct);
       }
-      #ifdef __PROFILING__
-      clocks->stop(11);
-      #endif
+
     }
   }
-  #ifdef __PROFILING__
-  clocks->stop(7);
-  #endif
+
 
   // just to delete particles
   if (MLMD_ParticleREPOPULATION and FluidLikeRep and !RepopulateBeforeMover){
@@ -669,7 +656,29 @@ void c_Solver::InjectBoundaryParticles(){
   }
 
 }
+/* species by species */
+void c_Solver::InjectBoundaryParticles_Sp(int i){
+  
+  if (numGrid >0) return;
 
+
+  if (col->getRHOinject(i)>0.0){
+    
+    mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+    
+    /* --------------------------------------- */
+    /* Remove particles from depopulation area */
+    /* --------------------------------------- */
+    
+    if (col->getCase()=="Dipole") {
+      
+      Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+      
+     
+    }
+  }
+
+}
 void c_Solver::WriteRestart(int cycle) {
   // write the RESTART file
   if (cycle % restart_cycle == 0 && cycle != first_cycle) {
@@ -734,7 +743,10 @@ void c_Solver::WriteConserved(int cycle) {
       }
 
     } // end if (WriteDistrFun)
-    if (WriteDistrFun_RepPart and numGrid >0){
+
+
+
+    if (WriteDistrFun_RepPart and numGrid >0 ){
       // this the repopulated particles
       for (int is = 0; is < ns; is++) {
 	double maxVel= col->getUth(is)*7;
@@ -905,4 +917,253 @@ void c_Solver::interpBC2N_ECSIM(int cycle){
 
   EMf->centers2nodesB(vct, grid, col);
   
+}
+
+
+/* mover and moment gathering in sequence per species  */
+void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
+
+  if (!InterleavedPossible){
+    cout << "I have never tested Mover_GatherMoments_Interleaved with the options you require" << endl
+	 << "Use the Non Interleaved option" <<endl
+	 << "Aborting now" <<endl;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+
+  // tested only with -1 repopulation
+
+  /* these guys had to be pulled out of GatherMoments */
+  /* from here */
+  EMf->updateInfoFields(grid,vct,col);
+  EMf->setZeroDensities();                  // set to zero the densities
+  /* to here */
+  
+  if (ns==0) mem_avail=1; // otherwise crashes
+
+  for (int i=0; i< ns; i++){
+
+    /* 1.1 Receive PBC, without applyting them, to free CG */
+    if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
+      part[i].ReceivePBC_NoApply(grid, vct, cycle);
+    }
+    /* end 1.1 */
+    
+    /* 1.2 move particles, without communicating them */
+    
+    // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+    mem_avail = part[i].mover_PC_sub_NoCommunicate(grid, vct, EMf); // use the Predictor Corrector scheme 
+        
+    if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
+      if (myrank == 0) {
+	cout << "*************************************************************" << endl;
+	cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
+	cout << "*************************************************************" << endl;
+      }
+      MPI_Abort(MPI_COMM_WORLD, -1);;              // exit from the time loop
+    }
+    
+    /* end 1.2 */
+    
+    /* 1.3 send PBC */
+    
+    if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
+      
+      part[i].SendPBC(grid, vct);
+    }
+    /* end 1.3 */
+  } // end cycle on species 
+
+
+  for (int i=0; i< ns; i++){
+    /* 2.1 communicate (the part scorporate from the mover) */
+
+    mem_avail=part[i].communicate_NoMover(grid, vct, EMf) ;
+    /* end 2.1 */
+    
+    if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
+      if (myrank == 0) {
+	cout << "*************************************************************" << endl;
+	cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
+	cout << "*************************************************************" << endl;
+      }
+      MPI_Abort(MPI_COMM_WORLD, -1);              // exit from the time loop
+    }
+
+
+    /* there is actually no communication here, only removes particles outside the domain -
+       check: it may be remover */
+    if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
+      part[i].communicateAfterMover(vct);
+    }
+
+    /* -------------------------------------- */
+    /* Repopulate the buffer zone at the edge */
+    /* -------------------------------------- */
+    
+    InjectBoundaryParticles_Sp(i);    
+  } // end cycle on particles
+
+  for (int i=0; i< ns; i++){
+    /* 3.1 apply PBC, without communicating */
+    part[i].ApplyPBC_NoReceive_NoCommunicate(grid, vct, cycle);
+  }
+
+  for (int i=0; i< ns; i++){
+    /* 4.1 communicate after repopulating */
+    part[i].communicateRepopulatedParticles_Wrap(grid, vct, cycle);
+  }
+
+  for (int i=0; i< ns; i++){
+    GatherMoments_Sp(i);
+  }
+
+  /* these guys had to be pulled out of GatherMoments */
+  /* from here */
+  EMf->sumOverSpecies(vct);                 // sum all over the species
+  //
+  // Fill with constant charge the planet
+  if (col->getCase()=="Dipole") {
+    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+  }
+
+  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
+  /* to here */
+}
+
+
+/* mover, species by species; i is the species*/
+bool c_Solver::ParticlesMover_Sp(int cycle, int i) {
+  
+  /*  -------------- */
+  /*  Particle mover */
+  /*  -------------- */
+
+  if (ns==0) mem_avail=1; // otherwise crashes
+
+  if (RepopulateBeforeMover){
+    // CG: send particle BC
+    part[i].SendPBC(grid, vct);
+    // RG: delete particles in PRA area
+    part[i].communicateAfterMover(vct);
+    // RG: accept BC particles in PRA area
+    part[i].ReceivePBC(grid, vct, cycle);
+
+  }
+
+
+  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+  mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
+
+
+  if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
+    if (myrank == 0) {
+      cout << "*************************************************************" << endl;
+      cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
+      cout << "*************************************************************" << endl;
+    }
+    return (true);              // exit from the time loop
+  }
+
+  /* -------------------------------------- */
+  /* Repopulate the buffer zone at the edge */
+  /* -------------------------------------- */
+
+  InjectBoundaryParticles_Sp(i);
+
+  if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
+    if (myrank == 0) {
+      cout << "*************************************************************" << endl;
+      cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
+      cout << "*************************************************************" << endl;
+    }
+    return (true);              // exit from the time loop
+  }
+  // CG sends PBC
+  int RR= vct->getCartesian_rank();   
+
+  // particle repopulation ops are done here if the repopulation is kinetic
+
+
+  if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
+    
+    // in practice, removes particles from the PRA
+
+    part[i].communicateAfterMover(vct);
+
+    part[i].SendPBC(grid, vct);
+
+    part[i].ReceivePBC(grid, vct, cycle);
+
+    // comment during production
+    //part[i].CheckSentReceivedParticles(vct);
+    
+    // this one is needed only if AllowPMsgResize=1 
+    // (see notes in postEPS2017.rtfd)
+
+    /* this barrier should NOT be needed if mover (i) and moments (i) are done in sequence;
+       in the previous case, without the barrier, the code was crashing, so there is no risk
+       or code running along unwanted paths */
+
+    /*if (part[i].getAllowPMsgResize()){
+      part[i].MPI_Barrier_ParentChild(vct);
+      }*/
+
+    
+  }
+
+  
+  // just to delete particles
+  if (MLMD_ParticleREPOPULATION and FluidLikeRep and !RepopulateBeforeMover){
+    
+    // in practice, removes particles from the PRA
+    part[i].communicateAfterMover(vct);
+
+  }
+
+   
+  return (false);
+
+}
+
+// with mlmd ops, i is the species
+void c_Solver::GatherMoments_Sp(int i){
+  // timeTasks.resetCycle();
+  // interpolation
+  // timeTasks.start(TimeTasks::MOMENTS);
+
+  /* these guys had to be moved at the beginning of Mover_GatherMoments 
+  EMf->updateInfoFields(grid,vct,col);
+  EMf->setZeroDensities();                  // set to zero the densities
+  */
+
+  // if particle repopulation is fluid, ops are done here
+  if (MLMD_ParticleREPOPULATION and FluidLikeRep){
+
+      part[i].ReceiveFluidBC(grid, vct);
+
+      part[i].ApplyFluidPBC(grid, vct, EMf);
+
+  }
+
+
+  part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
+
+  // if particle repopulation is fluid, ops are done here
+  if (MLMD_ParticleREPOPULATION and FluidLikeRep){
+  
+    part[i].SendFluidPBC(grid, vct, EMf);
+  
+  }
+
+  /* these guys had to be moved at the end of Mover_GatherMoments 
+  EMf->sumOverSpecies(vct);                 // sum all over the species
+  //
+  // Fill with constant charge the planet
+  if (col->getCase()=="Dipole") {
+    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+  }
+
+  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
+  */
+
 }

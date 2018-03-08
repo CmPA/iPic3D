@@ -448,32 +448,34 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   MAX_RG_numPBCMessages= (vct->getMaxRF1()+8)* vct->getMaxRF1()* vct->getMaxRF1() + 8;
   MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages * MaxGridPer; 
 
+  FluidLikeRep= col->getFluidLikeRep();
+  numFBC= 10;
+
   // wether to allow resize of repopulated particle buffers
-  // NB: if the repopulation is fluid, AllowPMsgResize is set to false in Collective::ReadInput
-  AllowPMsgResize= col->getAllowPMsgResize();
+  // NB: if the repopulation is fluid, AllowPMsgResize is set to false 
+  // otherwise, false in the inputfile means that resizing is done only the first three cycles, and then the values is kept
+  // with true, the resizing is done every cycle
+  // in both cases, i need the initial infrastructure, so i set to true here
+  // the value is modified in UpdateAllowPMsgResize called in UpdateCycleInfo
+
+  if (FluidLikeRep){
+    AllowPMsgResize= false;
+  } else {
+    AllowPMsgResize= true;
+  }
+
 
   // sizes of the PCGMsg values set here (but allocated only if needed) 
   // to have the send/ receive vectors with the same size, I cook up a number based 
   //   on the coarsest grid 
   // * start with a relatively low number, so it does not run out of memory *
+  // if you are doing kinetic repopulation, communication between the grids and in the RG will size the buffers to a decent value
   int MaxNopMLMD= ceil(npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0)) *0.05 ); // *4*4 ; 
 
   sizeCG_PBCMsg = MaxNopMLMD; // CG side
   sizeRG_PBCMsg = MaxNopMLMD; // RG side
   MAXsizePBCMsg = 200*MaxNopMLMD; //20*MaxNopMLMD;
 
-  if (!AllowPMsgResize){
-    // since i cannot resize, i have to start with a larger number
-    MaxNopMLMD= ceil(npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0)) *1 );
-
-    sizeCG_PBCMsg = MaxNopMLMD; // CG side
-    sizeRG_PBCMsg = MaxNopMLMD; // RG side
-    MAXsizePBCMsg = 200*MaxNopMLMD; //20*MaxNopMLMD;
-  }
-
-  
-  FluidLikeRep= col->getFluidLikeRep();
-  numFBC= 10;
 
   // end sizes of the PCGMsg values set here 
 
@@ -601,11 +603,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   PRA_PAdded=0;
   MAX_np_CRP= 10*npmax; // exagerated number
 
-  if (AllowPMsgResize){
-    size_CRP=  ceil(nop*0.05); // it just needs to survive the init, then it will be resized
-  }else{
-    size_CRP=  ceil(nop*0.5); // i do not allow resize, so i have to start with large number  
-  }
+  // the number will be sized automatically (see AllowPMsgResize)
+  size_CRP=  ceil(nop*0.05); // it just needs to survive the init, then it will be resized
+  
 
 
   // I am instantiating here local copies of Ex, Ey, Ezm Bx, By, Bz, Bx_ext, By_ext, Bz_ext
@@ -921,6 +921,9 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
 
   EMf->communicateGhostP2G(ns, bcPfaceXright, bcPfaceXleft, bcPfaceYright, bcPfaceYleft, bcPfaceZright, bcPfaceZleft, vct, grid);
 
+  //cout << "At the end of interpP2G, nop= " << nop << " in grid " << numGrid << " core "<< vct->getCartesian_rank() << endl;
+
+#ifdef __PROFILING__
 
   double QMAX ; double QMIN; int nop_InsideActive_TOT;
   MPI_Allreduce(&qmin, &QMIN, 1, MPI_DOUBLE, MPI_MIN, vct->getCommGrid());
@@ -932,24 +935,8 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
     my_file << endl << QMIN <<" " << QMAX <<" " << nop_InsideActive_TOT <<" ";
     cout << "QMIN: " << QMIN << " QMAX: " <<QMAX << endl;
     my_file.close();
-  }
-
-
-
-  // for future memory: the ghost node carries only half of the expected charge etc
-  // but IT DOES NOT MATTER because that value is never used
-  /*cout << "TEST FOR MOMENTS: " << endl;
-  for (int i=0; i< nxn; i++){
-    if (i==0 and vct->getXleft_neighbor_P()== MPI_PROC_NULL and numGrid==1) {
-      cout << "rhons[0][0][5][5]: " << EMf->getRHOns(0, 5, 5, 0) << endl
-	   << "rhons[0][1][5][5]: " << EMf->getRHOns(1, 5, 5, 0) << endl
-	   << "rhons[0][2][5][5]: " << EMf->getRHOns(2, 5, 5, 0) << endl
-	   << "rhons[0][3][5][5]: " << EMf->getRHOns(3, 5, 5, 0) << endl;
     }
-    }*/
-
-     
-
+ #endif
 }
 
 /** communicate buffers */
@@ -1202,6 +1189,8 @@ int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
   /** do nor touch this otherwise mess in communicateRepopulatedParticles **/
   nop_EndCommunicate= nop;
 
+  // i am removing sync points
+#ifdef __PROFILING__
   int ppc=nop; int TotalP=0;
   MPI_Allreduce(&ppc, &TotalP, 1, MPI_INT, MPI_SUM, ptVCT->getCommGrid());
   if (ptVCT->getCartesian_rank()==0){
@@ -1210,7 +1199,9 @@ int Particles3Dcomm::communicateAfterMover(VirtualTopology3D * ptVCT) {
     ofstream my_file(parInfo.c_str(), fstream::app);
     my_file << TotalP <<" " ;
     my_file.close();
-  }
+    }
+
+#endif
   return(0);
 
 }
@@ -2740,17 +2731,10 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 
       // build all the PBC msgs that this core has to send 
       
-      #ifdef __PROFILING__
-      clocks->start(12);
-      #endif
+
       buildPBCMsg(grid, vct, ch);
-      #ifdef __PROFILING__
-      clocks->stop(12);
-      #endif
-      
-      #ifdef __PROFILING__
-      clocks->start(13);
-      #endif
+
+
       if (AllowPMsgResize){
 	// the CG cores involved in PBC agree on the biggest buffer size
 	int MaxGrid_sizeCG_PBCMsg;
@@ -2765,10 +2749,6 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 	}
       } // end if (AllowPMsgResize){
 
-      #ifdef __PROFILING__
-      clocks->stop(13);
-      #endif
-
       // now send; send an extra msg to signal the end of the meaningful part
       // cycle on all the msgs this core has to send
 
@@ -2781,10 +2761,6 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 	}*/
 
 
-      #ifdef __PROFILING__
-      clocks->start(14);
-      #endif
-
       for (int m=0; m< CG_numPBCMessages[ch]; m++){
 	int dest= CG_Info[ch][m].RG_core;
 	int tag= CG_Info[ch][m].MsgID;
@@ -2792,10 +2768,6 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 	MPI_Isend(PCGMsg[ch][m], nopPCGMsg[ch][m]+1, MPI_RepP_struct, dest, tag, CommToChild_P[ch], &request );
 	MPI_Wait(&request, &status);
       } // end for (int m=0; m< CG_numPBCMessages[ch]; m++)
-
-      #ifdef __PROFILING__
-      clocks->stop(14);
-      #endif
 
 
     } //  if (CommToChild_P[ch] != MPI_COMM_NULL){ 
@@ -2809,9 +2781,7 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
   
   return;
 }
-
-/* RG receives PBC msg and acts accordingly */
-void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle){
+void Particles3Dcomm::ReceivePBC_NoApply(Grid* grid, VirtualTopology3D * vct, int cycle){
 
   if (saveRepParFile and numGrid >0 and (cycle % DiagnosticsOutputCycle == 1)){
     ofstream my_file(RepopulatedPar.c_str(), fstream::app);
@@ -2819,31 +2789,18 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle)
     my_file.close();
 
   }
-
-  nop_BeforeReceivePBC=nop;
+  
+  // to be mover in: Before Applying 
+  //nop_BeforeReceivePBC=nop;
   PRA_PAdded=0;
-
-
-  /* this method is at the moment particularly inefficient to catch eventual bugs_
-     improve after some testing */
 
   int RR= vct->getCartesian_rank();
 
-  /*if (numGrid >0){
-    //cout << "Grid " << numGrid << " core " << RR << " of " << vct->getXLEN()*vct->getYLEN()*vct->getZLEN() << " has started receiving PBC for sp " << ns << endl;
-
-    cout << "GRID " << numGrid << " CORE " << RR << " IS INSIDE ReceivePBC" << endl;
-    }*/
- 
-  // first, check if if i am a child and if i want to receive PBC
   // if not, exits
   if (CommToParent_P!= MPI_COMM_NULL and RG_numPBCMessages >0){
 
     MPI_Status status;
 
-    #ifdef __PROFILING__
-    clocks->start(15);
-    #endif
     if (AllowPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
       int NEW_sizePBCMsg;
       // as it is set now, each RG core receives a msg, so just do a rcv 
@@ -2854,14 +2811,6 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle)
 	resize_RG_MLMD_buffers(NEW_sizePBCMsg);
       }
     } // end if (AllowPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
-    #ifdef __PROFILING__
-    clocks->stop(15);
-    #endif
-
-
-    #ifdef __PROFILING__
-      clocks->start(16);
-    #endif
 
     for (int i=0; i<RG_numPBCMessages; i++ ){
       PRGMsgArrived[i]= false;
@@ -2907,21 +2856,27 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle)
       
     } // end for (int i=0; i< RG_numPBCMessages; i++){
 
-    #ifdef __PROFILING__
-    clocks->stop(16);
-    #endif
 
-    #ifdef __PROFILING__
-    clocks->start(17);
-    #endif
+  }
+}
+
+
+void Particles3Dcomm::ApplyPBC_NoReceive_NoCommunicate(Grid* grid, VirtualTopology3D * vct, int cycle){
+  
+
+  nop_BeforeReceivePBC=nop;
+
+  int RR= vct->getCartesian_rank();
+
+  // if not, exits
+  if (CommToParent_P!= MPI_COMM_NULL and RG_numPBCMessages >0){
+    
     // here, PBC have been successfully received
     // now I have to apply them (split the particles )
     ApplyPBC(vct, grid, cycle);
 
-    #ifdef __PROFILING__
-    clocks->stop(17);
-    #endif
-  } // end if (CommToParent_P!= MPI_COMM_NULL and RG_numPBCMessages >0){
+
+  }
   
   nop_AfterReceivePBC= nop;
 
@@ -2940,12 +2895,28 @@ void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle)
     }
   } // end debug stuff
 
+  
+
+}
+
+
+void Particles3Dcomm::communicateRepopulatedParticles_Wrap(Grid* grid, VirtualTopology3D * vct, int cycle){
+
   if (CommToParent_P!= MPI_COMM_NULL and XLEN*YLEN*ZLEN>1) {
     communicateRepopulatedParticles(grid, vct);
   }
 
-  /*if (numGrid>0)
-    cout <<"Grid " << numGrid << " R " << vct->getCartesian_rank() << " ns " << ns << " nop " << nop << " at the end of ReceivePBC "<< endl;*/
+}
+
+/* RG receives PBC msg and acts accordingly */
+void Particles3Dcomm::ReceivePBC(Grid* grid, VirtualTopology3D * vct, int cycle){
+
+  ReceivePBC_NoApply(grid, vct, cycle);
+  
+  ApplyPBC_NoReceive_NoCommunicate(grid, vct, cycle);
+
+  communicateRepopulatedParticles_Wrap(grid, vct, cycle);
+
 }
 
 void Particles3Dcomm::buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch){
@@ -5146,9 +5117,21 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * 
       }
   // to set number of particles in allocate, keeping in mind that in mlmd there can be particles in the GC
   nop= counter;
-  
-
 
 }
 
+void Particles3Dcomm::UpdateAllowPMsgResize(Collective * col, int cycle){
 
+  if (FluidLikeRep) { AllowPMsgResize= false; return;}
+ 
+  // so buffers are sized to a decent value
+  if (cycle <3) AllowPMsgResize= true; return;
+
+  if (cycle >=3){
+    if (col->getAllowPMsgResize()) AllowPMsgResize= true;
+    else
+      AllowPMsgResize= false;
+  }
+  return;
+
+}

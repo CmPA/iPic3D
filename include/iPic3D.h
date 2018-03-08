@@ -42,14 +42,21 @@ namespace iPic3D {
     void CalculateField_ECSIM(int i);
     void interpBC2N_ECSIM(int i);
     void CalculateBField(int i);
-    bool ParticlesMover(int i);
+    bool ParticlesMover(int cycle);
     void WriteOutput(int cycle);
     void WriteConserved(int cycle);
     void WriteRestart(int cycle);
     void UpdateCycleInfo(int cycle);
     void Finalize();
     
-
+    /* mover and moment gathering in sequence per species -
+       done for MLMD performance */
+    void Mover_GatherMoments(int cycle);
+    void Mover_GatherMoments_Interleaved(int cycle);
+    /* by species */
+    void InjectBoundaryParticles_Sp(int species);
+    bool ParticlesMover_Sp(int cycle, int species);
+    void GatherMoments_Sp(int species);
 
     inline int FirstCycle();
     inline int LastCycle();
@@ -136,10 +143,11 @@ namespace iPic3D {
 
     /*! end mlmd variables */
 
-    #ifdef __PETSC_SOLVER__
-      PetscSolver *petscSolver;
-    #endif
+#ifdef __PETSC_SOLVER__
+    PetscSolver *petscSolver;
+#endif
     
+    bool InterleavedPossible; 
   };
 
   inline int c_Solver::FirstCycle() {

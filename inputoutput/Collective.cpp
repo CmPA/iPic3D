@@ -788,11 +788,6 @@ void Collective::ReadInput(string inputfile) {
       
   } // end if(!RESTART1)
 
-  if (AllowPMsgResize and FluidLikeRep){
-    AllowPMsgResize= false;
-    cout <<"----- SINCE I AM USING FLUID REPOPULATION, I AM OVERRRIDING AllowPMsgResize = TRUE -----" << endl;
-  } // end if (AllowPMsgResize and FluidLikeRep){   
-
   TrackParticleID = new bool[ns];
   array_bool TrackParticleID0 = config.read < array_bool > ("TrackParticleID");
   TrackParticleID[0] = TrackParticleID0.a;
