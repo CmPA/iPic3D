@@ -107,9 +107,7 @@ int main (int argc, char **argv) {
     readvect(it, "/fields/","E", EX, EY, EZ);
     writeVTKvect_binary(it, "E", "", EX, EY, EZ);
 
-	delArr3(EX,nxn*XLEN,nyn*YLEN);
-	delArr3(EY,nxn*XLEN,nyn*YLEN);
-	delArr3(EZ,nxn*XLEN,nyn*YLEN);
+
 
 
 	//Magnetic field
@@ -123,7 +121,7 @@ int main (int argc, char **argv) {
     cout << recflux << endl;
     my_file << it * DeltaT << "   " << recflux << endl;
 
-    delArr3(AZ,nxn*XLEN,nyn*YLEN);
+
 
 	//Compute ExB
     //cross(BX, BY, BZ, EX, EY, EZ, VXBX, VXBY, VXBZ)
@@ -226,6 +224,10 @@ int main (int argc, char **argv) {
 
 	my_file.close();
 
+    delArr3(AZ,nxn*XLEN,nyn*YLEN);
+	delArr3(EX,nxn*XLEN,nyn*YLEN);
+	delArr3(EY,nxn*XLEN,nyn*YLEN);
+	delArr3(EZ,nxn*XLEN,nyn*YLEN);
 	delArr3(BX,nxn*XLEN,nyn*YLEN);
 	delArr3(BY,nxn*XLEN,nyn*YLEN);
 	delArr3(BZ,nxn*XLEN,nyn*YLEN);
