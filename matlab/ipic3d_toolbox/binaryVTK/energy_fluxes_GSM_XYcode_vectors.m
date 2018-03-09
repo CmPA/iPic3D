@@ -7,11 +7,12 @@ addpath(genpath('~/iPic3D-github/matlab/ipic3d_toolbox')); % Point to the direct
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-HRmaha3D3
+UHRmaha3D3
 
-dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
+%dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
 
-cycle = 80002  % for h5
+cycle = 80002  % for h5 in HRmaha3D3
+cycle = 50004  % for h5 in UHRmaha3D3
 %cycle = 80000  % for vtk binary
 
 % for HRmaha3D1:
