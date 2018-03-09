@@ -267,8 +267,8 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
 
   // apply to smooth to electric field 3 times
   smoothE(Smooth, Nvolte, vct, col);
-  //smoothE(Smooth, Nvolte, vct, col);
-  //smoothE(Smooth, Nvolte, vct, col);
+  smoothE(Smooth, Nvolte, vct, col);
+  smoothE(Smooth, Nvolte, vct, col);
 
   // communicate so the interpolation can have good values
   communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
@@ -1807,7 +1807,7 @@ void EMfields3D::initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Coll
           // Bxn[i][j][k] += (B0x/10.0)*(M_PI/Ly)*cos(2*M_PI*grid->getXN(i,j,k)/Lx)*sin(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly );
           Byn[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXN(i,j,k)/Lx)*cos(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly);
           // add the initial X perturbation
-          xpert = grid->getXN(i, j, k) - Lx / 2;
+          xpert = grid->getXN(i, j, k) - Ly / 2; //Lx / 2;
           ypert = grid->getYN(i, j, k) - Ly / 2;
           exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
           Bxn[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
@@ -1825,7 +1825,7 @@ void EMfields3D::initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Coll
           // Bxc[i][j][k] += (B0x/10.0)*(M_PI/Ly)*cos(2*M_PI*grid->getXC(i,j,k)/Lx)*sin(M_PI*(grid->getYC(i,j,k)- Ly/2)/Ly );
           Byc[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXC(i,j,k)/Lx)*cos(M_PI*(grid->getYC(i,j,k)- Ly/2)/Ly);
           // add the initial X perturbation
-          xpert = grid->getXC(i, j, k) - Lx / 2;
+          xpert = grid->getXC(i, j, k) - Ly / 2; //- Lx / 2;
           ypert = grid->getYC(i, j, k) - Ly / 2;
           exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
           Bxc[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);

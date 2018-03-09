@@ -174,6 +174,7 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
+  num_proc << myrank;
   if (col->getWriteMethod() == "default") {
     // Initialize the output (simulation results and restart file)
     // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
@@ -191,7 +192,6 @@ int c_Solver::Init(int argc, char **argv) {
       hdf5_agent.close();
     }
     // Restart
-    num_proc << myrank;
     if (restart == 0) {           // new simulation from input file
       hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("proc_topology ", 0);
@@ -232,7 +232,7 @@ int c_Solver::Init(int argc, char **argv) {
   //   my_file.close();
   // }
 
-  num_proc << myrank;
+  //num_proc << myrank;
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
   ofstream my_file(cqsat.c_str(), fstream::binary);
