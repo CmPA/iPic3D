@@ -226,9 +226,11 @@ tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(DUbulkDt(ir,jr,kr),3)*nWm3
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(DUthDt(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'DUtheDt',[-1 1]*0e-9, radius, 2);
 
 if(saveVTK)
-    savevtkvector_bin(Qhfex*mWm2, Qhfey*mWm2, Qhfez*mWm2, [dir 'Qhfe' ncycle '.vtk'],'Qhfe',dx,dy,dz,0,0,0);
-    savevtkvector_bin(Qenthex*mWm2, Qenthey*mWm2, Qenthez*mWm2, [dir 'Qenthe' ncycle '.vtk'],'Qenthe',dx,dy,dz,0,0,0);
-    savevtkvector_bin(Qbulkex*mWm2, Qbulkey*mWm2, Qbulkez*mWm2, [dir 'Qbulke' ncycle '.vtk'],'Qbulke',dx,dy,dz,0,0,0);
+    savevtkvector_bin(-Qhfex*mWm2, Qhfey*mWm2, Qhfez*mWm2, [dir 'Qhfe' ncycle '.vtk'],'Qhfe',dx,dy,dz,0,0,0);
+    savevtkvector_bin(-Qenthex*mWm2, Qenthey*mWm2, Qenthez*mWm2, [dir 'Qenthe' ncycle '.vtk'],'Qenthe',dx,dy,dz,0,0,0);
+    savevtkvector_bin(-Qbulkex*mWm2, Qbulkey*mWm2, Qbulkez*mWm2, [dir 'Qbulke' ncycle '.vtk'],'Qbulke',dx,dy,dz,0,0,0);
+    savevtk_bin(DUbulkDt*nWm3,[dir 'DUbulkedt' ncycle '.vtk'],'DUbulkedt',dx,dy,dz,0,0,0);
+    savevtk_bin(DUthDt*nWm3,[dir 'DUthedt' ncycle '.vtk'],'DUthedt',dx,dy,dz,0,0,0);
 end
 
 end
@@ -288,10 +290,13 @@ tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(DUbulkDt(ir,jr,kr),3)*nWm3
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(DUthDt(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'DUthiDt',[-1 1]*0e-9, radius, 2);
 
 if(saveVTK)
-    savevtkvector_bin(Qhfix*mWm2, Qhfiy*mWm2, Qhfiz*mWm2, [dir 'Qhfi' ncycle '.vtk'],'Qhfi',dx,dy,dz,0,0,0);
-    savevtkvector_bin(Qenthix*mWm2, Qenthiy*mWm2, Qenthiz*mWm2, [dir 'Qenthi' ncycle '.vtk'],'Qenthi',dx,dy,dz,0,0,0);
-    savevtkvector_bin(Qbulkix*mWm2, Qbulkiy*mWm2, Qbulkiz*mWm2, [dir 'Qbulki' ncycle '.vtk'],'Qbulki',dx,dy,dz,0,0,0);
+    savevtkvector_bin(-Qhfix*mWm2, Qhfiy*mWm2, Qhfiz*mWm2, [dir 'Qhfi' ncycle '.vtk'],'Qhfi',dx,dy,dz,0,0,0);
+    savevtkvector_bin(-Qenthix*mWm2, Qenthiy*mWm2, Qenthiz*mWm2, [dir 'Qenthi' ncycle '.vtk'],'Qenthi',dx,dy,dz,0,0,0);
+    savevtkvector_bin(-Qbulkix*mWm2, Qbulkiy*mWm2, Qbulkiz*mWm2, [dir 'Qbulki' ncycle '.vtk'],'Qbulki',dx,dy,dz,0,0,0);
+    savevtk_bin(DUbulkDt*nWm3,[dir 'DUbulkidt' ncycle '.vtk'],'DUbulkidt',dx,dy,dz,0,0,0);
+    savevtk_bin(DUthDt*nWm3,[dir 'DUthidt' ncycle '.vtk'],'DUthidt',dx,dy,dz,0,0,0);
 end
+
 end
 
 
