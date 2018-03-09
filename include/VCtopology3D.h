@@ -52,7 +52,7 @@ public:
       mlmd: build all communicators here */
   void setup_vctopology(MPI_Comm comm_old, Collective *col);
   /** Print topology info */
-  void Print();
+  void Print(Collective *col);
   /** Print the mapping of topology */
   void PrintMapping();
   /** values local to the grid

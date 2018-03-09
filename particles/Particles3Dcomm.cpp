@@ -496,7 +496,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   /*cout << "I AM CHANGING PRA NUMBER FOR IONS" << endl;
     if (qom>0) PRACells=2;*/
-  cout << "Species " << ns <<" qom " << qom << "PRACells= " << PRACells << endl;
+  //cout << "Species " << ns <<" qom " << qom << "PRACells= " << PRACells << endl;
 
   // Index at which the PRA starts/ ends
   // 
@@ -1629,7 +1629,7 @@ unsigned long *Particles3Dcomm::getVelocityDistribution_RepPart(int nBins, doubl
   double dv = maxVel / nBins;
   int bin = 0;
 
-  cout << "repopulated distribution function: " << (nop-nop_BeforeReceivePBC) <<" particles vs " << nop << " in this core " << endl;
+  //cout << "repopulated distribution function: " << (nop-nop_BeforeReceivePBC) <<" particles vs " << nop << " in this core " << endl;
   //cout << "NB: the first d.f. of repopulated particles is actually the entire d.f. of the RG" <<endl;
   /* test only the particles added after repopulation */
   for (long long i = nop_BeforeReceivePBC; i < nop; i++) {
@@ -1664,7 +1664,7 @@ unsigned long *Particles3Dcomm::getVelocityDistribution_NonRepPart(int nBins, do
   double dv = maxVel / nBins;
   int bin = 0;
 
-  cout << "NON repopulated distribution function: " << (nop_BeforeReceivePBC) <<" particles vs " << nop << " in this core " << endl;
+  //cout << "NON repopulated distribution function: " << (nop_BeforeReceivePBC) <<" particles vs " << nop << " in this core " << endl;
   /* test only the particles added after repopulation */
 
   int END;

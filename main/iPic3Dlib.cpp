@@ -99,13 +99,18 @@ int c_Solver::Init(int argc, char **argv) {
   ny0 = col->getNyc_mlmd(numGrid) / vct->getYLEN(); // get the number of cells in y for each processor
   nz0 = col->getNzc_mlmd(numGrid) / vct->getZLEN(); // get the number of cells in z for each processor
   // Print the initial settings to stdout and a file
-  if (myrank == 0) {
+
+  int myrank_SW;
+  MPI_Comm_rank( MPI_COMM_WORLD, &myrank_SW ) ;
+  
+  MPI_Barrier(MPI_COMM_WORLD);
+  if (myrank_SW == 0) {
     mpi->Print();
-    vct->Print();
+    vct->Print(col);
     col->Print();
     col->save();
   }
-
+  MPI_Barrier(MPI_COMM_WORLD);
 
   if (col->getSolInit()) {
     /* -------------------------------------------- */

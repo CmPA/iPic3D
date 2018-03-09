@@ -1319,196 +1319,138 @@ Collective::~Collective() {
 }
 /*! Print Simulation Parameters */
 void Collective::Print() {
-  cout << endl;
-  cout << "Simulation Parameters" << endl;
-  cout << "---------------------" << endl;
-  cout << "Number of species    = " << ns << endl;
-  for (int i = 0; i < ns; i++)
-    cout << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
-  cout << "x-Length                 = " << Lx << endl;
-  cout << "y-Length                 = " << Ly << endl;
-  cout << "z-Length                 = " << Lz << endl;
-  cout << "Number of cells (x)      = " << nxc << endl;
-  cout << "Number of cells (y)      = " << nyc << endl;
-  cout << "Number of cells (z)      = " << nzc << endl;
-  cout << "Time step                = " << dt << endl;
-  cout << "Number of cycles         = " << ncycles << endl;
-  cout << "Results saved in  : " << SaveDirName << endl;
-  cout << "Case type         : " << Case << endl;
-  cout << "Simulation name   : " << SimName << endl;
-  cout << "Poisson correction: " << PoissonCorrection << endl;
-  cout << "---------------------" << endl;
-  cout << "Check Simulation Constraints" << endl;
-  cout << "---------------------" << endl;
-  cout << "Accuracy Constraint:  " << endl;
-  for (int i = 0; i < ns; i++) {
-    cout << "u_th < dx/dt species " << i << ".....";
-    if (uth[i] < (dx / dt))
-      cout << "OK" << endl;
-    else
-      cout << "NOT SATISFIED. STOP THE SIMULATION." << endl;
-
-    cout << "v_th < dy/dt species " << i << "......";
-    if (vth[i] < (dy / dt))
-      cout << "OK" << endl;
-    else
-      cout << "NOT SATISFIED. STOP THE SIMULATION." << endl;
-  }
-  cout << endl;
-  cout << "Finite Grid Stability Constraint:  ";
-  cout << endl;
-  for (int is = 0; is < ns; is++) {
-    if (uth[is] * dt / dx > .1)
-      cout << "OK u_th*dt/dx (species " << is << ") = " << uth[is] * dt / dx << " > .1" << endl;
-    else
-      cout << "WARNING.  u_th*dt/dx (species " << is << ") = " << uth[is] * dt / dx << " < .1" << endl;
-
-    if (vth[is] * dt / dy > .1)
-      cout << "OK v_th*dt/dy (species " << is << ") = " << vth[is] * dt / dy << " > .1" << endl;
-    else
-      cout << "WARNING. v_th*dt/dy (species " << is << ") = " << vth[is] * dt / dy << " < .1"  << endl;
-
-  }
-  cout << "---------------------" << endl;
-  cout << "MLMD variables" << endl;
-
-  cout << "Number of MLMD grids          : " << Ngrids << endl;
-
-  cout << "Grid levels:                  : " << endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      cout << gridLevel[ng] << "\t";
-    }
-  cout <<endl;
-
-  cout << "Grid dimensions            : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      cout << Lx_mlmd[ng] <<"-"  << Ly_mlmd[ng] <<"-"  << Lz_mlmd[ng] << "\t";
-    }
-  cout <<endl;
   
-  cout << "Parent grid                   : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      cout << parentGrid[ng] << "\t";
-    }
-  cout <<endl;
+  for (int ng=0; ng< Ngrids; ng++){
+    cout << endl;
+    cout <<"G" << ng <<": "<< "Simulation Parameters" << endl;
+    cout <<"G" << ng <<": "<< "---------------------" << endl;
+    
+    cout <<"G" << ng <<": " << " Grid " << ng << ", grid level " <<  gridLevel[ng] << endl;
+    cout <<"G" << ng <<": " << "Number of species    = " << ns << endl;
+    for (int i = 0; i < ns; i++)
+      cout <<"G" << ng <<": " << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+    cout <<"G" << ng <<": " << "x-Length                 = " << Lx_mlmd[ng] << endl;
+    cout <<"G" << ng <<": " << "y-Length                 = " << Ly_mlmd[ng] << endl;
+    cout <<"G" << ng <<": " << "z-Length                 = " << Lz_mlmd[ng] << endl;
+    cout <<"G" << ng <<": " << "x-Origin (w.r.t. coarsest grid)  = " << Ox_SW[ng] << endl;
+    cout <<"G" << ng <<": " << "y-Origin (w.r.t. coarsest grid)  = " << Oy_SW[ng] << endl;
+    cout <<"G" << ng <<": " << "z-Origin (w.r.t. coarsest grid)  = " << Oz_SW[ng] << endl;
+    cout <<"G" << ng <<": " << "Number of cells (x)      = " << nxc_mlmd[ng] << endl;
+    cout <<"G" << ng <<": " << "Number of cells (y)      = " << nyc_mlmd[ng] << endl;
+    cout <<"G" << ng <<": " << "Number of cells (z)      = " << nzc_mlmd[ng] << endl;
+    cout <<"G" << ng <<": " << "Parent grid              = " << parentGrid[ng] << endl;
+    cout <<"G" << ng <<": " << "dx                       = " << dx_mlmd[ng] << endl;
+    cout <<"G" << ng <<": " << "dy                       = " << dy_mlmd[ng] << endl;
+    cout <<"G" << ng <<": " << "dz                       = " << dz_mlmd[ng] << endl;
+    cout <<"G" << ng <<": " << "Time step                = " << dt << endl;
+    cout <<"G" << ng <<": " << "Number of cycles         = " << ncycles << endl;
+    cout <<"G" << ng <<": " << "Results saved in  : " << SaveDirName << endl;
+    cout <<"G" << ng <<": " << "Case type         : " << Case << endl;
+    cout <<"G" << ng <<": " << "Simulation name   : " << SimName << endl;
+    cout <<"G" << ng <<": " << "Poisson correction: " << PoissonCorrection << endl;
+    cout <<"G" << ng <<": " << "---------------------" << endl;
+    cout <<"G" << ng <<": " << "Check Simulation Constraints" << endl;
+    cout << "---------------------" << endl;
+    cout <<"G" << ng <<": " << "Accuracy Constraint:  " << endl;
+    for (int i = 0; i < ns; i++) {
+      cout <<"G" << ng <<": " << "u_th < dx/dt species " << i << ".....";
+      if (uth[i] < (dx_mlmd[ng] / dt)) 
+	cout <<"G" << ng <<": " << "OK" << endl;
+      else
+	cout <<"G" << ng <<": " << "NOT SATISFIED. STOP THE SIMULATION." << endl;
+      
+      cout <<"G" << ng <<": " << "v_th < dy/dt species " << i << "......";
+      if (vth[i] < (dy_mlmd[ng] / dt))
+	cout <<"G" << ng <<": " << "OK" << endl;
+      else
+	cout <<"G" << ng <<": " << "NOT SATISFIED. STOP THE SIMULATION." << endl;
 
-  cout << "Grid origin, x y z direction (with respect to the COARSEST grid)      : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      cout <<"grid " << ng <<":\t"<< Ox_SW[ng] <<"\t" <<Oy_SW[ng] << "\t" <<Oz_SW[ng] <<endl;
+      cout <<"G" << ng <<": " << "w_th < dz/dt species " << i << "......";
+      if (wth[i] < (dz_mlmd[ng] / dt))
+	cout <<"G" << ng <<": " << "OK" << endl;
+      else
+	cout <<"G" << ng <<": " << "NOT SATISFIED. STOP THE SIMULATION." << endl;
     }
-  cout <<endl;
+    cout << endl;
+    cout <<"G" << ng <<": " << "Finite Grid Stability Constraint:  ";
+    cout << endl;
+    for (int is = 0; is < ns; is++) {
+      if (uth[is] * dt / dx_mlmd[ng] > .1)
+	cout <<"G" << ng <<": " << "OK u_th*dt/dx (species " << is << ") = " << uth[is] * dt / dx_mlmd[ng] << " > .1" << endl;
+      else
+	cout <<"G" << ng <<": " << "WARNING.  u_th*dt/dx (species " << is << ") = " << uth[is] * dt / dx_mlmd[ng] << " < .1" << endl;
 
-  cout << "Spatial resolution, x y z direction      : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      cout <<"grid " << ng <<":\t"<< dx_mlmd[ng] <<"\t" <<dy_mlmd[ng] << "\t" <<dz_mlmd[ng] <<endl;
+      if (vth[is] * dt / dy_mlmd[ng] > .1)
+	cout <<"G" << ng <<": " << "OK v_th*dt/dy (species " << is << ") = " << vth[is] * dt / dy_mlmd[ng] << " > .1" << endl;
+      else
+	cout <<"G" << ng <<": " << "WARNING.  v_th*dt/dx (species " << is << ") = " << vth[is] * dt / dx_mlmd[ng] << " < .1" << endl;
+
+      if (wth[is] * dt / dz_mlmd[ng] > .1)
+	cout <<"G" << ng <<": " << "OK v_th*dt/dz (species " << is << ") = " << wth[is] * dt / dz_mlmd[ng] << " > .1" << endl;
+      else
+	cout <<"G" << ng <<": " << "WARNING.  w_th*dt/dx (species " << is << ") = " << wth[is] * dt / dz_mlmd[ng] << " < .1" << endl;
+      
+      cout <<"G" << ng <<": "<< "---------------------" << endl;
+      
     }
-  cout <<endl;
+
+  }
+
   
-  cout << "Number of cells, x y z direction      : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      cout <<"grid " << ng <<":\t"<< nxc_mlmd[ng] <<"\t" <<nyc_mlmd[ng] << "\t" <<nzc_mlmd[ng] <<endl;
-    }
-  cout <<endl;
-
-  cout << "---------------------" << endl;
-
 }
 /*! Print Simulation Parameters */
 void Collective::save() {
   string temp;
   temp = SaveDirName + "/SimulationData.txt";
   ofstream my_file(temp.c_str());
-  my_file << "---------------------------" << endl;
-  my_file << "-  Simulation Parameters  -" << endl;
-  my_file << "---------------------------" << endl;
 
-  my_file << "Number of species    = " << ns << endl;
-  for (int i = 0; i < ns; i++)
-    my_file << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
-  my_file << "---------------------------" << endl;
-  my_file << "x-Length                 = " << Lx << endl;
-  my_file << "y-Length                 = " << Ly << endl;
-  my_file << "z-Length                 = " << Lz << endl;
-  my_file << "Number of cells (x)      = " << nxc << endl;
-  my_file << "Number of cells (y)      = " << nyc << endl;
-  my_file << "Number of cells (z)      = " << nzc << endl;
-  my_file << "---------------------------" << endl;
-  my_file << "Time step                = " << dt << endl;
-  my_file << "Number of cycles         = " << ncycles << endl;
-  my_file << "---------------------------" << endl;
-  for (int is = 0; is < ns; is++){
-    my_file << "rho init species   " << is << " = " << rhoINIT[is] << endl;
-    my_file << "rho inject species " << is << " = " << rhoINJECT[is]  << endl;
+  for (int ng=0; ng<Ngrids; ng ++){  
+  
+    my_file <<"G" << ng <<": "<< "---------------------------" << endl;
+    my_file <<"G" << ng <<": "<< "-  Simulation Parameters  -" << endl;
+    my_file <<"G" << ng <<": "<< "---------------------------" << endl;
+    my_file <<"G" << ng <<": " << " Grid " << ng << ", grid level " <<  gridLevel[ng] << endl;
+    my_file <<"G" << ng <<": "<< "Number of species    = " << ns << endl;
+    for (int i = 0; i < ns; i++)
+      my_file <<"G" << ng <<": "<< "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+    my_file <<"G" << ng <<": "<< "---------------------------" << endl;
+    my_file <<"G" << ng <<": " << "x-Length                 = " << Lx_mlmd[ng] << endl;
+    my_file <<"G" << ng <<": " << "y-Length                 = " << Ly_mlmd[ng] << endl;
+    my_file <<"G" << ng <<": " << "z-Length                 = " << Lz_mlmd[ng] << endl;
+    my_file <<"G" << ng <<": " << "x-Origin (w.r.t. coarsest grid)  = " << Ox_SW[ng] << endl;
+    my_file <<"G" << ng <<": " << "y-Origin (w.r.t. coarsest grid)  = " << Oy_SW[ng] << endl;
+    my_file <<"G" << ng <<": " << "z-Origin (w.r.t. coarsest grid)  = " << Oz_SW[ng] << endl;
+    my_file <<"G" << ng <<": " << "Number of cells (x)      = " << nxc_mlmd[ng] << endl;
+    my_file <<"G" << ng <<": " << "Number of cells (y)      = " << nyc_mlmd[ng] << endl;
+    my_file <<"G" << ng <<": " << "Number of cells (z)      = " << nzc_mlmd[ng] << endl;
+    my_file <<"G" << ng <<": " << "Parent grid              = " << parentGrid[ng] << endl;
+    my_file <<"G" << ng <<": " << "dx                       = " << dx_mlmd[ng] << endl;
+    my_file <<"G" << ng <<": " << "dy                       = " << dy_mlmd[ng] << endl;
+    my_file <<"G" << ng <<": " << "dz                       = " << dz_mlmd[ng] << endl;
+    my_file <<"G" << ng <<": " << "---------------------------" << endl;
+    my_file <<"G" << ng <<": " << "Time step                = " << dt << endl;
+    my_file <<"G" << ng <<": " << "Number of cycles         = " << ncycles << endl;
+    my_file <<"G" << ng <<": " << "---------------------------" << endl;
+    for (int is = 0; is < ns; is++){
+      my_file <<"G" << ng <<": " << "rho init species   " << is << " = " << rhoINIT[is] << endl;
+      my_file <<"G" << ng <<": " << "rho inject species " << is << " = " << rhoINJECT[is]  << endl;
+    }
+    my_file <<"G" << ng <<": " << "current sheet thickness  = " << delta << endl;
+    my_file <<"G" << ng <<": " << "B0x                      = " << B0x << endl;
+    my_file <<"G" << ng <<": " << "BOy                      = " << B0y << endl;
+    my_file <<"G" << ng <<": " << "B0z                      = " << B0z << endl;
+    my_file <<"G" << ng <<": " << "---------------------------" << endl;
+    my_file <<"G" << ng <<": " << "Smooth value                  = " << Smooth << endl;
+    my_file <<"G" << ng <<": " << "Smooth done                   = " << SmoothGrid[ng] <<endl; 
+    my_file <<"G" << ng <<": "<< "GMRES error tolerance    = " << GMREStol << endl;
+    my_file <<"G" << ng <<": "<< "CG error tolerance       = " << CGtol << endl;
+    my_file <<"G" << ng <<": "<< "Mover error tolerance    = " << NiterMover << endl;
+    my_file <<"G" << ng <<": "<< "---------------------------" << endl;
+    my_file <<"G" << ng <<": "<< "Results saved in: " << SaveDirName << endl;
+    my_file <<"G" << ng <<": "<< "Restart saved in: " << RestartDirName << endl;
+    my_file <<"G" << ng <<": "<< "---------------------" << endl;
+    my_file << "---------------------" << endl;
   }
-  my_file << "current sheet thickness  = " << delta << endl;
-  my_file << "B0x                      = " << B0x << endl;
-  my_file << "BOy                      = " << B0y << endl;
-  my_file << "B0z                      = " << B0z << endl;
-  my_file << "---------------------------" << endl;
-  my_file << "Smooth                   = " << Smooth << endl;
-  my_file << "GMRES error tolerance    = " << GMREStol << endl;
-  my_file << "CG error tolerance       = " << CGtol << endl;
-  my_file << "Mover error tolerance    = " << NiterMover << endl;
-  my_file << "---------------------------" << endl;
-  my_file << "Results saved in: " << SaveDirName << endl;
-  my_file << "Restart saved in: " << RestartDirName << endl;
-  my_file << "---------------------" << endl;
-
-  my_file << "---------------------" << endl;
-  my_file << "MLMD variables" << endl;
-
-  my_file << "Number of MLMD grids          : " << Ngrids << endl;
-
-  my_file << "Grid levels:                  : " << endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      my_file << gridLevel[ng] << "\t";
-    }
-  my_file <<endl;
-
-  my_file << "Grid dimensions            : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      my_file << Lx_mlmd[ng] <<"-"  << Ly_mlmd[ng] <<"-"  << Lz_mlmd[ng] << "\t";
-    }
-  my_file <<endl;
-  
-  my_file << "Parent grid                   : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      my_file << parentGrid[ng] << "\t";
-    }
-  my_file <<endl;
-
-  my_file << "Grid origin, x y z direction (with respect to the COARSEST grid)     : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      my_file <<"grid " << ng <<":\t"<< Ox_SW[ng] <<"\t" <<Oy_SW[ng] << "\t" <<Oz_SW[ng] <<endl;
-    }
-  my_file <<endl;
-
-  my_file << "Spatial resolution, x y z direction      : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      my_file <<"grid " << ng <<":\t"<< dx_mlmd[ng] <<"\t" <<dy_mlmd[ng] << "\t" <<dz_mlmd[ng] <<endl;
-    }
-  my_file <<endl;
-  
-  my_file << "Number of cells, x y z direction      : " <<endl;
-  for (int ng=0; ng < Ngrids; ng++)
-    {
-      my_file <<"grid " << ng <<":\t"<< nxc_mlmd[ng] <<"\t" <<nyc_mlmd[ng] << "\t" <<nzc_mlmd[ng] <<endl;
-    }
-  my_file <<endl;
-
-  my_file << "---------------------" << endl;
-
 
   my_file.close();
 

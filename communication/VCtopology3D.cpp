@@ -799,18 +799,22 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
 
 
 /** print topology info */
-inline void VCtopology3D::Print() {
+inline void VCtopology3D::Print(Collective *col) {
   cout << endl;
-  cout << "Virtual Cartesian Processors Topology" << endl;
-  cout << "-------------------------------------" << endl;
-  cout << "Processors grid: " << XLEN << "x" << YLEN << "x" << ZLEN << endl;
-  cout << "Periodicity Field X: " << periods[0] << endl;
-  cout << "Periodicity Field Y: " << periods[1] << endl;
-  cout << "Periodicity Field z: " << periods[2] << endl;
-  cout << "Periodicity Particles X: " << periods_P[0] << endl;
-  cout << "Periodicity Particles Y: " << periods_P[1] << endl;
-  cout << "Periodicity Particles z: " << periods_P[2] << endl;
-  cout << endl;
+  for (int ng=0; ng< Ngrids; ng++){
+
+    cout <<"G" << ng <<": "<< "Virtual Cartesian Processors Topology" << endl;
+    cout <<"G" << ng <<": "<< "-------------------------------------" << endl;
+    cout <<"G" << ng <<": "<< "Processors grid: " << XLEN_mlmd[ng] << "x" << YLEN_mlmd[ng] << "x" << ZLEN_mlmd[ng] << endl;
+    
+    cout <<"G" << ng <<": "<< "Periodicity Field X: " << col->getPERIODICX(numGrid) << endl;
+    cout <<"G" << ng <<": "<< "Periodicity Field Y: " << col->getPERIODICY(numGrid) << endl;
+    cout <<"G" << ng <<": "<< "Periodicity Field z: " << col->getPERIODICZ(numGrid) << endl; 
+    cout <<"G" << ng <<": "<< "Periodicity Particles X: " << col->getPERIODICX_P(numGrid) << endl;
+    cout <<"G" << ng <<": "<< "Periodicity Particles Y: " << col->getPERIODICY_P(numGrid) << endl;
+    cout <<"G" << ng <<": "<< "Periodicity Particles z: " << col->getPERIODICZ_P(numGrid) << endl;
+    cout << endl;
+  }
 }
 /** print cartesian rank of neighbors and coordinate of process */
 inline void VCtopology3D::PrintMapping() {

@@ -29,7 +29,7 @@ public:
      virtual void setup_vctopology(MPI_Comm comm_old) = 0; */
   virtual void setup_vctopology(MPI_Comm comm_old, Collective *col) = 0;
   /** Print topology info */
-  virtual void Print() = 0;
+  virtual void Print(Collective *col) = 0;
   /** Print the mapping of topology */
   virtual void PrintMapping() = 0;
   /** these give info on the current grid **/
