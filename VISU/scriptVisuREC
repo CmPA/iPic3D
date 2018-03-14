@@ -1,0 +1,42 @@
+module purge
+module load anaconda2/4.0.0
+
+first_cycle=0
+last_cycle=1888 #401 # 401 
+step=200 #20 #50 
+
+
+dirName1="/scratch/MariaElena/FromSuperMuc2018/LHDI_3D_BigOne/"
+
+dirName2="/home/meinnocenti/iPic3D_MLMD/iPic3D/OldSend_ParticleTest_PRA2_NPF_NPP_1_LONG_DoubleVth_3BCenters/"
+dirName3="/home/meinnocenti/iPic3D_MLMD/iPic3D/OldSend_ParticleTest_PRA2_NPF_NPP_1_LONG_DoubleVth_th05/"
+dirName4="/home/meinnocenti/iPic3D_MLMD/iPic3D/OldSend_ParticleTest_PRA2_NPF_NPP_1_LONG_OtherVth_th05/"
+
+
+GN=0
+mpiexec -n 2 python proc2vtr_iPic3D-mlmd_REC.py $dirName1 $GN $first_cycle $last_cycle $step >> outputVisu_1_0.txt &
+GN=1
+mpiexec -n 2 python proc2vtr_iPic3D-mlmd_REC.py $dirName1 $GN $first_cycle $last_cycle $step >> outputVisu_1_1.txt &
+
+#GN=2
+#mpiexec -n 1 python proc2vtr_iPic3D-mlmd_REC.py $dirName1 $GN $first_cycle $last_cycle $step >> outputVisu_2_1.txt &
+#GN=3
+#mpiexec -n 1 python proc2vtr_iPic3D-mlmd_REC.py $dirName1 $GN $first_cycle $last_cycle $step >> outputVisu_3_1.txt &
+
+#GN=0
+#mpiexec -n 4 python proc2vtr_iPic3D-mlmd_REC.py $dirName2 $GN $first_cycle $last_cycle $step >> outputVisu_1_0.txt &
+#GN=1
+#mpiexec -n 4 python proc2vtr_iPic3D-mlmd_REC.py $dirName2 $GN $first_cycle $last_cycle $step >> outputVisu_1_1.txt &
+
+#GN=0
+#mpiexec -n 1 python proc2vtr_iPic3D-mlmd_REC.py $dirName3 $GN $first_cycle $last_cycle $step >> outputVisu_1_0.txt &
+#GN=1
+#mpiexec -n 1 python proc2vtr_iPic3D-mlmd_REC.py $dirName3 $GN $first_cycle $last_cycle $step >> outputVisu_1_1.txt &
+
+#GN=0
+#mpiexec -n 1 python proc2vtr_iPic3D-mlmd_REC.py $dirName4 $GN $first_cycle $last_cycle $step >> outputVisu_1_0.txt &
+#GN=1
+#mpiexec -n 1 python proc2vtr_iPic3D-mlmd_REC.py $dirName4 $GN $first_cycle $last_cycle $step >> outputVisu_1_1.txt &
+
+
+
