@@ -1805,6 +1805,8 @@ void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3
   const double coarsedy= col->getDy_mlmd(0);
   double globaly;
   double shaperz;
+  double SIGN;
+
     
   double harvest;
   double prob, theta, sign;
@@ -1816,7 +1818,8 @@ void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3
           for (int jj = 0; jj < npcely; jj++)
             for (int kk = 0; kk < npcelz; kk++) {
 	            
-	      globaly= grid->getYN(i,j,k)+ coarsedy + grid->getOy_SW();
+	      //globaly= grid->getYN(i,j,k)+ coarsedy + grid->getOy_SW();
+	      globaly= grid->getYN(i,j,k) + grid->getOy_SW(); 
 	      shaperz= -tanh((globaly - Ly/2)/delta) ;
 	            
               /*x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  
@@ -1833,7 +1836,7 @@ void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3
 	      z[counter]= grid->getZN(i, j, k)+ dz*rZ;
 
 	      // to avoid accumulation outside of the grid
-	      double PM=0.001;
+	      double PM= 0.001;
 	      if (x[counter]< -dx+dx*PM or x[counter]> Lx+dx-dx*PM) continue;
 	      if (y[counter]< -dy+dy*PM or y[counter]> Ly+dy-dy*PM) continue;
 	      if (z[counter]< -dz+dz*PM or z[counter]> Lz+dz-dz*PM) continue;
@@ -1854,7 +1857,11 @@ void Particles3D::MaxwellianDoubleGEM(Grid * grid, Field * EMf, VirtualTopology3
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              w[counter] = w0*shaperz + wth * prob * cos(theta);
+              // shaperz
+	      w[counter] = w0*shaperz + wth * prob * cos(theta);
+	      // SIGN
+	      //if (globaly <  Ly/2) SIGN= 1.0; else SIGN=-1.0;
+	      //w[counter] = w0*SIGN + wth * prob * cos(theta);
               if (TrackParticleID)
                 ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
 

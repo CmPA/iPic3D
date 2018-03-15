@@ -3899,14 +3899,16 @@ void EMfields3D::UpdateRHOcs(Grid * grid){
 
 void EMfields3D::SetLambda(Grid *grid, VirtualTopology3D * vct){
 
-  bool SetDamping= false;
+  bool SetDamping= true;
   
   if (numGrid >0 ) SetDamping= false;
+
+  if (numGrid==0) {BufX=4; BufY=4; BufZ=4;}
 
   if (vct->getCartesian_rank() ==0 and SetDamping)
     cout << "Grid " << numGrid << " is initialising a Lambda layer " << endl;
 
-  double Fac;
+  double Fac=1.0;
 
   for (int i=0; i < nxn; i++){
     for (int j=0; j < nyn; j++){
@@ -3920,34 +3922,34 @@ void EMfields3D::SetLambda(Grid *grid, VirtualTopology3D * vct){
 
 	  // X
 	  if (vct->getXleft_neighbor()== MPI_PROC_NULL and i>1 and i< 2+ BufX){
-	    Fac= BufferFactor('L', i, j, k, BufX, BufY, BufZ);
-	    Lambda[i][j][k]= 2.0*M_PI/dx * Fac;
+	    //Fac= BufferFactor('L', i, j, k, BufX, BufY, BufZ);
+	    Lambda[i][j][k]= 2.0*M_PI/dx*Fac;
 	  }
 
 	  if (vct->getXright_neighbor()== MPI_PROC_NULL and i< nxn -2 and i> nxn-3-BufX){
-	    Fac= BufferFactor('R', i, j, k, BufX, BufY, BufZ);
+	    //Fac= BufferFactor('R', i, j, k, BufX, BufY, BufZ);
 	    Lambda[i][j][k]= 2.0*M_PI/dx * Fac;
 	  }
 
 	  // Y
 	  if (vct->getYleft_neighbor()== MPI_PROC_NULL and j>1 and j< 2+ BufY){
-	    Fac= BufferFactor('F', i, j, k, BufX, BufY, BufZ);
+	    //Fac= BufferFactor('F', i, j, k, BufX, BufY, BufZ);
 	    Lambda[i][j][k]= 2.0*M_PI/dy * Fac;
 	  }
 
 	  if (vct->getYright_neighbor()== MPI_PROC_NULL and j< nyn -2 and j> nyn-3-BufY){
-	    Fac= BufferFactor('b', i, j, k, BufX, BufY, BufZ);
+	    //Fac= BufferFactor('b', i, j, k, BufX, BufY, BufZ);
 	    Lambda[i][j][k]= 2.0*M_PI/dy * Fac;
 	  }
 
 	  // Z
 	  if (vct->getZleft_neighbor()== MPI_PROC_NULL and k>1 and k< 2+ BufZ){
-	    Fac= BufferFactor('B', i, j, k, BufX, BufY, BufZ);
+	    //Fac= BufferFactor('B', i, j, k, BufX, BufY, BufZ);
 	    Lambda[i][j][k]= 2.0*M_PI/dz * Fac;
 	  }
 
 	  if (vct->getZright_neighbor()== MPI_PROC_NULL and k< nzn -2 and k> nzn-3-BufZ){
-	    Fac= BufferFactor('T', i, j, k, BufX, BufY, BufZ);
+	    //Fac= BufferFactor('T', i, j, k, BufX, BufY, BufZ);
 	    Lambda[i][j][k]= 2.0*M_PI/dz * Fac;
 	    }
 
@@ -8729,9 +8731,13 @@ void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective 
     for (int i = 0; i < nxn; i++)
       for (int j = 0; j < nyn; j++)
         for (int k = 0; k < nzn; k++) {
-	  globalx= grid->getXN(i, j, k) + coarsedx + grid->getOx_SW();
+	  /*globalx= grid->getXN(i, j, k) + coarsedx + grid->getOx_SW();
 	  globaly= grid->getYN(i, j, k) + coarsedy + grid->getOy_SW();
-	  globalz= grid->getZN(i, j, k) + coarsedz + grid->getOz_SW();
+	  globalz= grid->getZN(i, j, k) + coarsedz + grid->getOz_SW();*/
+
+	  globalx= grid->getXN(i, j, k) + grid->getOx_SW();
+	  globaly= grid->getYN(i, j, k) + grid->getOy_SW();
+	  globalz= grid->getZN(i, j, k) + grid->getOz_SW();
          
           double yB = globaly - .25 * Ly;
 	  double yT = globaly - .75 * Ly;
@@ -8963,7 +8969,7 @@ void EMfields3D::initDoubleGEM_CentralPerturbation(VirtualTopology3D * vct, Grid
 	  globalx= grid->getXN(i, j, k) + grid->getOx_SW();
 	  globaly= grid->getYN(i, j, k) + grid->getOy_SW();
 	  globalz= grid->getZN(i, j, k) + grid->getOz_SW();
-         
+
           double yB = globaly - .25 * Ly;
 	  double yT = globaly - .75 * Ly;
           double yBd = yB / delta;
@@ -9844,11 +9850,14 @@ void EMfields3D::initTestProjection(VirtualTopology3D * vct, Grid * grid, Collec
     for (int i = 0; i < nxn; i++)
       for (int j = 0; j < nyn; j++)
         for (int k = 0; k < nzn; k++) {
-	  globalx= grid->getXN(i, j, k) + coarsedx + grid->getOx_SW();
+	  /*globalx= grid->getXN(i, j, k) + coarsedx + grid->getOx_SW();
 	  globaly= grid->getYN(i, j, k) + coarsedy + grid->getOy_SW();
-	  globalz= grid->getZN(i, j, k) + coarsedz + grid->getOz_SW();
+	  globalz= grid->getZN(i, j, k) + coarsedz + grid->getOz_SW();*/
          
-	    
+	  globalx= grid->getXN(i, j, k) + grid->getOx_SW();
+	  globaly= grid->getYN(i, j, k) + grid->getOy_SW();
+	  globalz= grid->getZN(i, j, k) + grid->getOz_SW();
+
           // initialize the density for species
           for (int is = 0; is < ns; is++) {
 	    rhons[is][i][j][k] = rhoINIT[is] / FourPI;
