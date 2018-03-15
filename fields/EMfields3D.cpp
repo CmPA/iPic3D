@@ -12630,3 +12630,105 @@ void EMfields3D::PoissonImage_2D_X(double *image, double *vector, Grid * grid, V
   delArr2(temp, nyc);
   delArr2(im, nyc);
   }*/
+
+/* GEM challenge setting, with the X point at Lx/4 */
+void EMfields3D::initGEM_Shifted(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  double pertX = 0.4;
+  double xpert, ypert, exp_pert;
+
+
+  double globalx;
+  double globaly;
+  double globalz;
+
+  const double coarsedx= grid->getDx_mlmd(0) ;
+  const double coarsedy= grid->getDy_mlmd(0) ;
+  const double coarsedz= grid->getDz_mlmd(0) ;
+
+  // this local
+  double Lx= col->getLx_mlmd(0);
+  double Ly= col->getLy_mlmd(0);
+  // end local
+
+  const double deltax= Lx/2.0;
+  const double deltay= Ly/2.0;
+
+
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize GEM Challenge (MLMD-ready) with Pertubation located at Lx/4, Ly/2 (global)" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+	cout << "rho species " << i << " = " << rhoINIT[i];
+	if (DriftSpecies[i])
+	  cout << " DRIFTING " << endl;
+	else
+	  cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+	for (int k = 0; k < nzn; k++) {
+
+	  globalx= grid->getXN(i, j, k) + grid->getOx_SW();
+	  globaly= grid->getYN(i, j, k) + grid->getOy_SW();
+	  globalz= grid->getZN(i, j, k) + grid->getOz_SW();
+         
+	  double xpert;
+	  double ypert;
+
+	  // initialize the density for species
+	  for (int is = 0; is < ns; is++) {
+	    if (DriftSpecies[is])
+	      rhons[is][i][j][k] = ((rhoINIT[is] / (cosh((globaly - Ly / 2) / delta) * cosh((globaly - Ly / 2) / delta)))) / FourPI;
+	    else
+	      rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+	  }
+	  // electric field
+	  Ex[i][j][k] = 0.0;
+	  Ey[i][j][k] = 0.0;
+	  Ez[i][j][k] = 0.0;
+	  // Magnetic field
+	  Bxn[i][j][k] = B0x * tanh((globaly - Ly / 2) / delta);
+	  // add the initial GEM perturbation
+	  Byn[i][j][k] = B0y;  
+	  // add the initial X perturbation
+	  xpert = globalx - Lx / 4; /* THIS IS THE ONLY DIFFERECE W.R.T. INITGEM */
+	  ypert = globaly - Ly / 2;
+	  exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
+	  Bxn[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+	  Byn[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+	  // guide field
+	  Bzn[i][j][k] = B0z;
+	}
+    // initialize B on centers
+   
+    communicateNode(nxn, nyn, nzn, Bxn, vct);
+    communicateNode(nxn, nyn, nzn, Byn, vct);
+    communicateNode(nxn, nyn, nzn, Bzn, vct);
+    // initialize B on centers; same thing as on nodes but on centers
+
+    grid->interpN2C_GC(Bxc, Bxn);
+    grid->interpN2C_GC(Byc, Byn);
+    grid->interpN2C_GC(Bzc, Bzn);
+     
+    // end initialize B on centers 
+    communicateCenter(nxc, nyc, nzc, Bxc, vct);
+    communicateCenter(nxc, nyc, nzc, Byc, vct);
+    communicateCenter(nxc, nyc, nzc, Bzc, vct);
+
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C_GC(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
