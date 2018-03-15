@@ -3606,6 +3606,7 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
   /* -- exchange - resize_CRPbuffers_BSTH -- */
   if (AllowPMsgResize){ // if, from inputfile, the resize is an option, do it
     int New_size_CRP;
+
     // on the PBC communicators
     MPI_Allreduce(&size_CRP, &New_size_CRP, 1, MPI_INT, MPI_MAX, COMM_RG_PBCSubset_P);
     if (New_size_CRP> size_CRP) 
@@ -5125,7 +5126,7 @@ void Particles3Dcomm::UpdateAllowPMsgResize(Collective * col, int cycle){
   if (FluidLikeRep) { AllowPMsgResize= false; return;}
  
   // so buffers are sized to a decent value
-  if (cycle <3) AllowPMsgResize= true; return;
+  if (cycle <3) {AllowPMsgResize= true; return;}
 
   if (cycle >=3){
     if (col->getAllowPMsgResize()) AllowPMsgResize= true;
