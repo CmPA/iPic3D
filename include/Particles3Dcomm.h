@@ -136,6 +136,7 @@ public:
   int communicateAfterMover(VirtualTopology3D * ptVCT);
   /* normal communicate + removes particles from PRA */
   int communicate_DepopulatePRA(VirtualTopology3D * ptVCT) ;
+  int communicate_NoBC(VirtualTopology3D * ptVCT, int initialNOP);
   /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
   void bufferXleft(double *b_, long long np, VirtualTopology3D * vct);
   /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
@@ -228,6 +229,7 @@ public:
   /*! mlmd: now I need the communicator also */
   //double getP();
   double getP(MPI_Comm Comm);
+  bool getCRPtS();
   /** Print particles info: positions, velocities */
   void Print(VirtualTopology3D * ptVCT) const;
   /** Print the number of particles of this subdomain */
@@ -306,6 +308,8 @@ public:
   void buildFluidBCMsg(VirtualTopology3D *vct, Grid * grid, Field * EMf, int ch, RGPBC_struct RGInfo, int Size, double *Msg );
   void ReceiveFluidBC(Grid *grid, VirtualTopology3D *vct);
   void ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * EMf);
+
+  bool getDoPMsgResize_CG_RG();
   /* ------ end fluid repopulation methods + support functions  ------ */
   /* trims the **_Info vectors used by the MLMD structure*/
   void TrimInfoVector(VirtualTopology3D *vct);
@@ -319,7 +323,6 @@ public:
      if it is false, done only the first three cycles to reach suitable buffer sizes, then stop */
   void UpdateAllowPMsgResize(Collective * col, int cycle);
 
-  bool getAllowPMsgResize() { return AllowPMsgResize; }
 protected:
   /** number of species */
   /*! comment: the number of THIS species, not the total number of particle species */
@@ -535,10 +538,15 @@ protected:
   /* resizing up to here -- value set in initWeightPBC
      same for RG and CG side */
   int MAXsizePBCMsg;
-  /* wether to allow the resize of the buffers containing the particles to send CG->RG for repopulation
-     false may be heavy on memory consumption                 
-     true may be heavy on performance */
-  bool AllowPMsgResize;
+  /* wether to allow the resize of the buffers containing the particles to send CG->RG for repopulation */
+  bool AllowPMsgResize_CG_RG;
+  bool AllowPMsgResize_RG_RG;
+  bool SwitchOffPMsgResize_CG_RG;
+  bool SwitchOffPMsgResize_RG_RG;
+  bool DoPMsgResize_CG_RG;
+  bool DoPMsgResize_RG_RG;
+  /* wether to communicate repopulated particles through communicateRepopulatedParticles_Wrap (=true) or communicate_OnlyRepopulated (=false)*/ 
+  bool CRPtS;
   /* END BOTH SIDES */
   /* RG SIDE */
   /* number of PBC Msgs to receive, as a child */
@@ -719,6 +727,8 @@ protected:
      instantiate only if you- as a CG core- are the spokeperson to a RG 
      only the entry relative to that grid has a valid number*/
   int **RcvList;
+  /** if CGSpokeperson is calculated true, numRcv and RcvList instantiated **/
+  bool CGSpokeperson;
   /*! end mlmd specific variables */
 
   // i keep here a copy of Ex, Ey, Ez, Bxn, Byn, Bzn, Bx_ext, By_ext, Bz_ext for the mover but also for moving repopulated particles

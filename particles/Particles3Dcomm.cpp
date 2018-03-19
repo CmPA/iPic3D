@@ -453,15 +453,24 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   // wether to allow resize of repopulated particle buffers
   // NB: if the repopulation is fluid, AllowPMsgResize is set to false 
-  // otherwise, false in the inputfile means that resizing is done only the first three cycles, and then the values is kept
-  // with true, the resizing is done every cycle
-  // in both cases, i need the initial infrastructure, so i set to true here
-  // the value is modified in UpdateAllowPMsgResize called in UpdateCycleInfo
+  // if AllowPMsgResize... is true, it can be switched off after a certian number of cycles
+  // if SwitchOffPBCResize... is true
 
+  CGSpokeperson= false;
   if (FluidLikeRep){
-    AllowPMsgResize= false;
+    AllowPMsgResize_CG_RG= false;
+    AllowPMsgResize_RG_RG= false;
+    SwitchOffPMsgResize_CG_RG= false;
+    SwitchOffPMsgResize_RG_RG= false;
+    DoPMsgResize_CG_RG= false;
+    DoPMsgResize_RG_RG= false;
   } else {
-    AllowPMsgResize= true;
+    AllowPMsgResize_CG_RG= true;
+    AllowPMsgResize_RG_RG= true;
+    SwitchOffPMsgResize_CG_RG= col->getSwitchOffPMsgResize_CG_RG();
+    SwitchOffPMsgResize_RG_RG= col->getSwitchOffPMsgResize_RG_RG();
+    DoPMsgResize_CG_RG= true;
+    DoPMsgResize_RG_RG= true;
   }
 
 
@@ -606,8 +615,6 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // the number will be sized automatically (see AllowPMsgResize)
   size_CRP=  ceil(nop*0.05); // it just needs to survive the init, then it will be resized
   
-
-
   // I am instantiating here local copies of Ex, Ey, Ezm Bx, By, Bz, Bx_ext, By_ext, Bz_ext
   // - used in the mover and only in one repopulation method
   Ex= newArr3(double, nxn, nyn, nzn);
@@ -1795,7 +1802,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 
     // these are vectors needed to exchange repopulated particles inside the RG
     // needed only for kinetic repopulation
-    if (RG_numPBCMessages>0 and !FluidLikeRep){
+    if (RG_numPBCMessages>0 and !FluidLikeRep and CRPtS ){
       if (rank_local==HighestRank){ 
 	H_CRP_General= new CRP_struct[size_CRP];
 	H_CRP_General_ptr= H_CRP_General; // for resize
@@ -1898,13 +1905,13 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 	  
 	  recv_ThisMsg++;
 	} // end while
-	if (recv_ThisMsg>0 and !FluidLikeRep){ // CRP ops only with kinetic repopulation
+	if (recv_ThisMsg>0 and !FluidLikeRep and CRPtS){ // CRP ops only with kinetic repopulation
 	  H_CRP_cores[src]= 1;
 	}
 	
       } // end for (int c=0; c< HighestRank; c++){
 
-      if (!FluidLikeRep){ // CRP ops only with kinetic repopulation 
+      if (!FluidLikeRep and CRPtS){ // CRP ops only with kinetic repopulation 
 	num_H_CRP_cores=0;
 	for (int i=0; i<XLEN*YLEN*ZLEN; i++){
 	  num_H_CRP_cores+= H_CRP_cores[i];
@@ -2027,47 +2034,11 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
   } // end if (numChildren>0){
 
 
-  // some prints for checks
-  
-  /*if (numGrid >0){
-    cout << "Grid " <<numGrid << " R " << rank_local << ": RG_numPBCMessages: " << RG_numPBCMessages <<endl;
-    if (rank_local== HighestRank){
-      cout << "H_CRP_cores is" << endl;
-      for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-	cout <<"i: " << i << ", H_CRP_cores[i]: " << H_CRP_cores[i] << endl;
-      }
-      cout << "Grid " << numGrid << ", num_H_CRP_cores: " << num_H_CRP_cores <<endl; 
-    }
-    }*/
-
-  // RG prints its messages
-  /*if (numGrid >0){
-    cout << "Grid " << numGrid <<" R " << vct->getCartesian_rank() << " total msg: " <<RG_numPBCMessages<< endl;
-    for (int m=0; m< RG_numPBCMessages; m++){
-      cout << "msg " << m << " of " << RG_numPBCMessages << endl;
-      //cout << "RG points: " << RGPBC_Info[m].np_x << "/ " nxn <<" - " << RGPBC_Info[m].np_y <<"/ " nyn << " - " << RGPBC_Info[m].np_z << "/ "<<nzn << endl;
-      cout << "CG_x_first-Ox --> CG_x_first-Ox + (RGPBC_Info[m].np_x-1)*dx " << RGPBC_Info[m].CG_x_first- grid->getOx() <<"-->" << RGPBC_Info[m].CG_x_first- grid->getOx() + (RGPBC_Info[m].np_x-1)*dx <<" -2dx "  << -2*dx <<" Lx+2dx " << Lx+2*dx << " Ox " << grid->getOx()  << endl;
-      cout << "CG_y_first-Oy --> CG_y_first-Oy + (RGPBC_Info[m].np_y-1)*dy " << RGPBC_Info[m].CG_y_first- grid->getOy() <<"-->" << RGPBC_Info[m].CG_y_first- grid->getOy() + (RGPBC_Info[m].np_y-1)*dy << " -2dy " << -2*dy << " Ly+2dy " << Ly+2*dy << " Oy " << grid->getOy() << endl;
-      cout << "CG_z_first-Oz --> CG_z_first-Oz + (RGPBC_Info[m].np_z-1)*dz " << RGPBC_Info[m].CG_z_first- grid->getOz() <<"-->" << RGPBC_Info[m].CG_z_first- grid->getOz() + (RGPBC_Info[m].np_z-1)*dz << " -2dz " << -2*dz << " Lz+2dz " << Lz+2*dz << " Oz " << grid->getOz() << endl;
-      
-    }
-    }*/
-  
-  // create communicators involving only the cores of the grid involved in particle BC communication
-
   /* finally instantiate H_CRP_Msg, but only the entries which are needed */
   // Fluid repopulation does not need communicate after repopulate
-  if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0 and rank_local==HighestRank and !FluidLikeRep) {
+  if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0 and rank_local==HighestRank and !FluidLikeRep and CRPtS ) {
     H_CRP_Msg= newArr2_PA(CRP_struct, XLEN*YLEN*ZLEN, size_CRP, H_CRP_cores);      
     H_CRP_Msg_ptr= H_CRP_Msg;
-    /*for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      cout << i << " of " << XLEN*YLEN*ZLEN <<": H_CRP_cores[i]: "<< H_CRP_cores[i] << endl;
-      }*/
-    /*for (int i=0; i< XLEN*YLEN*ZLEN; i++){
-      if (H_CRP_cores[i]!=1)
-	cout << "Trying to provoke segm fault: " << H_CRP_Msg[i][3].q << endl;
-	}*/
-      
 
   }
   /* end finally instantiate H_CRP_Msg */
@@ -2103,21 +2074,22 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
   
   // NB: AllowPMsgResize is overriden to false if fluid repopulation
   // build the list of RG cores to notify of the resize
-  if (AllowPMsgResize==true){
+  if (AllowPMsgResize_CG_RG==true){
     // build the list of RG cores to notify of the resize; each core has to receive only one msg
     // hence this
     
-    bool Needed= false; // am i the spokeperson to any child?
+    CGSpokeperson= false; // am i the spokeperson to any child?
     int Max=0;
+    
     for (int ch=0; ch< numChildren; ch++){
       if (COMM_CG_PBCSubset_P[ch] == MPI_COMM_NULL) continue;
       int S; 
       MPI_Comm_size(vct->getCommToChild_P(ch, ns), &S);
       if (S> Max) Max=S;
       if (CGSide_CGLeader_PBCSubset[ch]== vct->getRank_CommToChildren_P(ch, ns))
-	Needed = Needed or true;
+	CGSpokeperson = CGSpokeperson or true;
     }
-    if (Needed){
+    if (CGSpokeperson){
       numRcv= new int[numChildren];
       RcvList= newArr2(int, numChildren, Max);
     }
@@ -2147,6 +2119,9 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 	} // end for (int i=0; i< size; i++){
 	
       }// end if (vct->getRank_CommToChildren_P(nc, ns) == CGSide_CGLeader_PBCSubset[ch]){
+
+      delete[] tmp;
+      delete[] tmp_2;
     } // end for (int ch=0; ch< numChildren; ch++){
   } // end if (AllowPMsgResize==true)
   
@@ -2735,11 +2710,18 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
       buildPBCMsg(grid, vct, ch);
 
 
-      if (AllowPMsgResize){
+      if (DoPMsgResize_CG_RG){
+	cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;
 	// the CG cores involved in PBC agree on the biggest buffer size
 	int MaxGrid_sizeCG_PBCMsg;
 	MPI_Allreduce(&sizeCG_PBCMsg, &MaxGrid_sizeCG_PBCMsg, 1, MPI_INT, MPI_MAX, COMM_CG_PBCSubset_P[ch]);
 	
+	// I resize the CG buffers, to avoid resizing CG buffer in different stages
+	// (useful if i switch off resizing)
+	if (sizeCG_PBCMsg< MaxGrid_sizeCG_PBCMsg){
+	  resize_CG_MLMD_buffers(vct);
+	}
+
 	// CGSide_CGLeader_PBCSubset[ch] sends down to all RG grid cores involved in the communication
 	if (vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
 	  for (int i= 0; i< numRcv[ch]; i++){
@@ -2747,7 +2729,8 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 	    MPI_Wait(&request, &status);
 	  }
 	}
-      } // end if (AllowPMsgResize){
+      } else
+	{cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;} // end if (DoPMsgResize_CG_RG){
 
       // now send; send an extra msg to signal the end of the meaningful part
       // cycle on all the msgs this core has to send
@@ -2801,7 +2784,8 @@ void Particles3Dcomm::ReceivePBC_NoApply(Grid* grid, VirtualTopology3D * vct, in
 
     MPI_Status status;
 
-    if (AllowPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
+    if (DoPMsgResize_CG_RG){ // to do before anybody has started receiving, so i don't have to copy info
+      cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;
       int NEW_sizePBCMsg;
       // as it is set now, each RG core receives a msg, so just do a rcv 
       MPI_Recv(&NEW_sizePBCMsg, 1, MPI_INT, MPI_ANY_SOURCE, 200+ns, CommToParent_P, &status);
@@ -2810,7 +2794,9 @@ void Particles3Dcomm::ReceivePBC_NoApply(Grid* grid, VirtualTopology3D * vct, in
       if (NEW_sizePBCMsg > sizeRG_PBCMsg){
 	resize_RG_MLMD_buffers(NEW_sizePBCMsg);
       }
-    } // end if (AllowPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
+    }else{
+      cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;
+    } // end if (DoPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
 
     for (int i=0; i<RG_numPBCMessages; i++ ){
       PRGMsgArrived[i]= false;
@@ -3059,10 +3045,10 @@ void Particles3Dcomm::addP(int ch, int n, double x, double y, double z, double u
 
   //cout << "inside addP: pos: "<<pos <<"  PCGMsg[ch][n][pos].q " << PCGMsg[ch][n][pos].q << endl;
   if (nopPCGMsg[ch][n] == sizeCG_PBCMsg){
-    if (AllowPMsgResize){
+    if (DoPMsgResize_CG_RG){
       resize_CG_MLMD_buffers(vct);
     }else{
-      cout << "in addP, numGrid " << numGrid << " core " << vct->getCartesian_rank()  << " in the local grid communicator, you plan on passing too many particles as BC; " << endl << "ENABLE RESIZE --> AllowPMsgResize = 1 in the inputfile" << endl <<"Aborting now..." << endl;
+      cout << "in addP, numGrid " << numGrid << " core " << vct->getCartesian_rank()  << " in the local grid communicator, you plan on passing too many particles as BC; " << endl << "ENABLE RESIZE --> SwitchOffPMsgResize_CG_RG = 0 in the inputfile" << endl <<"Aborting now..." << endl;
       MPI_Abort(MPI_COMM_WORLD, -1);
     }
   }
@@ -3604,13 +3590,16 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
   cout << "Grid " << numGrid << " SONO QUI 0, grid barrier" << endl;*/
 
   /* -- exchange - resize_CRPbuffers_BSTH -- */
-  if (AllowPMsgResize){ // if, from inputfile, the resize is an option, do it
+  if (DoPMsgResize_RG_RG){ // if, from inputfile, the resize is an option, do it
+    cout << "DoPMsgResize_RG_RG: "<< DoPMsgResize_RG_RG <<endl;
     int New_size_CRP;
 
     // on the PBC communicators
     MPI_Allreduce(&size_CRP, &New_size_CRP, 1, MPI_INT, MPI_MAX, COMM_RG_PBCSubset_P);
     if (New_size_CRP> size_CRP) 
       resize_CRP_buffers(vct, New_size_CRP);
+  } else{
+    cout << "DoPMsgResize_RG_RG: "<< DoPMsgResize_RG_RG<<endl;
   }
   /* -- exchange - resize_CRPbuffers_BSTH -- */
 
@@ -3670,12 +3659,15 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
   } // end if (rank_local == HighestRank)
   
   /* -- exchange - resize_CRPbuffers_BSFH -- */
-  if (AllowPMsgResize){ // if, from inputfile, the resize is an option, do it
+  if (DoPMsgResize_RG_RG){ // if, from inputfile, the resize is an option, do it
+    cout <<"DoPMsgResize_RG_RG: "<< DoPMsgResize_RG_RG << endl;
     int New_size_CRP;
     // on the PBC communicators
     MPI_Allreduce(&size_CRP, &New_size_CRP, 1, MPI_INT, MPI_MAX, COMM_RG_PBCSubset_P);
     if (New_size_CRP> size_CRP) 
       resize_CRP_buffers(vct, New_size_CRP);
+  }else{
+    cout <<"DoPMsgResize_RG_RG: "<< DoPMsgResize_RG_RG << endl;
   }
   /* -- exchange - resize_CRPbuffers_BSFH -- */
     
@@ -3811,10 +3803,10 @@ void Particles3Dcomm::addP_CRP(CRP_struct * Vec, int *num, double x, double y, d
   // cout << "adding P: after adding *num= " << *num << endl;
 
   if (*num  == size_CRP){
-    if (AllowPMsgResize){
+    if (DoPMsgResize_RG_RG){
       resize_CRP_buffers(vct);
     }else{
-      cout << "in addP_CRP, numGrid " << numGrid << " core " << vct->getCartesian_rank()  << " in the local grid communicator, you plan on passing too many particles as BC; " << endl << "ENABLE RESIZE --> AllowPMsgResize = 1 in the inputfile" << endl <<"Aborting now..." << endl;
+      cout << "in addP_CRP, numGrid " << numGrid << " core " << vct->getCartesian_rank()  << " in the local grid communicator, you plan on passing too many particles as BC; " << endl << "ENABLE RESIZE --> SwitchOffPMsgResize_RG_RG = 0 in the inputfile" << endl <<"Aborting now..." << endl;
       MPI_Abort(MPI_COMM_WORLD, -1);
     }
   }
@@ -3825,8 +3817,8 @@ void Particles3Dcomm::addP_CRP(CRP_struct * Vec, int *num, double x, double y, d
 
 /* resize the buffers responsible for sending repopulated particle from the CG to the RG -- CG side*/
 void Particles3Dcomm::resize_CG_MLMD_buffers(VirtualTopology3D * vct){
-  /* I will multiply by 2 */
-  int NEW_sizePBCMsg= sizeCG_PBCMsg*2;
+  /* I will multiply by 4 */
+  int NEW_sizePBCMsg= sizeCG_PBCMsg*4;
   
   int RR= vct->getCartesian_rank();
 
@@ -5123,16 +5115,32 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * 
 
 void Particles3Dcomm::UpdateAllowPMsgResize(Collective * col, int cycle){
 
-  if (FluidLikeRep) { AllowPMsgResize= false; return;}
+  if (FluidLikeRep) { 
+    AllowPMsgResize_CG_RG= false; AllowPMsgResize_RG_RG= false;
+    DoPMsgResize_CG_RG= false; DoPMsgResize_RG_RG= false;
+    return;
+  }
  
   // so buffers are sized to a decent value
-  if (cycle <3) {AllowPMsgResize= true; return;}
+  int SWITCH_CYCLE=5;
+ 
+  AllowPMsgResize_CG_RG= true; AllowPMsgResize_RG_RG= true;
+  DoPMsgResize_CG_RG= true; DoPMsgResize_RG_RG= true;
 
-  if (cycle >=3){
-    if (col->getAllowPMsgResize()) AllowPMsgResize= true;
-    else
-      AllowPMsgResize= false;
+  if (cycle >=SWITCH_CYCLE){
+    
+    if (col->getSwitchOffPMsgResize_CG_RG()) {
+      DoPMsgResize_CG_RG= false;
+
+    }
+
+    if (col->getSwitchOffPMsgResize_RG_RG()) {
+      DoPMsgResize_RG_RG= false;
+
+    }
+
   }
+
   return;
 
 }
@@ -5361,3 +5369,180 @@ int Particles3Dcomm::communicate_DepopulatePRA(VirtualTopology3D * ptVCT) {
   return(0);
 
 }
+
+bool Particles3Dcomm::getDoPMsgResize_CG_RG(){
+  return DoPMsgResize_CG_RG;
+}
+
+
+int Particles3Dcomm::communicate_NoBC(VirtualTopology3D * ptVCT, int initialNOP) {
+  cout << "numGrid "<< numGrid << " rank " << ptVCT->getCartesian_rank() << " beginning of communicate_NoBC" << endl;
+  // allocate buffers
+  MPI_Status status;
+  int new_buffer_size;
+  int npExitingMax;
+  // variable for memory availability of space for new particles
+  int avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
+  for (int i = 0; i < buffer_size; i++) {
+    b_X_RIGHT[i] = MIN_VAL;
+    b_X_LEFT[i] = MIN_VAL;
+    b_Y_RIGHT[i] = MIN_VAL;
+    b_Y_LEFT[i] = MIN_VAL;
+    b_Z_RIGHT[i] = MIN_VAL;
+    b_Z_LEFT[i] = MIN_VAL;
+  }
+  npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
+
+  /* this one is the only major difference with previous versions */
+  long long np_current = initialNOP, nplast = nop - 1;
+
+  double xMin, yMin, zMin;
+  double xMax, yMax, zMax;
+
+
+  while (np_current < nplast+1){
+     
+    xMin=-dx; yMin=-dy; zMin=-dz;
+    xMax=Lx+dx; yMax=Ly+dy; zMax=Lz+dz;
+   
+    if (x[np_current] < xMin or x[np_current]> xMax or y[np_current] < yMin or y[np_current]> yMax or z[np_current] < zMin or z[np_current]> zMax){
+      // particle to delete
+      del_pack(np_current,&nplast);
+    }else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitXleft+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferXleft(b_X_LEFT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitXleft++;
+      } 
+    
+    else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitXright+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferXright(b_X_RIGHT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitXright++;
+    }
+    
+    else  if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitYleft+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferYleft(b_Y_LEFT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitYleft++;
+    }
+    
+    else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitYright+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferYright(b_Y_RIGHT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      npExitYright++;
+    }
+    else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitZleft+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferZleft(b_Z_LEFT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      
+      npExitZleft++;
+    } 
+    
+    else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
+      // check if there is enough space in the buffer before putting in the particle
+      if(((npExitZright+1)*nVar)>=buffer_size){
+	resize_buffers((int) (buffer_size*2)); 
+      }
+      // put it in the communication buffer
+      bufferZright(b_Z_RIGHT,np_current,ptVCT);
+      // delete the particle and pack the particle array, the value of nplast changes
+      del_pack(np_current,&nplast);
+      
+      npExitZright++;
+    
+    } // end else you have to move particle
+    else {
+      // particle ok
+      // particle is still in the domain, procede with the next particle
+      np_current++;
+    }
+    
+  }
+  
+
+  nop = nplast + 1;
+  npExitingMax = 0;
+  // calculate the maximum number of particles exiting from this domain
+  // use this value to check if communication is needed
+  // and to resize the buffer
+  npExitingMax = maxNpExiting();
+  // broadcast the maximum number of particles exiting for sizing the buffer and to check if communication is really needed
+  /*! mlmd: i need the communicator also */
+  //npExitingMax = reduceMaxNpExiting(npExitingMax);
+  npExitingMax = reduceMaxNpExiting(npExitingMax, ptVCT->getCommGrid()); 
+
+  /*****************************************************/
+  /* SEND AND RECEIVE MESSAGES */
+  /*****************************************************/
+
+  new_buffer_size = npExitingMax * nVar + 1;
+
+  if (new_buffer_size > buffer_size) {
+    cout << "resizing the receiving buffer" << endl;
+    resize_buffers(new_buffer_size);
+  }
+
+  if (npExitingMax > 0) {
+  
+    communicateParticles(new_buffer_size, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
+
+    // UNBUFFERING
+    /*! mlmd: need the communicator also */
+    avail1 = unbuffer(b_X_RIGHT, ptVCT->getCommGrid());
+    avail2 = unbuffer(b_X_LEFT, ptVCT->getCommGrid());
+    avail3 = unbuffer(b_Y_RIGHT, ptVCT->getCommGrid());
+    avail4 = unbuffer(b_Y_LEFT, ptVCT->getCommGrid());
+    avail5 = unbuffer(b_Z_RIGHT, ptVCT->getCommGrid());
+    avail6 = unbuffer(b_Z_LEFT, ptVCT->getCommGrid());
+
+    // if one of these numbers is negative than there is not enough space for particles
+    avail = avail1 + avail2 + avail3 + avail4 + avail5 + avail6;
+    /*! mlmd: i need the communicator also */
+    //availALL = reduceNumberParticles(avail);
+    availALL = reduceNumberParticles(avail, ptVCT->getCommGrid());
+    if (availALL < 0){
+      cout << "communicate_NoBC, TOO MANY PARTICLES COMING  " <<endl;
+      return (-1);              // too many particles coming, save data nad stop simulation
+    }
+
+  }
+  /** do nor touch this otherwise mess in communicateRepopulatedParticles **/
+  nop_EndCommunicate= nop;
+
+  cout << "numGrid "<< numGrid << " rank " << ptVCT->getCartesian_rank() << " end of communicate_NoBC" << endl;
+
+  return(0);
+
+}
+
+bool Particles3Dcomm::getCRPtS(){return CRPtS;}

@@ -299,7 +299,9 @@ class Collective
     bool getMLMD_fixBCenters();
     bool getMLMD_InterpolateOldBCell();
 
-    bool getAllowPMsgResize();
+    bool getSwitchOffPMsgResize_CG_RG();
+    bool getSwitchOffPMsgResize_RG_RG();
+    bool getCRPtS();
 
     bool getFluidLikeRep();
     bool getRepopulateBeforeMover();
@@ -580,11 +582,12 @@ class Collective
     bool MLMD_fixBCenters;
     bool MLMD_InterpolateOldBCell;
 
-    /* wether to allow the resize of the buffers containing the particles to send CG->RG for repopulation
-       false may be heavy on memory consumption
-       true may be heavy on performance */
-    bool AllowPMsgResize;
-    
+    /* wether to switch off the resize of the buffers containing the particles to send CG->RG/ RG->RG for repopulation*/
+    bool SwitchOffPMsgResize_CG_RG;
+    bool SwitchOffPMsgResize_RG_RG;
+    /* wether to communicate repopulated particles through a spokesperson (communicateRepopulatedParticles) or with a modified version of communicate */
+    bool CRPtS;
+
     /* wether to repopulate fluid-like or kinetically */
     bool FluidLikeRep;
     /* wether to repopulate before or after the mover */

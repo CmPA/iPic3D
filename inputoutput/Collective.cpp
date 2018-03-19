@@ -322,7 +322,9 @@ void Collective::ReadInput(string inputfile) {
     // default to zero
     MLMD_InterpolateOldBCell = config.read < bool > ("MLMD_InterpolateOldBCell", 0);
 
-    AllowPMsgResize= config.read < bool > ("AllowPMsgResize");
+    SwitchOffPMsgResize_CG_RG= config.read < bool > ("SwitchOffPMsgResize_CG_RG", true);
+    SwitchOffPMsgResize_RG_RG= config.read < bool > ("SwitchOffPMsgResize_RG_RG", true);
+    CRPtS= config.read <bool> ("CRPtS", false);
     PRA = config.read < int > ("PRA");
     Buf = config.read < int > ("Buf");
     //cout << "MLMD_BC: " << MLMD_BC <<endl;
@@ -1875,7 +1877,9 @@ bool Collective::getMLMD_BCBufferArea() {return MLMD_BCBufferArea;}
 bool Collective::getMLMD_fixBCenters() {return MLMD_fixBCenters;}
 bool Collective::getMLMD_InterpolateOldBCell() {return MLMD_InterpolateOldBCell;}
 
-bool Collective::getAllowPMsgResize() {return AllowPMsgResize;}
+bool Collective::getSwitchOffPMsgResize_CG_RG() {return SwitchOffPMsgResize_CG_RG;}
+bool Collective::getSwitchOffPMsgResize_RG_RG() {return SwitchOffPMsgResize_RG_RG;}
+bool Collective::getCRPtS() {return CRPtS;}
 bool Collective::getFluidLikeRep() {return FluidLikeRep;}
 bool Collective::getRepopulateBeforeMover() {return RepopulateBeforeMover;}
 int Collective::getPRA() {return PRA;}

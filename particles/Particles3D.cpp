@@ -1907,3 +1907,37 @@ int Particles3D::communicate_NoMover_DepopulatePRA(Grid * grid, VirtualTopology3
 
   return (0);
 }
+
+int Particles3D::communicate_OnlyRepopulated(Grid * grid, VirtualTopology3D * vct) {
+
+  cout << "numGrid: " << numGrid << " core: " << vct->getCartesian_rank() << " Beginning of communicate_OnlyRepopulated" << endl;
+  if ( CommToParent_P== MPI_COMM_NULL ) {
+    
+    cout << "numGrid: " << numGrid << " core: " << vct->getCartesian_rank() << " End of communicate_OnlyRepopulated" << endl;
+    return (0);
+  }
+  
+  // ********************//
+  // COMMUNICATION 
+  // *******************//
+  // timeTasks.start_communicate();
+  const int avail = communicate_NoBC(vct, nop_EndCommunicate);
+  if (avail < 0)
+    return (-1);
+  /*! mlmd: barrier at grid level */
+  //MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(vct->getCommGrid()); 
+  // communicate again if particles are not in the correct domain
+  while (isMessagingDone(vct) > 0) {
+    // COMMUNICATION
+    const int avail = communicate_NoBC(vct, nop_EndCommunicate);
+    if (avail < 0)
+      return (-1);
+    /*! mlmd: barrier at grid level */
+    //MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(vct->getCommGrid());
+  }
+
+  cout << "numGrid: " << numGrid << " core: " << vct->getCartesian_rank() << " End of communicate_OnlyRepopulated" << endl;
+  return (0);
+}

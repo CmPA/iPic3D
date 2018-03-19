@@ -614,10 +614,10 @@ bool c_Solver::ParticlesMover(int cycle) {
       // comment during production
       //part[i].CheckSentReceivedParticles(vct);
 
-      // this one is needed only if AllowPMsgResize=1 
+      // this one is needed only if DoPMsgResize=1 
       // (see notes in postEPS2017.rtfd)
       
-      if (part[i].getAllowPMsgResize()){
+      if (part[i].getDoPMsgResize_CG_RG()){
 	part[i].MPI_Barrier_ParentChild(vct);
       }
 
@@ -1007,7 +1007,16 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
 
   for (int i=0; i< ns; i++){
     /* 4.1 communicate after repopulating */
-    part[i].communicateRepopulatedParticles_Wrap(grid, vct, cycle);
+    if (part[i].getCRPtS()){
+      if (myrank==0)
+	cout << "CRPtS: " << part[i].getCRPtS() << endl;
+      part[i].communicateRepopulatedParticles_Wrap(grid, vct, cycle);
+    }
+    else{
+      if (myrank==0)
+	cout << "CRPtS: "<< part[i].getCRPtS() << endl;
+      part[i].communicate_OnlyRepopulated(grid, vct);
+    }
   }
 
   for (int i=0; i< ns; i++){
