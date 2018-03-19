@@ -1910,10 +1910,7 @@ int Particles3D::communicate_NoMover_DepopulatePRA(Grid * grid, VirtualTopology3
 
 int Particles3D::communicate_OnlyRepopulated(Grid * grid, VirtualTopology3D * vct) {
 
-  cout << "numGrid: " << numGrid << " core: " << vct->getCartesian_rank() << " Beginning of communicate_OnlyRepopulated" << endl;
   if ( CommToParent_P== MPI_COMM_NULL ) {
-    
-    cout << "numGrid: " << numGrid << " core: " << vct->getCartesian_rank() << " End of communicate_OnlyRepopulated" << endl;
     return (0);
   }
   
@@ -1938,6 +1935,6 @@ int Particles3D::communicate_OnlyRepopulated(Grid * grid, VirtualTopology3D * vc
     MPI_Barrier(vct->getCommGrid());
   }
 
-  cout << "numGrid: " << numGrid << " core: " << vct->getCartesian_rank() << " End of communicate_OnlyRepopulated" << endl;
+
   return (0);
 }

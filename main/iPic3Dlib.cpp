@@ -456,7 +456,7 @@ void c_Solver::UpdateCycleInfo(int cycle) {
 
   // to decide whather synchronization of buffer sizes has to be done or  not
   for (int i=0; i< ns; i++){
-    part[i].UpdateAllowPMsgResize(col, cycle);
+    part[i].UpdateAllowPMsgResize(vct, col, cycle);
   }
 
 
@@ -1008,12 +1008,12 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
   for (int i=0; i< ns; i++){
     /* 4.1 communicate after repopulating */
     if (part[i].getCRPtS()){
-      if (myrank==0)
+      if (myrank==0 and i==0)
 	cout << "CRPtS: " << part[i].getCRPtS() << endl;
       part[i].communicateRepopulatedParticles_Wrap(grid, vct, cycle);
     }
     else{
-      if (myrank==0)
+      if (myrank==0 and i==0)
 	cout << "CRPtS: "<< part[i].getCRPtS() << endl;
       part[i].communicate_OnlyRepopulated(grid, vct);
     }

@@ -473,6 +473,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     DoPMsgResize_RG_RG= true;
   }
 
+  CRPtS= col->getCRPtS();
 
   // sizes of the PCGMsg values set here (but allocated only if needed) 
   // to have the send/ receive vectors with the same size, I cook up a number based 
@@ -2711,7 +2712,7 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 
 
       if (DoPMsgResize_CG_RG){
-	cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;
+	//cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;
 	// the CG cores involved in PBC agree on the biggest buffer size
 	int MaxGrid_sizeCG_PBCMsg;
 	MPI_Allreduce(&sizeCG_PBCMsg, &MaxGrid_sizeCG_PBCMsg, 1, MPI_INT, MPI_MAX, COMM_CG_PBCSubset_P[ch]);
@@ -2729,8 +2730,7 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 	    MPI_Wait(&request, &status);
 	  }
 	}
-      } else
-	{cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;} // end if (DoPMsgResize_CG_RG){
+      }  // end if (DoPMsgResize_CG_RG){
 
       // now send; send an extra msg to signal the end of the meaningful part
       // cycle on all the msgs this core has to send
@@ -2785,7 +2785,6 @@ void Particles3Dcomm::ReceivePBC_NoApply(Grid* grid, VirtualTopology3D * vct, in
     MPI_Status status;
 
     if (DoPMsgResize_CG_RG){ // to do before anybody has started receiving, so i don't have to copy info
-      cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;
       int NEW_sizePBCMsg;
       // as it is set now, each RG core receives a msg, so just do a rcv 
       MPI_Recv(&NEW_sizePBCMsg, 1, MPI_INT, MPI_ANY_SOURCE, 200+ns, CommToParent_P, &status);
@@ -2794,9 +2793,7 @@ void Particles3Dcomm::ReceivePBC_NoApply(Grid* grid, VirtualTopology3D * vct, in
       if (NEW_sizePBCMsg > sizeRG_PBCMsg){
 	resize_RG_MLMD_buffers(NEW_sizePBCMsg);
       }
-    }else{
-      cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;
-    } // end if (DoPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
+    }// end if (DoPMsgResize){ // to do before anybody has started receiving, so i don't have to copy info
 
     for (int i=0; i<RG_numPBCMessages; i++ ){
       PRGMsgArrived[i]= false;
@@ -3591,16 +3588,14 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
 
   /* -- exchange - resize_CRPbuffers_BSTH -- */
   if (DoPMsgResize_RG_RG){ // if, from inputfile, the resize is an option, do it
-    cout << "DoPMsgResize_RG_RG: "<< DoPMsgResize_RG_RG <<endl;
+    
     int New_size_CRP;
 
     // on the PBC communicators
     MPI_Allreduce(&size_CRP, &New_size_CRP, 1, MPI_INT, MPI_MAX, COMM_RG_PBCSubset_P);
     if (New_size_CRP> size_CRP) 
       resize_CRP_buffers(vct, New_size_CRP);
-  } else{
-    cout << "DoPMsgResize_RG_RG: "<< DoPMsgResize_RG_RG<<endl;
-  }
+  } 
   /* -- exchange - resize_CRPbuffers_BSTH -- */
 
   if (rank_local< HighestRank){
@@ -3660,14 +3655,11 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
   
   /* -- exchange - resize_CRPbuffers_BSFH -- */
   if (DoPMsgResize_RG_RG){ // if, from inputfile, the resize is an option, do it
-    cout <<"DoPMsgResize_RG_RG: "<< DoPMsgResize_RG_RG << endl;
     int New_size_CRP;
     // on the PBC communicators
     MPI_Allreduce(&size_CRP, &New_size_CRP, 1, MPI_INT, MPI_MAX, COMM_RG_PBCSubset_P);
     if (New_size_CRP> size_CRP) 
       resize_CRP_buffers(vct, New_size_CRP);
-  }else{
-    cout <<"DoPMsgResize_RG_RG: "<< DoPMsgResize_RG_RG << endl;
   }
   /* -- exchange - resize_CRPbuffers_BSFH -- */
     
@@ -5113,7 +5105,7 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * 
 
 }
 
-void Particles3Dcomm::UpdateAllowPMsgResize(Collective * col, int cycle){
+void Particles3Dcomm::UpdateAllowPMsgResize(VirtualTopology3D * vct, Collective * col, int cycle){
 
   if (FluidLikeRep) { 
     AllowPMsgResize_CG_RG= false; AllowPMsgResize_RG_RG= false;
@@ -5140,6 +5132,12 @@ void Particles3Dcomm::UpdateAllowPMsgResize(Collective * col, int cycle){
     }
 
   }
+
+  if (vct->getCartesian_rank() == 0 && ns == 0){
+    cout << "Cycle " << cycle << " DoPMsgResize_RG_RG:" << DoPMsgResize_RG_RG <<endl;
+    cout << "Cycle " << cycle << " DoPMsgResize_CG_RG:" << DoPMsgResize_CG_RG <<endl;
+  }
+    
 
   return;
 
@@ -5376,7 +5374,7 @@ bool Particles3Dcomm::getDoPMsgResize_CG_RG(){
 
 
 int Particles3Dcomm::communicate_NoBC(VirtualTopology3D * ptVCT, int initialNOP) {
-  cout << "numGrid "<< numGrid << " rank " << ptVCT->getCartesian_rank() << " beginning of communicate_NoBC" << endl;
+
   // allocate buffers
   MPI_Status status;
   int new_buffer_size;
@@ -5539,7 +5537,7 @@ int Particles3Dcomm::communicate_NoBC(VirtualTopology3D * ptVCT, int initialNOP)
   /** do nor touch this otherwise mess in communicateRepopulatedParticles **/
   nop_EndCommunicate= nop;
 
-  cout << "numGrid "<< numGrid << " rank " << ptVCT->getCartesian_rank() << " end of communicate_NoBC" << endl;
+
 
   return(0);
 
