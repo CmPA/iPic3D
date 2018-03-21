@@ -955,14 +955,14 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
   int npExitingMax;
   // variable for memory availability of space for new particles
   int avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
-  for (int i = 0; i < buffer_size; i++) {
+  /*for (int i = 0; i < buffer_size; i++) {
     b_X_RIGHT[i] = MIN_VAL;
     b_X_LEFT[i] = MIN_VAL;
     b_Y_RIGHT[i] = MIN_VAL;
     b_Y_LEFT[i] = MIN_VAL;
     b_Z_RIGHT[i] = MIN_VAL;
     b_Z_LEFT[i] = MIN_VAL;
-  }
+    }*/
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   long long np_current = 0, nplast = nop - 1;
 
@@ -1084,6 +1084,17 @@ int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
     }
     
   }
+
+  /* set termination values */
+  for (int i=0; i< nVar; i++){
+    b_X_RIGHT[npExitXright*nVar +i] = MIN_VAL;
+    b_X_LEFT[npExitXleft*nVar+ i] = MIN_VAL;
+    b_Y_RIGHT[npExitYright*nVar +i] = MIN_VAL;
+    b_Y_LEFT[npExitYleft*nVar +i] = MIN_VAL;
+    b_Z_RIGHT[npExitZright*nVar +i] = MIN_VAL;
+    b_Z_LEFT[npExitZleft*nVar +i] = MIN_VAL;
+  }
+  /* end set termination values */
   
 
   nop = nplast + 1;
@@ -1229,8 +1240,9 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_X_LEFT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     b_X_LEFT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_X_LEFT[i] = MIN_VAL;
+  // not needed: termination is put at the end of communicate
+  /*for (int i = buffer_size; i < new_buffer_size; i++)
+    b_X_LEFT[i] = MIN_VAL;*/
 
   // resize b_X_RIGHT 
   for (int i = 0; i < buffer_size; i++)
@@ -1240,8 +1252,9 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_X_RIGHT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     b_X_RIGHT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_X_RIGHT[i] = MIN_VAL;
+  // not needed: termination is put at the end of communicate
+  /*for (int i = buffer_size; i < new_buffer_size; i++)
+    b_X_RIGHT[i] = MIN_VAL;*/
 
   // resize b_Y_RIGHT
   for (int i = 0; i < buffer_size; i++)
@@ -1251,8 +1264,9 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_Y_RIGHT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     b_Y_RIGHT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Y_RIGHT[i] = MIN_VAL;
+  // not needed: termination is put at the end of communicate
+  /*for (int i = buffer_size; i < new_buffer_size; i++)
+    b_Y_RIGHT[i] = MIN_VAL;*/
 
   // resize b_Y_LEFT
   for (int i = 0; i < buffer_size; i++)
@@ -1262,8 +1276,9 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_Y_LEFT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     b_Y_LEFT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Y_LEFT[i] = MIN_VAL;
+  // not needed: termination is put at the end of communicate
+  /*for (int i = buffer_size; i < new_buffer_size; i++)
+    b_Y_LEFT[i] = MIN_VAL;*/
 
   // resize b_Z_RIGHT
   for (int i = 0; i < buffer_size; i++)
@@ -1273,8 +1288,9 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_Z_RIGHT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     b_Z_RIGHT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Z_RIGHT[i] = MIN_VAL;
+  // not needed: termination is put at the end of communicate
+  /*for (int i = buffer_size; i < new_buffer_size; i++)
+    b_Z_RIGHT[i] = MIN_VAL;*/
 
   // resize b_Z_LEFT
   for (int i = 0; i < buffer_size; i++)
@@ -1284,8 +1300,9 @@ void Particles3Dcomm::resize_buffers(int new_buffer_size) {
   b_Z_LEFT = new double[new_buffer_size];
   for (int i = 0; i < buffer_size; i++)
     b_Z_LEFT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Z_LEFT[i] = MIN_VAL;
+  // not needed: termination is put at the end of communicate
+  /*for (int i = buffer_size; i < new_buffer_size; i++)
+    b_Z_LEFT[i] = MIN_VAL;*/
 
   delete[]temp;
 
@@ -5150,14 +5167,15 @@ int Particles3Dcomm::communicate_DepopulatePRA(VirtualTopology3D * ptVCT) {
   int npExitingMax;
   // variable for memory availability of space for new particles
   int avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
-  for (int i = 0; i < buffer_size; i++) {
+  // not needed, i set a termination value in the end
+  /*for (int i = 0; i < buffer_size; i++) {
     b_X_RIGHT[i] = MIN_VAL;
     b_X_LEFT[i] = MIN_VAL;
     b_Y_RIGHT[i] = MIN_VAL;
     b_Y_LEFT[i] = MIN_VAL;
     b_Z_RIGHT[i] = MIN_VAL;
     b_Z_LEFT[i] = MIN_VAL;
-  }
+    }*/
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
   long long np_current = 0, nplast = nop - 1;
 
@@ -5301,7 +5319,17 @@ int Particles3Dcomm::communicate_DepopulatePRA(VirtualTopology3D * ptVCT) {
     }
     
   }
-  
+
+  /* set termination values */
+  for (int i=0; i< nVar; i++){
+    b_X_RIGHT[npExitXright*nVar +i] = MIN_VAL;
+    b_X_LEFT[npExitXleft*nVar+ i] = MIN_VAL;
+    b_Y_RIGHT[npExitYright*nVar +i] = MIN_VAL;
+    b_Y_LEFT[npExitYleft*nVar +i] = MIN_VAL;
+    b_Z_RIGHT[npExitZright*nVar +i] = MIN_VAL;
+    b_Z_LEFT[npExitZleft*nVar +i] = MIN_VAL;
+  }
+  /* end set termination values */
 
   nop = nplast + 1;
   npExitingMax = 0;
@@ -5381,14 +5409,15 @@ int Particles3Dcomm::communicate_NoBC(VirtualTopology3D * ptVCT, int initialNOP)
   int npExitingMax;
   // variable for memory availability of space for new particles
   int avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
-  for (int i = 0; i < buffer_size; i++) {
+  // not needed, i am setting termination values
+  /*for (int i = 0; i < buffer_size; i++) {
     b_X_RIGHT[i] = MIN_VAL;
     b_X_LEFT[i] = MIN_VAL;
     b_Y_RIGHT[i] = MIN_VAL;
     b_Y_LEFT[i] = MIN_VAL;
     b_Z_RIGHT[i] = MIN_VAL;
     b_Z_LEFT[i] = MIN_VAL;
-  }
+    }*/
   npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
 
   /* this one is the only major difference with previous versions */
@@ -5487,6 +5516,18 @@ int Particles3Dcomm::communicate_NoBC(VirtualTopology3D * ptVCT, int initialNOP)
     
   }
   
+
+  /* set termination values */
+  for (int i=0; i< nVar; i++){
+    b_X_RIGHT[npExitXright*nVar +i] = MIN_VAL;
+    b_X_LEFT[npExitXleft*nVar+ i] = MIN_VAL;
+    b_Y_RIGHT[npExitYright*nVar +i] = MIN_VAL;
+    b_Y_LEFT[npExitYleft*nVar +i] = MIN_VAL;
+    b_Z_RIGHT[npExitZright*nVar +i] = MIN_VAL;
+    b_Z_LEFT[npExitZleft*nVar +i] = MIN_VAL;
+  }
+  /* end set termination values */
+
 
   nop = nplast + 1;
   npExitingMax = 0;
