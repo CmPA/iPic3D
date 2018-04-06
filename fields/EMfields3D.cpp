@@ -151,6 +151,15 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   Bx_ext = newArr3(double,nxn,nyn,nzn);
   By_ext = newArr3(double,nxn,nyn,nzn);
   Bz_ext = newArr3(double,nxn,nyn,nzn);
+
+  // i initialize it now just to shut up valgrind
+  for (int i=0; i< nxn; i++)
+    for (int j=0; j< nyn; j++)
+      for (int k=0; k< nzn; k++){
+	Bx_ext[i][j][k]=0.0;
+	By_ext[i][j][k]=0.0;
+	Bz_ext[i][j][k]=0.0;
+      }
   // Jx_ext = newArr3(double,nxn,nyn,nzn);
   // Jy_ext = newArr3(double,nxn,nyn,nzn);
   // Jz_ext = newArr3(double,nxn,nyn,nzn);
@@ -261,24 +270,29 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   
   int P= vct->getParentGridNum();
   // resolution of the parent
-  DxP= grid->getDx_mlmd(P);
-  DyP= grid->getDy_mlmd(P);
-  DzP= grid->getDz_mlmd(P);
-  // refinement jump per grid
-  RFx= DxP/dx;
-  RFy= DyP/dy;
-  RFz= DzP/dz;
+  if (P>-1){
+    DxP= grid->getDx_mlmd(P);
+    DyP= grid->getDy_mlmd(P);
+    DzP= grid->getDz_mlmd(P);
+    // refinement jump per grid
+    RFx= DxP/dx;
+    RFy= DyP/dy;
+    RFz= DzP/dz;
+
+    // NB: one cell in the inputfile means nzn=4
+    if ((ceil(RFx) > nxn-1 and nxn>4)  or (ceil(RFy) > nyn-1 and nyn>4) or (ceil(RFz) > nzn-1 and nzn>4)){
+      cout << "The number of cells per core must be > RF, aborting..." << endl;
+      MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+  }else { // if these guys are used in grid 0, i try to force an error
+    DxP=0; DyP=0; DzP=0;
+    RFx=0; RFy=0; RFz=0;
+  }
 
   /* length over which to do the buffering */
   BufX= col->getBuf();
   BufY= col->getBuf();
   BufZ= col->getBuf();
-
-  // NB: one cell in the inputfile means nzn=4
-  if ((ceil(RFx) > nxn-1 and nxn>4)  or (ceil(RFy) > nyn-1 and nyn>4) or (ceil(RFz) > nzn-1 and nzn>4)){
-    cout << "The number of cells per core must be > RF, aborting..." << endl;
-    MPI_Abort(MPI_COMM_WORLD, -1);
-  }
 
   BSNeeded= false;
 
@@ -290,7 +304,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid, VirtualTopology3D * vct) {
   }
 
   SmoothFaces= false;
-  
+
+  CommToParent_InDel= vct->getCommToParent();
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -5398,6 +5413,7 @@ EMfields3D::~EMfields3D() {
   delArr3(Bzc, nxc, nyc);
   delArr3(rhoc, nxc, nyc);
   delArr3(rhoh, nxc, nyc);
+  delArr4(rhocs, ns, nxc, nyc);
   // various stuff needs to be deallocated too
   delArr3(tempXC, nxc, nyc);
   delArr3(tempYC, nxc, nyc);
@@ -5423,75 +5439,135 @@ EMfields3D::~EMfields3D() {
   delArr3(vectZ, nxn, nyn);
   delArr3(divC, nxc, nyc);
 
+  delete[]rhoINIT;
+  delete[]rhoINJECT;
+  delete[]DriftSpecies;
+
   delete[]dx_Ch;
   delete[]dy_Ch;
   delete[]dz_Ch;
 
-  delete[]RGBC_Info_Ghost;
-  delete[]RGBC_Info_Active;
-
-  delArr2(Ex_Active_BC, RG_numBCMessages_Active);
-  delArr2(Ey_Active_BC, RG_numBCMessages_Active);
-  delArr2(Ez_Active_BC, RG_numBCMessages_Active);
-
-  delArr2(Ex_Ghost_BC, RG_numBCMessages_Ghost);
-  delArr2(Ey_Ghost_BC, RG_numBCMessages_Ghost);
-  delArr2(Ez_Ghost_BC, RG_numBCMessages_Ghost);
-
-  delArr2(Exth_Active_BC, RG_numBCMessages_Active);
-  delArr2(Eyth_Active_BC, RG_numBCMessages_Active);
-  delArr2(Ezth_Active_BC, RG_numBCMessages_Active);
-
-  delArr2(Exth_Ghost_BC, RG_numBCMessages_Ghost);
-  delArr2(Eyth_Ghost_BC, RG_numBCMessages_Ghost);
-  delArr2(Ezth_Ghost_BC, RG_numBCMessages_Ghost);
-
-  delArr2(Bxn_Active_BC, RG_numBCMessages_Active);
-  delArr2(Byn_Active_BC, RG_numBCMessages_Active);
-  delArr2(Bzn_Active_BC, RG_numBCMessages_Active);
-
-  delArr2(Bxn_Ghost_BC, RG_numBCMessages_Ghost);
-  delArr2(Byn_Ghost_BC, RG_numBCMessages_Ghost);
-  delArr2(Bzn_Ghost_BC, RG_numBCMessages_Ghost);
-
-  if (MLMD_BCBufferArea){
-    delete[]RGBC_Info_Buffer;
-    delete[]DirBuffer;
-
-    delArr2(Ex_Buffer_BC, RG_numBCMessages_Buffer);
-    delArr2(Ey_Buffer_BC, RG_numBCMessages_Buffer);
-    delArr2(Ez_Buffer_BC, RG_numBCMessages_Buffer);
-  
-    delArr2(Exth_Buffer_BC, RG_numBCMessages_Buffer);
-    delArr2(Eyth_Buffer_BC, RG_numBCMessages_Buffer);
-    delArr2(Ezth_Buffer_BC, RG_numBCMessages_Buffer);
-        
-    delArr2(Bxn_Buffer_BC, RG_numBCMessages_Buffer);
-    delArr2(Byn_Buffer_BC, RG_numBCMessages_Buffer);
-    delArr2(Bzn_Buffer_BC, RG_numBCMessages_Buffer);
-  }
-
-  if (MLMD_fixBCenters or MLMD_InterpolateOldBCell) {
-    delete[]RGBC_Info_fix3B;
-
-    delArr2(Bxc_fix3B_BC, RG_numBCMessages_fix3B);
-    delArr2(Byc_fix3B_BC, RG_numBCMessages_fix3B);
-    delArr2(Bzc_fix3B_BC, RG_numBCMessages_fix3B);
-  }
-
-  delete[] RGMsg;
-  // other mlmd stuff?
-  if (BSNeeded){
-    delArr3(Ex_BS, nxn, nyn);
-    delArr3(Ey_BS, nxn, nyn);
-    delArr3(Ez_BS, nxn, nyn);
-  }   
-
-
   delArr4(RHOINIT, ns, nxc, nyc);
   
+  delete injFieldsRight;
+  delete injFieldsLeft;
+  delete injFieldsTop;
+  delete injFieldsBottom;
+  delete injFieldsFront;
+  delete injFieldsRear;
 
+  delete []qom;
 
+  delArr3(imageEX, nxc, nyc);
+  delArr3(imageEY, nxc, nyc);
+  delArr3(imageEZ, nxc, nyc);
+  delArr3(imageBX, nxn, nyn);
+  delArr3(imageBY, nxn, nyn);
+  delArr3(imageBZ, nxn, nyn);
+
+  delArr3(arr, nxn, nyn);
+  delArr3(Lambda, nxn, nyn);
+
+  if (CommToParent_InDel != MPI_COMM_NULL and MLMD_BC){
+    delete[]RGBC_Info_Ghost;
+    delete[]RGBC_Info_Active;
+
+    if (MLMD_BCBufferArea){
+      delete[]RGBC_Info_Buffer;
+      delete[]DirBuffer;
+    }
+
+    if (MLMD_fixBCenters or MLMD_InterpolateOldBCell){
+      delete[]RGBC_Info_fix3B; 
+    }
+
+    delArr2(Ex_Active_BC, RG_numBCMessages_Active);
+    delArr2(Ey_Active_BC, RG_numBCMessages_Active);
+    delArr2(Ez_Active_BC, RG_numBCMessages_Active);
+
+    delArr2(Ex_Ghost_BC, RG_numBCMessages_Ghost);
+    delArr2(Ey_Ghost_BC, RG_numBCMessages_Ghost);
+    delArr2(Ez_Ghost_BC, RG_numBCMessages_Ghost);
+
+    delArr2(Exth_Active_BC, RG_numBCMessages_Active);
+    delArr2(Eyth_Active_BC, RG_numBCMessages_Active);
+    delArr2(Ezth_Active_BC, RG_numBCMessages_Active);
+
+    delArr2(Exth_Ghost_BC, RG_numBCMessages_Ghost);
+    delArr2(Eyth_Ghost_BC, RG_numBCMessages_Ghost);
+    delArr2(Ezth_Ghost_BC, RG_numBCMessages_Ghost);
+
+    delArr2(Bxn_Active_BC, RG_numBCMessages_Active);
+    delArr2(Byn_Active_BC, RG_numBCMessages_Active);
+    delArr2(Bzn_Active_BC, RG_numBCMessages_Active);
+
+    delArr2(Bxn_Ghost_BC, RG_numBCMessages_Ghost);
+    delArr2(Byn_Ghost_BC, RG_numBCMessages_Ghost);
+    delArr2(Bzn_Ghost_BC, RG_numBCMessages_Ghost);
+
+    if (MLMD_BCBufferArea){
+    
+      delArr2(Ex_Buffer_BC, RG_numBCMessages_Buffer);
+      delArr2(Ey_Buffer_BC, RG_numBCMessages_Buffer);
+      delArr2(Ez_Buffer_BC, RG_numBCMessages_Buffer);
+      
+      delArr2(Exth_Buffer_BC, RG_numBCMessages_Buffer);
+      delArr2(Eyth_Buffer_BC, RG_numBCMessages_Buffer);
+      delArr2(Ezth_Buffer_BC, RG_numBCMessages_Buffer);
+      
+      delArr2(Bxn_Buffer_BC, RG_numBCMessages_Buffer);
+      delArr2(Byn_Buffer_BC, RG_numBCMessages_Buffer);
+      delArr2(Bzn_Buffer_BC, RG_numBCMessages_Buffer);
+    }// end if (MLMD_BCBufferArea){
+
+    if (MLMD_fixBCenters or MLMD_InterpolateOldBCell){
+      delArr2(Bxc_fix3B_BC, RG_numBCMessages_fix3B);
+      delArr2(Byc_fix3B_BC, RG_numBCMessages_fix3B);
+      delArr2(Bzc_fix3B_BC, RG_numBCMessages_fix3B);
+    } // end if (MLMD_fixBCenters or MLMD_InterpolateOldBCell){
+
+    delete[] RGMsg; 
+
+    if (MLMD_BCBufferArea){
+      delete[]RGMsgBuffer;
+    }
+    if (MLMD_fixBCenters or MLMD_InterpolateOldBCell){
+      delete[]RGMsgfix3B;
+    }
+    
+  } // end if (CommToParent_InDel != MPI_COMM_NULL){
+ 
+  if (numChildren >0 and MLMD_BC ){   
+
+    delArr2(CG_Info_Ghost, numChildren);
+    delete[]CG_numBCMessages_Ghost;
+    delArr2(CG_Info_Active, numChildren);
+    delete[]CG_numBCMessages_Active;
+    delete[]CGMsg;   
+
+    if (MLMD_BCBufferArea){
+      delArr2(CG_Info_Buffer, numChildren);
+      delete[]CG_numBCMessages_Buffer;  
+      delete[]CGMsgBuffer; 
+    }
+
+    if (MLMD_fixBCenters or MLMD_InterpolateOldBCell){
+      delArr2(CG_Info_Fix3B, numChildren);
+      delete[]CG_numBCMessages_Fix3B;
+      delete[]CGMsgFix3B; 
+    }
+
+  } // end if (numChildren >0){
+
+  if (BSNeeded){
+      delArr3(Ex_BS, nxn, nyn);
+      delArr3(Ey_BS, nxn, nyn);
+      delArr3(Ez_BS, nxn, nyn);
+    }
+
+  /* deallocate datatypes */
+  MPI_Type_free(&MPI_RGBC_struct);
+  /* end deallocate datatypes */
 }
 
 /*! mlmd specific functions */
@@ -6450,13 +6526,14 @@ void EMfields3D::initWeightBC_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_st
   delete []Dir1_SPZperC;
   delete []Dir1_NPperC;
   delete []Dir1_rank;
+  delete []Dir1_IndexFirstPointperC;
 
   delete []Dir2_SPXperC;
   delete []Dir2_SPYperC;
   delete []Dir2_SPZperC;
   delete []Dir2_NPperC;
   delete []Dir2_rank;
-
+  delete []Dir2_IndexFirstPointperC;
 }
 
 void EMfields3D::initWeightBCBuffer_Phase1(Grid *grid, VirtualTopology3D *vct, RGBC_struct *RGBC_Info, int *numMsg, int *MaxSizeMsg){
@@ -6898,7 +6975,7 @@ void EMfields3D::initWeightBC_Phase2b(Grid *grid, VirtualTopology3D *vct, RGBC_s
     
   }
 
-  delete[] RGBC_Info_ToCGCore;
+  delArr2(RGBC_Info_ToCGCore, ParentCoreNum);
   delete[] RG_numBCMessages_ToCGCore;
 }
 
@@ -7061,6 +7138,7 @@ void EMfields3D::Trim_RGBC_Vectors(VirtualTopology3D *vct){
 	DirBuffer[i]= TMP[i];
       }
       delete[] TMP;
+      
     } // end if (MLMD_BCBufferArea){
 
     /** fix3B **/
@@ -7096,14 +7174,15 @@ void EMfields3D::Trim_RGBC_Vectors(VirtualTopology3D *vct){
 	tmp2[ch][d]= CG_Info_Ghost[ch][d];
       }
     }
-    delete[] CG_Info_Ghost;
+    delArr2(CG_Info_Ghost, numChildren);
     CG_Info_Ghost= newArr2(RGBC_struct, numChildren, dim);
     for (int ch=0; ch<numChildren; ch++){
       for (int d=0; d<dim; d++){
 	CG_Info_Ghost[ch][d]= tmp2[ch][d];
       }
     }
-    delete[] tmp2;
+   
+    delArr2(tmp2, numChildren);
 
     // active
     dim=0;
@@ -7117,14 +7196,15 @@ void EMfields3D::Trim_RGBC_Vectors(VirtualTopology3D *vct){
 	tmp2[ch][d]= CG_Info_Active[ch][d];
       }
     }
-    delete[] CG_Info_Active;
+    delArr2(CG_Info_Active, numChildren);
     CG_Info_Active= newArr2(RGBC_struct, numChildren, dim);
     for (int ch=0; ch<numChildren; ch++){
       for (int d=0; d<dim; d++){
 	CG_Info_Active[ch][d]= tmp2[ch][d]; //SF not here
       }
     }
-    delete[] tmp2;
+    delArr2(tmp2, numChildren);
+
 
     if (MLMD_BCBufferArea){
       dim=0;
@@ -7138,14 +7218,15 @@ void EMfields3D::Trim_RGBC_Vectors(VirtualTopology3D *vct){
 	  tmp2[ch][d]= CG_Info_Buffer[ch][d];
 	}
       }
-      delete[] CG_Info_Buffer;
+      delArr2(CG_Info_Buffer, numChildren);
       CG_Info_Buffer= newArr2(RGBC_struct, numChildren, dim);
       for (int ch=0; ch<numChildren; ch++){
 	for (int d=0; d<dim; d++){
 	  CG_Info_Buffer[ch][d]= tmp2[ch][d]; //SF not here
 	}
       }
-      delete[] tmp2;
+      delArr2(tmp2, numChildren);
+     
     } // end if (MLMD_BCBufferArea){
 
     if (MLMD_fixBCenters or MLMD_InterpolateOldBCell){
@@ -7160,14 +7241,15 @@ void EMfields3D::Trim_RGBC_Vectors(VirtualTopology3D *vct){
 	  tmp2[ch][d]= CG_Info_Fix3B[ch][d];
 	}
       }
-      delete[] CG_Info_Fix3B;
+      delArr2(CG_Info_Fix3B, numChildren);
       CG_Info_Fix3B= newArr2(RGBC_struct, numChildren, dim);
       for (int ch=0; ch<numChildren; ch++){
 	for (int d=0; d<dim; d++){
 	  CG_Info_Fix3B[ch][d]= tmp2[ch][d]; //SF not here
 	}
       }
-      delete[] tmp2;
+      delArr2(tmp2, numChildren);
+      
     } // end if (MLMD_fixBCenters){
 
   } // end if(numChildren >0)

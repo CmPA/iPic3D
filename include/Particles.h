@@ -88,7 +88,7 @@ public:
   virtual double getMaxVelocity(MPI_Comm Comm) = 0; 
   /** return energy distribution*/
   //virtual unsigned long *getVelocityDistribution(int nBins, double maxVel) = 0;
-  virtual unsigned long *getVelocityDistribution(int nBins, double maxVel, MPI_Comm Comm) = 0;
+  virtual void getVelocityDistribution(unsigned long *, int nBins, double maxVel, MPI_Comm Comm) = 0;
   /** retturn the momentum */
   //virtual double getP() = 0;
   virtual double getP(MPI_Comm Comm) = 0;

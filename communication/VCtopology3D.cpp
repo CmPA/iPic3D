@@ -145,9 +145,7 @@ VCtopology3D::VCtopology3D(Collective *col) {
 VCtopology3D::~VCtopology3D(){
   
   /* communicator stuff*/
-  delete[]CommToChildren;
   delete[]rank_CommToChildren;
-  delArr2(CommToChildren_P, Ngrids);
   delArr2(rank_CommToChildren_P, Ngrids);
 
   /* TAGS */
@@ -159,16 +157,96 @@ VCtopology3D::~VCtopology3D(){
   delete[]ZLEN_mlmd;
 
   /* lookup maps for coordinates */
-  delete[]Xcoord_CommToParent;
-  delete[]Ycoord_CommToParent;
-  delete[]Zcoord_CommToParent;
-  delete[]numGrid_CommToParent;
+  if (CommToParent != MPI_COMM_NULL){
+    delete[]Xcoord_CommToParent;
+    delete[]Ycoord_CommToParent;
+    delete[]Zcoord_CommToParent;
+    delete[]numGrid_CommToParent;
+  }
 
-  delArr2(Xcoord_CommToChildren, numChildren);
-  delArr2(Ycoord_CommToChildren, numChildren);
-  delArr2(Zcoord_CommToChildren, numChildren);
-  delArr2(numGrid_CommToChildren, numChildren);
+  if (numChildren > 0){
+    delArr2(Xcoord_CommToChildren, numChildren);
+    delArr2(Ycoord_CommToChildren, numChildren);
+    delArr2(Zcoord_CommToChildren, numChildren);
+    delArr2(numGrid_CommToChildren, numChildren);
+  }
   /* end lookup maps for coordinates */
+
+  if (CommToParent_P[0] != MPI_COMM_NULL){
+    delArr2(Xcoord_CommToParent_P, 2*MaxGridCoreN);
+    delArr2(Ycoord_CommToParent_P, 2*MaxGridCoreN);
+    delArr2(Zcoord_CommToParent_P, 2*MaxGridCoreN);
+    delArr2(numGrid_CommToParent_P, 2*MaxGridCoreN);
+  }
+
+  delete[]rank_CommToParent_P;
+  delete[]childrenGrid;
+  
+  if (numChildren>0){
+    delArr3(Xcoord_CommToChildren_P, numChildren, 2*MaxGridCoreN);
+    delArr3(Ycoord_CommToChildren_P, numChildren, 2*MaxGridCoreN);
+    delArr3(Zcoord_CommToChildren_P, numChildren, 2*MaxGridCoreN);
+    delArr3(numGrid_CommToChildren_P, numChildren, 2*MaxGridCoreN);
+  }
+
+  /* free communicators */
+  if (CART_COMM!= MPI_COMM_NULL)
+    MPI_Comm_free(&CART_COMM);
+  if (CART_COMM_P!= MPI_COMM_NULL)
+    MPI_Comm_free(&CART_COMM_P);
+  if (MPI_COMM_GRID!= MPI_COMM_NULL)
+    MPI_Comm_free(&MPI_COMM_GRID);
+  if (CommToParent != MPI_COMM_NULL)
+    MPI_Comm_free(&CommToParent);
+  if (CommToParent_BCGhost != MPI_COMM_NULL)
+    MPI_Comm_free(&CommToParent_BCGhost);
+  if (CommToParent_BCBuffer != MPI_COMM_NULL)
+    MPI_Comm_free(&CommToParent_BCBuffer);
+  if (CommToParent_BCFix3B != MPI_COMM_NULL)
+    MPI_Comm_free(&CommToParent_BCFix3B);
+  if (CommToParent_Proj != MPI_COMM_NULL)
+    MPI_Comm_free(&CommToParent_Proj);
+
+  for (int i=0; i< numChildren; i++){
+    if (CommToChildren[i] != MPI_COMM_NULL)
+      MPI_Comm_free(CommToChildren +i);
+    if (CommToChildren_BCGhost[i] != MPI_COMM_NULL)
+      MPI_Comm_free(CommToChildren_BCGhost +i);
+    if (CommToChildren_BCBuffer[i] != MPI_COMM_NULL)
+      MPI_Comm_free(CommToChildren_BCBuffer +i);
+    if (CommToChildren_BCFix3B[i] != MPI_COMM_NULL)
+      MPI_Comm_free(CommToChildren_BCFix3B +i);
+    if (CommToChildren_Proj[i] != MPI_COMM_NULL)
+      MPI_Comm_free(CommToChildren_Proj +i);    
+  }
+
+  if (CommField_XLeft!= MPI_COMM_NULL)
+    MPI_Comm_free(&CommField_XLeft);
+  if (CommField_XRight!= MPI_COMM_NULL)
+    MPI_Comm_free(&CommField_XRight);
+
+  if (CommField_YLeft!= MPI_COMM_NULL)
+    MPI_Comm_free(&CommField_YLeft);
+  if (CommField_YRight!= MPI_COMM_NULL)
+    MPI_Comm_free(&CommField_YRight);
+
+  if (CommField_ZLeft!= MPI_COMM_NULL)
+    MPI_Comm_free(&CommField_ZLeft);
+  if (CommField_ZRight!= MPI_COMM_NULL)
+    MPI_Comm_free(&CommField_ZRight);
+  
+  /* end free communicators */
+
+
+  delete[]CommToChildren;
+  delArr2(CommToChildren_P, Ngrids);
+
+  delete[]CommToChildren_BCGhost;
+  delete[]CommToChildren_BCBuffer;
+  delete[]CommToChildren_BCFix3B;
+  delete[]CommToChildren_Proj;
+
+  delete[]CommToParent_P;
 }
 
 /** Within CART_COMM, processes find about their new rank numbers, their cartesian coordinates,
@@ -785,15 +863,34 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm, Collective *col) {
    }
    /* END SETUP OF TAGS VALUES */
 
+   MPI_Barrier(MPI_COMM_WORLD);
+
+   /* free communicators, if they are !=MPI_COMM_NULL */
+   for (int i=0; i< Ngrids; i++){
+     if (ChildParentInterComm[i]!= MPI_COMM_NULL)
+       MPI_Comm_free(&(ChildParentInterComm[i])); //ok, MUST does not complain
+     /*if(ChildParentComm[i]!= MPI_COMM_NULL)    // with this, MUST complain
+       MPI_Comm_free(&(ChildParentComm[i]));*/
+     for (int is=0; is< ns; is++){
+       if (ChildParentInterComm_P[i][is]!=MPI_COMM_NULL)
+	 MPI_Comm_free(&(ChildParentInterComm_P[i][is])); //ok, MUST does not complain
+       /*if (ChildParentComm_P[i][is]!=MPI_COMM_NULL) // with this, MUST complain
+	 MPI_Comm_free(&(ChildParentComm_P[i][is]));*/
+     }
+   }
+
    /* cleaning up tmp arrays*/
    delete[]parentList;
-   delete[]childrenList;
+   delArr2(childrenList, Ngrids);
    delete[]childrenNum;
+
+   /* these were the communicator arrays */
    delete[]ChildParentInterComm;
    delete[]ChildParentComm;
 
    delArr2(ChildParentInterComm_P, Ngrids);
    delArr2(ChildParentComm_P, Ngrids);
+
 }
 
 

@@ -220,11 +220,11 @@ public:
   /** return the maximum kinetic energy */
   double getMaxVelocity(MPI_Comm Comm); 
   /** return energy distribution */
-  unsigned long *getVelocityDistribution(int nBins, double maxVel, MPI_Comm Comm);
+  void getVelocityDistribution(unsigned long *, int nBins, double maxVel, MPI_Comm Comm);
   /** return energy distribution, only of repopulated particles */
-  unsigned long *getVelocityDistribution_RepPart(int nBins, double maxVel, MPI_Comm Comm);
+  void getVelocityDistribution_RepPart(unsigned long *, int nBins, double maxVel, MPI_Comm Comm);
   /** return energy distribution, only of NON repopulated particles */
-  unsigned long *getVelocityDistribution_NonRepPart(int nBins, double maxVel, MPI_Comm Comm);
+  void getVelocityDistribution_NonRepPart(unsigned long *, int nBins, double maxVel, MPI_Comm Comm);
   /** return the momentum */
   /*! mlmd: now I need the communicator also */
   //double getP();
@@ -497,6 +497,8 @@ protected:
   int XLEN;
   int YLEN;
   int ZLEN;
+  
+  bool MLMD_ParticleREPOPULATION;
 
   /* mlmd: i need dx, dy, dz of the children */
   double *dx_Ch;
@@ -767,6 +769,8 @@ protected:
   bool saveRepParFile;
   string RepopulatedPar;
   int DiagnosticsOutputCycle;
+  int rank_local;
+  int HighestRank;
 };
 
 #endif

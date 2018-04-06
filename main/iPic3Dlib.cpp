@@ -719,6 +719,7 @@ void c_Solver::WriteConserved(int cycle) {
     if (myrank == 0) {
       ofstream my_file(cq.c_str(), fstream::app);
       my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy <<"\t" ;
+
       for (int is=0; is< ns; is++){
 	my_file << Ke[is] << "\t";
       }
@@ -737,7 +738,7 @@ void c_Solver::WriteConserved(int cycle) {
 	//double maxVel = part[is].getMaxVelocity(MPI_COMM_WORLD);
 	// use the same max vel at all times (to compare d.f. without normalizing)
 	double maxVel= col->getUth(is)*7;
-	VelocityDist = part[is].getVelocityDistribution(nDistributionBins, maxVel, vct->getCommGrid());
+	part[is].getVelocityDistribution(VelocityDist, nDistributionBins, maxVel, vct->getCommGrid());
 	if (myrank == 0) {
 	  ofstream my_file(ds[is].c_str(), fstream::app);
 	  my_file << cycle << "\t" << is << "\t" << maxVel;
@@ -756,7 +757,7 @@ void c_Solver::WriteConserved(int cycle) {
       // this the repopulated particles
       for (int is = 0; is < ns; is++) {
 	double maxVel= col->getUth(is)*7;
-	VelocityDist_RepPart = part[is].getVelocityDistribution_RepPart(nDistributionBins, maxVel, vct->getCommGrid());
+	part[is].getVelocityDistribution_RepPart(VelocityDist_RepPart, nDistributionBins, maxVel, vct->getCommGrid());
 	if (myrank == 0) {
 	  ofstream my_file(ds_RepPart[is].c_str(), fstream::app);
 	  my_file << cycle << "\t" << is << "\t" << maxVel;
@@ -770,7 +771,7 @@ void c_Solver::WriteConserved(int cycle) {
       // this the NON repopulated particles
       for (int is = 0; is < ns; is++) {
 	double maxVel= col->getUth(is)*7;
-	VelocityDist_NonRepPart = part[is].getVelocityDistribution_NonRepPart(nDistributionBins, maxVel, vct->getCommGrid());
+	part[is].getVelocityDistribution_NonRepPart(VelocityDist_NonRepPart, nDistributionBins, maxVel, vct->getCommGrid());
 	if (myrank == 0) {
 	  ofstream my_file(ds_NonRepPart[is].c_str(), fstream::app);
 	  my_file << cycle << "\t" << is << "\t" << maxVel;
@@ -861,11 +862,37 @@ void c_Solver::Finalize() {
   // stop profiling
   my_clock->stopTiming();
 
-  // deallocate
+  // deallocate stuff allocated in c_Solver
   delete[]Ke;
   delete[]momentum;
+  delete[]VelocityDist;
+  //delete[]VelocityDist_NonRepPart;
+  delete[]Qremoved;
+  if (WriteDistrFun){
+    delete[]ds;
+  }
+  if (WriteDistrFun_RepPart and numGrid >0){
+    delete[]VelocityDist_RepPart;
+    delete[]ds_RepPart;
+
+    delete[]VelocityDist_NonRepPart;
+    delete[]ds_NonRepPart;
+  }
+
+  //delete[]ds_NonRepPart;
+
+  delete my_clock;
+  
+  // delete all the important objstcs
+  delete col;
+  delete vct;
+  delete grid;
+  delete EMf;
+
+  delete[] part;
   // close MPI
   mpi->finalize_mpi();
+  delete mpi;
 }
 
 void c_Solver::CalculateField_ECSIM(int cycle) {
@@ -1173,3 +1200,5 @@ void c_Solver::GatherMoments_Sp(int i){
   */
 
 }
+
+

@@ -200,6 +200,17 @@ template < class type > void delArr2(type ** arr, int dummyx) {
   delete[]arr;
 }
 
+/*! Deallocator for arrays allocated with newArr2_PA*/ 
+template < class type > void delArr2_PA(type ** arr, int sz1, int *Which) {
+  for (int i=0; i< sz1; i++){
+    if (Which[i]==1){
+      delete[]arr[i];
+    }
+  }
+
+  delete[]arr;
+}
+
 #define newArr4(type,sz1,sz2,sz3,sz4) _new_4_array<type>((sz1),(sz2),(sz3),(sz4))
 #define newArr3(type,sz1,sz2,sz3) _new_3_array<type>((sz1),(sz2),(sz3))
 #define newArr2(type,sz1,sz2) _new_2_array<type>((sz1),(sz2))

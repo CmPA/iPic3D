@@ -1201,17 +1201,10 @@ Collective::Collective(int argc, char **argv) {
 
   /*! npcel = number of particles per cell */
   npcel = new int[ns];
-  /*! np = number of particles of different species */
-  np = new long[ns];
-  /*! npMax = maximum number of particles of different species */
-  npMax = new long[ns];
 
   // MLMD: maybe np should be had per grid as well
   for (int i = 0; i < ns; i++) {
     npcel[i] = npcelx[i] * npcely[i] * npcelz[i];
-    np[i] = npcel[i] * (nxc/XLEN_mlmd[numGrid_clt]) * (nyc/YLEN_mlmd[numGrid_clt]) * (nzc/ZLEN_mlmd[numGrid_clt]);
-    npMax[i] = (long) (NpMaxNpRatio * np[i]);
-    
   }
 
   /*! building the list of the children grids */
@@ -1261,12 +1254,11 @@ Collective::Collective(int argc, char **argv) {
 
 /*! destructor */
 Collective::~Collective() {
-  delete[]np;
+
   delete[]npcel;
   delete[]npcelx;
   delete[]npcely;
   delete[]npcelz;
-  delete[]npMax;
   delete[]qom;
 
   delete[]uth;
@@ -1291,6 +1283,7 @@ Collective::~Collective() {
   delete[]Ox_SW;
   delete[]Oy_SW;
   delete[]Oz_SW;
+  delete[]SmoothGrid;
   delete[]Ox_P;
   delete[]Oy_P;
   delete[]Oz_P;
@@ -1317,6 +1310,8 @@ Collective::~Collective() {
   delete[]bcPfaceYright;
   delete[]bcPfaceZleft;
   delete[]bcPfaceZright;
+  delete[]childrenNum;
+  delArr2(childrenGrids, Ngrids);
   // MLMD variables
 }
 /*! Print Simulation Parameters */
@@ -1329,8 +1324,7 @@ void Collective::Print() {
     
     cout <<"G" << ng <<": " << " Grid " << ng << ", grid level " <<  gridLevel[ng] << endl;
     cout <<"G" << ng <<": " << "Number of species    = " << ns << endl;
-    for (int i = 0; i < ns; i++)
-      cout <<"G" << ng <<": " << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+
     cout <<"G" << ng <<": " << "x-Length                 = " << Lx_mlmd[ng] << endl;
     cout <<"G" << ng <<": " << "y-Length                 = " << Ly_mlmd[ng] << endl;
     cout <<"G" << ng <<": " << "z-Length                 = " << Lz_mlmd[ng] << endl;
@@ -1413,8 +1407,7 @@ void Collective::save() {
     my_file <<"G" << ng <<": "<< "---------------------------" << endl;
     my_file <<"G" << ng <<": " << " Grid " << ng << ", grid level " <<  gridLevel[ng] << endl;
     my_file <<"G" << ng <<": "<< "Number of species    = " << ns << endl;
-    for (int i = 0; i < ns; i++)
-      my_file <<"G" << ng <<": "<< "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+
     my_file <<"G" << ng <<": "<< "---------------------------" << endl;
     my_file <<"G" << ng <<": " << "x-Length                 = " << Lx_mlmd[ng] << endl;
     my_file <<"G" << ng <<": " << "y-Length                 = " << Ly_mlmd[ng] << endl;
@@ -1520,14 +1513,7 @@ int Collective::getNpcely(int nspecies) {
 int Collective::getNpcelz(int nspecies) {
   return (npcelz[nspecies]);
 }
-/*! get the number of particles for different species */
-long Collective::getNp(int nspecies) {
-  return (np[nspecies]);
-}
-/*! get maximum number of particles for different species */
-long Collective::getNpMax(int nspecies) {
-  return (npMax[nspecies]);
-}
+
 double Collective::getNpMaxNpRatio() {
   return (NpMaxNpRatio);
 }

@@ -426,11 +426,9 @@ public:
       for (int i = 0; i < ns; ++i) {
         stringstream ii;
         ii << i;
-        this->output_adaptor.write("/collective/species_" + ii.str() + "/Np", _col->getNp(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/Npcelx", _col->getNpcelx(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/Npcely", _col->getNpcely(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/Npcelz", _col->getNpcelz(i));
-        this->output_adaptor.write("/collective/species_" + ii.str() + "/NpMax", _col->getNpMax(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/qom", _col->getQOM(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/uth", _col->getUth(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/vth", _col->getVth(i));

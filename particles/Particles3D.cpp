@@ -52,13 +52,7 @@ Particles3D::Particles3D() {
 }
 /** deallocate particles */
 Particles3D::~Particles3D() {
-  delete[]x;
-  delete[]y;
-  delete[]z;
-  delete[]u;
-  delete[]v;
-  delete[]w;
-  delete[]q;
+  
 }
 
 /** particles are uniformly distributed with zero velocity   */

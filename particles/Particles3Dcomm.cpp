@@ -54,9 +54,12 @@ extern MyClock *clocks;
 Particles3Dcomm::Particles3Dcomm() {
   // see allocate(int species, Collective* col, VirtualTopology3D* vct, Grid* grid)
 
+  
 }
 /** deallocate particles */
 Particles3Dcomm::~Particles3Dcomm() {
+
+  /* allocated in allocate */
   delete[]x;
   delete[]y;
   delete[]z;
@@ -64,6 +67,9 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]v;
   delete[]w;
   delete[]q;
+  if (TrackParticleID) {
+    delete[]ParticleID;
+  }
   // deallocate buffers
   delete[]b_X_RIGHT;
   delete[]b_X_LEFT;
@@ -72,59 +78,27 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]b_Z_RIGHT;
   delete[]b_Z_LEFT;
 
+  delete[]dx_Ch;
+  delete[]dy_Ch;
+  delete[]dz_Ch;
+  delete[]Ox_Ch;
+  delete[]Oy_Ch;
+  delete[]Oz_Ch;
+  delete[]Lx_Ch;
+  delete[]Ly_Ch;
+  delete[]Lz_Ch;
+
   // deallocate mlmd-related stuff
+
+  for (int i=0; i<numChildren; i++){
+    if (CommToChild_P[i]!= MPI_COMM_NULL)
+      MPI_Comm_free(CommToChild_P+i);
+  }
   delete[]CommToChild_P;
   delete[]Rank_CommToChildren_P;
 
-  delete[]RGPBC_Info;
-  if (!FluidLikeRep){
-    // RG side
-    delArr2(PRGMsg, RG_numPBCMessages);
-    delete[]nopPRGMsg;
-    delete[]PRGMsgArrived;
-    delete[]PRGMsg_General;
-    // CG side
-    delArr3(PCGMsg, numChildren, MaxNumMsg);
-    delArr2(nopPCGMsg, numChildren);
-  }
-  if (RG_numPBCMessages and !FluidLikeRep){
-    // RG side
-    delete CRP_ToCoreH;  
-    delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
-    delete[]H_num_CRP_nop;
-    delete[]H_CRP_General;
-    delete[]H_CRP_cores;
-  }
-
-  if (RG_numPBCMessages and FluidLikeRep){
-    // RG side
-    delArr2(rho_FBC, RG_numPBCMessages);
-    delArr2(Jx_FBC, RG_numPBCMessages);
-    delArr2(Jy_FBC, RG_numPBCMessages);
-    delArr2(Jz_FBC, RG_numPBCMessages);
-    delArr2(Pxx_FBC, RG_numPBCMessages);
-    delArr2(Pxy_FBC, RG_numPBCMessages);
-    delArr2(Pxz_FBC, RG_numPBCMessages);
-    delArr2(Pyy_FBC, RG_numPBCMessages);
-    delArr2(Pyz_FBC, RG_numPBCMessages);
-    delArr2(Pzz_FBC, RG_numPBCMessages);
-
-    delArr3(RHOP, nxc, nyc);
-    delArr3(UP, nxc, nyc);
-    delArr3(VP, nxc, nyc);
-    delArr3(WP, nxc, nyc);
-    delArr3(UTHP, nxc, nyc);
-    delArr3(VTHP, nxc, nyc);
-    delArr3(WTHP, nxc, nyc);
-
-    delete[]RGFluidMsg;
-    delArr3(REPO, nxc, nyc);
-  }
-  // put another condition so this happens only on RG
-  if (FluidLikeRep){
-    delete[]CGFluidMsg;
-  }
-  delArr3(Ex, nxn, nyn);
+  // commented otherwise valgrind complain after EMfields alredy de-allocated
+  /*delArr3(Ex, nxn, nyn);
   delArr3(Ey, nxn, nyn);
   delArr3(Ez, nxn, nyn);
 
@@ -134,10 +108,114 @@ Particles3Dcomm::~Particles3Dcomm() {
 
   delArr3(Bx_ext, nxn, nyn);
   delArr3(By_ext, nxn, nyn);
-  delArr3(Bz_ext, nxn, nyn);
+  delArr3(Bz_ext, nxn, nyn);*/
+  /* end allocated in allocate*/
+
+  /* allocated in initWeightPBC */
+  if (CommToParent_P != MPI_COMM_NULL) {
+    delete[]RGPBC_Info;
+  
+    if (RG_numPBCMessages>0 and !FluidLikeRep){
+      delArr2(PRGMsg, RG_numPBCMessages);
+      delete[]nopPRGMsg;
+      delete[]PRGMsgArrived;
+      delete[]PRGMsg_General;
+    }
+
+    if (RG_numPBCMessages>0 and !FluidLikeRep and CRPtS ){
+      if (rank_local==HighestRank){
+	delete[]H_CRP_General;
+	delete[]H_num_CRP_nop;
+	//delete[]H_CRP_cores;
+      }
+      else{
+	delete[]CRP_ToCoreH;
+      }
+    }
+
+    if   (RG_numPBCMessages>0 and FluidLikeRep){
+      delArr2(rho_FBC, RG_numPBCMessages);
+      delArr2(Jx_FBC, RG_numPBCMessages);
+      delArr2(Jy_FBC, RG_numPBCMessages);
+      delArr2(Jz_FBC, RG_numPBCMessages);
+      delArr2(Pxx_FBC, RG_numPBCMessages);
+      delArr2(Pxy_FBC, RG_numPBCMessages);
+      delArr2(Pxz_FBC, RG_numPBCMessages);
+      delArr2(Pyy_FBC, RG_numPBCMessages);
+      delArr2(Pyz_FBC, RG_numPBCMessages);
+      delArr2(Pzz_FBC, RG_numPBCMessages);
+      
+      delArr3(RHOP, nxc, nyc);
+      delArr3(UP, nxc, nyc);
+      delArr3(VP, nxc, nyc);
+      delArr3(WP, nxc, nyc);
+      delArr3(UTHP, nxc, nyc);
+      delArr3(VTHP, nxc, nyc);
+      delArr3(WTHP, nxc, nyc);
+      
+      delete[]RGFluidMsg;
+      delArr3(REPO, nxc, nyc);
+    }
+
+ 
+  } // end if (CommToParent_P != MPI_COMM_NULL)
+  // i need to add MLMD_ParticleREPOPULATION not to have segm fault
+  // if multiple grids, without repopulation
+  if (numChildren>0 and MLMD_ParticleREPOPULATION){ 
+    delArr2(CG_Info, numChildren);
+    delete[]CG_numPBCMessages;
+  }
+  if (numChildren>0 and MLMD_ParticleREPOPULATION){
+    if (MaxNumMsg >0 and !FluidLikeRep){
+
+      delArr3(PCGMsg, numChildren, MaxNumMsg);
+      delArr2(nopPCGMsg, numChildren);
+    }
+    if (MaxNumMsg >0 and FluidLikeRep){
+      delete[]CGFluidMsg;
+    }
+  } // end  if (numChildren>0)
+
+  if (CommToParent_P != MPI_COMM_NULL and RG_numPBCMessages>0 and rank_local==HighestRank and !FluidLikeRep and CRPtS ) {
+    delArr2_PA(H_CRP_Msg, XLEN*YLEN*ZLEN, H_CRP_cores); // PA
+    delete[]H_CRP_cores;
+  }
+
+  if (numChildren >0  and MLMD_ParticleREPOPULATION){
+    for (int i=0; i< numChildren; i++){
+      if (COMM_CG_PBCSubset_P[i]!= MPI_COMM_NULL)
+	MPI_Comm_free(COMM_CG_PBCSubset_P+i);     
+    }
+    delete[]COMM_CG_PBCSubset_P;
+    delete[]CGSide_CGLeader_PBCSubset;
+  }
+
+  if (AllowPMsgResize_CG_RG==true){
+    if (CGSpokeperson){
+      delete []numRcv;
+      delArr2(RcvList, numChildren);
+    }
+  }
+
+  /* de-allocate the datatypes */
+  MPI_Type_free(&MPI_RGBC_struct);
+  MPI_Type_free(&MPI_RepP_struct);
+  MPI_Type_free(&MPI_CRP_struct);
+  /* end de-allocate the datatypes */
+
+  if (CommToParent_P != MPI_COMM_NULL and COMM_RG_PBCSubset_P!= MPI_COMM_NULL)
+    MPI_Comm_free(&COMM_RG_PBCSubset_P);
+  
+  if (CommToParent_P != MPI_COMM_NULL)	     // according to MUST, this can cause a deadlock
+    MPI_Comm_free(&CommToParent_P);
+  
+  
 }
 /** constructors fo a single species*/
 void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
+
+  rank_local= vct->getCartesian_rank();
+  
 
   /*! use this for system-wide mlmd output */
   MLMDVerbose= col->getMLMDVerbose();
@@ -158,6 +236,8 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   XLEN= vct->getXLEN();
   YLEN= vct->getYLEN();
   ZLEN= vct->getZLEN();
+
+  HighestRank= XLEN*YLEN*ZLEN-1;
 
   // This if is necessary to restart with H5hut-io
   if (initnpmax==0){
@@ -201,12 +281,17 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   dy = grid->getDY();
   dz = grid->getDZ();
   int P= vct->getParentGridNum();
-  DxP= grid->getDx_mlmd(P);
-  DyP= grid->getDy_mlmd(P);
-  DzP= grid->getDz_mlmd(P);
-  RFx= DxP/dx;
-  RFy= DyP/dy;
-  RFz= DzP/dz;
+  if (P>-1){
+    DxP= grid->getDx_mlmd(P);
+    DyP= grid->getDy_mlmd(P);
+    DzP= grid->getDz_mlmd(P);
+    RFx= DxP/dx;
+    RFy= DyP/dy;
+    RFz= DzP/dz;}
+  else{ // if this number is misused by the parent, i want to force an error
+    DxP=0; DyP=0; DzP=0;
+    RFx=0; RFy=0; RFz=0;
+  }
   //cout << "numGrid: " << numGrid << ", RFx: "<< RFx <<", RFy: "<< RFy << ", RFz: " << RFz <<endl;
   delta = col->getDelta();
   TrackParticleID = col->getTrackParticleID(species);
@@ -299,6 +384,18 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   b_Z_RIGHT_ptr = b_Z_RIGHT;    // alias to make the resize
   b_Z_LEFT = new double[buffer_size];
   b_Z_LEFT_ptr = b_Z_LEFT;      // alias to make the resize
+
+  /* initialise all to min val, to shut up valgrind -
+     without this, it gave "non initialise value" with unbuffering */
+  for (int i=0; i< buffer_size; i++) {
+    b_X_RIGHT[i]= MIN_VAL;
+    b_X_LEFT[i]= MIN_VAL;
+    b_Y_RIGHT[i]= MIN_VAL;
+    b_Y_LEFT[i]= MIN_VAL;
+    b_Z_RIGHT[i]= MIN_VAL;
+    b_Z_LEFT[i]= MIN_VAL;
+  }
+  /* end initialise the first entry to min val, to shut up valgrind */
 
   // if RESTART is true initialize the particle in allocate method
   restart = col->getRestart_status();
@@ -399,6 +496,8 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   }
 
   // here, mlmd stuff which does not necessarily need to be at the beginning
+  MLMD_ParticleREPOPULATION= col->getMLMD_ParticleREPOPULATION();
+  
   numChildren= vct->getNumChildren();
 
   dx_Ch=new double[numChildren];
@@ -525,29 +624,6 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   PRA_ZRight_End= nzn-1;
   PRA_ZRight_Start= nzn-1 -PRACells ;
 
-  /*// for extreme testing
-  PRA_XLeft_Start= 0;
-  PRA_XLeft_End= ceil(nxn/2);
-  PRA_XRight_End= nxn-1;
-  PRA_XRight_Start= ceil(nxn/2);
-
-  PRA_YLeft_Start= 0;
-  PRA_YLeft_End= ceil(nyn/2);
-  PRA_YRight_End= nyn-1;
-  PRA_YRight_Start= ceil(nyn/2);
-
-  PRA_ZLeft_Start= 0;
-  PRA_ZLeft_End= ceil(nzn/2);
-  PRA_ZRight_End= nzn-1;
-  PRA_ZRight_Start= ceil(nzn/2);*/
-
-  /*if (numGrid ==1){
-    cout << "nxn " << nxn << " nyn " << nyn << " nzn " << nzn << endl;
-    cout << "PRA_XLeft_Start " << PRA_XLeft_Start << " PRA_XLeft_End " << PRA_XLeft_End << " PRA_XRight_End " << PRA_XRight_End << " PRA_XRight_Start " << PRA_XRight_Start <<endl; 
-    cout << "PRA_YLeft_Start " << PRA_YLeft_Start << " PRA_YLeft_End " << PRA_YLeft_End << " PRA_YRight_End " << PRA_YRight_End << " PRA_YRight_Start " << PRA_YRight_Start <<endl; 
-    cout << "PRA_ZLeft_Start " << PRA_ZLeft_Start << " PRA_ZLeft_End " << PRA_ZLeft_End << " PRA_ZRight_End " << PRA_ZRight_End << " PRA_ZRight_Start " << PRA_ZRight_Start <<endl;
-    } */
-
   // corresponding coordinates, relative to the grid (NOT to the core)
   // when checking on these coords, you do not need to check if the core is a boundary core
   Coord_XLeft_Start  = -dx;
@@ -586,29 +662,6 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     Coord_ZRight_Start=Lz;
     Coord_ZRight_End=Lz;
   }
-
-  // for extreme testing
-  /*Coord_XLeft_Start  = -dx;
-  Coord_XLeft_End    = Lx/2;
-  Coord_XRight_End   = Lx+dx;
-  Coord_XRight_Start = Lx/2;
-
-  Coord_YLeft_Start  = -dy;
-  Coord_YLeft_End    = Ly/2;
-  Coord_YRight_End   = Ly+dy;
-  Coord_YRight_Start = Ly/2;
-
-  Coord_ZLeft_Start  = -dz;
-  Coord_ZLeft_End    = Lz/2;
-  Coord_ZRight_End   = Lz+dz;
-  Coord_ZRight_Start = Lz/2;*/
-
-  /*if (vct->getCartesian_rank() ==0 and numGrid ==1){
-    cout << "Coord_XLeft_Start: " << Coord_XLeft_Start <<" Coord_XLeft_End: " << Coord_XLeft_End << " Coord_XRight_End " << Coord_XRight_End << " Coord_XRight_Start " << Coord_XRight_Start <<" Lx " << Lx<< endl;
-    cout << "Coord_YLeft_Start: " << Coord_YLeft_Start <<" Coord_YLeft_End: " << Coord_YLeft_End << " Coord_YRight_End " << Coord_YRight_End << " Coord_YRight_Start " << Coord_YRight_Start <<" Ly " << Ly<< endl;
-    cout << "Coord_ZLeft_Start: " << Coord_ZLeft_Start <<" Coord_ZLeft_End: " << Coord_ZLeft_End << " Coord_ZRight_End " << Coord_ZRight_End << " Coord_ZRight_Start " << Coord_ZRight_Start <<" Lz " << Lz<< endl;
-    }*/
-
 
   PRA_PAdded=0;
   MAX_np_CRP= 10*npmax; // exagerated number
@@ -1620,8 +1673,8 @@ double Particles3Dcomm::getMaxVelocity(MPI_Comm Comm) {
 /** get energy spectrum */
 /*! mlmd: i need the communicator also */
 //unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel) {
-unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel, MPI_Comm Comm) {
-  unsigned long *f = new unsigned long[nBins];
+void Particles3Dcomm::getVelocityDistribution(unsigned long * f, int nBins, double maxVel, MPI_Comm Comm) {
+  
   for (int i = 0; i < nBins; i++)
     f[i] = 0;
   double Vel = 0.0;
@@ -1642,12 +1695,13 @@ unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel
 
   MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_LONG, MPI_SUM, Comm);
 
-  return f;
+  return;
 }
 /* distribution function only of the repopulated particles -
    i test also the ones in the Ghost Cells */
-unsigned long *Particles3Dcomm::getVelocityDistribution_RepPart(int nBins, double maxVel, MPI_Comm Comm) {
-  unsigned long *f = new unsigned long[nBins];
+void Particles3Dcomm::getVelocityDistribution_RepPart(unsigned long * f, int nBins, double maxVel, MPI_Comm Comm) {
+
+  
   for (int i = 0; i < nBins; i++)
     f[i] = 0;
   double Vel = 0.0;
@@ -1675,14 +1729,14 @@ unsigned long *Particles3Dcomm::getVelocityDistribution_RepPart(int nBins, doubl
 
   MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_LONG, MPI_SUM, Comm);
 
-  return f;
+  return;
 }
 
 
 /* distribution function only of the NON- repopulated particles -
    i test also the ones in the Ghost Cells */
-unsigned long *Particles3Dcomm::getVelocityDistribution_NonRepPart(int nBins, double maxVel, MPI_Comm Comm) {
-  unsigned long *f = new unsigned long[nBins];
+void Particles3Dcomm::getVelocityDistribution_NonRepPart(unsigned long *f, int nBins, double maxVel, MPI_Comm Comm) {
+
   for (int i = 0; i < nBins; i++)
     f[i] = 0;
   double Vel = 0.0;
@@ -1717,7 +1771,7 @@ unsigned long *Particles3Dcomm::getVelocityDistribution_NonRepPart(int nBins, do
 
   MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_LONG, MPI_SUM, Comm);
 
-  return f;
+  return ;
 }
 
 /** print particles info */
@@ -1754,8 +1808,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 
   RG_numPBCMessages= 0;
   MaxSizeCGFluidBCMsg= 0;
-  int rank_local= vct->getCartesian_rank();  // on the grid communicator
-  int HighestRank= XLEN*YLEN*ZLEN-1;
+
   MPI_Status status;
   int TAG_CG_RG= ns; // i need to put it here to be visible from both CG and RG
 
@@ -2117,23 +2170,23 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
       
       int size;
       MPI_Comm_size(vct->getCommToChild_P(ch, ns), &size);
-      bool *tmp= new bool[size];
-      bool *tmp_2= new bool[size];
-      for (int ss=0; ss< size; ss++){tmp[ss]=false; tmp_2[ss]=false; }
+      int *tmp= new int[size];
+      int *tmp_2= new int[size];
+      for (int ss=0; ss< size; ss++){tmp[ss]=0; tmp_2[ss]=0; }
       
       // list of RG cores this CG cores communicates with
       for (int m=0; m< CG_numPBCMessages[ch]; m++){
-	tmp[CG_Info[ch][m].RG_core]= true;
+	tmp[CG_Info[ch][m].RG_core]= 1;
       }
       // now i have to share it
-      MPI_Allreduce(tmp, tmp_2, size, MPI::BOOL, MPI_LOR, COMM_CG_PBCSubset_P[ch]);
+      MPI_Allreduce(tmp, tmp_2, size, MPI_INT, MPI_SUM, COMM_CG_PBCSubset_P[ch]); 
       
       // i am the spokeperson
       if (vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
 	cout << "Grid " << numGrid << " R "<< vct->getCartesian_rank() << "is spokeperson " << endl;
 	numRcv[ch]=0;
 	for (int i=0; i< size; i++){
-	  if (tmp_2[i] == true){ RcvList[ch][numRcv[ch]]=i;  numRcv[ch]++;}
+	  if (tmp_2[i] >0){ RcvList[ch][numRcv[ch]]=i;  numRcv[ch]++;}
 	} // end for (int i=0; i< size; i++){
 	
       }// end if (vct->getRank_CommToChildren_P(nc, ns) == CGSide_CGLeader_PBCSubset[ch]){
@@ -3455,7 +3508,6 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
 
   int TAG=ns;
   int count;
-  int rank_local= vct->getCartesian_rank();
   
   int HighestRank= XLEN*YLEN*ZLEN-1;
 
@@ -3647,8 +3699,9 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
       for (int mm=0; mm< count; mm++){
 	
 	// check if the destination (WhereToSend), as calculated from the originating core, is allowed
+
 	int WTS= H_CRP_General[mm].Destination;
-	
+
 	if (WTS== rank_local){ // this core is the destination, unpack and go to next particle
 	  unpack_CRP(H_CRP_General[mm], vct);
 	}
@@ -3949,7 +4002,7 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct){
 	H_CRP_Msg_tmp[i][j]= H_CRP_Msg_ptr[i][j];
     }
 
-    delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
+    delArr2_PA(H_CRP_Msg, XLEN*YLEN*ZLEN, H_CRP_cores);
     H_CRP_Msg= newArr2_PA(CRP_struct, XLEN*YLEN*ZLEN, NEW_size_CRP, H_CRP_cores); 
     H_CRP_Msg_ptr= H_CRP_Msg;
     
@@ -3958,7 +4011,7 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct){
       for (int j=0; j<  H_num_CRP_nop[i]; j++)
 	H_CRP_Msg[i][j]= H_CRP_Msg_tmp[i][j];
     }
-    delArr2(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN);
+    delArr2_PA(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN, H_CRP_cores);
 
   }
 
@@ -4006,7 +4059,7 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct, int NewSize){
 	H_CRP_Msg_tmp[i][j]= H_CRP_Msg_ptr[i][j];
     }
 
-    delArr2(H_CRP_Msg, XLEN*YLEN*ZLEN);
+    delArr2_PA(H_CRP_Msg, XLEN*YLEN*ZLEN, H_CRP_cores);
     H_CRP_Msg= newArr2_PA(CRP_struct, XLEN*YLEN*ZLEN, NewSize, H_CRP_cores); 
     H_CRP_Msg_ptr= H_CRP_Msg;
     
@@ -4015,7 +4068,7 @@ void Particles3Dcomm::resize_CRP_buffers(VirtualTopology3D * vct, int NewSize){
       for (int j=0; j<  H_num_CRP_nop[i]; j++)
 	H_CRP_Msg[i][j]= H_CRP_Msg_tmp[i][j];
     }
-    delArr2(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN);
+    delArr2_PA(H_CRP_Msg_tmp, XLEN*YLEN*ZLEN, H_CRP_cores);
 
   
 
@@ -4504,7 +4557,7 @@ void Particles3Dcomm::initWeightFluidPBC_Phase1(Grid *grid, VirtualTopology3D *v
 
   int rank_CTP= vct->getRank_CommToParent();
   int rank_G= vct->getSystemWide_rank();
-  int rank_local= vct->getCartesian_rank();
+
 
   // NB: _s and _e are included!!!, so <= in the for        
   int i_s, i_e;

@@ -382,9 +382,9 @@ class Collective
     /*! number of particles per cell - Z direction */
     int *npcelz;
     /*! number of particles array for different species */
-    long *np;
+    //long *np;
     /*! maximum number of particles array for different species */
-    long *npMax;
+    //long *npMax;
     /*! max number of particles */
     double NpMaxNpRatio;
     /*! charge to mass ratio array for different species */

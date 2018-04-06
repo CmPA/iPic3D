@@ -1212,6 +1212,8 @@ class EMfields3D                // :public Field
     double sumEzBC;
     
     bool SmoothFaces;
+
+    MPI_Comm CommToParent_InDel;
 };
 
 
