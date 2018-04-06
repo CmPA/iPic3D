@@ -1,0 +1,10 @@
+NAME="Test16Cores"
+mkdir dataMLMD
+cp inputfiles/${NAME}.inp dataMLMD
+
+
+### NB do not use & to send in BG if you want to do the mv at the end
+
+mpirun  -n 16 ./iPic3D inputfiles/${NAME}.inp >> dataMLMD/output.txt 
+
+mv dataMLMD ${NAME}
