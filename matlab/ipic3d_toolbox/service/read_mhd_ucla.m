@@ -6,7 +6,7 @@
 %nome='psy400.iPic_mp_box_ttcor.0015.dat'; %Jean13
 %nome='psy501.iPic_mp_gbox.0020.dat'; %Jean17
 nome='~/Dropbox/Science/ucla/7feb09/feb0709iPICBox.035800UT.dat'; %7feb09
-nome='~/Documents/storage/ucla/ucla/HRmaha3D3/feb1508iPIC.034800UT.dat'; %HRmaha3D3
+%nome='~/Documents/storage/ucla/ucla/HRmaha3D3/feb1508iPIC.034800UT.dat'; %HRmaha3D3
 %nome='~/psy501.mp_EC_3DT01_box.0020.dat'
 
 [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] =   code_units(25,1);
@@ -80,11 +80,11 @@ n= n/ code_n/4/pi;
 Lx=xmax-xmin
 Ly=ymax-ymin
 
-%Nxpic=129;Nypic=65; Nzpic=2; %2D 7feb09
+Nxpic=129;Nypic=65; Nzpic=2; %2D 7feb09
 
 %Nxpic=400+1;Nypic=160+1; Nzpic=160+1; %HRmaha3D3
 
-Nxpic=144+1; Nypic= 252+1; Nzpic=108+1;
+%Nxpic=144+1; Nypic= 252+1; Nzpic=108+1; % 3D 7feb09
 
 dx=(xmax-xmin)/Nxpic;
 dy=(ymax-ymin)/Nypic;
@@ -104,6 +104,7 @@ end
 Tpic=interpmio(x,y,z,T,Xpic,Ypic,Zpic); 
 
 imagesc(squeeze(sqrt(256*Tratio(1)*Tpic(:,:,1))));axis image;colorbar
+imagesc(squeeze(Ex(:,:,1)));axis image;colorbar
 
 npic=interpmio(x,y,z,n,Xpic,Ypic,Zpic);
 

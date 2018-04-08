@@ -1913,7 +1913,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   // INJECTION FROM XLEFT
   ////////////////////////
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
-  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcPfaceXleft == 2){ // use Field topology in this case
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcPfaceXleft > 1){ // use Field topology in this case
     long long particles_index=0;
     long long nplast = nop-1;
 
@@ -1979,7 +1979,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   // INJECTION FROM YLEFT
   ////////////////////////
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
-  if (vct->getYleft_neighbor() == MPI_PROC_NULL  && bcPfaceYleft == 2)
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL  && bcPfaceYleft > 1)
   {
     long long particles_index=0;
     long long nplast = nop-1;
@@ -2040,7 +2040,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   // INJECTION FROM ZLEFT
   ////////////////////////
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
-  if (vct->getZleft_neighbor() == MPI_PROC_NULL  && bcPfaceZleft == 2)
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL  && bcPfaceZleft >1)
   {
     long long particles_index=0;
     long long nplast = nop-1;
@@ -2101,7 +2101,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   // INJECTION FROM XRIGHT
   ////////////////////////
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
-  if (vct->getXright_neighbor() == MPI_PROC_NULL  && bcPfaceXright == 2){
+  if (vct->getXright_neighbor() == MPI_PROC_NULL  && bcPfaceXright > 1){
     long long particles_index=0;
     long long nplast = nop-1;
     while (particles_index < nplast+1) {
@@ -2161,7 +2161,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   // INJECTION FROM YRIGHT
   ////////////////////////
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
-  if (vct->getYright_neighbor() == MPI_PROC_NULL  && bcPfaceYright == 2)
+  if (vct->getYright_neighbor() == MPI_PROC_NULL  && bcPfaceYright > 1)
   {
     long long particles_index=0;
     long long nplast = nop-1;
@@ -2222,7 +2222,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   // INJECTION FROM ZRIGHT
   ////////////////////////
   srand (vct->getCartesian_rank()+1+ns+(int(MPI_Wtime()))%10000);
-  if (vct->getZright_neighbor() == MPI_PROC_NULL  && bcPfaceZright == 2)
+  if (vct->getZright_neighbor() == MPI_PROC_NULL  && bcPfaceZright > 1)
   {
     long long particles_index=0;
     long long nplast = nop-1;
@@ -2281,6 +2281,151 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
 
   if (vct->getCartesian_rank()==0){
     cout << "*** number of particles " << nop << " ***" << endl;
+  }
+
+  //********************//
+  // COMMUNICATION
+  // *******************//
+  avail = communicate(vct);
+  if (avail < 0) return(-1);
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  // communicate again if particles are not in the correct domain
+  while(isMessagingDone(vct) >0){
+    // COMMUNICATION
+    avail = communicate(vct);
+    if (avail < 0)
+      return(-1);
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+
+  return(0); // exit succcesfully (hopefully)
+}
+
+
+int Particles3D::particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is){
+
+  /* -- NOTE: Hardcoded option -- */
+  enum {LINEAR,INITIAL,FFIELD};
+  int rtype = FFIELD;
+  /* -- END NOTE -- */
+
+  if (vct->getCartesian_rank()==0){
+    cout << "*** Repopulator species " << ns << " ***" << endl;
+  }
+  double weights[2][2][2];
+  double B_mag;
+  double bdotn;
+  double bxin ;
+  double byin ;
+  double bzin ;
+  double vdotb;
+  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+
+  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+  double Fext = EMf->getFext();
+
+  double Exl = 0.0;
+  double Eyl = 0.0;
+  double Ezl = 0.0;
+  double Bxl = 0.0;
+  double Byl = 0.0;
+  double Bzl = 0.0;
+  int ix;
+  int iy;
+  int iz;
+  double  FourPI =16*atan(1.0);
+  int avail;
+  long long store_nop=nop;
+  double vtestin, vtestout,vabsin,vabsout;
+
+  ////////////////////////
+  // INJECTION FROM XLEFT
+  ////////////////////////
+
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcPfaceXleft == 3){ // use Field topology in this case
+    long long particles_index=0;
+    long long nplast = nop-1;
+
+    while (particles_index < nplast+1) {
+      if (x[particles_index] > 3.0*dx && x[particles_index] < 4.0*dx) {
+        // reflect particles
+          //vtestin = u[particles_index];
+          //vabsin = u[particles_index] * u[particles_index] + v[particles_index] * v[particles_index] + w[particles_index] * w[particles_index];
+    	      get_weights(grid, x[particles_index], y[particles_index], z[particles_index], ix, iy, iz, weights);
+    	      get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+
+    	       // Compute the unit vector  b along B and pointing INSIDE the domain.
+     	       // This is achieved by computing the dot product of B with the outgoing normal
+     	       // And then imposing the vector b to point opposite to the outgoing normal
+
+    	       B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+    	       bdotn = -Bxl /abs(Bxl+1e-10);
+    	       bxin = -Bxl/(B_mag+1e-10)*bdotn;
+    	       byin = -Byl/(B_mag+1e-10)*bdotn;
+    	       bzin = -Bzl/(B_mag+1e-10)*bdotn;
+    	       vdotb = u[particles_index]*bxin + v[particles_index]*byin + w[particles_index]*bzin;
+    	       if(abs(vdotb)>uth){
+    	      u[particles_index] += -bxin * ( vdotb - abs(vdotb));
+    	      v[particles_index] += -byin * ( vdotb - abs(vdotb));
+    	      w[particles_index] += -bzin * ( vdotb - abs(vdotb));
+    	       }
+      	     // vdotb = u[particles_index]*bxin + v[particles_index]*byin + w[particles_index]*bzin;
+             // vtestout = u[particles_index];
+             // vabsout = u[particles_index] * u[particles_index] + v[particles_index] * v[particles_index] + w[particles_index] * w[particles_index];
+             // if(vtestin < 0.0 )
+             // cout << "test reflector  " << "vtestin=" << vtestin << "  vtestout=" << vtestout<< "   bxin="<< bxin<< "   vdotb="<< vdotb<<endl;
+              particles_index++;
+      } else {
+        particles_index++;
+      }
+    }
+
+  }
+
+  ////////////////////////
+  // INJECTION FROM XRIGHT
+  ////////////////////////
+
+  if (vct->getXright_neighbor() == MPI_PROC_NULL  && bcPfaceXright == 3){
+    long long particles_index=0;
+    long long nplast = nop-1;
+    while (particles_index < nplast+1) {
+      if (x[particles_index] < (Lx-3.0*dx) && x[particles_index] > (Lx-4.0*dx)) {
+          // reflect particles
+
+      	      get_weights(grid, x[particles_index], y[particles_index], z[particles_index], ix, iy, iz, weights);
+      	      get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+
+
+      	       B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+     	       bdotn = Bxl /abs(Bxl+1e-10);
+      	       bxin = -Bxl/(B_mag+1e-10)*bdotn;
+      	       byin = -Byl/(B_mag+1e-10)*bdotn;
+      	       bzin = -Bzl/(B_mag+1e-10)*bdotn;
+      	       vdotb = u[particles_index]*bxin + v[particles_index]*byin + w[particles_index]*bzin;
+      	      u[particles_index] += -bxin * ( vdotb - abs(vdotb));
+      	      v[particles_index] += -byin * ( vdotb - abs(vdotb));
+      	      w[particles_index] += -bzin * ( vdotb - abs(vdotb));
+
+      	      particles_index++;
+      } else {
+        particles_index++;
+      }
+    }
+
+  }
+  if (vct->getCartesian_rank()==0){
+    cout << "*** Reflector: number of particles " << nop << " ***" << endl;
   }
 
   //********************//

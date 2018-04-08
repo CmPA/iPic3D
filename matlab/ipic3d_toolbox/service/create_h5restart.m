@@ -43,6 +43,11 @@ rho = (.01+sech((Y-Ly/2)./L).^2);
 !rm Harris-Initial-Fields_000000.h5
 opath='Harris-Initial-Fields_000000.h5'
 
+%
+% For lambda damping to work, we need to have the intial fields as external
+% fields so they are not damped in the damping region
+%
+
 h5create(opath,'/Step#0/Block/Bx/0',[Nx, Ny, Nz]);
 h5write(opath,'/Step#0/Block/Bx/0',Bx)
 

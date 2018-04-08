@@ -1765,7 +1765,7 @@ void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective *c
 /*! initiliaze Harris plus background but with less shear a-la Fujimoto */
 void EMfields3D::initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
-  double pertX = 0.4;
+  double pertX = 1.0;
   double xpert, ypert, exp_pert;
   if (restart1 == 0) {
     // initialize
@@ -1812,6 +1812,12 @@ void EMfields3D::initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Coll
           exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
           Bxn[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
           Byn[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          // add second initial X perturbation
+          xpert = grid->getXN(i, j, k) - (Lx - Ly / 2); //Lx / 2;
+          ypert = grid->getYN(i, j, k) - Ly / 2;
+          exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
+          Bxn[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          Byn[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
           // guide field
           Bzn[i][j][k] = B0z;
         }
@@ -1826,6 +1832,12 @@ void EMfields3D::initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Coll
           Byc[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXC(i,j,k)/Lx)*cos(M_PI*(grid->getYC(i,j,k)- Ly/2)/Ly);
           // add the initial X perturbation
           xpert = grid->getXC(i, j, k) - Ly / 2; //- Lx / 2;
+          ypert = grid->getYC(i, j, k) - Ly / 2;
+          exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
+          Bxc[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          Byc[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          // add second initial X perturbation
+          xpert = grid->getXC(i, j, k) - (Lx - Ly / 2); //- Lx / 2;
           ypert = grid->getYC(i, j, k) - Ly / 2;
           exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
           Bxc[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);

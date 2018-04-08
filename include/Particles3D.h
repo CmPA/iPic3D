@@ -98,6 +98,8 @@ class Particles3D:public Particles3Dcomm {
 
     /** particle repopulator */
     int particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is);
+    /** particle reflector */
+    int particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is);
     /** interpolation Particle->Grid only charge density, current */
     void interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * vct);
     /** interpolation Particle->Grid only for pressure tensor */

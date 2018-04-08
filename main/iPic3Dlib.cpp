@@ -448,6 +448,7 @@ void c_Solver::InjectBoundaryParticles(){
     	      /* --------------------------------------- */
           for (int i=0; i < ns; i++){
           mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+          mem_avail = part[i].particle_reflector(grid,vct,EMf,i);
       }
       }
 }
