@@ -30,7 +30,12 @@ int main(int argc, char **argv) {
   /* 1- Main loop */
   /* ------------ */
 
-  for (int i = KCode.FirstCycle()+1; i <= KCode.LastCycle(); i++) {
+  // otherwise restart skips a cycle (the +1 in the for)
+  if (KCode.FirstCycle()>0){
+    KCode.DecrementFirstCycle();
+  }
+  
+  for (int i = KCode.FirstCycle()+1; i <= KCode.LastCycle()+1; i++) {
     /*! mlmd: KCode.get_myrank() is on the local grid communicator */
     if (KCode.get_myrank() == 0) cout << " ======= Grid " << KCode.get_numGrid()  <<"  Cycle " << i << " ======= " << endl;
 
@@ -39,7 +44,7 @@ int main(int argc, char **argv) {
     /*    Exit if there is a memory issue with the particles */
     /* ----------------------------------------------------- */
 
-    KCode.UpdateCycleInfo(i);
+    KCode.UpdateCycleInfo(i, KCode.FirstCycle());
 
     KCode.CalculateField();
 

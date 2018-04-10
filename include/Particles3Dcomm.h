@@ -321,7 +321,7 @@ public:
   /* with AllowPMsgResize= true, buffer dimensions are synched at each cycle, very expensive; 
      if in the inputfile AllowPMsgResize= true, this is done each cycle
      if it is false, done only the first three cycles to reach suitable buffer sizes, then stop */
-  void UpdateAllowPMsgResize(VirtualTopology3D * vct, Collective * col, int cycle);
+  void UpdateAllowPMsgResize(VirtualTopology3D * vct, Collective * col, int cycle, int FirstCycle);
 
 protected:
   /** number of species */

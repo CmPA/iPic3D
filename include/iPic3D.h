@@ -46,7 +46,7 @@ namespace iPic3D {
     void WriteOutput(int cycle);
     void WriteConserved(int cycle);
     void WriteRestart(int cycle);
-    void UpdateCycleInfo(int cycle);
+    void UpdateCycleInfo(int cycle, int FirstCycle);
     void Finalize();
     
     /* mover and moment gathering in sequence per species -
@@ -59,6 +59,7 @@ namespace iPic3D {
     void GatherMoments_Sp(int species);
 
     inline int FirstCycle();
+    inline void DecrementFirstCycle();
     inline int LastCycle();
     inline int get_myrank();
     /*! mlmd */
@@ -150,6 +151,9 @@ namespace iPic3D {
     bool InterleavedPossible; 
   };
 
+  inline void c_Solver::DecrementFirstCycle() {
+    first_cycle--;
+  }
   inline int c_Solver::FirstCycle() {
     return (first_cycle);
   }

@@ -452,11 +452,11 @@ void c_Solver::GatherMoments_Init(){
 
 }
 
-void c_Solver::UpdateCycleInfo(int cycle) {
+void c_Solver::UpdateCycleInfo(int cycle, int FirstCycle) {
 
   // to decide whather synchronization of buffer sizes has to be done or  not
   for (int i=0; i< ns; i++){
-    part[i].UpdateAllowPMsgResize(vct, col, cycle);
+    part[i].UpdateAllowPMsgResize(vct, col, cycle, FirstCycle);
   }
 
 
@@ -687,8 +687,14 @@ void c_Solver::InjectBoundaryParticles_Sp(int i){
 }
 void c_Solver::WriteRestart(int cycle) {
   // write the RESTART file
+
   if (cycle % restart_cycle == 0 && cycle != first_cycle) {
     if (col->getWriteMethod() != "h5hut") {
+
+      if (myrank==0){
+	cout << "Cycle " << cycle << ": I am saving restart info (restart_cycle= " << restart_cycle << ")" << endl;
+      }
+
       // without ,0 add to restart file
       writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0);
     }

@@ -2216,13 +2216,9 @@ void EMfields3D::initTestBBoundary(VirtualTopology3D * vct, Grid * grid, Collect
      PIdot(Jxh, Jyh, Jzh, tempXN, tempYN, tempZN, is, grid);
 
    }
-
-   
    smooth(Smooth, Jxh, 1, grid, vct);
    smooth(Smooth, Jyh, 1, grid, vct);
    smooth(Smooth, Jzh, 1, grid, vct);
-   
-   
    // calculate rho hat = rho - (dt*theta)div(jhat)
   grid->divN2C(tempXC, Jxh, Jyh, Jzh);
   scale(tempXC, -dt * th, nxc, nyc, nzc);
@@ -2782,9 +2778,14 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   else {                        // READING FROM RESTART
     if (vct->getCartesian_rank() == 0)
       cout << "LOADING EM FIELD FROM RESTART FILE in " + RestartDirName + "/restart.hdf" << endl;
+
+
     stringstream ss;
+    stringstream ss1;
     ss << vct->getCartesian_rank();
-    string name_file = RestartDirName + "/restart" + ss.str() + ".hdf";
+    ss1 << numGrid ;
+    string name_file = RestartDirName + "/restart" + ss.str() + "_G" + ss1.str() + ".hdf";
+    
     // hdf stuff 
     hid_t file_id, dataspace;
     hid_t datatype, dataset_id;
@@ -2926,6 +2927,7 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
     delete[]temp_storage;
     delete[]species_name;
   }
+  
 
 
 }

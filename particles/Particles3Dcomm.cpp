@@ -404,7 +404,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
       cout << "LOADING PARTICLES FROM RESTART FILE in " + col->getRestartDirName() + "/restart.hdf" << endl;
     stringstream ss;
     ss << vct->getCartesian_rank();
-    string name_file = col->getRestartDirName() + "/restart" + ss.str() + ".hdf";
+    stringstream ss1;
+    ss1 << numGrid ;
+    string name_file = col->getRestartDirName() + "/restart" + ss.str() + "_G" + ss1.str() + ".hdf";
     // hdf stuff 
     hid_t file_id, dataspace;
     hid_t datatype, dataset_id;
@@ -5175,7 +5177,7 @@ void Particles3Dcomm::ApplyFluidPBC(Grid *grid, VirtualTopology3D *vct, Field * 
 
 }
 
-void Particles3Dcomm::UpdateAllowPMsgResize(VirtualTopology3D * vct, Collective * col, int cycle){
+void Particles3Dcomm::UpdateAllowPMsgResize(VirtualTopology3D * vct, Collective * col, int cycle, int firstCycle){
 
   if (FluidLikeRep) { 
     AllowPMsgResize_CG_RG= false; AllowPMsgResize_RG_RG= false;
@@ -5189,7 +5191,7 @@ void Particles3Dcomm::UpdateAllowPMsgResize(VirtualTopology3D * vct, Collective 
   AllowPMsgResize_CG_RG= true; AllowPMsgResize_RG_RG= true;
   DoPMsgResize_CG_RG= true; DoPMsgResize_RG_RG= true;
 
-  if (cycle >=SWITCH_CYCLE){
+  if (cycle >=firstCycle + SWITCH_CYCLE){
     
     if (col->getSwitchOffPMsgResize_CG_RG()) {
       DoPMsgResize_CG_RG= false;
