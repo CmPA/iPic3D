@@ -234,6 +234,34 @@ void Grid3DCU::lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vc
   delArr3(gradZC, nxc, nyc);
 }
 
+/** calculate laplacian on nodes, given a scalar field defined on nodes, using the textbook stencil */
+void Grid3DCU::lapN2N_classic(double ***lapN, double ***scFieldN, VirtualTopology3D * vct) {
+  // calculate laplacian as divercence of gradient
+  // allocate 3 gradients: defined on central points
+  //double ***gradXC = newArr3(double, nxc, nyc, nzc);
+  //double ***gradYC = newArr3(double, nxc, nyc, nzc);
+  //double ***gradZC = newArr3(double, nxc, nyc, nzc);
+
+  //gradN2C(gradXC, gradYC, gradZC, scFieldN);
+  //// communicate with BC
+  //communicateCenterBC(nxc, nyc, nzc, gradXC, 1, 1, 1, 1, 1, 1, vct);
+  //communicateCenterBC(nxc, nyc, nzc, gradYC, 1, 1, 1, 1, 1, 1, vct);
+  //communicateCenterBC(nxc, nyc, nzc, gradZC, 1, 1, 1, 1, 1, 1, vct);
+  //divC2N(lapN, gradXC, gradYC, gradZC);
+  //// deallocate
+  //delArr3(gradXC, nxc, nyc);
+  //delArr3(gradYC, nxc, nyc);
+  //delArr3(gradZC, nxc, nyc);
+
+  for (register int i = 1; i < nxn - 1; i++)
+    for (register int j = 1; j < nyn - 1; j++)
+      for (register int k = 1; k < nzn - 1; k++) {
+        lapN[i][j][k] = (scFieldN[i-1][j  ][k  ] + scFieldN[i+1][j  ][k  ] - 2*scFieldN[i][j][k])*invdx*invdx
+                      + (scFieldN[i  ][j-1][k  ] + scFieldN[i  ][j+1][k  ] - 2*scFieldN[i][j][k])*invdy*invdy
+                      + (scFieldN[i  ][j  ][k-1] + scFieldN[i  ][j  ][k+1] - 2*scFieldN[i][j][k])*invdz*invdz;
+      }
+
+}
 /** calculate laplacian on central points, given a scalar field defined on central points */
 void Grid3DCU::lapC2C(double ***lapC, double ***scFieldC, VirtualTopology3D * vct) {
   // calculate laplacian as divercence of gradient

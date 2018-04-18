@@ -61,6 +61,9 @@ public:
 
   /** calculate laplacian on nodes, given a scalar field defined on nodes */
   void lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vct);
+  /** calculate laplacian on nodes, given a scalar field defined on nodes using the textbook stencil*/
+  void lapN2N_classic(double ***lapN, double ***scFieldN, VirtualTopology3D * vct);
+
   /** calculate laplacian on central points, given a scalar field defined on central points for Poisson */
   void lapC2Cpoisson(double ***lapC, double ***scFieldC, VirtualTopology3D * vct);
   /** calculate laplacian on central points, given a scalar field defined on central points */
