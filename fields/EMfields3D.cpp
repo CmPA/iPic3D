@@ -399,9 +399,9 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   eqValue(0.0, Dz, nxn, nyn, nzn);
   // move from krylov space to physical space
   solver2phys(vectX, vectY, vectZ, vector, nxn, nyn, nzn);
-  grid->lapN2N(imageX, vectX, vct);
-  grid->lapN2N(imageY, vectY, vct);
-  grid->lapN2N(imageZ, vectZ, vct);
+  grid->lapN2N_classic(imageX, vectX, vct);
+  grid->lapN2N_classic(imageY, vectY, vct);
+  grid->lapN2N_classic(imageZ, vectZ, vct);
   neg(imageX, nxn, nyn, nzn);
   neg(imageY, nxn, nyn, nzn);
   neg(imageZ, nxn, nyn, nzn);
