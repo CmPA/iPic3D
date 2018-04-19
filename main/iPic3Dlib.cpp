@@ -960,7 +960,7 @@ void c_Solver::interpBC2N_ECSIM(int cycle){
 
 
 /* mover and moment gathering in sequence per species  */
-void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
+void c_Solver::Mover_GatherMoments_Interleaved(int cycle, int FirstCycle){
 
   if (!InterleavedPossible){
     cout << "I have never tested Mover_GatherMoments_Interleaved with the options you require" << endl
@@ -979,16 +979,14 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
   
   if (ns==0) mem_avail=1; // otherwise crashes
 
-  for (int i=0; i< ns; i++){
+  for (int i=0; i< ns; i++){  
 
-    /* 1.1 Receive PBC, without applyting them, to free CG */
     if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
       part[i].ReceivePBC_NoApply(grid, vct, cycle);
     }
-    /* end 1.1 */
-  }    
+  }
 
-  for (int i=0; i< ns; i++){ 
+  for (int i=0; i< ns; i++){
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
     mem_avail = part[i].mover_PC_sub_NoCommunicate(grid, vct, EMf); // use the Predictor Corrector scheme 
         
@@ -1003,10 +1001,6 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
     
     /* end 1.2 */
     
-  } // end cycle on species 
-
-
-  for (int i=0; i< ns; i++){
     /* 2.1 communicate (the part scorporate from the mover) */
 
     mem_avail=part[i].communicate_NoMover_DepopulatePRA(grid, vct, EMf) ;
@@ -1026,13 +1020,20 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
     /* -------------------------------------- */
     
     InjectBoundaryParticles_Sp(i);    
+  }
+
+  for (int i=0; i< ns; i++){
 
     if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
-      
-      part[i].SendPBC(grid, vct);
+      // these are the waits from the cycle before
+      part[i].SendPBC_Waits(grid, vct, cycle, FirstCycle);
+      // and these are the sends, no waits, from the current cycle
+      part[i].SendPBC_NoWaits(grid, vct);
     }
   } // end cycle on particles
 
+
+    
   for (int i=0; i< ns; i++){
     /* 3.1 apply PBC, without communicating */
     part[i].ApplyPBC_NoReceive_NoCommunicate(grid, vct, cycle);
@@ -1051,7 +1052,7 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
       part[i].communicate_OnlyRepopulated(grid, vct);
     }
   }
-
+  
   for (int i=0; i< ns; i++){
     GatherMoments_Sp(i);
   }
@@ -1065,6 +1066,8 @@ void c_Solver::Mover_GatherMoments_Interleaved(int cycle){
     EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
   }
 
+
+  
   // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
   /* to here */
 }

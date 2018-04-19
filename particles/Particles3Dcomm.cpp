@@ -2797,10 +2797,12 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
 
 	// CGSide_CGLeader_PBCSubset[ch] sends down to all RG grid cores involved in the communication
 	if (vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
+
 	  for (int i= 0; i< numRcv[ch]; i++){
 	    MPI_Isend(&MaxGrid_sizeCG_PBCMsg, 1, MPI_INT, RcvList[ch][i], 200+ns, CommToChild_P[ch], &request);
 	    MPI_Wait(&request, &status);
 	  }
+	  
 	}
       }  // end if (DoPMsgResize_CG_RG){
 
@@ -2836,6 +2838,119 @@ void Particles3Dcomm::SendPBC(Grid* grid, VirtualTopology3D * vct){
   
   return;
 }
+
+
+
+void Particles3Dcomm::SendPBC_NoWaits(Grid* grid, VirtualTopology3D * vct){
+  if (numChildren==0) return;
+
+  numSendPBC_Waits=0;
+  for (int ch=0; ch < numChildren; ch++){    
+    if (CommToChild_P[ch] != MPI_COMM_NULL and CG_numPBCMessages[ch]>0) {
+      // the DoPMsgResize_CG_RG  
+      if(DoPMsgResize_CG_RG and vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
+	numSendPBC_Waits+= numRcv[ch]; 
+      }
+
+      numSendPBC_Waits+=CG_numPBCMessages[ch];
+
+    } // end if (CommToChild_P[ch] != MPI_COMM_NULL) {
+  } // end for (int ch=0; ch < numChildren; ch++){
+  // end calculating size of request buffers
+
+  if (numSendPBC_Waits>0){
+    req_SendPBC= new MPI_Request[numSendPBC_Waits];
+    st_SendPBC= new MPI_Status[numSendPBC_Waits];
+  }
+  
+  int counter=0;
+  
+  for (int ch=0; ch < numChildren; ch++){
+
+    if (CommToChild_P[ch] != MPI_COMM_NULL and CG_numPBCMessages[ch]>0){ // this child wants PBC and this core participates
+
+      // build all the PBC msgs that this core has to send 
+      
+
+      buildPBCMsg(grid, vct, ch);
+
+
+      if (DoPMsgResize_CG_RG){
+	//cout << "DoPMsgResize_CG_RG= " << DoPMsgResize_CG_RG  <<endl;
+	// the CG cores involved in PBC agree on the biggest buffer size
+	int MaxGrid_sizeCG_PBCMsg;
+	MPI_Allreduce(&sizeCG_PBCMsg, &MaxGrid_sizeCG_PBCMsg, 1, MPI_INT, MPI_MAX, COMM_CG_PBCSubset_P[ch]);
+	
+	// I resize the CG buffers, to avoid resizing CG buffer in different stages
+	// (useful if i switch off resizing)
+	if (sizeCG_PBCMsg< MaxGrid_sizeCG_PBCMsg){
+	  resize_CG_MLMD_buffers(vct);
+	}
+
+	// CGSide_CGLeader_PBCSubset[ch] sends down to all RG grid cores involved in the communication
+	if (vct->getRank_CommToChildren_P(ch, ns) == CGSide_CGLeader_PBCSubset[ch]){
+
+	  for (int i= 0; i< numRcv[ch]; i++){
+	    MPI_Isend(&MaxGrid_sizeCG_PBCMsg, 1, MPI_INT, RcvList[ch][i], 200+ns, CommToChild_P[ch], req_SendPBC+counter);
+	    counter++;
+	  }
+	  
+	}
+      }  // end if (DoPMsgResize_CG_RG){
+
+      // now send; send an extra msg to signal the end of the meaningful part
+      // cycle on all the msgs this core has to send
+
+      /*if (false){
+	for (int m=0; m< CG_numPBCMessages[ch]; m++){
+	  for (int ii=0; ii< nopPCGMsg[ch][m]+1; ii++){
+	    cout <<"CHECK CG, ch: " << ch << "m: "<< m << " ii: " << ii << " PCGMsg[ch][m][jj].q: "<< PCGMsg[ch][m][ii].q <<endl;
+	  }
+	}
+	}*/
+
+
+      for (int m=0; m< CG_numPBCMessages[ch]; m++){
+	int dest= CG_Info[ch][m].RG_core;
+	int tag= CG_Info[ch][m].MsgID;
+
+	MPI_Isend(PCGMsg[ch][m], nopPCGMsg[ch][m]+1, MPI_RepP_struct, dest, tag, CommToChild_P[ch], req_SendPBC+counter);
+	counter ++;
+      } // end for (int m=0; m< CG_numPBCMessages[ch]; m++)
+
+
+    } //  if (CommToChild_P[ch] != MPI_COMM_NULL){ 
+    
+  } // end for (int ch=0; ch < numChildren; ch++){ 
+
+    /*MPI_Barrier(vct->getComm());
+  int RR= vct->getCartesian_rank();
+  if (RR==0)
+  cout << "Grid " << numGrid << " has finished sending PBC ns  " <<ns << endl;*/
+
+  if (counter != numSendPBC_Waits){
+    cout << "Fatal error in SendPBC_NoWaits, aborting" << endl;
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+  
+  return;
+}
+
+
+void Particles3Dcomm::SendPBC_Waits(Grid* grid, VirtualTopology3D * vct, int cycle, int FirstCycle){
+
+  if (numChildren==0) return;
+  if (cycle== FirstCycle) return;
+
+  if(numSendPBC_Waits>0){
+    MPI_Waitall(numSendPBC_Waits, req_SendPBC, st_SendPBC);
+  }
+  
+  delete[]req_SendPBC;
+  delete[]st_SendPBC;
+}
+
+
 void Particles3Dcomm::ReceivePBC_NoApply(Grid* grid, VirtualTopology3D * vct, int cycle){
 
   if (saveRepParFile and numGrid >0 and (cycle % DiagnosticsOutputCycle == 1)){

@@ -52,7 +52,7 @@ namespace iPic3D {
     /* mover and moment gathering in sequence per species -
        done for MLMD performance */
     void Mover_GatherMoments(int cycle);
-    void Mover_GatherMoments_Interleaved(int cycle);
+    void Mover_GatherMoments_Interleaved(int cycle, int FirstCycle);
     /* by species */
     void InjectBoundaryParticles_Sp(int species);
     bool ParticlesMover_Sp(int cycle, int species);

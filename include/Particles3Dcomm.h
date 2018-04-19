@@ -261,7 +261,12 @@ public:
   /* ------ kinetic repopulation methods + support functions  ------ */
   /* build and send particle BC msg -- CG to RGC -- KINETIC REPOPULATION*/
   /* kinetic repopulation: to minimise waiting times, build all messages then send then */
+  // in SendPBC is blocking 
   void SendPBC(Grid* grid, VirtualTopology3D * vct);
+  // only the ISend, without the waits
+  void SendPBC_NoWaits(Grid* grid, VirtualTopology3D * vct);
+  // all the waits, without the ISends
+  void SendPBC_Waits(Grid* grid, VirtualTopology3D * vct, int cycle, int FirstCycle);
   /* prepares P BC msg to the refined grid */
   void buildPBCMsg(Grid* grid, VirtualTopology3D * vct, int ch);
   /* add a particle to the PBC msg */
@@ -771,6 +776,14 @@ protected:
   int DiagnosticsOutputCycle;
   int rank_local;
   int HighestRank;
+
+
+  /* this for SendPBC_Waits/ SendPBC_NoWaits */
+  int numSendPBC_Waits;
+  MPI_Request *req_SendPBC;
+  MPI_Status *st_SendPBC;
+
+
 };
 
 #endif

@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     /* end this is the normal and tested  */
 
 
-    KCode.Mover_GatherMoments_Interleaved(i);
+    KCode.Mover_GatherMoments_Interleaved(i, KCode.FirstCycle());
 
     if (!b_err) KCode.CalculateBField(i); 
 
