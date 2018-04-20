@@ -405,6 +405,11 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   eqValue(0.0, Dz, nxn, nyn, nzn);
   // move from krylov space to physical space
   solver2phys(vectX, vectY, vectZ, vector, nxn, nyn, nzn);
+  communicateNodeBC(nxn, nyn, nzn, vectX, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC(nxn, nyn, nzn, vectY, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC(nxn, nyn, nzn, vectZ, 2, 2, 2, 2, 2, 2, vct);
+
+
   grid->lapN2N_classic(imageX, vectX, vct);
   grid->lapN2N_classic(imageY, vectY, vct);
   grid->lapN2N_classic(imageZ, vectZ, vct);
