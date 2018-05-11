@@ -316,7 +316,7 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
-  if (Case=="ForceFree") fixBforcefree(grid,vct);
+  if ((Case=="ForceFree") ||(Case=="ForceFreeHump")) fixBforcefree(grid,vct);
   else if (Case=="GEM" || Case=="GEMRelativity" || Case=="GEMNoVelShear")       fixBgem(grid, vct);
   else if (Case=="HarrisSteps")       fixBgem(grid, vct);
   else if (Case=="GEMnoPert") fixBgem(grid, vct);
@@ -1094,7 +1094,7 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
-  if (Case=="ForceFree") fixBforcefree(grid,vct);
+  if ((Case=="ForceFree") || (Case=="ForceFreeHump")) fixBforcefree(grid,vct);
     else if (Case=="GEM" || Case=="GEMRelativity" || Case=="GEMNoVelShear")       fixBgem(grid, vct);
     else if (Case=="HarrisSteps")       fixBgem(grid, vct);
     else if (Case=="GEMnoPert") fixBgem(grid, vct);
@@ -3003,6 +3003,102 @@ void EMfields3D::initForceFree(VirtualTopology3D * vct, Grid * grid, Collective 
     init(vct, grid, col);            // use the fields from restart file
   }
 }
+
+void EMfields3D::initForceFreeWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col){
+    // perturbation localized in X
+    const double pertX = 0.4*0.0;
+    const double deltax = 8.*delta;
+    const double deltay = 4.*delta;
+    if (restart1 ==0){
+        // initialize
+        if (vct->getCartesian_rank() ==0){
+            cout << "------------------------------------------" << endl;
+            cout << "Initialize GEM Challenge with Pertubation" << endl;
+            cout << "------------------------------------------" << endl;
+            cout << "B0x                              = " << B0x << endl;
+            cout << "B0y                              = " << B0y << endl;
+            cout << "B0z                              = " << B0z << endl;
+            cout << "Delta (current sheet thickness) = " << delta << endl;
+            for (int i=0; i < ns; i++){
+                cout << "rho species " << i <<" = " << rhoINIT[i];
+                if (DriftSpecies[i])
+                    cout << " DRIFTING " << endl;
+                else
+                    cout << " BACKGROUND " << endl;
+            }
+            cout << "-------------------------" << endl;
+        }
+        for (int i=0; i < nxn; i++)
+            for (int j=0; j < nyn; j++)
+                for (int k=0; k < nzn; k++){
+                     double xM = grid->getXN(i,j,k)- .5*Lx;
+                     double yB = grid->getYN(i,j,k) - .25*Ly;
+                     double yT = grid->getYN(i,j,k) - .75*Ly;
+                     double yBd = yB/delta;
+                     double yTd = yT/delta*10.0;
+                    // initialize the density for species
+                    for (int is=0; is < ns; is++){
+                            rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+                    }
+                    // electric field
+                    Ex[i][j][k] =  0.0;
+                    Ey[i][j][k] =  0.0;
+                    Ez[i][j][k] =  0.0;
+                    // Magnetic field
+                    Bxn[i][j][k] = B0x*(-1.0+tanh(yBd)-tanh(yTd));
+                    Byn[i][j][k] = B0y;
+                    // add the initial X perturbation
+                     double xMdx = xM/deltax;
+                     double yBdy = yB/deltay;
+                     double yTdy = yT/deltay;
+                     double humpB = exp(-xMdx*xMdx-yBdy*yBdy);
+                    Bxn[i][j][k] -=(B0x*pertX)*humpB*(2.0*yBdy);
+                    Byn[i][j][k] +=(B0x*pertX)*humpB*(2.0*xMdx);
+
+                    // guide field
+                    Bzn[i][j][k] = sqrt( B0z *B0z + B0x*B0x - pow(Bxn[i][j][k], 2.0) ) ;
+                }
+        // communicate ghost
+        communicateNodeBC(nxn, nyn, nzn, Bxn, 1, 1, 2, 2, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Byn, 1, 1, 1, 1, 1, 1, vct);
+        communicateNodeBC(nxn, nyn, nzn, Bzn, 1, 1, 2, 2, 1, 1, vct);
+        // initialize B on centers
+        grid->interpN2C(Bxc, Bxn);
+        grid->interpN2C(Byc, Byn);
+        grid->interpN2C(Bzc, Bzn);
+        // communicate ghost
+        communicateCenterBC(nxc, nyc, nzc, Bxc, 2, 2, 2, 2, 2, 2, vct);
+        communicateCenterBC(nxc, nyc, nzc, Byc, 1, 1, 1, 1, 1, 1, vct);
+        communicateCenterBC(nxc, nyc, nzc, Bzc, 2, 2, 2, 2, 2, 2, vct);
+        for (int is=0 ; is<ns; is++)
+            grid->interpN2C(rhocs,is,rhons);
+    } else {
+    		init(vct, grid, col);   // use the fields from restart file
+    }
+	for (int i=0; i < nxn; i++)
+		for (int j=0; j < nyn; j++)
+			for (int k=0; k < nzn; k++)
+                for (int is=0; is < ns; is++){
+                         rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+			}
+  	for (int is=0 ; is<ns; is++)
+		grid->interpN2C(rhocs,is,rhons);
+
+	double val_Lambda=0.0;
+	for (int i=0; i < nxn; i++)
+		for (int j=0; j < nyn; j++)
+			for (int k=0; k < nzn; k++){
+//				Lambda[i][j][k] = 2.0 * M_PI / Lx * (exp(-pow(grid->getXN(i,j,k)/(Lx/,2.0))
+//						+ exp(-pow((Lx -grid->getXN(i,j,k))/(Lx/2),2.0)));
+				Lambda[i][j][k]  = 0.0;
+				if(fabs(grid->getXN(i,j,k)) < 5.0 * dx) Lambda[i][j][k]  = val_Lambda * 2.0 * M_PI / dx;
+				if(fabs(Lx-grid->getXN(i,j,k)) < 5.0 * dx) Lambda[i][j][k]  = val_Lambda * 2.0 * M_PI / dx;
+//				cout << "LAmbda = " << i << "  " << Lambda[i][j][k] << endl;
+				if(fabs(grid->getYN(i,j,k)) < 5.0 * dy) Lambda[i][j][k]  = val_Lambda * 2.0 * M_PI / dy;
+				if(fabs(Ly-grid->getYN(i,j,k)) < 5.0 * dy) Lambda[i][j][k]  = val_Lambda * 2.0 * M_PI / dy;
+			}
+}
+
 /*! Initialize the EM field with constants values or from restart */
 void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col, double x_center, double y_center, double z_center, double radius) {
   double distance;

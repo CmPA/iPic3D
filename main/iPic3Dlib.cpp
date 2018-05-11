@@ -81,6 +81,7 @@ int c_Solver::Init(int argc, char **argv) {
     /* --------------------------------------------------------- */
     if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
     else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
+    else if (col->getCase()=="ForceFreeHump") EMf->initForceFreeWithGaussianHumpPerturbation(vct,grid,col);
     else if ((col->getCase()=="GEM") || (col->getCase()=="GEMRelativity"))  EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="HarrisSteps")       EMf->initDoublePeriodicHarrisSteps(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);

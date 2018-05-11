@@ -198,6 +198,8 @@ class EMfields3D                // :public Field
     void initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! Init Force Free (JxB=0) */
     void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! Init Force Free for the series of Stefan's runs */
+    void initForceFreeWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /**  Init WB8 */
     void initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col);
     /**  Init Two Coils */
