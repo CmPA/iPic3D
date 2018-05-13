@@ -80,11 +80,11 @@ n= n/ code_n/4/pi;
 Lx=xmax-xmin
 Ly=ymax-ymin
 
-Nxpic=129;Nypic=65; Nzpic=2; %2D 7feb09
+%Nxpic=129;Nypic=65; Nzpic=2; %2D 7feb09
 
 %Nxpic=400+1;Nypic=160+1; Nzpic=160+1; %HRmaha3D3
 
-%Nxpic=144+1; Nypic= 252+1; Nzpic=108+1; % 3D 7feb09
+Nxpic=400+1; Nypic= 200+1; Nzpic=280+1; % 3D 7feb09
 
 dx=(xmax-xmin)/Nxpic;
 dy=(ymax-ymin)/Nypic;
@@ -126,7 +126,7 @@ Jzpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viz,Xpic,Ypic,Zpic);
 
 ns=2;
 !rm Initial-Fields_000000.h5
-opath='Initial-Fields_000000.h5'
+opath='7feb09-Fields_000000.h5'
 h5create(opath,'/Step#0/Block/Bx/0',[Nxpic, Nypic, Nzpic]);
 h5write(opath,'/Step#0/Block/Bx/0',Bxpic)
 
