@@ -277,8 +277,8 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
 
   // apply to smooth to electric field 3 times
   smoothE(Smooth, Nvolte, vct, col);
-  //smoothE(Smooth, Nvolte, vct, col);
-  //smoothE(Smooth, Nvolte, vct, col);
+  smoothE(Smooth, Nvolte, vct, col);
+  smoothE(Smooth, Nvolte, vct, col);
   communicateNodeBC(nxn, nyn, nzn, Ex,   col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
