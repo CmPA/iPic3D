@@ -410,9 +410,9 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   communicateNodeBC(nxn, nyn, nzn, vectZ, 2, 2, 2, 2, 2, 2, vct);
 
 
-  grid->lapN2N_classic(imageX, vectX, vct);
-  grid->lapN2N_classic(imageY, vectY, vct);
-  grid->lapN2N_classic(imageZ, vectZ, vct);
+  grid->lapN2N(imageX, vectX, vct);
+  grid->lapN2N(imageY, vectY, vct);
+  grid->lapN2N(imageZ, vectZ, vct);
   neg(imageX, nxn, nyn, nzn);
   neg(imageY, nxn, nyn, nzn);
   neg(imageZ, nxn, nyn, nzn);

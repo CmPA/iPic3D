@@ -555,7 +555,7 @@ void c_Solver::WriteOutput(int cycle) {
     }
     if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("position + velocity + q ", cycle, 1);
+      output_mgr.output("position + velocity + q + ID", cycle, 1);
       hdf5_agent.close();
     }
   }

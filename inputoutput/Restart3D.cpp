@@ -22,7 +22,7 @@ void writeRESTART(string SaveDirName, int myrank, int cycle, int ns, MPIdata * m
   hdf5_agent.open_append(SaveDirName + "/restart" + ss.str() + ".hdf");
   output_mgr.output("proc_topology ", 0);
   output_mgr.output("Eall + Ball + rhos", cycle);
-  output_mgr.output("position + velocity + q ", cycle, 0);
+  output_mgr.output("position + velocity + q + ID", cycle, 0);
   hdf5_agent.close();
 
 }
@@ -45,7 +45,7 @@ void writeRESTART(string SaveDirName, int myrank, int cycle, int ns, MPIdata * m
   hdf5_agent.open(SaveDirName + "/restart" + ss.str() + ".hdf");
   output_mgr.output("proc_topology ", 0);
   output_mgr.output("Eall + Ball + rhos", 0);
-  output_mgr.output("position + velocity + q ", 0, 0);
+  output_mgr.output("position + velocity + q + ID", 0, 0);
   output_mgr.output("last_cycle", cycle);
   hdf5_agent.close();
 
