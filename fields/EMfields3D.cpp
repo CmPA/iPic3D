@@ -539,6 +539,15 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
    }
 
    smoothE(Smooth, vct, col);
+   bool smoothThrice=true;
+   if (smoothThrice){
+     if (vct->getCartesian_rank() == 0){
+       cout << "I am smoothing E thrice" << endl;
+     }
+     
+     smoothE(Smooth, vct, col);
+     smoothE(Smooth, vct, col);
+   }
 
    /* this used to be only for grid 0, now for everybody */
    communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
@@ -3072,16 +3081,32 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
 }
 
 
-/* non-mlmd version
-void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+/* MLMD ready */
+void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
-  double pertX = 0.4;
-  double xpert, ypert, exp_pert;
+
+  double globalx;
+  double globaly;
+  double globalz;
+
+  const double coarsedx= grid->getDx_mlmd(0) ;
+  const double coarsedy= grid->getDy_mlmd(0) ;
+  const double coarsedz= grid->getDz_mlmd(0) ;
+
+  // this local
+  double Lx= col->getLx_mlmd(0);
+  double Ly= col->getLy_mlmd(0);
+  // end local
+
+  const double deltax= Lx/2.0;
+  const double deltay= Ly/2.0;
+
+
   if (restart1 == 0) {
     // initialize
     if (vct->getCartesian_rank() == 0) {
       cout << "------------------------------------------" << endl;
-      cout << "Initialize GEM Challenge with Pertubation" << endl;
+      cout << "Initialize GEM Challenge (MLMD-ready) without Pertubation" << endl;
       cout << "------------------------------------------" << endl;
       cout << "B0x                              = " << B0x << endl;
       cout << "B0y                              = " << B0y << endl;
@@ -3099,10 +3124,18 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
     for (int i = 0; i < nxn; i++)
       for (int j = 0; j < nyn; j++)
 	for (int k = 0; k < nzn; k++) {
+
+	  globalx= grid->getXN(i, j, k) + grid->getOx_SW();
+	  globaly= grid->getYN(i, j, k) + grid->getOy_SW();
+	  globalz= grid->getZN(i, j, k) + grid->getOz_SW();
+         
+	  double xpert;
+	  double ypert;
+
 	  // initialize the density for species
 	  for (int is = 0; is < ns; is++) {
 	    if (DriftSpecies[is])
-	      rhons[is][i][j][k] = ((rhoINIT[is] / (cosh((grid->getYN(i, j, k) - Ly / 2) / delta) * cosh((grid->getYN(i, j, k) - Ly / 2) / delta)))) / FourPI;
+	      rhons[is][i][j][k] = ((rhoINIT[is] / (cosh((globaly - Ly / 2) / delta) * cosh((globaly - Ly / 2) / delta)))) / FourPI;
 	    else
 	      rhons[is][i][j][k] = rhoINIT[is] / FourPI;
 	  }
@@ -3111,46 +3144,34 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
 	  Ey[i][j][k] = 0.0;
 	  Ez[i][j][k] = 0.0;
 	  // Magnetic field
-	  Bxn[i][j][k] = B0x * tanh((grid->getYN(i, j, k) - Ly / 2) / delta);
-	  // add the initial GEM perturbation
-	  // Bxn[i][j][k] += (B0x/10.0)*(M_PI/Ly)*cos(2*M_PI*grid->getXN(i,j,k)/Lx)*sin(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly );
-	  Byn[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXN(i,j,k)/Lx)*cos(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly); 
-	  // add the initial X perturbation
-	  xpert = grid->getXN(i, j, k) - Lx / 2;
-	  ypert = grid->getYN(i, j, k) - Ly / 2;
-	  exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
-	  Bxn[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
-	  Byn[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+	  Bxn[i][j][k] = B0x * tanh((globaly - Ly / 2) / delta);
+	  Byn[i][j][k] = B0y; 
 	  // guide field
 	  Bzn[i][j][k] = B0z;
 	}
     // initialize B on centers
-    for (int i = 0; i < nxc; i++)
-      for (int j = 0; j < nyc; j++)
-	for (int k = 0; k < nzc; k++) {
-	  // Magnetic field
-	  Bxc[i][j][k] = B0x * tanh((grid->getYC(i, j, k) - Ly / 2) / delta);
-	  // add the initial GEM perturbation
-	  // Bxc[i][j][k] += (B0x/10.0)*(M_PI/Ly)*cos(2*M_PI*grid->getXC(i,j,k)/Lx)*sin(M_PI*(grid->getYC(i,j,k)- Ly/2)/Ly );
-	  Byc[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXC(i,j,k)/Lx)*cos(M_PI*(grid->getYC(i,j,k)- Ly/2)/Ly); 
-	  // add the initial X perturbation
-	  xpert = grid->getXC(i, j, k) - Lx / 2;
-	  ypert = grid->getYC(i, j, k) - Ly / 2;
-	  exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
-	  Bxc[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
-	  Byc[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
-	  // guide field
-	  Bzc[i][j][k] = B0z;
+   
+    communicateNode(nxn, nyn, nzn, Bxn, vct);
+    communicateNode(nxn, nyn, nzn, Byn, vct);
+    communicateNode(nxn, nyn, nzn, Bzn, vct);
+    // initialize B on centers; same thing as on nodes but on centers
 
-	}
+    grid->interpN2C_GC(Bxc, Bxn);
+    grid->interpN2C_GC(Byc, Byn);
+    grid->interpN2C_GC(Bzc, Bzn);
+     
+    // end initialize B on centers 
+    communicateCenter(nxc, nyc, nzc, Bxc, vct);
+    communicateCenter(nxc, nyc, nzc, Byc, vct);
+    communicateCenter(nxc, nyc, nzc, Bzc, vct);
+
     for (int is = 0; is < ns; is++)
       grid->interpN2C_GC(rhocs, is, rhons);
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
-    }
-    }*/
-
+  }
+}
 
 void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
@@ -3420,7 +3441,8 @@ void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * gri
 }
 
 /*! initialize GEM challenge with no Perturbation */
-void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+/* Pre-MLMD version
+ void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   if (restart1 == 0) {
 
     // initialize
@@ -3479,7 +3501,7 @@ void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective 
     init(vct, grid, col);            // use the fields from restart file
   }
 }
-
+*/
 void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   double **modes_seed = newArr2(double, 7, 7);
   if (restart1 == 0) {
