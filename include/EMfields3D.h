@@ -25,6 +25,7 @@
 #include "asserts.h"
 #include "BCStructure.h"
 
+#include "EBox.h"
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -209,8 +210,12 @@ class EMfields3D                // :public Field
     void PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);
     /*! Image of Maxwell Solver (for Solver) */
     void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct);
+    /*! Image of Maxwell Solver (for Solver) in EB */
+    void MaxwellImage_EB(double *im, double *vector, Grid * grid, VirtualTopology3D * vct);
     /*! Maxwell source term (for SOLVER) */
     void MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
+    /*! Maxwell source term (for SOLVER) in EB */
+    void MaxwellSource_EB(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! Impose a constant charge inside a spherical zone of the domain */
     void ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, double R, double x_center, double y_center, double z_center);
     /*! Impose a constant charge in the OpenBC boundaries */
@@ -226,8 +231,13 @@ class EMfields3D                // :public Field
 
     /*! Calculate the three components of Pi(implicit pressure) cross image vector */
     void PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid);
+    /* PIdot, in expanding box */
+    void PIdot_EB(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid);
     /*! Calculate the three components of mu (implicit permeattivity) cross image vector */
     void MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid);
+    /* MUdot, in expanding box */
+    void MUdot_EB(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid);
+
     /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
     void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
@@ -293,6 +303,9 @@ class EMfields3D                // :public Field
     void sustensorX(double **susxx, double **susxy, double **susxz, int N);
     void sustensorY (double **susyx, double **susyy, double **susyz, int N);
     void sustensorZ(double **suszx, double **suszy, double **suszz, int N);
+
+    /*! Update vectors for expanding box !*/
+    void UpdateEBVectors(Grid *grid, EBox *ebox);
 
     /*! get Potential array */
     double ***getPHI();
@@ -686,6 +699,19 @@ class EMfields3D                // :public Field
     void BoundaryConditionsE(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
     void BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
 
+
+    /** Expanding box, variables needed in fields **/
+    double UEB_0;
+    double REB_0;
+    // intermediate position of the grid, updated by KCode.UpdateCycleInfo
+    double R_nth;
+    /* Expanding box arrays: declared, but instantiated conditionally to EB */
+    /*! 1/ (I + th dt P), parallel direction */
+    double ***EB_ExpPar;
+    /*! 1/ (I + th dt P), perpendicular direction */
+    double ***EB_ExpPerp;
+    /*! 1/ (1+ 2 th dt U0/R nth) */
+    double ***EB_Att;
 };
 
 typedef EMfields3D Field;

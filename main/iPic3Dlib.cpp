@@ -177,6 +177,14 @@ int c_Solver::Init(int argc, char **argv) {
 
   my_clock = new Timing(myrank);
 
+#ifdef EB
+  ebox= new EBox(col);
+  if (myrank==0){
+    cout <<"Expanding box initialised: U_EB_0= " << ebox->getUEB_0() << ", R_EB_0=" << ebox->getREB_0() << endl;
+  }
+#endif
+
+
   return 0;
 }
 
@@ -212,6 +220,11 @@ void c_Solver::UpdateCycleInfo(int cycle) {
       EMf->SetLambda(grid);
     }
   }
+
+#ifdef EB
+  ebox->UpdateEbParameter();
+  EMf->UpdateEBVectors(grid, ebox);
+#endif
 
 
 }
@@ -257,7 +270,12 @@ bool c_Solver::ParticlesMover() {
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+    
+#ifdef EB
+    mem_avail= part[i].mover_PC_EB(grid, vct, EMf, ebox); // no subcycling, Expanding Box
+#else
     mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
+#endif
   }
   // timeTasks.end(TimeTasks::PARTICLES);
 
@@ -339,7 +357,11 @@ void c_Solver::WriteConserved(int cycle) {
     }
     if (myrank == 0) {
       ofstream my_file(cq.c_str(), fstream::app);
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy  << "\t";
+      for (int is = 0; is < ns; is++) {
+	my_file << Ke[is] << "\t" ;
+      }
+      my_file << endl;
       my_file.close();
     }
     // // Velocity distribution

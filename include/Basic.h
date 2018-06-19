@@ -606,4 +606,12 @@ inline void loopZ(double *b, double x, double y, double z, double a, double xc, 
   b[2] = Bz;
 }
 
+/** method to calculate v1 = v1 dot v2 **/
+inline void v1dotv2(double ***vect1, double ***vect2, int nx, int ny, int nz) {
+  for (register int i = 0; i < nx; i++)
+    for (register int j = 0; j < ny; j++)
+      for (register int k = 0; k < nz; k++)
+        vect1[i][j][k] = vect1[i][j][k] * vect2[i][j][k] ;
+}
+
 #endif

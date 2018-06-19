@@ -51,6 +51,7 @@ file(
         ${IPIC_HOME}/processtopology/*.cpp
         ${IPIC_HOME}/solvers/*.cpp
         ${IPIC_HOME}/utility/*.cpp
+	${IPIC_HOME}/EBox/*.cpp	
         ${IPIC_HOME}/main/iPic3Dlib.cpp
 )
 
@@ -78,6 +79,11 @@ endif()
 option(IPIC_XEONPHI "Compile options for Xeon Phi" OFF)
 if(IPIC_XEONPHI)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+endif()
+
+option(EB "Expanding box options" ON)
+if(EB)
+  add_definitions( -DEB )
 endif()
 
 if(NOT CMAKE_BUILD_TYPE)

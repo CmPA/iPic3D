@@ -669,6 +669,263 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   return (0);                   // exit succcesfully (hopefully) 
 }
 
+
+/*** mover, EB **/
+/** mover with a Predictor-Corrector scheme, with expanding box */
+int Particles3D::mover_PC_EB(Grid * grid, VirtualTopology3D * vct, Field * EMf, EBox * ebox){
+  if (vct->getCartesian_rank() == 0) {
+    cout << "*** MOVER !!!EXPANDING BOX!!! species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+  }
+  /* this is the intermediate position of the grid, 
+     still add intermediate position of the particle the particle */
+  double R_nth= ebox->getR_nth();
+  if (vct->getCartesian_rank() == 0 and ns==0) {
+    cout << "R_nth in mover: " << R_nth << endl;
+  }
+  // R0
+  double R0_EB= ebox->getREB_0();
+  // U0
+  double U0_EB= ebox->getUEB_0();
+
+  double start_mover_PC = MPI_Wtime();
+  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+
+  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+  double Fext = EMf->getFext();
+
+  const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+  const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+  // don't bother trying to push any particles simultaneously;
+  // MIC already does vectorization automatically, and trying
+  // to do it by hand only hurts performance.
+#pragma omp parallel for
+#pragma simd                    // this just slows things down (why?)
+  for (long long rest = 0; rest < nop; rest++) {
+    // copy the particle
+    double xp = x[rest];
+    double yp = y[rest];
+    double zp = z[rest];
+    double up = u[rest];
+    double vp = v[rest];
+    double wp = w[rest];
+    const double xptilde = x[rest];
+    const double yptilde = y[rest];
+    const double zptilde = z[rest];
+    double uptilde;
+    double vptilde;
+    double wptilde;
+    // calculate the average velocity iteratively
+    for (int innter = 0; innter < NiterMover; innter++) {
+      // interpolation G-->P
+      const double ixd = floor((xp - xstart) * inv_dx);
+      const double iyd = floor((yp - ystart) * inv_dy);
+      const double izd = floor((zp - zstart) * inv_dz);
+      int ix = 2 + int (ixd);
+      int iy = 2 + int (iyd);
+      int iz = 2 + int (izd);
+      if (ix < 1)
+        ix = 1;
+      if (iy < 1)
+        iy = 1;
+      if (iz < 1)
+        iz = 1;
+      if (ix > nxn - 1)
+        ix = nxn - 1;
+      if (iy > nyn - 1)
+        iy = nyn - 1;
+      if (iz > nzn - 1)
+        iz = nzn - 1;
+
+      double xi  [2];
+      double eta [2];
+      double zeta[2];
+
+      xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+      eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+      zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+      xi  [1] = grid->getXN(ix,iy,iz) - xp;
+      eta [1] = grid->getYN(ix,iy,iz) - yp;
+      zeta[1] = grid->getZN(ix,iy,iz) - zp;
+
+      double Exl = 0.0;
+      double Eyl = 0.0;
+      double Ezl = 0.0;
+      double Bxl = 0.0;
+      double Byl = 0.0;
+      double Bzl = 0.0;
+
+      // MIC refuses to vectorize this ...
+      // 
+      // double weight[2][2][2];
+      // for (int ii = 0; ii < 2; ii++)
+      // for (int jj = 0; jj < 2; jj++)
+      // for (int kk = 0; kk < 2; kk++)
+      // weight[ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
+      // for (int ii = 0; ii < 2; ii++)
+      // for (int jj = 0; jj < 2; jj++)
+      // for (int kk = 0; kk < 2; kk++) {
+      // const double Exlp = weight[ii][jj][kk] * Ex.get(ix - ii, iy - jj, iz - kk);
+      // const double Eylp = weight[ii][jj][kk] * Ey.get(ix - ii, iy - jj, iz - kk);
+      // const double Ezlp = weight[ii][jj][kk] * Ez.get(ix - ii, iy - jj, iz - kk);
+      // const double Bxlp = weight[ii][jj][kk] * Bx.get(ix - ii, iy - jj, iz - kk);
+      // const double Bylp = weight[ii][jj][kk] * By.get(ix - ii, iy - jj, iz - kk);
+      // const double Bzlp = weight[ii][jj][kk] * Bz.get(ix - ii, iy - jj, iz - kk);
+      // Exl += Exlp;
+      // Eyl += Eylp;
+      // Ezl += Ezlp;
+      // Bxl += Bxlp;
+      // Byl += Bylp;
+      // Bzl += Bzlp;
+      // }
+
+      // ... so we expand things out instead
+      // 
+      const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+      const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+      const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+      const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+      const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+      const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+      const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+      const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+      // 
+      Bxl += weight000 * (Bx[ix][iy][iz]             + Fext*Bx_ext[ix][iy][iz]);
+      Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Fext*Bx_ext[ix][iy][iz-1]);
+      Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Fext*Bx_ext[ix][iy-1][iz]);
+      Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Fext*Bx_ext[ix][iy-1][iz-1]);
+      Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Fext*Bx_ext[ix-1][iy][iz]);
+      Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Fext*Bx_ext[ix-1][iy][iz-1]);
+      Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Fext*Bx_ext[ix-1][iy-1][iz]);
+      Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Fext*Bx_ext[ix-1][iy-1][iz-1]);
+      // 
+      Byl += weight000 * (By[ix][iy][iz]             + Fext*By_ext[ix][iy][iz]);
+      Byl += weight001 * (By[ix][iy][iz - 1]         + Fext*By_ext[ix][iy][iz-1]);
+      Byl += weight010 * (By[ix][iy - 1][iz]         + Fext*By_ext[ix][iy-1][iz]);
+      Byl += weight011 * (By[ix][iy - 1][iz - 1]     + Fext*By_ext[ix][iy-1][iz-1]);
+      Byl += weight100 * (By[ix - 1][iy][iz]         + Fext*By_ext[ix-1][iy][iz]);
+      Byl += weight101 * (By[ix - 1][iy][iz - 1]     + Fext*By_ext[ix-1][iy][iz-1]);
+      Byl += weight110 * (By[ix - 1][iy - 1][iz]     + Fext*By_ext[ix-1][iy-1][iz]);
+      Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + Fext*By_ext[ix-1][iy-1][iz-1]);
+      // 
+      Bzl += weight000 * (Bz[ix][iy][iz]             + Fext*Bz_ext[ix][iy][iz]);
+      Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Fext*Bz_ext[ix][iy][iz-1]);
+      Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Fext*Bz_ext[ix][iy-1][iz]);
+      Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Fext*Bz_ext[ix][iy-1][iz-1]);
+      Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Fext*Bz_ext[ix-1][iy][iz]);
+      Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Fext*Bz_ext[ix-1][iy][iz-1]);
+      Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
+      Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
+      // 
+      Exl += weight000 * Ex[ix][iy][iz];
+      Exl += weight001 * Ex[ix][iy][iz - 1];
+      Exl += weight010 * Ex[ix][iy - 1][iz];
+      Exl += weight011 * Ex[ix][iy - 1][iz - 1];
+      Exl += weight100 * Ex[ix - 1][iy][iz];
+      Exl += weight101 * Ex[ix - 1][iy][iz - 1];
+      Exl += weight110 * Ex[ix - 1][iy - 1][iz];
+      Exl += weight111 * Ex[ix - 1][iy - 1][iz - 1];
+      // 
+      Eyl += weight000 * Ey[ix][iy][iz];
+      Eyl += weight001 * Ey[ix][iy][iz - 1];
+      Eyl += weight010 * Ey[ix][iy - 1][iz];
+      Eyl += weight011 * Ey[ix][iy - 1][iz - 1];
+      Eyl += weight100 * Ey[ix - 1][iy][iz];
+      Eyl += weight101 * Ey[ix - 1][iy][iz - 1];
+      Eyl += weight110 * Ey[ix - 1][iy - 1][iz];
+      Eyl += weight111 * Ey[ix - 1][iy - 1][iz - 1];
+      // 
+      Ezl += weight000 * Ez[ix][iy][iz];
+      Ezl += weight001 * Ez[ix][iy][iz - 1];
+      Ezl += weight010 * Ez[ix][iy - 1][iz];
+      Ezl += weight011 * Ez[ix][iy - 1][iz - 1];
+      Ezl += weight100 * Ez[ix - 1][iy][iz];
+      Ezl += weight101 * Ez[ix - 1][iy][iz - 1];
+      Ezl += weight110 * Ez[ix - 1][iy - 1][iz];
+      Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
+
+      // end interpolation
+      const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
+      // solve the position equation
+      const double ut = up + qomdt2 * Exl;
+      const double vt = vp + qomdt2 * Eyl;
+      const double wt = wp + qomdt2 * Ezl;
+      const double udotb = ut * Bxl + vt * Byl + wt * Bzl;
+      // solve the velocity equation 
+      /* No EB
+      const double denom = 1.0 / (1.0 + omdtsq);   
+      uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
+      vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
+      wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;*/
+      /* EB: extra term at the denom of perpendicular terms, U0/R= U0/ (R0 +x) */
+      const double denom_par = 1.0 / (1.0 + omdtsq);
+      // Rnth= intermediate position grid (R_nth) + intermediate position particle (xp)
+      const double denom_perp = 1.0 / (1.0 + omdtsq + dto2* U0_EB/ (R_nth+xp));
+      uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom_par;  
+      vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom_perp; 
+      wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom_perp;
+      // update position
+      /*xp = xptilde + uptilde * dto2;
+      yp = yptilde + vptilde * dto2;
+      zp = zptilde + wptilde * dto2;*/
+      xp = xptilde + uptilde * dto2;                                                  
+      // Rn+th = intermediate position of grid (R_nth) + intermediate position of particle  
+      yp = yptilde + vptilde * dto2* (R0_EB/ (R_nth + xptilde));                         
+      zp = zptilde + wptilde * dto2* (R0_EB/ (R_nth + xptilde));
+      // update position, expanding box (R_0/R) in perp direction
+    }                           // end of iteration
+    // update the final position and velocity
+    up = 2.0 * uptilde - u[rest];
+    vp = 2.0 * vptilde - v[rest];
+    wp = 2.0 * wptilde - w[rest];
+    /*xp = xptilde + uptilde * dt;
+    yp = yptilde + vptilde * dt;
+    zp = zptilde + wptilde * dt;*/
+    double x_int= xp; // intermediate x position, needed for Px
+    xp = xptilde + uptilde * dt;
+    // Rn+th = intermediate position of grid (R_nth) + intermediate position of particle
+    yp = yptilde + vptilde * dt* (R0_EB/ (R_nth + x_int)); 
+    zp = zptilde + wptilde * dt* (R0_EB/ (R_nth + x_int));
+    /* EB: add the R0_R term in the perp direction */
+    x[rest] = xp;
+    y[rest] = yp;
+    z[rest] = zp;
+    u[rest] = up;
+    v[rest] = vp;
+    w[rest] = wp;
+  }                             // END OF ALL THE PARTICLES
+
+  // ********************//
+  // COMMUNICATION 
+  // *******************//
+  // timeTasks.start_communicate();
+  const int avail = communicate(vct);
+  if (avail < 0)
+    return (-1);
+  MPI_Barrier(MPI_COMM_WORLD);
+  // communicate again if particles are not in the correct domain
+  while (isMessagingDone(vct) > 0) {
+    // COMMUNICATION
+    const int avail = communicate(vct);
+    if (avail < 0)
+      return (-1);
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+  // timeTasks.addto_communicate();
+  return (0);                   // exit succcesfully (hopefully) 
+}
+
+/** end mover, EB **/
+
+
+
 /** mover with a Predictor-Corrector scheme */
 int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   if (vct->getCartesian_rank() == 0) {

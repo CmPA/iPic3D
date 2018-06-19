@@ -49,6 +49,14 @@ void Collective::ReadInput(string inputfile) {
     SimName           = config.read<string>("SimulationName");
     PoissonCorrection = config.read<string>("PoissonCorrection");
 
+    /* expanding box parameters*/
+#ifdef EB
+    UEB_0 = config.read <double>("UEB_0", 0.0);
+    REB_0 = config.read <double>("REB_0", 0.0);
+    //cout << "Expanding box parameters: UEB_0= " << UEB_0 << ", REB_0= " << REB_0 << endl;
+#endif
+    /* end expanding box parameters*/
+
     rhoINIT = new double[ns];
     array_double rhoINIT0 = config.read < array_double > ("rhoINIT");
     rhoINIT[0] = rhoINIT0.a;
@@ -1100,4 +1108,12 @@ int Collective::getRestartOutputCycle() {
 /*! output of fields */
 int Collective::getDiagnosticsOutputCycle() {
   return (DiagnosticsOutputCycle);
+}
+/*! expanding box UEB_0 */
+double Collective::getUEB_0(){
+  return UEB_0;
+}
+/*! expanding box REB_0 */
+double Collective::getREB_0(){
+  return REB_0;
 }

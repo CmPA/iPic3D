@@ -16,6 +16,8 @@
 #include "Timing.h"
 #include "ParallelIO.h"
 
+#include "EBox.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -62,6 +64,7 @@ namespace iPic3D {
     unsigned long *VelocityDist;
     Timing        *my_clock;
 
+    EBox          *ebox;
     PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
     myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent;  // Create an Output Agent for HDF5 output
 

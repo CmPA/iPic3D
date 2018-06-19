@@ -11,7 +11,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "VirtualTopology3D.h"
 #include "Grid.h"
 #include "Field.h"
-
+#include "EBox.h"
 /**
  * 
  * Abstract class for particles of the same species

@@ -206,6 +206,11 @@ class Collective
     /*! get the amplitude of the magnetic field 1 along z */
     double getB1z();
 
+    /*! get the expanding box value UEB_0: velocity of the plasma parcel */
+    double getUEB_0();
+    /*! get the expanding box value REB_0: distance from the Sun */
+    double getREB_0();
+
     /*! get the boolean value for verbose results */
     bool getVerbose();
 
@@ -407,6 +412,9 @@ class Collective
     double B1y;
     double B1z;
 
+    /* Expanding box parameters */
+    double UEB_0;
+    double REB_0;
 
     /*! boolean value for verbose results */
     bool verbose;
