@@ -140,9 +140,15 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   rhoh = newArr3(double, nxc, nyc, nzc);
   // array allocation: Expanding Box
 #ifdef EB
+  // on nodes
   EB_ExpPar  = newArr3(double,nxn,nyn,nzn);
   EB_ExpPerp = newArr3(double,nxn,nyn,nzn);
   EB_Att     = newArr3(double,nxn,nyn,nzn);
+  // on centers
+  EB_B1_Par  = newArr3(double,nxc,nyc,nzc);
+  EB_B1_Perp = newArr3(double,nxc,nyc,nzc);
+  EB_B2_Par  = newArr3(double,nxc,nyc,nzc);
+  EB_B2_Perp = newArr3(double,nxc,nyc,nzc);
 #endif
 
   // temporary arrays
@@ -723,7 +729,9 @@ void EMfields3D::PIdot_EB(double ***PIdotX, double ***PIdotY, double ***PIdotZ, 
 	/* XPOS this is Rn+th, intermediate position of this grid point;
 	   = R_nth (intermediate position grid, updated at the beginning of the cycle)+
 	   position of this grid point */
-	double XPOS= R_nth + grid->getXN(i, 1, 1) ;
+	//double XPOS= R_nth + grid->getXN(i, 1, 1) ;
+	// for the moment, neglect dispalcement within the grid
+	double XPOS=R_nth;
 	denom_perp = 1 / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz + .5*dt*UEB_0/ ( XPOS) );
 
         PIdotX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom_par;
@@ -791,8 +799,9 @@ void EMfields3D::MUdot_EB(double ***MUdotX, double ***MUdotY, double ***MUdotZ, 
 	  /* XPOS is Rn+th, intermediate position of this grid point;                   
            = Rnth (intermediate position grid, updated at the beginning of the cycle)+ 
            position of the grid point */
-	  double XPOS= R_nth + grid->getXN(i, 1, 1) ;
-
+	  //double XPOS= R_nth + grid->getXN(i, 1, 1) ;
+	  // for the moment, neglect displacement within the grid
+	  double XPOS= R_nth; 
 	  denom_perp = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz  + .5*dt *UEB_0/ (XPOS));
 
           MUdotX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom_par;
@@ -1239,6 +1248,60 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   addscale(-c * dt, 1, Bxc, tempXC, nxc, nyc, nzc);
   addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
   addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
+
+  // communicate ghost 
+  communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+
+  if (Case=="ForceFree") fixBforcefree(grid,vct);
+  if (Case=="GEM")       fixBgem(grid, vct);
+  if (Case=="GEMnoPert") fixBgem(grid, vct);
+
+  // OpenBC:
+  BoundaryConditionsB(Bxc,Byc,Bzc,nxc,nyc,nzc,grid,vct);
+
+  // interpolate C2N
+  grid->interpC2N(Bxn, Bxc);
+  grid->interpC2N(Byn, Byc);
+  grid->interpC2N(Bzn, Bzc);
+
+  communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+
+
+}
+
+/*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
+void EMfields3D::calculateB_EB(Grid * grid, VirtualTopology3D * vct, Collective *col) {
+  if (vct->getCartesian_rank() == 0)
+    cout << "*** B CALCULATION, Expanding Box!!! ***" << endl;
+
+  // calculate the curl of Eth
+  grid->curlN2C(tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
+
+  /** I/(I + theta Dt P) curl Eth **/
+  /**v1 = v1 dot v2 **/
+  v1dotv2(tempXC, EB_B2_Par, nxc, nyc, nzc);
+  v1dotv2(tempYC, EB_B2_Perp, nxc, nyc, nzc);
+  v1dotv2(tempZC, EB_B2_Perp, nxc, nyc, nzc);
+
+  /** -c Dt/(I + theta Dt P) curl Eth **/
+  scale(tempXC, -c * dt, nxc, nyc, nzc);
+  scale(tempYC, -c * dt, nxc, nyc, nzc);
+  scale(tempZC, -c * dt, nxc, nyc, nzc);
+
+  /** I- Dt P/(I + theta Dt P) B **/
+  v1dotv2(Bxc, EB_B1_Par, nxc, nyc, nzc);
+  v1dotv2(Byc, EB_B1_Perp, nxc, nyc, nzc);
+  v1dotv2(Bzc, EB_B1_Perp, nxc, nyc, nzc);
+
+  /** I- Dt P/(I + theta Dt P) B  -c Dt/(I + theta Dt P) curl Eth **/
+  /*vector1 = vector1 + vector2*/
+  sum(Bxc, tempXC, nxc, nyc, nzc);
+  sum(Byc, tempYC, nxc, nyc, nzc);
+  sum(Bzc, tempZC, nxc, nyc, nzc);
 
   // communicate ghost 
   communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
@@ -2488,6 +2551,8 @@ void EMfields3D::initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col,
 
 void EMfields3D::UpdateFext(int cycle){
 
+  // I need to keep into account the bg field
+  
   return;
 
 
@@ -3946,6 +4011,7 @@ double EMfields3D::getBenergy(void) {
   for (int i = 1; i < nxn - 2; i++)
     for (int j = 1; j < nyn - 2; j++)
       for (int k = 1; k < nzn - 2; k++){
+	//	cout << "Bxn[i][j][k]: "<< Bxn[i][j][k] << " Bx_ext[i][j][k]: "<< Bx_ext[i][j][k] << endl;
         Bxt = Bxn[i][j][k]+Fext*Bx_ext[i][j][k];
         Byt = Byn[i][j][k]+Fext*By_ext[i][j][k];
         Bzt = Bzn[i][j][k]+Fext*Bz_ext[i][j][k];
@@ -4028,6 +4094,11 @@ EMfields3D::~EMfields3D() {
   delArr3(EB_ExpPar, nxn, nyn);
   delArr3(EB_ExpPerp, nxn, nyn);
   delArr3(EB_Att, nxn, nyn);
+
+  delArr3(EB_B1_Par, nxc, nyc);
+  delArr3(EB_B1_Perp, nxc, nyc);
+  delArr3(EB_B2_Par, nxc, nyc);
+  delArr3(EB_B2_Perp, nxc, nyc);
 #endif
 }
 
@@ -4042,14 +4113,19 @@ void EMfields3D::UpdateEBVectors(Grid *grid, EBox *ebox){
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
   R_nth=ebox->getR_nth();
+  R=ebox->getR();
   if (rank==0) {
     cout.precision(6);
-    cout << "Grid intermediate position is Rnth=" << R_nth << " in fields" << endl;}
+    cout << "Grid intermediate position is Rnth=" << R_nth << " in fields" << endl;
+    cout << "Grid position is R=" << R << " in fields" << endl;
+  }
 
   for (int i=0; i< nxn; i++){
     // intermediate position of grid point= intermediate position grid + X node coordinate
-    double XPOS= R_nth + grid->getXN(i, 1, 1) ;
-    
+    //double XPOS= R_nth + grid->getXN(i, 1, 1) ;
+    // for the moment, neglect displacement within the grid
+    double XPOS= R_nth;
+
     for (int j=0; j< nyn; j++)
       for (int k=0; k< nzn; k++){
 	//1/ (I + th dt P)
@@ -4058,4 +4134,46 @@ void EMfields3D::UpdateEBVectors(Grid *grid, EBox *ebox){
 	EB_Att[i][j][k]=     1.0/ (1.0 + 2.0 *th*dt *UEB_0 / XPOS);
       }
   }
+
+  for (int i=0; i< nxc; i++){
+    double XPOS= R_nth;
+    for (int j=0; j< nyc; j++)
+      for (int k=0; k<nzc; k++){
+	EB_B1_Par[i][j][k]= 1.0 - dt* (2*UEB_0 / XPOS)/ (1 + th* dt* (2*UEB_0 / XPOS));
+	EB_B1_Perp[i][j][k]= 1.0 - dt* (UEB_0 / XPOS)/(1 + th* dt* (UEB_0 / XPOS));
+
+	EB_B2_Par[i][j][k]=1.0/(1.0 + th *dt*(2*UEB_0 / XPOS) );
+	EB_B2_Perp[i][j][k]=1.0/(1.0 + th *dt*(UEB_0 / XPOS) );
+      }
+  }
+  
+}
+
+
+void EMfields3D::SetBackgroundEBoxB(VirtualTopology3D *vct, Grid* grid, Collective *col){
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  if (rank==0) {
+    cout << "Background field updated, with R= " << R << endl;
+  }
+  
+  /*for (int i=0; i< nxn; i++)
+    for (int j=0; j< nyn; j++)
+      for (int k=0; k< nzn; k++){
+	double XPOS= R +grid->getXN(i, 0, 0);
+	Bx_ext[i][j][k]=B1x*REB_0 / (XPOS*XPOS);
+	By_ext[i][j][k]=B1y*REB_0 / (XPOS);
+	Bz_ext[i][j][k]=B1z*REB_0 / (XPOS);
+	}*/
+
+  // at the moment, same background field for all grid points, do not consider dispalcement within the grid
+
+
+  for (int i=0; i< nxn; i++)
+    for (int j=0; j< nyn; j++)
+      for (int k=0; k< nzn; k++){
+	Bx_ext[i][j][k]=B1x*REB_0*REB_0 / (R*R);
+	By_ext[i][j][k]=B1y*REB_0 / (R);
+	Bz_ext[i][j][k]=B1z*REB_0 / (R);
+      }
 }

@@ -27,7 +27,7 @@ public:
   double getUEB_0();
   double getREB_0();
   double getR_nth();
-
+  double getR();
 private:
   double dt;
   double th;
@@ -38,5 +38,7 @@ private:
 
   /* R^{n+theta}= R0+U0 t = Rn+ U0*th dt */
   double R_nth;
+
+  double R;
 };
 #endif

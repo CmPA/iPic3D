@@ -222,8 +222,10 @@ void c_Solver::UpdateCycleInfo(int cycle) {
   }
 
 #ifdef EB
+  // so it enters, as old magnetic field, in the En+theta calculation
   ebox->UpdateEbParameter();
   EMf->UpdateEBVectors(grid, ebox);
+  //EMf->SetBackgroundEBoxB(vct,grid,col);
 #endif
 
 
@@ -253,7 +255,11 @@ void c_Solver::CalculateBField() {
   /* --------------------- */
 
   // timeTasks.start(TimeTasks::BFIELD);
+#ifdef EB
+  EMf->calculateB_EB(grid, vct, col); 
+#else
   EMf->calculateB(grid, vct, col);   // calculate the B field
+#endif
   // timeTasks.end(TimeTasks::BFIELD);
 
   // print out total time for all tasks
@@ -406,7 +412,11 @@ void c_Solver::WriteOutput(int cycle) {
     // OUTPUT to large file, called proc**
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+#ifdef EB
+      output_mgr.output("Eall + Ball + rhos + Jsall + pressure + Bext", cycle);
+#else
       output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
+#endif
       // Pressure tensor is available
       hdf5_agent.close();
     }

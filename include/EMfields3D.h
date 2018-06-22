@@ -224,6 +224,8 @@ class EMfields3D                // :public Field
     void ConstantChargeOpenBCv2(Grid * grid, VirtualTopology3D * vct);
     /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
     void calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col);
+    /** in EB **/
+    void calculateB_EB(Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! fix B on the boundary for gem challange */
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for gem challange */
@@ -306,7 +308,9 @@ class EMfields3D                // :public Field
 
     /*! Update vectors for expanding box !*/
     void UpdateEBVectors(Grid *grid, EBox *ebox);
-
+    /*! Update background field for expanding box !*/
+    void SetBackgroundEBoxB(VirtualTopology3D *vct, Grid* grid, Collective *col);
+    
     /*! get Potential array */
     double ***getPHI();
     /*! get Electric Field component X defined on node(indexX,indexY,indexZ) */
@@ -446,7 +450,6 @@ class EMfields3D                // :public Field
     double getEenergy();
     /*! get the magnetic field energy */
     double getBenergy();
-
 
     /*! print electromagnetic fields info */
     void print(void) const;
@@ -705,6 +708,8 @@ class EMfields3D                // :public Field
     double REB_0;
     // intermediate position of the grid, updated by KCode.UpdateCycleInfo
     double R_nth;
+    // actual position of the grid, updated by KCode.UpdateCycleInfo, used to set the background field
+    double R;
     /* Expanding box arrays: declared, but instantiated conditionally to EB */
     /*! 1/ (I + th dt P), parallel direction */
     double ***EB_ExpPar;
@@ -712,6 +717,15 @@ class EMfields3D                // :public Field
     double ***EB_ExpPerp;
     /*! 1/ (1+ 2 th dt U0/R nth) */
     double ***EB_Att;
+    /* I- Dt P/(I + theta Dt P), on centers, parallel direction */
+    double ***EB_B1_Par;
+    /* I- Dt P/(I + theta Dt P), on centers, perp direction */
+    double ***EB_B1_Perp;
+    /* I/(I + theta Dt P), on centers, parallel direction */
+    double ***EB_B2_Par;
+    /* I/(I + theta Dt P), on centers, perp direction */
+    double ***EB_B2_Perp;
+    
 };
 
 typedef EMfields3D Field;

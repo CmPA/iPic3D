@@ -867,18 +867,20 @@ int Particles3D::mover_PC_EB(Grid * grid, VirtualTopology3D * vct, Field * EMf, 
       /* EB: extra term at the denom of perpendicular terms, U0/R= U0/ (R0 +x) */
       const double denom_par = 1.0 / (1.0 + omdtsq);
       // Rnth= intermediate position grid (R_nth) + intermediate position particle (xp)
-      const double denom_perp = 1.0 / (1.0 + omdtsq + dto2* U0_EB/ (R_nth+xp));
+      //const double denom_perp = 1.0 / (1.0 + omdtsq + dto2* U0_EB/ (R_nth+xp));
+      // for the moment, neglect local displacement within the grid
+      const double denom_perp = 1.0 / (1.0 + omdtsq + dto2* U0_EB/ (R_nth)); 
       uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom_par;  
       vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom_perp; 
       wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom_perp;
       // update position
-      /*xp = xptilde + uptilde * dto2;
-      yp = yptilde + vptilde * dto2;
-      zp = zptilde + wptilde * dto2;*/
       xp = xptilde + uptilde * dto2;                                                  
       // Rn+th = intermediate position of grid (R_nth) + intermediate position of particle  
-      yp = yptilde + vptilde * dto2* (R0_EB/ (R_nth + xptilde));                         
-      zp = zptilde + wptilde * dto2* (R0_EB/ (R_nth + xptilde));
+      /*yp = yptilde + vptilde * dto2* (R0_EB/ (R_nth + xptilde));                         
+	zp = zptilde + wptilde * dto2* (R0_EB/ (R_nth + xptilde));*/
+      // for the moment, neglect local displacement within the grid
+      yp = yptilde + vptilde * dto2* (R0_EB/ (R_nth ));                                                              
+      zp = zptilde + wptilde * dto2* (R0_EB/ (R_nth ));
       // update position, expanding box (R_0/R) in perp direction
     }                           // end of iteration
     // update the final position and velocity
@@ -891,8 +893,11 @@ int Particles3D::mover_PC_EB(Grid * grid, VirtualTopology3D * vct, Field * EMf, 
     double x_int= xp; // intermediate x position, needed for Px
     xp = xptilde + uptilde * dt;
     // Rn+th = intermediate position of grid (R_nth) + intermediate position of particle
-    yp = yptilde + vptilde * dt* (R0_EB/ (R_nth + x_int)); 
-    zp = zptilde + wptilde * dt* (R0_EB/ (R_nth + x_int));
+    /*yp = yptilde + vptilde * dt* (R0_EB/ (R_nth + x_int)); 
+      zp = zptilde + wptilde * dt* (R0_EB/ (R_nth + x_int));*/
+    // for the moment, neglect local displacement within the grod
+    yp = yptilde + vptilde * dt* (R0_EB/ (R_nth ));                                                                    
+    zp = zptilde + wptilde * dt* (R0_EB/ (R_nth ));
     /* EB: add the R0_R term in the perp direction */
     x[rest] = xp;
     y[rest] = yp;

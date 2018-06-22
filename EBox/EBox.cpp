@@ -11,6 +11,9 @@ EBox::EBox(Collective * col) {
 
   //so it becomes REB_0 + dt*UEB_0*th at the first update
   R_nth  = REB_0- dt*UEB_0 + dt*UEB_0*th; 
+
+  //so it becomes REB_0 at tge first update
+  R  = REB_0- dt*UEB_0;
 }
 
 /*! destructor */
@@ -26,6 +29,8 @@ void EBox::UpdateEbParameter(){
      (AT INIT, SET TO R_nth  = REB_0- dt*UEB_0 + dt*UEB_0*th, so it becomes REB_0 + dt*UEB_0*th
      at the first update*/
   R_nth = R_nth+ dt*UEB_0;
+
+  R = R+ dt*UEB_0;
 
   cout.precision(11);
   int rank;
@@ -44,3 +49,4 @@ void EBox::UpdateEbParameter(){
 double EBox::getUEB_0() {return UEB_0;}
 double EBox::getREB_0() {return REB_0;}
 double EBox::getR_nth() {return R_nth;}
+double EBox::getR() {return R;}

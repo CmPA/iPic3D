@@ -352,6 +352,16 @@ public:
       this->output_adaptor.write("/collective/Bx0", _col->getB0x());
       this->output_adaptor.write("/collective/By0", _col->getB0y());
       this->output_adaptor.write("/collective/Bz0", _col->getB0z());
+      // external B field
+      this->output_adaptor.write("/collective/B1x", _col->getB1x());
+      this->output_adaptor.write("/collective/B1y", _col->getB1y());
+      this->output_adaptor.write("/collective/B1z", _col->getB1z());
+      // end external B field
+      /* if def does not seem to work here; I will have this printed anyway
+	 at worse it's going to be garbage */
+      this->output_adaptor.write("/collective/UEB_0", _col->getUEB_0());
+      this->output_adaptor.write("/collective/REB_0", _col->getREB_0());
+      /* */
       this->output_adaptor.write("/collective/Nxc", _col->getNxc());
       this->output_adaptor.write("/collective/Nyc", _col->getNyc());
       this->output_adaptor.write("/collective/Nzc", _col->getNzc());
@@ -454,6 +464,13 @@ public:
     else if (tag.find("Bz", 0) != string::npos) {
       this->output_adaptor.write("/fields/Bz/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), _field->getBz());
 
+    }
+
+    // if requested, print B_ext
+    if (tag.find("Bext", 0) != string::npos) {
+      this->output_adaptor.write("/fields/Bx_ext/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), _field->getBx_ext());
+      this->output_adaptor.write("/fields/By_ext/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), _field->getBy_ext());
+      this->output_adaptor.write("/fields/Bz_ext/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), _field->getBz_ext());
     }
 
 
