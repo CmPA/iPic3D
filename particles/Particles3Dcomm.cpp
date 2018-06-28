@@ -458,7 +458,19 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++) {
-            weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+
+#ifdef EB
+	    double R0= EMf->getREB_0_EB();
+	    // this value is updated in UpdateEBVectors
+	    double R= EMf->getR_EB();
+	    /* rescaling the moments */
+            weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL/ (R*R/ R0/ R0);
+	    if (i==0 && vct->getCartesian_rank() ==0){
+	      cout << "Species " << ns << " is rescaling moments (R/R0)^2 for EB, R= " << R << ", R0= "<< R0<<endl;;
+	    }
+#else
+	    weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+#endif
           }
       //weight[0][0][0] = q[i] * xi[0] * eta[0] * zeta[0] * invVOL;
       //weight[0][0][1] = q[i] * xi[0] * eta[0] * zeta[1] * invVOL;

@@ -247,6 +247,10 @@ class EMfields3D                // :public Field
     void SetLambda  (Grid * grid);
     double ***GetLambda();
 
+
+    double getR_EB();
+    double getREB_0_EB();
+
     /*! communicate ghost for densities and interp rho from node to center */
     void interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid);
     /*! set to 0 all the densities fields */

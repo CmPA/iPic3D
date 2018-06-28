@@ -183,6 +183,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
 #ifdef EB
   UEB_0= col->getUEB_0();
   REB_0= col->getREB_0();
+  R= REB_0;
 #endif
 
 }
@@ -4100,6 +4101,13 @@ EMfields3D::~EMfields3D() {
   delArr3(EB_B2_Par, nxc, nyc);
   delArr3(EB_B2_Perp, nxc, nyc);
 #endif
+}
+
+double EMfields3D::getR_EB(){
+  return R;
+}
+double EMfields3D::getREB_0_EB(){
+  return REB_0;
 }
 
 void EMfields3D::UpdateEBVectors(Grid *grid, EBox *ebox){
