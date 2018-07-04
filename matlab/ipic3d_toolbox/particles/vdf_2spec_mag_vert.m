@@ -191,6 +191,10 @@ ndiv=51;
 vdf_sp=spaziofasi3D(upar(ii),uperp1(ii),uperp2(ii),q(ii),vmin,vmax,ndiv);
 vdf_sp=vdf_sp./sum(vdf_sp(:));
 
+Tperp1=(moment(uperp1(ii),2));
+Tperp2=(moment(uperp2(ii),2));
+agyrotropy=8*abs(Tperp1-Tperp2)/(Tperp1+Tperp2)
+
 % converting to physical units
 %tail
 
@@ -230,11 +234,13 @@ crange=[-8 -2];
 else
 crange=[-8 -2];
 end 
-crange=[-6 -2];
+%crange=[-6 -2];
+crange=[-6 -3];
 
-pos_label = ['Npart=' num2str(sum(ii)) '  X=' num2str(xscan((ipy-1)*nsuby+suby+1)) '  Y=' num2str(yscan((ipy-1)*nsuby+suby+1)) '  Z=' num2str(zscan((ipy-1)*nsuby+suby+1))];
+pos_label = ['Npart=' num2str(sum(ii)) '  X=' num2str(xscan((ipy-1)*nsuby+suby+1),3) '  Y=' num2str(yscan((ipy-1)*nsuby+suby+1),3) '  Z=' num2str(zscan((ipy-1)*nsuby+suby+1),3)];
 
-immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,3))), ...
+%immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,3))), ...
+immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(vdf_sp(:,:,(ndiv-1)/2))), ...
              ['vdfParPerp_' 'species_' num2str(is) '_' num2str(ipy*nsuby+suby)], ...
              crange,0,pos_label,max(size(q(ii))),1,[1 2],'v_{||}/c','v_{\perp 1}/c','vdf');
 
@@ -242,13 +248,18 @@ immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,3))), ...
 %             ['vdfXZ_' 'species_' num2str(is) '_' num2str(ipx*nsub+subx)], ...
 %             [0 0],0,num2str(xscan((ipx-1)*nsub+subx+1)),max(size(q(ii))),1,'v_{||}/c','v_{\perp,avg}/c','vdf');
 
-immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,1))), ...
+%immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(sum(vdf_sp,1))), ...
+immagine_dir([vmin vmax],[vmin vmax],log10(1e-20+squeeze(vdf_sp((ndiv-1)/2,:,:))), ...
              ['vdfPerp1Perp2_' 'species_' num2str(is) '_' num2str(ipy*nsuby+suby)], ...
              crange,0,pos_label,max(size(q(ii))),1, [2 2],'v_{\perp 1}/c','v_{\perp 2}/c','vdf');
          
   current_fig=gcf
-  title(current_fig.Children(end),pos_label)
+  load rainbow_cm
+  colormap(cmap)
+  title(current_fig.Children(end),[pos_label '  Agyrotropy = ' num2str(agyrotropy)])
   print('-dpng','-r300',['vdf_species_' num2str(is) '_' num2str(ipy*nsuby+suby) '.png'])
+  
+  scritto
 end
 
 
