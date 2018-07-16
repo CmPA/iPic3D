@@ -69,6 +69,10 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+    else if (col->getCase()=="ByPert")    EMf->initByPert(vct,grid,col);
+    else if (col->getCase()=="BxPert")    EMf->initBxPert(vct,grid,col);
+    else if (col->getCase()=="ExPert")    EMf->initExPert(vct,grid,col);
+    else if (col->getCase()=="NPert")    EMf->initNPert(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -93,6 +97,8 @@ int c_Solver::Init(int argc, char **argv) {
         part[i].allocate(i, 0, col, vct, grid);
         if (col->getPartInit()=="EixB") part[i].MaxwellianFromFields(grid, EMf, vct);
         else                            part[i].maxwellian(grid, EMf, vct);
+
+
       }
     }
   }
@@ -141,6 +147,11 @@ int c_Solver::Init(int argc, char **argv) {
       hdf5_agent.close();
     }
   }
+
+  for (int i=0; i< ns; i++)
+    if (part[i].GetTrackSpecies()){
+      part[i].AssignParticlesID(vct);
+    }
 
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
@@ -446,6 +457,16 @@ void c_Solver::WriteOutput(int cycle) {
       my_file.close();
     }
   }
+
+  for (int i=0; i< ns; i++){
+
+    if ((cycle % part[i].GetTrackingSpOutputCycle() == 0 || cycle == first_cycle) && part[i].GetTrackSpecies() ){
+      cout << "Proc " << vct->getCartesian_rank() << " sp " << i << " is writing tracking info" << endl;
+      part[i].WriteTracking(cycle, vct, col);
+      
+    }
+  }
+
 }
 
 void c_Solver::Finalize() {

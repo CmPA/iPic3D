@@ -172,10 +172,17 @@ public:
   void Add_vDist3D();
   void Write_vDist3D(string SaveDirName);
 
+  /** for tracking **/
+  bool GetTrackSpecies();
+  int GetTrackingSpOutputCycle();
+  void AssignParticlesID(VirtualTopology3D * vct);
+  void WriteTracking(int cycle, VirtualTopology3D * vct, Collective * col);
+
+
 protected:
   /** number of species */
   int ns;
-  /** maximum number of particles of this species on this domain. used for memory allocation */
+  /** OBmaximum number of particles of this species on this domain. used for memory allocation */
   long long npmax;
   /** number of particles of this species on this domain */
   long long nop;
@@ -333,6 +340,20 @@ protected:
 
   int nvDistLoc;
   c_vDist* vDist;
+
+  /* for particle tracking */
+  /* wether to track species */
+  bool TrackSpecies;
+  /* how often to print output */
+  int TrackingSpOutputCycle;
+  /* where they are born */
+  unsigned long *TrackSpBirthRank;
+  /* ID within the rank of birth */
+  unsigned long *TrackSpID;
+  /* file for output */
+  string cqTr;
+  /* where in the communication buffer start writing Tracking */
+  int startTr;
 
 };
 

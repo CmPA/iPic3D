@@ -65,6 +65,11 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]b_Y_LEFT;
   delete[]b_Z_RIGHT;
   delete[]b_Z_LEFT;
+
+  if (TrackSpecies){
+    delete[]TrackSpBirthRank;
+    delete[]TrackSpID;
+  }
 }
 /** constructors fo a single species*/
 void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
@@ -170,13 +175,33 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
       return;
     }
   }
+
+  /* NB: this tracking is different, because data not saved in hdf;
+     saved in txt file; 
+     it is expected that fewer particles will be tracked this way
+     in an apposite species */
+  TrackSpecies= col->getTrackSpecies(ns);
+  TrackingSpOutputCycle= col->getTrackingOutputCycle();
+  cout <<"sp " << ns << " TrackSpecies: "<< TrackSpecies << ", TrackingSpOutputCycle: " << TrackingSpOutputCycle << endl;
+  if (TrackSpecies){  
+    TrackSpBirthRank = new unsigned long[npmax];
+    TrackSpID        = new unsigned long[npmax];
+  }
   // BUFFERS
   // the buffer size should be decided depending on number of particles
   // the buffer size should be decided depending on number of particles
-  if (TrackParticleID)
+  if (TrackParticleID){
     nVar = 8;
-  else
+  }
+  else{
     nVar = 7;
+  }
+  
+  if (TrackSpecies){
+    nVar+=2;
+    startTr= nVar-2;
+  }
+
   buffer_size = (int) (.05 * nop * nVar + 1); // max: 5% of the particles in the processors is going out
   buffer_size_small = (int) (.01 * nop * nVar + 1); // max 1% not resizable 
 
@@ -460,13 +485,16 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
           for (int kk = 0; kk < 2; kk++) {
 
 #ifdef EB
+
+	    /* the RESCALED moments have to be used in the big equation -
+	       tested with electrostatic perturbation */
 	    double R0= EMf->getREB_0_EB();
 	    // this value is updated in UpdateEBVectors
 	    double R= EMf->getR_EB();
 	    /* rescaling the moments */
             weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL/ (R*R/ R0/ R0);
-	    if (i==0 && vct->getCartesian_rank() ==0){
-	      cout << "Species " << ns << " is rescaling moments (R/R0)^2 for EB, R= " << R << ", R0= "<< R0<<endl;;
+	    if (ns ==0 && i==0 && vct->getCartesian_rank() ==0){
+	      /*cout << "Species " << ns << " is rescaling moments (R/R0)^2 for EB, R= " << R << ", R0= "<< R0<<endl;;*/
 	    }
 #else
 	    weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
@@ -827,6 +855,10 @@ void Particles3Dcomm::bufferXleft(double *b_, long long np_current, VirtualTopol
   b_[npExitXleft * nVar + 6] = q[np_current];
   if (TrackParticleID)
     b_[npExitXleft * nVar + 7] = ParticleID[np_current];
+  if (TrackSpecies){
+    b_[npExitXleft * nVar + startTr +0] = TrackSpBirthRank[np_current]; 
+    b_[npExitXleft * nVar + startTr +1] = TrackSpID[np_current];
+  }
 }
 /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
 void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -842,6 +874,10 @@ void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopo
   b_[npExitXright * nVar + 6] = q[np_current];
   if (TrackParticleID)
     b_[npExitXright * nVar + 7] = ParticleID[np_current];
+  if (TrackSpecies){
+    b_[npExitXright * nVar + startTr +0] = TrackSpBirthRank[np_current];
+    b_[npExitXright * nVar + startTr +1] = TrackSpID[np_current];
+  }
 }
 /** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -857,6 +893,10 @@ inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, Virtu
   b_[npExitYleft * nVar + 6] = q[np_current];
   if (TrackParticleID)
     b_[npExitYleft * nVar + 7] = ParticleID[np_current];
+  if (TrackSpecies){
+    b_[npExitYleft * nVar + startTr +0] = TrackSpBirthRank[np_current];
+    b_[npExitYleft * nVar + startTr +1] = TrackSpID[np_current];
+  }
 }
 /** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -872,6 +912,10 @@ inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, Virt
   b_[npExitYright * nVar + 6] = q[np_current];
   if (TrackParticleID)
     b_[npExitYright * nVar + 7] = ParticleID[np_current];
+  if (TrackSpecies){
+    b_[npExitYright * nVar + startTr +0] = TrackSpBirthRank[np_current];
+    b_[npExitYright * nVar + startTr +1] = TrackSpID[np_current];
+  }
 }
 /** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -887,6 +931,10 @@ inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, Virtu
   b_[npExitZleft * nVar + 6] = q[np_current];
   if (TrackParticleID)
     b_[npExitZleft * nVar + 7] = ParticleID[np_current];
+  if (TrackSpecies){
+    b_[npExitZleft * nVar + startTr +0] = TrackSpBirthRank[np_current];
+    b_[npExitZleft * nVar + startTr +1] = TrackSpID[np_current];
+  }
 }
 /** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -902,6 +950,10 @@ inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, Virt
   b_[npExitZright * nVar + 6] = q[np_current];
   if (TrackParticleID)
     b_[npExitZright * nVar + 7] = ParticleID[np_current];
+  if (TrackSpecies){
+    b_[npExitZright * nVar + startTr +0] = TrackSpBirthRank[np_current];
+    b_[npExitZright * nVar + startTr +1] = TrackSpID[np_current];
+  }
 }
 /** This unbuffer the last communication */
 int Particles3Dcomm::unbuffer(double *b_) {
@@ -917,6 +969,10 @@ int Particles3Dcomm::unbuffer(double *b_) {
     q[nop] = b_[nVar * np_current + 6];
     if (TrackParticleID)
       ParticleID[nop] = (unsigned long) b_[nVar * np_current + 7];
+    if (TrackSpecies){
+      TrackSpBirthRank[nop] = (unsigned long) b_[nVar * np_current + startTr +0];
+      TrackSpID[nop]        = (unsigned long) b_[nVar * np_current + startTr +1];
+    }
     np_current++;
     // these particles need further communication
     if (x[nop] < xstart || x[nop] > xend || y[nop] < ystart || y[nop] > yend || z[nop] < zstart || z[nop] > zend)
@@ -947,6 +1003,10 @@ void Particles3Dcomm::del_pack(long long np_current, long long *nplast) {
   q[np_current] = q[*nplast];
   if (TrackParticleID)
     ParticleID[np_current] = ParticleID[*nplast];
+  if (TrackSpecies){
+    TrackSpBirthRank[np_current] = TrackSpBirthRank[*nplast];
+    TrackSpID[np_current]        = TrackSpID[*nplast];
+  }
   npExit++;
   (*nplast)--;
 }
@@ -1145,3 +1205,37 @@ void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
   cout << endl;
 }
+bool Particles3Dcomm::GetTrackSpecies(){
+  return TrackSpecies;
+}
+int Particles3Dcomm::GetTrackingSpOutputCycle(){
+  return TrackingSpOutputCycle;
+}
+void Particles3Dcomm::AssignParticlesID(VirtualTopology3D * vct){
+  for (int i=0; i< nop; i++){
+    TrackSpBirthRank[i] = vct->getCartesian_rank();
+    TrackSpID[i]        = i;
+  }
+}
+
+void Particles3Dcomm::WriteTracking(int cycle, VirtualTopology3D * vct, Collective * col){
+
+  stringstream num_proc;
+  stringstream num_sp;
+  stringstream num_cyc;
+
+  num_proc << vct->getCartesian_rank();
+  num_sp << ns;
+  num_cyc << cycle;
+
+  cqTr = col->getSaveDirName() + "/Tracking_proc" + num_proc.str() + "_sp" + num_sp.str() + "_cyc" + num_cyc.str()+ ".txt";
+
+  ofstream my_file(cqTr.c_str(), fstream::app);
+  //my_file << cycle << endl;
+  for (int i=0; i< nop; i++){
+    my_file << TrackSpBirthRank[i] <<" " << TrackSpID[i] <<" " << x[i]<<" " << y[i]<<" " << z[i]<<" " << q[i]<<" " << u[i]<<" " << v[i]<<" " << w[i] << endl;
+  }
+  cout << "Proc " << num_proc.str() << " wrote " << nop << " particles, sp " << num_sp << endl; 
+  my_file.close();
+}
+

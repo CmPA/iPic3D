@@ -106,6 +106,28 @@ void Collective::ReadInput(string inputfile) {
     PERIODICY = config.read < bool >("PERIODICY");
     PERIODICZ = config.read < bool >("PERIODICZ");
 
+    /* for particle tracking */
+    TrackSpecies = new bool[ns];
+    array_bool TrackSpecies0 = config.read<array_bool>( "TrackSpecies" );
+    TrackSpecies[0]=TrackSpecies0.a;
+    if (ns > 1)
+      TrackSpecies[1]=TrackSpecies0.b;
+    if (ns > 2)
+      TrackSpecies[2]=TrackSpecies0.c;
+    if (ns > 3)
+      TrackSpecies[3]=TrackSpecies0.d;
+    if (ns > 4)
+      TrackSpecies[4]=TrackSpecies0.e;
+    if (ns > 5)
+    TrackSpecies[5]=TrackSpecies0.f;
+
+    TrackingOutputCycle      = config.read < int > ("TrackingOutputCycle",1000);
+
+    for (int i=0; i< ns ; i++){
+      cout << "In collective, sp " << i << " TrackSpecies[i] " << TrackSpecies[i] << endl;
+    }
+
+
   }
 
   SolInit = false;
@@ -1116,4 +1138,11 @@ double Collective::getUEB_0(){
 /*! expanding box REB_0 */
 double Collective::getREB_0(){
   return REB_0;
+}
+bool Collective::getTrackSpecies(int is){
+  return TrackSpecies[is];
+}
+/* how often */
+int Collective::getTrackingOutputCycle(){
+  return TrackingOutputCycle;
 }

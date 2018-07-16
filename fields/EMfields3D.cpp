@@ -1293,12 +1293,12 @@ void EMfields3D::calculateB_EB(Grid * grid, VirtualTopology3D * vct, Collective 
   scale(tempYC, -c * dt, nxc, nyc, nzc);
   scale(tempZC, -c * dt, nxc, nyc, nzc);
 
-  /** I- Dt P/(I + theta Dt P) B **/
+  /** (I- Dt P/(I + theta Dt P)) B **/
   v1dotv2(Bxc, EB_B1_Par, nxc, nyc, nzc);
   v1dotv2(Byc, EB_B1_Perp, nxc, nyc, nzc);
   v1dotv2(Bzc, EB_B1_Perp, nxc, nyc, nzc);
 
-  /** I- Dt P/(I + theta Dt P) B  -c Dt/(I + theta Dt P) curl Eth **/
+  /** (I- Dt P/(I + theta Dt P)) B  -c Dt/(I + theta Dt P) curl Eth **/
   /*vector1 = vector1 + vector2*/
   sum(Bxc, tempXC, nxc, nyc, nzc);
   sum(Byc, tempYC, nxc, nyc, nzc);
@@ -4184,4 +4184,193 @@ void EMfields3D::SetBackgroundEBoxB(VirtualTopology3D *vct, Grid* grid, Collecti
 	By_ext[i][j][k]=B1y*REB_0 / (R);
 	Bz_ext[i][j][k]=B1z*REB_0 / (R);
       }
+}
+
+void EMfields3D::initByPert(VirtualTopology3D * vct, Grid * grid, Collective *col){
+
+  double Per= 0.05;
+  double n1= 1;
+  /*  double n2= 5;
+  double n3= 6;
+  double n4= 7;
+  double n5= 8;*/
+  cout << "Init with By-Bz perturbation in x direction, " 
+       << "Pert= " << Per 
+       << "n1= " <<n1 <<endl;/* << " n2= " <<n2 << " n3= " <<n3 
+				<< " n4= " <<n4 << " n5= " <<n5 << endl;*/
+  
+  
+
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++) {
+      for (int k = 0; k < nzn; k++) {
+	for (int is = 0; is < ns; is++) {
+	  rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+	}
+	Ex[i][j][k] = 0.0;
+	Ey[i][j][k] = 0.0;
+	Ez[i][j][k] = 0.0;
+	Bxn[i][j][k] = B0x;
+	Byn[i][j][k] = B0y;
+	Bzn[i][j][k] = B0z;
+	double xM = grid->getXN(i, j, k);
+	Byn[i][j][k] += Per*sin(n1*2*M_PI * xM / Lx);
+	Bzn[i][j][k] += Per*cos(n1*2*M_PI * xM / Lx);
+	/*Byn[i][j][k] += Per*sin(n1*2*M_PI * xM / Lx);     
+	  Bzn[i][j][k] -= Per*cos(n1*2*M_PI * xM / Lx);*/
+	/*	Byn[i][j][k] += Per*sin(n2*2*M_PI * xM / Lx);
+	Byn[i][j][k] += Per*sin(n3*2*M_PI * xM / Lx);
+	Byn[i][j][k] += Per*sin(n4*2*M_PI * xM / Lx);
+	Byn[i][j][k] += Per*sin(n5*2*M_PI * xM / Lx);*/
+      }
+    }
+  }
+
+  // initialize B on centers                                                  
+  grid->interpN2C(Bxc, Bxn);
+  grid->interpN2C(Byc, Byn);
+  grid->interpN2C(Bzc, Bzn);
+  
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+
+}
+
+
+void EMfields3D::initExPert(VirtualTopology3D * vct, Grid * grid, Collective *col){
+
+  double Per= 0.05;
+  double n1= 1;
+  /*  double n2= 5;
+  double n3= 6;
+  double n4= 7;
+  double n5= 8;*/
+  cout << "Init with Ex sin perturbation in x direction, NO n pert" 
+       << "Pert= " << Per
+       << "n1= " <<n1 <<endl
+       << "k_p=n2pi/Lx= " << n1*2*M_PI/Lx << endl;
+				
+  
+  
+
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++) {
+      for (int k = 0; k < nzn; k++) {
+	for (int is = 0; is < ns; is++) {
+	  double xM = grid->getXN(i, j, k);
+	  rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+	  /*if (qom[is]<0){
+	    double ff = (qom[is] / fabs(qom[is]));
+	    rhons[is][i][j][k] += ff* (rhoINIT[is] / FourPI*Per*n1*FourPI/2./Lx)*cos(n1*2*M_PI * xM / Lx);
+	    }*/
+	}
+	Ex[i][j][k] = 0.0;
+	Ey[i][j][k] = 0.0;
+	Ez[i][j][k] = 0.0;
+	Bxn[i][j][k] = B0x;
+	Byn[i][j][k] = B0y;
+	Bzn[i][j][k] = B0z;
+	double xM = grid->getXN(i, j, k);
+	Ex[i][j][k] += Per*sin(n1*2*M_PI * xM / Lx);
+	
+      }
+    }
+  }
+
+  // initialize B on centers                                                  
+  grid->interpN2C(Bxc, Bxn);
+  grid->interpN2C(Byc, Byn);
+  grid->interpN2C(Bzc, Bzn);
+  
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+
+}
+
+
+void EMfields3D::initNPert(VirtualTopology3D * vct, Grid * grid, Collective *col){
+
+  double Per= 0.5;
+  double n1= 1;
+  /*  double n2= 5;
+  double n3= 6;
+  double n4= 7;
+  double n5= 8;*/
+  cout << "Init with N sin perturbation in x direction, n pert, no E pert" 
+       << "Pert= " << Per
+       << "n1= " <<n1 <<endl
+       << "k_p=n2pi/Lx= " << n1*2*M_PI/Lx << endl;
+				
+  
+  
+
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++) {
+      for (int k = 0; k < nzn; k++) {
+	for (int is = 0; is < ns; is++) {
+	  double xM = grid->getXN(i, j, k);
+	  rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+	  if (qom[is]<0){
+	    double ff = (qom[is] / fabs(qom[is]));
+	    rhons[is][i][j][k] += ff* (rhoINIT[is] / FourPI*Per)*sin(n1*2*M_PI * xM / Lx);
+	  }
+	}
+	Ex[i][j][k] = 0.0;
+	Ey[i][j][k] = 0.0;
+	Ez[i][j][k] = 0.0;
+	Bxn[i][j][k] = B0x;
+	Byn[i][j][k] = B0y;
+	Bzn[i][j][k] = B0z;
+	
+      }
+    }
+  }
+
+  // initialize B on centers                                                  
+  grid->interpN2C(Bxc, Bxn);
+  grid->interpN2C(Byc, Byn);
+  grid->interpN2C(Bzc, Bzn);
+  
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+
+}
+
+
+void EMfields3D::initBxPert(VirtualTopology3D * vct, Grid * grid, Collective *col){
+
+  double Per= 0.03;
+  double n= 4;
+  cout << "Init with Bx perturbation in x direction, " 
+       << "Pert= " << Per 
+       << "n= " <<n << endl;
+  
+  
+
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++) {
+      for (int k = 0; k < nzn; k++) {
+	for (int is = 0; is < ns; is++) {
+	  rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+	}
+	Ex[i][j][k] = 0.0;
+	Ey[i][j][k] = 0.0;
+	Ez[i][j][k] = 0.0;
+	Bxn[i][j][k] = B0x;
+	Byn[i][j][k] = B0y;
+	Bzn[i][j][k] = B0z;
+	double xM = grid->getXN(i, j, k);
+	Bxn[i][j][k] = B0x+Per*sin(n*2*M_PI * xM / Lx);
+      }
+    }
+  }
+
+  // initialize B on centers                                                  
+  grid->interpN2C(Bxc, Bxn);
+  grid->interpN2C(Byc, Byn);
+  grid->interpN2C(Bzc, Bzn);
+  
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+
 }

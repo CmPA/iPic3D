@@ -241,6 +241,12 @@ class Collective
     /*! get initfile */
     string getinitfile();
 
+    /* for particle tracking */
+    /* wether to track the species */
+    bool getTrackSpecies(int is);
+    /* how often */
+    int getTrackingOutputCycle();
+
   private:
     /*! inputfile */
     string inputfile;
@@ -441,6 +447,12 @@ class Collective
     int RestartOutputCycle;
     /*! Output for diagnostics */
     int DiagnosticsOutputCycle;
+
+    /* for particle tracking */
+    /* wether to track the species */
+    bool *TrackSpecies;
+    /* how often */
+    int TrackingOutputCycle;
 };
 
 #endif
