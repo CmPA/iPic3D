@@ -37,8 +37,6 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Fext = 0.0;
 
   delt = c * th * dt;
-  PoissonCorrection = false;
-  if (col->getPoissonCorrection()=="yes") PoissonCorrection = true;
   CGtol = col->getCGtol();
   GMREStol = col->getGMREStol();
   qom = new double[ns];
@@ -170,7 +168,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
-void EMfields3D::calculateFields(Grid * grid, VirtualTopology3D * vct, Collective *col, Particles* part) {
+void EMfields3D::calculateFields(Grid * grid, VirtualTopology3D * vct, Collective *col, Particles3D* part) {
   if (vct->getCartesian_rank() == 0)
     cout << "*** E CALCULATION ***" << endl;
 
@@ -215,16 +213,10 @@ void EMfields3D::calculateFields(Grid * grid, VirtualTopology3D * vct, Collectiv
   // deallocate temporary arrays
   delete[]xkrylov;
   delete[]bkrylov;
-  delete[]xkrylovPoisson;
-  delete[]bkrylovPoisson;
-  delArr3(divE, nxc, nyc);
-  delArr3(gradPHIX, nxn, nyn);
-  delArr3(gradPHIY, nxn, nyn);
-  delArr3(gradPHIZ, nxn, nyn);
 
 }
 
-/*! Calculate sorgent for Maxwell solver */
+/*! Calculate source for Maxwell solver */
 void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col) {
   eqValue(0.0, tempX, nxn, nyn, nzn);
   eqValue(0.0, tempY, nxn, nyn, nzn);
@@ -239,16 +231,16 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   grid->curlC2N(tempX, tempY, tempZ, Bxc, Byc, Bzc);
 
   // En + (dt/2) Curl(Bn)
-  addscale(dt/2, 1, tempX, Ex, Exth, nxn, nyn, nzn); 
-  addscale(dt/2, 1, tempY, Ey, Eyth, nxn, nyn, nzn); 
-  addscale(dt/2, 1, tempZ, Ez, Ezth, nxn, nyn, nzn); 
+  addscale(dt/2, 1, tempX, Ex, nxn, nyn, nzn); 
+  addscale(dt/2, 1, tempY, Ey, nxn, nyn, nzn); 
+  addscale(dt/2, 1, tempZ, Ez, nxn, nyn, nzn); 
 
   // physical space -> Krylov space
   phys2solver(bkrylov, tempX, tempY, tempZ, nxn, nyn, nzn);
 
 }
 /*! Mapping of Maxwell image to give to solver */
-void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct, Particles* part) {
+void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct, Particles3D* part) {
 
 
   eqValue(0.0, im, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
@@ -259,7 +251,7 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   // move from krylov space to physical space
   solver2phys(vectX, vectY, vectZ, vector, nxn, nyn, nzn);
 
-  // Update particles momentum (we assumed that Eth and Bth have been updated in the
+  // Update particle momentum (we assumed that Eth and Bth have been updated in the
   // previous itration).
   for (int i=0; i<ns; i++) 
     part[i].mover_relativistic_mom_ES(grid, vct, vectX, vectY, vectZ);
@@ -269,25 +261,27 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   eqValue(0.0, Jy, nxn, nyn, nzn);
   eqValue(0.0, Jz, nxn, nyn, nzn);
 
-  for (int i=0; i<ns; i++) 
-    part[i].gatherJbar(this, grid, vct);
+  for (int i=0; i<ns; i++) {
+    part[i].gatherJbar(Jx, Jy, Jz, grid, vct);
+  }
+  communicateGhostJbar(vct);
 
   //----------------------------------
   // Compute the residual:
 
   // Curl(Eth)
   grid->curlN2C(tempXC, tempYC, tempZC, vectX, vectY, vectZ);
-  communicateCenterBC(nxc, nyc, nzc, tempXC, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
-  communicateCenterBC(nxc, nyc, nzc, tempYC, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
-  communicateCenterBC(nxc, nyc, nzc, tempZC, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, tempXC, 1, 1, 1, 1, 1, 1, vct);
+  communicateCenterBC(nxc, nyc, nzc, tempYC, 1, 1, 1, 1, 1, 1, vct);
+  communicateCenterBC(nxc, nyc, nzc, tempZC, 1, 1, 1, 1, 1, 1, vct);
 
   // Curl(Curl(Eth))
   grid->curlC2N(imageX, imageY, imageZ, tempXC, tempYC, tempZC);
 
   // (dt*dt/4) Curl(Curl(Eth)) + (dt/2) Jbar
-  addscale(dt*dt/4.0, dt/2.0, imageX, Jx, nxn, nyn, nzn);
-  addscale(dt*dt/4.0, dt/2.0, imageY, Jy, nxn, nyn, nzn);
-  addscale(dt*dt/4.0, dt/2.0, imageZ, Jz, nxn, nyn, nzn);
+  addscale(dt*dt/4.0, dt/2.0*FourPI, imageX, Jx, nxn, nyn, nzn);
+  addscale(dt*dt/4.0, dt/2.0*FourPI, imageY, Jy, nxn, nyn, nzn);
+  addscale(dt*dt/4.0, dt/2.0*FourPI, imageZ, Jz, nxn, nyn, nzn);
 
   // Eth + (dt*dt/4) Curl(Curl(Eth)) + (dt/2) Jbar
   addscale(1.0, imageX, vectX, nxn, nyn, nzn);
@@ -868,6 +862,18 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   communicateNode_P(nxn, nyn, nzn, pYYsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pYZsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pZZsn, ns, vct);
+
+}
+
+void EMfields3D::communicateGhostJbar(VirtualTopology3D * vct) {
+  // interpolate adding common nodes among processors
+  communicateInterp(nxn, nyn, nzn, 0, &Jx, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, 0, &Jy, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, 0, &Jz, 0, 0, 0, 0, 0, 0, vct);
+
+  communicateNode_P(nxn, nyn, nzn, &Jx, 0, vct);
+  communicateNode_P(nxn, nyn, nzn, &Jy, 0, vct);
+  communicateNode_P(nxn, nyn, nzn, &Jz, 0, vct);
 
 }
 

@@ -64,11 +64,7 @@ int c_Solver::Init(int argc, char **argv) {
     /* --------------------------------------------------------- */
     /* If using 'default' IO initialize fields depending on case */
     /* --------------------------------------------------------- */
-    if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
-    else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
-    else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
-    else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
-    else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+    if      (col->getCase()=="Test") EMf->init(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -91,8 +87,8 @@ int c_Solver::Init(int argc, char **argv) {
       if (myrank==0) cout << "WARNING: Particle drift velocity from ExB " << endl;
       for (int i = 0; i < ns; i++){
         part[i].allocate(i, 0, col, vct, grid);
-        if (col->getPartInit()=="EixB") part[i].MaxwellianFromFields(grid, EMf, vct);
-        else                            part[i].maxwellian(grid, EMf, vct);
+        if (col->getPartInit()=="TwoStream1D") part[i].twostream1D(grid, vct);
+        else part[i].maxwellian(grid, vct);
       }
     }
   }
@@ -104,11 +100,10 @@ int c_Solver::Init(int argc, char **argv) {
     if (restart == 0) {
       // wave = new Planewave(col, EMf, grid, vct);
       // wave->Wave_Rotated(part); // Single Plane Wave
-      for (int i = 0; i < ns; i++)
-        if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
-        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
-        else                                  part[i].maxwellian(grid, EMf, vct);
-
+      for (int i = 0; i < ns; i++) {
+        if (col->getPartInit()=="TwoStream1D") part[i].twostream1D(grid, vct);
+        else part[i].maxwellian(grid, vct);
+      }
     }
   }
 
@@ -211,7 +206,7 @@ bool c_Solver::ParticlesMover() {
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-    mem_avail = part[i].mover_relativistic_pos(grid, vct, EMf); // use the Predictor Corrector scheme 
+    mem_avail = part[i].mover_relativistic_pos(grid, vct); // use the Predictor Corrector scheme 
   }
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -231,11 +226,18 @@ void c_Solver::CalculateField() {
   MPI_Barrier(MPI_COMM_WORLD);
 
   // MAXWELL'S SOLVER
-  EMf->calculateFields(grid, vct, col); 
+  EMf->calculateFields(grid, vct, col, part); 
 
 }
 
 void c_Solver::FinalMomentumUpdate() {
+
+  for (int i=0; i<ns; i++) {
+    // Recompute the moments with the new values of the fields
+    part[i].mover_relativistic_mom_ES(grid, vct, EMf->getExth(), EMf->getEyth(), EMf->getEzth());
+    // Update the velocity
+    part[i].mover_relativistic_vel(grid, vct);
+  } 
 
 }
 
@@ -251,6 +253,8 @@ void c_Solver::WriteRestart(int cycle) {
 }
 
 void c_Solver::WriteConserved(int cycle) {
+
+
   // write the conserved quantities
   if (cycle % col->getDiagnosticsOutputCycle() == 0) {
     Eenergy = EMf->getEenergy();
@@ -264,9 +268,9 @@ void c_Solver::WriteConserved(int cycle) {
       TOTmomentum += momentum[is];
     }
     if (myrank == 0) {
-      ofstream my_file(cq.c_str(), fstream::app);
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
-      my_file.close();
+      FILE* fd = fopen(cq.c_str(), "a");
+      fprintf(fd,"%6d %13.6e %13.6e %13.6e %13.6e %13.6e\n", cycle, (Eenergy + Benergy + TOTenergy), TOTmomentum, Eenergy, Benergy, TOTenergy);
+      fclose(fd);
     }
     // // Velocity distribution
     // for (int is = 0; is < ns; is++) {

@@ -10,7 +10,6 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "Collective.h"
 #include "VirtualTopology3D.h"
 #include "Grid.h"
-#include "Field.h"
 
 /**
  * 
@@ -90,9 +89,5 @@ public:
   virtual void Print(VirtualTopology3D * ptVCT) const = 0;
   /** Print the number of particles of this subdomain */
   virtual void PrintNp(VirtualTopology3D * ptVCT) const = 0;
-
-  virtual int mover_relativistic_mom_EM(Grid*, VirtualTopology3D*, double*** Ex, double*** Ey, double*** Ez);
-  virtual int mover_relativistic_mom_ES(Grid*, VirtualTopology3D*, double*** Ex, double*** Ey, double*** Ez);
-
 };
 #endif

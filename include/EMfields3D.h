@@ -23,7 +23,7 @@
 #include "TimeTasks.h"
 #include "asserts.h"
 #include "BCStructure.h"
-#include "Particles.h"
+#include "Particles3D.h"
 
 using std::cout;
 using std::cerr;
@@ -204,9 +204,9 @@ class EMfields3D                // :public Field
     void SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
-    void calculateFields(Grid * grid, VirtualTopology3D * vct, Collective *col, Particles* part);
+    void calculateFields(Grid * grid, VirtualTopology3D * vct, Collective *col, Particles3D* part);
     /*! Image of Maxwell Solver (for Solver) */
-    void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct, Particles* part);
+    void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct, Particles3D* part);
     /*! Maxwell source term (for SOLVER) */
     void MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! Impose a constant charge inside a spherical zone of the domain */
@@ -243,6 +243,7 @@ class EMfields3D                // :public Field
 
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
+    void communicateGhostJbar(VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
     void addToSpeciesMoments(const Moments & in, int is);
     /*! add an amount of charge density to charge density field at node X,Y,Z */
@@ -350,6 +351,11 @@ class EMfields3D                // :public Field
     /*! SPECIES: get density array on cells without the ghost cells */
     double ***getRHOcs(int is);
     double ***& getRHOcs(int is, int dummy);
+
+  
+    double ***getExth() { return Exth; }
+    double ***getEyth() { return Eyth; }
+    double ***getEzth() { return Ezth; }
 
     /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
     double &getBx_ext(int indexX, int indexY, int indexZ) const;

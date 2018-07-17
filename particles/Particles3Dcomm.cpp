@@ -32,6 +32,18 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+
+
+void addValue(double*** tgt, double weight[][2][2], int X, int Y, int Z, double invVOL) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++) {
+        const double temp = weight[i][j][k] * invVOL;
+        tgt[X - i][Y - j][Z - k] += temp;
+      }
+}
+
+
 #define min(a,b) (((a)<(b))?(a):(b));
 #define max(a,b) (((a)>(b))?(a):(b));
 #define MIN_VAL   1E-32
@@ -436,123 +448,16 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
 
 
 /** Interpolation Particle --> Grid */
-void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
+void Particles3Dcomm::gatherJbar(double*** Jx, double*** Jy, double*** Jz, Grid * grid, VirtualTopology3D * vct) {
   const double inv_dx = 1.0 / dx;
   const double inv_dy = 1.0 / dy;
   const double inv_dz = 1.0 / dz;
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
-  //#pragma omp parallel
+  double invVOL = grid->getInvVOL();
+  
   {
-    //Moments speciesMoments(nxn,nyn,nzn,invVOL);
-    //speciesMoments.set_to_zero();
-    //#pragma omp for
-    for (register long long i = 0; i < nop; i++)
-    {
-      const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
-      const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
-      const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
-      double temp[2][2][2];
-      double xi[2], eta[2], zeta[2];
-      xi[0] = x[i] - grid->getXN(ix - 1, iy, iz);
-      eta[0] = y[i] - grid->getYN(ix, iy - 1, iz);
-      zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
-      xi[1] = grid->getXN(ix, iy, iz) - x[i];
-      eta[1] = grid->getYN(ix, iy, iz) - y[i];
-      zeta[1] = grid->getZN(ix, iy, iz) - z[i];
-      double weight[2][2][2];
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++) {
-            weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
-          }
-      //weight[0][0][0] = q[i] * xi[0] * eta[0] * zeta[0] * invVOL;
-      //weight[0][0][1] = q[i] * xi[0] * eta[0] * zeta[1] * invVOL;
-      //weight[0][1][0] = q[i] * xi[0] * eta[1] * zeta[0] * invVOL;
-      //weight[0][1][1] = q[i] * xi[0] * eta[1] * zeta[1] * invVOL;
-      //weight[1][0][0] = q[i] * xi[1] * eta[0] * zeta[0] * invVOL;
-      //weight[1][0][1] = q[i] * xi[1] * eta[0] * zeta[1] * invVOL;
-      //weight[1][1][0] = q[i] * xi[1] * eta[1] * zeta[0] * invVOL;
-      //weight[1][1][1] = q[i] * xi[1] * eta[1] * zeta[1] * invVOL;
-      // add charge density
-      EMf->addRho(weight, ix, iy, iz, ns);
-      // add current density - X
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
-      EMf->addJx(temp, ix, iy, iz, ns);
-      // add current density - Y
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
-      EMf->addJy(temp, ix, iy, iz, ns);
-      // add current density - Z
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
-      EMf->addJz(temp, ix, iy, iz, ns);
-      // Pxx - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
-      EMf->addPxx(temp, ix, iy, iz, ns);
-      // Pxy - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
-      EMf->addPxy(temp, ix, iy, iz, ns);
-      // Pxz - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
-      EMf->addPxz(temp, ix, iy, iz, ns);
-      // Pyy - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
-      EMf->addPyy(temp, ix, iy, iz, ns);
-      // Pyz - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
-      EMf->addPyz(temp, ix, iy, iz, ns);
-      // Pzz - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
-      EMf->addPzz(temp, ix, iy, iz, ns);
-    }
-    // change this to allow more parallelization after implementing array class
-    //#pragma omp critical
-    //EMf->addToSpeciesMoments(speciesMoments,ns);
-  }
-  // communicate contribution from ghost cells 
-  EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
-}
-
-/** Interpolation Particle --> Grid */
-void Particles3Dcomm::gatherJbar(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
-  const double inv_dx = 1.0 / dx;
-  const double inv_dy = 1.0 / dy;
-  const double inv_dz = 1.0 / dz;
-  const double nxn = grid->getNXN();
-  const double nyn = grid->getNYN();
-  const double nzn = grid->getNZN();
-  //#pragma omp parallel
-  {
-    //Moments speciesMoments(nxn,nyn,nzn,invVOL);
-    //speciesMoments.set_to_zero();
-    //#pragma omp for
     for (register long long i = 0; i < nop; i++)
     {
       double g  = 1.0/sqrt(1 - u[i]*u[i] - v[i]*v[i] - w[i]*w[i]);
@@ -576,28 +481,30 @@ void Particles3Dcomm::gatherJbar(Field * EMf, Grid * grid, VirtualTopology3D * v
       eta[1] = grid->getYN(ix, iy, iz) - y[i];
       zeta[1] = grid->getZN(ix, iy, iz) - z[i];
       double weight[2][2][2];
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
       // add current density - X
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = up * weight[ii][jj][kk];
-      EMf->addJx(temp, ix, iy, iz, ns);
+      addValue(Jx, temp, ix, iy, iz, invVOL);
       // add current density - Y
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = vp * weight[ii][jj][kk];
-      EMf->addJy(temp, ix, iy, iz, ns);
+      addValue(Jy, temp, ix, iy, iz, invVOL);
       // add current density - Z
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = wp * weight[ii][jj][kk];
-      EMf->addJz(temp, ix, iy, iz, ns);
+      addValue(Jz, temp, ix, iy, iz, invVOL);
     }
   }
-  // communicate contribution from ghost cells 
-  EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
 }
 
 /** communicate buffers */
@@ -1131,8 +1038,9 @@ long long Particles3Dcomm::getNOP()  const {
 double Particles3Dcomm::getKe() {
   double localKe = 0.0;
   double totalKe = 0.0;
-  for (register long long i = 0; i < nop; i++)
-    localKe += .5 * (q[i] / qom) * (u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+  for (register long long i = 0; i < nop; i++) {
+    double g = 1.0 / sqrt(1 - u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    localKe += abs(q[i] / qom) * (g - 1.0);}
   MPI_Allreduce(&localKe, &totalKe, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalKe);
 }
@@ -1140,8 +1048,9 @@ double Particles3Dcomm::getKe() {
 double Particles3Dcomm::getP() {
   double localP = 0.0;
   double totalP = 0.0;
-  for (register long long i = 0; i < nop; i++)
-    localP += (q[i] / qom) * sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+  for (register long long i = 0; i < nop; i++) {
+    double g = 1.0 / sqrt(1 - u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    localP += abs(q[i] / qom) * g * sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);}
   MPI_Allreduce(&localP, &totalP, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalP);
 }
