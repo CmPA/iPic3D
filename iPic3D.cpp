@@ -12,10 +12,7 @@ int main(int argc, char **argv) {
   /* ------------------------------ */
   /* 0- Initialize the solver class */
   /* ------------------------------ */
-
   KCode.Init(argc, argv);
-  KCode.InjectBoundaryParticles();
-  KCode.GatherMoments();
 
   /* ------------ */
   /* 1- Main loop */
@@ -25,24 +22,18 @@ int main(int argc, char **argv) {
 
     if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
 
-    /* ----------------------------------------------------- */
-    /* 2- Calculate fields and move particles                */
-    /*    Exit if there is a memory issue with the particles */
-    /* ----------------------------------------------------- */
+    // Update particle position
+    KCode.ParticlesMover();
 
-    KCode.UpdateCycleInfo(i);
+    // Calculate E and B fields
     KCode.CalculateField();
 
-    b_err = KCode.ParticlesMover();
-
-    if (!b_err) KCode.CalculateBField();
-    if (!b_err) KCode.GatherMoments();
-    if ( b_err) i = KCode.LastCycle() + 1;
+    // Update the momentum and velocity
+    KCode.FinalMomentumUpdate();
 
     /* --------------- */
     /* 3- Output files */
     /* --------------- */
-
     KCode.WriteOutput(i);
     KCode.WriteConserved(i);
     KCode.WriteRestart(i);

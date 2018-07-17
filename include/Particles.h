@@ -26,8 +26,6 @@ class Particles {
 public:
   /** allocate particles */
   virtual void allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) = 0;
-  /** interpolation Particle -> grid */
-  virtual void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) = 0;
 
 
   /** get X-position array for all the particles */
@@ -92,6 +90,9 @@ public:
   virtual void Print(VirtualTopology3D * ptVCT) const = 0;
   /** Print the number of particles of this subdomain */
   virtual void PrintNp(VirtualTopology3D * ptVCT) const = 0;
+
+  virtual int mover_relativistic_mom_EM(Grid*, VirtualTopology3D*, double*** Ex, double*** Ey, double*** Ez);
+  virtual int mover_relativistic_mom_ES(Grid*, VirtualTopology3D*, double*** Ex, double*** Ey, double*** Ez);
 
 };
 #endif

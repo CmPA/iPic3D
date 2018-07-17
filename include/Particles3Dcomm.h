@@ -80,6 +80,7 @@ public:
   void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);
   /** interpolation method GRID->PARTICLE order 1: CIC */
   void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct);
+  void gatherJbar(Field * EMf, Grid * grid, VirtualTopology3D * vct);
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
   int communicate(VirtualTopology3D * ptVCT);
   /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
@@ -217,6 +218,12 @@ protected:
   double *v;
   /** Velocities array - Z component */
   double *w;
+  /** Momentum array - X component */
+  double *mxp;
+  /** Momentum array - Y component */
+  double *myp;
+  /** Momentum array - Z component */
+  double *mzp;
   /** TrackParticleID */
   bool TrackParticleID;
   /** ParticleID */
@@ -333,6 +340,8 @@ protected:
 
   int nvDistLoc;
   c_vDist* vDist;
+
+  double CGtol;
 
 };
 

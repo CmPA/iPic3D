@@ -58,6 +58,9 @@ Particles3D::~Particles3D() {
   delete[]u;
   delete[]v;
   delete[]w;
+  delete[]mxp;
+  delete[]myp;
+  delete[]mzp;
   delete[]q;
 }
 
@@ -799,12 +802,222 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     MPI_Barrier(MPI_COMM_WORLD);
   }
   // timeTasks.addto_communicate();
-  return (0);                   // exit succcesfully (hopefully) 
+  return (0);                   // exit succesfully (hopefully) 
 }
 
-/** relativistic mover with a Predictor-Corrector scheme */
-int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
-  return (0);
+/** Relativistic EM mover with a Newton scheme: solve momentum equation */
+/** Particles have been moved already by mover_relativistic_pos **/
+int Particles3D::mover_relativistic_mom_EM(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+  if (vct->getCartesian_rank() == 0) {
+    cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+  }
+  double start_mover_rel = MPI_Wtime();
+  double weights[2][2][2];
+  // Get fields (at n+1/2 time level) for this processor
+  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+
+  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+  double Fext = EMf->getFext();
+
+  for (long long rest = 0; rest < nop; rest++) {
+    // copy the particle
+    double xp = x[rest];
+    double yp = y[rest];
+    double zp = z[rest];
+    double up = u[rest];
+    double vp = v[rest];
+    double wp = w[rest];
+
+    double Exl = 0.0;
+    double Eyl = 0.0;
+    double Ezl = 0.0;
+    double Bxl = 0.0;
+    double Byl = 0.0;
+    double Bzl = 0.0;
+    int ix;
+    int iy;
+    int iz;
+
+    // Get fields (at n+1/2 time level) at the particle position
+    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+    get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+    get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+
+    // Precondition the newton variables
+    double gp = 1. / sqrt(1. - up*up - vp*vp - wp*wp);
+    double pxp = up*gp;
+    double pyp = vp*gp;
+    double pzp = wp*gp;
+    double pxk = pxp + qom*dt*(Exl + vp*Bzl - wp*Byl);
+    double pyk = pyp + qom*dt*(Eyl - up*Bzl - wp*Bxl);
+    double pzk = pzp + qom*dt*(Ezl + up*Byl - vp*Bxl);
+    double gk = sqrt(1. + pxk*pxk + pyk*pyk + pzk*pzk);
+
+    double err = 1.;
+    // Newton step: maximum number of iterations specified in input file
+    for (int nk = 0; nk < NiterMover; nk++) {
+      // Residuals
+      double F1 = pxk - pxp - qom*dt*(Exl + (pyk+pyp)/(gk+gp)*Bzl - (pzk+pzp)/(gk+gp)*Byl);
+      double F2 = pyk - pyp - qom*dt*(Eyl - (pxk+pxp)/(gk+gp)*Bzl + (pzk+pzp)/(gk+gp)*Bxl);
+      double F3 = pzk - pzp - qom*dt*(Ezl + (pxk+pxp)/(gk+gp)*Byl - (pyk+pyp)/(gk+gp)*Bxl);
+
+      // Jacobian
+      double J11 = 1. - qom*dt*(-(pyk+pyp)/(gk+gp)*Bzl + (pzk+pzp)/(gk+gp)*Byl) * pxk/gk/(gk+gp);
+      double J12 = - qom*dt*((-(pyk+pyp)/(gk+gp)*pyk/gk + 1.)*Bzl + (pzk+pzp)/(gk+gp)*pyk/gk*Byl) / (gk+gp);
+      double J13 = - qom*dt*(-(pyk+pyp)/(gk+gp)*pzk/gk*Bzl - (-(pzk+pzp)/(gk+gp)*pzk/gk + 1.)*Byl) / (gk+gp);
+      double J21 = - qom*dt*(-(-(pxk+pxp)/(gk+gp)*pxk/gk + 1.)*Bzl - (pzk+pzp)/(gk+gp)*pxk/gk*Bxl) /(gk+gp);
+      double J22 = 1. - qom*dt*((pxk+pxp)/(gk+gp)*Bzl - (pzk+pzp)/(gk+gp)*Bxl) * pyk/gk / (gk+gp);
+      double J23 = - qom*dt*((pxk+pxp)/(gk+gp)*pzk/gk*Bzl + (-(pzk+pzp)/(gk+gp)*pzk/gk + 1.)*Bxl) / (gk+gp);
+      double J31 = - qom*dt*((-(pxk+pxp)/(gk+gp)*pxk/gk + 1.)*Byl + (pyk+pyp)/(gk+gp)*pxk/gk*Bxl) /(gk+gp);
+      double J32 = - qom*dt*(-(pxk+pxp)/(gk+gp)*pyk/gk*Byl - (-(pyk+pyp)/(gk+gp)*pyk/gk + 1.)*Bxl) / (gk+gp);
+      double J33 = 1. - qom*dt*(-(pxk+pxp)/(gk+gp)*Byl + (pyk+pyp)/(gk+gp)*Bxl) * pzk/gk / (gk+gp);
+
+      // Inverse Jacobian
+      double Det = J11*J22*J33 + J21*J32*J13 + J31*J12*J23 - J11*J32*J23 - J31*J22*J13 - J21*J12*J33;
+      double iJ11 = (J22*J33 - J23*J32) / Det;
+      double iJ12 = (J13*J32 - J12*J33) / Det;
+      double iJ13 = (J12*J23 - J13*J22) / Det;
+      double iJ21 = (J23*J31 - J21*J33) / Det;
+      double iJ22 = (J11*J33 - J13*J31) / Det;
+      double iJ23 = (J13*J21 - J11*J23) / Det;
+      double iJ31 = (J21*J32 - J22*J31) / Det;
+      double iJ32 = (J12*J31 - J11*J32) / Det;
+      double iJ33 = (J11*J22 - J12*J21) / Det;
+      
+      // Compute increments dpk=-Jac^-1*Fk
+      double dpxk = - (iJ11*F1 + iJ12*F2 + iJ13*F3);
+      double dpyk = - (iJ21*F1 + iJ22*F2 + iJ23*F3);
+      double dpzk = - (iJ31*F1 + iJ32*F2 + iJ33*F3);
+
+      // Error
+      err = sqrt(dpxk*dpxk + dpyk*dpyk + dpzk*dpzk);
+
+      // Update iteration variables
+      pxk += dpxk;
+      pyk += dpyk;
+      pzk += dpzk;
+      gk = sqrt(1. + pxk*pxk + pyk*pyk + pzk*pzk);
+
+      if (err < CGtol) break;
+    } // END OF THE NEWTON ITERATION
+
+    // Update the final position and velocity
+    // Needs to distinguish between a final update (after the fields have converged) and a temporary one (during NK iteration)
+    // E.g. with an input parameter "mode"
+    // Also needs 3 additional variables mxp,myp,mzp for the particles
+    mxp[rest] = pxk;
+    myp[rest] = pyk;
+    mzp[rest] = pzk;
+  } // END OF ALL THE PARTICLES
+
+  // timeTasks.addto_communicate();
+  return (0);                   // exit succesfully (hopefully) 
+
+}
+
+/** Relativistic ES mover: solve momentum equation */
+/** Particles have been moved already by mover_relativistic_pos **/
+int Particles3D::mover_relativistic_mom_ES(Grid * grid, VirtualTopology3D * vct, double*** Ex, double*** Ey, double*** Ez) {
+  if (vct->getCartesian_rank() == 0) {
+    cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+  }
+  double start_mover_rel = MPI_Wtime();
+  double weights[2][2][2];
+
+  for (long long rest = 0; rest < nop; rest++) {
+    // copy the particle
+    double xp = x[rest];
+    double yp = y[rest];
+    double zp = z[rest];
+    double up = u[rest];
+    double vp = v[rest];
+    double wp = w[rest];
+
+    double Exl = 0.0;
+    double Eyl = 0.0;
+    double Ezl = 0.0;
+    int ix;
+    int iy;
+    int iz;
+
+    // Get fields (at n+1/2 time level) at the particle position
+    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+    get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+
+    // Solve the momentum equation
+    double gp = 1. / sqrt(1. - up*up - vp*vp - wp*wp);
+    double pxp = up*gp;
+    double pyp = vp*gp;
+    double pzp = wp*gp;
+    double pxk = pxp + qom*dt*Exl;
+    double pyk = pyp + qom*dt*Eyl;
+    double pzk = pzp + qom*dt*Ezl;
+    double gk = sqrt(1. + pxk*pxk + pyk*pyk + pzk*pzk);
+
+    // Update the final position and velocity
+    // Needs to distinguish between a final update (after the fields have converged) and a temporary one (during NK iteration)
+    // E.g. with an input parameter "mode"
+    // Also needs 3 additional variables mxp,myp,mzp for the particles
+    mxp[rest] = pxk;
+    myp[rest] = pyk;
+    mzp[rest] = pzk;
+  } // END OF ALL THE PARTICLES
+
+}
+
+/** Relativistic EM mover: move particles */
+int Particles3D::mover_relativistic_pos(Grid * grid, VirtualTopology3D * vct) {
+  if (vct->getCartesian_rank() == 0) {
+    cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
+  }
+  double start_mover_rel = MPI_Wtime();
+
+  for (long long rest = 0; rest < nop; rest++) {
+    // copy the particle
+    double xp = x[rest];
+    double yp = y[rest];
+    double zp = z[rest];
+    double up = u[rest];
+    double vp = v[rest];
+    double wp = w[rest];
+
+    // Move particles
+    xp += up * dt;
+    yp += vp * dt;
+    zp += wp * dt;
+
+    x[rest] = xp;
+    y[rest] = yp;
+    z[rest] = zp;
+  }               // END OF ALL THE PARTICLES
+
+  // ********************//
+  // COMMUNICATION 
+  // *******************//
+  // timeTasks.start_communicate();
+  const int avail = communicate(vct);
+  if (avail < 0)
+    return (-1);
+  MPI_Barrier(MPI_COMM_WORLD);
+  // communicate again if particles are not in the correct domain
+  while (isMessagingDone(vct) > 0) {
+    // COMMUNICATION
+    const int avail = communicate(vct);
+    if (avail < 0)
+      return (-1);
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+  // timeTasks.addto_communicate();
+  return (0);                   // exit succesfully (hopefully) 
+
 }
 
 int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is){

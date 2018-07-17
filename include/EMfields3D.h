@@ -16,7 +16,6 @@
 #include "Basic.h"
 #include "Grid.h"
 #include "TransArraySpace3D.h"
-#include "CG.h"
 #include "GMRES.h"
 #include "Collective.h"
 #include "ComNodes3D.h"
@@ -24,6 +23,7 @@
 #include "TimeTasks.h"
 #include "asserts.h"
 #include "BCStructure.h"
+#include "Particles.h"
 
 using std::cout;
 using std::cerr;
@@ -204,11 +204,9 @@ class EMfields3D                // :public Field
     void SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
-    void calculateE(Grid * grid, VirtualTopology3D * vct, Collective *col);
-    /*! Image of Poisson Solver (for SOLVER) */
-    void PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct);
+    void calculateFields(Grid * grid, VirtualTopology3D * vct, Collective *col, Particles* part);
     /*! Image of Maxwell Solver (for Solver) */
-    void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct);
+    void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct, Particles* part);
     /*! Maxwell source term (for SOLVER) */
     void MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! Impose a constant charge inside a spherical zone of the domain */
@@ -223,13 +221,6 @@ class EMfields3D                // :public Field
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for gem challange */
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
-
-    /*! Calculate the three components of Pi(implicit pressure) cross image vector */
-    void PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid);
-    /*! Calculate the three components of mu (implicit permeattivity) cross image vector */
-    void MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid);
-    /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
-    void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
     void UpdateRHOcs(Grid * grid);
     void SetLambda  (Grid * grid);

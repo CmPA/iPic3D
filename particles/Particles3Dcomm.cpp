@@ -57,6 +57,9 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]u;
   delete[]v;
   delete[]w;
+  delete[]mxp;
+  delete[]myp;
+  delete[]mzp;
   delete[]q;
   // deallocate buffers
   delete[]b_X_RIGHT;
@@ -131,6 +134,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   invVOL = grid->getInvVOL();
   // info from VirtualTopology3D
   cVERBOSE = vct->getcVERBOSE();
+  CGtol = col->getCGtol();
 
   // boundary condition for particles
   bcPfaceXright = col->getBcPfaceXright();
@@ -154,6 +158,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   u = new double[npmax];
   v = new double[npmax];
   w = new double[npmax];
+  mxp = new double[npmax];
+  myp = new double[npmax];
+  mzp = new double[npmax];
   // charge
   q = new double[npmax];
   // ID
@@ -528,6 +535,66 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
     // change this to allow more parallelization after implementing array class
     //#pragma omp critical
     //EMf->addToSpeciesMoments(speciesMoments,ns);
+  }
+  // communicate contribution from ghost cells 
+  EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
+}
+
+/** Interpolation Particle --> Grid */
+void Particles3Dcomm::gatherJbar(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
+  const double inv_dx = 1.0 / dx;
+  const double inv_dy = 1.0 / dy;
+  const double inv_dz = 1.0 / dz;
+  const double nxn = grid->getNXN();
+  const double nyn = grid->getNYN();
+  const double nzn = grid->getNZN();
+  //#pragma omp parallel
+  {
+    //Moments speciesMoments(nxn,nyn,nzn,invVOL);
+    //speciesMoments.set_to_zero();
+    //#pragma omp for
+    for (register long long i = 0; i < nop; i++)
+    {
+      double g  = 1.0/sqrt(1 - u[i]*u[i] - v[i]*v[i] - w[i]*w[i]);
+      double gk = sqrt(1 + mxp[i]*mxp[i] + myp[i]*myp[i] + mzp[i]*mzp[i]);
+      double pxp = u[i]*g;
+      double pyp = v[i]*g;
+      double pzp = w[i]*g;
+      double up = (pxp + mxp[i])/(g + gk);
+      double vp = (pyp + myp[i])/(g + gk);
+      double wp = (pzp + mzp[i])/(g + gk);
+    
+      const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
+      const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
+      const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
+      double temp[2][2][2];
+      double xi[2], eta[2], zeta[2];
+      xi[0] = x[i] - grid->getXN(ix - 1, iy, iz);
+      eta[0] = y[i] - grid->getYN(ix, iy - 1, iz);
+      zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
+      xi[1] = grid->getXN(ix, iy, iz) - x[i];
+      eta[1] = grid->getYN(ix, iy, iz) - y[i];
+      zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+      double weight[2][2][2];
+      // add current density - X
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = up * weight[ii][jj][kk];
+      EMf->addJx(temp, ix, iy, iz, ns);
+      // add current density - Y
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vp * weight[ii][jj][kk];
+      EMf->addJy(temp, ix, iy, iz, ns);
+      // add current density - Z
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = wp * weight[ii][jj][kk];
+      EMf->addJz(temp, ix, iy, iz, ns);
+    }
   }
   // communicate contribution from ghost cells 
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);

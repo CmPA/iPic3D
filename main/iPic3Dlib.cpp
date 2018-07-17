@@ -180,73 +180,27 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
-void c_Solver::GatherMoments(){
-  // timeTasks.resetCycle();
-  // interpolation
-  // timeTasks.start(TimeTasks::MOMENTS);
-
-  EMf->updateInfoFields(grid,vct,col);
-  EMf->setZeroDensities();                  // set to zero the densities
-
-  for (int i = 0; i < ns; i++)
-    part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
-
-  EMf->sumOverSpecies(vct);                 // sum all over the species
-  //
-  // Fill with constant charge the planet
-  if (col->getCase()=="Dipole") {
-    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
-  }
-
-  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
-
-}
-
-void c_Solver::UpdateCycleInfo(int cycle) {
-
-  EMf->UpdateFext(cycle);
-  if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
-  if (cycle == first_cycle) {
-    if (col->getCase()=="Dipole") {
-      EMf->SetDipole_2Bext(vct,grid,col);
-      EMf->SetLambda(grid);
-    }
-  }
-
-
-}
-
-void c_Solver::CalculateField() {
-
-  // timeTasks.resetCycle();
-  // interpolation
-  // timeTasks.start(TimeTasks::MOMENTS);
-
-  EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
-  EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
-  MPI_Barrier(MPI_COMM_WORLD);
-  // timeTasks.end(TimeTasks::MOMENTS);
-
-  // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
-  EMf->calculateE(grid, vct, col);               // calculate the E field
-  // timeTasks.end(TimeTasks::FIELDS);
-
-}
-
-void c_Solver::CalculateBField() {
-  /* --------------------- */
-  /* Calculate the B field */
-  /* --------------------- */
-
-  // timeTasks.start(TimeTasks::BFIELD);
-  EMf->calculateB(grid, vct, col);   // calculate the B field
-  // timeTasks.end(TimeTasks::BFIELD);
-
-  // print out total time for all tasks
-  // timeTasks.print_cycle_times();
-}
-
+//void c_Solver::GatherMoments(){
+//  // timeTasks.resetCycle();
+//  // interpolation
+//  // timeTasks.start(TimeTasks::MOMENTS);
+//
+//  EMf->updateInfoFields(grid,vct,col);
+//  EMf->setZeroDensities();                  // set to zero the densities
+//
+//  for (int i = 0; i < ns; i++)
+//    part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
+//
+//  EMf->sumOverSpecies(vct);                 // sum all over the species
+//  //
+//  // Fill with constant charge the planet
+//  if (col->getCase()=="Dipole") {
+//    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+//  }
+//
+//  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
+//
+//}
 bool c_Solver::ParticlesMover() {
 
   /*  -------------- */
@@ -257,59 +211,31 @@ bool c_Solver::ParticlesMover() {
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-    mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
+    mem_avail = part[i].mover_relativistic_pos(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
-  // timeTasks.end(TimeTasks::PARTICLES);
-
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
       cout << "*************************************************************" << endl;
       cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
       cout << "*************************************************************" << endl;
     }
-    return (true);              // exit from the time loop
+    MPI_Abort(MPI_COMM_WORLD, -1);
   }
-
-  /* -------------------------------------- */
-  /* Repopulate the buffer zone at the edge */
-  /* -------------------------------------- */
-
-  InjectBoundaryParticles();
-
-  if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
-    if (myrank == 0) {
-      cout << "*************************************************************" << endl;
-      cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
-      cout << "*************************************************************" << endl;
-    }
-    return (true);              // exit from the time loop
-  }
-
   return (false);
+}
+
+
+
+void c_Solver::CalculateField() {
+
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  // MAXWELL'S SOLVER
+  EMf->calculateFields(grid, vct, col); 
 
 }
 
-void c_Solver::InjectBoundaryParticles(){
-
-    /* --------------------------------------- */
-    /* Remove particles from depopulation area */
-    /* --------------------------------------- */
-
-    if (col->getCase()=="Dipole") {
-      for (int i=0; i < ns; i++)
-          Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
-
-    }
-
-    /* ------------------------------------------------------------------------ */
-    /* Remove all old particles and inject new ones only in the injeciton faces */
-    /* ------------------------------------------------------------------------ */
-
-    for (int i=0; i < ns; i++)
-      if (col->getRHOinject(i)>0.0){
-        mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
-
-  }
+void c_Solver::FinalMomentumUpdate() {
 
 }
 
