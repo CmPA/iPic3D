@@ -53,6 +53,7 @@ int c_Solver::Init(int argc, char **argv) {
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
 
+
   if (col->getSolInit()) {
     /* -------------------------------------------- */
     /* If using parallel H5hut IO read initial file */
@@ -170,6 +171,9 @@ int c_Solver::Init(int argc, char **argv) {
 
   Qremoved = new double[ns];
 
+  // Petsc Solver
+  petscSolver = new PetscSolver(EMf, grid, vct, col, part);
+
   my_clock = new Timing(myrank);
 
   return 0;
@@ -226,7 +230,8 @@ void c_Solver::CalculateField() {
   MPI_Barrier(MPI_COMM_WORLD);
 
   // MAXWELL'S SOLVER
-  EMf->calculateFields(grid, vct, col, part); 
+  petscSolver->solve();
+  //EMf->calculateFields(grid, vct, col, part); 
 
 }
 

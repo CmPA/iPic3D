@@ -204,11 +204,12 @@ class EMfields3D                // :public Field
     void SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
-    void calculateFields(Grid * grid, VirtualTopology3D * vct, Collective *col, Particles3D* part);
+    void startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col);
+    void endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! Image of Maxwell Solver (for Solver) */
     void MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct, Particles3D* part);
     /*! Maxwell source term (for SOLVER) */
-    void MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
+    void MaxwellSource(Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! Impose a constant charge inside a spherical zone of the domain */
     void ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, double R, double x_center, double y_center, double z_center);
     /*! Impose a constant charge in the OpenBC boundaries */
@@ -540,6 +541,9 @@ class EMfields3D                // :public Field
     double ***temp2X;
     double ***temp2Y;
     double ***temp2Z;
+    double ***sourcesX;
+    double ***sourcesY;
+    double ***sourcesZ;
     /*! and some for MaxwellImage */
     double ***imageX;
     double ***imageY;

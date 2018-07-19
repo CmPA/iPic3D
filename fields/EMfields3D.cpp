@@ -155,6 +155,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   imageX = newArr3(double, nxn, nyn, nzn);
   imageY = newArr3(double, nxn, nyn, nzn);
   imageZ = newArr3(double, nxn, nyn, nzn);
+  sourcesX = newArr3(double, nxn, nyn, nzn);
+  sourcesY = newArr3(double, nxn, nyn, nzn);
+  sourcesZ = newArr3(double, nxn, nyn, nzn);
   Dx = newArr3(double, nxn, nyn, nzn);
   Dy = newArr3(double, nxn, nyn, nzn);
   Dz = newArr3(double, nxn, nyn, nzn);
@@ -168,41 +171,13 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
-void EMfields3D::calculateFields(Grid * grid, VirtualTopology3D * vct, Collective *col, Particles3D* part) {
+void EMfields3D::startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col) {
   if (vct->getCartesian_rank() == 0)
     cout << "*** E CALCULATION ***" << endl;
+}
 
-  double *xkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
-  double *bkrylov = new double[3 * (nxn - 2) * (nyn - 2) * (nzn - 2)];  // 3 components
-
-  // set to zero all the stuff 
-  eqValue(0.0, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
-  eqValue(0.0, bkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
-
-  if (vct->getCartesian_rank() == 0)
-    cout << "*** MAXWELL SOLVER ***" << endl;
-
-  // prepare the source 
-  MaxwellSource(bkrylov, grid, vct, col);
-
-  // Precondition the krylov vector
-  eqValue(0.0, Jx, nxn, nyn, nzn);
-  eqValue(0.0, Jy, nxn, nyn, nzn);
-  eqValue(0.0, Jz, nxn, nyn, nzn);
-  for (int i=0; i<ns; i++) {
-    part[i].gatherJbar(Jx, Jy, Jz, grid, vct);
-  }
-  communicateGhostJbar(vct);
-  eq(Exth, Ex, nxn, nyn, nzn);
-  eq(Eyth, Ey, nxn, nyn, nzn);
-  eq(Ezth, Ez, nxn, nyn, nzn);
-  addscale(-dt/2.0, 1.0, Exth, Jx, nxn, nyn, nzn);
-  addscale(-dt/2.0, 1.0, Eyth, Jy, nxn, nyn, nzn);
-  addscale(-dt/2.0, 1.0, Ezth, Jz, nxn, nyn, nzn);
-  phys2solver(xkrylov, Exth, Eyth, Ezth, nxn, nyn, nzn);
-
-  // solver
-  GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this, part);
+void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col)
+{
   // move from krylov space to physical space
   solver2phys(Exth, Eyth, Ezth, xkrylov, nxn, nyn, nzn);
 
@@ -210,7 +185,10 @@ void EMfields3D::calculateFields(Grid * grid, VirtualTopology3D * vct, Collectiv
   addscale(1 / th, -(1.0 - th) / th, Ey, Eyth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ez, Ezth, nxn, nyn, nzn);
 
-  // WARNING: COMPUTE B AND Bth FROM NEW VALUES OF E and Eth
+  // apply to smooth to electric field 3 times
+  smoothE(Smooth, vct, col);
+  smoothE(Smooth, vct, col);
+  smoothE(Smooth, vct, col);
 
   // communicate so the interpolation can have good values
   communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
@@ -224,33 +202,41 @@ void EMfields3D::calculateFields(Grid * grid, VirtualTopology3D * vct, Collectiv
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
   BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
 
-  // deallocate temporary arrays
-  delete[]xkrylov;
-  delete[]bkrylov;
-
+for (int i=1; i<nxn-1; i++) {
+  printf("%3d %13.6e %13.6e %13.6e \n",i, Exth[i][1][1], Eyth[i][1][1], Ezth[i][1][1]);
+}
 }
 
 /*! Calculate source for Maxwell solver */
-void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col) {
-  eqValue(0.0, tempX, nxn, nyn, nzn);
-  eqValue(0.0, tempY, nxn, nyn, nzn);
-  eqValue(0.0, tempZ, nxn, nyn, nzn);
+void EMfields3D::MaxwellSource(Grid * grid, VirtualTopology3D * vct, Collective *col) {
+  eqValue(0.0, sourcesX, nxn, nyn, nzn);
+  eqValue(0.0, sourcesY, nxn, nyn, nzn);
+  eqValue(0.0, sourcesZ, nxn, nyn, nzn);
 
   communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
   
   // Curl(Bn)
-  grid->curlC2N(tempX, tempY, tempZ, Bxc, Byc, Bzc);
+  grid->curlC2N(sourcesX, sourcesY, sourcesZ, Bxc, Byc, Bzc);
 
   // En + (dt/2) Curl(Bn)
-  addscale(1.0, dt/2.0, tempX, Ex, nxn, nyn, nzn); 
-  addscale(1.0, dt/2.0, tempY, Ey, nxn, nyn, nzn); 
-  addscale(1.0, dt/2.0, tempZ, Ez, nxn, nyn, nzn); 
+  addscale(1.0, dt/2.0, sourcesX, Ex, nxn, nyn, nzn); 
+  addscale(1.0, dt/2.0, sourcesY, Ey, nxn, nyn, nzn); 
+  addscale(1.0, dt/2.0, sourcesZ, Ez, nxn, nyn, nzn); 
 
-  // physical space -> Krylov space
-  phys2solver(bkrylov, tempX, tempY, tempZ, nxn, nyn, nzn);
 
+// DEBUG:
+//eqValue(0.0, sourcesX, nxn, nyn, nzn);
+//eqValue(0.0, sourcesY, nxn, nyn, nzn);
+//eqValue(0.0, sourcesZ, nxn, nyn, nzn);
+//for (int i=0; i<nxn; i++) 
+//  for (int j=0; j<nyn; j++) 
+//    for (int k=0; k<nzn; k++) {
+//      sourcesX[i][j][k] = 25;
+//      sourcesY[i][j][k] = i*i;
+//      sourcesZ[i][j][k] = 4;
+//    }
 }
 /*! Mapping of Maxwell image to give to solver */
 void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct, Particles3D* part) {
@@ -301,6 +287,23 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sum(imageX, vectX, nxn, nyn, nzn);
   sum(imageY, vectY, nxn, nyn, nzn);
   sum(imageZ, vectZ, nxn, nyn, nzn);
+
+// DEBUG:
+//eqValue(0.0, imageX, nxn, nyn, nzn);
+//eqValue(0.0, imageY, nxn, nyn, nzn);
+//eqValue(0.0, imageZ, nxn, nyn, nzn);
+//for (int i=0; i<nxn; i++) 
+//  for (int j=0; j<nyn; j++) 
+//    for (int k=0; k<nzn; k++) {
+//      imageX[i][j][k] = vectX[i][j][k]*vectX[i][j][k];
+//      imageY[i][j][k] = vectY[i][j][k]*vectY[i][j][k];
+//      imageZ[i][j][k] = vectZ[i][j][k]*vectZ[i][j][k];
+//    }
+
+
+  addscale(-1, imageX, sourcesX,nxn, nyn, nzn); 
+  addscale(-1, imageY, sourcesY,nxn, nyn, nzn); 
+  addscale(-1, imageZ, sourcesZ,nxn, nyn, nzn); 
 
   // move from physical space to krylov space
   phys2solver(im, imageX, imageY, imageZ, nxn, nyn, nzn);
