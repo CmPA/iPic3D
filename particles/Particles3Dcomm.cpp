@@ -193,9 +193,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // the buffer size should be decided depending on number of particles
   // the buffer size should be decided depending on number of particles
   if (TrackParticleID)
-    nVar = 8;
+    nVar = 11;
   else
-    nVar = 7;
+    nVar = 10;
   buffer_size = (int) (.05 * nop * nVar + 1); // max: 5% of the particles in the processors is going out
   buffer_size_small = (int) (.01 * nop * nVar + 1); // max 1% not resizable 
 
@@ -456,12 +456,12 @@ void Particles3Dcomm::gatherJbar(double*** Jx, double*** Jy, double*** Jz, Grid 
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
   double invVOL = grid->getInvVOL();
-  
+
   {
     for (register long long i = 0; i < nop; i++)
     {
-      double g  = 1.0/sqrt(1 - u[i]*u[i] - v[i]*v[i] - w[i]*w[i]);
-      double gk = sqrt(1 + mxp[i]*mxp[i] + myp[i]*myp[i] + mzp[i]*mzp[i]);
+      double g  = 1.0/sqrt(1.0 - u[i]*u[i] - v[i]*v[i] - w[i]*w[i]);
+      double gk = sqrt(1.0 + mxp[i]*mxp[i] + myp[i]*myp[i] + mzp[i]*mzp[i]);
       double pxp = u[i]*g;
       double pyp = v[i]*g;
       double pzp = w[i]*g;
@@ -786,9 +786,12 @@ void Particles3Dcomm::bufferXleft(double *b_, long long np_current, VirtualTopol
   b_[npExitXleft * nVar + 3] = u[np_current];
   b_[npExitXleft * nVar + 4] = v[np_current];
   b_[npExitXleft * nVar + 5] = w[np_current];
-  b_[npExitXleft * nVar + 6] = q[np_current];
+  b_[npExitXleft * nVar + 6] = mxp[np_current];
+  b_[npExitXleft * nVar + 7] = myp[np_current];
+  b_[npExitXleft * nVar + 8] = mzp[np_current];
+  b_[npExitXleft * nVar + 9] = q[np_current];
   if (TrackParticleID)
-    b_[npExitXleft * nVar + 7] = ParticleID[np_current];
+    b_[npExitXleft * nVar + 10] = ParticleID[np_current];
 }
 /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
 void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -801,9 +804,12 @@ void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopo
   b_[npExitXright * nVar + 3] = u[np_current];
   b_[npExitXright * nVar + 4] = v[np_current];
   b_[npExitXright * nVar + 5] = w[np_current];
-  b_[npExitXright * nVar + 6] = q[np_current];
+  b_[npExitXright * nVar + 6] = mxp[np_current];
+  b_[npExitXright * nVar + 7] = myp[np_current];
+  b_[npExitXright * nVar + 8] = mzp[np_current];
+  b_[npExitXright * nVar + 9] = q[np_current];
   if (TrackParticleID)
-    b_[npExitXright * nVar + 7] = ParticleID[np_current];
+    b_[npExitXright * nVar + 10] = ParticleID[np_current];
 }
 /** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -816,9 +822,12 @@ inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, Virtu
   b_[npExitYleft * nVar + 3] = u[np_current];
   b_[npExitYleft * nVar + 4] = v[np_current];
   b_[npExitYleft * nVar + 5] = w[np_current];
-  b_[npExitYleft * nVar + 6] = q[np_current];
+  b_[npExitYleft * nVar + 6] = mxp[np_current];
+  b_[npExitYleft * nVar + 7] = myp[np_current];
+  b_[npExitYleft * nVar + 8] = mzp[np_current];
+  b_[npExitYleft * nVar + 9] = q[np_current];
   if (TrackParticleID)
-    b_[npExitYleft * nVar + 7] = ParticleID[np_current];
+    b_[npExitYleft * nVar + 10] = ParticleID[np_current];
 }
 /** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -831,9 +840,12 @@ inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, Virt
   b_[npExitYright * nVar + 3] = u[np_current];
   b_[npExitYright * nVar + 4] = v[np_current];
   b_[npExitYright * nVar + 5] = w[np_current];
-  b_[npExitYright * nVar + 6] = q[np_current];
+  b_[npExitYright * nVar + 6] = mxp[np_current];
+  b_[npExitYright * nVar + 7] = myp[np_current];
+  b_[npExitYright * nVar + 8] = mzp[np_current];
+  b_[npExitYright * nVar + 9] = q[np_current];
   if (TrackParticleID)
-    b_[npExitYright * nVar + 7] = ParticleID[np_current];
+    b_[npExitYright * nVar + 10] = ParticleID[np_current];
 }
 /** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -846,9 +858,12 @@ inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, Virtu
   b_[npExitZleft * nVar + 3] = u[np_current];
   b_[npExitZleft * nVar + 4] = v[np_current];
   b_[npExitZleft * nVar + 5] = w[np_current];
-  b_[npExitZleft * nVar + 6] = q[np_current];
+  b_[npExitZleft * nVar + 6] = mxp[np_current];
+  b_[npExitZleft * nVar + 7] = myp[np_current];
+  b_[npExitZleft * nVar + 8] = mzp[np_current];
+  b_[npExitZleft * nVar + 9] = q[np_current];
   if (TrackParticleID)
-    b_[npExitZleft * nVar + 7] = ParticleID[np_current];
+    b_[npExitZleft * nVar + 10] = ParticleID[np_current];
 }
 /** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
 inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, VirtualTopology3D * vct) {
@@ -861,9 +876,12 @@ inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, Virt
   b_[npExitZright * nVar + 3] = u[np_current];
   b_[npExitZright * nVar + 4] = v[np_current];
   b_[npExitZright * nVar + 5] = w[np_current];
-  b_[npExitZright * nVar + 6] = q[np_current];
+  b_[npExitZright * nVar + 6] = mxp[np_current];
+  b_[npExitZright * nVar + 7] = myp[np_current];
+  b_[npExitZright * nVar + 8] = mzp[np_current];
+  b_[npExitZright * nVar + 9] = q[np_current];
   if (TrackParticleID)
-    b_[npExitZright * nVar + 7] = ParticleID[np_current];
+    b_[npExitZright * nVar + 10] = ParticleID[np_current];
 }
 /** This unbuffer the last communication */
 int Particles3Dcomm::unbuffer(double *b_) {
@@ -876,9 +894,12 @@ int Particles3Dcomm::unbuffer(double *b_) {
     u[nop] = b_[nVar * np_current + 3];
     v[nop] = b_[nVar * np_current + 4];
     w[nop] = b_[nVar * np_current + 5];
-    q[nop] = b_[nVar * np_current + 6];
+    mxp[nop] = b_[nVar * np_current + 6];
+    myp[nop] = b_[nVar * np_current + 7];
+    mzp[nop] = b_[nVar * np_current + 8];
+    q[nop] = b_[nVar * np_current + 9];
     if (TrackParticleID)
-      ParticleID[nop] = (unsigned long) b_[nVar * np_current + 7];
+      ParticleID[nop] = (unsigned long) b_[nVar * np_current + 10];
     np_current++;
     // these particles need further communication
     if (x[nop] < xstart || x[nop] > xend || y[nop] < ystart || y[nop] > yend || z[nop] < zstart || z[nop] > zend)
@@ -906,6 +927,9 @@ void Particles3Dcomm::del_pack(long long np_current, long long *nplast) {
   u[np_current] = u[*nplast];
   v[np_current] = v[*nplast];
   w[np_current] = w[*nplast];
+  mxp[np_current] = mxp[*nplast];
+  myp[np_current] = myp[*nplast];
+  mzp[np_current] = mzp[*nplast];
   q[np_current] = q[*nplast];
   if (TrackParticleID)
     ParticleID[np_current] = ParticleID[*nplast];
@@ -962,6 +986,18 @@ double *Particles3Dcomm::getVall()  const {
 double *Particles3Dcomm::getWall()  const {
   return (w);
 }
+/** get X-momentum of particle with label indexPart */
+double *Particles3Dcomm::getPXall()  const {
+  return (mxp);
+}
+/** get Y-momentum of particle with label indexPart */
+double *Particles3Dcomm::getPYall()  const {
+  return (myp);
+}
+/**get Z-momentum of particle with label indexPart */
+double *Particles3Dcomm::getPZall()  const {
+  return (mzp);
+}
 /**get ID of particle with label indexPart */
 unsigned long *Particles3Dcomm::getParticleIDall()  const {
   return (ParticleID);
@@ -994,6 +1030,19 @@ double *& Particles3Dcomm::getVref() {
 double *& Particles3Dcomm::getWref() {
   return (w);
 }
+/** get X-momentum of particle with label indexPart as reference */
+double *& Particles3Dcomm::getPXref() {
+  return (mxp);
+}
+/** get Y-momentum of particle with label indexPart as reference */
+double *& Particles3Dcomm::getPYref() {
+  return (myp);
+}
+/**get Z-momentum of particle with label indexPart as reference */
+double *& Particles3Dcomm::getPZref() {
+  return (mzp);
+}
+
 /**get charge of particle with label indexPart as reference */
 double *& Particles3Dcomm::getQref() {
   return (q);
@@ -1039,7 +1088,7 @@ double Particles3Dcomm::getKe() {
   double localKe = 0.0;
   double totalKe = 0.0;
   for (register long long i = 0; i < nop; i++) {
-    double g = 1.0 / sqrt(1 - u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    double g = 1.0 / sqrt(1.0 - u[i] * u[i] - v[i] * v[i] - w[i] * w[i]);
     localKe += abs(q[i] / qom) * (g - 1.0);}
   MPI_Allreduce(&localKe, &totalKe, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalKe);
@@ -1049,7 +1098,7 @@ double Particles3Dcomm::getP() {
   double localP = 0.0;
   double totalP = 0.0;
   for (register long long i = 0; i < nop; i++) {
-    double g = 1.0 / sqrt(1 - u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    double g = 1.0 / sqrt(1.0 - u[i] * u[i] - v[i] * v[i] - w[i] * w[i]);
     localP += abs(q[i] / qom) * g * sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);}
   MPI_Allreduce(&localP, &totalP, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalP);

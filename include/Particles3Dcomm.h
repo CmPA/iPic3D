@@ -121,6 +121,12 @@ public:
   double *getVall() const;
   /** get w (Z-velocity) array for all the particles */
   double *getWall() const;
+  /** get px (X-momentum) array for all the particles */
+  double *getPXall() const;
+  /** get py (Y-momentum) array for all the particles */
+  double *getPYall() const;
+  /** get pz (Z-momentum) array for all the particles */
+  double *getPZall() const;
   /** get X-position array for all the particles by reference */
   double *& getXref();
   /** get Y-position array for all the particles by reference */
@@ -133,6 +139,12 @@ public:
   double *& getVref();
   /** get w (Z-velocity) array for all the particles by reference */
   double *& getWref();
+  /** get px (X-momentum) array for all the particles by reference */
+  double *& getPXref();
+  /** get py (Y-momentum) array for all the particles by reference */
+  double *& getPYref();
+  /** get pz (Z-momentum) array for all the particles by reference */
+  double *& getPZref();
   /** get q array for all the particles by reference */
   double *& getQref();
   /** get the ID array   */
@@ -149,6 +161,12 @@ public:
   double getV(long long indexPart) const;
   /** get w (Z-velocity) of particle with label indexPart */
   double getW(long long indexPart) const;
+  /** get px (X-momentum) of particle with label indexPart */
+  double getPX(long long indexPart) const;
+  /** get py (Y-momentum) of particle with label indexPart */
+  double getPY(long long indexPart) const;
+  /** get pz (Z-momentum) of particle with label indexPart */
+  double getPZ(long long indexPart) const;
   /** get ID of particle with label indexPart */
   unsigned long getParticleID(long long indexPart) const;
   /**get charge of particle with label indexPart */

@@ -88,17 +88,17 @@ void Particles3D::maxwellian(Grid * grid, VirtualTopology3D * vct) {
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mxp[counter] = u0 / sqrt(1 - u0*u0) + uth / sqrt(1 - uth*uth) * cos(theta);
+              mxp[counter] = u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * cos(theta);
               // v
-              myp[counter] = v0 / sqrt(1 - v0*v0) + vth / sqrt(1 - vth*vth) * sin(theta);
+              myp[counter] = v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * sin(theta);
               // w
               harvest = rand() / (double) RAND_MAX;
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mzp[counter] = w0 / sqrt(1 - w0*w0) + wth / sqrt(1 - wth*wth) * cos(theta);
+              mzp[counter] = w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * cos(theta);
 
-              double g = sqrt(1 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
+              double g = sqrt(1.0 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
               u[counter] = mxp[counter] / g;
               v[counter] = myp[counter] / g;
               w[counter] = mzp[counter] / g;
@@ -127,7 +127,7 @@ void Particles3D::twostream1D(Grid * grid, VirtualTopology3D * vct) {
         for (int ii = 0; ii < npcelx/2; ii++)
           for (int jj = 0; jj < npcely; jj++)
             for (int kk = 0; kk < npcelz; kk++) {
-              x[counter] = (ii + .5) * (dx / npcelx/2) + grid->getXN(i, j, k);
+              x[counter] = (ii + .5) * (dx / (npcelx/2)) + grid->getXN(i, j, k);
               y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
               z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
               // q = charge
@@ -137,17 +137,17 @@ void Particles3D::twostream1D(Grid * grid, VirtualTopology3D * vct) {
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mxp[counter] = u0 / sqrt(1 - u0*u0) + uth / sqrt(1 - uth*uth) * cos(theta);
+              mxp[counter] = u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * cos(theta);
               // v
-              myp[counter] = v0 / sqrt(1 - v0*v0) + vth / sqrt(1 - vth*vth) * sin(theta);
+              myp[counter] = v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * sin(theta);
               // w
               harvest = rand() / (double) RAND_MAX;
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mzp[counter] = w0 / sqrt(1 - w0*w0) + wth / sqrt(1 - wth*wth) * cos(theta);
+              mzp[counter] = w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * cos(theta);
 
-              double g = sqrt(1 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
+              double g = sqrt(1.0 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
               u[counter] = mxp[counter] / g;
               v[counter] = myp[counter] / g;
               w[counter] = mzp[counter] / g;
@@ -165,7 +165,7 @@ void Particles3D::twostream1D(Grid * grid, VirtualTopology3D * vct) {
         for (int ii = 0; ii < npcelx/2; ii++)
           for (int jj = 0; jj < npcely; jj++)
             for (int kk = 0; kk < npcelz; kk++) {
-              x[counter] = (ii + .5) * (dx / npcelx/2) + grid->getXN(i, j, k);
+              x[counter] = (ii + .5) * (dx / (npcelx/2)) + grid->getXN(i, j, k);
               y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
               z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
               // q = charge
@@ -175,17 +175,17 @@ void Particles3D::twostream1D(Grid * grid, VirtualTopology3D * vct) {
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mxp[counter] = -u0 / sqrt(1 - u0*u0) + uth / sqrt(1 - uth*uth) * cos(theta);
+              mxp[counter] = -u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * cos(theta);
               // v
-              myp[counter] = -v0 / sqrt(1 - v0*v0) + vth / sqrt(1 - vth*vth) * sin(theta);
+              myp[counter] = -v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * sin(theta);
               // w
               harvest = rand() / (double) RAND_MAX;
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mzp[counter] = -w0 / sqrt(1 - w0*w0) + wth / sqrt(1 - wth*wth) * cos(theta);
+              mzp[counter] = -w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * cos(theta);
 
-              double g = sqrt(1 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
+              double g = sqrt(1.0 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
               u[counter] = mxp[counter] / g;
               v[counter] = myp[counter] / g;
               w[counter] = mzp[counter] / g;
@@ -398,7 +398,11 @@ int Particles3D::mover_relativistic_mom_EM(Grid * grid, VirtualTopology3D * vct,
 int Particles3D::mover_relativistic_mom_ES(Grid * grid, VirtualTopology3D * vct, double*** Ex, double*** Ey, double*** Ez) {
   double start_mover_rel = MPI_Wtime();
   double weights[2][2][2];
-
+//cout << "particle side E field" << endl;
+//for (int i = 0; i < nxn; i++)
+//    for (int j = 0; j < 1; j++)
+//      for (int k = 0; k < 1; k++)
+//        cout << Ex[i][j][k] << endl;
   for (long long rest = 0; rest < nop; rest++) {
     // copy the particle
     double xp = x[rest];
@@ -420,14 +424,13 @@ int Particles3D::mover_relativistic_mom_ES(Grid * grid, VirtualTopology3D * vct,
     get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
 
     // Solve the momentum equation
-    double gp = 1. / sqrt(1. - up*up - vp*vp - wp*wp);
+    double gp = 1.0 / sqrt(1.0 - up*up - vp*vp - wp*wp);
     double pxp = up*gp;
     double pyp = vp*gp;
     double pzp = wp*gp;
     double pxk = pxp + qom*dt*Exl;
     double pyk = pyp + qom*dt*Eyl;
     double pzk = pzp + qom*dt*Ezl;
-
     // Update the momentum
     mxp[rest] = pxk;
     myp[rest] = pyk;
@@ -486,9 +489,9 @@ int Particles3D::mover_relativistic_pos(Grid * grid, VirtualTopology3D * vct) {
 void Particles3D::mover_relativistic_vel(Grid*, VirtualTopology3D*)
 {
   for (long long i=0; i<nop; i++) {
-    double gk = sqrt(1 + mxp[i]*mxp[i] + myp[i]*myp[i] + mzp[i]*mzp[i]);
-    u[i] = mxp[i]/gk;
-    v[i] = myp[i]/gk;
-    w[i] = mzp[i]/gk;
+    double gk = sqrt(1.0 + mxp[i]*mxp[i] + myp[i]*myp[i] + mzp[i]*mzp[i]);
+    u[i] = mxp[i] / gk;
+    v[i] = myp[i] / gk;
+    w[i] = mzp[i] / gk;
   }
 }

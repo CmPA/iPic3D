@@ -13,12 +13,14 @@ int main(int argc, char **argv) {
   /* 0- Initialize the solver class */
   /* ------------------------------ */
   KCode.Init(argc, argv);
+  KCode.WriteOutput(0);
+  KCode.WriteConserved(0);
 
   /* ------------ */
   /* 1- Main loop */
   /* ------------ */
 
-  for (int i = KCode.FirstCycle(); i <= KCode.LastCycle(); i++) {
+  for (int i = KCode.FirstCycle()+1; i <= KCode.LastCycle()+1; i++) {
 
     if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
 
@@ -28,6 +30,7 @@ int main(int argc, char **argv) {
     // Calculate E and B fields
     KCode.CalculateField();
 
+cout << "final momentum update" << endl;
     // Update the momentum and velocity
     KCode.FinalMomentumUpdate();
 

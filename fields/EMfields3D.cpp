@@ -185,7 +185,21 @@ void EMfields3D::calculateFields(Grid * grid, VirtualTopology3D * vct, Collectiv
   // prepare the source 
   MaxwellSource(bkrylov, grid, vct, col);
 
-  phys2solver(xkrylov, Ex, Ey, Ez, nxn, nyn, nzn);
+  // Precondition the krylov vector
+  eqValue(0.0, Jx, nxn, nyn, nzn);
+  eqValue(0.0, Jy, nxn, nyn, nzn);
+  eqValue(0.0, Jz, nxn, nyn, nzn);
+  for (int i=0; i<ns; i++) {
+    part[i].gatherJbar(Jx, Jy, Jz, grid, vct);
+  }
+  communicateGhostJbar(vct);
+  eq(Exth, Ex, nxn, nyn, nzn);
+  eq(Eyth, Ey, nxn, nyn, nzn);
+  eq(Ezth, Ez, nxn, nyn, nzn);
+  addscale(-dt/2.0, 1.0, Exth, Jx, nxn, nyn, nzn);
+  addscale(-dt/2.0, 1.0, Eyth, Jy, nxn, nyn, nzn);
+  addscale(-dt/2.0, 1.0, Ezth, Jz, nxn, nyn, nzn);
+  phys2solver(xkrylov, Exth, Eyth, Ezth, nxn, nyn, nzn);
 
   // solver
   GMRES(&Field::MaxwellImage, xkrylov, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2), bkrylov, 20, 200, GMREStol, grid, vct, this, part);
@@ -225,15 +239,14 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
-
   
   // Curl(Bn)
   grid->curlC2N(tempX, tempY, tempZ, Bxc, Byc, Bzc);
 
   // En + (dt/2) Curl(Bn)
-  addscale(dt/2, 1, tempX, Ex, nxn, nyn, nzn); 
-  addscale(dt/2, 1, tempY, Ey, nxn, nyn, nzn); 
-  addscale(dt/2, 1, tempZ, Ez, nxn, nyn, nzn); 
+  addscale(1.0, dt/2.0, tempX, Ex, nxn, nyn, nzn); 
+  addscale(1.0, dt/2.0, tempY, Ey, nxn, nyn, nzn); 
+  addscale(1.0, dt/2.0, tempZ, Ez, nxn, nyn, nzn); 
 
   // physical space -> Krylov space
   phys2solver(bkrylov, tempX, tempY, tempZ, nxn, nyn, nzn);
@@ -242,7 +255,6 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
 /*! Mapping of Maxwell image to give to solver */
 void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTopology3D * vct, Particles3D* part) {
 
-
   eqValue(0.0, im, 3 * (nxn - 2) * (nyn - 2) * (nzn - 2));
   eqValue(0.0, imageX, nxn, nyn, nzn);
   eqValue(0.0, imageY, nxn, nyn, nzn);
@@ -250,9 +262,12 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 
   // move from krylov space to physical space
   solver2phys(vectX, vectY, vectZ, vector, nxn, nyn, nzn);
+  communicateNodeBC(nxn, nyn, nzn, vectX, 1, 1, 1, 1, 1, 1, vct);
+  communicateNodeBC(nxn, nyn, nzn, vectY, 1, 1, 1, 1, 1, 1, vct);
+  communicateNodeBC(nxn, nyn, nzn, vectZ, 1, 1, 1, 1, 1, 1, vct);
 
-  // Update particle momentum (we assumed that Eth and Bth have been updated in the
-  // previous itration).
+  // Update particle momentum
+  // (we assume that Eth and Bth have been updated in the previous iteration).
   for (int i=0; i<ns; i++) 
     part[i].mover_relativistic_mom_ES(grid, vct, vectX, vectY, vectZ);
 
@@ -260,7 +275,6 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   eqValue(0.0, Jx, nxn, nyn, nzn);
   eqValue(0.0, Jy, nxn, nyn, nzn);
   eqValue(0.0, Jz, nxn, nyn, nzn);
-
   for (int i=0; i<ns; i++) {
     part[i].gatherJbar(Jx, Jy, Jz, grid, vct);
   }
@@ -279,14 +293,14 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   grid->curlC2N(imageX, imageY, imageZ, tempXC, tempYC, tempZC);
 
   // (dt*dt/4) Curl(Curl(Eth)) + (dt/2) Jbar
-  addscale(dt*dt/4.0, dt/2.0*FourPI, imageX, Jx, nxn, nyn, nzn);
-  addscale(dt*dt/4.0, dt/2.0*FourPI, imageY, Jy, nxn, nyn, nzn);
-  addscale(dt*dt/4.0, dt/2.0*FourPI, imageZ, Jz, nxn, nyn, nzn);
+  addscale(dt/2.0, dt*dt/4.0, imageX, Jx, nxn, nyn, nzn);
+  addscale(dt/2.0, dt*dt/4.0, imageY, Jy, nxn, nyn, nzn);
+  addscale(dt/2.0, dt*dt/4.0, imageZ, Jz, nxn, nyn, nzn);
 
   // Eth + (dt*dt/4) Curl(Curl(Eth)) + (dt/2) Jbar
-  addscale(1.0, imageX, vectX, nxn, nyn, nzn);
-  addscale(1.0, imageY, vectY, nxn, nyn, nzn);
-  addscale(1.0, imageZ, vectZ, nxn, nyn, nzn);
+  sum(imageX, vectX, nxn, nyn, nzn);
+  sum(imageY, vectY, nxn, nyn, nzn);
+  sum(imageZ, vectZ, nxn, nyn, nzn);
 
   // move from physical space to krylov space
   phys2solver(im, imageX, imageY, imageZ, nxn, nyn, nzn);
@@ -3367,7 +3381,7 @@ double EMfields3D::getEenergy(void) {
   for (int i = 1; i < nxn - 2; i++)
     for (int j = 1; j < nyn - 2; j++)
       for (int k = 1; k < nzn - 2; k++)
-        localEenergy += .5 * dx * dy * dz * (Ex[i][j][k] * Ex[i][j][k] + Ey[i][j][k] * Ey[i][j][k] + Ez[i][j][k] * Ez[i][j][k]) / (FourPI);
+        localEenergy += .5 * dx * dy * dz * (Ex[i][j][k] * Ex[i][j][k] + Ey[i][j][k] * Ey[i][j][k] + Ez[i][j][k] * Ez[i][j][k]);
 
   MPI_Allreduce(&localEenergy, &totalEenergy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalEenergy);
@@ -3386,7 +3400,7 @@ double EMfields3D::getBenergy(void) {
         Bxt = Bxn[i][j][k]+Fext*Bx_ext[i][j][k];
         Byt = Byn[i][j][k]+Fext*By_ext[i][j][k];
         Bzt = Bzn[i][j][k]+Fext*Bz_ext[i][j][k];
-        localBenergy += .5*dx*dy*dz*(Bxt*Bxt + Byt*Byt + Bzt*Bzt)/(FourPI);
+        localBenergy += .5*dx*dy*dz*(Bxt*Bxt + Byt*Byt + Bzt*Bzt);
       }
 
   MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

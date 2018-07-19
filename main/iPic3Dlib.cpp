@@ -206,7 +206,7 @@ bool c_Solver::ParticlesMover() {
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-    mem_avail = part[i].mover_relativistic_pos(grid, vct); // use the Predictor Corrector scheme 
+    mem_avail = part[i].mover_relativistic_pos(grid, vct);
   }
   if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
@@ -303,9 +303,10 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0 &&
-        cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    if (cycle%(col->getFieldOutputCycle())==0 ||
+        cycle==col->getLast_cycle())       WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    if (cycle%(col->getParticlesOutputCycle())==0 ||
+        cycle==col->getLast_cycle())      WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
   }
   else
