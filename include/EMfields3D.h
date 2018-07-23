@@ -358,10 +358,12 @@ class EMfields3D                // :public Field
     double ***getRHOcs(int is);
     double ***& getRHOcs(int is, int dummy);
 
-  
     double ***getExth() { return Exth; }
     double ***getEyth() { return Eyth; }
     double ***getEzth() { return Ezth; }
+    double ***getBxthn() { return Bxthn; }
+    double ***getBythn() { return Bythn; }
+    double ***getBzthn() { return Bzthn; }
 
     /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
     double &getBx_ext(int indexX, int indexY, int indexZ) const;
@@ -527,6 +529,18 @@ class EMfields3D                // :public Field
     double ***Byn;
     /*! Bzn: magnetic field Z-component (indexX, indexY, indexZ), defined on nodes */
     double ***Bzn;
+    /*! Bxthc: implicit magnetic field X-component (indexX, indexY, indexZ), defined on central points between nodes */
+    double ***Bxthc;
+    /*! Bythc: implicit magnetic field Y-component (indexX, indexY, indexZ), defined on central points between nodes */
+    double ***Bythc;
+    /*! Bzthc: implicit magnetic field Z-component (indexX, indexY, indexZ), defined on central points between nodes */
+    double ***Bzthc;
+    /*! Bxthn: implicit magnetic field X-component (indexX, indexY, indexZ), defined on nodes */
+    double ***Bxthn;
+    /*! Bythn: implicit magnetic field Y-component (indexX, indexY, indexZ), defined on nodes */
+    double ***Bythn;
+    /*! Bzthn: implicit magnetic field Z-component (indexX, indexY, indexZ), defined on nodes */
+    double ***Bzthn;
 
     // *************************************
     // TEMPORARY ARRAY

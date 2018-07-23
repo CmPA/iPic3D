@@ -103,6 +103,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Bxn = newArr3(double, nxn, nyn, nzn);
   Byn = newArr3(double, nxn, nyn, nzn);
   Bzn = newArr3(double, nxn, nyn, nzn);
+  Bxthn = newArr3(double, nxn, nyn, nzn);
+  Bythn = newArr3(double, nxn, nyn, nzn);
+  Bzthn = newArr3(double, nxn, nyn, nzn);
   rhon = newArr3(double, nxn, nyn, nzn);
   Jx = newArr3(double, nxn, nyn, nzn);
   Jy = newArr3(double, nxn, nyn, nzn);
@@ -134,6 +137,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Bxc = newArr3(double, nxc, nyc, nzc);
   Byc = newArr3(double, nxc, nyc, nzc);
   Bzc = newArr3(double, nxc, nyc, nzc);
+  Bxthc = newArr3(double, nxc, nyc, nzc);
+  Bythc = newArr3(double, nxc, nyc, nzc);
+  Bzthc = newArr3(double, nxc, nyc, nzc);
   rhoc = newArr3(double, nxc, nyc, nzc);
   rhoh = newArr3(double, nxc, nyc, nzc);
 
@@ -181,26 +187,62 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   // move from krylov space to physical space
   solver2phys(Exth, Eyth, Ezth, xkrylov, nxn, nyn, nzn);
 
+  // Compute new E
   addscale(1 / th, -(1.0 - th) / th, Ex, Exth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ey, Eyth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ez, Ezth, nxn, nyn, nzn);
 
-  // apply to smooth to electric field 3 times
-  smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
-  smoothE(Smooth, vct, col);
+  // Compute new Bth, B on centres and nodes (might want to optimise  this)
+  // Curl(Eth) 
+  grid->curlN2C(tempXC, tempYC, tempZC, Exth, Eyth, Ezth);
+  // Bth = Bn - (dt/2) Curl(Eth)
+  eq(Bxthc, Bxc, nxc, nyc, nzc);
+  eq(Bythc, Byc, nxc, nyc, nzc);
+  eq(Bzthc, Bzc, nxc, nyc, nzc);
+  addscale(-dt/2.0, Bxthc, tempXC, nxc, nyc, nzc); 
+  addscale(-dt/2.0, Bythc, tempYC, nxc, nyc, nzc); 
+  addscale(-dt/2.0, Bzthc, tempZC, nxc, nyc, nzc);
+  // B = 2 Bth - Bn
+  addscale(1 / th, -(1.0 - th) / th, Bxc, Bxthc, nxc, nyc, nzc);
+  addscale(1 / th, -(1.0 - th) / th, Byc, Bythc, nxc, nyc, nzc);
+  addscale(1 / th, -(1.0 - th) / th, Bzc, Bzthc, nxc, nyc, nzc);
+  // Interpolate to nodes
+  communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Bxthc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Bythc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+  communicateCenterBC(nxc, nyc, nzc, Bzthc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+  grid->interpC2N(Bxn, Bxc);
+  grid->interpC2N(Byn, Byc);
+  grid->interpC2N(Bzn, Bzc);
+  grid->interpC2N(Bxthn, Bxthc);
+  grid->interpC2N(Bythn, Bythc);
+  grid->interpC2N(Bzthn, Bzthc);
 
-  // communicate so the interpolation can have good values
+
+  // apply to smooth to electric field 3 times
+//  smoothE(Smooth, vct, col);
+//  smoothE(Smooth, vct, col);
+//  smoothE(Smooth, vct, col);
+
+  // Communicate nodes for the interpolation to the particles
   communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Eyth, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ezth, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ex,   col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Bxthn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Bythn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Bzthn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
   // OpenBC
-  BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
-  BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
+  //BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
+  //BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
 
 for (int i=1; i<nxn-1; i++) {
   printf("%3d %13.6e %13.6e %13.6e \n",i, Exth[i][1][1], Eyth[i][1][1], Ezth[i][1][1]);
@@ -252,8 +294,32 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   communicateNodeBC(nxn, nyn, nzn, vectY, 1, 1, 1, 1, 1, 1, vct);
   communicateNodeBC(nxn, nyn, nzn, vectZ, 1, 1, 1, 1, 1, 1, vct);
 
+  // Compute new Bth on centres and nodes
+  // Curl(Eth)
+  grid->curlN2C(tempXC, tempYC, tempZC, vectX, vectY, vectZ);
+  communicateCenterBC(nxc, nyc, nzc, tempXC, 1, 1, 1, 1, 1, 1, vct);
+  communicateCenterBC(nxc, nyc, nzc, tempYC, 1, 1, 1, 1, 1, 1, vct);
+  communicateCenterBC(nxc, nyc, nzc, tempZC, 1, 1, 1, 1, 1, 1, vct);
+  // Bthc = Bn - (dt/2) Curl(Eth)
+  // Bth = Bn - (dt/2) Curl(Eth)
+  eq(Bxthc, Bxc, nxc, nyc, nzc);
+  eq(Bythc, Byc, nxc, nyc, nzc);
+  eq(Bzthc, Bzc, nxc, nyc, nzc);
+  addscale(-dt/2.0, Bxthc, tempXC, nxc, nyc, nzc); 
+  addscale(-dt/2.0, Bythc, tempYC, nxc, nyc, nzc); 
+  addscale(-dt/2.0, Bzthc, tempZC, nxc, nyc, nzc);
+  communicateCenterBC(nxc, nyc, nzc, Bxthc, 1, 1, 1, 1, 1, 1, vct);
+  communicateCenterBC(nxc, nyc, nzc, Bythc, 1, 1, 1, 1, 1, 1, vct);
+  communicateCenterBC(nxc, nyc, nzc, Bzthc, 1, 1, 1, 1, 1, 1, vct);
+  // Interpolate to nodes
+  grid->interpC2N(Bxthn, Bxthc);
+  grid->interpC2N(Bythn, Bythc);
+  grid->interpC2N(Bzthn, Bzthc);
+  communicateNodeBC(nxn, nyn, nzn, Bxthn, 1, 1, 1, 1, 1, 1, vct);
+  communicateNodeBC(nxn, nyn, nzn, Bythn, 1, 1, 1, 1, 1, 1, vct);
+  communicateNodeBC(nxn, nyn, nzn, Bzthn, 1, 1, 1, 1, 1, 1, vct);
+
   // Update particle momentum
-  // (we assume that Eth and Bth have been updated in the previous iteration).
   for (int i=0; i<ns; i++) 
     part[i].mover_relativistic_mom_ES(grid, vct, vectX, vectY, vectZ);
 
@@ -268,12 +334,6 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 
   //----------------------------------
   // Compute the residual:
-
-  // Curl(Eth)
-  grid->curlN2C(tempXC, tempYC, tempZC, vectX, vectY, vectZ);
-  communicateCenterBC(nxc, nyc, nzc, tempXC, 1, 1, 1, 1, 1, 1, vct);
-  communicateCenterBC(nxc, nyc, nzc, tempYC, 1, 1, 1, 1, 1, 1, vct);
-  communicateCenterBC(nxc, nyc, nzc, tempZC, 1, 1, 1, 1, 1, 1, vct);
 
   // Curl(Curl(Eth))
   grid->curlC2N(imageX, imageY, imageZ, tempXC, tempYC, tempZC);
@@ -300,10 +360,10 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 //      imageZ[i][j][k] = vectZ[i][j][k]*vectZ[i][j][k];
 //    }
 
-
-  addscale(-1, imageX, sourcesX,nxn, nyn, nzn); 
-  addscale(-1, imageY, sourcesY,nxn, nyn, nzn); 
-  addscale(-1, imageZ, sourcesZ,nxn, nyn, nzn); 
+  // Eth + (dt*dt/4) Curl(Curl(Eth)) + (dt/2) Jbar - (dt/2) Curl(Bn) - En
+  addscale(-1.0, imageX, sourcesX, nxn, nyn, nzn); 
+  addscale(-1.0, imageY, sourcesY, nxn, nyn, nzn); 
+  addscale(-1.0, imageZ, sourcesZ, nxn, nyn, nzn); 
 
   // move from physical space to krylov space
   phys2solver(im, imageX, imageY, imageZ, nxn, nyn, nzn);
@@ -3433,6 +3493,9 @@ EMfields3D::~EMfields3D() {
   delArr3(Bxn, nxn, nyn);
   delArr3(Byn, nxn, nyn);
   delArr3(Bzn, nxn, nyn);
+  delArr3(Bxthn, nxn, nyn);
+  delArr3(Bythn, nxn, nyn);
+  delArr3(Bzthn, nxn, nyn);
   delArr3(rhon, nxn, nyn);
   delArr3(Jx, nxn, nyn);
   delArr3(Jy, nxn, nyn);
@@ -3456,6 +3519,9 @@ EMfields3D::~EMfields3D() {
   delArr3(Bxc, nxc, nyc);
   delArr3(Byc, nxc, nyc);
   delArr3(Bzc, nxc, nyc);
+  delArr3(Bxthc, nxc, nyc);
+  delArr3(Bythc, nxc, nyc);
+  delArr3(Bzthc, nxc, nyc);
   delArr3(rhoc, nxc, nyc);
   delArr3(rhoh, nxc, nyc);
   // various stuff needs to be deallocated too
