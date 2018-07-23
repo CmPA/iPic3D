@@ -242,7 +242,7 @@ void c_Solver::FinalMomentumUpdate() {
     part[i].mover_relativistic_mom_ES(grid, vct, EMf->getExth(), EMf->getEyth(), EMf->getEzth());
     // Update the velocity
     part[i].mover_relativistic_vel(grid, vct);
-  } 
+  }
 
 }
 
@@ -274,7 +274,7 @@ void c_Solver::WriteConserved(int cycle) {
     }
     if (myrank == 0) {
       FILE* fd = fopen(cq.c_str(), "a");
-      fprintf(fd,"%6d %13.6e %13.6e %13.6e %13.6e %13.6e\n", cycle, (Eenergy + Benergy + TOTenergy), TOTmomentum, Eenergy, Benergy, TOTenergy);
+      fprintf(fd,"%6d %13.14e %13.6e %13.6e %13.6e %13.6e\n", cycle, (Eenergy + Benergy + TOTenergy), TOTmomentum, Eenergy, Benergy, TOTenergy);
       fclose(fd);
     }
     // // Velocity distribution
@@ -308,8 +308,12 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0 ||
-        cycle==col->getLast_cycle())       WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    if (cycle%(col->getFieldOutputCycle())==0 || cycle==col->getLast_cycle()) {
+       EMf->setZeroDensities();
+       EMf->GatherJ(grid, vct, part);
+       EMf->GatherRho(grid, vct, part);
+       WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    }
     if (cycle%(col->getParticlesOutputCycle())==0 ||
         cycle==col->getLast_cycle())      WritePartclH5hut(ns, grid, part, col, vct, cycle);
 

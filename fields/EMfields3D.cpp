@@ -310,6 +310,24 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 
 }
 
+void EMfields3D::GatherJ(Grid * grid, VirtualTopology3D * vct, Particles3D * part) {
+  
+  for (int i=0; i<ns; i++) {
+    // Gather J for output
+    part[i].gatherJ(Jxs, Jys, Jzs, i, grid, vct);
+    communicateGhostJ(i, vct);
+  }
+}
+
+void EMfields3D::GatherRho(Grid * grid, VirtualTopology3D * vct, Particles3D * part) {
+
+  for (int i=0; i<ns; i++) {
+    // Gather Rho for output
+    part[i].gatherRho(rhons, i, grid, vct);
+    communicateGhostRho(i, vct);
+  }
+}
+
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
 
@@ -894,6 +912,23 @@ void EMfields3D::communicateGhostJbar(VirtualTopology3D * vct) {
 
 }
 
+void EMfields3D::communicateGhostJ(int ns, VirtualTopology3D * vct) {
+  // interpolate adding common nodes among processors
+  communicateInterp(nxn, nyn, nzn, ns, Jxs, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, Jys, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, Jzs, 0, 0, 0, 0, 0, 0, vct);
+
+  communicateNode_P(nxn, nyn, nzn, Jxs, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, Jys, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, Jzs, ns, vct);
+}
+
+void EMfields3D::communicateGhostRho(int ns, VirtualTopology3D * vct) {
+  // interpolate adding common nodes among processors
+  communicateInterp(nxn, nyn, nzn, ns, rhons, 0, 0, 0, 0, 0, 0, vct);
+  communicateNode_P(nxn, nyn, nzn, rhons, ns, vct);
+}
+
 
 /** add an amount of charge density to charge density field at node X,Y */
 void Moments::addRho(double weight[][2][2], int X, int Y, int Z) {
@@ -1082,23 +1117,6 @@ void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is) {
 
 /*! set to 0 all the densities fields */
 void EMfields3D::setZeroDensities() {
-  for (register int i = 0; i < nxn; i++)
-    for (register int j = 0; j < nyn; j++)
-      for (register int k = 0; k < nzn; k++) {
-        Jx  [i][j][k] = 0.0;
-        Jxh [i][j][k] = 0.0;
-        Jy  [i][j][k] = 0.0;
-        Jyh [i][j][k] = 0.0;
-        Jz  [i][j][k] = 0.0;
-        Jzh [i][j][k] = 0.0;
-        rhon[i][j][k] = 0.0;
-      }
-  for (register int i = 0; i < nxc; i++)
-    for (register int j = 0; j < nyc; j++)
-      for (register int k = 0; k < nzc; k++) {
-        rhoc[i][j][k] = 0.0;
-        rhoh[i][j][k] = 0.0;
-      }
   for (register int kk = 0; kk < ns; kk++)
     for (register int i = 0; i < nxn; i++)
       for (register int j = 0; j < nyn; j++)
@@ -1107,12 +1125,6 @@ void EMfields3D::setZeroDensities() {
           Jxs  [kk][i][j][k] = 0.0;
           Jys  [kk][i][j][k] = 0.0;
           Jzs  [kk][i][j][k] = 0.0;
-          pXXsn[kk][i][j][k] = 0.0;
-          pXYsn[kk][i][j][k] = 0.0;
-          pXZsn[kk][i][j][k] = 0.0;
-          pYYsn[kk][i][j][k] = 0.0;
-          pYZsn[kk][i][j][k] = 0.0;
-          pZZsn[kk][i][j][k] = 0.0;
         }
 
 }
@@ -3384,7 +3396,7 @@ double EMfields3D::getEenergy(void) {
   for (int i = 1; i < nxn - 2; i++)
     for (int j = 1; j < nyn - 2; j++)
       for (int k = 1; k < nzn - 2; k++)
-        localEenergy += .5 * dx * dy * dz * (Ex[i][j][k] * Ex[i][j][k] + Ey[i][j][k] * Ey[i][j][k] + Ez[i][j][k] * Ez[i][j][k]);
+        localEenergy += .5 * dx*dy*dz * (Ex[i][j][k]*Ex[i][j][k]+Ey[i][j][k]*Ey[i][j][k] + Ez[i][j][k]*Ez[i][j][k]);
 
   MPI_Allreduce(&localEenergy, &totalEenergy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalEenergy);
@@ -3394,16 +3406,10 @@ double EMfields3D::getEenergy(void) {
 double EMfields3D::getBenergy(void) {
   double localBenergy = 0.0;
   double totalBenergy = 0.0;
-  double Bxt = 0.0;
-  double Byt = 0.0;
-  double Bzt = 0.0;
-  for (int i = 1; i < nxn - 2; i++)
-    for (int j = 1; j < nyn - 2; j++)
-      for (int k = 1; k < nzn - 2; k++){
-        Bxt = Bxn[i][j][k]+Fext*Bx_ext[i][j][k];
-        Byt = Byn[i][j][k]+Fext*By_ext[i][j][k];
-        Bzt = Bzn[i][j][k]+Fext*Bz_ext[i][j][k];
-        localBenergy += .5*dx*dy*dz*(Bxt*Bxt + Byt*Byt + Bzt*Bzt);
+  for (int i = 1; i < nxc - 1; i++)
+    for (int j = 1; j < nyc - 1; j++)
+      for (int k = 1; k < nzc - 1; k++){
+        localBenergy += .5 * dx*dy*dz * (Bxc[i][j][k]*Bxc[i][j][k] + Byc[i][j][k]*Byc[i][j][k] + Bzc[i][j][k]*Ez[i][j][k]);
       }
 
   MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

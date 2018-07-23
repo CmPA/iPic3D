@@ -43,6 +43,15 @@ void addValue(double*** tgt, double weight[][2][2], int X, int Y, int Z, double 
       }
 }
 
+void addValueSp(double**** tgt, double weight[][2][2], int X, int Y, int Z, double invVOL, int ns) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++) {
+        const double temp = weight[i][j][k] * invVOL;
+        tgt[ns][X - i][Y - j][Z - k] += temp;
+      }
+}
+
 
 #define min(a,b) (((a)<(b))?(a):(b));
 #define max(a,b) (((a)>(b))?(a):(b));
@@ -503,6 +512,101 @@ void Particles3Dcomm::gatherJbar(double*** Jx, double*** Jy, double*** Jz, Grid 
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = wp * weight[ii][jj][kk];
       addValue(Jz, temp, ix, iy, iz, invVOL);
+    }
+  }
+}
+
+// Gather J for each species (for output only)
+void Particles3Dcomm::gatherJ(double**** Jx, double**** Jy, double**** Jz, int ns, Grid * grid, VirtualTopology3D * vct) {
+
+  const double inv_dx = 1.0 / dx;
+  const double inv_dy = 1.0 / dy;
+  const double inv_dz = 1.0 / dz;
+  const double nxn = grid->getNXN();
+  const double nyn = grid->getNYN();
+  const double nzn = grid->getNZN();
+  double invVOL = grid->getInvVOL();
+
+  {
+    for (register long long i = 0; i < nop; i++)
+    {
+      double up = u[i];
+      double vp = v[i];
+      double wp = w[i];
+    
+      const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
+      const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
+      const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
+      double temp[2][2][2];
+      double xi[2], eta[2], zeta[2];
+      xi[0] = x[i] - grid->getXN(ix - 1, iy, iz);
+      eta[0] = y[i] - grid->getYN(ix, iy - 1, iz);
+      zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
+      xi[1] = grid->getXN(ix, iy, iz) - x[i];
+      eta[1] = grid->getYN(ix, iy, iz) - y[i];
+      zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+      double weight[2][2][2];
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+      // add current density - X
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = up * weight[ii][jj][kk];
+      addValueSp(Jx, temp, ix, iy, iz, invVOL, ns);
+      // add current density - Y
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vp * weight[ii][jj][kk];
+      addValueSp(Jy, temp, ix, iy, iz, invVOL, ns);
+      // add current density - Z
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = wp * weight[ii][jj][kk];
+      addValueSp(Jz, temp, ix, iy, iz, invVOL, ns);
+    }
+  }
+}
+
+// Gather J for each species (for output only)
+void Particles3Dcomm::gatherRho(double**** rho, int ns, Grid * grid, VirtualTopology3D * vct) {
+  const double inv_dx = 1.0 / dx;
+  const double inv_dy = 1.0 / dy;
+  const double inv_dz = 1.0 / dz;
+  const double nxn = grid->getNXN();
+  const double nyn = grid->getNYN();
+  const double nzn = grid->getNZN();
+  double invVOL = grid->getInvVOL();
+
+  {
+    for (register long long i = 0; i < nop; i++)
+    {
+      const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
+      const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
+      const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
+      double temp[2][2][2];
+      double xi[2], eta[2], zeta[2];
+      xi[0] = x[i] - grid->getXN(ix - 1, iy, iz);
+      eta[0] = y[i] - grid->getYN(ix, iy - 1, iz);
+      zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
+      xi[1] = grid->getXN(ix, iy, iz) - x[i];
+      eta[1] = grid->getYN(ix, iy, iz) - y[i];
+      zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+      double weight[2][2][2];
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+      // add charge density
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = weight[ii][jj][kk];
+      addValueSp(rho, temp, ix, iy, iz, invVOL, ns);
     }
   }
 }

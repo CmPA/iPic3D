@@ -24,15 +24,15 @@ int main(int argc, char **argv) {
 
     if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
 
-    // Update particle position
+    // Push particle position half a step
     KCode.ParticlesMover();
 
     // Calculate E and B fields
     KCode.CalculateField();
 
-cout << "final momentum update" << endl;
-    // Update the momentum and velocity
+    // Final position/velocity update, moment gathering for output
     KCode.FinalMomentumUpdate();
+    KCode.ParticlesMover();
 
     /* --------------- */
     /* 3- Output files */

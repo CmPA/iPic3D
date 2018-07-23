@@ -456,9 +456,9 @@ int Particles3D::mover_relativistic_pos(Grid * grid, VirtualTopology3D * vct) {
     double wp = w[rest];
 
     // Move particles
-    xp += up * dt;
-    yp += vp * dt;
-    zp += wp * dt;
+    xp += up * dt/2.0;
+    yp += vp * dt/2.0;
+    zp += wp * dt/2.0;
 
     x[rest] = xp;
     y[rest] = yp;

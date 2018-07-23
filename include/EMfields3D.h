@@ -242,9 +242,14 @@ class EMfields3D                // :public Field
     /*! smooth the electric field */
     void smoothE(double value, VirtualTopology3D * vct, Collective *col);
 
+    /*! Gather moments for output */
+    void GatherJ(Grid * grid, VirtualTopology3D * vct, Particles3D * part);
+    void GatherRho(Grid * grid, VirtualTopology3D * vct, Particles3D * part);
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
     void communicateGhostJbar(VirtualTopology3D * vct);
+    void communicateGhostJ(int ns, VirtualTopology3D * vct);
+    void communicateGhostRho(int ns, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
     void addToSpeciesMoments(const Moments & in, int is);
     /*! add an amount of charge density to charge density field at node X,Y,Z */
