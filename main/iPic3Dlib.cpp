@@ -239,7 +239,9 @@ void c_Solver::FinalMomentumUpdate() {
 
   for (int i=0; i<ns; i++) {
     // Recompute the moments with the new values of the fields
-    part[i].mover_relativistic_mom_ES(grid, vct, EMf->getExth(), EMf->getEyth(), EMf->getEzth());
+    // part[i].mover_relativistic_mom_ES(grid, vct, EMf->getExth(), EMf->getEyth(), EMf->getEzth()); // ES mover
+    part[i].mover_relativistic_mom_EM(grid, vct, EMf->getExth(), EMf->getEyth(), EMf->getEzth(),
+                                                 EMf->getBxthn(), EMf->getBythn(), EMf->getBzthn()); // EM mover
     // Update the velocity
     part[i].mover_relativistic_vel(grid, vct);
   }

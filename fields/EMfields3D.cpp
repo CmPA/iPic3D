@@ -244,8 +244,8 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   //BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
   //BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
 
-for (int i=1; i<nxn-1; i++) {
-  printf("%3d %13.6e %13.6e %13.6e \n",i, Exth[i][1][1], Eyth[i][1][1], Ezth[i][1][1]);
+for (int i=1; i<nxc-1; i++) {
+  printf("%3d %13.6e %13.6e %13.6e \n",i, Bxc[i][1][1], Byc[i][1][1], Bzc[i][1][1]);
 }
 }
 
@@ -321,7 +321,8 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 
   // Update particle momentum
   for (int i=0; i<ns; i++) 
-    part[i].mover_relativistic_mom_ES(grid, vct, vectX, vectY, vectZ);
+   // part[i].mover_relativistic_mom_ES(grid, vct, vectX, vectY, vectZ); // ES mover
+    part[i].mover_relativistic_mom_EM(grid, vct, vectX, vectY, vectZ, Bxthn, Bythn, Bzthn); // EM mover
 
   // Gather the current
   eqValue(0.0, Jx, nxn, nyn, nzn);
@@ -3469,7 +3470,7 @@ double EMfields3D::getBenergy(void) {
   for (int i = 1; i < nxc - 1; i++)
     for (int j = 1; j < nyc - 1; j++)
       for (int k = 1; k < nzc - 1; k++){
-        localBenergy += .5 * dx*dy*dz * (Bxc[i][j][k]*Bxc[i][j][k] + Byc[i][j][k]*Byc[i][j][k] + Bzc[i][j][k]*Ez[i][j][k]);
+        localBenergy += .5 * dx*dy*dz * (Bxc[i][j][k]*Bxc[i][j][k] + Byc[i][j][k]*Byc[i][j][k] + Bzc[i][j][k]*Bzc[i][j][k]);
       }
 
   MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

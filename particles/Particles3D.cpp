@@ -256,7 +256,7 @@ void Particles3D::get_El(const double weights[2][2][2], int ix, int iy, int iz, 
 
 }
 
-void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext){
+void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz){
 
   Bxl = 0.0;
   Byl = 0.0;
@@ -266,35 +266,58 @@ void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, 
   for (int i=0; i<=1; i++)
     for (int j=0; j<=1; j++)
       for (int k=0; k<=1; k++) {
-        Bxl += weights[i][j][k] * (Bx[ix-i][iy-j][iz-k] + Fext*Bx_ext[ix-i][iy-j][iz-k]);
-        Byl += weights[i][j][k] * (By[ix-i][iy-j][iz-k] + Fext*By_ext[ix-i][iy-j][iz-k]);
-        Bzl += weights[i][j][k] * (Bz[ix-i][iy-j][iz-k] + Fext*Bz_ext[ix-i][iy-j][iz-k]);
+        Bxl += weights[i][j][k] * Bx[ix-i][iy-j][iz-k];
+        Byl += weights[i][j][k] * By[ix-i][iy-j][iz-k];
+        Bzl += weights[i][j][k] * Bz[ix-i][iy-j][iz-k];
         l = l + 1;
       }
 }
 
-/** Relativistic EM mover with a Newton scheme: solve momentum equation */
-/** Particles have been moved already by mover_relativistic_pos **/
-/*
-int Particles3D::mover_relativistic_mom_EM(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
-  if (vct->getCartesian_rank() == 0) {
-    cout << "*** MOVER species " << ns << " ***" << NiterMover << " ITERATIONS   ****" << endl;
-  }
+/** Relativistic ES mover: solve momentum equation explicitly */
+int Particles3D::mover_relativistic_mom_ES(Grid * grid, VirtualTopology3D * vct, double*** Ex, double*** Ey, double*** Ez) {
   double start_mover_rel = MPI_Wtime();
   double weights[2][2][2];
-  // Get fields (at n+1/2 time level) for this processor
-  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
-  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
-  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
-  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
-  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
-  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
 
-  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
-  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
-  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+  for (long long rest = 0; rest < nop; rest++) {
+    // copy the particle
+    double xp = x[rest];
+    double yp = y[rest];
+    double zp = z[rest];
+    double up = u[rest];
+    double vp = v[rest];
+    double wp = w[rest];
 
-  double Fext = EMf->getFext();
+    double Exl = 0.0;
+    double Eyl = 0.0;
+    double Ezl = 0.0;
+    int ix;
+    int iy;
+    int iz;
+
+    // Get fields (at n+1/2 time level) at the particle position
+    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+    get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+
+    // Solve the momentum equation
+    double gp = 1.0 / sqrt(1.0 - up*up - vp*vp - wp*wp);
+    double pxp = up*gp;
+    double pyp = vp*gp;
+    double pzp = wp*gp;
+    double pxk = pxp + qom*dt*Exl;
+    double pyk = pyp + qom*dt*Eyl;
+    double pzk = pzp + qom*dt*Ezl;
+    // Update the momentum
+    mxp[rest] = pxk;
+    myp[rest] = pyk;
+    mzp[rest] = pzk;
+  }                   // END OF ALL THE PARTICLES
+
+}
+
+/** Relativistic EM mover: solve momentum equation with a Newton iteration particle by particle */
+int Particles3D::mover_relativistic_mom_EM(Grid * grid, VirtualTopology3D * vct, double*** Ex, double*** Ey, double*** Ez, double*** Bx, double*** By, double*** Bz) {
+  double start_mover_rel = MPI_Wtime();
+  double weights[2][2][2];
 
   for (long long rest = 0; rest < nop; rest++) {
     // copy the particle
@@ -317,10 +340,10 @@ int Particles3D::mover_relativistic_mom_EM(Grid * grid, VirtualTopology3D * vct,
 
     // Get fields (at n+1/2 time level) at the particle position
     get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
-    get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
     get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+    get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz);
 
-    // Precondition the newton variables
+    // Precondition the newton variables (can be changed)
     double gp = 1. / sqrt(1. - up*up - vp*vp - wp*wp);
     double pxp = up*gp;
     double pyp = vp*gp;
@@ -332,6 +355,7 @@ int Particles3D::mover_relativistic_mom_EM(Grid * grid, VirtualTopology3D * vct,
 
     double err = 1.;
     // Newton step: maximum number of iterations specified in input file
+    // Jacobian is inverted manually for speed
     for (int nk = 0; nk < NiterMover; nk++) {
       // Residuals
       double F1 = pxk - pxp - qom*dt*(Exl + (pyk+pyp)/(gk+gp)*Bzl - (pzk+pzp)/(gk+gp)*Byl);
@@ -378,64 +402,11 @@ int Particles3D::mover_relativistic_mom_EM(Grid * grid, VirtualTopology3D * vct,
       if (err < CGtol) break;
     } // END OF THE NEWTON ITERATION
 
-    // Update the final position and velocity
-    // Needs to distinguish between a final update (after the fields have converged) and a temporary one (during NK iteration)
-    // E.g. with an input parameter "mode"
-    // Also needs 3 additional variables mxp,myp,mzp for the particles
-    mxp[rest] = pxk;
-    myp[rest] = pyk;
-    mzp[rest] = pzk;
-  } // END OF ALL THE PARTICLES
-
-  // timeTasks.addto_communicate();
-  return (0);                   // exit succesfully (hopefully) 
-
-}
-*/
-
-/** Relativistic ES mover: solve momentum equation */
-/** Particles have been moved already by mover_relativistic_pos **/
-int Particles3D::mover_relativistic_mom_ES(Grid * grid, VirtualTopology3D * vct, double*** Ex, double*** Ey, double*** Ez) {
-  double start_mover_rel = MPI_Wtime();
-  double weights[2][2][2];
-//cout << "particle side E field" << endl;
-//for (int i = 0; i < nxn; i++)
-//    for (int j = 0; j < 1; j++)
-//      for (int k = 0; k < 1; k++)
-//        cout << Ex[i][j][k] << endl;
-  for (long long rest = 0; rest < nop; rest++) {
-    // copy the particle
-    double xp = x[rest];
-    double yp = y[rest];
-    double zp = z[rest];
-    double up = u[rest];
-    double vp = v[rest];
-    double wp = w[rest];
-
-    double Exl = 0.0;
-    double Eyl = 0.0;
-    double Ezl = 0.0;
-    int ix;
-    int iy;
-    int iz;
-
-    // Get fields (at n+1/2 time level) at the particle position
-    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
-    get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
-
-    // Solve the momentum equation
-    double gp = 1.0 / sqrt(1.0 - up*up - vp*vp - wp*wp);
-    double pxp = up*gp;
-    double pyp = vp*gp;
-    double pzp = wp*gp;
-    double pxk = pxp + qom*dt*Exl;
-    double pyk = pyp + qom*dt*Eyl;
-    double pzk = pzp + qom*dt*Ezl;
     // Update the momentum
     mxp[rest] = pxk;
     myp[rest] = pyk;
     mzp[rest] = pzk;
-  } // END OF ALL THE PARTICLES
+  }                  // END OF ALL THE PARTICLES
 
 }
 
