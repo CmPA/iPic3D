@@ -36,7 +36,7 @@ Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./B;
 elseif(strcmp(leggo,'h5'))
     % the next line is specific for HRmaha3D3
      
-    namefile = 'DoubleHarris-Fields'
+    namefile = [case_name '-Fields']
     fn=[dir,namefile,'_',ncycle,'.h5'];
 
     hinfo=hdf5info(fn);

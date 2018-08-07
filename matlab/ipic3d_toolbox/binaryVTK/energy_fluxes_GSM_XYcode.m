@@ -27,6 +27,7 @@ ntime = datestr(time/86400,'HH:MM:SS UT')
 
 ncycle = num2str(cycle,'%06d');
 
+case_name='GEM'
 import_h5_binvtk   
 
 
