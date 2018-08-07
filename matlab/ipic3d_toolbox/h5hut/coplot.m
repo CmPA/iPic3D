@@ -39,7 +39,7 @@ caxis(range1)
 %ay2=((ay-range2(1))/(range2(2)-range2(1))*(range1(2)-range1(2))+range1(1));
 
 
-ff=contour(x,y,ay,linspace(range2(1),range2(2),60),'w');
+%ff=contour(x,y,ay,linspace(range2(1),range2(2),60),'w');
 
 
 xlabel(xlab,'fontsize',[18])

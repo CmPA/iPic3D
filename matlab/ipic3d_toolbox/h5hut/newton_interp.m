@@ -1,6 +1,7 @@
 function dx = newton_interp(t, x)
   global ex ey ez bx by bz xg yg  Lx Ly qom Rout
 xp=x(1:3);
+xp(2)=mod(xp(2),Ly)
 vp=x(4:6);
 dx = zeros(6,1);
 

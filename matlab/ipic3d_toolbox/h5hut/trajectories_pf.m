@@ -180,7 +180,7 @@ hold on
         random=1
         if(random)
         % random
-        xp=[0.5 Ly/2 0]+rand(1,3)*3;
+        xp=[0.5 Ly/20 0]+rand(1,3)*3;
         vmono = 8e-3;
         costh = rand(1,1)*2-1; sinth =1-costh^2;
         fi = 2*pi *rand(1,1);
@@ -203,7 +203,7 @@ hold on
     [t,y]=ode45(@newton_interp,0:dt:Tend ,[xp vp],opts);
     
     xout=y(:,1);
-    yout=y(:,2);
+    yout=mod(y(:,2),Ly);
     zout=y(:,3);
     vxout=y(:,4);
     vyout=y(:,5);

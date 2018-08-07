@@ -5,8 +5,8 @@ addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
 folder_name = '/Users/gianni/Dropbox/Science/san_diego/high-res-steady-state'
 folder_name = '/Users/gianni/Downloads/pressure-anisotropy'
+folder_name = '/Users/giovannilapenta/Dropbox/Science/ucla/controlloE/picket-fence with divE-removed'
 folder_name = '/Users/giovannilapenta/Dropbox/Science/ucla/controlloE/picket-fencewithdivE'
-
 namefile = 'PF4-Fields';
 
 
@@ -130,7 +130,7 @@ i = 64000
     ylab='y'
     titolo=[ 'cycle=' num2str(i) '  \lambda_{De}(int) (color) A(contours)']
     
-    
+
     range1=[0 .1]; 
     range2=[0 0];
  
@@ -138,9 +138,24 @@ i = 64000
   coplot(i,xg,yg,lde,ath,xlab,ylab,titolo,range1, range2)
   titolo=[ 'cycle=' num2str(i) '  \rho_e(int) (color) A(contours)']
     figure(3)
-  coplot(i,xg,yg,rhoe,ath,xlab,ylab,titolo,range1, range2)
-  
+    subplot(2,2,1)
 
+  coplot(i,xg,yg,ne+ni,ath,xlab,ylab,'net \rho',[-.5 .5], range2)
+  load cm_new
+colormap(cm_kbwrk)
+  subplot(2,2,2)
+  coplot(i,xg,yg,(ne+ni).*xg,ath,xlab,ylab,'r \rho',[-20 20], range2)
+colormap(cm_kbwrk)
+  %subplot(2,2,4)
+  %coplot(i,xg,yg,cumsum((ne+ni).*xg,2)*dx,ath,xlab,ylab,titolo,[0 0], range2)
+subplot(2,2,3)
+  coplot(i,xg,yg,cumsum((ne+ni).*xg,2)*dx./xg/4/pi,ath,xlab,ylab,'(\int r \rho dr)/4\pir',[-.1 .1], range2)
+subplot(2,2,4)
+  coplot(i,xg,yg,ex,ath,xlab,ylab,'Ex',[0 0], range2)
+print -dpng 'withDiv.png'
+ 
+  
+return
   figure(2)
   subplot(3,1,1)
   iy=round(Ny/2);
@@ -169,3 +184,6 @@ plot(diag(xg(1+(Ny-1)/2:end,:)),diag(ben(1+(Ny-1)/2:end,:)))
   legend('P_B','P','P_{tot}')
   ylim([0 4e-7])
         xlabel('r')
+        
+        
+      
