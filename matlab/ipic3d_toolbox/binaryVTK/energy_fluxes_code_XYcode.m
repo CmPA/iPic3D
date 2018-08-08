@@ -10,7 +10,7 @@ addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 TRED77
 
 
-cycle = 15000
+cycle = 5000 %15000
 
 
 % Prepare string

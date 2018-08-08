@@ -3,8 +3,9 @@ addpath(genpath('../ipic3d_toolbox'));
 %clearvars -except Ncyc_ini Ncyc_max dir results_dir fraciz Ygsm
 
 
-dir='/shared/gianni/tred77/'
-dir='/Users/Gianni/Dropbox/Science/conferenze/2017/firenze/tred77_15000b/'
+dir='/data2/gianni/tred77/';
+%dir='/shared/gianni/tred77/'
+%dir='/Users/Gianni/Dropbox/Science/conferenze/2017/firenze/tred77_15000b/'
 global Lx Ly Lz Xgsmrange Ygsmrange Zgsmrange dx dy dz XLEN YLEN ZLEN initial_time Nx Ny Nz Dt
 
 
