@@ -1,4 +1,4 @@
-function [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
+function [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
     rho, Jx, Jy, Jz,... 
     Qbulkx, Qbulky, Qbulkz, Qenthx, Qenthy, Qenthz, Qhfx, Qhfy, Qhfz, ...
     Pxx, Pyy, Pzz, Pxy, Pxz, Pyz, x, y, z, dx, dy, dz, qom, radius)
@@ -15,19 +15,30 @@ Vx=imgaussfilt3(Jx./rho,radius);
 Vy=imgaussfilt3(Jy./rho,radius);
 Vz=imgaussfilt3(Jz./rho,radius);
 
-tmp = compute_div(x,y,z,Pxx,Pxy,Pxz, radius, 1);
+tmp = compute_div(x,y,z,Pxx,Pxy,Pxz, radius, 0);
 udivP = tmp.* Vx;
-tmp = compute_div(x,y,z,Pxy,Pyy,Pyz, radius, 1);
+tmp = compute_div(x,y,z,Pxy,Pyy,Pyz, radius, 0);
 udivP = udivP + tmp.* Vy;
-tmp = compute_div(x,y,z,Pxz,Pyz,Pzz, radius, 1);
+tmp = compute_div(x,y,z,Pxz,Pyz,Pzz, radius, 0);
 udivP = udivP + tmp.* Vz;
 
-[tx, ty, tz] = gradient(imgaussfilt3(permute(Jx./rho,[2 1 3]),radius), dx, dy, dz);
+p=(Pxx+Pyy+Pzz)/3;
+pdivv = imgaussfilt3(p,radius).*compute_div(x,y,z,Vx,Vy,Vz, radius, 0);
+
+[tx, ty, tz] = gradient(imgaussfilt3(permute(p,[2 1 3]),radius), dx, dy, dz);
 tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-PgradV = tx.*Pxx + ty.*Pxy +tz.* Pxz;
-[tx, ty, tz] = gradient(imgaussfilt3(permute(Jy./rho,[2 1 3]),radius), dx, dy, dz);
+ugradp = tx.*Vx + ty.*Vy + tz.*Vz;
+
+[tx, ty, tz] = gradient(permute(Vx,[2 1 3]), dx, dy, dz);
 tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-PgradV = PgradV + tx.*Pxy + ty.*Pyy +tz.* Pyz;
-[tx, ty, tz] = gradient(imgaussfilt3(permute(Jz./rho,[2 1 3]),radius), dx, dy, dz);
+PgradV = tx.*imgaussfilt3(Pxx,radius)+ ty.*imgaussfilt3(Pxy,radius) +tz.* imgaussfilt3(Pxz,radius);
+[tx, ty, tz] = gradient(permute(Vy,[2 1 3]), dx, dy, dz);
 tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-PgradV = PgradV + tx.*Pxz + ty.*Pyz +tz.* Pzz;
+PgradV = PgradV + tx.*imgaussfilt3(Pxy,radius) + ty.*imgaussfilt3(Pyy,radius) +tz.* imgaussfilt3(Pyz,radius);
+[tx, ty, tz] = gradient(permute(Vz,[2 1 3]), dx, dy, dz);
+tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
+PgradV = PgradV + tx.*imgaussfilt3(Pxz,radius) + ty.*imgaussfilt3(Pyz,radius) +tz.* imgaussfilt3(Pzz,radius);
+
+divUP = compute_div(x,y,z,Pxx.*Vx,Pxy.*Vy,Pxz.*Vz, radius, 0);
+divUP = divUP + compute_div(x,y,z,Pxy.*Vx,Pyy.*Vy,Pyz.*Vz, radius, 0);
+divUP = divUP + compute_div(x,y,z,Pxz.*Vx,Pyz.*Vy,Pzz.*Vz, radius, 0);
