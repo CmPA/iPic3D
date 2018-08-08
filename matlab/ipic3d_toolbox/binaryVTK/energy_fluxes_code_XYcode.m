@@ -8,7 +8,7 @@ addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 
 
 TRED77
-
+case_name='GEM';
 
 cycle = 5000 %15000
 
@@ -166,10 +166,21 @@ end
 if(electrons)
 
 
-[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
+[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
     rhoe, Jex, Jey, Jez,... 
     Qbulkex, Qbulkey, Qbulkez, Qenthex, Qenthey, Qenthez, Qhfex, Qhfey, Qhfez, ...
     Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom_ele, radius);
+
+if(saveVTK)
+    savevtk_bin(divQbulk*nWm3, [dir 'divQbulke' ncycle '.vtk'],'divQbulke',dx,dy,dz,0,0,0);
+    savevtk_bin(divQenth*nWm3, [dir 'divQenthe' ncycle '.vtk'],'divQenthe',dx,dy,dz,0,0,0);
+    savevtk_bin(divQhf*nWm3, [dir 'divQhfe' ncycle '.vtk'],'divQhfe',dx,dy,dz,0,0,0);
+    savevtk_bin(udivP*nWm3, [dir 'udivPe' ncycle '.vtk'],'udivPe',dx,dy,dz,0,0,0);
+    savevtk_bin(PgradV*nWm3, [dir 'PgradVe' ncycle '.vtk'],'PgradVe',dx,dy,dz,0,0,0);
+    savevtk_bin(ugradp*nWm3, [dir 'ugradpe' ncycle '.vtk'],'ugradpe',dx,dy,dz,0,0,0);
+    savevtk_bin(pdivv*nWm3, [dir 'pdivve' ncycle '.vtk'],'pdivve',dx,dy,dz,0,0,0);
+    savevtk_bin(divUP*nWm3, [dir 'divUPe' ncycle '.vtk'],'divUPe',dx,dy,dz,0,0,0);
+end
 
 labelc = 'nW/m^3';
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JedotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JeE',[-1 1]*0e-10, radius,1);
@@ -208,9 +219,13 @@ tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qhfez(ir,jr,kr),3)*mWm2,AA
 
 
 labelc = 'nW/m^3';
-
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divUP(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'divUPe',[-1 1]*0e-9, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(udivP(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPe',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(ugradp(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Ugradpe',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(udivP(ir,jr,kr)-ugradp(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'offUdivPe',[-1 1]*0e-9, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(PgradV(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'PgradVe',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(pdivv(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'pdivVe',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(PgradV(ir,jr,kr)-pdivv(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'offPgradVe',[-1 1]*0e-9, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Ubulk(ir,jr,kr).*divVe(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'UbulkdivVe',[-1 1]*0e-9, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Uth(ir,jr,kr).*divVe(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'UthdivVe',[-1 1]*0e-9, radius, 2);
 
@@ -220,9 +235,9 @@ tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(DUbulkDt(ir,jr,kr),3)*nWm3
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(DUthDt(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'DUtheDt',[-1 1]*0e-9, radius, 2);
 
 if(saveVTK)
-    savevtkvector_bin(-Qhfex*mWm2, Qhfey*mWm2, Qhfez*mWm2, [dir 'Qhfe' ncycle '.vtk'],'Qhfe',dx,dy,dz,0,0,0);
-    savevtkvector_bin(-Qenthex*mWm2, Qenthey*mWm2, Qenthez*mWm2, [dir 'Qenthe' ncycle '.vtk'],'Qenthe',dx,dy,dz,0,0,0);
-    savevtkvector_bin(-Qbulkex*mWm2, Qbulkey*mWm2, Qbulkez*mWm2, [dir 'Qbulke' ncycle '.vtk'],'Qbulke',dx,dy,dz,0,0,0);
+    savevtkvector_bin(Qhfex*mWm2, Qhfey*mWm2, Qhfez*mWm2, [dir 'Qhfe' ncycle '.vtk'],'Qhfe',dx,dy,dz,0,0,0);
+    savevtkvector_bin(Qenthex*mWm2, Qenthey*mWm2, Qenthez*mWm2, [dir 'Qenthe' ncycle '.vtk'],'Qenthe',dx,dy,dz,0,0,0);
+    savevtkvector_bin(Qbulkex*mWm2, Qbulkey*mWm2, Qbulkez*mWm2, [dir 'Qbulke' ncycle '.vtk'],'Qbulke',dx,dy,dz,0,0,0);
     savevtk_bin(DUbulkDt*nWm3,[dir 'DUbulkedt' ncycle '.vtk'],'DUbulkedt',dx,dy,dz,0,0,0);
     savevtk_bin(DUthDt*nWm3,[dir 'DUthedt' ncycle '.vtk'],'DUthedt',dx,dy,dz,0,0,0);
 end
@@ -231,11 +246,21 @@ end
 
 
 if(ions)
-[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
+[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
     rhoi, Jix, Jiy, Jiz,... 
     Qbulkix, Qbulkiy, Qbulkiz, Qenthix, Qenthiy, Qenthiz, Qhfix, Qhfiy, Qhfiz, ...
     Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius);
 
+if(saveVTK)
+    savevtk_bin(divQbulk*nWm3, [dir 'divQbulki' ncycle '.vtk'],'divQbulki',dx,dy,dz,0,0,0);
+    savevtk_bin(divQenth*nWm3, [dir 'divQenthi' ncycle '.vtk'],'divQenthi',dx,dy,dz,0,0,0);
+    savevtk_bin(divQhf*nWm3, [dir 'divQhfi' ncycle '.vtk'],'divQhfi',dx,dy,dz,0,0,0);
+    savevtk_bin(udivP*nWm3, [dir 'udivPi' ncycle '.vtk'],'udivPi',dx,dy,dz,0,0,0);
+    savevtk_bin(PgradV*nWm3, [dir 'PgradVi' ncycle '.vtk'],'PgradVi',dx,dy,dz,0,0,0);
+    savevtk_bin(ugradp*nWm3, [dir 'ugradpi' ncycle '.vtk'],'ugradpi',dx,dy,dz,0,0,0);
+    savevtk_bin(pdivv*nWm3, [dir 'pdivvi' ncycle '.vtk'],'pdivvi',dx,dy,dz,0,0,0);
+    savevtk_bin(divUP*nWm3, [dir 'divUPi' ncycle '.vtk'],'divUPi',dx,dy,dz,0,0,0);
+end
 labelc = 'nW/m^3';
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JidotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JiE',[-1 1]*0e-10, radius,1);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQbulk(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'divQbulki',[-1 1]*0e-10, radius,1);
@@ -273,8 +298,13 @@ tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qhfiz(ir,jr,kr),3)*mWm2,AA
 
 
 labelc = 'nW/m^3';
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divUP(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'divUPi',[-1 1]*0e-9, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(udivP(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'UdivPi',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(ugradp(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Ugradpi',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(udivP(ir,jr,kr)-ugradp(ir,jr,kr),3)*nWm3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'offUdivPi',[-1 1]*0e-9, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(PgradV(ir,jr,kr),3)*nWm3,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'PgradVi',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(pdivv(ir,jr,kr),3)*nWm3,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'pdivVi',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(PgradV(ir,jr,kr)-pdivv(ir,jr,kr),3)*nWm3,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'offPgradVi',[-1 1]*0e-9, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Ubulk(ir,jr,kr).*divVi(ir,jr,kr),3)*nWm3,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'UbulkdivVi',[-1 1]*0e-9, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Uth(ir,jr,kr).*divVi(ir,jr,kr),3)*nWm3,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'UthdivVi',[-1 1]*0e-9, radius, 2);
 
@@ -302,4 +332,9 @@ end
 
 end
 
+
+
+!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) divUPe.png -trim +append comboe.png
+
+!/usr/local/bin/convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
 
