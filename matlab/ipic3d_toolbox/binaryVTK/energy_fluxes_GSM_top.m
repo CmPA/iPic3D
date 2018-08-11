@@ -8,7 +8,7 @@ addpath(genpath('~/iPic3D-github/matlab/ipic3d_toolbox')); % Point to the direct
 
 
 HRmaha3D3
-
+case_name='GEM';
 dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
 
 cycle = 80002  % for h5
@@ -27,9 +27,10 @@ ntime = datestr(time/86400,'HH:MM:SS UT')
 
 ncycle = num2str(cycle,'%06d');
 
+
 import_h5_binvtk   
 
-
+[X Z] = meshgrid(0:dx:Lx-dx,0:dz:Lz-dz);
 
 bufferX=round(Nx/20);
 bufferY=round(Ny/20);

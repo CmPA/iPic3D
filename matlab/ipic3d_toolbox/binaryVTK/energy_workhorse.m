@@ -2,7 +2,6 @@ cyl = 0
 
 [x,y,z]=meshgrid(0:dx:Lx,0:dy:Ly,0:dz:Lz);
 
-[X Y] = meshgrid(0:dx:Lx-dx,0:dy:Ly-dy);
 
 xc=Lx-linspace(0, Lx, Nx);
 yc=linspace(0, Ly, Ny);
@@ -36,12 +35,12 @@ divVi = compute_div(x,y,z,Vix,Viy,Viz, radius, cyl);
 Vex=-imgaussfilt(squeeze(mean(Vex(:,jr,:),2)),radius);
 Vey=imgaussfilt(squeeze(mean(Vey(:,jr,:),2)),radius);
 Vez=imgaussfilt(squeeze(mean(Vez(:,jr,:),2)),radius);
-AAze=vecpot(xc,zc,Vex,Vez);
+%AAze=vecpot(xc,zc,Vex,Vez);
 
 Vix=-imgaussfilt(squeeze(mean(Vix(:,jr,:),2)),radius);
 Viy=imgaussfilt(squeeze(mean(Viy(:,jr,:),2)),radius);
 Viz=imgaussfilt(squeeze(mean(Viz(:,jr,:),2)),radius);
-AAzi=vecpot(xc,zc,Vix,Viz);
+%AAzi=vecpot(xc,zc,Vix,Viz);
 
 AAz=vecpot(xc,yc,-mean(Bx(:,:,kr),3),mean(By(:,:,kr),3));
 Vx=-mean(Bx(:,:,kr),3);

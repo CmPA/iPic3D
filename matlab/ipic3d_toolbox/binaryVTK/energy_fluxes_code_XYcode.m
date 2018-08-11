@@ -31,6 +31,7 @@ electrons=true
 ions=true
 saveVTK=false
 
+[X Y] = meshgrid(0:dx:Lx-dx,0:dy:Ly-dy);
 
 bufferX=round(Nx/20);
 bufferY=round(Ny/20);
