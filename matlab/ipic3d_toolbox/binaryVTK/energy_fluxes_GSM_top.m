@@ -30,15 +30,6 @@ ncycle = num2str(cycle,'%06d');
 import_h5_binvtk   
 
 
-%Lx=dx*Nx;LZ=dy*Ny;Lz=Nz*dz;
-
-%[x,y,z]=meshgrid(0:dx:Lx-dx,0:dy:Ly-dy,0:dz:Lz-dz);
-
-[x,y,z]=meshgrid(0:dx:Lx,0:dy:Ly,0:dz:Lz);
-
-[X Z] = meshgrid(0:dx:Lx-dx,0:dz:Lz-dz);
-
-qom_ele = -256;
 
 bufferX=round(Nx/20);
 bufferY=round(Ny/20);
@@ -66,20 +57,13 @@ labely ='y/R_E';
 labelc = 'mW/m^2';
 skip=10
 
-% Compute J dot E
-JedotE=dot(Jex,Jey,Jez,Ex,Ey,Ez);
 
+% Call the heavy lifting
+energy_workhorse
 
-JedotEsm=dot(imgaussfilt3(Jex,radius),imgaussfilt3(Jey,radius),imgaussfilt3(Jez,radius), ...
-    imgaussfilt3(Ex,radius),imgaussfilt3(Ey,radius),imgaussfilt3(Ez,radius));
-
-
-JidotE=dot(Jix,Jiy,Jiz,Ex,Ey,Ez);
-
-JdotE=JedotE+JidotE;
-
-[Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
-divS = compute_div(x,y,z,Sx,Sy,Sz,radius, 1);
+%
+%Elm energy
+%
 
 Sx=Sx*code_E*code_B/mu0;
 Sy=Sy*code_E*code_B/mu0;
@@ -91,8 +75,6 @@ divS = divS*nWm3;
 % by 4pi and rescale it with mWm2 like all other fluxes the result is
 % identical.
 %
-xc=Lx-linspace(0, Lx, Nx);
-zc=linspace(0, Lz, Nz);
 
 %
 % n, J and p from the code need to be multiplied by 4pi and then
@@ -100,39 +82,13 @@ zc=linspace(0, Lz, Nz);
 % By the same token, all particle energy fluxes need the 4 pi
 % multiplication, but not the Poynting flux that is based on the fields.
 %
-Wm3 = code_E*code_J*4*pi; %4pi is due to the usal division by 4pi of the dencity
-nWm3 = 1e9*Wm3;
-mWm2= Wm3*code_dp*1e3
+
 
 %
 % Electrons
 %
 
 
-%for iz=135
-%kr=-5:5
-%kr=kr+round(iz);
-
-
-% Vix=Jix./rhoi;Viz=Jiz./rhoi;
-% AAzi=vecpot(xc,zc,-squeeze(mean(Vix(:,jr,:),2)),squeeze(mean(Viz(:,jr,:),2)));
-
-Vex=Jex./rhoe;Vey=Jey./rhoe;Vez=Jez./rhoe;
-divVe = compute_div(x,y,z,Vex,Vey,Vez, radius, 1);
-
-Vex=-imgaussfilt(squeeze(mean(Vex(:,jr,:),2)),radius);
-Vey=imgaussfilt(squeeze(mean(Vey(:,jr,:),2)),radius);
-Vez=imgaussfilt(squeeze(mean(Vez(:,jr,:),2)),radius);
-AAze=vecpot(xc,zc,Vex,Vez);
-
-
-Vix=Jix./rhoi;Viy=Jiy./rhoi;Viz=Jiz./rhoi;
-divVi = compute_div(x,y,z,Vix,Viy,Viz, radius, 1);
-
-Vix=-imgaussfilt(squeeze(mean(Vix(:,jr,:),2)),radius);
-Viy=imgaussfilt(squeeze(mean(Viy(:,jr,:),2)),radius);
-Viz=imgaussfilt(squeeze(mean(Viz(:,jr,:),2)),radius);
-AAze=vecpot(xc,zc,Vix,Viz);
 
 poynting=true
 electrons=true
@@ -163,12 +119,6 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Sperp2(ir,jr,kr),2)*1e
 end
 
 if(electrons)
-
-
-[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
-    rhoe, Jex, Jey, Jez,... 
-    Qbulkex, Qbulkey, Qbulkez, Qenthex, Qenthey, Qenthez, Qhfex, Qhfey, Qhfez, ...
-    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom_ele, radius);
 
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JedotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),'AVG_Z','JeE',[-1 1]*0e-10, radius,1);
@@ -213,8 +163,7 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(PgradV(ir,jr,kr),2)*nW
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Ubulk(ir,jr,kr).*divVe(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr), 'AVG_Z','UbulkdivVe',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Uth(ir,jr,kr).*divVe(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr), 'AVG_Z','UthdivVe',[-1 1]*0e-9, radius, 2);
 
-DUbulkDt = JedotE - Ubulk.*divVe - udivP;
-DUthDt = -Uth.*divVe -PgradV;
+
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUbulkDt(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr), 'AVG_Z','DUbulkeDt',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUthDt(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr), 'AVG_Z','DUtheDt',[-1 1]*0e-9, radius, 2);
 
@@ -222,10 +171,6 @@ end
 
 
 if(ions)
-[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV] = compute_energy_balance( ...
-    rhoi, Jix, Jiy, Jiz,... 
-    Qbulkix, Qbulkiy, Qbulkiz, Qenthix, Qenthiy, Qenthiz, Qhfix, Qhfiy, Qhfiz, ...
-    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius);
 
 labelc = 'nW/m^3';
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JidotE(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr),'AVG_Z','JiE',[-1 1]*0e-10, radius,1);
@@ -269,8 +214,6 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(PgradV(ir,jr,kr),2)*nW
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Ubulk(ir,jr,kr).*divVi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr) , 'AVG_Z','UbulkdivVi',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(Uth(ir,jr,kr).*divVi(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr) , 'AVG_Z','UthdivVi',[-1 1]*0e-9, radius, 2);
 
-DUbulkDt = JidotE - Ubulk.*divVi - udivP;
-DUthDt = -Uth.*divVi -PgradV;
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUbulkDt(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr), 'AVG_Z','DUbulkiDt',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUthDt(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr), 'AVG_Z','DUthiDt',[-1 1]*0e-9, radius, 2);
 
