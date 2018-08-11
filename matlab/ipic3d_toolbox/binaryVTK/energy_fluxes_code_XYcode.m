@@ -15,6 +15,8 @@ case_name='AH'
 cycle = 3000 %15000
 
 
+cyl = 0 % cartesian geometry
+
 % Prepare string
 
 
@@ -89,7 +91,7 @@ JidotE=dot(Jix,Jiy,Jiz,Ex,Ey,Ez);
 JdotE=JedotE+JidotE;
 
 [Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
-divS = compute_div(x,y,z,Sx,Sy,Sz,radius, 1);
+divS = compute_div(x,y,z,Sx,Sy,Sz,radius, cyl);
 
 Sx=Sx*code_E*code_B/mu0;
 Sy=Sy*code_E*code_B/mu0;
@@ -126,9 +128,9 @@ mWm2= Wm3*code_dp*1e3
 % AAzi=vecpot(xc,zc,-squeeze(mean(Vix(:,jr,:),2)),squeeze(mean(Viz(:,jr,:),2)));
 
 Vex=Jex./rhoe;Vey=Jey./rhoe;Vez=Jez./rhoe;
-divVe = compute_div(x,y,z,Vex,Vey,Vez, radius, 1);
+divVe = compute_div(x,y,z,Vex,Vey,Vez, radius, cyl);
 Vix=Jix./rhoi;Viy=Jiy./rhoi;Viz=Jiz./rhoi;
-divVi = compute_div(x,y,z,Vix,Viy,Viz, radius, 1);
+divVi = compute_div(x,y,z,Vix,Viy,Viz, radius, cyl);
 
 ygsm=1.8
 zcode = (ygsm - Ygsmrange(1)) * Lz/(Ygsmrange(2)-Ygsmrange(1))
@@ -181,7 +183,7 @@ if(electrons)
 [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
     rhoe, Jex, Jey, Jez,... 
     Qbulkex, Qbulkey, Qbulkez, Qenthex, Qenthey, Qenthez, Qhfex, Qhfey, Qhfez, ...
-    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom_ele, radius);
+    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom_ele, radius,cyl);
 
 if(saveVTK)
     savevtk_bin(divQbulk*nWm3, [dir 'divQbulke' ncycle '.vtk'],'divQbulke',dx,dy,dz,0,0,0);
@@ -261,7 +263,7 @@ if(ions)
 [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
     rhoi, Jix, Jiy, Jiz,... 
     Qbulkix, Qbulkiy, Qbulkiz, Qenthix, Qenthiy, Qenthiz, Qhfix, Qhfiy, Qhfiz, ...
-    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius);
+    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius,cyl);
 
 if(saveVTK)
     savevtk_bin(divQbulk*nWm3, [dir 'divQbulki' ncycle '.vtk'],'divQbulki',dx,dy,dz,0,0,0);
