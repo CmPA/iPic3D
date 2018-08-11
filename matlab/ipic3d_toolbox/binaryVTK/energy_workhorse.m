@@ -61,13 +61,3 @@ DUthDt = -Uth.*divVe -PgradV;
 end    
 
 
-if(ions)
-[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
-    rhoi, Jix, Jiy, Jiz,... 
-    Qbulkix, Qbulkiy, Qbulkiz, Qenthix, Qenthiy, Qenthiz, Qhfix, Qhfiy, Qhfiz, ...
-    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius,cyl);
-
-DUbulkDt = JidotE - Ubulk.*divVi - udivP;
-DUthDt = -Uth.*divVi -PgradV;
-
-end

@@ -7,7 +7,7 @@ addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-sim_name='tred77'
+sim_name='HRmaha3D3'
 switch sim_name
 case 'tred77'
     TRED77;
@@ -30,7 +30,7 @@ case 'HRmaha3D3'
     % time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
     %ADD initial time of the RUN
     time=time+initial_time; %(03*60+48)*60
-    ygsm=1.8;
+    ygsm=7.05;%1.8;
     zcode = (ygsm - Ygsmrange(1)) * Lz/(Ygsmrange(2)-Ygsmrange(1));
 otherwise
     print('no recognised case selected')
@@ -204,6 +204,17 @@ if(saveVTK)
     savevtk_bin(DUbulkDt*nWm3,[dir 'DUbulkedt' ncycle '.vtk'],'DUbulkedt',dx,dy,dz,0,0,0);
     savevtk_bin(DUthDt*nWm3,[dir 'DUthedt' ncycle '.vtk'],'DUthedt',dx,dy,dz,0,0,0);
 end
+
+end
+
+if(ions)
+[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
+    rhoi, Jix, Jiy, Jiz,... 
+    Qbulkix, Qbulkiy, Qbulkiz, Qenthix, Qenthiy, Qenthiz, Qhfix, Qhfiy, Qhfiz, ...
+    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius,cyl);
+
+DUbulkDt = JidotE - Ubulk.*divVi - udivP;
+DUthDt = -Uth.*divVi -PgradV;
 
 end
 

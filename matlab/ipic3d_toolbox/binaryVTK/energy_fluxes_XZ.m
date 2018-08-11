@@ -6,7 +6,7 @@ close all
 addpath(genpath('~/iPic3D-github/matlab/ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
-sim_name='tred77'
+sim_name='HRmaha3D3'
 switch sim_name
 case 'tred77'
 TRED77;
@@ -61,7 +61,7 @@ ir=bufferX:Nx-bufferX;
 jr=bufferY:Ny-bufferY;
 kr=bufferZ:Nz-bufferZ;
 
-radius=1; %radius=4
+radius=4; %radius=4
 
 
 global color_choice symmetric_color labelx labely labelc reversex reversey Ncycle skip
@@ -198,6 +198,16 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUthDt(ir,jr,kr),2)*nW
 
 end
 
+if(ions)
+[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
+    rhoi, Jix, Jiy, Jiz,... 
+    Qbulkix, Qbulkiy, Qbulkiz, Qenthix, Qenthiy, Qenthiz, Qhfix, Qhfiy, Qhfiz, ...
+    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius,cyl);
+
+DUbulkDt = JidotE - Ubulk.*divVi - udivP;
+DUthDt = -Uth.*divVi -PgradV;
+
+end
 
 if(ions)
 
