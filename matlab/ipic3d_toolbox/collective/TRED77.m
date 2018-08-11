@@ -12,24 +12,18 @@ global Lx Ly Lz Xgsmrange Ygsmrange Zgsmrange dx dy dz XLEN YLEN ZLEN initial_ti
 
 initial_time=0
 
-B0=0.0026
 
-code_E = 2060.21;
-code_B = 6.87213e-06;
-%code_B=code_B *1e9; % to convert from Tesla to nT
-code_J = 1.20082e-05;
-%code_J = code_J*4*pi;
-%code_J = code_J*1e9; % to convert to nA/m^2
-code_V = 2.99792e+08;
-%code_V=code_V/1e3; %to convert to Km/s
-code_T = 1.50326e-10;
-code_n = 0.25;
-code_dp = 4.5541e+05; %ion skin depth for code unit conversion
-e=1.6e-19;
-mu0 = 4*pi*1e-7;
-%convert to keV
-%TeoTi=1/5;
-%code_T=code_T/e/1e3/TeoTi;
+
+code_E = 1;
+code_B = 1;
+code_J = 1;
+code_V = 1;
+code_T = 1;
+code_n = 1;
+code_dp = 1; %ion skin depth for code unit conversion
+e=1;
+mu0 = 4*pi; % to use CGS in code units
+
 
 filename=[dir 'settings.hdf'];
 Dt=double(hdf5read(filename,'/collective/Dt'));
@@ -51,7 +45,7 @@ Nprocs=hdf5read(filename,'/topology/Nprocs')
 
 vthr=vthe;
 
-Xgsmrange= -[Lx 0];
+Xgsmrange= [Lx 0];
 Zgsmrange= [0 Ly];
 Ygsmrange= [0 Lz];
 

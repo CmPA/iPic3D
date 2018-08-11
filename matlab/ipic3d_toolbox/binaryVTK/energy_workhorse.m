@@ -1,4 +1,4 @@
-cyl = 0
+cyl = 0;
 
 [x,y,z]=meshgrid(0:dx:Lx,0:dy:Ly,0:dz:Lz);
 
@@ -52,7 +52,7 @@ if(electrons)
 [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
     rhoe, Jex, Jey, Jez,... 
     Qbulkex, Qbulkey, Qbulkez, Qenthex, Qenthey, Qenthez, Qhfex, Qhfey, Qhfez, ...
-    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom_ele, radius,cyl);
+    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom, radius,cyl);
     
     
 DUbulkDt = JedotE - Ubulk.*divVe - udivP;
