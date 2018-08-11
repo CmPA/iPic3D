@@ -12,7 +12,7 @@ h=figure(1)
 end
 
 %set(h, 'Position', [167 26 515 776])
-set(h, 'Position',[204 376 764 429])
+%set(h, 'Position',[204 376 764 429])
 
 if(clmt(1) == clmt(2))
 clmt(1)=min(J(:));
@@ -33,7 +33,7 @@ Ncut=1
 imagesc(x(1,:),y(:,1),J',clmt)
 
 hold on
-contour(x,y,Az',50,'k')
+contour(x,y,Az',20,'k')
 caxis(clmt)
 
 if(color_choice==0)
