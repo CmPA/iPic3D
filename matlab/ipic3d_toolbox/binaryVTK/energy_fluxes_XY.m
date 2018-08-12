@@ -7,7 +7,7 @@ addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-sim_name='HRmaha3D3'
+sim_name='7feb09'
 switch sim_name
 case 'tred77'
     TRED77;
@@ -21,6 +21,7 @@ case 'AH'
     zcode = Lz/2;
 case 'HRmaha3D3'
     HRmaha3D3;
+    case_name='GEM';
     dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
     cycle = 80002;  % for h5
     %cycle = 80000  % for vtk binary
@@ -30,6 +31,19 @@ case 'HRmaha3D3'
     % time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
     %ADD initial time of the RUN
     time=time+initial_time; %(03*60+48)*60
+    ygsm=7.05;%1.8;
+    zcode = (ygsm - Ygsmrange(1)) * Lz/(Ygsmrange(2)-Ygsmrange(1));
+    case '7feb09'
+FEB09;
+cycle=18000
+case_name='MHDUCLA'
+%cycle = 80000  % for vtk binary
+% for HRmaha3D1:
+time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt between 2D and 3D
+% for HRmaha3D1.v2:
+% time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
+%ADD initial time of the RUN
+time=time+initial_time; %(03*60+48)*60
     ygsm=7.05;%1.8;
     zcode = (ygsm - Ygsmrange(1)) * Lz/(Ygsmrange(2)-Ygsmrange(1));
 otherwise

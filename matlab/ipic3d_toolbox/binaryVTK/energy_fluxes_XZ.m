@@ -6,7 +6,7 @@ close all
 addpath(genpath('~/iPic3D-github/matlab/ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
-sim_name='HRmaha3D3'
+sim_name='7feb09'
 switch sim_name
 case 'tred77'
 TRED77;
@@ -20,6 +20,7 @@ cycle =4000;
 zcode = Lz/2;
 case 'HRmaha3D3'
 HRmaha3D3;
+    case_name='GEM';
 dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
 cycle = 80002;  % for h5
 %cycle = 80000  % for vtk binary
@@ -29,8 +30,17 @@ time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt bet
 % time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
 %ADD initial time of the RUN
 time=time+initial_time; %(03*60+48)*60
-ygsm=1.8;
-zcode = (ygsm - Ygsmrange(1)) * Lz/(Ygsmrange(2)-Ygsmrange(1));
+case '7feb09'
+FEB09;
+cycle=18000
+case_name='MHDUCLA'
+%cycle = 80000  % for vtk binary
+% for HRmaha3D1:
+time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt between 2D and 3D
+% for HRmaha3D1.v2:
+% time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
+%ADD initial time of the RUN
+time=time+initial_time; %(03*60+48)*60
 otherwise
 print('no recognised case selected')
 end
@@ -55,13 +65,14 @@ end
 [X Z] = meshgrid(0:dx:Lx-dx,0:dz:Lz-dz);
 
 bufferX=round(Nx/20);
-bufferY=round(Ny/20);
+bufferY=round(Ny/2.5);
 bufferZ=round(Nz/10);
 ir=bufferX:Nx-bufferX;
-jr=bufferY:Ny-bufferY;
+
+jr=round(Ny/2)+(-3:3);
 kr=bufferZ:Nz-bufferZ;
 
-radius=4; %radius=4
+radius=1; %radius=4
 
 
 global color_choice symmetric_color labelx labely labelc reversex reversey Ncycle skip
@@ -72,7 +83,7 @@ color_choice =3;
 switch sim_name
 case {'tred77','AH'}
 labelx ='x/d_i';
-labely ='y/d_i';
+labely ='z/d_i';
 labelc_flux = 'c.u.';
 labelc_power = 'c.u.';
 signx = 1;
@@ -82,7 +93,7 @@ mWm2= 1;
 reversex=0;
 otherwise
 labelx ='x/R_E';
-labely ='y/R_E';
+labely ='z/R_E';
 labelc_flux = 'mW/m^2';
 labelc_power = 'nW/m^3';
 signx = -1;
