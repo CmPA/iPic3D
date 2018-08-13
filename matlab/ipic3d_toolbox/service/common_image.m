@@ -75,3 +75,5 @@ end
 print('-dpng','-r300',[name Ncycle '.png'])
 
 %saveas(gcf,[name '.fig'])
+
+close(nfig)

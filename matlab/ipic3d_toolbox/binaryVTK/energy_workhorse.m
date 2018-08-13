@@ -34,12 +34,21 @@ divVi = compute_div(x,y,z,Vix,Viy,Viz, radius, cyl);
 
 
 
-AAz=vecpot(xc,yc,signx*mean(Bx(:,:,kr),3),mean(By(:,:,kr),3));
+AAz=vecpot(xc,yc,-mean(Bx(:,:,kr),3),mean(By(:,:,kr),3));
 Vx=signx*mean(Bx(:,:,kr),3);
 Vy=mean(By(:,:,kr),3);
 
 if(electrons)
+    
+Vmhdx=(Vix+Vex/abs(qom))/(1+1/abs(qom));
+Vmhdy=(Viy+Vey/abs(qom))/(1+1/abs(qom));
+Vmhdz=(Viz+Vez/abs(qom))/(1+1/abs(qom));
 
+Epx = Ex + (Vmhdy.*Bz - Vmhdz.*By);
+Epy = Ey + (Vmhdz.*Bx - Vmhdx.*Bz);
+Epz = Ez + (Vmhdx.*By - Vmhdy.*Bx);
+
+JdotEp=(Jex+Jix).*Epx + (Jey+Jiy).*Epy + (Jez+Jiz).*Epz;
 
 [Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradV, ugradp, pdivv, divUP] = compute_energy_balance( ...
     rhoe, Jex, Jey, Jez,... 

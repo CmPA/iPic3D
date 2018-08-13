@@ -80,6 +80,7 @@ global color_choice symmetric_color labelx labely labelc reversex reversey Ncycl
 reversey=1;
 symmetric_color=1;
 color_choice =3;
+
 switch sim_name
 case {'tred77','AH'}
 labelx ='x/d_i';
@@ -148,6 +149,7 @@ divS = divS*nWm3;
 
 labelc = labelc_power;
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JdotE(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),'AVG_Z','JE',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(JdotEp(ir,jr,kr),2)*nWm3,Vex(ir,kr),Vez(ir,kr),'AVG_Z','JEp',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(divS(ir,jr,kr),2),Vex(ir,kr),Vez(ir,kr) ,'AVG_Z','divS',[-1 1]*0e-9, radius, 4);
 
 
@@ -286,5 +288,13 @@ tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUbulkDt(ir,jr,kr),2)*
 tmp=common_image_vel(gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),mean(DUthDt(ir,jr,kr),2)*nWm3,Vix(ir,kr),Viz(ir,kr), 'AVG_Z','DUthiDt',[-1 1]*0e-9, radius, 2);
 
 end
+
+!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) divUPe.png -trim +append comboe.png
+
+!/usr/local/bin/convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
+
+!convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) divUPe.png -trim +append comboe.png
+
+!convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
 
 

@@ -3,7 +3,7 @@ addpath(genpath('../ipic3d_toolbox'));
 %clearvars -except Ncyc_ini Ncyc_max dir results_dir fraciz Ygsm
 
 
-dir='~/thr/';
+dir='~/thr/withdiv/';
 global Lx Ly Lz Xgsmrange Ygsmrange Zgsmrange dx dy dz XLEN YLEN ZLEN initial_time Nx Ny Nz Dt
 
 

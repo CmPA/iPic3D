@@ -7,7 +7,7 @@ addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-sim_name='7feb09'
+sim_name='AH'
 switch sim_name
 case 'tred77'
     TRED77;
@@ -71,8 +71,8 @@ end
 bufferX=round(Nx/20);
 bufferY=round(Ny/20);
 
-%bufferX=round(Nx/2.5);
-%bufferY=round(Ny/2.3);
+bufferX=round(Nx/2.5);
+bufferY=round(Ny/2.3);
 
 ir=bufferX:Nx-bufferX;
 jr=bufferY:Ny-bufferY;
@@ -141,6 +141,7 @@ divS = divS*nWm3;
 
 labelc = labelc_power;
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JdotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JE',[-1 1]*0e-10, radius,1);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JdotEp(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JEp',[-1 1]*0e-10, radius,1);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divS(ir,jr,kr),3),AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'divS',[-1 1]*0e-9, radius, 4);
 
 
@@ -164,6 +165,7 @@ end
 
 if(electrons)
 
+    
 
 if(saveVTK)
     savevtk_bin(divQbulk*nWm3, [dir 'divQbulke' ncycle '.vtk'],'divQbulke',dx,dy,dz,0,0,0);
@@ -304,7 +306,7 @@ end
 
 !/usr/local/bin/convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
 
-!convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) divUPe.png -trim +append comboe.png
+!convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) +append comboe.png
 
 !convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
 
