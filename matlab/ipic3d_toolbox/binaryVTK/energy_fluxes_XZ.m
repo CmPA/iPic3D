@@ -110,6 +110,19 @@ skip=10;
 energy_workhorse
 
 %
+%Define velocities on the 2D plane of plotting
+%
+Vex=signx*imgaussfilt(squeeze(mean(Vex(:,jr,:),2)),radius);
+Vey=imgaussfilt(squeeze(mean(Vey(:,jr,:),2)),radius);
+Vez=imgaussfilt(squeeze(mean(Vez(:,jr,:),2)),radius);
+%AAze=vecpot(xc,zc,Vex,Vez);
+
+Vix=signx*imgaussfilt(squeeze(mean(Vix(:,jr,:),2)),radius);
+Viy=imgaussfilt(squeeze(mean(Viy(:,jr,:),2)),radius);
+Viz=imgaussfilt(squeeze(mean(Viz(:,jr,:),2)),radius);
+%AAzi=vecpot(xc,zc,Vix,Viz);
+
+%
 %Elm energy
 %
 if(poynting)

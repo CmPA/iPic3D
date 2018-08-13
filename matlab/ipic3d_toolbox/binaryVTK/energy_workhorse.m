@@ -32,15 +32,7 @@ divVe = compute_div(x,y,z,Vex,Vey,Vez, radius, cyl);
 Vix=Jix./rhoi;Viy=Jiy./rhoi;Viz=Jiz./rhoi;
 divVi = compute_div(x,y,z,Vix,Viy,Viz, radius, cyl);
 
-Vex=signx*imgaussfilt(squeeze(mean(Vex(:,jr,:),2)),radius);
-Vey=imgaussfilt(squeeze(mean(Vey(:,jr,:),2)),radius);
-Vez=imgaussfilt(squeeze(mean(Vez(:,jr,:),2)),radius);
-%AAze=vecpot(xc,zc,Vex,Vez);
 
-Vix=signx*imgaussfilt(squeeze(mean(Vix(:,jr,:),2)),radius);
-Viy=imgaussfilt(squeeze(mean(Viy(:,jr,:),2)),radius);
-Viz=imgaussfilt(squeeze(mean(Viz(:,jr,:),2)),radius);
-%AAzi=vecpot(xc,zc,Vix,Viz);
 
 AAz=vecpot(xc,yc,signx*mean(Bx(:,:,kr),3),mean(By(:,:,kr),3));
 Vx=signx*mean(Bx(:,:,kr),3);
