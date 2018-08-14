@@ -3,19 +3,59 @@ addpath(genpath('../../ipic3d_toolbox')); % Point to the directory where the iPi
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-%use for tred60
-%for cycle=20010:1000:20010
-cycle=15000
+
+sim_name='tred77'
+switch sim_name
+case 'tred77'
+    TRED77;
+    case_name='GEM';
+    cycle = 15000;
+    zcode = Lz/2;
+case 'AH'
+    generic;
+    case_name='AH';
+    cycle =4000;
+    zcode = Lz/2;
+case 'HRmaha3D3'
+    HRmaha3D3;
+    case_name='GEM';
+    dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
+    cycle = 80002;  % for h5
+    %cycle = 80000  % for vtk binary
+    % for HRmaha3D1:
+    time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt between 2D and 3D
+    % for HRmaha3D1.v2:
+    % time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
+    %ADD initial time of the RUN
+    time=time+initial_time; %(03*60+48)*60
+    ygsm=7.05;%1.8;
+    zcode = (ygsm - Ygsmrange(1)) * Lz/(Ygsmrange(2)-Ygsmrange(1));
+    case '7feb09'
+FEB09;
+cycle=18000
+case_name='MHDUCLA'
+%cycle = 80000  % for vtk binary
+% for HRmaha3D1:
+time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt between 2D and 3D
+% for HRmaha3D1.v2:
+% time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
+%ADD initial time of the RUN
+time=time+initial_time; %(03*60+48)*60
+    ygsm=7.05;%1.8;
+    zcode = (ygsm - Ygsmrange(1)) * Lz/(Ygsmrange(2)-Ygsmrange(1));
+otherwise
+    print('no recognised case selected')
+end
+
+
+
 
     ncycle = num2str(cycle,'%06d');
-leggo=0
-if(leggo==2)
+leggo=true
+if(leggo)
     
-    %HRmaha3D3
-%BOW25
-TRED77
     
-    namefile = 'GEM2-Fields';
+    namefile = [case_name '-Fields'];
     fn=[dir,namefile,'_',ncycle,'.h5'];
 
     hinfo=hdf5info(fn);
@@ -62,8 +102,8 @@ TRED77
     perp2z=-B2D./B;
     Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./B;
 
-    [Pexx,Peyy,Pezz,Pexy,Pexz,Peyz]=compute_pressure(Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Jex,Jey,Jez,rhoe, qom);
-    [Pixx,Piyy,Pizz,Pixy,Pixz,Piyz]=compute_pressure(Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Jix,Jiy,Jiz,rhoi, 1.0);
+    [Pexx,Peyy,Pezz,Pexy,Pexz,Peyz]=compute_pressure(Bx, By, Bz, Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Jex,Jey,Jez,rhoe, qom);
+    [Pixx,Piyy,Pizz,Pixy,Pixz,Piyz]=compute_pressure(Bx, By, Bz, Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Jix,Jiy,Jiz,rhoi, 1.0);
     
     Qex = hdf5read(fn,'/Step#0/Block/EFx_0/0/')+hdf5read(fn,'/Step#0/Block/EFx_2/0/');
     Qey = hdf5read(fn,'/Step#0/Block/EFy_0/0/')+hdf5read(fn,'/Step#0/Block/EFy_2/0/');
@@ -167,3 +207,4 @@ h5create(opath,'/Step#0/Block/Nongyro_swisdak/0',[Nx, Ny, Nz]);
 h5write(opath,'/Step#0/Block/Nongyro_swisdak/0',Nongyro_swisdak)
 h5create(opath,'/Step#0/Block/Nongyro_aunai/0',[Nx, Ny, Nz]);
 h5write(opath,'/Step#0/Block/Nongyro_aunai/0',Nongyro_swisdak)
+
