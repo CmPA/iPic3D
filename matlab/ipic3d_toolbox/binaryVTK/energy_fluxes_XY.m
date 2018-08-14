@@ -7,7 +7,7 @@ addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-sim_name='AH'
+sim_name='tred77'
 switch sim_name
 case 'tred77'
     TRED77;
@@ -71,8 +71,8 @@ end
 bufferX=round(Nx/20);
 bufferY=round(Ny/20);
 
-bufferX=round(Nx/2.5);
-bufferY=round(Ny/2.3);
+%bufferX=round(Nx/2.5);
+%bufferY=round(Ny/2.3);
 
 ir=bufferX:Nx-bufferX;
 jr=bufferY:Ny-bufferY;
@@ -298,8 +298,11 @@ end
 
 end
 
+
 agyro=true
 if(agyro)
+    symmetric_color=0;
+    color_choice =-1;
     Agyro_aunai=hdf5read(fn,'/Step#0/Block/Agyro_aunai/0/');
     Agyro=hdf5read(fn,'/Step#0/Block/Agyro/0/');
     Nongyro_swisdak=hdf5read(fn,'/Step#0/Block/Nongyro_swisdak/0/');
@@ -313,12 +316,12 @@ end
 
 
 
-!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) divUPe.png -trim +append comboe.png
+!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png
 
 !/usr/local/bin/convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
 
-!convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png
+unix('convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png')
 
-!convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
+unix('convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png')
 
 

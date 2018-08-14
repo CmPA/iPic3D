@@ -6,7 +6,7 @@ close all
 addpath(genpath('../../ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
-sim_name='tred81'
+sim_name='tred77'
 switch sim_name
 case 'tred77'
 TRED77;
@@ -163,7 +163,7 @@ divS = divS*nWm3;
 
 labelc = labelc_power;
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotE(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','JE',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotEp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','JE',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotEp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','JEp',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divS(ir,:,kr),Vex_plane(ir,kr),Vez_plane(ir,kr) ,'AVG_Z','divS',[-1 1]*0e-9, radius, 4);
 
 
@@ -303,12 +303,28 @@ tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUt
 
 end
 
-!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) divUPe.png -trim +append comboe.png
+agyro=true
+if(agyro)
+    symmetric_color=0;
+    color_choice =-1;
+    Agyro_aunai=hdf5read(fn,'/Step#0/Block/Agyro_aunai/0/');
+    Agyro=hdf5read(fn,'/Step#0/Block/Agyro/0/');
+    Nongyro_swisdak=hdf5read(fn,'/Step#0/Block/Nongyro_swisdak/0/');
+    Nongyro_aunai=hdf5read(fn,'/Step#0/Block/Nongyro_aunai/0/');
+    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Agyro(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','Agyro',[-1 1]*0e-9, radius, 2);
+    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Agyro_aunai(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','Agyro-aunai',[-1 1]*0e-9, radius, 2);
+    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Nongyro_swisdak(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','Nongyro-swisdak',[-1 1]*0e-9, radius, 2);
+    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Nongyro_aunai(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','Nongyro-aunai',[-1 1]*0e-9, radius, 2);
+end
+
+
+
+!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png
 
 !/usr/local/bin/convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
 
-!convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) divUPe.png -trim +append comboe.png
+unix('convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png')
 
-!convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
+unix('convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png')
 
 
