@@ -7,7 +7,7 @@ addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-sim_name='AH'
+sim_name='tred77'
 switch sim_name
 case 'tred77'
     TRED77;
@@ -298,7 +298,18 @@ end
 
 end
 
+agyro=true
+if(agyro)
+    Agyro_aunai=hdf5read(fn,'/Step#0/Block/Agyro_aunai/0/');
+    Agyro=hdf5read(fn,'/Step#0/Block/Agyro/0/');
+    Nongyro_swisdak=hdf5read(fn,'/Step#0/Block/Nongyro_swisdak/0/');
+    Nongyro_aunai=hdf5read(fn,'/Step#0/Block/Nongyro_aunai/0/');
+    tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Agyro(ir,jr,kr),3),AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Agyro',[-1 1]*0e-9, radius, 2);
+    tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Agyro_aunai(ir,jr,kr),3),AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Agyro-aunai',[-1 1]*0e-9, radius, 2);
+    tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Nongyro_swisdak(ir,jr,kr),3),AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Nongyro-swisdak',[-1 1]*0e-9, radius, 2);
+    tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Nongyro_aunai(ir,jr,kr),3),AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Nongyro-aunai',[-1 1]*0e-9, radius, 2);
 
+end
 
 
 

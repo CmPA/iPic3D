@@ -194,9 +194,9 @@ Agyro_sm=smooth3D(Agyro,6);
 Agyro_aunai_sm=smooth3D(Agyro_aunai,6);
 Nongyro_swisdak_sm=smooth3D(Nongyro_swisdak,6);
 
-savevtk_bin(Agyro_sm,['Agyro' ncycle '.vtk'],'Agyro',dx,dy,dz)
-savevtk_bin(Agyro_aunai_sm,['Agyro_aunai' ncycle '.vtk'],'Agyro',dx,dy,dz)
-savevtk_bin(Nongyro_swisdak_sm,['Nongyro_swisdak' ncycle '.vtk'],'Agyro',dx,dy,dz)
+savevtk_bin(Agyro_sm,['Agyro_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+savevtk_bin(Agyro_aunai_sm,['Agyro_aunai_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+savevtk_bin(Nongyro_swisdak_sm,['Nongyro_swisdak_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
 
 opath=fn
 h5create(opath,'/Step#0/Block/Agyro/0',[Nx, Ny, Nz]);
