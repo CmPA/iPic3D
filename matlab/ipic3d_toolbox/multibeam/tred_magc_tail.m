@@ -125,45 +125,91 @@ print('figure_log','-dpng')
 
 
 
-figure(4)
-
-
-dist=[]
-for icluster=1:Nc
-    dist=[dist sum((XHE2(:,:)-C(icluster,:)).^2,2)];
-end
- [dm,im]=min(dist,[],2);
- 
+ Q=ones(size(X2));
 for ic=1:Nc
- plot3(XHE2(im==ic,1),XHE2(im==ic,2),XHE2(im==ic,3),'.','color',rand(1,3),'MarkerSize',1)
- hold on
 
 
-x_mean(ic,:) = (sum(X2(idx==ic,:).*Q(idx==ic),1)+sum(XHE2(im==ic,:).*QHE(im==ic),1)) ...
-    ./(sum(Q(idx==ic))+sum(QHE(im==ic)))
+x_mean(ic,:) = (sum(X2(idx==ic,:).*Q(idx==ic),1)) ...
+    ./(sum(Q(idx==ic)));
 
-x2_mean(ic,:) = (sum((X2(idx==ic,:)-x_mean(ic,:)).^2.*Q(idx==ic),1)+sum((XHE2(im==ic,:)-x_mean(ic,:)).^2.*QHE(im==ic),1)) ...
-    ./(sum(Q(idx==ic))+sum(QHE(im==ic)))
+x2_mean(ic,:) = (sum((X2(idx==ic,:)-x_mean(ic,:)).^2.*Q(idx==ic),1)) ...
+    ./(sum(Q(idx==ic)));
 
-x3_mean(ic,:) = (sum((X2(idx==ic,:)-x_mean(ic,:)).^3.*Q(idx==ic),1)+sum((XHE2(im==ic,:)-x_mean(ic,:)).^3.*QHE(im==ic),1)) ...
-    ./(sum(Q(idx==ic))+sum(QHE(im==ic)))
+x3_mean(ic,:) = (sum((X2(idx==ic,:)-x_mean(ic,:)).^3.*Q(idx==ic),1)) ...
+    ./(sum(Q(idx==ic)));
 
-Q_mean(ic,:) = x_mean(ic,:).^2*(sum(Q(idx==ic))+sum(QHE(im==ic)));
+Q_mean(ic,:) = x_mean(ic,:).^2*(sum(Q(idx==ic)));
     
 end 
- 
-x_mean_t = (sum(X2(:,:).*Q,1)+sum(XHE2(:,:).*QHE,1)) ...
-    ./(sum(Q)+sum(QHE))
 
-x2_mean_t = (sum((X2(:,:)-x_mean_t).^2.*Q,1)+sum((XHE2(:,:)-x_mean_t).^2.*QHE,1)) ...
-    ./(sum(Q)+sum(QHE))
+fid=fopen('MyLatex.tex','w');
+input.dataFormat = {'%e'};
 
-x3_mean_t = (sum((X2(:,:)-x_mean_t).^3.*Q,1)+sum((XHE2(:,:)-x_mean_t).^3.*QHE,1)) ...
-    ./(sum(Q)+sum(QHE))
+x_mean_t = (sum(X2(:,:).*Q,1)) ...
+    ./(sum(Q));
 
-Q_mean_t = (sum((X2(:,:)).^2.*Q,1)+sum((XHE2(:,:)).^2.*QHE,1)) ...
-    ./(sum(Q)+sum(QHE))
+Ubar=[x_mean_t ;(x_mean'*n)']
+input.data = Ubar
+
+% LaTex table caption:
+input.tableCaption = 'Mean Velocity ';
+
+% LaTex table label:
+input.tableLabel = 'mean_velocity';
+
+latex = latexTable(input)
 
 
-Q_non_bulk_1beam=(Q_mean_t-x_mean_t.^2)./sum(x_mean_t.^2)
-Q_non_bulk_multibeam=(Q_mean_t.*(sum(Q)+sum(QHE))-sum(Q_mean))./(sum(Q)+sum(QHE))./sum(x_mean_t.^2)
+[nrows,ncols] = size(latex);
+for row = 1:nrows
+    fprintf(fid,'%s\n',latex{row,:});
+end
+fprintf(fid,'\n');
+
+
+x2_mean_t = (sum((X2(:,:)-x_mean_t).^2.*Q,1)) ...
+    ./(sum(Q));
+Uth=[x2_mean_t/2 ; (x2_mean'*n)'/2]
+
+% LaTex table caption:
+input.tableCaption = 'Thermal Energy';
+
+% LaTex table label:
+input.tableLabel = 'thermal_energy';
+
+
+
+input.data = Uth
+latex = latexTable(input)
+
+[nrows,ncols] = size(latex);
+for row = 1:nrows
+    fprintf(fid,'%s\n',latex{row,:});
+end
+fprintf(fid,'\n');
+
+x3_mean_t = (sum((X2(:,:)-x_mean_t).^3.*Q,1)) ...
+    ./(sum(Q));
+HF=[x3_mean_t; (x3_mean'*n)']
+
+% LaTex table caption:
+input.tableCaption = 'Heat Flux';
+
+% LaTex table label:
+input.tableLabel = 'heat_flux';
+
+input.data = HF
+latex = latexTable(input)
+
+[nrows,ncols] = size(latex);
+for row = 1:nrows
+    fprintf(fid,'%s\n',latex{row,:});
+end
+
+
+
+fclose(fid);
+fprintf('\n... your LaTex code has been saved as ''MyLatex.tex'' in your working directory\n');
+
+
+
