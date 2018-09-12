@@ -276,7 +276,7 @@ void c_Solver::WriteConserved(int cycle) {
     }
     if (myrank == 0) {
       FILE* fd = fopen(cq.c_str(), "a");
-      fprintf(fd,"%6d %13.14e %13.6e %13.6e %13.6e %13.6e\n", cycle, (Eenergy + Benergy + TOTenergy), TOTmomentum, Eenergy, Benergy, TOTenergy);
+      fprintf(fd,"%6d %13.14e %13.14e %13.6e %13.6e %13.6e\n", cycle, (Eenergy + Benergy + TOTenergy), TOTmomentum, Eenergy, Benergy, TOTenergy);
       fclose(fd);
     }
     // // Velocity distribution

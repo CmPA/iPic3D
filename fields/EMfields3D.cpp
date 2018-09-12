@@ -244,9 +244,9 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   //BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
   //BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
 
-for (int i=1; i<nxc-1; i++) {
-  printf("%3d %13.6e %13.6e %13.6e \n",i, Bxc[i][1][1], Byc[i][1][1], Bzc[i][1][1]);
-}
+//for (int i=1; i<nxc-1; i++) {
+//  printf("%3d %13.6e %13.6e %13.6e \n",i, Bxc[i][1][1], Byc[i][1][1], Bzc[i][1][1]);
+//}
 }
 
 /*! Calculate source for Maxwell solver */
