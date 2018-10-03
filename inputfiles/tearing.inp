@@ -1,0 +1,131 @@
+# INPUT FILE for GEM challenge case
+# 2 Species
+
+#  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
+SaveDirName    = tearing     # Output directory (without trailing "/")
+RestartDirName = tearing     # Restart directory (for WriteMethod=default)
+
+#  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
+
+Case              = GEMnp                         # Case [ GEM | Dipole | ... ]
+FieldsInit        =                               # Initial fields h5 file
+PartInit          = GEM2D                         # Initial particles [ Maxwell | File ]
+WriteMethod       = h5hut                         # Output method [ default | Parallel ]
+PoissonCorrection = no                            # Poisson correction [ yes | no ]
+SimulationName    = tearing                       # Simulation name for the output
+
+#  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
+B0x = 0.00  
+B0y = 4.4721
+B0z = 0.00
+
+# External magnetic field parameters:
+B1x = 0.000
+B1y = 0.000
+B1z = 0.000
+
+delta = 1
+
+#  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
+dt = 0.1               # dt = time step
+ncycles = 10          # cycles
+th = 0.5               # th =   decentering parameter
+c = 1.0                # c = light speed
+
+#  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
+Smooth = 1.0           # Smoothing value (5-points stencil)
+
+
+# %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
+Lx =   102.4             # Lx = simulation box length - x direction
+Ly =   51.2             # Ly = simulation box length - y direction
+Lz =   1.0             # Lz = simulation box length - z direction
+
+x_center =   1.        # Lx = simulation box length - x direction in m
+y_center =   1.        # Ly = simulation box length - y direction in m
+z_center =   1.        # Lz = simulation box length - z direction in m
+L_square =   .1
+
+nxc =  1024              # nxc = number of cells - x direction
+nyc =  512               # nyc = number of cells - y direction
+nzc =  1               # nzc = number of cells - z direction
+
+# %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
+XLEN = 4               # Number of subdomains in the X direction
+YLEN = 4               # Number of subdomains in the X direction
+ZLEN = 1               # Number of subdomains in the X direction
+
+# %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+#    0 = electrons
+#    1 = protons
+#    2,3,4,5,... = ions
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ns = 4                               # Number of particles
+rhoINIT         = 1.0  1.0  1.0  1.0         # Initial density (make sure you are neutral)
+rhoINJECT       = 0    0    0    0       # Injection density (make sure you are neutral)
+TrackParticleID = 0    0    0    0     # TrackParticleID[species] = 1=true, 0=false
+
+npcelx          = 12   12   12  12           # Particles per cell in X
+npcely          = 12   12   12  12       # Particles per cell in Y
+npcelz          = 1    1    1   1      # Particles per cell in Z
+NpMaxNpRatio    = 3.0                # Maximum number of particles allocated
+
+qom             = -1.0   1.0    -1.0     1.0     # Charge/mass ratio
+uth             = 0.2236 0.2236  0.0     0.0     # Thermal velocity in X 
+vth             = 0.2236 0.2236  0.0     0.0     # Thermal velocity in Y 
+wth             = 0.2236 0.2236  0.5590  0.5590  # Thermal velocity in Z (for drifting sp., temperature in the CS)
+u0              = 0.0    0.0     0.0     0.0     # Drift velocity in X
+v0              = 0.0    0.0     0.0     0.0     # Drift velocity in Y
+w0              = 0.0    0.0     0.7454 -0.7454  # Drift velocity in Z
+
+# %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
+PERIODICX       = 1                  # In direction X (1=true, 0=false)
+PERIODICY       = 1                  # In direction Y (1=true, 0=false)
+PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
+
+# %%%%%%%%%%%% boundary conditions %%%%%%%%%%%%%%%
+# If the PERIODIC flag is active in the previous section
+# periodic boundary conditions will be imposed
+#
+# PHI Electrostatic Potential
+# 0,1 = Dirichilet boundary condition ;
+# 2   = Neumann boundary condition
+    bcPHIfaceXright = 1
+    bcPHIfaceXleft  = 1
+    bcPHIfaceYright = 1
+    bcPHIfaceYleft  = 1
+    bcPHIfaceZright = 1
+    bcPHIfaceZleft  = 1
+
+#    EM field boundary condition
+#    0 = perfect conductor
+#    1 = magnetic mirror
+    bcEMfaceXright = 0
+    bcEMfaceXleft =  0
+    bcEMfaceYright = 0
+    bcEMfaceYleft =  0
+    bcEMfaceZright = 0
+    bcEMfaceZleft =  0
+
+#    Particles Boundary condition
+#    0 = exit
+#    1 = perfect mirror
+#    2 = riemission
+    bcPfaceXright = 1
+    bcPfaceXleft =  1
+    bcPfaceYright = 1
+    bcPfaceYleft =  1
+    bcPfaceZright = 1
+    bcPfaceZleft =  1
+
+# %%%%%%%%%%%% Numerics options %%%%%%%%%%%%%%%
+verbose                = 1        # Print to video results
+Vinj                   = 0.0      # Velocity of the injection from the wall
+CGtol                  = 1E-14    # CG solver stopping criterium tolerance
+GMREStol               = 1E-14    # GMRES solver stopping criterium tolerance
+NiterMover             = 20       # mover predictor corrector iteration
+FieldOutputCycle       = 1        # Output for field. If -1 it doesn't save field data
+ParticlesOutputCycle   = -1       # Output for particles. If -1 it doesn't save particles data
+RestartOutputCycle     = 4000     # restart cycle
+DiagnosticsOutputCycle = 1        # Diagnostics cycle

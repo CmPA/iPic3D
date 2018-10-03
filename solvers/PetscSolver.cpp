@@ -43,7 +43,7 @@ PetscSolver::PetscSolver(EMfields3D *EMf, Grid* grid, VirtualTopology3D *vct, Co
   iter_max = 5000;
 
   SNESCreate(PETSC_COMM_WORLD, &snes);
-  SNESSetType(snes, "qn");
+  SNESSetType(snes, "anderson");
   SNESSetTolerances(snes,tolAbs,tolAbs,tolAbs,5000,5000);
   
   // Create the vectors

@@ -129,7 +129,13 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   dx = grid->getDX();
   dy = grid->getDY();
   dz = grid->getDZ();
+
+  // GEM challenge parameters
   delta = col->getDelta();
+  B0x = col->getB0x();
+  B0y = col->getB0y();
+  B0z = col->getB0z();
+
   TrackParticleID = col->getTrackParticleID(species);
   c = col->getC();
   // info for mover
@@ -333,7 +339,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
 }
 
-/** Initialie arrays for velocity distributions in 3D */
+/** Initialise arrays for velocity distributions in 3D */
 void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, int bk, double vR, double vFact, Collective * col, Grid * grid){
   vDistRad   = vR;
 
@@ -533,7 +539,7 @@ void Particles3Dcomm::gatherJ(double**** Jx, double**** Jy, double**** Jz, int n
       double up = u[i];
       double vp = v[i];
       double wp = w[i];
-    
+
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
       const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
       const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));

@@ -66,6 +66,7 @@ int c_Solver::Init(int argc, char **argv) {
     /* If using 'default' IO initialize fields depending on case */
     /* --------------------------------------------------------- */
     if      (col->getCase()=="Test") EMf->init(vct,grid,col);
+    else if (col->getCase()=="GEMnp")  EMf->initGEMnp(vct, grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -88,7 +89,8 @@ int c_Solver::Init(int argc, char **argv) {
       if (myrank==0) cout << "WARNING: Particle drift velocity from ExB " << endl;
       for (int i = 0; i < ns; i++){
         part[i].allocate(i, 0, col, vct, grid);
-        if (col->getPartInit()=="TwoStream1D") part[i].twostream1D(grid, vct);
+        if      (col->getPartInit()=="TwoStream1D") part[i].twostream1D(grid, vct);
+        else if (col->getPartInit()=="GEM2D")       part[i].relgem2D(grid, vct);
         else part[i].maxwellian(grid, vct);
       }
     }
@@ -102,7 +104,8 @@ int c_Solver::Init(int argc, char **argv) {
       // wave = new Planewave(col, EMf, grid, vct);
       // wave->Wave_Rotated(part); // Single Plane Wave
       for (int i = 0; i < ns; i++) {
-        if (col->getPartInit()=="TwoStream1D") part[i].twostream1D(grid, vct);
+        if      (col->getPartInit()=="TwoStream1D") part[i].twostream1D(grid, vct);
+        else if (col->getPartInit()=="GEM2D")       part[i].relgem2D(grid, vct);
         else part[i].maxwellian(grid, vct);
       }
     }
@@ -155,19 +158,19 @@ int c_Solver::Init(int argc, char **argv) {
   //   ofstream my_file(ds.c_str());
   //   my_file.close();
   // }
-  cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
-  // if(myrank==0){
-  ofstream my_file(cqsat.c_str(), fstream::binary);
-  nsat = 3;
-  for (int isat = 0; isat < nsat; isat++) {
-    for (int jsat = 0; jsat < nsat; jsat++) {
-      for (int ksat = 0; ksat < nsat; ksat++) {
-        int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
-        int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
-        int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
-        my_file << grid->getXC(index1, index2, index3) << "\t" << grid->getYC(index1, index2, index3) << "\t" << grid->getZC(index1, index2, index3) << endl;
-      }}}
-  my_file.close();
+//  cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
+//  // if(myrank==0){
+//  ofstream my_file(cqsat.c_str(), fstream::binary);
+//  nsat = 3;
+//  for (int isat = 0; isat < nsat; isat++) {
+//    for (int jsat = 0; jsat < nsat; jsat++) {
+//      for (int ksat = 0; ksat < nsat; ksat++) {
+//        int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
+//        int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
+//        int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
+//        my_file << grid->getXC(index1, index2, index3) << "\t" << grid->getYC(index1, index2, index3) << "\t" << grid->getZC(index1, index2, index3) << endl;
+//      }}}
+//  my_file.close();
 
   Qremoved = new double[ns];
 
@@ -310,14 +313,16 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0 || cycle==col->getLast_cycle()) {
+    if (col->getFieldOutputCycle() != -1 &&
+       (cycle%(col->getFieldOutputCycle())==0 || cycle==col->getLast_cycle())) {
        EMf->setZeroDensities();
        EMf->GatherJ(grid, vct, part);
        EMf->GatherRho(grid, vct, part);
        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
     }
-    if (cycle%(col->getParticlesOutputCycle())==0 ||
-        cycle==col->getLast_cycle())      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    if (col->getParticlesOutputCycle() != -1 &&
+       (cycle%(col->getParticlesOutputCycle())==0 || cycle==col->getLast_cycle()))
+       WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
   }
   else

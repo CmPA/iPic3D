@@ -214,6 +214,10 @@ protected:
   double qom;
   /** recon thick */
   double delta;
+  /** recon field */
+  double B0x;
+  double B0y;
+  double B0z;
   /** thermal velocity  - Direction X*/
   double uth;
   /** thermal velocity  - Direction Y*/

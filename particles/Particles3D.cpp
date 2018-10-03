@@ -44,6 +44,111 @@ using std::endl;
  *
  */
 
+/* !!!!!!!!!!! Mathematical functions !!!!!!!!!!! */
+
+/* Modified Bessel functions of the first and second kind */
+/*                      First kind                        */
+inline double BesselI(double nu, double z)
+{
+  double tol = 1.e-14;
+  double err = 1.;
+
+  double add;
+  double Inu = 0.;
+  int fact1 = 1;
+
+  int kk = 0;
+  while (err > tol) {
+    if (kk > 0) fact1 *= kk;
+    add = pow(.25*z*z, kk) / fact1 / tgamma(nu+double(kk+1));
+    Inu += add;
+
+    err = std::abs(add);
+    kk += 1;
+  }
+  Inu *= pow(.5*z, nu);
+
+  return Inu;
+}
+
+/*                     Second kind                        */
+inline double BesselKf(double nu, double z)
+{
+  double Inup = BesselI(nu, z);
+  double Inum = BesselI(-nu, z);
+
+  double Knuf = M_PI / 2. * (Inum - Inup) / sin(nu * M_PI);
+
+  return Knuf;
+}
+
+/* Digamma function for (positive) integer argument: psi=d(log(Gamma(n)))/dn */
+inline double psi(int m)
+{
+  double eulerg = 0.5772156649015328606065120;
+  
+  double psi = 0.;
+  for (auto n=1; n<m; n++) {
+    psi += 1. / double(n);
+  }
+  psi -= eulerg;
+  
+  return psi;
+}
+
+inline double BesselKi(int nu, double z)
+{
+  double tol = 1.e-14;
+  double err = 1.;
+
+  double add;
+  double Knui = 0.;
+  int fact1 = 1;
+  int fact2 = 1;
+
+  int kk = 0;
+  while (err > tol) {
+    if (kk > 0) fact1 *= kk;
+    fact2 *= nu + kk;
+    add = (psi(kk+1) + psi(kk+1+nu)) * pow(.25*z*z, kk) / fact1 / fact2;
+    Knui += add;
+
+    err = std::abs(add);
+    kk += 1;
+  }
+  
+  Knui *= pow(-1., nu) * .5*pow(.5*z, nu);
+  double Inu = BesselI(double(nu), z);
+  Knui += pow(-1., nu+1) * log(.5*z) * Inu;
+
+  fact1 = 1;
+  fact2 = 1;
+  for (auto ii=0; ii<nu; ii++) {
+    if (ii > 0) fact1 *= ii;
+    if (ii != nu-1) fact2 *= nu - ii - 1;
+    else fact2 = 1;
+    Knui += .5 * pow(.5*z, -nu) * fact2 / fact1 * pow(-.25*z*z, ii);
+  }
+
+  return Knui;
+}
+
+inline double BesselK(double nu, double z)
+{
+  double Knu;
+  if (ceilf(nu) != nu) Knu = BesselKf(nu, z); // Non-integer order
+  else {
+    if (nu < 0) {
+      std::cout << " ERROR: Modified Bessel functions of the second kind not implemented for negative orders." << std::endl;
+      abort();
+    }
+    else Knu = BesselKi((int) nu, z); // Integer order
+  }
+
+  return Knu;
+}
+/* !!!!!!!!!!! End of Mathematical functions !!!!!!!!!!! */
+
 /** constructor */
 Particles3D::Particles3D() {
   // see allocate(int species, Collective* col, VirtualTopology3D* vct, Grid* grid)
@@ -195,6 +300,177 @@ void Particles3D::twostream1D(Grid * grid, VirtualTopology3D * vct) {
 
               counter++;
             }
+}
+
+/** Double periodic GEM distribution: Background (Maxwellian) + Drift (Maxwell-Juttner) */
+void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2 + 10*ns);
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        // Check if background
+        if (w0 == 0) {         // Background: uniform distribution and Maxwellian velocity
+          for (int ii = 0; ii < npcelx; ii++)
+            for (int jj = 0; jj < npcely; jj++)
+              for (int kk = 0; kk < npcelz; kk++) {
+                x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+                y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+                z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+                // q = charge
+                q[counter] = (qom / fabs(qom)) * (rhoINIT / npcel) * (1.0 / grid->getInvVOL());
+                // u
+                harvest = rand() / (double) RAND_MAX;
+                prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+                harvest = rand() / (double) RAND_MAX;
+                theta = 2.0 * M_PI * harvest;
+                mxp[counter] = u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * cos(theta);
+                // v
+                myp[counter] = v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * sin(theta);
+                // w
+                harvest = rand() / (double) RAND_MAX;
+                prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+                harvest = rand() / (double) RAND_MAX;
+                theta = 2.0 * M_PI * harvest;
+                mzp[counter] = w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * cos(theta);
+
+                double g = sqrt(1.0 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
+                u[counter] = mxp[counter] / g;
+                v[counter] = myp[counter] / g;
+                w[counter] = mzp[counter] / g;
+
+                if (TrackParticleID)
+                  ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+                counter++;
+              }
+        }
+        else {           // Current sheet
+          // Check if rho is large enough here to place at least 1 particle
+          const double eta = 3.0; // Overdensity parameter
+          const double xB = grid->getXC(i, j, k) - .25 * Lx;
+          const double xT = grid->getXC(i, j, k) - .75 * Lx;
+          const double xBd = xB / delta;
+          const double xTd = xT / delta;
+          const double sech_xBd = 1. / cosh(xBd);
+          const double sech_xTd = 1. / cosh(xTd);
+          double rhoCS = eta * rhoINIT * sech_xBd * sech_xBd + eta * rhoINIT * sech_xTd * sech_xTd;
+          int npcelCS = npcel * (int) floor(rhoCS / rhoINIT); // Particles in this cell
+          // If yes, place them uniformly in the cell
+          if (npcelCS >= 1) {
+            int npcelyCS = (int) max(floor(sqrt(double(npcelCS) * dy/dx)), 1);
+            int npcelxCS = (int) ceil(double(npcelCS) / double(npcelyCS));
+            int npcelzCS = 1;
+            for (int ii = 0; ii < npcelxCS; ii++)
+              for (int jj = 0; jj < npcelyCS; jj++)
+                for (int kk = 0; kk < npcelzCS; kk++) {
+                  x[counter] = (ii + .5) * (dx / npcelxCS) + grid->getXN(i, j, k);
+                  y[counter] = (jj + .5) * (dy / npcelyCS) + grid->getYN(i, j, k);
+                  z[counter] = (kk + .5) * (dz / npcelzCS) + grid->getZN(i, j, k);
+                  // q = charge
+                  q[counter] = (qom / fabs(qom)) * (rhoINIT / npcel) * (1.0 / grid->getInvVOL());
+                  if (TrackParticleID)
+                    ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                  
+                  counter++;
+                }
+          }
+        }    //  Done placing particles
+
+  nop = counter; // Update number of particles
+
+  // If CS particles were placed, initialise a Maxwell-Juttner velocity distribution
+  // See Melzani et al. 2013
+  if (w0 != 0 && counter > 0) {
+    // CS parameters
+    double muCS = 1.0 / wth;
+    double g0CS = 1.0 / sqrt(1.0 - w0*w0);
+    double besselkmu = BesselK(2., muCS);
+
+    /* Marginal distribution function for this proc */
+    int Npoints = min(counter,1000); // We want good statistics
+    double zz [Npoints];
+    double dzmax = 0.001;
+    double tol = 1e-14;
+    double z0 = -20.;
+    double nmax = 10;
+
+    /* Produce a table of values to draw pz from */
+    for (auto ii=1; ii<Npoints; ii++) {
+      double dz = dzmax;
+      double z = z0;
+      double J = 4.72e-11;
+      double t = double(ii) / double(Npoints);
+
+      int nk = 0;
+      while (std::abs(J-t) > tol) {
+        nk += 1;
+        double gz = sqrt(1. + z*z);
+        double jZ = (1.+muCS*gz*g0CS)/(2.*muCS*g0CS*g0CS*g0CS*besselkmu)*exp(-muCS*g0CS*(gz-std::abs(w0)*z));
+
+        J += dz*jZ;
+        if (J < t) z += dz;
+        else if (J > t) { J -= dz*jZ; dz /= 2.;}
+      }
+
+      zz[ii] = z; // Values stored in zz
+    }
+
+    /* Now initialise the particle velocity with the proper distribution */
+    for (auto i=0; i<counter; i++) {
+
+      // Drift component drawn from the values stored previously
+      harvest = rand() / (double) RAND_MAX;
+      int r = 1 + (int)(double(Npoints - 1) * harvest);
+      double ppz = - std::abs(qom)/qom * zz[r];
+      double gppz = sqrt(1. + ppz*ppz);
+      
+      // Other two components*: solve nonlinear equation with Newton
+      // *not independent of the first one, which is the whole problem
+
+      double az = muCS * g0CS * gppz;
+      harvest = rand() / (double) RAND_MAX;
+      double ww = harvest;
+      // Apply Newton's method
+      double err = 1.;
+      int nk = 0;
+      double uu = 1.;
+
+      while (err > tol && nk <= nmax) {
+        nk += 1;
+        double F = (1.+az*uu) * exp(-az*uu) - ww * (1.+az) * exp(-az);
+        double D = az * exp(-az*uu) - (1.+az*uu) * az * exp(-az*uu);
+        double du = - F / D;
+        uu += du;
+        err = std::abs(du);
+      }
+
+      double rr = sqrt(uu*uu - 1.);
+      harvest = rand() / (double) RAND_MAX;
+      double th = 2. * M_PI * harvest;
+      double ppx = rr * cos(th) * gppz;
+      double ppy = rr * sin(th) * gppz;   
+      double gpp = sqrt(ppx*ppx + ppy*ppy + ppz*ppz + 1.);
+
+      // u
+      mxp[i] = ppx;
+      // v
+      myp[i] = ppy;
+      // w
+      mzp[i] = ppz;
+
+      double g = sqrt(1.0 + ppx*ppx + ppy*ppy + ppz*ppz);
+      u[i] = mxp[i] / g;
+      v[i] = myp[i] / g;
+      w[i] = mzp[i] / g;
+//cout << u[i] << " " << v[i] << " " << w[i] << endl;
+    }
+  }
 }
 
 void Particles3D::get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]){

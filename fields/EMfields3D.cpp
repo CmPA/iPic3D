@@ -1389,6 +1389,85 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   }
 }
 
+
+void EMfields3D::initGEMnp(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "--------------------------------------------" << endl;
+      cout << "Initialize GEM Challenge without Pertubation" << endl;
+      cout << "--------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+          const double xB = grid->getXN(i, j, k) - .25 * Lx;
+          const double xT = grid->getXN(i, j, k) - .75 * Lx;
+          const double xBd = xB / delta;
+          const double xTd = xT / delta;
+          // initialize the density for species
+          const double eta = 3.0; // Overdensity parameter
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is]) {
+              const double sech_xBd = 1. / cosh(xBd);
+              const double sech_xTd = 1. / cosh(xTd);
+              rhons[is][i][j][k] = eta * rhoINIT[is] * sech_xBd * sech_xBd;
+              rhons[is][i][j][k] += eta * rhoINIT[is] * sech_xTd * sech_xTd;
+            }
+            else
+              rhons[is][i][j][k] = rhoINIT[is];
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          Byn[i][j][k] = B0y * (-1.0 + tanh(xBd) - tanh(xTd));
+          Bxn[i][j][k] = 0.;
+          Bzn[i][j][k] = 0.;
+        }
+    // communicate ghost
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    // initialize B on centers
+    for (int i = 0; i < nxc; i++)
+      for (int j = 0; j < nyc; j++)
+        for (int k = 0; k < nzc; k++) {
+          const double xB = grid->getXC(i, j, k) - .25 * Lx;
+          const double xT = grid->getXC(i, j, k) - .75 * Lx;
+          const double xBd = xB / delta;
+          const double xTd = xT / delta;
+          Byc[i][j][k] = B0y * (-1.0 + tanh(xBd) - tanh(xTd));
+          Bxc[i][j][k] = 0.;
+          Bzc[i][j][k] = 0.;
+        }
+    // communicate ghost
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+/* !!!!!!!!!!!! OLD INITIALISATION ROUTINES !!!!!!!!!!!!!! */
+
 /*! initiliaze EM for GEM challange */
 void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 #ifdef BATSRUS

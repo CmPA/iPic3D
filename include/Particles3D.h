@@ -28,7 +28,7 @@ class Particles3D:public Particles3Dcomm {
     /** Initial condition: uniform in space and maxwellian in velocity */
     void maxwellian(Grid * grid, VirtualTopology3D * vct);
     void twostream1D(Grid * grid, VirtualTopology3D * vct);
-
+    void relgem2D(Grid * grid, VirtualTopology3D * vct);
     void get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz);
     void get_El(const double weights[2][2][2], int ix, int iy, int iz, double& Exl, double& Eyl, double& Ezl, double*** Ex, double*** Ey, double*** Ez);
     void get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]);
