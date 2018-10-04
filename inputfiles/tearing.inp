@@ -28,7 +28,7 @@ delta = 1
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
 dt = 0.1               # dt = time step
-ncycles = 10          # cycles
+ncycles = 1          # cycles
 th = 0.5               # th =   decentering parameter
 c = 1.0                # c = light speed
 
@@ -74,7 +74,7 @@ NpMaxNpRatio    = 3.0                # Maximum number of particles allocated
 qom             = -1.0   1.0    -1.0     1.0     # Charge/mass ratio
 uth             = 0.2236 0.2236  0.0     0.0     # Thermal velocity in X 
 vth             = 0.2236 0.2236  0.0     0.0     # Thermal velocity in Y 
-wth             = 0.2236 0.2236  0.5590  0.5590  # Thermal velocity in Z (for drifting sp., temperature in the CS)
+wth             = 0.2236 0.2236  2.5     2.5     # Thermal velocity in Z (for drifting sp., temperature in the CS)
 u0              = 0.0    0.0     0.0     0.0     # Drift velocity in X
 v0              = 0.0    0.0     0.0     0.0     # Drift velocity in Y
 w0              = 0.0    0.0     0.7454 -0.7454  # Drift velocity in Z

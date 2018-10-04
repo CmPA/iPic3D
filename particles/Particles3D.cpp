@@ -193,15 +193,15 @@ void Particles3D::maxwellian(Grid * grid, VirtualTopology3D * vct) {
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mxp[counter] = u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * cos(theta);
+              mxp[counter] = u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * prob * cos(theta);
               // v
-              myp[counter] = v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * sin(theta);
+              myp[counter] = v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * prob * sin(theta);
               // w
               harvest = rand() / (double) RAND_MAX;
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mzp[counter] = w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * cos(theta);
+              mzp[counter] = w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * prob * cos(theta);
 
               double g = sqrt(1.0 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
               u[counter] = mxp[counter] / g;
@@ -242,15 +242,15 @@ void Particles3D::twostream1D(Grid * grid, VirtualTopology3D * vct) {
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mxp[counter] = u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * cos(theta);
+              mxp[counter] = u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * prob * cos(theta);
               // v
-              myp[counter] = v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * sin(theta);
+              myp[counter] = v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * prob * sin(theta);
               // w
               harvest = rand() / (double) RAND_MAX;
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mzp[counter] = w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * cos(theta);
+              mzp[counter] = w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * prob * cos(theta);
 
               double g = sqrt(1.0 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
               u[counter] = mxp[counter] / g;
@@ -280,15 +280,15 @@ void Particles3D::twostream1D(Grid * grid, VirtualTopology3D * vct) {
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mxp[counter] = -u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * cos(theta);
+              mxp[counter] = -u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * prob * cos(theta);
               // v
-              myp[counter] = -v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * sin(theta);
+              myp[counter] = -v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * prob * sin(theta);
               // w
               harvest = rand() / (double) RAND_MAX;
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
-              mzp[counter] = -w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * cos(theta);
+              mzp[counter] = -w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * prob * cos(theta);
 
               double g = sqrt(1.0 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
               u[counter] = mxp[counter] / g;
@@ -308,6 +308,8 @@ void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
   /* initialize random generator with different seed on different processor */
   srand(vct->getCartesian_rank() + 2 + 10*ns);
 
+  double qbg = (qom / fabs(qom)) * (rhoINIT / npcel) * (1.0 / grid->getInvVOL()); // Charge of the background
+
   double harvest;
   double prob, theta, sign;
   long long counter = 0;
@@ -323,21 +325,21 @@ void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
                 y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
                 z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
                 // q = charge
-                q[counter] = (qom / fabs(qom)) * (rhoINIT / npcel) * (1.0 / grid->getInvVOL());
+                q[counter] = qbg;
                 // u
                 harvest = rand() / (double) RAND_MAX;
                 prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
                 harvest = rand() / (double) RAND_MAX;
                 theta = 2.0 * M_PI * harvest;
-                mxp[counter] = u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * cos(theta);
+                mxp[counter] = u0 / sqrt(1.0 - u0*u0) + uth / sqrt(1.0 - uth*uth) * prob * cos(theta);
                 // v
-                myp[counter] = v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * sin(theta);
+                myp[counter] = v0 / sqrt(1.0 - v0*v0) + vth / sqrt(1.0 - vth*vth) * prob * sin(theta);
                 // w
                 harvest = rand() / (double) RAND_MAX;
                 prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
                 harvest = rand() / (double) RAND_MAX;
                 theta = 2.0 * M_PI * harvest;
-                mzp[counter] = w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * cos(theta);
+                mzp[counter] = w0 / sqrt(1.0 - w0*w0) + wth / sqrt(1.0 - wth*wth) * prob * cos(theta);
 
                 double g = sqrt(1.0 + mxp[counter]*mxp[counter] + myp[counter]*myp[counter] + mzp[counter]*mzp[counter]);
                 u[counter] = mxp[counter] / g;
@@ -359,8 +361,8 @@ void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
           const double xTd = xT / delta;
           const double sech_xBd = 1. / cosh(xBd);
           const double sech_xTd = 1. / cosh(xTd);
-          double rhoCS = eta * rhoINIT * sech_xBd * sech_xBd + eta * rhoINIT * sech_xTd * sech_xTd;
-          int npcelCS = npcel * (int) floor(rhoCS / rhoINIT); // Particles in this cell
+          double rhoCS = eta * rhoINIT * sech_xBd * sech_xBd - eta * rhoINIT * sech_xTd * sech_xTd;
+          int npcelCS = floor(double(npcel) * std::abs(rhoCS) / rhoINIT); // Particles in this cell
           // If yes, place them uniformly in the cell
           if (npcelCS >= 1) {
             int npcelyCS = (int) max(floor(sqrt(double(npcelCS) * dy/dx)), 1);
@@ -373,7 +375,7 @@ void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
                   y[counter] = (jj + .5) * (dy / npcelyCS) + grid->getYN(i, j, k);
                   z[counter] = (kk + .5) * (dz / npcelzCS) + grid->getZN(i, j, k);
                   // q = charge
-                  q[counter] = (qom / fabs(qom)) * (rhoINIT / npcel) * (1.0 / grid->getInvVOL());
+                  q[counter] = std::abs(rhoCS)/rhoCS; // Here use the charge as a proxy for the sign of the drift velocity
                   if (TrackParticleID)
                     ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
                   
@@ -404,7 +406,7 @@ void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
     for (auto ii=1; ii<Npoints; ii++) {
       double dz = dzmax;
       double z = z0;
-      double J = 4.72e-11;
+      double J = 3.1553e-10;
       double t = double(ii) / double(Npoints);
 
       int nk = 0;
@@ -427,7 +429,7 @@ void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
       // Drift component drawn from the values stored previously
       harvest = rand() / (double) RAND_MAX;
       int r = 1 + (int)(double(Npoints - 1) * harvest);
-      double ppz = - std::abs(qom)/qom * zz[r];
+      double ppz = std::abs(qom)/qom * q[i] * zz[r];
       double gppz = sqrt(1. + ppz*ppz);
       
       // Other two components*: solve nonlinear equation with Newton
@@ -468,6 +470,10 @@ void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
       u[i] = mxp[i] / g;
       v[i] = myp[i] / g;
       w[i] = mzp[i] / g;
+
+      // Charge (equal to the background)
+      q[i] = qbg;
+
 //cout << u[i] << " " << v[i] << " " << w[i] << endl;
     }
   }
