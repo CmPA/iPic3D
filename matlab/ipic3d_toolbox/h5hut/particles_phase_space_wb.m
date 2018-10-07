@@ -84,17 +84,12 @@ i = 104000
     %
     %   Extract subset
     %
-
-    %
-    %   Extract subset
-    %
-        radius = .2
-        volgorde= 0
-    for posx=0:radius:Lx
+radius = .2
+        
         posy=Ly/4
-        volgorde=volgorde+1
 
-    ii=abs(y-posy)<radius & abs(x-posx)<radius;
+
+    ii=abs(y-posy)<radius ;
     sum(ii)
     qsub=q(ii);
     xsub=x(ii);
@@ -103,9 +98,7 @@ i = 104000
     vsub=v(ii);
     wsub=w(ii);
     Nsub=max(size(xsub))
-    if Nsub>100
-    %plot(usub,vsub,'.','MarkerSize',[1])
-    %title(num2str(size(xsub)))
+
     if(is==0)
         vmax=.5;
     else
@@ -113,7 +106,7 @@ i = 104000
     end    
     vmin= -vmax;
     ndiv=100;
-    vdf_sp=spaziofasi3D(usub,wsub,vsub,qsub,vmin,vmax,ndiv);
+    [totnum,vdf_sp,xrange,urange]=spaziofasi2(xsub,usub,qsub,0,0,Lx,vmin,vmax,ndiv);
         %vdf_sp=vdf_sp./sum(vdf_sp(:));
         
     global color_choice symmetric_color titolo square labelT
@@ -125,31 +118,15 @@ i = 104000
     symmetric_color = 0 
     labelT=''
     titolo=['Npart=' num2str(Nsub)];
-    immagine_dir([vmin vmax],[vmin vmax],log10(1e-10+squeeze(sum(vdf_sp,2))), ...
-             ['vdfXZ_' 'species_' num2str(is) '_' num2str(volgorde)], ...
-             [0 5e-3]*0,Nsm,titolo,0,1,[1 3],'v_x/c','v_z/c','vdf');
-    immagine_dir([vmin vmax],[vmin vmax],log10(1e-10+squeeze(sum(vdf_sp,3))), ...
-             ['vdfXY_' 'species_' num2str(is) '_' num2str(volgorde)], ...
-             [0 5e-3]*0,Nsm,titolo,0,1,[2 3],'v_x/c','v_y/c','vdf');
-    %figure(1)
-    subplot(1,3,3)
-    contourf(xc,yc,log(ath.^2+1e-10))
-    %pcolor(xc,yc,b)
-    shading interp
-    hold on
-    plot(xsub,ysub,'w.')
-    axis equal
-    %set(gca,'xdir','reverse','TickDir','out')
-    %xlim(gsmx([0 Lx]))
-    %ylim(gsmy2z([0 Ly]))
+    immagine_dir([0 Lx],[vmin vmax],log10(vdf_sp'), ...
+             ['vdfXZ_' 'species_' num2str(is) '_' ], ...
+             [0 5e-3]*0,Nsm,titolo,0,1,[1 1],'v_x/c','v_z/c','vdf');
+
     xlabel('x', 'fontsize',[14])
     ylabel('y', 'fontsize',[14])
     set(gca,'fontsize',[14])
     hold off
-    print('-dpng',['combo' sprintf('%06.0f',volgorde)])
+    print('-dpng',['spaziofasi' sprintf('%06.0f',is)])
 
   
 
-    end 
-    
-    end
