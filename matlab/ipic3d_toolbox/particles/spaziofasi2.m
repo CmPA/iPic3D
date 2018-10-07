@@ -20,6 +20,9 @@ for i=1:ibin
     totnum=totnum+sum(nbin);
     nbib=nbin*0;
     for j=1:ibin;nbin(j)=sum(abs(qtmp(bin==j)));end
-    nbinu=[nbinu nbin.*(xrange(i)+dx/2).^cyl];
+    nbin_tmp=nbin.*(xrange(i)+dx/2).^cyl;
+    %size(nbin_tmp)
+    nbin_tmp=reshape(nbin_tmp,ndiv+1,1);
+    nbinu=[nbinu nbin_tmp];
 end
 

@@ -1,4 +1,5 @@
 close all
+clear all
 addpath(genpath('../../ipic3d_toolbox'));
 
 
@@ -12,7 +13,7 @@ zcode = Lz/2;
 case 'tred81'
 tred81;
 case_name='GEM';
-cycle = 18000;
+cycle = 15000;
 zcode = Lz/2;
 case 'AH'
 generic;
@@ -93,6 +94,29 @@ end
 
 [Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
 S=sqrt(Sx.^2+Sy.^2+Sz.^2);
+
+xc=Lx-linspace(0, Lx, Nx);
+yc=linspace(0, Ly, Ny);
+AAz=zeros(size(Bx));
+for kr=1:Nz
+AAz(:,:,kr)=vecpot(xc,yc,Bx(:,:,kr),By(:,:,kr));
+AAz(:,:,kr)=AAz(:,:,kr)-AAz(round(Nx/2),round(Ny/2),kr);
+end
+figure
+imagesc(mean(AAz,3)')
+colorbar
+
+[X,Y,Z]=ndgrid(1:Nx,1:Ny,1:Nz);
+figure
+plot3(AAz(:),Y(:),S(:),'.')
+figure
+plot(AAz(:),S(:),'.')
+figure
+ndiv=100;
+[totnum,nbinu,xrange,urange]=spaziofasi2(AAz(:),S(:),ones(Nx*Ny*Nz,1),0,min(AAz(:)),max(AAz(:)),min(S(:)),max(S(:))/10,ndiv);
+imagesc(xrange,urange,log10(nbinu))
+figure
+
 %spectrum = fft(Ez.*By-Bz.*Ey,[],3);
 spectrum = fft(Sz,[],3);
 
@@ -102,7 +126,7 @@ bar(0:39,(modes(1:40)))
 set(gca,'Yscale','log')
 
 for i=1:20
-h=figure(i)
+h=figure(100+i)
 subplot(2,1,1)
 imagesc(log10(abs(spectrum(:,:,i))'))
 ylabel('y/d_i')
