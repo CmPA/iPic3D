@@ -7,7 +7,7 @@ addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-sim_name='tred77'
+sim_name='AH'
 switch sim_name
 case 'tred77'
     TRED77;
@@ -17,7 +17,7 @@ case 'tred77'
 case 'AH'
     generic;
     case_name='AH';
-    cycle =4000;
+    cycle =5000;
     zcode = Lz/2;
 case 'HRmaha3D3'
     HRmaha3D3;
@@ -71,8 +71,8 @@ end
 bufferX=round(Nx/20);
 bufferY=round(Ny/20);
 
-%bufferX=round(Nx/2.5);
-%bufferY=round(Ny/2.3);
+bufferX=round(Nx/2.5);
+bufferY=round(Ny/2.3);
 
 ir=bufferX:Nx-bufferX;
 jr=bufferY:Ny-bufferY;

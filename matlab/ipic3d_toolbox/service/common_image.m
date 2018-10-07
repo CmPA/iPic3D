@@ -26,6 +26,12 @@ clmt(2)=-clmt(1)
 end
 end
 
+%ftrunc=-9;
+%flog=sign(J).*(log10(max(abs(J),10^ftrunc))-ftrunc);
+%  fmax=3;
+%  fmin=-fmax;
+
+
 %Ncut=max(Nsm*3,1)
 Ncut=1
 
@@ -35,6 +41,7 @@ imagesc(x(1,:),y(:,1),J',clmt)
 hold on
 contour(x,y,Az',20,'k')
 caxis(clmt)
+%caxis([fmin fmax])
 
 if(color_choice==0)
         colormap jet

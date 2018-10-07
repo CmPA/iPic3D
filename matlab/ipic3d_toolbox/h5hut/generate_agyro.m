@@ -4,7 +4,7 @@ addpath(genpath('../../ipic3d_toolbox')); % Point to the directory where the iPi
 
 
 
-sim_name='tred77'
+sim_name='AH'
 switch sim_name
 case 'tred77'
     TRED77;
@@ -14,7 +14,7 @@ case 'tred77'
 case 'AH'
     generic;
     case_name='AH';
-    cycle =4000;
+    cycle =5000;
     zcode = Lz/2;
 case 'HRmaha3D3'
     HRmaha3D3;
