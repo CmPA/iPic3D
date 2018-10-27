@@ -121,6 +121,18 @@ figura(AAz,UPez,4,'uPez',ncycle)
 figura(AAz,UPix,4,'uPix',ncycle)
 figura(AAz,UPiy,4,'uPiy',ncycle)
 figura(AAz,UPiz,4,'uPiz',ncycle)
+figura(AAz,Jex.*Ex+Jey.*Ey+Jez.*Ez,4,'JeE',ncycle)
+figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle)
+
+        
+        Epx = Ex + (Jey.*Bz - Jez.*By)./rhoe;
+        Epy = Ey + (Jez.*Bx - Jex.*Bz)./rhoe;
+        Epz = Ez + (Jex.*By - Jey.*Bx)./rhoe;
+        
+        JdotEp=(Jex+Jix).*Epx + (Jey+Jiy).*Epy + (Jez+Jiz).*Epz;
+figura(AAz,JdotEp,4,'JEp',ncycle)
+        
+        
 function [] = figura(a,p,n,name,prename)
 % MYMEAN Example of a local function.
 close all
