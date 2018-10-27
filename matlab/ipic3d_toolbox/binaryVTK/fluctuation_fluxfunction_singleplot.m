@@ -144,6 +144,7 @@ end
 % close(n)
 figure(n)
 [totnum,nbinu,xrange,urange]=spaziofasi2(a(:),dp(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dp(:)),max(dp(:)),ndiv);
+durange=urange(2)-urange(1);
 imagesc(xrange,urange,log10(nbinu))
 xlabel('\Phi')
 ylabel(name)
@@ -151,29 +152,39 @@ colorbar
 colormap hsv
 
 
-!rm tmp*.png
-Ncuts=5;
+Ncuts=7;
 figure(n+1)
-        urka=-20:.1:20
-        semilogy(urka,exp(-urka.^2/2)/sqrt(2*pi))
+        urka=-20:.1:20;
+        semilogy(urka,exp(-urka.^2/2)/sqrt(2*pi),'k--')
 hold on
+labelle=["normal"];
+list_value=[-.02, -.01, 0, .005, .01, .015, .02] %tred82
+list_value=-.02:.01:.04 %tred81
+Nxr=max(size(xrange));
+
 for i=1:Ncuts
-ip=round(ndiv/Ncuts*i-ndiv/Ncuts/2);
+%ip=round(ndiv/Ncuts*i-ndiv/Ncuts/2);
+ip=(list_value(i)*(Nxr-1)+max(xrange)-min(xrange)*Nxr)/(max(xrange)-min(xrange));
+ip=round(ip);
+lr=num2str(xrange(ip),'%10.3f\n');
+labelle=[labelle;string(lr)];
 figure(n)
 hold on
-plot([xrange(ip) xrange(iP)],[min(urange) max(urange)])
+plot([xrange(ip) xrange(ip)],[min(urange) max(urange)],'w')
 figure(n+1)
 sig=sqrt(urange.^2*nbinu(:,ip)/sum(nbinu(:,ip)));
-        semilogy(urange/sig,nbinu(:,ip)./max(nbinu(:,ip)),'linewidth',[4])
+        semilogy(urange/sig,nbinu(:,ip)./sum(durange/sig*nbinu(:,ip)))%,'linewidth',[4])
 %ylim([min(nbinu(:,ip)) max(nbinu(:,ip))])
-ylim([1e-6, 10])
-xlabel(['\Delta' name])
-title(num2str(xrange(ip)))
-set(gca,'fontsize',[14])
-print('-dpng','-r300',['tmp' num2str(i,'%03.f')])
 end
+ylim([1e-6, 10])
+xlim([-20 20])
+xlabel(['\Delta' name])
+title(name)
+legend(labelle)
+set(gca,'fontsize',[14])
+print('-dpng','-r300',[prename '_mp_' name])
 close(n+1)
-        
+figure(n)        
 print('-dpng','-r300',[prename '_d_' name])
 close(n)
 
