@@ -7,8 +7,23 @@ addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-sim_name='AH'
-switch sim_name
+sim_name='tred82'
+switch sim_name    
+    case 'tred74'
+tred74;
+case_name='GEM';
+cycle = 18000;
+zcode = Lz/2;
+    case 'tred81'
+tred81;
+case_name='GEM';
+cycle = 18000;
+zcode = Lz/2;
+    case 'tred82'
+tred82;
+case_name='GEM';
+cycle = 18000;
+zcode = Lz/2;
 case 'tred77'
     TRED77;
     case_name='GEM';
@@ -53,7 +68,7 @@ end
 poynting=true;
 electrons=true;
 ions=true;
-saveVTK=false;
+saveVTK=true;
 
 cyl = 0; % cartesian geometry
 
@@ -71,8 +86,8 @@ end
 bufferX=round(Nx/20);
 bufferY=round(Ny/20);
 
-bufferX=round(Nx/2.5);
-bufferY=round(Ny/2.3);
+%bufferX=round(Nx/2.5);
+%bufferY=round(Ny/2.3);
 
 ir=bufferX:Nx-bufferX;
 jr=bufferY:Ny-bufferY;
@@ -97,7 +112,7 @@ reversey=1;
 symmetric_color=1;
 color_choice =3;
 switch sim_name
-case {'tred77','AH'}
+case {'tred81','tred82','tred77','AH'}
     labelx ='x/d_i';
     labely ='y/d_i';
     labelc_flux = 'c.u.';
@@ -299,7 +314,7 @@ end
 end
 
 
-agyro=true
+agyro=false
 if(agyro)
     symmetric_color=0;
     color_choice =-1;

@@ -6,15 +6,25 @@ close all
 addpath(genpath('../../ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
-sim_name='tred77'
+sim_name='tred82'
 switch sim_name
 case 'tred77'
 TRED77;
 case_name='GEM';
 cycle = 15000;
 zcode = Lz/2;
+    case 'tred74'
+tred74;
+case_name='GEM';
+cycle = 18000;
+zcode = Lz/2;
 case 'tred81'
 tred81;
+case_name='GEM';
+cycle = 18000;
+zcode = Lz/2;
+case 'tred82'
+tred82;
 case_name='GEM';
 cycle = 18000;
 zcode = Lz/2;
@@ -162,79 +172,79 @@ divS = divS*nWm3;
 
 
 labelc = labelc_power;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotE(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','JE',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotEp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','JEp',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divS(ir,:,kr),Vex_plane(ir,kr),Vez_plane(ir,kr) ,'AVG_Z','divS',[-1 1]*0e-9, radius, 4);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotE(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','JE',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotEp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','JEp',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divS(ir,:,kr),Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','divS',[-1 1]*0e-9, radius, 4);
 
 
 % The poynting flux is in SI units, W/m^3 so we need multiplication by 1e3
 % to have it in mW/m^2
 labelc = labelc_flux;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Sx(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'AVG_Z','Sx',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Sy(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Sy',[-1 1]*0e-9, radius, 3);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Sz(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'AVG_Z','Sz',[-1 1]*0e-9, radius, 4);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Sx(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Sx',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Sy(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Sy',[-1 1]*0e-9, radius, 3);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Sz(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Sz',[-1 1]*0e-9, radius, 4);
 
 
 Sperp1=(By.*Sx-Bx.*Sy)./B2D;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Sperp1(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Sperp1',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Sperp1(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Sperp1',[-1 1]*0e-9, radius, 2);
 Sperp2=perp2x.*Sx+perp2y.*Sy+perp2z.*Sz;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Sperp2(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'AVG_Z','Sperp2',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Sperp2(ir,:,kr)*1e3,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Sperp2',[-1 1]*0e-9, radius, 2);
 
 end
 
 if(electrons)
 
 labelc = labelc_power;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JedotE(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','JeE',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQbulk(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','divQbulke',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQenth(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','divQenthe',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQhf(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','divQhfe',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JedotE(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','JeE',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQbulk(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQbulke',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQenth(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQenthe',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQhf(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQhfe',[-1 1]*0e-10, radius,1);
 
 labelc = labelc_flux;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qbulkex(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'AVG_Z','Qbulkex',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkey(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qbulkey',[-1 1]*0e-9, radius, 3);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkez(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'AVG_Z','Qbulkez',[-1 1]*0e-9, radius, 4);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qbulkex(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Qbulkex',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkey(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qbulkey',[-1 1]*0e-9, radius, 3);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkez(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Qbulkez',[-1 1]*0e-9, radius, 4);
 
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qenthex(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qenthex',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthey(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qenthey',[-1 1]*0e-9, radius, 3);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthez(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qenthez',[-1 1]*0e-9, radius, 4);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qenthex(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qenthex',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthey(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qenthey',[-1 1]*0e-9, radius, 3);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthez(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qenthez',[-1 1]*0e-9, radius, 4);
 
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qhfex(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qhfex',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qhfey(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qhfey',[-1 1]*0e-9, radius, 3);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qhfez(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qhfez',[-1 1]*0e-9, radius, 4);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qhfex(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qhfex',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qhfey(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qhfey',[-1 1]*0e-9, radius, 3);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qhfez(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qhfez',[-1 1]*0e-9, radius, 4);
 
 
 Qenthepar= dot(Qenthex,Qenthey,Qenthez,Bx,By,Bz)./B;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthepar(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qenthepar',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthepar(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qenthepar',[-1 1]*0e-9, radius, 2);
 Qentheperp1=(By.*Qenthex-Bx.*Qenthey)./B2D;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qentheperp1(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qentheprp1',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qentheperp1(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qentheprp1',[-1 1]*0e-9, radius, 2);
 Qentheperp2=perp2x.*Qenthex+perp2y.*Qenthey+perp2z.*Qenthez;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qentheperp2(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'AVG_Z','Qentheprp2',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qentheperp2(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qentheprp2',[-1 1]*0e-9, radius, 2);
 
 
 Qbulkepar= dot(Qbulkex,Qbulkey,Qbulkez,Bx,By,Bz)./B;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkepar(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','Qbulkepar',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkepar(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','Qbulkepar',[-1 1]*0e-9, radius, 2);
 Qbulkeperp1=(By.*Qbulkex-Bx.*Qbulkey)./B2D;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkeperp1(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr),'AVG_Z','Qbulkeprp1',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkeperp1(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','Qbulkeprp1',[-1 1]*0e-9, radius, 2);
 Qbulkeperp2=perp2x.*Qbulkex+perp2y.*Qbulkey+perp2z.*Qbulkez;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkeperp2(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','Qbulkeprp2',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkeperp2(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','Qbulkeprp2',[-1 1]*0e-9, radius, 2);
 
 
 labelc = labelc_power;
 
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divUP(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','divUPe',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),udivP(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','UdivPe',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),ugradp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','Ugradpe',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),udivP(ir,:,kr)-ugradp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','offUdivPe',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),PgradV(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','PgradVe',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),pdivv(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','pdivVe',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),PgradV(ir,:,kr)-pdivv(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','offPgradVe',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubulk(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','UbulkdivVe',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','UthdivVe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divUP(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','divUPe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),udivP(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','UdivPe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),ugradp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','Ugradpe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),udivP(ir,:,kr)-ugradp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','offUdivPe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),PgradV(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','PgradVe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),pdivv(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','pdivVe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),PgradV(ir,:,kr)-pdivv(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','offPgradVe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubulk(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','UbulkdivVe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','UthdivVe',[-1 1]*0e-9, radius, 2);
 
 
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','DUbulkeDt',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'AVG_Z','DUtheDt',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','DUbulkeDt',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','DUtheDt',[-1 1]*0e-9, radius, 2);
 
 end
 
@@ -252,58 +262,58 @@ end
 if(ions)
 
 labelc = labelc_power;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JidotE(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'AVG_Z','JiE',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQbulk(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','divQbulki',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQenth(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'AVG_Z','divQenthi',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQhf(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','divQhfi',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JidotE(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'MAXP','JiE',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQbulk(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','divQbulki',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQenth(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'MAXP','divQenthi',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQhf(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','divQhfi',[-1 1]*0e-10, radius,1);
 
 labelc = labelc_flux;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qbulkix(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'AVG_Z','Qbulkix',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiy(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'AVG_Z','Qbulkiy',[-1 1]*0e-9, radius, 3);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiz(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'AVG_Z','Qbulkiz',[-1 1]*0e-9, radius, 4);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qbulkix(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qbulkix',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiy(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qbulkiy',[-1 1]*0e-9, radius, 3);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiz(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qbulkiz',[-1 1]*0e-9, radius, 4);
 
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qenthix(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'AVG_Z','Qenthix',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthiy(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'AVG_Z','Qenthiy',[-1 1]*0e-9, radius, 3);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthiz(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'AVG_Z','Qenthiz',[-1 1]*0e-9, radius, 4);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qenthix(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qenthix',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthiy(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'MAXP','Qenthiy',[-1 1]*0e-9, radius, 3);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthiz(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qenthiz',[-1 1]*0e-9, radius, 4);
 
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qhfix(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'AVG_Z','Qhfix',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qhfiy(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'AVG_Z','Qhfiy',[-1 1]*0e-9, radius, 3);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qhfiz(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'AVG_Z','Qhfiz',[-1 1]*0e-9, radius, 4);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qhfix(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'MAXP','Qhfix',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qhfiy(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qhfiy',[-1 1]*0e-9, radius, 3);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qhfiz(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'MAXP','Qhfiz',[-1 1]*0e-9, radius, 4);
 
 
 Qenthipar= dot(Qenthix,Qenthiy,Qenthiz,Bx,By,Bz)./B;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthipar(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'AVG_Z','Qenthipar',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthipar(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'MAXP','Qenthipar',[-1 1]*0e-9, radius, 2);
 Qenthiperp1=(By.*Qenthix-Bx.*Qenthiy)./B2D;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthiperp1(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'AVG_Z','Qenthiprp1',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthiperp1(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qenthiprp1',[-1 1]*0e-9, radius, 2);
 Qenthiperp2=perp2x.*Qenthix+perp2y.*Qenthiy+perp2z.*Qenthiz;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthiperp2(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'AVG_Z','Qenthiprp2',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qenthiperp2(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'MAXP','Qenthiprp2',[-1 1]*0e-9, radius, 2);
 
 
 Qbulkipar= dot(Qbulkix,Qbulkiy,Qbulkiz,Bx,By,Bz)./B;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkipar(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'AVG_Z','Qbulkipar',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkipar(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qbulkipar',[-1 1]*0e-9, radius, 2);
 Qbulkiperp1=(By.*Qbulkix-Bx.*Qbulkiy)./B2D;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiperp1(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'AVG_Z','Qbulkiprp1',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiperp1(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'MAXP','Qbulkiprp1',[-1 1]*0e-9, radius, 2);
 Qbulkiperp2=perp2x.*Qbulkix+perp2y.*Qbulkiy+perp2z.*Qbulkiz;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiperp2(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'AVG_Z','Qbulkiprp2',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiperp2(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) ,'MAXP','Qbulkiprp2',[-1 1]*0e-9, radius, 2);
 
 
 labelc = labelc_power;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divUP(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','divUPi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),udivP(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','UdivPi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),ugradp(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','Ugradpi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),udivP(ir,:,kr)-ugradp(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','offUdivPi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),PgradV(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','PgradVi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),pdivv(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','pdivVi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),PgradV(ir,:,kr)-pdivv(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','offPgradVi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubulk(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','UbulkdivVi',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','UthdivVi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divUP(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','divUPi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),udivP(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','UdivPi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),ugradp(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Ugradpi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),udivP(ir,:,kr)-ugradp(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','offUdivPi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),PgradV(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','PgradVi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),pdivv(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','pdivVi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),PgradV(ir,:,kr)-pdivv(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','offPgradVi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubulk(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','UbulkdivVi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','UthdivVi',[-1 1]*0e-9, radius, 2);
 
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','DUbulkiDt',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','DUthiDt',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','DUbulkiDt',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','DUthiDt',[-1 1]*0e-9, radius, 2);
 
 end
 
-agyro=true
+agyro=false
 if(agyro)
     symmetric_color=0;
     color_choice =-1;
@@ -311,10 +321,10 @@ if(agyro)
     Agyro=hdf5read(fn,'/Step#0/Block/Agyro/0/');
     Nongyro_swisdak=hdf5read(fn,'/Step#0/Block/Nongyro_swisdak/0/');
     Nongyro_aunai=hdf5read(fn,'/Step#0/Block/Nongyro_aunai/0/');
-    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Agyro(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','Agyro',[-1 1]*0e-9, radius, 2);
-    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Agyro_aunai(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','Agyro-aunai',[-1 1]*0e-9, radius, 2);
-    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Nongyro_swisdak(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','Nongyro-swisdak',[-1 1]*0e-9, radius, 2);
-    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Nongyro_aunai(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'AVG_Z','Nongyro-aunai',[-1 1]*0e-9, radius, 2);
+    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Agyro(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Agyro',[-1 1]*0e-9, radius, 2);
+    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Agyro_aunai(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Agyro-aunai',[-1 1]*0e-9, radius, 2);
+    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Nongyro_swisdak(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Nongyro-swisdak',[-1 1]*0e-9, radius, 2);
+    tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Nongyro_aunai(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Nongyro-aunai',[-1 1]*0e-9, radius, 2);
 end
 
 

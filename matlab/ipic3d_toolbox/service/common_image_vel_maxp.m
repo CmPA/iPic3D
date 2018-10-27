@@ -82,6 +82,6 @@ if(reversey==1)
 end
 %set(gca,'xdir','reverse','TickDir','out')
 %print('-depsc','-r300',[name '.eps'])
-print('-dpng','-r300',[name Ncycle '.png'])
+print('-dpng','-r300',[nlabel name Ncycle '.png'])
 %saveas(gcf,[name '.fig'])
 close(nfig)

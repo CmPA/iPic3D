@@ -6,12 +6,22 @@ close all
 addpath(genpath('~/iPic3D-github/matlab/ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
-sim_name='7feb09'
+sim_name='tred82'
 switch sim_name
 case 'tred77'
 TRED77;
 case_name='GEM';
 cycle = 15000;
+zcode = Lz/2;
+    case 'tred81'
+tred81;
+case_name='GEM';
+cycle = 18000;
+zcode = Lz/2;
+    case 'tred82'
+tred82;
+case_name='GEM';
+cycle = 18000;
 zcode = Lz/2;
 case 'AH'
 generic;
@@ -82,7 +92,7 @@ symmetric_color=1;
 color_choice =3;
 
 switch sim_name
-case {'tred77','AH'}
+case {'tred82','tred81','tred77','AH'}
 labelx ='x/d_i';
 labely ='z/d_i';
 labelc_flux = 'c.u.';

@@ -3,7 +3,7 @@ clear all
 addpath(genpath('../../ipic3d_toolbox'));
 
 
-sim_name='tred81'
+sim_name='tred85'
 switch sim_name
 case 'tred77'
 TRED77;
@@ -13,7 +13,17 @@ zcode = Lz/2;
 case 'tred81'
 tred81;
 case_name='GEM';
-cycle = 15000;
+cycle = 18000;
+zcode = Lz/2;
+    case 'tred82'
+tred82;
+case_name='GEM';
+cycle = 18000;
+zcode = Lz/2;    
+    case 'tred85'
+tred85;
+case_name='GEM';
+cycle = 18000
 zcode = Lz/2;
 case 'AH'
 generic;
@@ -115,37 +125,64 @@ figure
 ndiv=100;
 [totnum,nbinu,xrange,urange]=spaziofasi2(AAz(:),S(:),ones(Nx*Ny*Nz,1),0,min(AAz(:)),max(AAz(:)),min(S(:)),max(S(:))/10,ndiv);
 imagesc(xrange,urange,log10(nbinu))
-figure
+close all
 
-%spectrum = fft(Ez.*By-Bz.*Ey,[],3);
-spectrum = fft(Sz,[],3);
+work_horse(Sx,'Sx',Lx,Ly);
+work_horse(Sy,'Sy',Lx,Ly);
+work_horse(Sz,'Sz',Lx,Ly);
+work_horse(S,'S',Lx,Ly);
+work_horse(Ex,'Ex',Lx,Ly);
+work_horse(Ey,'Ey',Lx,Ly);
+work_horse(Ez,'Ez',Lx,Ly);
+work_horse(Bx,'Bx',Lx,Ly);
+work_horse(By,'By',Lx,Ly);
+work_horse(Bz,'Bz',Lx,Ly);
 
-modes=(squeeze(sum(sum(spectrum.*conj(spectrum),1),2)));
-figure(1000)
-bar(0:39,(modes(1:40)))
-set(gca,'Yscale','log')
-
-for i=1:20
-h=figure(100+i)
-subplot(2,1,1)
-imagesc(log10(abs(spectrum(:,:,i))'))
-ylabel('y/d_i')
-title(['S(x,y) m_z=' num2str(i-1) ])
-nc=round(mean(mean(log10(abs(spectrum(:,:,i))'))));
-caxis([nc-2 nc+2])
-colormap hsv
-colorbar
-subplot(2,1,2)
-imagesc(angle(spectrum(:,:,i))'.*abs(spectrum(:,:,i))')
-load cm_new
-%colormap(cm_kbwrk)
-xlabel('x/d_i')
-ylabel('y/d_i')
-title(['S(x,y) m_z=' num2str(i-1) ])
-colorbar
-print('-dpng', '-r300',['FFTZ_S_m' num2str(i-1) '.png'])
-%caxis([-2 2]*1e-3)
-end
 %saveas(h,'tred70.fig')
 %print -dpng -r1200 tred70.png
 %end
+
+function [out]=work_horse(S,varname,Lx,Ly)
+
+%spectrum = fft(Ez.*By-Bz.*Ey,[],3);
+spectrum = fft(S,[],3);
+
+modes=(squeeze(sum(sum(spectrum.*conj(spectrum),1),2)));
+
+for i=1:20
+    nc(i)=round(mean(mean(log10(1e-10+abs(spectrum(:,:,i))'))));
+end
+nc(2:end)=max(nc(2:end));
+figure(1000)
+bar(0:39,(modes(1:40)))
+set(gca,'Yscale','log')
+close all
+for i=1:20
+h=figure(100+i)
+%subplot(2,1,1)
+imagesc([0 Lx],[0 Ly],log10(abs(spectrum(:,:,i))'))
+ylabel('y/d_i')
+title([varname '(x,y) m_z=' num2str(i-1) ])
+
+nc(i)
+caxis([nc(i)-2 nc(i)+2])
+
+colormap hsv
+colorbar
+axis equal 
+axis tight
+% subplot(2,1,2)
+% imagesc(angle(spectrum(:,:,i))')%.*abs(spectrum(:,:,i))')
+% load cm_new
+% %colormap(cm_kbwrk)
+% xlabel('x/d_i')
+% ylabel('y/d_i')
+% title([varname '(x,y) m_z=' num2str(i-1) ])
+% colorbar
+print(h,'-dpng', '-r300',['FFTZ_' varname '_m' num2str(i-1,'%03.f') '.png'])
+%export_fig(['eFFTZ_' varname '_m' num2str(i-1,'%03.f') '.png'],'-png')
+close(100+i)
+%caxis([-2 2]*1e-3)
+end
+out=1;
+end
