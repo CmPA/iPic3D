@@ -31,7 +31,7 @@ int main(int argc, char **argv) {
     /* ----------------------------------------------------- */
 
     KCode.UpdateCycleInfo(i);
-    KCode.CalculateField();
+    KCode.CalculateField(i);
 
     b_err = KCode.ParticlesMover();
 

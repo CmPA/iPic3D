@@ -228,7 +228,7 @@ void c_Solver::UpdateCycleInfo(int cycle) {
   if (cycle == first_cycle) {
     if (col->getCase()=="Dipole") {
       EMf->SetDipole_2Bext(vct,grid,col);
-      EMf->SetLambda(grid);
+      EMf->SetLambda(grid, cycle);
     }
   }
 
@@ -236,13 +236,16 @@ void c_Solver::UpdateCycleInfo(int cycle) {
   // so it enters, as old magnetic field, in the En+theta calculation
   ebox->UpdateEbParameter();
   EMf->UpdateEBVectors(grid, ebox);
-  //EMf->SetBackgroundEBoxB(vct,grid,col);
+
+  // try damping E the first gyroperiod
+  EMf->SetLambda(grid, cycle);
+
 #endif
 
 
 }
 
-void c_Solver::CalculateField() {
+void c_Solver::CalculateField(int cycle) {
 
   // timeTasks.resetCycle();
   // interpolation
@@ -256,6 +259,7 @@ void c_Solver::CalculateField() {
   // MAXWELL'S SOLVER
   // timeTasks.start(TimeTasks::FIELDS);
   EMf->calculateE(grid, vct, col);               // calculate the E field
+  
   // timeTasks.end(TimeTasks::FIELDS);
 
 }
@@ -462,7 +466,7 @@ void c_Solver::WriteOutput(int cycle) {
 
     if ((cycle % part[i].GetTrackingSpOutputCycle() == 0 || cycle == first_cycle) && part[i].GetTrackSpecies() ){
       cout << "Proc " << vct->getCartesian_rank() << " sp " << i << " is writing tracking info" << endl;
-      part[i].WriteTracking(cycle, vct, col);
+      part[i].WriteTracking(cycle, vct, col, EMf, grid);
       
     }
   }

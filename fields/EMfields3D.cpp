@@ -256,9 +256,20 @@ void EMfields3D::calculateE(Grid * grid, VirtualTopology3D * vct, Collective *co
   // move from krylov space to physical space
   solver2phys(Exth, Eyth, Ezth, xkrylov, nxn, nyn, nzn);
 
+  /* for (int i=0; i< nxn; i++)
+    for (int j=0; j< nyn; j++)
+      for (int k=0; k< nzn; k++){
+	Eyth[i][j][k]=0.0;
+	Ezth[i][j][k]=0.0;
+	//Exth[i][j][k]=0.0;
+      }
+  cout << "EY and EZ put to zero, for real this time" << endl;
+  //cout << "Ex put to zero, for real this time" << endl; */
+
   addscale(1 / th, -(1.0 - th) / th, Ex, Exth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ey, Eyth, nxn, nyn, nzn);
   addscale(1 / th, -(1.0 - th) / th, Ez, Ezth, nxn, nyn, nzn);
+  
 
   // apply to smooth to electric field 3 times
   smoothE(Smooth, vct, col);
@@ -2798,7 +2809,12 @@ void EMfields3D::UpdateRHOcs(Grid * grid){
     //grid->interpN2C(rhocs, is, rhons);
 }
 
-void EMfields3D::SetLambda(Grid *grid){
+void EMfields3D::SetLambda(Grid *grid, int cycle){
+
+  double STOP = 300;
+  double Perc= (STOP- double(cycle))/ STOP;
+  if (cycle> STOP) return;
+  //  cout << "Cycle " << cycle <<": Lambda with factor " << Perc << endl;
 
   for (int i=0; i < nxn; i++){
     for (int j=0; j < nyn; j++){
@@ -2813,10 +2829,13 @@ void EMfields3D::SetLambda(Grid *grid){
 
         Lambda[i][j][k] = 0.0;
 
-        if (x > xmin_r) {
+        /*if (x > xmin_r) {
           if (x < xmax_r) Lambda[i][j][k] = ((x - xmin_r) /  (xmax_r - xmin_r)) * 4.0 * M_PI / dx;
           else            Lambda[i][j][k] = 4.0 * M_PI / dx;
-        }
+	  }*/
+
+
+	//Lambda[i][j][k] = 4.0 * M_PI / dx * Perc;
 
       }
     }
@@ -4188,18 +4207,31 @@ void EMfields3D::SetBackgroundEBoxB(VirtualTopology3D *vct, Grid* grid, Collecti
 
 void EMfields3D::initByPert(VirtualTopology3D * vct, Grid * grid, Collective *col){
 
-  double Per= 0.05;
-  double n1= 1;
-  /*  double n2= 5;
-  double n3= 6;
-  double n4= 7;
-  double n5= 8;*/
-  cout << "Init with By-Bz perturbation in x direction, " 
-       << "Pert= " << Per 
-       << "n1= " <<n1 <<endl;/* << " n2= " <<n2 << " n3= " <<n3 
-				<< " n4= " <<n4 << " n5= " <<n5 << endl;*/
+  // THIS IS THE INITIALIZATION FOR A WHISTLER, INTERACTS WITH ELECTRONS WITH VX< 0
+
+  double Per=B0x/10; //B0x/5 ; //B0x/20;  //B0x/10;
+  double n1= 1 ; //2;
+
+  double kCalc= 2.0*3.14*n1/Lx;
+  // the expected real frequency for whistler from Gary, blue book, 6.2.6
+  // I am assuming normalization to electrons
+  double mi= 1./qom[1];
+  double omega_pi= 1.0/sqrt(mi);
+  double Omega_ci= B0x/mi;
+  double omega_r_exp= kCalc*(Omega_ci)/omega_pi*sqrt(1.0+ kCalc*kCalc/omega_pi/omega_pi);
+  double PertE= omega_r_exp*Per/kCalc; 
   
+
+  cout << "Init with coupled By-Bz/ Ey-Ez perturbation in x direction, for whistler " << endl
+       << "PertB= " << Per << " PertE= " << PertE << " exp omega_r = " << omega_r_exp << endl
+       << "n1= " <<n1 <<endl;
+
+  /*Per= 0.0033;
+  PertE= 0.000259;
   
+  cout << "Init with whistler pertubation set for resonance with vx< 0 " << endl
+       << "PertB= " << Per << " PertE= " << PertE << " obtained form other run (Lx= pi)" << endl
+       << "n1= " <<n1 <<endl;*/
 
   for (int i = 0; i < nxn; i++) {
     for (int j = 0; j < nyn; j++) {
@@ -4215,13 +4247,12 @@ void EMfields3D::initByPert(VirtualTopology3D * vct, Grid * grid, Collective *co
 	Bzn[i][j][k] = B0z;
 	double xM = grid->getXN(i, j, k);
 	Byn[i][j][k] += Per*sin(n1*2*M_PI * xM / Lx);
+	//Bzn[i][j][k] -= Per*cos(n1*2*M_PI * xM / Lx);
+	/* NB: i use a +sin, -cos perturbation so the electrons with
+	   +vth resonate, otherwise the ones with -vth resonate */
 	Bzn[i][j][k] += Per*cos(n1*2*M_PI * xM / Lx);
-	/*Byn[i][j][k] += Per*sin(n1*2*M_PI * xM / Lx);     
-	  Bzn[i][j][k] -= Per*cos(n1*2*M_PI * xM / Lx);*/
-	/*	Byn[i][j][k] += Per*sin(n2*2*M_PI * xM / Lx);
-	Byn[i][j][k] += Per*sin(n3*2*M_PI * xM / Lx);
-	Byn[i][j][k] += Per*sin(n4*2*M_PI * xM / Lx);
-	Byn[i][j][k] += Per*sin(n5*2*M_PI * xM / Lx);*/
+	Ey[i][j][k] += PertE*cos(n1*2*M_PI * xM / Lx);
+	Ez[i][j][k] -= PertE*sin(n1*2*M_PI * xM / Lx); 
       }
     }
   }
@@ -4239,13 +4270,13 @@ void EMfields3D::initByPert(VirtualTopology3D * vct, Grid * grid, Collective *co
 
 void EMfields3D::initExPert(VirtualTopology3D * vct, Grid * grid, Collective *col){
 
-  double Per= 0.05;
+  double Per= 0.0004;
   double n1= 1;
   /*  double n2= 5;
   double n3= 6;
   double n4= 7;
   double n5= 8;*/
-  cout << "Init with Ex sin perturbation in x direction, NO n pert" 
+  cout << "Init with E  cos pert, corresponding n " 
        << "Pert= " << Per
        << "n1= " <<n1 <<endl
        << "k_p=n2pi/Lx= " << n1*2*M_PI/Lx << endl;
@@ -4259,10 +4290,11 @@ void EMfields3D::initExPert(VirtualTopology3D * vct, Grid * grid, Collective *co
 	for (int is = 0; is < ns; is++) {
 	  double xM = grid->getXN(i, j, k);
 	  rhons[is][i][j][k] = rhoINIT[is] / FourPI;
-	  /*if (qom[is]<0){
+	  if (qom[is]<0){
 	    double ff = (qom[is] / fabs(qom[is]));
 	    rhons[is][i][j][k] += ff* (rhoINIT[is] / FourPI*Per*n1*FourPI/2./Lx)*cos(n1*2*M_PI * xM / Lx);
-	    }*/
+	    //rhons[is][i][j][k] += rhoINIT[is]/ FourPI*Per*cos(n1*2*M_PI*xM/Lx);
+	    }
 	}
 	Ex[i][j][k] = 0.0;
 	Ey[i][j][k] = 0.0;

@@ -264,6 +264,14 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
               y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
               z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+	      /*      #ifdef EB
+	      if (nyn==4){ // meaning it's 1D; now particles are populated around y=0
+		y[counter]-=Ly/2;
+	      }
+	      if (nzn==4){ // meaning it's 1D
+		z[counter]-=Lz/2;
+	      }
+	      #endif*/
               // q = charge
               q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
               // u

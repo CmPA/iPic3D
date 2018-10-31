@@ -38,7 +38,7 @@ namespace iPic3D {
     int Init(int argc, char **argv);
     void InjectBoundaryParticles();
     void GatherMoments();
-    void CalculateField();
+    void CalculateField(int cycle);
     void CalculateBField();
     bool ParticlesMover();
     void WriteOutput(int cycle);

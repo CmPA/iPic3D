@@ -249,7 +249,7 @@ class EMfields3D                // :public Field
     void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
     void UpdateRHOcs(Grid * grid);
-    void SetLambda  (Grid * grid);
+    void SetLambda  (Grid * grid, int cycle);
     double ***GetLambda();
 
 

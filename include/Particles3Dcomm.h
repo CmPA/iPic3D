@@ -176,7 +176,7 @@ public:
   bool GetTrackSpecies();
   int GetTrackingSpOutputCycle();
   void AssignParticlesID(VirtualTopology3D * vct);
-  void WriteTracking(int cycle, VirtualTopology3D * vct, Collective * col);
+  void WriteTracking(int cycle, VirtualTopology3D * vct, Collective * col, Field * EMf,  Grid * grid);
 
 
 protected:

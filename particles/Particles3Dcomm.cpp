@@ -1218,7 +1218,7 @@ void Particles3Dcomm::AssignParticlesID(VirtualTopology3D * vct){
   }
 }
 
-void Particles3Dcomm::WriteTracking(int cycle, VirtualTopology3D * vct, Collective * col){
+void Particles3Dcomm::WriteTracking(int cycle, VirtualTopology3D * vct, Collective * col, Field * EMf, Grid * grid){
 
   stringstream num_proc;
   stringstream num_sp;
@@ -1230,10 +1230,131 @@ void Particles3Dcomm::WriteTracking(int cycle, VirtualTopology3D * vct, Collecti
 
   cqTr = col->getSaveDirName() + "/Tracking_proc" + num_proc.str() + "_sp" + num_sp.str() + "_cyc" + num_cyc.str()+ ".txt";
 
+  // I want to start writing also Ex, Ey, Ez, Bx, By, Bz @ particle position, so I have to do another interpolation
+  const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+  
+  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+
+  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+  double Fext = EMf->getFext();
+
+
   ofstream my_file(cqTr.c_str(), fstream::app);
   //my_file << cycle << endl;
   for (int i=0; i< nop; i++){
-    my_file << TrackSpBirthRank[i] <<" " << TrackSpID[i] <<" " << x[i]<<" " << y[i]<<" " << z[i]<<" " << q[i]<<" " << u[i]<<" " << v[i]<<" " << w[i] << endl;
+
+    /* interpolate fields at particle position*/
+    // interpolation G-->P                                                                                            
+    const double ixd = floor((x[i] - xstart) * inv_dx);
+    const double iyd = floor((y[i] - ystart) * inv_dy);
+    const double izd = floor((z[i] - zstart) * inv_dz);
+    int ix = 2 + int (ixd);
+    int iy = 2 + int (iyd);
+    int iz = 2 + int (izd);
+    if (ix < 1)
+      ix = 1;
+    if (iy < 1)
+      iy = 1;
+    if (iz < 1)
+      iz = 1;
+    if (ix > nxn - 1)
+      ix = nxn - 1;
+    if (iy > nyn - 1)
+      iy = nyn - 1;
+    if (iz > nzn - 1)
+      iz = nzn - 1;
+
+    double xi  [2];
+    double eta [2];
+    double zeta[2];
+
+    xi  [0] = x[i] - grid->getXN(ix-1,iy  ,iz  );
+    eta [0] = y[i] - grid->getYN(ix  ,iy-1,iz  );
+    zeta[0] = z[i] - grid->getZN(ix  ,iy  ,iz-1);
+    xi  [1] = grid->getXN(ix,iy,iz) - x[i];
+    eta [1] = grid->getYN(ix,iy,iz) - y[i];
+    zeta[1] = grid->getZN(ix,iy,iz) - z[i];
+
+    double Exl = 0.0;
+    double Eyl = 0.0;
+    double Ezl = 0.0;
+    double Bxl = 0.0;
+    double Byl = 0.0;
+    double Bzl = 0.0;
+
+    const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+    const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+    const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+    const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+    const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+    const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+    const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+    const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+    //                                                                                                                
+    Bxl += weight000 * (Bx[ix][iy][iz]             + Fext*Bx_ext[ix][iy][iz]);
+    Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Fext*Bx_ext[ix][iy][iz-1]);
+    Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Fext*Bx_ext[ix][iy-1][iz]);
+    Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Fext*Bx_ext[ix][iy-1][iz-1]);
+    Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Fext*Bx_ext[ix-1][iy][iz]);
+    Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Fext*Bx_ext[ix-1][iy][iz-1]);
+    Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Fext*Bx_ext[ix-1][iy-1][iz]);
+    Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Fext*Bx_ext[ix-1][iy-1][iz-1]);
+    //                                                                                                                
+    Byl += weight000 * (By[ix][iy][iz]             + Fext*By_ext[ix][iy][iz]);
+    Byl += weight001 * (By[ix][iy][iz - 1]         + Fext*By_ext[ix][iy][iz-1]);
+    Byl += weight010 * (By[ix][iy - 1][iz]         + Fext*By_ext[ix][iy-1][iz]);
+    Byl += weight011 * (By[ix][iy - 1][iz - 1]     + Fext*By_ext[ix][iy-1][iz-1]);
+    Byl += weight100 * (By[ix - 1][iy][iz]         + Fext*By_ext[ix-1][iy][iz]);
+    Byl += weight101 * (By[ix - 1][iy][iz - 1]     + Fext*By_ext[ix-1][iy][iz-1]);
+    Byl += weight110 * (By[ix - 1][iy - 1][iz]     + Fext*By_ext[ix-1][iy-1][iz]);
+    Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + Fext*By_ext[ix-1][iy-1][iz-1]);
+    //                                                                                                                
+    Bzl += weight000 * (Bz[ix][iy][iz]             + Fext*Bz_ext[ix][iy][iz]);
+    Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Fext*Bz_ext[ix][iy][iz-1]);
+    Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Fext*Bz_ext[ix][iy-1][iz]);
+    Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Fext*Bz_ext[ix][iy-1][iz-1]);
+    Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Fext*Bz_ext[ix-1][iy][iz]);
+    Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Fext*Bz_ext[ix-1][iy][iz-1]);
+    Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
+    Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
+
+    Exl += weight000 * Ex[ix][iy][iz];
+    Exl += weight001 * Ex[ix][iy][iz - 1];
+    Exl += weight010 * Ex[ix][iy - 1][iz];
+    Exl += weight011 * Ex[ix][iy - 1][iz - 1];
+    Exl += weight100 * Ex[ix - 1][iy][iz];
+    Exl += weight101 * Ex[ix - 1][iy][iz - 1];
+    Exl += weight110 * Ex[ix - 1][iy - 1][iz];
+    Exl += weight111 * Ex[ix - 1][iy - 1][iz - 1];
+    //                                                                                                                
+    Eyl += weight000 * Ey[ix][iy][iz];
+    Eyl += weight001 * Ey[ix][iy][iz - 1];
+    Eyl += weight010 * Ey[ix][iy - 1][iz];
+    Eyl += weight011 * Ey[ix][iy - 1][iz - 1];
+    Eyl += weight100 * Ey[ix - 1][iy][iz];
+    Eyl += weight101 * Ey[ix - 1][iy][iz - 1];
+    Eyl += weight110 * Ey[ix - 1][iy - 1][iz];
+    Eyl += weight111 * Ey[ix - 1][iy - 1][iz - 1];
+    //                                                                                                                
+    Ezl += weight000 * Ez[ix][iy][iz];
+    Ezl += weight001 * Ez[ix][iy][iz - 1];
+    Ezl += weight010 * Ez[ix][iy - 1][iz];
+    Ezl += weight011 * Ez[ix][iy - 1][iz - 1];
+    Ezl += weight100 * Ez[ix - 1][iy][iz];
+    Ezl += weight101 * Ez[ix - 1][iy][iz - 1];
+    Ezl += weight110 * Ez[ix - 1][iy - 1][iz];
+    Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1];
+    /* end interpolate fields at particle position;*/
+
+    my_file << TrackSpBirthRank[i] <<" " << TrackSpID[i] <<" " << x[i]<<" " << y[i]<<" " << z[i]<<" " << q[i]<<" " << u[i]<<" " << v[i]<<" " << w[i] << " " << Exl << " " << Eyl << " " << Ezl << " " << Bxl << " " << Byl << " " << Bzl << endl;
   }
   cout << "Proc " << num_proc.str() << " wrote " << nop << " particles, sp " << num_sp << endl; 
   my_file.close();
