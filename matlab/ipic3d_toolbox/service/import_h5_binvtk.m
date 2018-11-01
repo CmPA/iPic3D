@@ -2,7 +2,7 @@
 % Script to read in all varibles from a file called "dir"
 %
 
-leggo='h5'; 
+%leggo='h5'; 
 if(strcmp(leggo,'vtk'))
 
 
@@ -33,6 +33,77 @@ Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./B;
 % Te=(Pexx+Peyy+Pezz)./(-rhoe);
 % Ti=(Pixx+Piyy+Pizz)./rhoi;
 
+elseif(strcmp(leggo,'gda'))
+
+file=[dir 'B_x_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+Bx=fread(fid,'real*8');
+fclose(fid);
+Bx=reshape(Bx,Nx,Ny,Nz);
+
+file=[dir 'B_y_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+By=fread(fid,'real*8');
+fclose(fid);
+By=reshape(By,Nx,Ny,Nz);
+
+file=[dir 'B_z_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+Bz=fread(fid,'real*8');
+fclose(fid);
+Bz=reshape(Bz,Nx,Ny,Nz);
+
+
+file=[dir 'Pi_per1_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+Pper1=fread(fid,'real*8');
+fclose(fid);
+Pper1=reshape(Pper1,Nx,Ny,Nz);
+
+file=[dir 'Pe_xx_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+PeXX=fread(fid,'real*8');
+fclose(fid);
+PeXX=reshape(PeXX,Nx,Ny,Nz);
+
+file=[dir 'Pe_xy_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+PeXY=fread(fid,'real*8');
+fclose(fid);
+PeXY=reshape(PeXY,Nx,Ny,Nz);
+
+file=[dir 'Pe_xz_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+PeXZ=fread(fid,'real*8');
+fclose(fid);
+PeXZ=reshape(PeXZ,Nx,Ny,Nz);
+
+file=[dir 'Pe_yy_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+PeYY=fread(fid,'real*8');
+fclose(fid);
+PeYY=reshape(PeYY,Nx,Ny,Nz);
+
+file=[dir 'Pe_yz_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+PeYZ=fread(fid,'real*8');
+fclose(fid);
+PeYZ=reshape(PeYZ,Nx,Ny,Nz);
+
+file=[dir 'Pe_zz_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+PeZZ=fread(fid,'real*8');
+fclose(fid);
+PeZZ=reshape(PeZZ,Nx,Ny,Nz);
+
+
+B=sqrt(Bx.*Bx+By.*By+Bz.*Bz);
+B2D=sqrt(Bx.^2+By.^2);
+perp2x=Bz.*Bx./(B.*B2D);
+perp2y=Bz.*By./(B.*B2D);
+perp2z=-B2D./B;
+Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./B;
+ 
 elseif(strcmp(leggo,'h5'))
     % the next line is specific for HRmaha3D3
      

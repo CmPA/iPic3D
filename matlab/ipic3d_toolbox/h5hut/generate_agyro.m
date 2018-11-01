@@ -3,44 +3,46 @@ addpath(genpath('../../ipic3d_toolbox')); % Point to the directory where the iPi
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
+must_read=true;
+leggo='h5'
+if(must_read)
 
 sim_name='tred81'
 switch sim_name
+case 'tred77'
+TRED77;
+case_name='GEM';
+cycle = 15000;
+zcode = Lz/2;
 case 'tred81'
 tred81;
 case_name='GEM';
-cycle = 22000;
+cycle = 18000;
 zcode = Lz/2;
-case 'tred82'
+    case 'tred82'
 tred82;
 case_name='GEM';
 cycle = 18000;
 zcode = Lz/2;
-case 'tred77'
-    TRED77;
-    case_name='GEM';
-    cycle = 15000;
-    zcode = Lz/2;
 case 'AH'
-    generic;
-    case_name='AH';
-    cycle =5000;
-    zcode = Lz/2;
+generic;
+case_name='AH';
+cycle =4000;
+zcode = Lz/2;
 case 'HRmaha3D3'
-    HRmaha3D3;
+HRmaha3D3;
+leggo='gda';
     case_name='GEM';
-    dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
-    cycle = 80002;  % for h5
-    %cycle = 80000  % for vtk binary
-    % for HRmaha3D1:
-    time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt between 2D and 3D
-    % for HRmaha3D1.v2:
-    % time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
-    %ADD initial time of the RUN
-    time=time+initial_time; %(03*60+48)*60
-    ygsm=7.05;%1.8;
-    zcode = (ygsm - Ygsmrange(1)) * Lz/(Ygsmrange(2)-Ygsmrange(1));
-    case '7feb09'
+dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
+cycle = 80002;  % for h5
+%cycle = 80000  % for vtk binary
+% for HRmaha3D1:
+time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt between 2D and 3D
+% for HRmaha3D1.v2:
+% time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
+%ADD initial time of the RUN
+time=time+initial_time; %(03*60+48)*60
+case '7feb09'
 FEB09;
 cycle=18000
 case_name='MHDUCLA'
@@ -51,84 +53,21 @@ time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt bet
 % time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
 %ADD initial time of the RUN
 time=time+initial_time; %(03*60+48)*60
-    ygsm=7.05;%1.8;
-    zcode = (ygsm - Ygsmrange(1)) * Lz/(Ygsmrange(2)-Ygsmrange(1));
 otherwise
-    print('no recognised case selected')
+print('no recognised case selected')
+end
+
+% Prepare string
+ntime = num2str(cycle,'%06d');
+ncycle = num2str(cycle,'%06d');
+
+
+import_h5_binvtk
 end
 
 
 
-
-    ncycle = num2str(cycle,'%06d');
-leggo=true
-if(leggo)
-    
-    
-    namefile = [case_name '-Fields'];
-    fn=[dir,namefile,'_',ncycle,'.h5'];
-
-    hinfo=hdf5info(fn);
-    Nx= hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1).Dims(1);
-    Ny= hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1).Dims(2);
-    Nz= hinfo.GroupHierarchy.Groups.Groups.Groups(3).Datasets(1).Dims(3);
-    % uncomment this for a list of varibales available
-    %hinfo.GroupHierarchy.Groups.Groups.Groups(:).Name
-    
-
-    Bx = hdf5read(fn,'/Step#0/Block/Bx/0/');
-    By = hdf5read(fn,'/Step#0/Block/By/0/');
-    Bz = hdf5read(fn,'/Step#0/Block/Bz/0/');
-    Ex = hdf5read(fn,'/Step#0/Block/Ex/0/');
-    Ey = hdf5read(fn,'/Step#0/Block/Ey/0/');
-    Ez = hdf5read(fn,'/Step#0/Block/Ez/0/');
-    Jex = hdf5read(fn,'/Step#0/Block/Jx_0/0/')+hdf5read(fn,'/Step#0/Block/Jx_2/0/');
-    Jey = hdf5read(fn,'/Step#0/Block/Jy_0/0/')+hdf5read(fn,'/Step#0/Block/Jy_2/0/');
-    Jez = hdf5read(fn,'/Step#0/Block/Jz_0/0/')+hdf5read(fn,'/Step#0/Block/Jz_2/0/');
-    Jix = hdf5read(fn,'/Step#0/Block/Jx_1/0/')+hdf5read(fn,'/Step#0/Block/Jx_3/0/');
-    Jiy = hdf5read(fn,'/Step#0/Block/Jy_1/0/')+hdf5read(fn,'/Step#0/Block/Jy_3/0/');
-    Jiz = hdf5read(fn,'/Step#0/Block/Jz_1/0/')+hdf5read(fn,'/Step#0/Block/Jz_3/0/');
-    
-    rhoe = hdf5read(fn,'/Step#0/Block/rho_0/0/')+hdf5read(fn,'/Step#0/Block/rho_2/0/');
-    rhoi = hdf5read(fn,'/Step#0/Block/rho_1/0/')+hdf5read(fn,'/Step#0/Block/rho_3/0/');
-
-    Pexx = hdf5read(fn,'/Step#0/Block/Pxx_0/0/')+hdf5read(fn,'/Step#0/Block/Pxx_2/0/');
-    Peyy = hdf5read(fn,'/Step#0/Block/Pyy_0/0/')+hdf5read(fn,'/Step#0/Block/Pyy_2/0/');
-    Pezz = hdf5read(fn,'/Step#0/Block/Pzz_0/0/')+hdf5read(fn,'/Step#0/Block/Pzz_2/0/');
-    Pexy = hdf5read(fn,'/Step#0/Block/Pxy_0/0/')+hdf5read(fn,'/Step#0/Block/Pxy_2/0/');    
-    Pexz = hdf5read(fn,'/Step#0/Block/Pxz_0/0/')+hdf5read(fn,'/Step#0/Block/Pxz_2/0/');
-    Peyz = hdf5read(fn,'/Step#0/Block/Pyz_0/0/')+hdf5read(fn,'/Step#0/Block/Pyz_2/0/');
-    
-    Pixx = hdf5read(fn,'/Step#0/Block/Pxx_1/0/')+hdf5read(fn,'/Step#0/Block/Pxx_3/0/');
-    Piyy = hdf5read(fn,'/Step#0/Block/Pyy_1/0/')+hdf5read(fn,'/Step#0/Block/Pyy_3/0/');
-    Pizz = hdf5read(fn,'/Step#0/Block/Pzz_1/0/')+hdf5read(fn,'/Step#0/Block/Pzz_3/0/');
-    Pixy = hdf5read(fn,'/Step#0/Block/Pxy_1/0/')+hdf5read(fn,'/Step#0/Block/Pxy_3/0/');    
-    Pixz = hdf5read(fn,'/Step#0/Block/Pxz_1/0/')+hdf5read(fn,'/Step#0/Block/Pxz_3/0/');
-    Piyz = hdf5read(fn,'/Step#0/Block/Pyz_1/0/')+hdf5read(fn,'/Step#0/Block/Pyz_3/0/');
-    B=sqrt(Bx.*Bx+By.*By+Bz.*Bz);
-    B2D=sqrt(Bx.^2+By.^2);
-    perp2x=Bz.*Bx./(B.*B2D);
-    perp2y=Bz.*By./(B.*B2D);
-    perp2z=-B2D./B;
-    Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./B;
-
-    [Pexx,Peyy,Pezz,Pexy,Pexz,Peyz]=compute_pressure(Bx, By, Bz, Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Jex,Jey,Jez,rhoe, qom);
-    [Pixx,Piyy,Pizz,Pixy,Pixz,Piyz]=compute_pressure(Bx, By, Bz, Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Jix,Jiy,Jiz,rhoi, 1.0);
-    
-    Qex = hdf5read(fn,'/Step#0/Block/EFx_0/0/')+hdf5read(fn,'/Step#0/Block/EFx_2/0/');
-    Qey = hdf5read(fn,'/Step#0/Block/EFy_0/0/')+hdf5read(fn,'/Step#0/Block/EFy_2/0/');
-    Qez = hdf5read(fn,'/Step#0/Block/EFz_0/0/')+hdf5read(fn,'/Step#0/Block/EFz_2/0/');    
-    Qix = hdf5read(fn,'/Step#0/Block/EFx_1/0/')+hdf5read(fn,'/Step#0/Block/EFx_3/0/');
-    Qiy = hdf5read(fn,'/Step#0/Block/EFy_1/0/')+hdf5read(fn,'/Step#0/Block/EFy_3/0/');
-    Qiz = hdf5read(fn,'/Step#0/Block/EFz_1/0/')+hdf5read(fn,'/Step#0/Block/EFz_3/0/'); 
-  
-    [Qenthex,Qenthey,Qenthez,Qbulkex,Qbulkey,Qbulkez,Qhfex,Qhfey,Qhfez] = ...
-    compute_energy_fluxes(Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Qex,Qey,Qez,Jex,Jey,Jez,rhoe, qom);
-
-    [Qenthix,Qenthiy,Qenthiz,Qbulkix,Qbulkiy,Qbulkiz,Qhfix,Qhfiy,Qhfiz] = ...
-    compute_energy_fluxes(Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Qix,Qiy,Qiz,Jix,Jiy,Jiz,rhoi, 1.0);
-
-end
+   
 
 [nx ny nz]= size(Pexx)
 
