@@ -70,6 +70,11 @@ end
 
 [Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
 S=sqrt(Sx.^2+Sy.^2+Sz.^2);
+[x,y,z]=meshgrid(0:dx:Lx,0:dy:Ly,0:dz:Lz);
+radius=0.01;
+divS = compute_div(x,y,z,Sx,Sy,Sz,radius, 0.);
+divQe = compute_div(x,y,z,Qex,Qey,Qez,radius, 0.);
+divQi = compute_div(x,y,z,Qix,Qiy,Qiz,radius, 0.);
 
 UPex = (Jex.*Pexx + Jey.*Pexy + Jez.*Pexz)./rhoe;
 UPey = (Jex.*Pexy + Jey.*Peyy + Jez.*Peyz)./rhoe;
@@ -78,8 +83,15 @@ UPix = (Jix.*Pixx + Jiy.*Pixy + Jiz.*Pixz)./rhoi;
 UPiy = (Jix.*Pixy + Jiy.*Piyy + Jiz.*Piyz)./rhoi;
 UPiz = (Jix.*Pixz + Jiy.*Piyz + Jiz.*Pizz)./rhoi;
 
-xc=linspace(0, Lx, Nx+1);
-yc=linspace(0, Ly, Ny+1);
+switch sim_name
+case 'tred82'
+    list_value=[-.02, -.01, 0, .005, .01, .015, .02] %tred82
+    otherwise
+    list_value=-.02:.01:.04 %tred81
+end
+
+xc=linspace(0, Lx, Nx);
+yc=linspace(0, Ly, Ny);
 AAz=zeros(size(Bx));
 for kr=1:Nz
 AAz(:,:,kr)=vecpot(xc,yc,Bx(:,:,kr),By(:,:,kr));
@@ -87,14 +99,18 @@ AAz(:,:,kr)=AAz(:,:,kr)-AAz(round(Nx/2),round(Ny/2),kr);
 end
 figure(1)
 imagesc(xc,yc,mean(AAz,3)')
-load cm_new
-colormap(cm_kbwrk)
+%contourf(xc,yc,mean(AAz,3)',20)
+%hold on; contour(xc,yc,mean(AAz,3)',list_value,'m','linewidth',2)
+load cm_new; colormap(cm_kbwrk)
+%colormap default
 colorbar
 xlabel('x')
 ylabel('y')
 cmax=max(max(abs(mean(AAz,3))));
 caxis([-cmax cmax])
 print('-dpng','-r300',[ncycle '_Phi'])
+
+
 % 
 % [X,Y,Z]=ndgrid(1:Nx,1:Ny,1:Nz);
 % figure
@@ -104,25 +120,34 @@ print('-dpng','-r300',[ncycle '_Phi'])
 
 colormap hsv
 
-figura(AAz,S,2,'S',ncycle)
-%figura(AAz,log10(S),3,'Slog',ncycle)
-figura(AAz,Sx,4,'Sx',ncycle)
-figura(AAz,Sy,5,'Sy',ncycle)
-figura(AAz,Sz,6,'Sz',ncycle)
-figura(AAz,Qex,4,'Qex',ncycle)
-figura(AAz,Qey,4,'Qey',ncycle)
-figura(AAz,Qez,4,'Qez',ncycle)
-figura(AAz,Qix,4,'Qix',ncycle)
-figura(AAz,Qiy,4,'Qiy',ncycle)
-figura(AAz,Qiz,4,'Qiz',ncycle)
-figura(AAz,UPex,4,'uPex',ncycle)
-figura(AAz,UPey,4,'uPey',ncycle)
-figura(AAz,UPez,4,'uPez',ncycle)
-figura(AAz,UPix,4,'uPix',ncycle)
-figura(AAz,UPiy,4,'uPiy',ncycle)
-figura(AAz,UPiz,4,'uPiz',ncycle)
-figura(AAz,Jex.*Ex+Jey.*Ey+Jez.*Ez,4,'JeE',ncycle)
-figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle)
+figura(AAz,S,2,'S',ncycle, list_value)
+figura(AAz,divS,2,'divS',ncycle, list_value)
+figura(AAz,divQe,2,'divQe',ncycle, list_value)
+figura(AAz,divQi,2,'divQi',ncycle, list_value)
+figura(AAz,Bx.*Bx+By.*By+Bz.*Bz,2,'B2',ncycle, list_value)
+figura(AAz,Ex.*Ex+Ey.*Ey+Ez.*Ez,2,'E2',ncycle, list_value)
+figura(AAz,0.5*(Jex.^2+Jey.^2+Jez.^2)./rhoe/qom,2,'Ubulke',ncycle, list_value)
+figura(AAz,0.5*(Pexx+Peyy+Pezz),2,'Uthe',ncycle, list_value);
+figura(AAz,0.5*(Jix.^2+Jiy.^2+Jiz.^2)./rhoi,2,'Ubulki',ncycle, list_value)
+figura(AAz,0.5*(Pixx+Piyy+Pizz),2,'Uthi',ncycle, list_value);
+%figura(AAz,log10(S),3,'Slog',ncycle, list_value)
+figura(AAz,Sx,4,'Sx',ncycle, list_value)
+figura(AAz,Sy,5,'Sy',ncycle, list_value)
+figura(AAz,Sz,6,'Sz',ncycle, list_value)
+figura(AAz,Qex,4,'Qex',ncycle, list_value)
+figura(AAz,Qey,4,'Qey',ncycle, list_value)
+figura(AAz,Qez,4,'Qez',ncycle, list_value)
+figura(AAz,Qix,4,'Qix',ncycle, list_value)
+figura(AAz,Qiy,4,'Qiy',ncycle, list_value)
+figura(AAz,Qiz,4,'Qiz',ncycle, list_value)
+figura(AAz,UPex,4,'uPex',ncycle, list_value)
+figura(AAz,UPey,4,'uPey',ncycle, list_value)
+figura(AAz,UPez,4,'uPez',ncycle, list_value)
+figura(AAz,UPix,4,'uPix',ncycle, list_value)
+figura(AAz,UPiy,4,'uPiy',ncycle, list_value)
+figura(AAz,UPiz,4,'uPiz',ncycle, list_value)
+figura(AAz,Jex.*Ex+Jey.*Ey+Jez.*Ez,4,'JeE',ncycle, list_value)
+figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle, list_value)
 
         
         Epx = Ex + (Jey.*Bz - Jez.*By)./rhoe;
@@ -130,10 +155,10 @@ figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle)
         Epz = Ez + (Jex.*By - Jey.*Bx)./rhoe;
         
         JdotEp=(Jex+Jix).*Epx + (Jey+Jiy).*Epy + (Jez+Jiz).*Epz;
-figura(AAz,JdotEp,4,'JEp',ncycle)
+figura(AAz,JdotEp,4,'JEp',ncycle, list_value)
         
         
-function [] = figura(a,p,n,name,prename)
+function [] = figura(a,p,n,name,prename, list_value)
 % MYMEAN Example of a local function.
 close all
 
@@ -158,8 +183,8 @@ figure(n)
 [totnum,nbinu,xrange,urange]=spaziofasi2(a(:),dp(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dp(:)),max(dp(:)),ndiv);
 durange=urange(2)-urange(1);
 imagesc(xrange,urange,log10(nbinu))
-xlabel('\Phi')
-ylabel(name)
+xlabel('\Phi','fontsize',[14])
+ylabel(name,'fontsize',[14])
 colorbar
 colormap hsv
 
@@ -170,8 +195,7 @@ figure(n+1)
         semilogy(urka,exp(-urka.^2/2)/sqrt(2*pi),'k--')
 hold on
 labelle=["normal"];
-list_value=[-.02, -.01, 0, .005, .01, .015, .02] %tred82
-list_value=-.02:.01:.04 %tred81
+
 Nxr=max(size(xrange));
 
 for i=1:Ncuts
@@ -190,13 +214,14 @@ sig=sqrt(urange.^2*nbinu(:,ip)/sum(nbinu(:,ip)));
 end
 ylim([1e-6, 10])
 xlim([-20 20])
-xlabel(['\Delta' name])
-title(name)
+xlabel(['\Delta' name],'fontsize',[14])
+title(name,'fontsize',[14])
 legend(labelle)
 set(gca,'fontsize',[14])
 print('-dpng','-r300',[prename '_mp_' name])
 close(n+1)
-figure(n)        
+figure(n)  
+set(gca,'fontsize',[14])
 print('-dpng','-r300',[prename '_d_' name])
 close(n)
 

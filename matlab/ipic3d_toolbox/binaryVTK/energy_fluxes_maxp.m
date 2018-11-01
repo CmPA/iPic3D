@@ -60,11 +60,11 @@ otherwise
 print('no recognised case selected')
 end
 
-poynting=true;
-electrons=true;
-ions=true;
+poynting=false;
+electrons=false;
+ions=false;
 saveVTK=false;
-
+agyro=false;
 
 cyl = 0; % cartesian geometry
 
@@ -313,8 +313,9 @@ tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUt
 
 end
 
-agyro=false
+
 if(agyro)
+    
     symmetric_color=0;
     color_choice =-1;
     Agyro_aunai=hdf5read(fn,'/Step#0/Block/Agyro_aunai/0/');
