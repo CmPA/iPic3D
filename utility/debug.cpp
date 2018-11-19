@@ -16,8 +16,7 @@ void dfprintf_fileLine(FILE * fptr, const char *func, const char *file, int line
   fflush(fptr);
   va_list args;
   va_start(args, format);
-  fprintf(fptr, "(%d) DEBUG %s(), %s:%d: ", func, file, // my_basename(file),
-          line_number);
+  fprintf(fptr, "DEBUG %s(), %s:%d: ", func, file, line_number);
   /* print out remainder of message */
   vfprintf(fptr, format, args);
   va_end(args);

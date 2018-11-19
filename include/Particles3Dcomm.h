@@ -8,6 +8,7 @@ developers: Stefano Markidis, Giovanni Lapenta
 #define Part3DCOMM_H
 
 #include "Particles.h"
+#include <vector>
 
 /** Class for particle distribution calculation in 3D */
 class c_vDist {
@@ -74,68 +75,54 @@ public:
   /** destructor */
   ~Particles3Dcomm();
   /** allocate particles */
-  void allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid);
+  void allocate(int species, long long nop_init, Collective * col, VirtualTopology3D * vct, Grid * grid);
 
   /** calculate the weights given the position of particles */
   void calculateWeights(double weight[][2][2], double xp, double yp, double zp, int ix, int iy, int iz, Grid * grid);
   /** interpolation method GRID->PARTICLE order 1: CIC */
   void interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct);
   /** method for communicating exiting particles to X-RIGHT, X-LEFT, Y-RIGHT, Y-LEFT, Z-RIGHT, Z-LEFT processes */
-  int communicate(VirtualTopology3D * ptVCT);
-  /** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXleft(double *b_, long long np, VirtualTopology3D * vct);
-  /** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferXright(double *b_, long long np, VirtualTopology3D * vct);
-  /** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYleft(double *b_, long long np, VirtualTopology3D * vct);
-  /** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferYright(double *b_, long long np, VirtualTopology3D * vct);
-  /** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZleft(double *b_, long long np, VirtualTopology3D * vct);
-  /** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
-  void bufferZright(double *b_, long long np, VirtualTopology3D * vct);
+  void communicate(VirtualTopology3D * vct);
+  /** put a leaving particle to the communication buffer */
+  inline void buffer_leaving(std::vector<double>& buffer, long long& part_pos, long long& np_current);
   /** Delete the a particle from a list(array) and pack the list(array) */
-  void del_pack(long long np, long long *nplast);
+  void del_pack(long long np);
+
+  /** apply boundary conditions */
+  inline int bc_apply(double* x, double* y, double* z, double* u, double* v, double* w);
+  /** booleans to indicate if a particle is outside of the local domain */
+  bool x_out_left, x_out_right, y_out_left, y_out_right, z_out_left, z_out_right;
 
   /** method to debuild the buffer received */
-  int unbuffer(double *b_);
+  int unbuffer(std::vector<double>& buffer, std::vector<double>& wxl, std::vector<double>& wxr, std::vector<double>& wyl, std::vector<double>& wyr, std::vector<double>& wzl, std::vector<double>& wzr, long long& wrong_x_left, long long& wrong_x_right, long long& wrong_y_left, long long& wrong_y_right, long long& wrong_z_left, long long& wrong_z_right);
+  /** put particles back into a buffer that are in the wrong domain */
+  inline void rebuffer(double *start, std::vector<double>& buffer, long long& wrong);
+
+  /** iterate communication of particles that are in the wrong domain */
+  int iterate_communication(std::vector<double>& bxl, std::vector<double>& bxr, std::vector<double>& byl, std::vector<double>& byr, std::vector<double>& bzl, std::vector<double>& bzr, long long num_x, long long num_y, long long num_z, long long& size_x, long long& size_y, long long& size_z, VirtualTopology3D * vct);
 
   /** resize the receiving buffer */
-  void resize_buffers(int new_buffer_size);
-  /** a method to compute how many particles are not in the right domain */
-  int isMessagingDone(VirtualTopology3D * ptVCT);
+  void resize_buffers(std::vector<double>& b_LEFT, std::vector<double>& b_RIGHT, long long& size, long long request_size, bool extend=true);
   /** calculate the maximum number exiting from this domain */
-  int maxNpExiting();
+  long long maxNpExiting(long long *max_x, long long *max_y, long long *max_z);
   /** calculate the weights given the position of particles */
   // void calculateWeights(double*** weight, double xp, double yp, double zp,int ix, int iy, int iz, Grid* grid);
   /** get X-position array for all the particles */
-  double *getXall() const;
+  const double *getXall() const;
   /** get Y-position array for all the particles */
-  double *getYall() const;
+  const double *getYall() const;
   /** get Z-position array for all the particles */
-  double *getZall() const;
+  const double *getZall() const;
   /** get u (X-velocity) array for all the particles */
-  double *getUall() const;
+  const double *getUall() const;
   /** get v (Y-velocity) array for all the particles */
-  double *getVall() const;
+  const double *getVall() const;
   /** get w (Z-velocity) array for all the particles */
-  double *getWall() const;
-  /** get X-position array for all the particles by reference */
-  double *& getXref();
-  /** get Y-position array for all the particles by reference */
-  double *& getYref();
-  /** get Z-position array for all the particles by reference */
-  double *& getZref();
-  /** get u (X-velocity) array for all the particles by reference */
-  double *& getUref();
-  /** get v (Y-velocity) array for all the particles by reference */
-  double *& getVref();
-  /** get w (Z-velocity) array for all the particles by reference */
-  double *& getWref();
-  /** get q array for all the particles by reference */
-  double *& getQref();
-  /** get the ID array   */
-  unsigned long *getParticleIDall() const;
+  const double *getWall() const;
+  /** get q (charge) array for all the particles */
+  const double *getQall() const;
+  /** get the ParticleID array */
+  const unsigned long long *getParticleIDall() const;
   /** get X-position of particle with label indexPart */
   double getX(long long indexPart) const;
   /** get Y-position of particle with label indexPart */
@@ -148,12 +135,10 @@ public:
   double getV(long long indexPart) const;
   /** get w (Z-velocity) of particle with label indexPart */
   double getW(long long indexPart) const;
-  /** get ID of particle with label indexPart */
-  unsigned long getParticleID(long long indexPart) const;
-  /**get charge of particle with label indexPart */
+  /**get q (charge) of particle with label indexPart */
   double getQ(long long indexPart) const;
-  /** get charge of array for ID particles */
-  double *getQall() const;
+  /** get ID of particle with label indexPart */
+  unsigned long long getParticleID(long long indexPart) const;
   /** get the number of particles of this subdomain */
   long long getNOP() const;
   /** return the Kinetic energy */
@@ -165,18 +150,30 @@ public:
   /** return the momentum */
   double getP();
   /** Print particles info: positions, velocities */
-  void Print(VirtualTopology3D * ptVCT) const;
+  void Print(VirtualTopology3D * vct) const;
   /** Print the number of particles of this subdomain */
-  void PrintNp(VirtualTopology3D * ptVCT) const;
+  void PrintNp(VirtualTopology3D * vct) const;
   /** Add distributions in this iteration to the total */
   void Add_vDist3D();
   void Write_vDist3D(string SaveDirName);
 
+  /** communicate the global sum */
+  inline long long globalSum(long long value) {
+    long long sum = 0;
+    MPI_Allreduce(&value, &sum, 1, MPI_LONG_LONG_INT, MPI_SUM, MPI_COMM_WORLD);
+    return (sum);
+  }
+
+  /** communicate the global maximum */
+  inline long long globalMaximum(long long value) {
+    long long max = 0;
+    MPI_Allreduce(&value, &max, 1, MPI_LONG_LONG_INT, MPI_MAX, MPI_COMM_WORLD);
+    return (max);
+  }
+
 protected:
   /** number of species */
   int ns;
-  /** maximum number of particles of this species on this domain. used for memory allocation */
-  long long npmax;
   /** number of particles of this species on this domain */
   long long nop;
   /** total number of particles */
@@ -205,28 +202,28 @@ protected:
   double v0;
   /** w0 Drift velocity - Direction Z */
   double w0;
-  /** Positions arra - X component */
-  double *x;
+  /** Positions array - X component */
+  std::vector<double> x;
   /** Positions array - Y component */
-  double *y;
+  std::vector<double> y;
   /** Positions array - Z component */
-  double *z;
+  std::vector<double> z;
   /** Velocities array - X component */
-  double *u;
+  std::vector<double> u;
   /** Velocities array - Y component */
-  double *v;
+  std::vector<double> v;
   /** Velocities array - Z component */
-  double *w;
+  std::vector<double> w;
   /** TrackParticleID */
   bool TrackParticleID;
   /** ParticleID */
-  unsigned long *ParticleID;
+  std::vector<unsigned long long> ParticleID;
   /** rank of processor in which particle is created (for ID) */
   int BirthRank[2];
   /** number of variables to be stored in buffer for communication for each particle  */
   int nVar;
   /** Charge array */
-  double *q;
+  std::vector<double> q;
 
   /** Initial charge density */
   double rhoINIT;
@@ -245,56 +242,43 @@ protected:
   double Lz;
   /** grid spacings */
   double dx, dy, dz;
-  /** number of grid 
-          nodes */
+  /** number of grid nodes */
   int nxn, nyn, nzn;
+
+  /** helpful booleans that are constant but requested for each particle */
+  bool x_degenerated, y_degenerated, z_degenerated;
+  bool x_leftmost, y_leftmost, z_leftmost, x_rightmost, y_rightmost, z_rightmost;
+  bool no_x_left, no_y_left, no_z_left, no_x_right, no_y_right, no_z_right;
+  bool x_mirror, y_mirror, z_mirror, x_reemission, y_reemission, z_reemission;
+
   /** buffers for communication */
   /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
-  int buffer_size;
-  /** smaller buffer size */
-  int buffer_size_small;
+  long long buffer_size_x, buffer_size_y, buffer_size_z;
   /** buffer with particles going to the right processor - Direction X */
-  double *b_X_RIGHT;
-  /** pointer to the buffer for resizing */
-  double *b_X_RIGHT_ptr;
+  std::vector<double> b_X_RIGHT;
   /** buffer with particles going to the left processor - Direction X */
-  double *b_X_LEFT;
-  /** pointer to the buffer for resizing */
-  double *b_X_LEFT_ptr;
+  std::vector<double> b_X_LEFT;
   /** buffer with particles going to the right processor - Direction Y */
-  double *b_Y_RIGHT;
-  /** pointer to the buffer for resizing */
-  double *b_Y_RIGHT_ptr;
+  std::vector<double> b_Y_RIGHT;
   /** buffer with particles going to the left processor - Direction Y */
-  double *b_Y_LEFT;
-  /** pointer to the buffer for resizing */
-  double *b_Y_LEFT_ptr;
+  std::vector<double> b_Y_LEFT;
   /** buffer with particles going to the right processor - Direction Z */
-  double *b_Z_RIGHT;
-  /** pointer to the buffer for resizing */
-  double *b_Z_RIGHT_ptr;
+  std::vector<double> b_Z_RIGHT;
   /** buffer with particles going to the left processor - Direction Z */
-  double *b_Z_LEFT;
-  /** pointer to the buffer for resizing */
-  double *b_Z_LEFT_ptr;
+  std::vector<double> b_Z_LEFT;
 
-  /** number of particles exiting per cycle*/
-  int npExitXright;
-  /** number of particles exiting to X-LEFT per cycle*/
-  int npExitXleft;
-  /** number of particles exiting to Y-RIGHT per cycle*/
-  int npExitYright;
-  /** number of particles exiting to Y-LEFT per cycle*/
-  int npExitYleft;
-  /** number of particles exiting to Z-RIGHT per cycle*/
-  int npExitZright;
-  /** number of particles exiting to Z-LEFT per cycle*/
-  int npExitZleft;
-  /** total number of particles exiting per cycle */
-  int npExit;
-  /** number of particles not in the right domain   */
-  int rightDomain;
-
+  /** number of particles exiting to X-RIGHT */
+  long long npExitXright;
+  /** number of particles exiting to X-LEFT */
+  long long npExitXleft;
+  /** number of particles exiting to Y-RIGHT */
+  long long npExitYright;
+  /** number of particles exiting to Y-LEFT */
+  long long npExitYleft;
+  /** number of particles exiting to Z-RIGHT */
+  long long npExitZright;
+  /** number of particles exiting to Z-LEFT */
+  long long npExitZleft;
 
   /** bool for communication verbose */
   bool cVERBOSE;
@@ -303,7 +287,6 @@ protected:
           <li>0 = exit</li>
           <li>1 = perfect mirror</li>
           <li>2 = riemission</li>
-          <li>3 = periodic condition </li>
           </ul>
           */
   /** Boundary Condition Particles: FaceXright */

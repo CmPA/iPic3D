@@ -58,7 +58,8 @@ file(
 # Compilation options
 #
 
-option(IPIC_H5HUT_OUTPUT "Output is done using Parallel HDF5 with the H5hut library")
+option(IPIC_H5HUT_OUTPUT "Output is done using Parallel HDF5 with the H5hut library" on)
+
 if(IPIC_H5HUT_OUTPUT)
   add_subdirectory(${IPIC_HOME}/H5hut-io H5hut-io)
   set(H5HUT_HOME $ENV{H5HUT_DIR} CACHE STRING "H5hut home directory")

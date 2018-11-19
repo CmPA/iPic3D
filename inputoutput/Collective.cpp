@@ -1,4 +1,4 @@
-
+#include <mpi.h>
 #include "Collective.h"
 
 /*! Read the input file from text file and put the data in a collective wrapper: if it's a restart read from input file basic sim data and load particles and EM field from restart file */
@@ -26,7 +26,6 @@ void Collective::ReadInput(string inputfile) {
     SaveDirName = config.read < string > ("SaveDirName");
     RestartDirName = config.read < string > ("RestartDirName");
     ns = config.read < int >("ns");
-    NpMaxNpRatio = config.read < double >("NpMaxNpRatio");
     // GEM Challenge 
     B0x = config.read <double>("B0x");
     B0y = config.read <double>("B0y");
@@ -97,6 +96,9 @@ void Collective::ReadInput(string inputfile) {
     PERIODICX = config.read < bool >("PERIODICX");
     PERIODICY = config.read < bool >("PERIODICY");
     PERIODICZ = config.read < bool >("PERIODICZ");
+    PERIODICX_P = config.read < bool >("PERIODICX_P");
+    PERIODICY_P = config.read < bool >("PERIODICY_P");
+    PERIODICZ_P = config.read < bool >("PERIODICZ_P");
 
   }
 
@@ -640,13 +642,10 @@ Collective::Collective(int argc, char **argv) {
   npcel = new int[ns];
   /*! np = number of particles of different species */
   np = new long[ns];
-  /*! npMax = maximum number of particles of different species */
-  npMax = new long[ns];
 
   for (int i = 0; i < ns; i++) {
     npcel[i] = npcelx[i] * npcely[i] * npcelz[i];
     np[i] = npcel[i] * (nxc/XLEN) * (nyc/YLEN) * (nzc/ZLEN);
-    npMax[i] = (long) (NpMaxNpRatio * np[i]);
   }
 
 
@@ -660,7 +659,6 @@ Collective::~Collective() {
   delete[]npcelx;
   delete[]npcely;
   delete[]npcelz;
-  delete[]npMax;
   delete[]qom;
 
   delete[]uth;
@@ -684,7 +682,7 @@ void Collective::Print() {
   cout << "---------------------" << endl;
   cout << "Number of species    = " << ns << endl;
   for (int i = 0; i < ns; i++)
-    cout << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+    cout << "Number of particles per proc of species " << i << " = " << np[i] << "\t QOM = " << qom[i] << endl;
   cout << "x-Length                 = " << Lx << endl;
   cout << "y-Length                 = " << Ly << endl;
   cout << "z-Length                 = " << Lz << endl;
@@ -701,18 +699,28 @@ void Collective::Print() {
   cout << "Check Simulation Constraints" << endl;
   cout << "---------------------" << endl;
   cout << "Accuracy Constraint:  " << endl;
+  int stop_me = 0;
   for (int i = 0; i < ns; i++) {
-    cout << "u_th < dx/dt species " << i << ".....";
+    cout << "u_th < dx/dt species " << i << " => ";
     if (uth[i] < (dx / dt))
       cout << "OK" << endl;
-    else
-      cout << "NOT SATISFIED. STOP THE SIMULATION." << endl;
+    else {
+      cout << "NOT SATISFIED." << endl;
+      stop_me++;
+    }
 
-    cout << "v_th < dy/dt species " << i << "......";
+    cout << "v_th < dy/dt species " << i << " => ";
     if (vth[i] < (dy / dt))
       cout << "OK" << endl;
-    else
-      cout << "NOT SATISFIED. STOP THE SIMULATION." << endl;
+    else {
+      cout << "NOT SATISFIED." << endl;
+      stop_me++;
+    }
+  }
+  if (stop_me) {
+    cout << "STOPPING THE SIMULATION!" << endl;
+    cout << "Please fix the above reported errors and retry." << endl;
+    exit (1);
   }
   cout << endl;
   cout << "Finite Grid Stability Constraint:  ";
@@ -743,7 +751,7 @@ void Collective::save() {
 
   my_file << "Number of species    = " << ns << endl;
   for (int i = 0; i < ns; i++)
-    my_file << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+    my_file << "Number of particles per proc of species " << i << " = " << np[i] << "\t QOM = " << qom[i] << endl;
   my_file << "---------------------------" << endl;
   my_file << "x-Length                 = " << Lx << endl;
   my_file << "y-Length                 = " << Ly << endl;
@@ -876,13 +884,6 @@ int Collective::getNpcelz(int nspecies) {
 /*! get the number of particles for different species */
 long Collective::getNp(int nspecies) {
   return (np[nspecies]);
-}
-/*! get maximum number of particles for different species */
-long Collective::getNpMax(int nspecies) {
-  return (npMax[nspecies]);
-}
-double Collective::getNpMaxNpRatio() {
-  return (NpMaxNpRatio);
 }
 /*! get charge to mass ratio for different species */
 double Collective::getQOM(int nspecies) {

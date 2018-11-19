@@ -5,7 +5,7 @@ global PfaceXright PfaceXleft PfaceYright PfaceYleft PfaceZright PfaceZleft
 global PHIfaceXright PHIfaceXleft PHIfaceYright PHIfaceYleft PHIfaceZright PHIfaceZleft 
 global EMfaceXright EMfaceXleft EMfaceYright EMfaceYleft EMfaceZright EMfaceZleft
 
-global Np Npcelx Npcely Npcelz NpMax qom 
+global Np Npcelx Npcely Npcelz qom 
 global uth vth wth u_drift v_drift w_drift
 global XLEN YLEN ZLEN Nprocs periodicX periodicY periodicZ
 
@@ -51,8 +51,7 @@ for i=0:Ns-1
     Np(i+1)=hdf5read(filename,['/collective/species_',num2str(i),'/Np']);
     Npcelx(i+1)=hdf5read(filename,['/collective/species_',num2str(i),'/Npcelx']);
     Npcely(i+1)=hdf5read(filename,['/collective/species_',num2str(i),'/Npcely']);
-	Npcelz(i+1)=hdf5read(filename,['/collective/species_',num2str(i),'/Npcelz']); 
-    NpMax(i+1)=hdf5read(filename,['/collective/species_',num2str(i),'/NpMax']);
+    Npcelz(i+1)=hdf5read(filename,['/collective/species_',num2str(i),'/Npcelz']); 
     qom(i+1)=hdf5read(filename,['/collective/species_',num2str(i),'/qom']);
     uth(i+1)=hdf5read(filename,['/collective/species_',num2str(i),'/uth']);
     vth(i+1)=hdf5read(filename,['/collective/species_',num2str(i),'/vth']);

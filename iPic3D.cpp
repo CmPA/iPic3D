@@ -1,4 +1,4 @@
-
+#include <mpi.h>
 #include <iomanip>
 #include "iPic3D.h"
 
@@ -37,7 +37,10 @@ int main(int argc, char **argv) {
 
     if (!b_err) KCode.CalculateBField();
     if (!b_err) KCode.GatherMoments();
-    if ( b_err) i = KCode.LastCycle() + 1;
+    if ( b_err) {
+      cout << " ======= KILLING " << KCode.get_myrank() << " ======= " << endl;
+      i = KCode.LastCycle() + 1;
+    }
 
     /* --------------- */
     /* 3- Output files */

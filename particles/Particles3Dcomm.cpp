@@ -1,9 +1,9 @@
 /*******************************************************************************************
-  Particles3Dcomm.cpp  -  Class for particles of the same species, in a 2D space and 3component velocity
+  Particles3Dcomm.cpp  -  Class for communication of particles of the same species in 3D
   -------------------
 developers: Stefano Markidis, Giovanni Lapenta.
  ********************************************************************************************/
-
+#include <mpi.h>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -13,7 +13,6 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "VirtualTopology3D.h"
 #include "VCtopology3D.h"
 #include "Collective.h"
-#include "ComParticles3D.h"
 #include "Alloc.h"
 #include "Basic.h"
 #include "BcParticles.h"
@@ -27,6 +26,7 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include "hdf5.h"
 #include <vector>
 #include <complex>
+#include <climits>
 
 using std::cout;
 using std::cerr;
@@ -34,10 +34,9 @@ using std::endl;
 
 #define min(a,b) (((a)<(b))?(a):(b));
 #define max(a,b) (((a)>(b))?(a):(b));
-#define MIN_VAL   1E-32
 /**
  * 
- * Class for particles of the same species, in a 2D space and 3component velocity
+ * Class for communication of particles of the same species in 3D
  * @date Fri Jun 4 2007
  * @author Stefano Markidis, Giovanni Lapenta
  * @version 2.0
@@ -46,28 +45,22 @@ using std::endl;
 
 /** constructor */
 Particles3Dcomm::Particles3Dcomm() {
-  // see allocate(int species, Collective* col, VirtualTopology3D* vct, Grid* grid)
+  // see allocate
 
 }
 /** deallocate particles */
 Particles3Dcomm::~Particles3Dcomm() {
-  delete[]x;
-  delete[]y;
-  delete[]z;
-  delete[]u;
-  delete[]v;
-  delete[]w;
-  delete[]q;
-  // deallocate buffers
-  delete[]b_X_RIGHT;
-  delete[]b_X_LEFT;
-  delete[]b_Y_RIGHT;
-  delete[]b_Y_LEFT;
-  delete[]b_Z_RIGHT;
-  delete[]b_Z_LEFT;
+  x.resize(0);
+  y.resize(0);
+  z.resize(0);
+  u.resize(0);
+  v.resize(0);
+  w.resize(0);
+  q.resize(0);
+  if (TrackParticleID) ParticleID.resize(0);
 }
 /** constructors fo a single species*/
-void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
+void Particles3Dcomm::allocate(int species, long long nop_init, Collective * col, VirtualTopology3D * vct, Grid * grid) {
   // info from collectiveIO
   ns = species;
   npcel = col->getNpcel(species);
@@ -75,18 +68,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   npcely = col->getNpcely(species);
   npcelz = col->getNpcelz(species);
 
-  // This if is necessary to restart with H5hut-io
-  if (initnpmax==0){
-    long ncproc = int(col->getNxc()/col->getXLEN()) *
-                  int(col->getNyc()/col->getYLEN()) *
-                  int(col->getNzc()/col->getZLEN());
-    nop   = ncproc * npcel;
-    npmax = nop * col->getNpMaxNpRatio();
-  }
-  else {
-    npmax = initnpmax*col->getNpMaxNpRatio();
-    nop   = initnpmax;
-  }
+  nop = npcel * col->getNxc()/col->getXLEN() * col->getNyc()/col->getYLEN() * col->getNzc()/col->getZLEN();
 
   rhoINIT   = col->getRHOinit(species);
   rhoINJECT = col->getRHOinject(species);
@@ -137,61 +119,72 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   bcPfaceXleft = col->getBcPfaceXleft();
   bcPfaceYright = col->getBcPfaceYright();
   bcPfaceYleft = col->getBcPfaceYleft();
-  bcPfaceXright = col->getBcPfaceXright();
-  bcPfaceXleft = col->getBcPfaceXleft();
-  bcPfaceYright = col->getBcPfaceYright();
-  bcPfaceYleft = col->getBcPfaceYleft();
   bcPfaceZright = col->getBcPfaceZright();
   bcPfaceZleft = col->getBcPfaceZleft();
-  // //////////////////////////////////////////////////////////////
-  // ////////////// ALLOCATE ARRAYS /////////////////////////
-  // //////////////////////////////////////////////////////////////
+
+  x_degenerated = (vct->getXleft_neighbor_P() == vct->getCartesian_rank());
+  y_degenerated = (vct->getYleft_neighbor_P() == vct->getCartesian_rank());
+  z_degenerated = (vct->getZleft_neighbor_P() == vct->getCartesian_rank());
+
+  x_leftmost = x_degenerated || (vct->getXleft_neighbor_P() > vct->getCartesian_rank());
+  y_leftmost = y_degenerated || (vct->getYleft_neighbor_P() > vct->getCartesian_rank());
+  z_leftmost = z_degenerated || (vct->getZleft_neighbor_P() > vct->getCartesian_rank());
+  x_rightmost = x_degenerated || (vct->getXright_neighbor_P() < vct->getCartesian_rank());
+  y_rightmost = y_degenerated || (vct->getYright_neighbor_P() < vct->getCartesian_rank());
+  z_rightmost = z_degenerated || (vct->getZright_neighbor_P() < vct->getCartesian_rank());
+
+  no_x_left = x_leftmost || (vct->getXleft_neighbor_P() == MPI_PROC_NULL);
+  no_y_left = y_leftmost || (vct->getYleft_neighbor_P() == MPI_PROC_NULL);
+  no_z_left = z_leftmost || (vct->getZleft_neighbor_P() == MPI_PROC_NULL);
+  no_x_right = x_rightmost || (vct->getXright_neighbor_P() == MPI_PROC_NULL);
+  no_y_right = y_rightmost || (vct->getYright_neighbor_P() == MPI_PROC_NULL);
+  no_z_right = z_rightmost || (vct->getZright_neighbor_P() == MPI_PROC_NULL);
+
+  x_mirror = !x_degenerated && ((bcPfaceXleft == 1) || (bcPfaceXright == 1));
+  y_mirror = !y_degenerated && ((bcPfaceYleft == 1) || (bcPfaceYright == 1));
+  z_mirror = !z_degenerated && ((bcPfaceZleft == 1) || (bcPfaceZright == 1));
+  x_reemission = !x_degenerated && ((bcPfaceXleft == 2) || (bcPfaceXright == 2));
+  y_reemission = !y_degenerated && ((bcPfaceYleft == 2) || (bcPfaceYright == 2));
+  z_reemission = !z_degenerated && ((bcPfaceZleft == 2) || (bcPfaceZright == 2));
+
+  // ALLOCATE PARTICLE ARRAYS
+  if (nop_init == 0) nop_init = nop;
+  nop_init += (long long) (nop * 0.025) + 10;
   // positions
-  x = new double[npmax];
-  y = new double[npmax];
-  z = new double[npmax];
+  x.reserve(nop_init);
+  y.reserve(nop_init);
+  z.reserve(nop_init);
   // velocities
-  u = new double[npmax];
-  v = new double[npmax];
-  w = new double[npmax];
+  u.reserve(nop_init);
+  v.reserve(nop_init);
+  w.reserve(nop_init);
   // charge
-  q = new double[npmax];
-  // ID
+  q.reserve(nop_init);
+  // ParticleID
   if (TrackParticleID) {
-    ParticleID = new unsigned long[npmax];
+    ParticleID.reserve(nop_init);
     BirthRank[0] = vct->getCartesian_rank();
     if (vct->getNprocs() > 1)
       BirthRank[1] = (int) ceil(log10((double) (vct->getNprocs())));  // Number of digits needed for # of process in ID
     else
       BirthRank[1] = 1;
-    if (BirthRank[1] + (int) ceil(log10((double) (npmax))) > 10 && BirthRank[0] == 0) {
-      cerr << "Error: can't Track particles in Particles3Dcomm::allocate" << endl;
-      cerr << "Unsigned long 'ParticleID' cannot store all the particles" << endl;
-      return;
-    }
   }
+
   // BUFFERS
   // the buffer size should be decided depending on number of particles
-  // the buffer size should be decided depending on number of particles
-  if (TrackParticleID)
-    nVar = 8;
-  else
-    nVar = 7;
-  buffer_size = (int) (.05 * nop * nVar + 1); // max: 5% of the particles in the processors is going out
-  buffer_size_small = (int) (.01 * nop * nVar + 1); // max 1% not resizable 
+  nVar = 7;
+  if (TrackParticleID) nVar++;
 
-  b_X_RIGHT = new double[buffer_size];
-  b_X_RIGHT_ptr = b_X_RIGHT;    // alias to make the resize
-  b_X_LEFT = new double[buffer_size];
-  b_X_LEFT_ptr = b_X_LEFT;      // alias to make the resize
-  b_Y_RIGHT = new double[buffer_size];
-  b_Y_RIGHT_ptr = b_Y_RIGHT;    // alias to make the resize
-  b_Y_LEFT = new double[buffer_size];
-  b_Y_LEFT_ptr = b_Y_LEFT;      // alias to make the resize
-  b_Z_RIGHT = new double[buffer_size];
-  b_Z_RIGHT_ptr = b_Z_RIGHT;    // alias to make the resize
-  b_Z_LEFT = new double[buffer_size];
-  b_Z_LEFT_ptr = b_Z_LEFT;      // alias to make the resize
+  buffer_size_x = (long long) (0.025 * nop) + 10; // assume 2.5% of the particles in the processors are leaving
+  buffer_size_y = buffer_size_x;
+  buffer_size_z = buffer_size_x;
+
+  b_X_LEFT.resize (1 + buffer_size_x * nVar);
+  b_X_RIGHT.resize (1 + buffer_size_x * nVar);
+  b_Y_LEFT.resize (1 + buffer_size_y * nVar);
+  b_Y_RIGHT.resize (1 + buffer_size_y * nVar);
+  b_Z_LEFT.resize (1 + buffer_size_z * nVar);
+  b_Z_RIGHT.resize (1 + buffer_size_z * nVar);
 
   // if RESTART is true initialize the particle in allocate method
   restart = col->getRestart_status();
@@ -228,63 +221,75 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
     // get how many particles there are on this processor for this species
     status_n = H5Sget_simple_extent_dims(dataspace, dims_out, NULL);
-    nop = dims_out[0];          // this the number of particles on the processor!
+    nop = dims_out[0];   // this the number of particles on the processor!
+
+    // prepare actual data arrays for reading
+    x.resize(nop);
+    y.resize(nop);
+    z.resize(nop);
+    u.resize(nop);
+    v.resize(nop);
+    w.resize(nop);
+    q.resize(nop);
+    if (TrackParticleID) ParticleID.resize(nop);
+
     // get x
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, x);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, x.data());
     // close the data set
     status = H5Dclose(dataset_id);
 
     // get y
     name_dataset = "/particles/species_" + species_name.str() + "/y/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, y);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, y.data());
     status = H5Dclose(dataset_id);
 
     // get z
     name_dataset = "/particles/species_" + species_name.str() + "/z/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, z);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, z.data());
     status = H5Dclose(dataset_id);
 
     // get u
     name_dataset = "/particles/species_" + species_name.str() + "/u/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, u);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, u.data());
     status = H5Dclose(dataset_id);
+
     // get v
     name_dataset = "/particles/species_" + species_name.str() + "/v/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, v);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, v.data());
     status = H5Dclose(dataset_id);
+
     // get w
     name_dataset = "/particles/species_" + species_name.str() + "/w/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, w);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, w.data());
     status = H5Dclose(dataset_id);
+
     // get q
     name_dataset = "/particles/species_" + species_name.str() + "/q/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, q);
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, q.data());
     status = H5Dclose(dataset_id);
+
     // ID 
     if (TrackParticleID) {
-      // herr_t (*old_func)(void*); // HDF 1.6
-      H5E_auto2_t old_func;      // HDF 1.8.8
+      H5E_auto2_t old_func; // HDF 1.8.8
       void *old_client_data;
-      H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8.8
+      H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data); // HDF 1.8.8
       /* Turn off error handling */
-      // H5Eset_auto(NULL, NULL); // HDF 1.6
       H5Eset_auto2(H5E_DEFAULT, 0, 0); // HDF 1.8
       name_dataset = "/particles/species_" + species_name.str() + "/ID/cycle_0";
       dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
 
-      // H5Eset_auto(old_func, old_client_data); // HDF 1.6
       H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data);
       if (dataset_id > 0)
-        status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID);
+        status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID.data());
       else {
         for (register long long counter = 0; counter < nop; counter++)
-          ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+          ParticleID[counter] = counter * (unsigned long long) pow(10.0, BirthRank[1]) + BirthRank[0];
       }
     }
     // close the hdf file
@@ -306,14 +311,13 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 }
 
 /** Initialie arrays for velocity distributions in 3D */
-void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, int bk, double vR, double vFact, Collective * col, Grid * grid){
-  vDistRad   = vR;
+void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, int bk, double vR, double vFact, Collective * col, Grid * grid) {
+  vDistRad = vR;
 
   dovDist3D = false;
-  if (vX > grid->getXstart() && vX < grid->getXend())
-  if (vY > grid->getYstart() && vY < grid->getYend())
-  if (vZ > grid->getZstart() && vZ < grid->getZend())
-    dovDist3D = true;
+  if (vX > grid->getXstart() && vX < grid->getXend() &&
+      vY > grid->getYstart() && vY < grid->getYend() &&
+      vZ > grid->getZstart() && vZ < grid->getZend()) dovDist3D = true;
 
   if (dovDist3D) {
     vDistLoc_x = vX;
@@ -335,13 +339,13 @@ void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, i
     vBinEnd_j = col->getV0(ispec) + vFact * col->getVth(ispec);
     vBinBeg_k = col->getW0(ispec) - vFact * col->getWth(ispec);
     vBinEnd_k = col->getW0(ispec) + vFact * col->getWth(ispec);
-    dv_i      = (vBinEnd_i - vBinBeg_i) / double(nBins_i);
-    dv_j      = (vBinEnd_j - vBinBeg_j) / double(nBins_j);
-    dv_k      = (vBinEnd_k - vBinBeg_k) / double(nBins_k);
+    dv_i = (vBinEnd_i - vBinBeg_i) / double(nBins_i);
+    dv_j = (vBinEnd_j - vBinBeg_j) / double(nBins_j);
+    dv_k = (vBinEnd_k - vBinBeg_k) / double(nBins_k);
   }
 }
 
-void c_vDist::add(double x, double y, double z, double u, double v, double w){
+void c_vDist::add(double x, double y, double z, double u, double v, double w) {
 
   double r2 = (x-vDistLoc_x)*(x-vDistLoc_x) + (y-vDistLoc_y)*(y-vDistLoc_y) + (z-vDistLoc_z)*(z-vDistLoc_z);
   cout << " --+-- r2, vDistRad = " << r2 << " " << vDistRad << endl;
@@ -362,12 +366,12 @@ void c_vDist::add(double x, double y, double z, double u, double v, double w){
 }
 
 /** Add velocity distributions in 3D */
-void Particles3Dcomm::Add_vDist3D(){
+void Particles3Dcomm::Add_vDist3D() {
 
   for (int i=0; i<nvDistLoc; i++) {
 
     if (vDist[i].get_doVdist()) {
-      for (long long p=0; p<nop ;p++) {
+      for (long long p=0; p<nop; p++) {
         cout << p << "/" << nop;
         vDist[i].add(x[p], y[p], z[p], u[p], v[p], w[p]);
       }
@@ -377,7 +381,7 @@ void Particles3Dcomm::Add_vDist3D(){
 }
 
 /** Print velocity distributions in 3D */
-void Particles3Dcomm::Write_vDist3D(string SaveDirName){
+void Particles3Dcomm::Write_vDist3D(string SaveDirName) {
 
   for (int n=0; n<nvDistLoc; n++) {
 
@@ -533,496 +537,388 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
 }
 
-/** communicate buffers */
-int Particles3Dcomm::communicate(VirtualTopology3D * ptVCT) {
-  // allocate buffers
-  MPI_Status status;
-  int new_buffer_size;
-  int npExitingMax;
-  // variable for memory availability of space for new particles
-  int avail, availALL, avail1, avail2, avail3, avail4, avail5, avail6;
-  for (int i = 0; i < buffer_size; i++) {
-    b_X_RIGHT[i] = MIN_VAL;
-    b_X_LEFT[i] = MIN_VAL;
-    b_Y_RIGHT[i] = MIN_VAL;
-    b_Y_LEFT[i] = MIN_VAL;
-    b_Z_RIGHT[i] = MIN_VAL;
-    b_Z_LEFT[i] = MIN_VAL;
-  }
-  npExitXright = 0, npExitXleft = 0, npExitYright = 0, npExitYleft = 0, npExitZright = 0, npExitZleft = 0, npExit = 0, rightDomain = 0;
-  long long np_current = 0, nplast = nop - 1;
+/** communicate buffers or apply boundary conditions for particles: */
+void Particles3Dcomm::communicate(VirtualTopology3D * vct) {
+  // number of particles in the wrong domain
+  long long comm_x, comm_y, comm_z;
 
-  while (np_current < nplast+1){
+  npExitXright = 0L, npExitXleft = 0L, npExitYright = 0L, npExitYleft = 0L, npExitZright = 0L, npExitZleft = 0L;
+  long long np_current = 0L;
+  int result;
 
-    // BC on particles
-    if (x[np_current] < 0 && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft);
-    else if (x[np_current] > Lx && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL)
-      BCpart(&x[np_current],&u[np_current],&v[np_current],&w[np_current],Lx,uth,vth,wth,bcPfaceXright,bcPfaceXleft); 
-    if (y[np_current] < 0 && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL)  // check it here
-      BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft);
-    else if (y[np_current] > Ly && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL) //check it here
-      BCpart(&y[np_current],&v[np_current],&u[np_current],&w[np_current],Ly,vth,uth,wth,bcPfaceYright,bcPfaceYleft); 
-    if (z[np_current] < 0 && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL)  // check it here
-      BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
-    else if (z[np_current] > Lz && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL) //check it here
-      BCpart(&z[np_current],&w[np_current],&u[np_current],&v[np_current],Lz,wth,uth,vth,bcPfaceZright,bcPfaceZleft);
+  while (np_current < nop) {
 
-    // if the particle exits, apply the boundary conditions add the particle to communication buffer
-    if (x[np_current] < xstart || x[np_current] >xend){
-      // communicate if they don't belong to the domain
-      if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() != MPI_PROC_NULL){
-        // check if there is enough space in the buffer before putting in the particle
-        if(((npExitXleft+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
-        }
-        // put it in the communication buffer
-        bufferXleft(b_X_LEFT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitXleft++;
-      } 
-      else if (x[np_current] < xstart && ptVCT->getXleft_neighbor_P() == MPI_PROC_NULL){
-        del_pack(np_current,&nplast);
-        npExitXleft++;
-      } 
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() != MPI_PROC_NULL){
-        // check if there is enough space in the buffer before putting in the particle
-        if(((npExitXright+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
-        }
-        // put it in the communication buffer
-        bufferXright(b_X_RIGHT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitXright++;
-      }
-      else if (x[np_current] > xend && ptVCT->getXright_neighbor_P() == MPI_PROC_NULL){
-        del_pack(np_current,&nplast);
-        npExitXright++;
-      }
+    // check for boundary conditions
+    result = bc_apply (&x[np_current], &y[np_current], &z[np_current], &u[np_current], &v[np_current], &w[np_current]);
+    if (result == -1) { del_pack(np_current); continue; }
 
-    } else  if (y[np_current] < ystart || y[np_current] >yend){
-      // communicate if they don't belong to the domain
-      if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() != MPI_PROC_NULL){
-        // check if there is enough space in the buffer before putting in the particle
-        if(((npExitYleft+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
-        }
-        // put it in the communication buffer
-        bufferYleft(b_Y_LEFT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitYleft++;
-      }
-      else if (y[np_current] < ystart && ptVCT->getYleft_neighbor_P() == MPI_PROC_NULL){
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitYleft++;
-      }
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() != MPI_PROC_NULL){
-        // check if there is enough space in the buffer before putting in the particle
-        if(((npExitYright+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
-        }
-        // put it in the communication buffer
-        bufferYright(b_Y_RIGHT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitYright++;
-      }
-      else if (y[np_current] > yend && ptVCT->getYright_neighbor_P() == MPI_PROC_NULL){
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-        npExitYright++;
-      }
-    } else  if (z[np_current] < zstart || z[np_current] >zend){
-      // communicate if they don't belong to the domain
-      if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() != MPI_PROC_NULL){
-        // check if there is enough space in the buffer before putting in the particle
-        if(((npExitZleft+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
-        }
-        // put it in the communication buffer
-        bufferZleft(b_Z_LEFT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-
-        npExitZleft++;
-      } 
-      else if (z[np_current] < zstart && ptVCT->getZleft_neighbor_P() == MPI_PROC_NULL){
-        del_pack(np_current,&nplast);
-        npExitZleft++;
-      }
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() != MPI_PROC_NULL){
-        // check if there is enough space in the buffer before putting in the particle
-        if(((npExitZright+1)*nVar)>=buffer_size){
-          resize_buffers((int) (buffer_size*2)); 
-        }
-        // put it in the communication buffer
-        bufferZright(b_Z_RIGHT,np_current,ptVCT);
-        // delete the particle and pack the particle array, the value of nplast changes
-        del_pack(np_current,&nplast);
-
-        npExitZright++;
-      }
-      else if (z[np_current] > zend && ptVCT->getZright_neighbor_P() == MPI_PROC_NULL){
-        del_pack(np_current,&nplast);
-        npExitZright++;
-      }
-    }  else {
-      // particle is still in the domain, procede with the next particle
+    // particle leaving the domain need to be communicated in a large enough buffer
+    if (x_out_left) {
+      if (x_leftmost) x[np_current] += Lx;
+      if (npExitXleft >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, buffer_size_x, npExitXleft);
+      buffer_leaving(b_X_LEFT, npExitXleft, np_current);
+    }
+    else if (x_out_right) {
+      if (x_rightmost) x[np_current] -= Lx;
+      if (npExitXright >= buffer_size_x) resize_buffers(b_X_LEFT, b_X_RIGHT, buffer_size_x, npExitXright);
+      buffer_leaving(b_X_RIGHT, npExitXright, np_current);
+    }
+    else if (y_out_left) {
+      if (y_leftmost) y[np_current] += Ly;
+      if (npExitYleft >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, buffer_size_y, npExitYleft);
+      buffer_leaving(b_Y_LEFT, npExitYleft, np_current);
+    }
+    else if (y_out_right) {
+      if (y_rightmost) y[np_current] -= Ly;
+      if (npExitYright >= buffer_size_y) resize_buffers(b_Y_LEFT, b_Y_RIGHT, buffer_size_y, npExitYright);
+      buffer_leaving(b_Y_RIGHT, npExitYright, np_current);
+    }
+    else if (z_out_left) {
+      if (z_leftmost) z[np_current] += Lz;
+      if (npExitZleft >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, buffer_size_z, npExitZleft);
+      buffer_leaving(b_Z_LEFT, npExitZleft, np_current);
+    }
+    else if (z_out_right) {
+      if (z_rightmost) z[np_current] -= Lz;
+      if (npExitZright >= buffer_size_z) resize_buffers(b_Z_LEFT, b_Z_RIGHT, buffer_size_z, npExitZright);
+      buffer_leaving(b_Z_RIGHT, npExitZright, np_current);
+    }
+    else {
+      // particle is still in the domain, proceed with the next particle
       np_current++;
     }
-
   }
 
-  nop = nplast + 1;
-  npExitingMax = 0;
-  // calculate the maximum number of particles exiting from this domain
-  // use this value to check if communication is needed
-  // and to resize the buffer
-  npExitingMax = maxNpExiting();
-  // broadcast the maximum number of particles exiting for sizing the buffer and to check if communication is really needed
-  npExitingMax = reduceMaxNpExiting(npExitingMax);
+  // put number of particles to buffers
+  b_X_LEFT[0] = *((double *) &npExitXleft);
+  b_Y_LEFT[0] = *((double *) &npExitYleft);
+  b_Z_LEFT[0] = *((double *) &npExitZleft);
+  b_X_RIGHT[0] = *((double *) &npExitXright);
+  b_Y_RIGHT[0] = *((double *) &npExitYright);
+  b_Z_RIGHT[0] = *((double *) &npExitZright);
 
-  /*****************************************************/
-  /* SEND AND RECEIVE MESSAGES */
-  /*****************************************************/
+  // local maximum number of particles communicated in each direction
+  comm_x = max(npExitXleft, npExitXright);
+  comm_y = max(npExitYleft, npExitYright);
+  comm_z = max(npExitZleft, npExitZright);
 
-  new_buffer_size = npExitingMax * nVar + 1;
-
-  if (new_buffer_size > buffer_size) {
-    cout << "resizing the receiving buffer" << endl;
-    resize_buffers(new_buffer_size);
-  }
-
-  if (npExitingMax > 0) {
-    communicateParticles(new_buffer_size, b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, ptVCT);
-
-    // UNBUFFERING
-    // message from XLEFT
-    avail1 = unbuffer(b_X_RIGHT);
-    avail2 = unbuffer(b_X_LEFT);
-    avail3 = unbuffer(b_Y_RIGHT);
-    avail4 = unbuffer(b_Y_LEFT);
-    avail5 = unbuffer(b_Z_RIGHT);
-    avail6 = unbuffer(b_Z_LEFT);
-    // if one of these numbers is negative than there is not enough space for particles
-    avail = avail1 + avail2 + avail3 + avail4 + avail5 + avail6;
-    availALL = reduceNumberParticles(avail);
-    if (availALL < 0)
-      return (-1);              // too many particles coming, save data nad stop simulation
-  }
-
-  return (0);                   // everything was fine
-
-
+  iterate_communication (b_X_LEFT, b_X_RIGHT, b_Y_LEFT, b_Y_RIGHT, b_Z_LEFT, b_Z_RIGHT, comm_x, comm_y, comm_z, buffer_size_x, buffer_size_y, buffer_size_z, vct);
 }
-/** resize the buffers */
-void Particles3Dcomm::resize_buffers(int new_buffer_size) {
-  cout << "RESIZING FROM " << buffer_size << " TO " << new_buffer_size << endl;
-  // resize b_X_LEFT
-  double *temp = new double[buffer_size];
 
-  for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_X_LEFT_ptr[i];
-  // delete[] b_X_LEFT_ptr;
-  delete[]b_X_LEFT;
-  b_X_LEFT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_X_LEFT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_X_LEFT[i] = MIN_VAL;
+/** iterate communication of buffers and insert received particles to local domain: */
+int Particles3Dcomm::iterate_communication(std::vector<double>& bxl, std::vector<double>& bxr, std::vector<double>& byl, std::vector<double>& byr, std::vector<double>& bzl, std::vector<double>& bzr, long long num_x, long long num_y, long long num_z, long long& size_x, long long& size_y, long long& size_z, VirtualTopology3D * vct) {
 
-  // resize b_X_RIGHT 
-  for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_X_RIGHT_ptr[i];
-  // delete[] b_X_RIGHT_ptr;
-  delete[]b_X_RIGHT;
-  b_X_RIGHT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_X_RIGHT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_X_RIGHT[i] = MIN_VAL;
+  // number of particles still in the wrong domain
+  long long wrong_x_left = 0L, wrong_x_right = 0L, wrong_y_left = 0L, wrong_y_right = 0L, wrong_z_left = 0L, wrong_z_right = 0L;
+  // vector of particles in the wrong domain
+  std::vector<double> wxl, wxr, wyl, wyr, wzl, wzr;
+  // communication helper variables
+  long long error, comm_x, comm_y, comm_z;
 
-  // resize b_Y_RIGHT
-  for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_Y_RIGHT_ptr[i];
-  // delete[] b_Y_RIGHT_ptr;
-  delete[]b_Y_RIGHT;
-  b_Y_RIGHT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_Y_RIGHT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Y_RIGHT[i] = MIN_VAL;
+  // global maximum number of particles communicated in each direction
+  num_x = globalMaximum(num_x);
+  num_y = globalMaximum(num_y);
+  num_z = globalMaximum(num_z);
 
-  // resize b_Y_LEFT
-  for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_Y_LEFT_ptr[i];
-  // delete[] b_Y_LEFT_ptr;
-  delete[]b_Y_LEFT;
-  b_Y_LEFT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_Y_LEFT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Y_LEFT[i] = MIN_VAL;
+  if (num_x + num_y + num_z > 0L) {
 
-  // resize b_Z_RIGHT
-  for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_Z_RIGHT_ptr[i];
-  // delete[] b_Z_RIGHT_ptr;
-  delete[]b_Z_RIGHT;
-  b_Z_RIGHT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_Z_RIGHT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Z_RIGHT[i] = MIN_VAL;
-
-  // resize b_Z_LEFT
-  for (int i = 0; i < buffer_size; i++)
-    temp[i] = b_Z_LEFT_ptr[i];
-  // delete[] b_Z_LEFT_ptr;
-  delete[]b_Z_LEFT;
-  b_Z_LEFT = new double[new_buffer_size];
-  for (int i = 0; i < buffer_size; i++)
-    b_Z_LEFT[i] = temp[i];
-  for (int i = buffer_size; i < new_buffer_size; i++)
-    b_Z_LEFT[i] = MIN_VAL;
-
-  delete[]temp;
-
-  b_X_RIGHT_ptr = b_X_RIGHT;
-  b_Y_RIGHT_ptr = b_Y_RIGHT;
-  b_Z_RIGHT_ptr = b_Z_RIGHT;
-  b_Y_LEFT_ptr = b_Y_LEFT;
-  b_X_LEFT_ptr = b_X_LEFT;
-  b_Z_LEFT_ptr = b_Z_LEFT;
-
-  buffer_size = new_buffer_size;
-}
-/** put a particle exiting to X-LEFT in the bufferXLEFT for communication and check if you're sending the particle to the right subdomain*/
-void Particles3Dcomm::bufferXleft(double *b_, long long np_current, VirtualTopology3D * vct) {
-  if (x[np_current] < 0)
-    b_[npExitXleft * nVar] = x[np_current] + Lx;  // this applies to the the leftmost processor
-  else
-    b_[npExitXleft * nVar] = x[np_current];
-  b_[npExitXleft * nVar + 1] = y[np_current];
-  b_[npExitXleft * nVar + 2] = z[np_current];
-  b_[npExitXleft * nVar + 3] = u[np_current];
-  b_[npExitXleft * nVar + 4] = v[np_current];
-  b_[npExitXleft * nVar + 5] = w[np_current];
-  b_[npExitXleft * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitXleft * nVar + 7] = ParticleID[np_current];
-}
-/** put a particle exiting to X-RIGHT in the bufferXRIGHT for communication and check if you're sending the particle to the right subdomain*/
-void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopology3D * vct) {
-  if (x[np_current] > Lx)
-    b_[npExitXright * nVar] = x[np_current] - Lx; // this applies to the right most processor
-  else
-    b_[npExitXright * nVar] = x[np_current];
-  b_[npExitXright * nVar + 1] = y[np_current];
-  b_[npExitXright * nVar + 2] = z[np_current];
-  b_[npExitXright * nVar + 3] = u[np_current];
-  b_[npExitXright * nVar + 4] = v[np_current];
-  b_[npExitXright * nVar + 5] = w[np_current];
-  b_[npExitXright * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitXright * nVar + 7] = ParticleID[np_current];
-}
-/** put a particle exiting to Y-LEFT in the bufferYLEFT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, VirtualTopology3D * vct) {
-  b_[npExitYleft * nVar] = x[np_current];
-  if (y[np_current] < 0)
-    b_[npExitYleft * nVar + 1] = y[np_current] + Ly;
-  else
-    b_[npExitYleft * nVar + 1] = y[np_current];
-  b_[npExitYleft * nVar + 2] = z[np_current];
-  b_[npExitYleft * nVar + 3] = u[np_current];
-  b_[npExitYleft * nVar + 4] = v[np_current];
-  b_[npExitYleft * nVar + 5] = w[np_current];
-  b_[npExitYleft * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitYleft * nVar + 7] = ParticleID[np_current];
-}
-/** put a particle exiting to Y-RIGHT in the bufferYRIGHT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, VirtualTopology3D * vct) {
-  b_[npExitYright * nVar] = x[np_current];
-  if (y[np_current] > Ly)
-    b_[npExitYright * nVar + 1] = y[np_current] - Ly;
-  else
-    b_[npExitYright * nVar + 1] = y[np_current];
-  b_[npExitYright * nVar + 2] = z[np_current];
-  b_[npExitYright * nVar + 3] = u[np_current];
-  b_[npExitYright * nVar + 4] = v[np_current];
-  b_[npExitYright * nVar + 5] = w[np_current];
-  b_[npExitYright * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitYright * nVar + 7] = ParticleID[np_current];
-}
-/** put a particle exiting to Z-LEFT in the bufferZLEFT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, VirtualTopology3D * vct) {
-  b_[npExitZleft * nVar] = x[np_current];
-  b_[npExitZleft * nVar + 1] = y[np_current];
-  if (z[np_current] < 0)
-    b_[npExitZleft * nVar + 2] = z[np_current] + Lz;
-  else
-    b_[npExitZleft * nVar + 2] = z[np_current];
-  b_[npExitZleft * nVar + 3] = u[np_current];
-  b_[npExitZleft * nVar + 4] = v[np_current];
-  b_[npExitZleft * nVar + 5] = w[np_current];
-  b_[npExitZleft * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitZleft * nVar + 7] = ParticleID[np_current];
-}
-/** put a particle exiting to Z-RIGHT in the bufferZRIGHT for communication and check if you're sending the particle to the right subdomain*/
-inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, VirtualTopology3D * vct) {
-  b_[npExitZright * nVar] = x[np_current];
-  b_[npExitZright * nVar + 1] = y[np_current];
-  if (z[np_current] > Lz)
-    b_[npExitZright * nVar + 2] = z[np_current] - Lz;
-  else
-    b_[npExitZright * nVar + 2] = z[np_current];
-  b_[npExitZright * nVar + 3] = u[np_current];
-  b_[npExitZright * nVar + 4] = v[np_current];
-  b_[npExitZright * nVar + 5] = w[np_current];
-  b_[npExitZright * nVar + 6] = q[np_current];
-  if (TrackParticleID)
-    b_[npExitZright * nVar + 7] = ParticleID[np_current];
-}
-/** This unbuffer the last communication */
-int Particles3Dcomm::unbuffer(double *b_) {
-  long long np_current = 0;
-  // put the new particles at the end of the array, and update the number of particles
-  while (b_[np_current * nVar] != MIN_VAL) {
-    x[nop] = b_[nVar * np_current];
-    y[nop] = b_[nVar * np_current + 1];
-    z[nop] = b_[nVar * np_current + 2];
-    u[nop] = b_[nVar * np_current + 3];
-    v[nop] = b_[nVar * np_current + 4];
-    w[nop] = b_[nVar * np_current + 5];
-    q[nop] = b_[nVar * np_current + 6];
-    if (TrackParticleID)
-      ParticleID[nop] = (unsigned long) b_[nVar * np_current + 7];
-    np_current++;
-    // these particles need further communication
-    if (x[nop] < xstart || x[nop] > xend || y[nop] < ystart || y[nop] > yend || z[nop] < zstart || z[nop] > zend)
-      rightDomain++;            // the particle is not in the domain
-    nop++;
-    if (nop > npmax) {
-      cout << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
-      MPI_Abort(MPI_COMM_WORLD, -1);
-      return (-1);              // end the simulation because you dont have enough space on the array
+    // resize buffers, if necessary
+    if (num_x > size_x) {
+      if (vct->getCartesian_rank() == 0)
+        cout << "resizing X-buffer: " << size_x << " => " << num_x << " particles" << endl;
+      resize_buffers(bxl, bxr, size_x, num_x, false);
     }
-  }
-  return (0);                   // everything was fine
-}
-/** Delete the a particle from the array and pack the the array, update the number of 
- * particles that are exiting
- * For deleting the particle from the array take the last particle and put it
- * in the position of the particle you want to delete
- * @param np = the index of the particle that must be deleted
- * @param nplast = the index of the last particle in the array
- */
-void Particles3Dcomm::del_pack(long long np_current, long long *nplast) {
-  x[np_current] = x[*nplast];
-  y[np_current] = y[*nplast];
-  z[np_current] = z[*nplast];
-  u[np_current] = u[*nplast];
-  v[np_current] = v[*nplast];
-  w[np_current] = w[*nplast];
-  q[np_current] = q[*nplast];
-  if (TrackParticleID)
-    ParticleID[np_current] = ParticleID[*nplast];
-  npExit++;
-  (*nplast)--;
-}
-/** method to calculate how many particles are out of right domain */
-int Particles3Dcomm::isMessagingDone(VirtualTopology3D * ptVCT) {
-  int result = 0;
-  result = reduceNumberParticles(rightDomain);
-  if (result > 0 && cVERBOSE && ptVCT->getCartesian_rank() == 0)
-    cout << "Further Comunication: " << result << " particles not in the right domain" << endl;
-  return (result);
+    if (num_y > size_y) {
+      if (vct->getCartesian_rank() == 0)
+        cout << "resizing Y-buffer: " << size_y << " => " << num_y << " particles" << endl;
+      resize_buffers(byl, byr, size_y, num_y, false);
+    }
+    if (num_z > size_z) {
+      if (vct->getCartesian_rank() == 0)
+        cout << "resizing Z-buffer: " << size_z << " => " << num_z << " particles" << endl;
+      resize_buffers(bzl, bzr, size_z, num_z, false);
+    }
 
+    // communicate in the X direction
+    if (num_x > 0L) {
+      if (num_x*nVar > INT_MAX) {
+        cout << "ERROR: X-buffer too large: " << num_x*nVar << " > " << INT_MAX << endl;
+        MPI_Abort(MPI_COMM_WORLD, -1);
+        return (-1);
+      }
+      communicateParticlesDIR((int) num_x*nVar, vct->getCartesian_rank(), vct->getXright_neighbor_P(), vct->getXleft_neighbor_P(), 0, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), bxr.data(), bxl.data());
+    }
+
+    // communicate in the Y direction
+    if (num_y > 0L) {
+      if (num_y*nVar > INT_MAX) {
+        cout << "ERROR: Y-buffer too large: " << num_y*nVar << " > " << INT_MAX << endl;
+        MPI_Abort(MPI_COMM_WORLD, -1);
+        return (-1);
+      }
+      communicateParticlesDIR((int) num_y*nVar, vct->getCartesian_rank(), vct->getYright_neighbor_P(), vct->getYleft_neighbor_P(), 1, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), byr.data(), byl.data());
+    }
+
+    // communicate in the Z direction
+    if (num_z > 0L) {
+      if (num_z*nVar > INT_MAX) {
+        cout << "ERROR: Z-buffer too large: " << num_z*nVar << " > " << INT_MAX << endl;
+        MPI_Abort(MPI_COMM_WORLD, -1);
+        return (-1);
+      }
+      communicateParticlesDIR((int) num_z*nVar, vct->getCartesian_rank(), vct->getZright_neighbor_P(), vct->getZleft_neighbor_P(), 2, vct->getXLEN(), vct->getYLEN(), vct->getZLEN(), bzr.data(), bzl.data());
+    }
+
+    // put received particles in the local domain
+    wxl.reserve(100*nVar);
+    wxr.reserve(100*nVar);
+    wyl.reserve(100*nVar);
+    wyr.reserve(100*nVar);
+    wzl.reserve(100*nVar);
+    wzr.reserve(100*nVar);
+    error  = unbuffer(bxr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(bxl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(byr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(byl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(bzr, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    error += unbuffer(bzl, wxl, wxr, wyl, wyr, wzl, wzr, wrong_x_left, wrong_x_right, wrong_y_left, wrong_y_right, wrong_z_left, wrong_z_right);
+    wxl.data()[0] = wrong_x_left;
+    wxr.data()[0] = wrong_x_right;
+    wyl.data()[0] = wrong_y_left;
+    wyr.data()[0] = wrong_y_right;
+    wzl.data()[0] = wrong_z_left;
+    wzr.data()[0] = wrong_z_right;
+
+    // if any of these numbers is negative there was not enough space to store the incoming particles
+    error = globalSum(error);
+    if (error < 0) return (-1); // save data and stop simulation
+
+    // local maximum number of particles communicated in each direction
+    comm_x = max(wrong_x_left, wrong_x_right);
+    comm_y = max(wrong_y_left, wrong_y_right);
+    comm_z = max(wrong_z_left, wrong_z_right);
+
+    // recursive call to treat those particles that are still in the wrong domain
+    iterate_communication (wxl, wxr, wyl, wyr, wzl, wzr, comm_x, comm_y, comm_z, comm_x, comm_y, comm_z, vct);
+
+    wxl.clear();
+    wxr.clear();
+    wyl.clear();
+    wyr.clear();
+    wzl.clear();
+    wzr.clear();
+  }
+  return (0);
 }
-/** calculate the maximum number exiting from this domain */
-int Particles3Dcomm::maxNpExiting() {
-  int maxNp = 0;
-  if (npExitXright > maxNp)
-    maxNp = npExitXright;
-  if (npExitXleft > maxNp)
-    maxNp = npExitXleft;
-  if (npExitYright > maxNp)
-    maxNp = npExitYright;
-  if (npExitYleft > maxNp)
-    maxNp = npExitYleft;
-  if (npExitZright > maxNp)
-    maxNp = npExitZright;
-  if (npExitZleft > maxNp)
-    maxNp = npExitZleft;
-  return (maxNp);
+
+/** apply boundary conditions */
+inline int Particles3Dcomm::bc_apply(double* x, double* y, double* z, double* u, double* v, double* w) {
+
+    x_out_left = (*x < xstart);
+    x_out_right = (*x > xend);
+    y_out_left = (*y < ystart);
+    y_out_right = (*y > yend);
+    z_out_left = (*z < zstart);
+    z_out_right = (*z > zend);
+
+    if (no_x_left && x_out_left) {
+      if (x_degenerated) BCpart_left_degenerated(x,Lx);
+      else if (x_mirror) BCpart_left_mirror(x,u,Lx);
+      else if (x_reemission) BCpart_left_reemission(x,u,v,w,Lx,uth,vth,wth);
+      else { return (-1); }
+      x_out_left = false;
+    }
+    else if (no_x_right && x_out_right) {
+      if (x_degenerated) BCpart_right_degenerated(x,Lx);
+      else if (x_mirror) BCpart_right_mirror(x,u,Lx);
+      else if (x_reemission) BCpart_right_reemission(x,u,v,w,Lx,uth,vth,wth);
+      else { return (-1); }
+      x_out_right = false;
+    }
+    if (no_y_left && y_out_left) {
+      if (y_degenerated) BCpart_left_degenerated(y,Ly);
+      else if (y_mirror) BCpart_left_mirror(y,v,Ly);
+      else if (y_reemission) BCpart_left_reemission(y,v,u,w,Ly,vth,uth,wth);
+      else { return (-1); }
+      y_out_left = false;
+    }
+    else if (no_y_right && y_out_right) {
+      if (y_degenerated) BCpart_right_degenerated(y,Ly);
+      else if (y_mirror) BCpart_right_mirror(y,v,Ly);
+      else if (y_reemission) BCpart_right_reemission(y,v,u,w,Ly,vth,uth,wth);
+      else { return (-1); }
+      y_out_right = false;
+    }
+    if (no_z_left && z_out_left) {
+      if (z_degenerated) BCpart_left_degenerated(z,Lz);
+      else if (z_mirror) BCpart_left_mirror(z,w,Lz);
+      else if (z_reemission) BCpart_left_reemission(z,w,u,v,Lz,wth,uth,vth);
+      else { return (-1); }
+      z_out_left = false;
+    }
+    else if (no_z_right && z_out_right) {
+      if (z_degenerated) BCpart_right_degenerated(z,Lz);
+      else if (z_mirror) BCpart_right_mirror(z,w,Lz);
+      else if (z_reemission) BCpart_right_reemission(z,w,u,v,Lz,wth,uth,vth);
+      else { return (-1); }
+      z_out_right = false;
+    }
+
+  return (0);
+}
+
+/** resize a buffer */
+void Particles3Dcomm::resize_buffers(std::vector<double>& b_left, std::vector<double>& b_right, long long& size, long long request_size, bool extend) {
+  double *temp = NULL;
+  size = request_size + 1;
+  if (extend) size += ((long long) (request_size*0.1 + 0.01*nop)) + 100;
+  long long new_size = 1 + size * nVar;
+
+  // resize and initialize
+  b_left.reserve(new_size);
+  b_right.reserve(new_size);
+}
+
+/** put a leaving particle to the communication buffer */
+inline void Particles3Dcomm::buffer_leaving(std::vector<double>& buffer, long long& part_pos, long long& np_current) {
+  long long pos = 1 + part_pos * nVar;
+  buffer.resize (pos + nVar);
+  buffer[pos] = x[np_current];
+  buffer[pos+1] = y[np_current];
+  buffer[pos+2] = z[np_current];
+  buffer[pos+3] = u[np_current];
+  buffer[pos+4] = v[np_current];
+  buffer[pos+5] = w[np_current];
+  buffer[pos+6] = q[np_current];
+  if (TrackParticleID) buffer[pos+7] = ParticleID[np_current];
+  part_pos++;
+  del_pack(np_current);
+}
+
+/** Unbuffer the last communication */
+int Particles3Dcomm::unbuffer(std::vector<double>& buffer, std::vector<double>& wxl, std::vector<double>& wxr, std::vector<double>& wyl, std::vector<double>& wyr, std::vector<double>& wzl, std::vector<double>& wzr, long long& wrong_x_left, long long& wrong_x_right, long long& wrong_y_left, long long& wrong_y_right, long long& wrong_z_left, long long& wrong_z_right) {
+  double *start;
+  long long pos, size;
+  int result;
+  // put the new particles at the end of the array, and update the number of particles
+  start = buffer.data();
+  size = *((long long *) start);
+  start++;
+  for (pos = 0L; pos < size; pos++) {
+    result = bc_apply (start, start+1, start+2, start+3, start+4, start+5);
+    if (result == 0) {
+      // outside particles need further communication
+      if (x_out_left) {
+        rebuffer(start, wxl, wrong_x_left);
+      }
+      else if (x_out_right) {
+        rebuffer(start, wxr, wrong_x_right);
+      }
+      else if (y_out_left) {
+        rebuffer(start, wyl, wrong_y_left);
+      }
+      else if (y_out_right) {
+        rebuffer(start, wyr, wrong_y_right);
+      }
+      else if (z_out_left) {
+        rebuffer(start, wzl, wrong_z_left);
+      }
+      else if (z_out_right) {
+        rebuffer(start, wzr, wrong_z_right);
+      }
+      else {
+        // particle arrived at the right domain
+        x.push_back(start[0]);
+        y.push_back(start[1]);
+        z.push_back(start[2]);
+        u.push_back(start[3]);
+        v.push_back(start[4]);
+        w.push_back(start[5]);
+        q.push_back(start[6]);
+        if (TrackParticleID) ParticleID.push_back(start[7]);
+        nop++;
+      }
+    }
+    start += nVar;
+  }
+  return (0);
+}
+
+/** Rebuffer particles still in the wrong domain after the last communication */
+inline void Particles3Dcomm::rebuffer(double *start, std::vector<double>& buffer, long long& part_pos) {
+  long long pos = 1 + part_pos * nVar;
+  buffer.resize (pos + nVar);
+  buffer[pos] = start[0];
+  buffer[pos+1] = start[1];
+  buffer[pos+2] = start[2];
+  buffer[pos+3] = start[3];
+  buffer[pos+4] = start[4];
+  buffer[pos+5] = start[5];
+  buffer[pos+6] = start[6];
+  if (TrackParticleID) buffer[pos+7] = start[7];
+  part_pos++;
+}
+
+/** Delete the a particle from the array and pack the array,
+ * update the number of particles that are leaving.
+ * For deleting the particle from the array take the last particle and
+ * put it in the position of the particle you want to delete.
+ * @param np = the index of the particle that must be deleted
+ */
+void Particles3Dcomm::del_pack(long long np_current) {
+  nop--;
+  x[np_current] = x.back(); x.pop_back();
+  y[np_current] = y.back(); y.pop_back();
+  z[np_current] = z.back(); z.pop_back();
+  u[np_current] = u.back(); u.pop_back();
+  v[np_current] = v.back(); v.pop_back();
+  w[np_current] = w.back(); w.pop_back();
+  q[np_current] = q.back(); q.pop_back();
+  if (TrackParticleID) {
+    ParticleID[np_current] = ParticleID.back(); ParticleID.pop_back();
+  }
+}
+
+/** calculate the maximum number leaving from this domain */
+long long Particles3Dcomm::maxNpExiting(long long *max_x, long long *max_y, long long *max_z) {
+  *max_x = max(npExitXleft, npExitXright);
+  *max_y = max(npExitYleft, npExitYright);
+  *max_z = max(npExitZleft, npExitZright);
+  long long max_xyz = max(*max_x, *max_y);
+  max_xyz = max(max_xyz, *max_z);
+  return (max_xyz);
 }
 /** return X-coordinate of particle array */
-double *Particles3Dcomm::getXall()  const {
-  return (x);
+const double *Particles3Dcomm::getXall()  const {
+  return (x.data());
 }
 /** return Y-coordinate  of particle array */
-double *Particles3Dcomm::getYall()  const {
-  return (y);
+const double *Particles3Dcomm::getYall()  const {
+  return (y.data());
 }
 /** return Z-coordinate  of particle array*/
-double *Particles3Dcomm::getZall()  const {
-  return (z);
+const double *Particles3Dcomm::getZall()  const {
+  return (z.data());
 }
 /** get X-velocity of particle with label indexPart */
-double *Particles3Dcomm::getUall()  const {
-  return (u);
+const double *Particles3Dcomm::getUall()  const {
+  return (u.data());
 }
 /** get Y-velocity of particle with label indexPart */
-double *Particles3Dcomm::getVall()  const {
-  return (v);
+const double *Particles3Dcomm::getVall()  const {
+  return (v.data());
 }
 /**get Z-velocity of particle with label indexPart */
-double *Particles3Dcomm::getWall()  const {
-  return (w);
-}
-/**get ID of particle with label indexPart */
-unsigned long *Particles3Dcomm::getParticleIDall()  const {
-  return (ParticleID);
+const double *Particles3Dcomm::getWall()  const {
+  return (w.data());
 }
 /**get charge of particle with label indexPart */
-double *Particles3Dcomm::getQall()  const {
-  return (q);
+const double *Particles3Dcomm::getQall()  const {
+  return (q.data());
 }
-/** return X-coordinate of particle array as reference */
-double *& Particles3Dcomm::getXref() {
-  return (x);
-}
-/** return Y-coordinate  of particle array as reference */
-double *& Particles3Dcomm::getYref() {
-  return (y);
-}
-/** return Z-coordinate  of particle array as reference */
-double *& Particles3Dcomm::getZref() {
-  return (z);
-}
-/** get X-velocity of particle with label indexPart as reference */
-double *& Particles3Dcomm::getUref() {
-  return (u);
-}
-/** get Y-velocity of particle with label indexPart as reference */
-double *& Particles3Dcomm::getVref() {
-  return (v);
-}
-/**get Z-velocity of particle with label indexPart as reference */
-double *& Particles3Dcomm::getWref() {
-  return (w);
-}
-/**get charge of particle with label indexPart as reference */
-double *& Particles3Dcomm::getQref() {
-  return (q);
+/**get ID of particle with label indexPart */
+const unsigned long long *Particles3Dcomm::getParticleIDall()  const {
+  return (ParticleID.data());
 }
 /** return X-coordinate of particle with index indexPart */
 double Particles3Dcomm::getX(long long indexPart)  const {
@@ -1048,13 +944,13 @@ double Particles3Dcomm::getV(long long indexPart)  const {
 double Particles3Dcomm::getW(long long indexPart)  const {
   return (w[indexPart]);
 }
-/**get ID of particle with label indexPart */
-unsigned long Particles3Dcomm::getParticleID(long long indexPart)  const {
-  return (ParticleID[indexPart]);
-}
 /**get charge of particle with label indexPart */
 double Particles3Dcomm::getQ(long long indexPart)  const {
   return (q[indexPart]);
+}
+/**get ID of particle with label indexPart */
+unsigned long long Particles3Dcomm::getParticleID(long long indexPart)  const {
+  return (ParticleID[indexPart]);
 }
 /** return the number of particles */
 long long Particles3Dcomm::getNOP()  const {
@@ -1114,10 +1010,10 @@ unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel
 
 
 /** print particles info */
-void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
+void Particles3Dcomm::Print(VirtualTopology3D * vct) const {
   cout << endl;
   cout << "Number of Particles: " << nop << endl;
-  cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
+  cout << "Subgrid (" << vct->getCoordinates(0) << "," << vct->getCoordinates(1) << "," << vct->getCoordinates(2) << ")" << endl;
   cout << "Xin = " << xstart << "; Xfin = " << xend << endl;
   cout << "Yin = " << ystart << "; Yfin = " << yend << endl;
   cout << "Zin = " << zstart << "; Zfin = " << zend << endl;
@@ -1127,9 +1023,9 @@ void Particles3Dcomm::Print(VirtualTopology3D * ptVCT) const {
   cout << endl;
 }
 /** print just the number of particles */
-void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
+void Particles3Dcomm::PrintNp(VirtualTopology3D * vct)  const {
   cout << endl;
   cout << "Number of Particles of species " << ns << ": " << nop << endl;
-  cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
+  cout << "Subgrid (" << vct->getCoordinates(0) << "," << vct->getCoordinates(1) << "," << vct->getCoordinates(2) << ")" << endl;
   cout << endl;
 }

@@ -1,4 +1,4 @@
-
+#include <mpi.h>
 #include <fstream>
 
 #include "ParallelIO.h"
@@ -322,7 +322,7 @@ void ReadFieldsH5hut(int nspec, bool readext, EMfields3D *EMf, Collective *col, 
   infile.CloseFieldsFile();
 
   // initialize B on centers
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
 
   // Comm ghost nodes for B-field
   communicateNodeBC(grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx(), col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);

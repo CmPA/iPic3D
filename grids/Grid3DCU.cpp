@@ -1,4 +1,4 @@
-
+#include <mpi.h>
 #include "Grid3DCU.h"
 
 /*! constructor */
@@ -76,9 +76,9 @@ Grid3DCU::~Grid3DCU() {
 }
 
 /** print the local grid info */
-void Grid3DCU::print(VirtualTopology3D * ptVCT) {
+void Grid3DCU::print(VirtualTopology3D * vct) {
   cout << endl;
-  cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
+  cout << "Subgrid (" << vct->getCoordinates(0) << "," << vct->getCoordinates(1) << "," << vct->getCoordinates(2) << ")" << endl;
   cout << "Number of cell: -X=" << nxc - 2 << " -Y=" << nyc - 2 << " -Z=" << nzc - 2 << endl;
   cout << "Xin = " << node_xcoord[1] << "; Xfin = " << node_xcoord[nxn - 2] << endl;
   cout << "Yin = " << node_ycoord[1] << "; Yfin = " << node_ycoord[nyn - 2] << endl;
@@ -389,6 +389,7 @@ void Grid3DCU::interpC2N(double ****vecFieldN, int ns, double ****vecFieldC) {
     for (register int j = 1; j < nyn - 1; j++)
       for (register int k = 1; k < nzn - 1; k++)
         vecFieldN[ns][i][j][k] = .125 * (vecFieldC[ns][i][j][k] + vecFieldC[ns][i - 1][j][k] + vecFieldC[ns][i][j - 1][k] + vecFieldC[ns][i][j][k - 1] + vecFieldC[ns][i - 1][j - 1][k] + vecFieldC[ns][i - 1][j][k - 1] + vecFieldC[ns][i][j - 1][k - 1] + vecFieldC[ns][i - 1][j - 1][k - 1]);
+  // *** WORK HERE: outer nodes are not computed
 }
 /** interpolate on nodes from central points: do this for the magnetic field*/
 void Grid3DCU::interpC2N(double ***vecFieldN, double ***vecFieldC) {
@@ -396,21 +397,22 @@ void Grid3DCU::interpC2N(double ***vecFieldN, double ***vecFieldC) {
     for (register int j = 1; j < nyn - 1; j++)
       for (register int k = 1; k < nzn - 1; k++)
         vecFieldN[i][j][k] = .125 * (vecFieldC[i][j][k] + vecFieldC[i - 1][j][k] + vecFieldC[i][j - 1][k] + vecFieldC[i][j][k - 1] + vecFieldC[i - 1][j - 1][k] + vecFieldC[i - 1][j][k - 1] + vecFieldC[i][j - 1][k - 1] + vecFieldC[i - 1][j - 1][k - 1]);
+  // *** WORK HERE: outer nodes are not computed
 }
 
 /** interpolate on central points from nodes */
 void Grid3DCU::interpN2C(double ***vecFieldC, double ***vecFieldN) {
-  for (register int i = 1; i < nxc - 1; i++)
-    for (register int j = 1; j < nyc - 1; j++)
-      for (register int k = 1; k < nzc - 1; k++)
+  for (register int i = 0; i < nxc; i++)
+    for (register int j = 0; j < nyc; j++)
+      for (register int k = 0; k < nzc; k++)
         vecFieldC[i][j][k] = .125 * (vecFieldN[i][j][k] + vecFieldN[i + 1][j][k] + vecFieldN[i][j + 1][k] + vecFieldN[i][j][k + 1] + vecFieldN[i + 1][j + 1][k] + vecFieldN[i + 1][j][k + 1] + vecFieldN[i][j + 1][k + 1] + vecFieldN[i + 1][j + 1][k + 1]);
 }
 
 /** interpolate on central points from nodes */
 void Grid3DCU::interpN2C(double ****vecFieldC, int ns, double ****vecFieldN) {
-  for (register int i = 1; i < nxc - 1; i++)
-    for (register int j = 1; j < nyc - 1; j++)
-      for (register int k = 1; k < nzc - 1; k++)
+  for (register int i = 0; i < nxc; i++)
+    for (register int j = 0; j < nyc; j++)
+      for (register int k = 0; k < nzc; k++)
         vecFieldC[ns][i][j][k] = .125 * (vecFieldN[ns][i][j][k] + vecFieldN[ns][i + 1][j][k] + vecFieldN[ns][i][j + 1][k] + vecFieldN[ns][i][j][k + 1] + vecFieldN[ns][i + 1][j + 1][k] + vecFieldN[ns][i + 1][j][k + 1] + vecFieldN[ns][i][j + 1][k + 1] + vecFieldN[ns][i + 1][j + 1][k + 1]);
 }
 

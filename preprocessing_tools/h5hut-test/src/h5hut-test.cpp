@@ -88,13 +88,13 @@ int main (int argc, char *argv[])
   for (int s = 0; s < nspec; s++){
     myPart[s].memalloc(file.GetNp(s));
 
-    file.DumpPartclX(myPart[s].getXref(), s);
-    file.DumpPartclY(myPart[s].getYref(), s);
-    file.DumpPartclZ(myPart[s].getZref(), s);
-    file.DumpPartclU(myPart[s].getUref(), s);
-    file.DumpPartclV(myPart[s].getVref(), s);
-    file.DumpPartclW(myPart[s].getWref(), s);
-    file.DumpPartclQ(myPart[s].getQref(), s);
+    file.DumpPartclX(myPart[s].getXall(), s);
+    file.DumpPartclY(myPart[s].getYall(), s);
+    file.DumpPartclZ(myPart[s].getZall(), s);
+    file.DumpPartclU(myPart[s].getUall(), s);
+    file.DumpPartclV(myPart[s].getVall(), s);
+    file.DumpPartclW(myPart[s].getWall(), s);
+    file.DumpPartclQ(myPart[s].getQall(), s);
   }
   file.ClosePartclFile();
 

@@ -21,7 +21,7 @@ email                : markidis@lanl.gov, lapenta@lanl.gov
 // class Grid {
 // public:
 // /** print grid info */
-// virtual void print(VirtualTopology3D * ptVCT) = 0;
+// virtual void print(VirtualTopology3D * vct) = 0;
 // /** calculate gradient on nodes, given a scalar field defined on central points */
 // virtual void gradC2N(double ***gradXN, double ***gradYN, double ***gradZN, double ***scFieldC) = 0;
 // /** calculate gradient on nodes, given a scalar field defined on central points */
