@@ -4,6 +4,7 @@ clear all
 addpath(genpath('../../ipic3d_toolbox'));
 
 must_read=true;
+leggo='h5';
 if(must_read)
 
 sim_name='tred81'
@@ -30,6 +31,7 @@ cycle =4000;
 zcode = Lz/2;
 case 'HRmaha3D3'
 HRmaha3D3;
+leggo='gda';
     case_name='GEM';
 dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
 cycle = 80002;  % for h5
@@ -108,6 +110,8 @@ xlabel('x')
 ylabel('y')
 cmax=max(max(abs(mean(AAz,3))));
 caxis([-cmax cmax])
+axis equal 
+axis tight
 print('-dpng','-r300',[ncycle '_Phi'])
 
 
@@ -156,7 +160,12 @@ figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle, list_value)
         
         JdotEp=(Jex+Jix).*Epx + (Jey+Jiy).*Epy + (Jez+Jiz).*Epz;
 figura(AAz,JdotEp,4,'JEp',ncycle, list_value)
-        
+     
+xflow='inflow'
+   structure_function
+xflow='outflow'
+   structure_function
+
         
 function [] = figura(a,p,n,name,prename, list_value)
 % MYMEAN Example of a local function.
@@ -226,3 +235,5 @@ print('-dpng','-r300',[prename '_d_' name])
 close(n)
 
 end
+
+

@@ -35,6 +35,8 @@ Epar=(Ex.*Bx+Ey.*By+Ez.*Bz)./B;
 
 elseif(strcmp(leggo,'gda'))
 
+ncycle = num2str(cycle)    
+    
 file=[dir 'B_x_cycle' ncycle '.gda'];
 fid= fopen(file,'rb');
 Bx=fread(fid,'real*8');
@@ -53,48 +55,66 @@ Bz=fread(fid,'real*8');
 fclose(fid);
 Bz=reshape(Bz,Nx,Ny,Nz);
 
-
-file=[dir 'Pi_per1_cycle' ncycle '.gda'];
+file=[dir 'E_x_cycle' ncycle '.gda'];
 fid= fopen(file,'rb');
-Pper1=fread(fid,'real*8');
+Ex=fread(fid,'real*8');
 fclose(fid);
-Pper1=reshape(Pper1,Nx,Ny,Nz);
+Ex=reshape(Ex,Nx,Ny,Nz);
+
+file=[dir 'E_y_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+Ey=fread(fid,'real*8');
+fclose(fid);
+Ey=reshape(Ey,Nx,Ny,Nz);
+
+file=[dir 'E_z_cycle' ncycle '.gda'];
+fid= fopen(file,'rb');
+Ez=fread(fid,'real*8');
+fclose(fid);
+Ez=reshape(Ez,Nx,Ny,Nz);
+
+
+% file=[dir 'Pi_per1_cycle' ncycle '.gda'];
+% fid= fopen(file,'rb');
+% Pper1=fread(fid,'real*8');
+% fclose(fid);
+% Pper1=reshape(Pper1,Nx,Ny,Nz);
 
 file=[dir 'Pe_xx_cycle' ncycle '.gda'];
 fid= fopen(file,'rb');
-PeXX=fread(fid,'real*8');
+Pexx=fread(fid,'real*8');
 fclose(fid);
-PeXX=reshape(PeXX,Nx,Ny,Nz);
+Pexx=reshape(Pexx,Nx,Ny,Nz);
 
 file=[dir 'Pe_xy_cycle' ncycle '.gda'];
 fid= fopen(file,'rb');
-PeXY=fread(fid,'real*8');
+Pexy=fread(fid,'real*8');
 fclose(fid);
-PeXY=reshape(PeXY,Nx,Ny,Nz);
+Pexy=reshape(Pexy,Nx,Ny,Nz);
 
 file=[dir 'Pe_xz_cycle' ncycle '.gda'];
 fid= fopen(file,'rb');
-PeXZ=fread(fid,'real*8');
+Pexz=fread(fid,'real*8');
 fclose(fid);
-PeXZ=reshape(PeXZ,Nx,Ny,Nz);
+Pexz=reshape(Pexz,Nx,Ny,Nz);
 
 file=[dir 'Pe_yy_cycle' ncycle '.gda'];
 fid= fopen(file,'rb');
-PeYY=fread(fid,'real*8');
+Peyy=fread(fid,'real*8');
 fclose(fid);
-PeYY=reshape(PeYY,Nx,Ny,Nz);
+Peyy=reshape(Peyy,Nx,Ny,Nz);
 
 file=[dir 'Pe_yz_cycle' ncycle '.gda'];
 fid= fopen(file,'rb');
-PeYZ=fread(fid,'real*8');
+Peyz=fread(fid,'real*8');
 fclose(fid);
-PeYZ=reshape(PeYZ,Nx,Ny,Nz);
+Peyz=reshape(Peyz,Nx,Ny,Nz);
 
 file=[dir 'Pe_zz_cycle' ncycle '.gda'];
 fid= fopen(file,'rb');
-PeZZ=fread(fid,'real*8');
+Pezz=fread(fid,'real*8');
 fclose(fid);
-PeZZ=reshape(PeZZ,Nx,Ny,Nz);
+Pezz=reshape(Pezz,Nx,Ny,Nz);
 
 
 B=sqrt(Bx.*Bx+By.*By+Bz.*Bz);

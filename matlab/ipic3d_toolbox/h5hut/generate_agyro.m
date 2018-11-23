@@ -1,13 +1,13 @@
 close all
 addpath(genpath('../../ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
-
+clear all
 
 must_read=true;
 leggo='h5'
 if(must_read)
 
-sim_name='tred81'
+sim_name='UHRmaha3D3'
 switch sim_name
 case 'tred77'
 TRED77;
@@ -33,9 +33,26 @@ case 'HRmaha3D3'
 HRmaha3D3;
 leggo='gda';
     case_name='GEM';
-dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; ncycle = num2str(cycle,'%06d');
-cycle = 80002;  % for h5
+%dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; 
+cycle = 24000
+%cycle = 80002;  % for h5
 %cycle = 80000  % for vtk binary
+ncycle = num2str(cycle)%,'%06d');
+% for HRmaha3D1:
+time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt between 2D and 3D
+% for HRmaha3D1.v2:
+% time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
+%ADD initial time of the RUN
+time=time+initial_time; %(03*60+48)*60
+case 'UHRmaha3D3'
+UHRmaha3D3;
+leggo='vtk';
+    case_name='GEM';
+%dir='/data1/gianni/HRmaha3D3/h5/'; cycle= 80002; 
+cycle = 48000
+%cycle = 80002;  % for h5
+%cycle = 80000  % for vtk binary
+ncycle = num2str(cycle)%,'%06d');
 % for HRmaha3D1:
 time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt between 2D and 3D
 % for HRmaha3D1.v2:
@@ -139,13 +156,18 @@ Nongyro_swisdak(i,iy,k)=sqrt(Q);
 end
 end
 end
+
+savevtk_bin(Agyro,['Agyro_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+savevtk_bin(Agyro_aunai,['Agyro_aunai_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+savevtk_bin(Nongyro_swisdak,['Nongyro_swisdak_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+
 Agyro_sm=smooth3D(Agyro,6);
 Agyro_aunai_sm=smooth3D(Agyro_aunai,6);
 Nongyro_swisdak_sm=smooth3D(Nongyro_swisdak,6);
 
-savevtk_bin(Agyro_sm,['Agyro_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
-savevtk_bin(Agyro_aunai_sm,['Agyro_aunai_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
-savevtk_bin(Nongyro_swisdak_sm,['Nongyro_swisdak_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+savevtk_bin(Agyro_sm,['AgyroSM_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+savevtk_bin(Agyro_aunai_sm,['AgyroSM_aunai_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+savevtk_bin(Nongyro_swisdak_sm,['NongyroSM_swisdak_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
 
 opath=fn
 h5create(opath,'/Step#0/Block/Agyro/0',[Nx, Ny, Nz]);

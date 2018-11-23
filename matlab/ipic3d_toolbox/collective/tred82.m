@@ -38,8 +38,8 @@ YLEN=12;
 ZLEN=8;
 qom=-256;
 mratio=256;
-vthi=.0044
-vthe=.00027
+vthe=.0044
+vthi=.00027
 Nprocs=XLEN*YLEN*ZLEN
 
 vthr=vthe;
