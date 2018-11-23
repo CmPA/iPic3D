@@ -3,7 +3,7 @@ clear all
 close all
 
 generateX=true
-separate_he=true
+separate_he=false
 graphicose=true
 
 

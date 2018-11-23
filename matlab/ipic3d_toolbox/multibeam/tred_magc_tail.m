@@ -13,12 +13,12 @@ n0=1; % particle per cc
 
 load('uvw-tail.mat')
 load('tail-vdf.mat')
-fcutoff=permute(fcutoff,[2 1 3]);
+%fcutoff=permute(fcutoff,[2 1 3]);
 fcutoff=smooth3(fcutoff,'box',5);
 Np=max(size(up));
 X2=zeros(Np,3);
-X2(:,1)=up;
-X2(:,2)=vp;
+X2(:,1)=vp;
+X2(:,2)=up;
 X2(:,3)=wp;
 
 Nc=4
@@ -57,66 +57,88 @@ conservation=n'*C-U
 
 %U=U/(Nx-1)*560*2-560
 
+load ../service/gist_ncar.mat
+
 
 figure(2)
-subplot(2,2,1)
 aa=squeeze(mean(fcutoff,3));
 imagesc([-.06 .06],[-.06 .06],aa')
-title('\perp_1 - ||')
+xlabel('v_x','fontsize',[20])
+ylabel('v_y','fontsize',[20])
+set(gca,'fontsize',[20])
 hold on
-plot(C(:,1),C(:,2),'kx',...
-     'MarkerSize',3,'LineWidth',1) 
+plot(C(:,1),C(:,2),'mx',...
+     'MarkerSize',15,'LineWidth',1) 
 axis xy
-
-subplot(2,2,2)
-aa=squeeze(mean(fcutoff,2));
-imagesc([-.06 .06],[-.06 .06],aa')
-title('\perp_1 - \perp_2')
-hold on
-plot(C(:,1),C(:,3),'kx',...
-     'MarkerSize',3,'LineWidth',1) 
-axis xy
-
-subplot(2,2,3)
-aa=squeeze(mean(fcutoff,1));
-imagesc([-.06 .06],[-.06 .06],aa')
-title('|| - \perp_2')
-
-hold on
-plot(C(:,2),C(:,3),'kx',...
-     'MarkerSize',3,'LineWidth',1) 
-axis xy
-
-print('figure_linear','-dpng')
+axis equal
+axis tight
+colormap(parula)
+print('figure_linear_1','-dpng','-r300')
 
 figure(3)
+aa=squeeze(mean(fcutoff,2));
+imagesc([-.06 .06],[-.06 .06],aa')
+xlabel('v_x','fontsize',[20])
+ylabel('v_z','fontsize',[20])
+set(gca,'fontsize',[20])
+hold on
+plot(C(:,1),C(:,3),'mx',...
+     'MarkerSize',15,'LineWidth',1) 
+axis xy
+axis equal
+axis tight
+colormap(parula)
+print('figure_linear_2','-dpng','-r300')
+
+figure(4)
+aa=squeeze(mean(fcutoff,1));
+imagesc([-.06 .06],[-.06 .06],aa')
+xlabel('v_y','fontsize',[20])
+ylabel('v_z','fontsize',[20])
+set(gca,'fontsize',[20])
+
+hold on
+plot(C(:,2),C(:,3),'mx',...
+     'MarkerSize',15,'LineWidth',1) 
+axis xy
+axis equal
+axis tight
+colormap(parula)
+print('figure_linear_3','-dpng','-r300')
+
+figure(5)
 subplot(2,2,1)
 aa=squeeze(log(mean(fcutoff,3)));
 imagesc([-.06 .06],[-.06 .06],aa')
-title('\perp_1 - ||')
+xlabel('v_x','fontsize',[20])
+ylabel('v_y','fontsize',[20])
 hold on
-plot(C(:,1),C(:,2),'kx',...
-     'MarkerSize',3,'LineWidth',1) 
+plot(C(:,1),C(:,2),'wx',...
+     'MarkerSize',6,'LineWidth',1) 
 axis xy
+colormap(parula)
 
 subplot(2,2,2)
 aa=squeeze(log(mean(fcutoff,2)));
 imagesc([-.06 .06],[-.06 .06],aa')
-title('\perp_1 - \perp_2')
+xlabel('v_x','fontsize',[20])
+ylabel('v_z','fontsize',[20])
 hold on
-plot(C(:,1),C(:,3),'kx',...
-     'MarkerSize',3,'LineWidth',1) 
+plot(C(:,1),C(:,3),'wx',...
+     'MarkerSize',6,'LineWidth',1) 
 axis xy
+colormap(parula)
 
 subplot(2,2,3)
 aa=squeeze(log(mean(fcutoff,1)));
 imagesc([-.06 .06],[-.06 .06],aa')
-title('|| - \perp_2')
+xlabel('v_y','fontsize',[20])
+ylabel('v_z','fontsize',[20])
 hold on
-plot(C(:,2),C(:,3),'kx',...
-     'MarkerSize',3,'LineWidth',1) 
+plot(C(:,2),C(:,3),'wx',...
+     'MarkerSize',6,'LineWidth',1) 
 axis xy
-
+colormap(parula)
 
 print('figure_log','-dpng')
 
@@ -145,15 +167,36 @@ end
 fid=fopen('MyLatex.tex','w');
 input.dataFormat = {'%e'};
 
+input.tableColLabels = {'x','y','z'};
+input.tableRowLabels = {'Cluster 1', 'Cluster 2', 'Cluster 3', 'Cluster 4'};
+
+
+% LaTex table caption:
+input.tableCaption = 'Cluster Centers';
+% LaTex table label:
+input.tableLabel = 'cluster_center';
+input.data = C
+latex = latexTable(input)
+
+input.tableColLabels = {'x','y','z','mod'};
+input.tableRowLabels = {'1 cluster','4 clusters'};
+
+
+[nrows,ncols] = size(latex);
+for row = 1:nrows
+    fprintf(fid,'%s\n',latex{row,:});
+end
+fprintf(fid,'\n');
+
 x_mean_t = (sum(X2(:,:).*Q,1)) ...
     ./(sum(Q));
 
 Ubar=[x_mean_t ;(x_mean'*n)']
+Ubar=[Ubar sqrt(sum(Ubar.^2,2))]
 input.data = Ubar
 
 % LaTex table caption:
 input.tableCaption = 'Mean Velocity ';
-
 % LaTex table label:
 input.tableLabel = 'mean_velocity';
 
@@ -170,6 +213,7 @@ fprintf(fid,'\n');
 x2_mean_t = (sum((X2(:,:)-x_mean_t).^2.*Q,1)) ...
     ./(sum(Q));
 Uth=[x2_mean_t/2 ; (x2_mean'*n)'/2]
+Uth=[Uth sum(Uth,2)]
 
 % LaTex table caption:
 input.tableCaption = 'Thermal Energy';
@@ -190,7 +234,8 @@ fprintf(fid,'\n');
 
 x3_mean_t = (sum((X2(:,:)-x_mean_t).^3.*Q,1)) ...
     ./(sum(Q));
-HF=[x3_mean_t; (x3_mean'*n)']
+HF=[x3_mean_t/2; (x3_mean'*n)'/2]
+HF=[HF sqrt(sum(HF.^2,2))]
 
 % LaTex table caption:
 input.tableCaption = 'Heat Flux';
@@ -212,4 +257,72 @@ fclose(fid);
 fprintf('\n... your LaTex code has been saved as ''MyLatex.tex'' in your working directory\n');
 
 
+fid=fopen('MyLatex_SI.tex','w');
+input.dataFormat = {'%e'};
+input.tableColLabels = {'x','y','z','mod'};
+input.tableRowLabels = {'1 cluster','4 clusters'};
 
+
+%Convert to SI
+% 0.5*n*me*256*U^2*c^2 (*1e9 to have it in nW/m^3)
+c=299792458;
+n_mi_c2=0.01*1e6*9.1e-31*(c)^2*256;
+
+
+input.data = Ubar.^2/2*n_mi_c2*1e9
+
+% LaTex table caption:
+input.tableCaption = 'Bulk Energy $nJ/m^3$ ';
+% LaTex table label:
+input.tableLabel = 'bulk_energy_si';
+
+latex = latexTable(input)
+
+[nrows,ncols] = size(latex);
+for row = 1:nrows
+    fprintf(fid,'%s\n',latex{row,:});
+end
+fprintf(fid,'\n');
+
+% Uth*c^2*n*me*256
+
+
+% LaTex table caption:
+input.tableCaption = 'Thermal Energy $nJ/m^3$';
+
+% LaTex table label:
+input.tableLabel = 'thermal_energy_si';
+
+
+
+input.data = Uth*n_mi_c2*1e9
+latex = latexTable(input)
+
+[nrows,ncols] = size(latex);
+for row = 1:nrows
+    fprintf(fid,'%s\n',latex{row,:});
+end
+fprintf(fid,'\n');
+
+% HF*c^2*n*me*256
+
+
+% LaTex table caption:
+input.tableCaption = 'Heat Flux $mW/m^2$';
+
+% LaTex table label:
+input.tableLabel = 'heat_flux_si';
+
+input.data = HF*n_mi_c2*1e3*c
+latex = latexTable(input)
+
+[nrows,ncols] = size(latex);
+for row = 1:nrows
+    fprintf(fid,'%s\n',latex{row,:});
+end
+fclose(fid);
+fprintf('\n... your LaTex code has been saved as ''MyLatex.tex'' in your working directory\n');
+
+!cp *.tex ~/Dropbox/Science/tex/marty-multibeam
+!/usr/local/bin/mogrify -trim *.png
+!cp *.png ~/Dropbox/Science/tex/marty-multibeam
