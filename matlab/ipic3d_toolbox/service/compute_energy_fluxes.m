@@ -1,7 +1,7 @@
 function [Qenthx,Qenthy,Qenthz,Qbulkx,Qbulky,Qbulkz,Qhfx,Qhfy,Qhfz,Ubulk,Uth]=compute_energy_fluxes(Pxx,Pyy,Pzz,Pxy,Pxz,Pyz,Qx,Qy,Qz,Jx,Jy,Jz,rho, qom)
 
 small=1e-10;
-Ubulk = 0.5*(Jx.^2 + Jy.^2 + Jz.^2)./(N+small)/qom;
+Ubulk = 0.5*(Jx.^2 + Jy.^2 + Jz.^2)./(rho+small)/qom;
 Qbulkx = Jx./(rho+small).*Ubulk;
 Qbulky = Jy./(rho+small).*Ubulk;
 Qbulkz = Jz./(rho+small).*Ubulk;

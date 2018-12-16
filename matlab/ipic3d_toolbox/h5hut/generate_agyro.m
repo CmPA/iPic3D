@@ -82,8 +82,13 @@ ncycle = num2str(cycle,'%06d');
 import_h5_binvtk
 end
 
-
-
+ll=[1,1,1]*9;
+Pxx1=smooth3(Pexx,'box',ll);
+Pyy1=smooth3(Peyy,'box',ll);
+Pzz1=smooth3(Pezz,'box',ll);
+Pxy1=smooth3(Pexy,'box',ll);
+Pxz1=smooth3(Pexz,'box',ll);
+Pyz1=smooth3(Peyz,'box',ll);
    
 
 [nx ny nz]= size(Pexx)
@@ -92,12 +97,12 @@ for i=1:nx
 for iy=1:ny
 for k=1:nz
 
-p(1,1)=(Pexx(i,iy,k));
-p(1,2)=(Pexy(i,iy,k));
-p(1,3)=(Pexz(i,iy,k));
-p(2,2)=(Peyy(i,iy,k));
-p(2,3)=(Peyz(i,iy,k));
-p(3,3)=(Pezz(i,iy,k));
+p(1,1)=(Pxx1(i,iy,k));
+p(1,2)=(Pxy1(i,iy,k));
+p(1,3)=(Pxz1(i,iy,k));
+p(2,2)=(Pyy1(i,iy,k));
+p(2,3)=(Pyz1(i,iy,k));
+p(3,3)=(Pzz1(i,iy,k));
 p(2,1)=p(1,2);
 p(3,1)=p(1,3);
 p(3,2)=p(2,3);
@@ -161,21 +166,21 @@ savevtk_bin(Agyro,['Agyro_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
 savevtk_bin(Agyro_aunai,['Agyro_aunai_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
 savevtk_bin(Nongyro_swisdak,['Nongyro_swisdak_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
 
-Agyro_sm=smooth3D(Agyro,6);
-Agyro_aunai_sm=smooth3D(Agyro_aunai,6);
-Nongyro_swisdak_sm=smooth3D(Nongyro_swisdak,6);
+% Agyro_sm=smooth3D(Agyro,6);
+% Agyro_aunai_sm=smooth3D(Agyro_aunai,6);
+% Nongyro_swisdak_sm=smooth3D(Nongyro_swisdak,6);
+% 
+% savevtk_bin(Agyro_sm,['AgyroSM_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+% savevtk_bin(Agyro_aunai_sm,['AgyroSM_aunai_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
+% savevtk_bin(Nongyro_swisdak_sm,['NongyroSM_swisdak_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
 
-savevtk_bin(Agyro_sm,['AgyroSM_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
-savevtk_bin(Agyro_aunai_sm,['AgyroSM_aunai_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
-savevtk_bin(Nongyro_swisdak_sm,['NongyroSM_swisdak_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
-
-opath=fn
-h5create(opath,'/Step#0/Block/Agyro/0',[Nx, Ny, Nz]);
-h5write(opath,'/Step#0/Block/Agyro/0',Agyro)
-h5create(opath,'/Step#0/Block/Agyro_aunai/0',[Nx, Ny, Nz]);
-h5write(opath,'/Step#0/Block/Agyro_aunai/0',Agyro_aunai)
-h5create(opath,'/Step#0/Block/Nongyro_swisdak/0',[Nx, Ny, Nz]);
-h5write(opath,'/Step#0/Block/Nongyro_swisdak/0',Nongyro_swisdak)
-h5create(opath,'/Step#0/Block/Nongyro_aunai/0',[Nx, Ny, Nz]);
-h5write(opath,'/Step#0/Block/Nongyro_aunai/0',Nongyro_swisdak)
-
+% opath=fn
+% h5create(opath,'/Step#0/Block/Agyro/0',[Nx, Ny, Nz]);
+% h5write(opath,'/Step#0/Block/Agyro/0',Agyro)
+% h5create(opath,'/Step#0/Block/Agyro_aunai/0',[Nx, Ny, Nz]);
+% h5write(opath,'/Step#0/Block/Agyro_aunai/0',Agyro_aunai)
+% h5create(opath,'/Step#0/Block/Nongyro_swisdak/0',[Nx, Ny, Nz]);
+% h5write(opath,'/Step#0/Block/Nongyro_swisdak/0',Nongyro_swisdak)
+% h5create(opath,'/Step#0/Block/Nongyro_aunai/0',[Nx, Ny, Nz]);
+% h5write(opath,'/Step#0/Block/Nongyro_aunai/0',Nongyro_swisdak)
+% 

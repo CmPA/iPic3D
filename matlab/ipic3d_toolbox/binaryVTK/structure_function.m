@@ -26,6 +26,8 @@ Qe=Qex.^2+Qey.^2+Qez.^2; Qe=sqrt(Qe);
 %figure(1)
 %imagesc(bbb(:,:,1))
 
+   
+
 [autX1,autY1,autZ1,volX,volY,volZ]=compute_strct_funct_directional(st,Qex,Qey,Qez);
 
 %bbb=S.*st;
@@ -39,9 +41,9 @@ set(h,'Position', [103 3 827 665])
 hax=subplot(1,3,1)
 loglog((0:Nx/2-1)*dx,autX1(1:Nx/2),(0:Ny/2-1)*dy,autY1(1:Ny/2),(0:Nz/2-1)*dz,autZ1(1:Nz/2))
 hold on 
-p=polyfit(log(1./(1:3)/dx), log(autX1(2:4)'),1)
+p=polyfit(log(1./(10:20)/dx), log(autX1(11:21)'),1)
 n=p(1);
-loglog((1:20)*dx,(1./(1:20)/dx).^n.*dx^n*autX1(2))
+loglog((5:30)*dx,(1./(5:30)/dx).^n.*(dx*10)^n*autX1(11))
 xlabel('$\ell/d_i$','interpreter','latex','fontsize',12)
 ylabel('S_Q^2')
 %line([1 1]/rhoi,get(hax,'YLim'),'Color','k')
@@ -51,9 +53,9 @@ grid on
 hax=subplot(1,3,2)
 loglog((0:Nx/2-1)*dx,autX2(1:Nx/2),(0:Ny/2-1)*dy,autY2(1:Ny/2),(0:Nz/2-1)*dz,autZ2(1:Nz/2))
 hold on 
-p=polyfit(log(1./(1:3)/dx), log(autX2(2:4)'),1)
+p=polyfit(log(1./(10:20)/dx), log(autX2(11:21)'),1)
 n=p(1);
-loglog((1:20)*dx,(1./(1:20)/dx).^n.*dx^n*autX2(2))
+loglog((5:30)*dx,(1./(5:30)/dx).^n.*(dx*10)^n*autX2(11))
 xlabel('$\ell/d_i$','interpreter','latex','fontsize',12)
 ylabel('S_S^2')
 grid on
@@ -63,9 +65,9 @@ legend('S:l_x','l_y','l_z',['n=' num2str(-n)],'location','southoutside')
 hax=subplot(1,3,3)
 loglog((0:Nx/2-1)*dx,autX3(1:Nx/2),(0:Ny/2-1)*dy,autY3(1:Ny/2),(0:Nz/2-1)*dz,autZ3(1:Nz/2))
 hold on 
-p=polyfit(log(1./(1:3)/dx), log(autX3(2:4)'),1)
+p=polyfit(log(1./(10:20)/dx), log(autX3(11:21)'),1)
 n=p(1);
-loglog((1:20)*dx,(1./(1:20)/dx).^n.*dx^n*autX3(2))
+loglog((5:30)*dx,(1./(5:30)/dx).^n.*(dx*10)^n*autX3(11))
 xlabel('$\ell/d_i$','interpreter','latex','fontsize',12)
 ylabel('S_{JeE}^2')
 grid on
@@ -81,6 +83,8 @@ Qi=Qix.^2+Qiy.^2+Qiz.^2; Qi=sqrt(Qi);
 %figure(1)
 %imagesc(bbb(:,:,1))
 
+
+
 [autX1,autY1,autZ1,volX,volY,volZ]=compute_strct_funct_directional(st,Qix,Qiy,Qiz);
 
 %bbb=S.*st;
@@ -94,9 +98,9 @@ set(h,'Position', [103 3 827 665])
 hax=subplot(1,3,1)
 loglog((0:Nx/2-1)*dx,autX1(1:Nx/2),(0:Ny/2-1)*dy,autY1(1:Ny/2),(0:Nz/2-1)*dz,autZ1(1:Nz/2))
 hold on 
-p=polyfit(log(1./(1:3)/dx), log(autX1(2:4)'),1);
+p=polyfit(log(1./(10:20)/dx), log(autX1(11:21)'),1);
 n=p(1);
-loglog((1:20)*dx,(1./(1:20)/dx).^n.*dx^n*autX1(2))
+loglog((5:30)*dx,(1./(5:30)/dx).^n.*(10*dx)^n*autX1(11))
 xlabel('$\ell/d_i$','interpreter','latex','fontsize',12)
 ylabel('S_Q^2')
 %line([1 1]/rhoi,get(hax,'YLim'),'Color','k')
@@ -106,9 +110,9 @@ grid on
 hax=subplot(1,3,2)
 loglog((0:Nx/2-1)*dx,autX2(1:Nx/2),(0:Ny/2-1)*dy,autY2(1:Ny/2),(0:Nz/2-1)*dz,autZ2(1:Nz/2))
 hold on 
-p=polyfit(log(1./(1:3)/dx), log(autX2(2:4)'),1)
+p=polyfit(log(1./(10:20)/dx), log(autX2(11:21)'),1)
 n=p(1);
-loglog((1:20)*dx,(1./(1:20)/dx).^n.*dx^n*autX2(2))
+loglog((5:30)*dx,(1./(5:30)/dx).^n.*(10*dx)^n*autX2(11))
 xlabel('$\ell/d_i$','interpreter','latex','fontsize',12)
 ylabel('S_S^2')
 grid on
@@ -118,9 +122,9 @@ legend('S:l_x','l_y','l_z',['n=' num2str(-n)],'location','southoutside')
 hax=subplot(1,3,3)
 loglog((0:Nx/2-1)*dx,autX3(1:Nx/2),(0:Ny/2-1)*dy,autY3(1:Ny/2),(0:Nz/2-1)*dz,autZ3(1:Nz/2))
 hold on 
-p=polyfit(log(1./(1:3)/dx), log(autX3(2:4)'),1)
+p=polyfit(log(1./(10:20)/dx), log(autX3(11:21)'),1)
 n=p(1);
-loglog((1:20)*dx,(1./(1:20)/dx).^n.*dx^n*autX3(2))
+loglog((5:30)*dx,(1./(5:30)/dx).^n.*(10*dx)^n*autX3(11))
 xlabel('$\ell/d_i$','interpreter','latex','fontsize',12)
 ylabel('S_{JiE}^2')
 grid on

@@ -7,7 +7,7 @@ must_read=true;
 leggo='h5';
 if(must_read)
 
-sim_name='tred81'
+sim_name='tred82'
 switch sim_name
 case 'tred77'
 TRED77;
@@ -84,6 +84,16 @@ UPez = (Jex.*Pexz + Jey.*Peyz + Jez.*Pezz)./rhoe;
 UPix = (Jix.*Pixx + Jiy.*Pixy + Jiz.*Pixz)./rhoi;
 UPiy = (Jix.*Pixy + Jiy.*Piyy + Jiz.*Piyz)./rhoi;
 UPiz = (Jix.*Pixz + Jiy.*Piyz + Jiz.*Pizz)./rhoi;
+radius=0.001;
+[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradVe, ugradp, pdivve, divUP] = compute_energy_balance( ...
+    rhoe, Jex, Jey, Jez,... 
+    Qbulkex, Qbulkey, Qbulkez, Qenthex, Qenthey, Qenthez, Qhfex, Qhfey, Qhfez, ...
+    Pexx, Peyy, Pezz, Pexy, Pexz, Peyz, x, y, z, dx, dy, dz, qom, radius,0.);
+[Uth, Ubulk, divQbulk, divQenth, divQhf,  udivP, PgradVi, ugradp, pdivvi, divUP] = compute_energy_balance( ...
+    rhoi, Jix, Jiy, Jiz,... 
+    Qbulkix, Qbulkiy, Qbulkiz, Qenthix, Qenthiy, Qenthiz, Qhfix, Qhfiy, Qhfiz, ...
+    Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius,0.);
+
 
 switch sim_name
 case 'tred82'
@@ -144,12 +154,16 @@ figura(AAz,Qez,4,'Qez',ncycle, list_value)
 figura(AAz,Qix,4,'Qix',ncycle, list_value)
 figura(AAz,Qiy,4,'Qiy',ncycle, list_value)
 figura(AAz,Qiz,4,'Qiz',ncycle, list_value)
-figura(AAz,UPex,4,'uPex',ncycle, list_value)
-figura(AAz,UPey,4,'uPey',ncycle, list_value)
-figura(AAz,UPez,4,'uPez',ncycle, list_value)
-figura(AAz,UPix,4,'uPix',ncycle, list_value)
-figura(AAz,UPiy,4,'uPiy',ncycle, list_value)
-figura(AAz,UPiz,4,'uPiz',ncycle, list_value)
+%figura(AAz,UPex,4,'uPex',ncycle, list_value)
+%figura(AAz,UPey,4,'uPey',ncycle, list_value)
+%figura(AAz,UPez,4,'uPez',ncycle, list_value)
+%figura(AAz,UPix,4,'uPix',ncycle, list_value)
+%figura(AAz,UPiy,4,'uPiy',ncycle, list_value)
+%figura(AAz,UPiz,4,'uPiz',ncycle, list_value)
+figura(AAz,pdivve,4,'pthetae',ncycle, list_value)
+figura(AAz,pdivvi,4,'pthetai',ncycle, list_value)
+figura(AAz,PgradVe-pdivve,4,'PiDe',ncycle, list_value)
+figura(AAz,PgradVi-pdivvi,4,'PiDi',ncycle, list_value)
 figura(AAz,Jex.*Ex+Jey.*Ey+Jez.*Ez,4,'JeE',ncycle, list_value)
 figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle, list_value)
 
@@ -195,8 +209,9 @@ imagesc(xrange,urange,log10(nbinu))
 xlabel('\Phi','fontsize',[14])
 ylabel(name,'fontsize',[14])
 colorbar
-colormap hsv
-
+%colormap hsv
+load gist_ncar.mat
+colormap(flipud(gist_ncar))
 
 Ncuts=7;
 figure(n+1)
@@ -215,7 +230,7 @@ lr=num2str(xrange(ip),'%10.3f\n');
 labelle=[labelle;string(lr)];
 figure(n)
 hold on
-plot([xrange(ip) xrange(ip)],[min(urange) max(urange)],'w')
+plot([xrange(ip) xrange(ip)],[min(urange) max(urange)],'k')
 figure(n+1)
 sig=sqrt(urange.^2*nbinu(:,ip)/sum(nbinu(:,ip)));
         semilogy(urange/sig,nbinu(:,ip)./sum(durange/sig*nbinu(:,ip)))%,'linewidth',[4])
