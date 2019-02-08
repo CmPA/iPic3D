@@ -138,6 +138,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="TestBBoundary" ) EMf->initTestBBoundary(vct,grid, col);
     else if (col->getCase()=="initTestIntProj") EMf->initTestIntProj(vct, grid, col);
     else if (col->getCase()=="GEM_Shifted")     EMf->initGEM_Shifted(vct, grid,col);
+    else if (col->getCase()=="GEM_SidePert")     EMf->initGEM_SidePert(vct, grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;

@@ -185,6 +185,8 @@ class EMfields3D                // :public Field
     void initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col, double x_center, double y_center, double z_center, double radius);
     /*! initialize GEM challenge */
     void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize GEM challenge, perturbation at the sides */
+    void initGEM_SidePert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! GEM challenge, with X point at Lx/4, Ly/2 */
     void initGEM_Shifted(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);

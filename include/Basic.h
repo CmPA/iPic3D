@@ -487,6 +487,11 @@ inline void MODULO(double *x, double L) {
   *x = *x - floor(*x / L) * L;
 
 }
+inline double MODULO_2(double x, double L) {
+  return (x - floor(x / L) * L);
+
+}
+
 /** method to calculate the epsilon machine */
 inline double eps() {
   double eps;
