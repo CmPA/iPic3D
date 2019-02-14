@@ -86,6 +86,8 @@ if(EB)
   add_definitions( -DEB )
 endif()
 
+add_definitions("-DMPICH_IGNORE_CXX_SEEK")
+
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options
 are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)

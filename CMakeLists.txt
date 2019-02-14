@@ -36,6 +36,8 @@ include_directories(
     ${HDF5_INCLUDE_DIRS}
 )
 
+add_definitions("-DMPICH_IGNORE_CXX_SEEK")
+
 #
 # Executable compilation
 #

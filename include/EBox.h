@@ -10,6 +10,7 @@ email                : maria.elena.innocenti@jpl.nasa.gov
 #ifndef EBox_H
 #define EBox_H
 
+#include "mpi.h"
 #include "Collective.h"
 
 class EBox                                            
