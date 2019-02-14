@@ -298,6 +298,85 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
 }
 
+
+/** maxwellian with perpendicular current oscillations for electrons supporting whistler **/
+void Particles3D::maxwellian_WhistlerCurrent(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* to be used with initBy for fields;
+     deltaB to be read from inputfile */
+
+  if (qom<0){
+    cout << "Particle init: imposing perp current oscillations, deltaB= " << deltaB <<endl;
+  }
+
+  // specific of whistler init
+  double k0= 2* M_PI/ Lx;
+  double V0= - k0* deltaB/ fabs(rhoINIT)/ ElectronSpNumber;
+  cout << "species " << ns << " rhoINIT " << rhoINIT << " V0 " << V0 << "=(- k0 delta B/ |n0|)/" <<ElectronSpNumber <<", with " << ElectronSpNumber << "the # of current-carrying electron species" <<endl;
+  double COS, SIN, Vy, Vz;
+
+  // I have to distribute the current among the current-carrying species, i.e. electrons
+  // (I may have more than one species if i do tracking)
+  
+
+  // end specific of whistler init 
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  
+  for (int i = 1; i < grid->getNXC() - 1; i++){
+    COS= cos(k0* grid->getXN(i, 0, 0));
+    SIN= sin(k0* grid->getXN(i, 0, 0));
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+	      /* the shape of the perp electron current is given through this */
+	      if (qom< 0){
+		Vy= v0+ V0*SIN;
+		Vz= w0+ V0*COS;
+	      }else{
+		Vy= v0;
+		Vz= w0;
+	      }
+
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = Vy + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = Vz + wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+
+              counter++;
+	    }
+  }
+  
+
+}
+
+/* end maxwellian with perpendicular current oscillations for electrons supporting whistler */
+
 /** Force Free initialization (JxB=0) for particles */
 void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 

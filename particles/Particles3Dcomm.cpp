@@ -96,6 +96,19 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   rhoINIT   = col->getRHOinit(species);
   rhoINJECT = col->getRHOinject(species);
 
+  /* initial parameters for whistler */
+  omega_r= col->getOmega_r();
+  deltaB= col->getDeltaB();
+  // I need the number of electron species to distribute current
+  ElectronSpNumber=0;
+  for (int ss=0; ss< col->getNs(); ss++)
+    if (col->getQOM(ss)<0)
+      ElectronSpNumber++;
+  /* end initial parameters for whistler */
+
+
+
+
   qom = col->getQOM(species);
   uth = col->getUth(species);
   vth = col->getVth(species);

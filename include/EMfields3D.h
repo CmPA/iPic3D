@@ -735,6 +735,10 @@ class EMfields3D                // :public Field
     /* I/(I + theta Dt P), on centers, perp direction */
     double ***EB_B2_Perp;
     
+
+    /* variables needed for whistler init: real frequency and perpendicular field */
+    double omega_r;
+    double deltaB;
 };
 
 typedef EMfields3D Field;

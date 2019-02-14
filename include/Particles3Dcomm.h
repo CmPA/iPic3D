@@ -355,6 +355,11 @@ protected:
   /* where in the communication buffer start writing Tracking */
   int startTr;
 
+  /* initial parameters for whistler, real frequency and perpendicular field */
+  double omega_r;
+  double deltaB;
+  int ElectronSpNumber;
+  /* end initial parameters for whistler, real frequency and perpendicular field */
 };
 
 #endif

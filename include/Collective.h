@@ -211,6 +211,12 @@ class Collective
     /*! get the expanding box value REB_0: distance from the Sun */
     double getREB_0();
 
+    /*! get the parameters for whistler wave init: real frequency */
+    double getOmega_r();
+
+    /*! get the parameters for whistler wave init: perpendicular field */
+    double getDeltaB();
+
     /*! get the boolean value for verbose results */
     bool getVerbose();
 
@@ -421,6 +427,10 @@ class Collective
     /* Expanding box parameters */
     double UEB_0;
     double REB_0;
+
+    /* init for whistler wave: real frequency and perpendicular field */
+    double omega_r;
+    double deltaB;
 
     /*! boolean value for verbose results */
     bool verbose;

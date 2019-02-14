@@ -113,6 +113,7 @@ int c_Solver::Init(int argc, char **argv) {
       for (int i = 0; i < ns; i++)
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+        else if (col->getPartInit()=="MaxWhistler") part[i].maxwellian_WhistlerCurrent(grid, EMf, vct);
         else                                  part[i].maxwellian(grid, EMf, vct);
 
     }

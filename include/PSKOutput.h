@@ -362,6 +362,10 @@ public:
       this->output_adaptor.write("/collective/UEB_0", _col->getUEB_0());
       this->output_adaptor.write("/collective/REB_0", _col->getREB_0());
       /* */
+      /* inputs for whistler wave init */
+      this->output_adaptor.write("/collective/omega_r", _col->getOmega_r());
+      this->output_adaptor.write("/collective/deltaB", _col->getDeltaB());
+      /* end inputs for whistler wave init */
       this->output_adaptor.write("/collective/Nxc", _col->getNxc());
       this->output_adaptor.write("/collective/Nyc", _col->getNyc());
       this->output_adaptor.write("/collective/Nzc", _col->getNzc());

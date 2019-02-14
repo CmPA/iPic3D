@@ -186,6 +186,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   R= REB_0;
 #endif
 
+  /* parameters for initialization whistler */
+  omega_r= col->getOmega_r();
+  deltaB= col->getDeltaB();
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -4209,8 +4212,8 @@ void EMfields3D::initByPert(VirtualTopology3D * vct, Grid * grid, Collective *co
 
   // THIS IS THE INITIALIZATION FOR A WHISTLER, INTERACTS WITH ELECTRONS WITH VX< 0
 
-  double Per=B0x/10; //B0x/5 ; //B0x/20;  //B0x/10;
-  double n1= 1 ; //2;
+  /* do not change the harmonic */
+  double n1= 1 ; 
 
   double kCalc= 2.0*3.14*n1/Lx;
   // the expected real frequency for whistler from Gary, blue book, 6.2.6
@@ -4218,20 +4221,36 @@ void EMfields3D::initByPert(VirtualTopology3D * vct, Grid * grid, Collective *co
   double mi= 1./qom[1];
   double omega_pi= 1.0/sqrt(mi);
   double Omega_ci= B0x/mi;
-  double omega_r_exp= kCalc*(Omega_ci)/omega_pi*sqrt(1.0+ kCalc*kCalc/omega_pi/omega_pi);
+
+  double Per;
+  double omega_r_exp;
+  if (fabs(omega_r)> 0.000001 and fabs(deltaB)> 0.000001){
+    // use parameters from input, if available
+    omega_r_exp= omega_r;
+    Per= deltaB;
+  } else{
+    /* super approx formula, could add something better */
+    omega_r_exp= kCalc*(Omega_ci)/omega_pi*sqrt(1.0+ kCalc*kCalc/omega_pi/omega_pi);
+    Per=B0x/10;
+  }
+
   double PertE= omega_r_exp*Per/kCalc; 
   
+  // second harmonic, harcoded at the moment
+  bool SecondHarmonic= false;
+  double kCalc_2=0.1570;
+  double omega_r_exp_2=0.0048;
+  double Per_2=deltaB;
+  double PertE_2=omega_r_exp_2*Per_2/kCalc_2;
 
+  
   cout << "Init with coupled By-Bz/ Ey-Ez perturbation in x direction, for whistler " << endl
        << "PertB= " << Per << " PertE= " << PertE << " exp omega_r = " << omega_r_exp << endl
        << "n1= " <<n1 <<endl;
-
-  /*Per= 0.0033;
-  PertE= 0.000259;
-  
-  cout << "Init with whistler pertubation set for resonance with vx< 0 " << endl
-       << "PertB= " << Per << " PertE= " << PertE << " obtained form other run (Lx= pi)" << endl
-       << "n1= " <<n1 <<endl;*/
+  if (SecondHarmonic){
+    cout << "second harmonic now hard-coded: k= " << kCalc_2 <<", omega_r_exp_2= " << omega_r_exp_2 << endl
+	 << "PertB_2= "<< Per_2 <<", PertE_2= " << PertE_2 << endl;
+      }
 
   for (int i = 0; i < nxn; i++) {
     for (int j = 0; j < nyn; j++) {
@@ -4252,7 +4271,13 @@ void EMfields3D::initByPert(VirtualTopology3D * vct, Grid * grid, Collective *co
 	   +vth resonate, otherwise the ones with -vth resonate */
 	Bzn[i][j][k] += Per*cos(n1*2*M_PI * xM / Lx);
 	Ey[i][j][k] += PertE*cos(n1*2*M_PI * xM / Lx);
-	Ez[i][j][k] -= PertE*sin(n1*2*M_PI * xM / Lx); 
+	Ez[i][j][k] -= PertE*sin(n1*2*M_PI * xM / Lx);
+	if (SecondHarmonic){
+	  Byn[i][j][k] += Per_2*sin(kCalc_2 * xM );
+	  Bzn[i][j][k] += Per_2*cos(kCalc_2 * xM );
+	  Ey[i][j][k] += PertE_2*cos(kCalc_2 * xM );
+	  Ez[i][j][k] -= PertE_2*sin(kCalc_2 * xM );
+	}
       }
     }
   }

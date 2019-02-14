@@ -57,6 +57,11 @@ void Collective::ReadInput(string inputfile) {
 #endif
     /* end expanding box parameters*/
 
+    /* whistler init parameters */
+    omega_r = config.read <double>("omega_r", 0.0);
+    deltaB = config.read <double>("deltaB", 0.0);
+    /* end whistler init parameters */
+
     rhoINIT = new double[ns];
     array_double rhoINIT0 = config.read < array_double > ("rhoINIT");
     rhoINIT[0] = rhoINIT0.a;
@@ -1138,6 +1143,14 @@ double Collective::getUEB_0(){
 /*! expanding box REB_0 */
 double Collective::getREB_0(){
   return REB_0;
+}
+/*! init for whistler: real frequency */
+double Collective::getOmega_r(){
+  return omega_r;
+}
+/*! init for whistler: perpendicular field */
+double Collective::getDeltaB(){
+  return deltaB;
 }
 bool Collective::getTrackSpecies(int is){
   return TrackSpecies[is];
