@@ -383,6 +383,10 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
+  // I am rolling back on interleaving, since code hangs up
+  // on massive runs
+  InterleavedPossible= false;
+
   return 0;
 }
 
@@ -602,9 +606,8 @@ bool c_Solver::ParticlesMover(int cycle) {
 
   // particle repopulation ops are done here if the repopulation is kinetic
 
-  if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
-    for (int i = 0; i < ns; i++){
-      // in practice, removes particles from the PRA
+  for (int i = 0; i < ns; i++){
+    if (MLMD_ParticleREPOPULATION and !FluidLikeRep and !RepopulateBeforeMover){
 
       part[i].communicateAfterMover(vct);
 
@@ -613,7 +616,8 @@ bool c_Solver::ParticlesMover(int cycle) {
       part[i].ReceivePBC(grid, vct, cycle);
 
       // comment during production
-      //part[i].CheckSentReceivedParticles(vct);
+      cout<<"COMMENT THIS AFTER FINISHING TESTS" << endl;
+      part[i].CheckSentReceivedParticles(vct);
 
       // this one is needed only if DoPMsgResize=1 
       // (see notes in postEPS2017.rtfd)
@@ -623,6 +627,9 @@ bool c_Solver::ParticlesMover(int cycle) {
       }
 
     }
+    // now, this barrier is on the entire grid,
+    // to avoid species mixing
+    MPI_Barrier(vct->getCommGrid());
   }
 
 
@@ -634,9 +641,7 @@ bool c_Solver::ParticlesMover(int cycle) {
     }
   }
 
-  
-
- 
+   
   return (false);
 
 }

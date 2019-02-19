@@ -49,17 +49,14 @@ int main(int argc, char **argv) {
     KCode.CalculateField();
 
 
-    /* this is the normal and tested */
-    /*
+    
     b_err = KCode.ParticlesMover(i); 
 
     // with mlmd ops
     if (!b_err) KCode.GatherMoments();
-    */
-    /* end this is the normal and tested  */
-
-
-    KCode.Mover_GatherMoments_Interleaved(i, KCode.FirstCycle());
+    
+    // roll back on interleaving, code hangs up on massive runs
+    /*KCode.Mover_GatherMoments_Interleaved(i, KCode.FirstCycle());*/
 
     if (!b_err) KCode.CalculateBField(i); 
 
