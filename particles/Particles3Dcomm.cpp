@@ -581,7 +581,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   //   on the coarsest grid 
   // * start with a relatively low number, so it does not run out of memory *
   // if you are doing kinetic repopulation, communication between the grids and in the RG will size the buffers to a decent value
-  int MaxNopMLMD= ceil(npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0)) *0.05 ); // *4*4 ; 
+  int MaxNopMLMD= ceil(npcelx*npcely*npcelz *( col->getNxc_mlmd(0)/ col->getXLEN_mlmd(0) )*( col->getNyc_mlmd(0)/ col->getYLEN_mlmd(0) )*(col->getNzc_mlmd(0)/ col->getZLEN_mlmd(0)) *1 ); // *4*4 ; 
 
   sizeCG_PBCMsg = MaxNopMLMD; // CG side
   sizeRG_PBCMsg = MaxNopMLMD; // RG side
