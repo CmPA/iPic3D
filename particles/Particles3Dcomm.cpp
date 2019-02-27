@@ -550,6 +550,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages * MaxGridPer; 
 
   FluidLikeRep= col->getFluidLikeRep();
+  cout << "rank local " << rank_local << " FluidLikeRep " << FluidLikeRep << endl; 
   numFBC= 10;
 
   // wether to allow resize of repopulated particle buffers
@@ -1875,6 +1876,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 
     // these are vectors needed to exchange repopulated particles inside the RG
     // needed only for kinetic repopulation
+    cout <<"G" <<numGrid <<"R" << localRank << " RG_numPBCMessages " << RG_numPBCMessages << " FluidLikeRep " << FluidLikeRep << " CRPtS " << CRPtS << endl;  
     if (RG_numPBCMessages>0 and !FluidLikeRep and CRPtS ){
       if (rank_local==HighestRank){ 
 	H_CRP_General= new CRP_struct[size_CRP];
@@ -1888,6 +1890,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 	num_H_CRP_cores=0;
       }
       else{
+	cout << "G" <<numGrid <<"R" << localRank << " is allocating CRP_ToCoreH "<<endl;
 	CRP_ToCoreH= new CRP_struct[size_CRP];
 	CRP_ToCoreH_ptr= CRP_ToCoreH;
       }
@@ -3622,6 +3625,8 @@ void Particles3Dcomm::CheckAfterInitWeightPBC(VirtualTopology3D * vct){
 
 void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopology3D * vct){
   if ( RG_numPBCMessages <1) return;
+
+  cout <<"Grid " << numGrid <<" R " << rank_local << " RG_numPBCMessages " << RG_numPBCMessages << " ns " << ns << " is in communicateRepopulatedParticles " << endl;
 
   int TAG=ns;
   int count;
