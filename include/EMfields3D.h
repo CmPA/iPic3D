@@ -194,8 +194,11 @@ class EMfields3D                // :public Field
     void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialized with rotated magnetic field */
     void initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta);
-    /*! perturbation in By */
+    /*! perturbation in By --- this is a whistler like perturbation with E and B
+     appropriately set; use the corresponding particle init to start from equilibrium*/
     void initByPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /* here, of the whistler init, I set only B- E and J are left to arise on their own */
+    void initByPert_NoEq(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initBxPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initExPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initNPert(VirtualTopology3D * vct, Grid * grid, Collective *col);

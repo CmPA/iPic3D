@@ -4292,7 +4292,76 @@ void EMfields3D::initByPert(VirtualTopology3D * vct, Grid * grid, Collective *co
 
 }
 
+/*** ***/
+void EMfields3D::initByPert_NoEq(VirtualTopology3D * vct, Grid * grid, Collective *col){
 
+  // of the whistler init, I keep only B
+  // E and J are left to evolve on their own
+
+  /* do not change the harmonic */
+  double n1= 1 ; 
+
+  double kCalc= 2.0*3.14*n1/Lx;
+  // the expected real frequency for whistler from Gary, blue book, 6.2.6
+  // I am assuming normalization to electrons
+  double mi= 1./qom[1];
+  double omega_pi= 1.0/sqrt(mi);
+  double Omega_ci= B0x/mi;
+
+  double Per;
+  double omega_r_exp;
+  if (fabs(omega_r)> 0.000001 and fabs(deltaB)> 0.000001){
+    // use parameters from input, if available
+    omega_r_exp= omega_r;
+    Per= deltaB;
+  } else{
+    /* super approx formula, could add something better */
+    omega_r_exp= kCalc*(Omega_ci)/omega_pi*sqrt(1.0+ kCalc*kCalc/omega_pi/omega_pi);
+    Per=B0x/10;
+  }
+  
+  // second harmonic, harcoded at the moment
+  bool SecondHarmonic= false;
+    
+  cout << "Whistler-like init, but only for B-- E and J on their own " << endl
+       << "PertB= " << Per <<  " exp omega_r = " << omega_r_exp << endl
+       << "n1= " <<n1 <<endl;
+
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++) {
+      for (int k = 0; k < nzn; k++) {
+	for (int is = 0; is < ns; is++) {
+	  rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+	}
+	Ex[i][j][k] = 0.0;
+	Ey[i][j][k] = 0.0;
+	Ez[i][j][k] = 0.0;
+	Bxn[i][j][k] = B0x;
+	Byn[i][j][k] = B0y;
+	Bzn[i][j][k] = B0z;
+	double xM = grid->getXN(i, j, k);
+	Byn[i][j][k] += Per*sin(n1*2*M_PI * xM / Lx);
+	//Bzn[i][j][k] -= Per*cos(n1*2*M_PI * xM / Lx);
+	/* NB: i use a +sin, -cos perturbation so the electrons with
+	   +vth resonate, otherwise the ones with -vth resonate */
+	Bzn[i][j][k] += Per*cos(n1*2*M_PI * xM / Lx);
+
+
+      }
+    }
+  }
+
+  // initialize B on centers                                                  
+  grid->interpN2C(Bxc, Bxn);
+  grid->interpN2C(Byc, Byn);
+  grid->interpN2C(Bzc, Bzn);
+  
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+
+}
+
+/*** ***/
 void EMfields3D::initExPert(VirtualTopology3D * vct, Grid * grid, Collective *col){
 
   double Per= 0.0004;

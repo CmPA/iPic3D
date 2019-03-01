@@ -70,6 +70,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
     else if (col->getCase()=="ByPert")    EMf->initByPert(vct,grid,col);
+    else if (col->getCase()=="ByPert_NoEq")    EMf->initByPert_NoEq(vct,grid,col);
     else if (col->getCase()=="BxPert")    EMf->initBxPert(vct,grid,col);
     else if (col->getCase()=="ExPert")    EMf->initExPert(vct,grid,col);
     else if (col->getCase()=="NPert")    EMf->initNPert(vct,grid,col);
