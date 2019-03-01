@@ -550,7 +550,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   MAX_RG_numPBCMessages_LevelWide= MAX_RG_numPBCMessages * MaxGridPer; 
 
   FluidLikeRep= col->getFluidLikeRep();
-  cout << "rank local " << rank_local << " FluidLikeRep " << FluidLikeRep << endl; 
+
   numFBC= 10;
 
   // wether to allow resize of repopulated particle buffers
@@ -1876,7 +1876,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 
     // these are vectors needed to exchange repopulated particles inside the RG
     // needed only for kinetic repopulation
-    cout <<"G" <<numGrid <<"R" << localRank << " RG_numPBCMessages " << RG_numPBCMessages << " FluidLikeRep " << FluidLikeRep << " CRPtS " << CRPtS << endl;  
+
     if (RG_numPBCMessages>0 and !FluidLikeRep and CRPtS ){
       if (rank_local==HighestRank){ 
 	H_CRP_General= new CRP_struct[size_CRP];
@@ -1890,7 +1890,7 @@ void Particles3Dcomm::initWeightPBC(Grid * grid, VirtualTopology3D * vct){
 	num_H_CRP_cores=0;
       }
       else{
-	cout << "G" <<numGrid <<"R" << localRank << " is allocating CRP_ToCoreH "<<endl;
+
 	CRP_ToCoreH= new CRP_struct[size_CRP];
 	CRP_ToCoreH_ptr= CRP_ToCoreH;
       }
@@ -3626,7 +3626,7 @@ void Particles3Dcomm::CheckAfterInitWeightPBC(VirtualTopology3D * vct){
 void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopology3D * vct){
   if ( RG_numPBCMessages <1) return;
 
-  cout <<"Grid " << numGrid <<" R " << rank_local << " RG_numPBCMessages " << RG_numPBCMessages << " ns " << ns << " is in communicateRepopulatedParticles " << endl;
+
 
   int TAG=ns;
   int count;
@@ -3692,9 +3692,9 @@ void Particles3Dcomm::communicateRepopulatedParticles(Grid* grid, VirtualTopolog
       if (rank_local != HighestRank){
 	// check on vector size is done inside
 	// np_ToCoreH_CRP is incremented inside
-	cout << "rank_local is " << rank_local << " BEFORE addP_CRP, np_ToCoreH_CRP is  " << np_ToCoreH_CRP << " size_CRP is " << size_CRP<< endl;
+
 	addP_CRP(CRP_ToCoreH, &np_ToCoreH_CRP, x[np_current], y[np_current], z[np_current], u[np_current], v[np_current], w[np_current], q[np_current], Id, DestCore, vct);
-	cout << "rank_local is " << rank_local << " AFTER addP_CRP, np_ToCoreH_CRP is  " << np_ToCoreH_CRP << " size_CRP is " << size_CRP<< endl;
+
       
       } // end if (rank_local != HighestRank){
       else{ // you are HighestRank, start packing it in the vector for the appropriate dest
@@ -3970,7 +3970,6 @@ void Particles3Dcomm::unpack_CRP(CRP_struct p, VirtualTopology3D * vct){
 
 void Particles3Dcomm::addP_CRP(CRP_struct * Vec, int *num, double x, double y, double z, double u, double v, double w, double q, unsigned long ID, int DestinationRank, VirtualTopology3D* vct){
  
-  cout << "Rank " << vct->getCartesian_rank() << " in addP_CRP, *num is " << *num << ", size_CRP is " << size_CRP << endl;
 
   (Vec+(*num))->x=x;
 
