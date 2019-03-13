@@ -86,6 +86,7 @@ if(IPIC_PETSC_SOLVER)
   add_definitions(-D__PETSC_SOLVER__)
 endif()
 
+add_definitions("-DMPICH_IGNORE_CXX_SEEK")
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options

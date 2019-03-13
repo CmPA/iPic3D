@@ -263,6 +263,8 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     npmax= npmax *4;
     }*/
 
+  
+
   rhoINIT   = col->getRHOinit(species);
   rhoINJECT = col->getRHOinject(species);
 
@@ -338,19 +340,20 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // //////////////////////////////////////////////////////////////
   // ////////////// ALLOCATE ARRAYS /////////////////////////
   // //////////////////////////////////////////////////////////////
+
   // positions
-  x = new double[npmax];
-  y = new double[npmax];
-  z = new double[npmax];
+  x = new double[npmax]; x_ptr=x;
+  y = new double[npmax]; y_ptr=y;
+  z = new double[npmax]; z_ptr=z;
   // velocities
-  u = new double[npmax];
-  v = new double[npmax];
-  w = new double[npmax];
+  u = new double[npmax]; u_ptr=u;
+  v = new double[npmax]; v_ptr=v;
+  w = new double[npmax]; w_ptr=w;
   // charge
-  q = new double[npmax];
+  q = new double[npmax]; q_ptr=q;
   // ID
   if (TrackParticleID) {
-    ParticleID = new unsigned long[npmax];
+    ParticleID = new unsigned long[npmax]; ParticleID_ptr= ParticleID;
     BirthRank[0] = vct->getCartesian_rank();
     if (vct->getNprocs() > 1)
       BirthRank[1] = (int) ceil(log10((double) (vct->getNprocs())));  // Number of digits needed for # of process in ID
@@ -1484,7 +1487,7 @@ int Particles3Dcomm::unbuffer(double *b_, MPI_Comm Comm) {
       rightDomain++;            // the particle is not in the domain
     nop++;
     if (nop > npmax) {
-      cout << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
+      cout << "in unbuffer " << "G " << numGrid << " R "<<rank_local  << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
       MPI_Abort(MPI_COMM_WORLD, -1);
       return (-1);              // end the simulation because you dont have enough space on the array
     }
@@ -3249,7 +3252,9 @@ void Particles3Dcomm::ApplyPBC(VirtualTopology3D* vct, Grid* grid, int cycle){
   /*if (RR==0){
     cout << "G" << numGrid <<"R" << RR << " INSIDE APPLYPBC" << endl;
     }*/
-  //cout << "R" << RR <<" G" << numGrid << ", nop before applying BC: " << nop <<endl;
+  /*if (RG_numPBCMessages >0){
+    cout << "R" << RR <<" G" << numGrid << " ns " << ns << ", nop before applying BC: " << nop << "npmax " << npmax<<endl;
+    }*/
 
   for (int m=0; m< RG_numPBCMessages; m++){
     int count =0; 
@@ -3264,7 +3269,9 @@ void Particles3Dcomm::ApplyPBC(VirtualTopology3D* vct, Grid* grid, int cycle){
     //cout <<"G"<<numGrid << "R" <<RR << " ns " << ns  << " m " << m << " nopPRGMsg[m] " << nopPRGMsg[m] << Endl;
   } // end for (int m=0; m< RG_numPBCMessages; m++){
 
-  //cout << "R" << RR <<" G" << numGrid << ", nop after applying BC: " << nop <<endl;
+  /*if (RG_numPBCMessages >0){
+    cout << "R" << RR <<" G" << numGrid << " ns " << ns << ", nop after applying BC: " << nop << " npmax " << npmax <<endl;
+    }*/
 }
 
 void Particles3Dcomm::MPI_Barrier_ParentChild(VirtualTopology3D* vct){
@@ -3544,12 +3551,17 @@ void Particles3Dcomm::SplitPBC(VirtualTopology3D * vct, Grid* grid, RepP_struct 
 	  }
 	  /* end save data regarding this particle */
 	 	 
+	  /** resize particle vectors, only for this core
+	      this is needed because the distribution of repopulated particles
+	      before communicate repopulated particles is very unqual between RG cores **/
+
 	  if (nop > npmax) {
-	    cout << "Grid " << numGrid <<": Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
-	    cout << "Aborting ..." << endl;
-	    MPI_Abort(MPI_COMM_WORLD, -1);
-	    return;              // end the simulation because you dont have enough space on the array           
-	  }
+	    ResizeParticleVectors(npmax*2);	    	    	    
+
+	  } // end if (nop > npmax) 
+	  
+
+
 	}// end if (StX or StY or StZ)
       } // end for (int k=0; k< ceil(RFz); k++){
     } // end for (int j=0; j< ceil(RFy); j++){
@@ -3960,7 +3972,7 @@ void Particles3Dcomm::unpack_CRP(CRP_struct p, VirtualTopology3D * vct){
   nop++;
 
   if (nop > npmax) {
-      cout << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
+    cout << "G " << numGrid << " R "<<rank_local << "Number of particles in the domain " << nop << " and maxpart = " << npmax << endl;
       cout << "Grid " << numGrid <<": FATAL ERROR in unpack_CRP, aborting ..." <<endl;
       MPI_Abort(MPI_COMM_WORLD, -1);
       return ;              // end the simulation because you dont have enough space on the array
@@ -5763,3 +5775,116 @@ int Particles3Dcomm::communicate_NoBC(VirtualTopology3D * ptVCT, int initialNOP)
 }
 
 bool Particles3Dcomm::getCRPtS(){return CRPtS;}
+
+
+void Particles3Dcomm::CountParticles(VirtualTopology3D * vct){
+  int nop_Grid=0;
+  MPI_Allreduce(&nop, &nop_Grid, 1, MPI_INT, MPI_SUM, vct->getComm());
+
+  if (vct->getCartesian_rank()==0){
+    cout << "ns " << ns << "numGrid "<< numGrid << " after mover, nop total= " << nop_Grid << endl;
+  }
+}
+
+
+void Particles3Dcomm::ResizeParticleVectors(int NS){
+
+  cout << "G " << numGrid << " R " << rank_local << " ns " << ns << " is doubling particle vectors" << endl;
+  double  * tmp= new double[NS]; 
+  /** x **/
+  for (int i=0; i<nop; i++)
+    tmp[i]= x_ptr[i];
+  delete[] x;
+  
+  x= new double[NS];
+  x_ptr= x;
+  
+  for (int i=0; i< nop; i++)
+    x[i]= tmp[i];
+  
+  /** y **/
+  for (int i=0; i<nop; i++)
+    tmp[i]= y_ptr[i];
+  delete[] y;
+  
+  y= new double[NS];
+  y_ptr= y;
+  
+  for (int i=0; i< nop; i++)
+    y[i]= tmp[i];
+  
+  /** z **/
+  for (int i=0; i<nop; i++)
+    tmp[i]= z_ptr[i];
+  delete[] z;
+  
+  z= new double[NS];
+  z_ptr= z;
+  
+  for (int i=0; i< nop; i++)
+    z[i]= tmp[i];
+  
+  /** q **/
+  for (int i=0; i<nop; i++)
+    tmp[i]= q_ptr[i];
+  delete[] q;
+  
+  q= new double[NS];
+  q_ptr= q;
+  
+  for (int i=0; i< nop; i++)
+    q[i]= tmp[i];
+  
+  /** u **/
+  for (int i=0; i<nop; i++)
+    tmp[i]= u_ptr[i];
+  delete[] u;
+  
+  u= new double[NS];
+  u_ptr= u;
+  
+  for (int i=0; i< nop; i++)
+    u[i]= tmp[i];
+  
+  /** v **/
+  for (int i=0; i<nop; i++)
+    tmp[i]= v_ptr[i];
+  delete[] v;
+  
+  v= new double[NS];
+  v_ptr= v;
+  
+  for (int i=0; i< nop; i++)
+    v[i]= tmp[i];
+
+  /** w **/
+  for (int i=0; i<nop; i++)
+    tmp[i]= w_ptr[i];
+  delete[] w;
+  
+  w= new double[NS];
+  w_ptr= w;
+  
+  for (int i=0; i< nop; i++)
+    w[i]= tmp[i];
+
+  delete[] tmp;
+    
+  if (TrackParticleID) {                                                                         
+    unsigned long * tmp= new unsigned long[NS];
+
+    for (int i=0; i<nop; i++)
+      tmp[i]= ParticleID_ptr[i];
+    delete[] ParticleID;
+
+    ParticleID= new unsigned long[NS];
+    ParticleID_ptr= ParticleID;
+
+    for (int i=0; i< nop; i++)
+      ParticleID[i]= tmp[i];
+    delete[] tmp;
+  } 
+
+  npmax= NS;
+  return;
+}

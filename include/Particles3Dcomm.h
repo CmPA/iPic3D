@@ -318,6 +318,10 @@ public:
   /* ------ end fluid repopulation methods + support functions  ------ */
   /* trims the **_Info vectors used by the MLMD structure*/
   void TrimInfoVector(VirtualTopology3D *vct);
+  /* count particles */
+  void CountParticles(VirtualTopology3D *vct);
+  /* resize particle vectors */
+  void ResizeParticleVectors(int NS);
   // moved here from Particles3D.h
   void get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]);
   void get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext);
@@ -378,6 +382,16 @@ protected:
   bool TrackParticleID;
   /** ParticleID */
   unsigned long *ParticleID;
+  /** the ptr to resize the particle vectors **/
+  double *x_ptr;
+  double *y_ptr;
+  double *z_ptr;
+  double *u_ptr;
+  double *v_ptr;
+  double *w_ptr;
+  unsigned long *ParticleID_ptr;
+  double *q_ptr;
+  /** end the ptr to resize the particle vectors **/
   /** rank of processor in which particle is created (for ID) */
   int BirthRank[2];
   /** number of variables to be stored in buffer for communication for each particle  */

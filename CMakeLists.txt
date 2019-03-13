@@ -47,6 +47,8 @@ include_directories(
     ${PETSC_INCLUDES}
 )
 
+
+add_definitions("-DMPICH_IGNORE_CXX_SEEK")
 add_definitions(
   ${PETSC_DEFINITIONS}
 )

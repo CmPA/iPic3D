@@ -616,8 +616,8 @@ bool c_Solver::ParticlesMover(int cycle) {
       part[i].ReceivePBC(grid, vct, cycle);
 
       // comment during production
-      cout<<"COMMENT THIS AFTER FINISHING TESTS" << endl;
-      part[i].CheckSentReceivedParticles(vct);
+      //cout<<"COMMENT THIS AFTER FINISHING TESTS" << endl;
+      //part[i].CheckSentReceivedParticles(vct);
 
       // this one is needed only if DoPMsgResize=1 
       // (see notes in postEPS2017.rtfd)
@@ -640,8 +640,9 @@ bool c_Solver::ParticlesMover(int cycle) {
       part[i].communicateAfterMover(vct);
     }
   }
-
-   
+  /*for (int i = 0; i < ns; i++){
+    part[i].CountParticles(vct) ;  
+    }*/
   return (false);
 
 }
