@@ -6,18 +6,20 @@
 %nome='psy400.iPic_mp_box_ttcor.0015.dat'; %Jean13
 %nome='psy501.iPic_mp_gbox.0020.dat'; %Jean17
 %nome='~/Dropbox/Science/ucla/7feb09/feb0709iPICBox.035800UT.dat'; %
-nome='/data1/gianni/7feb09HR/feb0709iPICBox.035800UT.dat'; %7feb09
-nome='/nobackup/glapenta/EArth/feb0709iPICBoxRC.035800UT.dat'; %7feb09 EARTH Centered
+%nome='/data1/gianni/7feb09HR/feb0709iPICBox.035800UT.dat'; %7feb09
+%nome='/nobackup/glapenta/EArth/feb0709iPICBoxRC.035800UT.dat'; %7feb09 EARTH Centered
+density_adjust = false;
 
 %nome='~/Documents/storage/ucla/ucla/HRmaha3D3/feb1508iPIC.034800UT.dat'; %HRmaha3D3
 %nome='~/psy501.mp_EC_3DT01_box.0020.dat'
+nome = '/nobackupp2/glapenta/generic/gc009iPICBox_lg.013000UT.dat'; % Generic run
 
 [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] =   code_units(256,0);
 e= 1.6022e-19;
 
-Tratio=[1/5,1];
-qom=[-256,1];
-concentration=[-1.0,1.0];
+Tratio=[1/5,1,10,10];
+qom=[-256,1,-256,1];
+concentration=[-1.0,1.0,-1.0e-3,1.0e-3];
 
 readdo=1;
 if(readdo)
@@ -50,7 +52,9 @@ z=reshape(a(:,3),Nz,Ny,Nx);zmax=max(z(:));zmin=min(z(:));
 
 n=reshape(a(:,10),Nz,Ny,Nx)*1e6;
 
-n(n==0)=1e5;
+if(density_adjust) 
+    n(n==0) = 1e5;
+end    
 Bx=reshape(a(:,4),Nz,Ny,Nx)*1e-9/code_B;
 By=reshape(a(:,5),Nz,Ny,Nx)*1e-9/code_B;
 Bz=reshape(a(:,6),Nz,Ny,Nx)*1e-9/code_B;
@@ -92,6 +96,8 @@ Ly=ymax-ymin
 %Nxpic=400+1; Nypic= 300+1; Nzpic=300+1; % 3D 7feb09
 Nxpic=200+1; Nypic= 150+1; Nzpic=1+1; % 3D 7feb09
 
+Nxpic=400+1;Nypic=200+1; Nzpic=280+1; %generic
+
 dx=(xmax-xmin)/Nxpic;
 dy=(ymax-ymin)/Nypic;
 dz=(zmax-zmin)/Nzpic;
@@ -114,7 +120,7 @@ Tpic=interpmio(x,y,z,T,Xpic,Ypic,Zpic);
 
 npic=interpmio(x,y,z,n,Xpic,Ypic,Zpic);
 %ii=npic<.01;npic(ii)=.01;
-npic(:)=1;
+%npic(:)=1;
 
 Bxpic=interpmio(x,y,z,Bx,Xpic,Ypic,Zpic);
 Bypic=interpmio(x,y,z,By,Xpic,Ypic,Zpic);
@@ -132,9 +138,9 @@ Jxpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Vix,Xpic,Ypic,Zpic);
 Jypic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viy,Xpic,Ypic,Zpic);
 Jzpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viz,Xpic,Ypic,Zpic);
 
-ns=2;
-!rm EArth-Fields_000000.h5
-opath='EArth-Fields_000000.h5'
+ns=4;
+!rm Initial4sp-Fields_000000.h5
+opath='Initial4sp-Fields_000000.h5'
 h5create(opath,'/Step#0/Block/Bx/0',[Nxpic, Nypic, Nzpic]);
 h5write(opath,'/Step#0/Block/Bx/0',Bxpic)
 
