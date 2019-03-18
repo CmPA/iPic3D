@@ -7,6 +7,7 @@
 %nome='psy501.iPic_mp_gbox.0020.dat'; %Jean17
 %nome='~/Dropbox/Science/ucla/7feb09/feb0709iPICBox.035800UT.dat'; %
 nome='/data1/gianni/7feb09HR/feb0709iPICBox.035800UT.dat'; %7feb09
+nome='/nobackup/glapenta/EArth/feb0709iPICBoxRC.035800UT.dat'; %7feb09 EARTH Centered
 
 %nome='~/Documents/storage/ucla/ucla/HRmaha3D3/feb1508iPIC.034800UT.dat'; %HRmaha3D3
 %nome='~/psy501.mp_EC_3DT01_box.0020.dat'
@@ -49,6 +50,7 @@ z=reshape(a(:,3),Nz,Ny,Nx);zmax=max(z(:));zmin=min(z(:));
 
 n=reshape(a(:,10),Nz,Ny,Nx)*1e6;
 
+n(n==0)=1e5;
 Bx=reshape(a(:,4),Nz,Ny,Nx)*1e-9/code_B;
 By=reshape(a(:,5),Nz,Ny,Nx)*1e-9/code_B;
 Bz=reshape(a(:,6),Nz,Ny,Nx)*1e-9/code_B;
@@ -76,6 +78,7 @@ Vez = (Vz - Jz ./n /e)/ code_V;
 p=reshape(a(:,11),Nz,Ny,Nx)*1e-12;
 
 T = (p ./ n  ) ./ code_T ./(1.0+Tratio(1)/Tratio(2));
+%ii=n==0; T(ii)=0;
 
 n= n/ code_n/4/pi;
 
@@ -86,7 +89,8 @@ Ly=ymax-ymin
 
 %Nxpic=400+1;Nypic=160+1; Nzpic=160+1; %HRmaha3D3
 
-Nxpic=400+1; Nypic= 200+1; Nzpic=280+1; % 3D 7feb09
+%Nxpic=400+1; Nypic= 300+1; Nzpic=300+1; % 3D 7feb09
+Nxpic=200+1; Nypic= 150+1; Nzpic=1+1; % 3D 7feb09
 
 dx=(xmax-xmin)/Nxpic;
 dy=(ymax-ymin)/Nypic;
@@ -105,10 +109,12 @@ end
 
 Tpic=interpmio(x,y,z,T,Xpic,Ypic,Zpic); 
 
-imagesc(squeeze(sqrt(256*Tratio(1)*Tpic(:,:,1))));axis image;colorbar
-imagesc(squeeze(Ex(:,:,1)));axis image;colorbar
+%imagesc(squeeze(sqrt(256*Tratio(1)*Tpic(:,:,1))));axis image;colorbar
+%imagesc(squeeze(Ex(:,:,1)));axis image;colorbar
 
 npic=interpmio(x,y,z,n,Xpic,Ypic,Zpic);
+%ii=npic<.01;npic(ii)=.01;
+npic(:)=1;
 
 Bxpic=interpmio(x,y,z,Bx,Xpic,Ypic,Zpic);
 Bypic=interpmio(x,y,z,By,Xpic,Ypic,Zpic);
@@ -127,8 +133,8 @@ Jypic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viy,Xpic,Ypic,Zpic);
 Jzpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viz,Xpic,Ypic,Zpic);
 
 ns=2;
-!rm Initial-Fields_000000.h5
-opath='7feb09-Fields_000000.h5'
+!rm EArth-Fields_000000.h5
+opath='EArth-Fields_000000.h5'
 h5create(opath,'/Step#0/Block/Bx/0',[Nxpic, Nypic, Nzpic]);
 h5write(opath,'/Step#0/Block/Bx/0',Bxpic)
 
