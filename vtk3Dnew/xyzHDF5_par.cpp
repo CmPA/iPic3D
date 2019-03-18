@@ -167,13 +167,14 @@ int main (int argc, char **argv) {
     writeVTKtensor_binary(it, "P", "e", TXX, TXY, TXZ, TYY, TYZ, TZZ,
     	  TPAR, TPER1, TPER2, EPS);
     cout << "smoothing" << endl;
-    int Nsmooth = 5;
+    int Nsmooth = 3;
     smooth(Nsmooth, TXX, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     smooth(Nsmooth, TXY, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     smooth(Nsmooth, TXZ, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     smooth(Nsmooth, TYY, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     smooth(Nsmooth, TYZ, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
     smooth(Nsmooth, TZZ, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
+
     cout << "calling agyro" << endl;
     agyro(agyro_scudder, agyro_aunai, nongyro_swisdak, align,
     	BX, BY, BZ, TXX, TXY, TXZ, TYY, TYZ, TZZ);

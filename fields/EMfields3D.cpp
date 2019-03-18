@@ -1881,7 +1881,7 @@ void EMfields3D::initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Coll
 /*! initiliaze EM for GEM challange */
 void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
-  double pertX = 0.4;
+  double pertX = 0.4*0.0;
   double xpert, ypert, exp_pert;
   if (restart1 == 0) {
     // initialize
