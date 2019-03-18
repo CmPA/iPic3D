@@ -38,6 +38,13 @@ int main (int argc, char **argv) {
 	if(argc>6) sscanf(argv[7],"%d",&zshift);
 		else zshift=0;
 
+	grid_str = argv[8];
+
+	printf( "Shift in x is set to %d\n ", xshift);
+	printf( "Shift in y is set to %d\n ", yshift);
+	printf( "Shift in z is set to %d\n ", zshift);
+	printf( "grid_Str %s\n ", grid_str.c_str());
+
     int rank, size;
 
    MPI_Init (&argc, &argv);	/* starts MPI */

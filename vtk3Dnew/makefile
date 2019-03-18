@@ -2,7 +2,7 @@
 CPP=	mpicxx
 OPTFLAGS=  -O2 
 
-SYSTEM = mac
+SYSTEM = pleiades
 
 # Libraties needed for intel compiler
 HDF5LIBS = -lhdf5 -lhdf5_hl -mkl 
