@@ -111,10 +111,13 @@ hid_t    file_id;
 hid_t    dataset_id;
 herr_t   status;
 
+string grid_str = "_G1";
 
 int readsettings(){
+	string temp;
 	// Open the  settings file
-	file_id = H5Fopen("settings.hdf", H5F_ACC_RDWR, H5P_DEFAULT);
+	temp = "settings" + grid_str  + ".hdf";
+	file_id = H5Fopen(temp.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 	if (file_id < 0){
 		cout << "couldn't open file: settings.hdf" << endl;
 		
@@ -252,8 +255,8 @@ void readvect(int it, string campo, string vectname, double*** EX, double*** EY,
 				proc= i*YLEN*ZLEN+j*ZLEN+k;
 				stringstream ss;
 				ss << proc;
-				//cout << "ss="<<ss.str() << endl;
-				temp = "proc" + ss.str() + ".hdf";
+				//cout << "ss="<<ss.str() + grid_str  << endl;
+				temp = "proc" + ss.str() + grid_str  + ".hdf";
 				proc_file_id = H5Fopen(temp.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 				// read data
 				//cout << "file = " << temp << endl;
@@ -307,8 +310,8 @@ void addreadvect(int it, string campo, string vectname, double*** EX, double*** 
 				proc= i*YLEN*ZLEN+j*ZLEN+k;
 				stringstream ss;
 				ss << proc;
-				//cout << "ss="<<ss.str() << endl;
-				temp = "proc" + ss.str() + ".hdf";
+				//cout << "ss="<<ss.str() + grid_str  << endl;
+				temp = "proc" + ss.str() + grid_str  + ".hdf";
 				proc_file_id = H5Fopen(temp.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 				// read data
 				//cout << "file = " << temp << endl;
@@ -364,8 +367,8 @@ void readscalar(int it, string campo, string scalarname, double*** EX) {
 				proc= i*YLEN*ZLEN+j*ZLEN+k;
 				stringstream ss;
 				ss << proc;
-				//cout << "ss="<<ss.str() << endl;
-				temp = "proc" + ss.str() + ".hdf";
+				//cout << "ss="<<ss.str() + grid_str  << endl;
+				temp = "proc" + ss.str() + grid_str  + ".hdf";
 				proc_file_id = H5Fopen(temp.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 				// read data
 				//cout << "file = " << temp << endl;
@@ -410,8 +413,8 @@ void addreadscalar(int it, string campo, string scalarname, double*** EX) {
 				proc= i*YLEN*ZLEN+j*ZLEN+k;
 				stringstream ss;
 				ss << proc;
-				//cout << "ss="<<ss.str() << endl;
-				temp = "proc" + ss.str() + ".hdf";
+				//cout << "ss="<<ss.str() + grid_str  << endl;
+				temp = "proc" + ss.str() + grid_str  + ".hdf";
 				proc_file_id = H5Fopen(temp.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 				// read data
 				//cout << "file = " << temp << endl;
@@ -455,8 +458,8 @@ void readpotential(int it, string campo, string scalarname, double*** EX) {
 				proc= i*YLEN*ZLEN+j*ZLEN+k;
 				stringstream ss;
 				ss << proc;
-				//cout << "ss="<<ss.str() << endl;
-				temp = "proc" + ss.str() + ".hdf";
+				//cout << "ss="<<ss.str() + grid_str  << endl;
+				temp = "proc" + ss.str() + grid_str  + ".hdf";
 				proc_file_id = H5Fopen(temp.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
 				// read data
 				//cout << "file = " << temp << endl;
