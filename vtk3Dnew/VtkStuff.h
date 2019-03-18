@@ -111,7 +111,7 @@ hid_t    file_id;
 hid_t    dataset_id;
 herr_t   status;
 
-string grid_str = "_G1";
+string grid_str;
 
 int readsettings(){
 	string temp;

@@ -35,13 +35,23 @@ int main (int argc, char **argv) {
 	sscanf(argv[2],"%d",&MaxLevel);
 	sscanf(argv[3],"%d",&DeltaT);
 
+
+			NdimCode = 3;
+			xshift = 0;
+			yshift = 0;
+			zshift = 0;
 	if(argc>3) {
 			sscanf(argv[4], "%d", &NdimCode);
+			sscanf(argv[5],"%d",&xshift);
+			sscanf(argv[6],"%d",&yshift);
+			sscanf(argv[7],"%d",&zshift);
+			grid_str = argv[8];
 		}
-		else
-		{
-			NdimCode = 3;
-		}
+
+	printf( "Shift in x is set to %d ", xshift);
+	printf( "Shift in y is set to %d ", yshift);
+	printf( "Shift in z is set to %d ", zshift);
+	printf( "grid_Str %s\n ", grid_str);
 
      int rank, size;
     
