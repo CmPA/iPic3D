@@ -138,6 +138,10 @@ Jxpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Vix,Xpic,Ypic,Zpic);
 Jypic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viy,Xpic,Ypic,Zpic);
 Jzpic(1:Nxpic,1:Nypic,1:Nzpic,2)=interpmio(x,y,z,n.*Viz,Xpic,Ypic,Zpic);
 
+Jxpic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
+Jypic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
+Jzpic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
+
 ns=4;
 !rm Initial4sp-Fields_000000.h5
 opath='Initial4sp-Fields_000000.h5'
