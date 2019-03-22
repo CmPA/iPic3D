@@ -138,8 +138,11 @@ figura(AAz,S,2,'S',ncycle, list_value)
 figura(AAz,divS,2,'divS',ncycle, list_value)
 figura(AAz,divQe,2,'divQe',ncycle, list_value)
 figura(AAz,divQi,2,'divQi',ncycle, list_value)
-figura(AAz,Bx.*Bx+By.*By+Bz.*Bz,2,'B2',ncycle, list_value)
-figura(AAz,Ex.*Ex+Ey.*Ey+Ez.*Ez,2,'E2',ncycle, list_value)
+figura(AAz,(Bx.*Bx+By.*By+Bz.*Bz)/8/pi,2,'B2',ncycle, list_value)
+figura(AAz,(Ex.*Ex+Ey.*Ey+Ez.*Ez)/8/pi,2,'E2',ncycle, list_value)
+[dBx,dBy,dBz]=compute_curl(x,y,z,Ex,Ey,Ez);
+dBdt=(Bx.*dBx+By.*dBy+dBz.*Bz)/8/pi;
+figura(AAz,dBdt,2,'dBdt',ncycle, list_value)
 figura(AAz,0.5*(Jex.^2+Jey.^2+Jez.^2)./rhoe/qom,2,'Ubulke',ncycle, list_value)
 figura(AAz,0.5*(Pexx+Peyy+Pezz),2,'Uthe',ncycle, list_value);
 figura(AAz,0.5*(Jix.^2+Jiy.^2+Jiz.^2)./rhoi,2,'Ubulki',ncycle, list_value)

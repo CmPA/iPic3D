@@ -6,7 +6,7 @@ clc
 addpath(genpath('../../ipic3d_toolbox'))
 folder_name = pwd;
 folder_name = '/Users/gianni/Dropbox/Science/codes/build_ecsim/run_agu/'
-folder_name = '/data1/gianni/hermes/agu2017_angle_sm3/'
+folder_name = '/data1/gianni/hermes-tmp/agu2017_angle/'
 
 namefile = 'MHDUCLA-Partcl';
 namefile_field = 'MHDUCLA-Fields';
@@ -98,10 +98,10 @@ volgorde=volgorde+1;volgorde=i;
     %ii=e>en_level & abs(x-Lx/2)<Lx/2-Lx/10;
         if(is==0)
         vmax=.05;
-        efold=3;
+        efold=5;
     else
         vmax=.005*2;
-        efold=10;
+        efold=15;
         end
         
     ii=e>emean*efold &x>Lx/2;
@@ -136,12 +136,12 @@ volgorde=volgorde+1;volgorde=i;
    % immagine_dir(x,y,J1,name,lmt, Nsm, Ncycle, Ygsm, nfig, nplot, labelx,labely, labelc)
 
     immagine_dir([vmin vmax],[vmin vmax],log10(1e-10+squeeze(sum(vdf_sp,2))), ...
-             ['vdfXZ_' 'species_' num2str(is) '_' num2str(volgorde)], ...
+             ['vdfXZ_' 'species_' num2str(is) '_' num2str(volgorde,'%06d')], ...
              [0 5e-3]*0,Nsm,titolo,0,1,[1 2],'v_x/c','v_z/c','vdf');
     immagine_dir([vmin vmax],[vmin vmax],log10(1e-10+squeeze(sum(vdf_sp,3))), ...
-             ['vdfXY_' 'species_' num2str(is) '_' num2str(volgorde)], ...
+             ['vdfXY_' 'species_' num2str(is) '_' num2str(volgorde,'%06d')], ...
              [0 5e-3]*0,Nsm,titolo,0,1,[2 2],'v_x/c','v_y/c','vdf');
-         print('-dpng',[num2str(is) 'vdf' num2str(volgorde)])
+         print('-dpng',[num2str(is) 'vdf' num2str(volgorde,'%06d')])
          close all
     figure(2)
     %contourf(gsmx(xc),gsmy2z(yc),AAz)
@@ -157,7 +157,7 @@ volgorde=volgorde+1;volgorde=i;
     xlabel('x', 'fontsize',[14])
     ylabel('y', 'fontsize',[14])
     set(gca,'fontsize',[14])
-    print('-dpng',[num2str(is) 'scatter' num2str(volgorde)])
+    print('-dpng',[num2str(is) 'scatter' num2str(volgorde,'%06d')])
 close all
     figure(3)
     [v,ev]=hist(e);
@@ -167,7 +167,7 @@ close all
     xlabel('E', 'fontsize',[14])
     ylabel('Fraction of Particles', 'fontsize',[14])
     set(gca,'fontsize',[14])
-    print('-dpng',[num2str(is) 'part' num2str(volgorde)])
+    print('-dpng',[num2str(is) 'part' num2str(volgorde,'%06d')])
 close all
     end 
     

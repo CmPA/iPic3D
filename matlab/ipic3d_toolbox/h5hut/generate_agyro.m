@@ -7,7 +7,7 @@ must_read=true;
 leggo='h5'
 if(must_read)
 
-sim_name='UHRmaha3D3'
+sim_name='turbo'
 switch sim_name
 case 'tred77'
 TRED77;
@@ -23,6 +23,11 @@ zcode = Lz/2;
 tred82;
 case_name='GEM';
 cycle = 18000;
+zcode = Lz/2;
+case 'turbo'
+turbo;
+case_name='DoubleHarris';
+cycle = 20000;
 zcode = Lz/2;
 case 'AH'
 generic;
@@ -174,13 +179,13 @@ savevtk_bin(Nongyro_swisdak,['Nongyro_swisdak_xyz_cycle' ncycle '.vtk'],'Agyro',
 % savevtk_bin(Agyro_aunai_sm,['AgyroSM_aunai_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
 % savevtk_bin(Nongyro_swisdak_sm,['NongyroSM_swisdak_xyz_cycle' ncycle '.vtk'],'Agyro',dx,dy,dz)
 
-% opath=fn
-% h5create(opath,'/Step#0/Block/Agyro/0',[Nx, Ny, Nz]);
-% h5write(opath,'/Step#0/Block/Agyro/0',Agyro)
-% h5create(opath,'/Step#0/Block/Agyro_aunai/0',[Nx, Ny, Nz]);
-% h5write(opath,'/Step#0/Block/Agyro_aunai/0',Agyro_aunai)
-% h5create(opath,'/Step#0/Block/Nongyro_swisdak/0',[Nx, Ny, Nz]);
-% h5write(opath,'/Step#0/Block/Nongyro_swisdak/0',Nongyro_swisdak)
-% h5create(opath,'/Step#0/Block/Nongyro_aunai/0',[Nx, Ny, Nz]);
-% h5write(opath,'/Step#0/Block/Nongyro_aunai/0',Nongyro_swisdak)
-% 
+opath=fn
+h5create(opath,'/Step#0/Block/Agyro/0',[Nx, Ny, Nz]);
+h5write(opath,'/Step#0/Block/Agyro/0',Agyro)
+h5create(opath,'/Step#0/Block/Agyro_aunai/0',[Nx, Ny, Nz]);
+h5write(opath,'/Step#0/Block/Agyro_aunai/0',Agyro_aunai)
+h5create(opath,'/Step#0/Block/Nongyro_swisdak/0',[Nx, Ny, Nz]);
+h5write(opath,'/Step#0/Block/Nongyro_swisdak/0',Nongyro_swisdak)
+h5create(opath,'/Step#0/Block/Nongyro_aunai/0',[Nx, Ny, Nz]);
+h5write(opath,'/Step#0/Block/Nongyro_aunai/0',Nongyro_swisdak)
+
