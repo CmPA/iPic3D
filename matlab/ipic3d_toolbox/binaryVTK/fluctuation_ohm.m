@@ -129,6 +129,9 @@ figure(n)
 dpq=dp.*dq1;
 [totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
 int1=urange*nbinpq./sum(nbinpq,1);
+
+int1 = spaziofasi_int(a(:),dpq(:),ndiv);
+
 dpq=dp.*dq2;
 [totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
 int2=urange*nbinpq./sum(nbinpq,1);
