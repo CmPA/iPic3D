@@ -135,6 +135,7 @@ print('-dpng','-r300',[ncycle '_Phi'])
 colormap hsv
 
 figura(AAz,S,2,'S',ncycle, list_value)
+fluctuation_integral(AAz,rhoe,Ex,2,'rhoE',ncycle, list_value)
 figura(AAz,divS,2,'divS',ncycle, list_value)
 figura(AAz,divQe,2,'divQe',ncycle, list_value)
 figura(AAz,divQi,2,'divQi',ncycle, list_value)
@@ -253,5 +254,37 @@ print('-dpng','-r300',[prename '_d_' name])
 close(n)
 
 end
+
+function [] = fluctuation_integral(a,p,q,n,name,prename, list_value)
+% MYMEAN Example of a local function.
+close all
+
+ndiv=100;
+Np=max(size(a(:)));
+p_avg=mean(p,3);
+[Nx Ny Nz]=size(p);
+dp=p;
+for k=1:Nz
+    dp(:,:,k)=p(:,:,k)-p_avg;
+end
+q_avg=mean(q,3);
+[Nx Ny Nz]=size(q);
+dq=q;
+for k=1:Nz
+    dq(:,:,k)=q(:,:,k)-q_avg;
+end
+
+figure(n)
+[totnum,nbinp,xrange,urange]=spaziofasi2(a(:),dp(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dp(:)),max(dp(:)),ndiv);
+[totnum,nbinq,xrange,u2range]=spaziofasi2(a(:),dq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dq(:)),max(dq(:)),ndiv);
+
+semilogy(xrange,sum(nbinp.*nbinq,1));
+
+figure(n)  
+set(gca,'fontsize',[14])
+print('-dpng','-r300',[prename '_sum_' name])
+%close(n)
+end
+
 
 
