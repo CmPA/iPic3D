@@ -95,6 +95,9 @@ radius=0.001;
     Pixx, Piyy, Pizz, Pixy, Pixz, Piyz, x, y, z, dx, dy, dz, 1.0, radius,0.);
 
 
+[JexBx, JexBy, JexBz] = cross_prod(Jex, Jey, Jez, Bx, By, Bz);
+
+
 switch sim_name
 case 'tred82'
     list_value=[-.02, -.01, 0, .005, .01, .015, .02] %tred82
@@ -135,7 +138,7 @@ print('-dpng','-r300',[ncycle '_Phi'])
 colormap hsv
 
 figura(AAz,S,2,'S',ncycle, list_value)
-fluctuation_integral(AAz,rhoe,Ex,2,'rhoE',ncycle, list_value)
+fluctuation_integral(AAz,-rhoe,Ex,Ey, Ez,2,'rhoE',ncycle, list_value)
 figura(AAz,divS,2,'divS',ncycle, list_value)
 figura(AAz,divQe,2,'divQe',ncycle, list_value)
 figura(AAz,divQi,2,'divQi',ncycle, list_value)
@@ -255,7 +258,7 @@ close(n)
 
 end
 
-function [] = fluctuation_integral(a,p,q,n,name,prename, list_value)
+function [] = fluctuation_integral(a,p,q1,q2,q3,n,name,prename, list_value)
 % MYMEAN Example of a local function.
 close all
 
@@ -267,18 +270,35 @@ dp=p;
 for k=1:Nz
     dp(:,:,k)=p(:,:,k)-p_avg;
 end
-q_avg=mean(q,3);
-[Nx Ny Nz]=size(q);
-dq=q;
+
+q1_avg=mean(q1,3);
+dq1=q1;
 for k=1:Nz
-    dq(:,:,k)=q(:,:,k)-q_avg;
+    dq1(:,:,k)=q1(:,:,k)-q1_avg;
 end
-
+q2_avg=mean(q2,3);
+dq2=q2;
+for k=1:Nz
+    dq2(:,:,k)=q2(:,:,k)-q2_avg;
+end
+q3_avg=mean(q3,3);
+dq3=q3;
+for k=1:Nz
+    dq3(:,:,k)=q3(:,:,k)-q3_avg;
+end
 figure(n)
-          [totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dp(:).*dq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dp(:)),max(dp(:)),ndiv);
 
+dpq=dp.*dq1;
+[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
+int1=urange*nbinpq;
+dpq=dp.*dq2;
+[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
+int2=urange*nbinpq;
+dpq=dp.*dq3;
+[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
+int3=urange*nbinpq;
 
-semilogy(xrange,sum(nbinpq,1));
+semilogy(xrange,int1,xrange,int2,xrange,int3);
 
 figure(n)  
 set(gca,'fontsize',[14])
