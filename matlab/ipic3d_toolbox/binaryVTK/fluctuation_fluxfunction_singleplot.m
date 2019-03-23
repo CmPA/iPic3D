@@ -275,10 +275,10 @@ for k=1:Nz
 end
 
 figure(n)
-[totnum,nbinp,xrange,urange]=spaziofasi2(a(:),dp(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dp(:)),max(dp(:)),ndiv);
-[totnum,nbinq,xrange,u2range]=spaziofasi2(a(:),dq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dq(:)),max(dq(:)),ndiv);
+          [totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dp(:).*dq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dp(:)),max(dp(:)),ndiv);
 
-semilogy(xrange,sum(nbinp.*nbinq,1));
+
+semilogy(xrange,sum(nbinpq,1));
 
 figure(n)  
 set(gca,'fontsize',[14])
