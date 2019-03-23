@@ -127,21 +127,23 @@ end
 figure(n)
 
 dpq=dp.*dq1;
-[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
-int1=urange*nbinpq./sum(nbinpq,1);
-
-int1 = spaziofasi_int(a(:),dpq(:),ndiv);
+%[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
+%int1=urange*nbinpq./sum(nbinpq,1);
+[int1, xrange] = spaziofasi_int(a(:),dpq(:),ones(Np,1),ndiv);
 
 dpq=dp.*dq2;
-[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
-int2=urange*nbinpq./sum(nbinpq,1);
+%[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
+%int2=urange*nbinpq./sum(nbinpq,1);
+int2 = spaziofasi_int(a(:),dpq(:),ones(Np,1),ndiv);
+
 dpq=dp.*dq3;
-[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
-int3=urange*nbinpq./sum(nbinpq,1);
+%[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
+%int3=urange*nbinpq./sum(nbinpq,1);
+int3 = spaziofasi_int(a(:),dpq(:),ones(Np,1),ndiv);
 
+figure(n) 
 plot(xrange,-int1,xrange,-int2,xrange,-int3);
-
-figure(n)  
+legend('x','y','z')
 set(gca,'fontsize',[14])
 print('-dpng','-r300',[prename '_sum_' name])
 %close(n)
@@ -190,18 +192,23 @@ end
 [cp1, cp2, cp3] = cross_prod(dp1, dp2, dp3, dq1, dq2, dq3);
 figure(n)
 
-[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),cp1(:),ones(Np,1),0,min(a(:)),max(a(:)),min(cp1(:)),max(cp1(:)),ndiv);
-int1=(urange*nbinpq)./sum(nbinpq,1);
+%[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),cp1(:),ones(Np,1),0,min(a(:)),max(a(:)),min(cp1(:)),max(cp1(:)),ndiv);
+%int1=(urange*nbinpq)./sum(nbinpq,1);
+[int1, xrange] = spaziofasi_int(a(:),cp1(:),ones(Np,1),ndiv);
 
-[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),cp2(:),ones(Np,1),0,min(a(:)),max(a(:)),min(cp2(:)),max(cp2(:)),ndiv);
-int2=urange*nbinpq./sum(nbinpq,1);
 
-[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),cp3(:),ones(Np,1),0,min(a(:)),max(a(:)),min(cp3(:)),max(cp3(:)),ndiv);
-int3=urange*nbinpq./sum(nbinpq,1);
+%[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),cp2(:),ones(Np,1),0,min(a(:)),max(a(:)),min(cp2(:)),max(cp2(:)),ndiv);
+%int2=urange*nbinpq./sum(nbinpq,1);
+int2 = spaziofasi_int(a(:),cp2(:),ones(Np,1),ndiv);
 
-plot(xrange,-int1,xrange,-int2,xrange,-int3);
+%[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),cp3(:),ones(Np,1),0,min(a(:)),max(a(:)),min(cp3(:)),max(cp3(:)),ndiv);
+%int3=urange*nbinpq./sum(nbinpq,1);
+int3 = spaziofasi_int(a(:),cp3(:),ones(Np,1),ndiv);
 
 figure(n)  
+plot(xrange,-int1,xrange,-int2,xrange,-int3);
+
+legend('x','y','z')
 set(gca,'fontsize',[14])
 print('-dpng','-r300',[prename '_sum_' name])
 %close(n)

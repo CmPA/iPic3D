@@ -1,4 +1,4 @@
-function [integral_phsp]=spaziofasi_int(xx,uu,qq,ndiv,xmin,xmax)
+function [integral_phsp, xrange]=spaziofasi_int(xx,uu,qq,ndiv,xmin,xmax)
 
 if(nargin<4)
 ndiv=100;
