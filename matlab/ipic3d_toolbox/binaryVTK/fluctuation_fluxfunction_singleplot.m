@@ -137,42 +137,41 @@ print('-dpng','-r300',[ncycle '_Phi'])
 
 colormap hsv
 
-figura(AAz,S,2,'S',ncycle, list_value)
-fluctuation_integral(AAz,-rhoe,Ex,Ey, Ez,2,'rhoE',ncycle, list_value)
-figura(AAz,divS,2,'divS',ncycle, list_value)
-figura(AAz,divQe,2,'divQe',ncycle, list_value)
-figura(AAz,divQi,2,'divQi',ncycle, list_value)
-figura(AAz,(Bx.*Bx+By.*By+Bz.*Bz)/8/pi,2,'B2',ncycle, list_value)
-figura(AAz,(Ex.*Ex+Ey.*Ey+Ez.*Ez)/8/pi,2,'E2',ncycle, list_value)
+figura(AAz,S,2,'S',ncycle, true, list_value)
+figura(AAz,divS,2,'divS',ncycle, true, list_value)
+figura(AAz,divQe,2,'divQe',ncycle, true, list_value)
+figura(AAz,divQi,2,'divQi',ncycle, true, list_value)
+figura(AAz,(Bx.*Bx+By.*By+Bz.*Bz)/8/pi,2,'B2',ncycle, true, list_value)
+figura(AAz,(Ex.*Ex+Ey.*Ey+Ez.*Ez)/8/pi,2,'E2',ncycle, true, list_value)
 [dBx,dBy,dBz]=compute_curl(x,y,z,Ex,Ey,Ez);
 dBdt=(Bx.*dBx+By.*dBy+dBz.*Bz)/8/pi;
-figura(AAz,dBdt,2,'dBdt',ncycle, list_value)
-figura(AAz,0.5*(Jex.^2+Jey.^2+Jez.^2)./rhoe/qom,2,'Ubulke',ncycle, list_value)
-figura(AAz,0.5*(Pexx+Peyy+Pezz),2,'Uthe',ncycle, list_value);
-figura(AAz,0.5*(Jix.^2+Jiy.^2+Jiz.^2)./rhoi,2,'Ubulki',ncycle, list_value)
-figura(AAz,0.5*(Pixx+Piyy+Pizz),2,'Uthi',ncycle, list_value);
-%figura(AAz,log10(S),3,'Slog',ncycle, list_value)
-figura(AAz,Sx,4,'Sx',ncycle, list_value)
-figura(AAz,Sy,5,'Sy',ncycle, list_value)
-figura(AAz,Sz,6,'Sz',ncycle, list_value)
-figura(AAz,Qex,4,'Qex',ncycle, list_value)
-figura(AAz,Qey,4,'Qey',ncycle, list_value)
-figura(AAz,Qez,4,'Qez',ncycle, list_value)
-figura(AAz,Qix,4,'Qix',ncycle, list_value)
-figura(AAz,Qiy,4,'Qiy',ncycle, list_value)
-figura(AAz,Qiz,4,'Qiz',ncycle, list_value)
-%figura(AAz,UPex,4,'uPex',ncycle, list_value)
-%figura(AAz,UPey,4,'uPey',ncycle, list_value)
-%figura(AAz,UPez,4,'uPez',ncycle, list_value)
-%figura(AAz,UPix,4,'uPix',ncycle, list_value)
-%figura(AAz,UPiy,4,'uPiy',ncycle, list_value)
-%figura(AAz,UPiz,4,'uPiz',ncycle, list_value)
-figura(AAz,pdivve,4,'pthetae',ncycle, list_value)
-figura(AAz,pdivvi,4,'pthetai',ncycle, list_value)
-figura(AAz,PgradVe-pdivve,4,'PiDe',ncycle, list_value)
-figura(AAz,PgradVi-pdivvi,4,'PiDi',ncycle, list_value)
-figura(AAz,Jex.*Ex+Jey.*Ey+Jez.*Ez,4,'JeE',ncycle, list_value)
-figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle, list_value)
+figura(AAz,dBdt,2,'dBdt',ncycle, true, list_value)
+figura(AAz,0.5*(Jex.^2+Jey.^2+Jez.^2)./rhoe/qom,2,'Ubulke',ncycle, true, list_value)
+figura(AAz,0.5*(Pexx+Peyy+Pezz),2,'Uthe',ncycle, true, list_value);
+figura(AAz,0.5*(Jix.^2+Jiy.^2+Jiz.^2)./rhoi,2,'Ubulki',ncycle, true, list_value)
+figura(AAz,0.5*(Pixx+Piyy+Pizz),2,'Uthi',ncycle, true, list_value);
+%figura(AAz,log10(S),3,'Slog',ncycle, true, list_value)
+figura(AAz,Sx,4,'Sx',ncycle, true, list_value)
+figura(AAz,Sy,5,'Sy',ncycle, true, list_value)
+figura(AAz,Sz,6,'Sz',ncycle, true, list_value)
+figura(AAz,Qex,4,'Qex',ncycle, true, list_value)
+figura(AAz,Qey,4,'Qey',ncycle, true, list_value)
+figura(AAz,Qez,4,'Qez',ncycle, true, list_value)
+figura(AAz,Qix,4,'Qix',ncycle, true, list_value)
+figura(AAz,Qiy,4,'Qiy',ncycle, true, list_value)
+figura(AAz,Qiz,4,'Qiz',ncycle, true, list_value)
+%figura(AAz,UPex,4,'uPex',ncycle, true, list_value)
+%figura(AAz,UPey,4,'uPey',ncycle, true, list_value)
+%figura(AAz,UPez,4,'uPez',ncycle, true, list_value)
+%figura(AAz,UPix,4,'uPix',ncycle, true, list_value)
+%figura(AAz,UPiy,4,'uPiy',ncycle, true, list_value)
+%figura(AAz,UPiz,4,'uPiz',ncycle, true, list_value)
+figura(AAz,pdivve,4,'pthetae',ncycle, true, list_value)
+figura(AAz,pdivvi,4,'pthetai',ncycle, true, list_value)
+figura(AAz,PgradVe-pdivve,4,'PiDe',ncycle, true, list_value)
+figura(AAz,PgradVi-pdivvi,4,'PiDi',ncycle, true, list_value)
+figura(AAz,Jex.*Ex+Jey.*Ey+Jez.*Ez,4,'JeE',ncycle, true, list_value)
+figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle, true, list_value)
 
         
         Epx = Ex + (Jey.*Bz - Jez.*By)./rhoe;
@@ -180,33 +179,60 @@ figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle, list_value)
         Epz = Ez + (Jex.*By - Jey.*Bx)./rhoe;
         
         JdotEp=(Jex+Jix).*Epx + (Jey+Jiy).*Epy + (Jez+Jiz).*Epz;
-figura(AAz,JdotEp,4,'JEp',ncycle, list_value)
+figura(AAz,JdotEp,4,'JEp',ncycle, true, list_value)
      
+[cp1, cp2, cp3] = cross_prod(mean(Jex,3), mean(Jey,3), mean(Jez,3), mean(Bx,3), mean(By,3), mean(Bz,3));
+
+figura(AAz, cp1, 4, 'OHMJxdB_X', ncycle, false, list_value)
+figura(AAz, cp2, 4, 'OHMJxdB_Y', ncycle, false, list_value)
+figura(AAz, cp3, 4, 'OHMJxdB_Z', ncycle, false, list_value)
+
+figura(AAz, mean(rhoe,3).*mean(Ex,3), 4, 'OHMnE_X', ncycle, false, list_value)
+figura(AAz, mean(rhoe,3).*mean(Ey,3), 4, 'OHMnE_X', ncycle, false, list_value)
+figura(AAz, mean(rhoe,3).*mean(Ez,3), 4, 'OHMnE_X', ncycle, false, list_value)
+
+[tx, ty, tz] = gradient(imgaussfilt3(permute(mean(Jex./rhoe,3),[2 1 3]),radius), dx, dy, dz);
+tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
+cp1 = tx.*mean(Jex,3) + ty.*mean(Jey,3) + tz.*mean(Jez,3);
+
+[tx, ty, tz] = gradient(imgaussfilt3(permute(mean(Jey./rhoe,3),[2 1 3]),radius), dx, dy, dz);
+tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
+cp2 = tx.*mean(Jex,3) + ty.*mean(Jey,3) + tz.*mean(Jez,3);
+
+[tx, ty, tz] = gradient(imgaussfilt3(permute(mean(Jez./rhoe,3),[2 1 3]),radius), dx, dy, dz);
+tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
+cp3 = tx.*mean(Jex,3) + ty.*mean(Jey,3) + tz.*mean(Jez,3);
+
+figura(AAz, cp1, 4, 'OHMdinert_X', ncycle, false, list_value)
+figura(AAz, cp2, 4, 'OHMdinert_Y', ncycle, false, list_value)
+figura(AAz, cp3, 4, 'OHMdinert_Z', ncycle, false, list_value)
+
+
 [cp1, cp2, cp3] = cross_prod(fluct(Jex), fluct(Jey), fluct(Jez), fluct(Bx), fluct(By), fluct(Bz));
 
-figura(AAz, cp1, 4, 'OHMJxB_X', ncycle, list_value)
-figura(AAz, cp2, 4, 'OHMJxB_Y', ncycle, list_value)
-figura(AAz, cp3, 4, 'OHMJxB_Z', ncycle, list_value)
+figura(AAz, cp1, 4, 'OHMdJxdB_X', ncycle, false, list_value)
+figura(AAz, cp2, 4, 'OHMdJxdB_Y', ncycle, false, list_value)
+figura(AAz, cp3, 4, 'OHMdJxdB_Z', ncycle, false, list_value)
 
-figura(AAz, flcut(rhoe).*flcut(Ex), 4, 'OHMnE_X', ncycle, list_value)
-figura(AAz, flcut(rhoe).*flcut(Ey), 4, 'OHMnE_X', ncycle, list_value)
-figura(AAz, flcut(rhoe).*flcut(Ez), 4, 'OHMnE_X', ncycle, list_value)
+figura(AAz, flcut(rhoe).*fluct(Ex), 4, 'OHMdndE_X', ncycle, false, list_value)
+figura(AAz, flcut(rhoe).*fluct(Ey), 4, 'OHMdndE_X', ncycle, false, list_value)
+figura(AAz, flcut(rhoe).*fluct(Ez), 4, 'OHMdndE_X', ncycle, false, list_value)
 
 [tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jex./rhoe),[2 1 3]),radius), dx, dy, dz);
 tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-cp1 = tx.*Jex + ty.*Jey + tz.*Jez;
+cp1 = tx.*fluct(Jex) + ty.*fluct(Jey) + tz.*fluct(Jez);
 
 [tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jey./rhoe),[2 1 3]),radius), dx, dy, dz);
 tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-cp2 = tx.*Jex + ty.*Jey + tz.*Jez;
+cp2 = tx.*fluct(Jex) + ty.*fluct(Jey) + tz.*fluct(Jez);
 
 [tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jez./rhoe),[2 1 3]),radius), dx, dy, dz);
 tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-cp3 = tx.*Jex + ty.*Jey + tz.*Jez;
+cp3 = tx.*fluct(Jex) + ty.*fluct(Jey) + tz.*fluct(Jez);
 
-figura(AAz, cp1, 4, 'OHMndVdt_X', ncycle, list_value)
-figura(AAz, cp2, 4, 'OHMndVdt_Y', ncycle, list_value)
-figura(AAz, cp3, 4, 'OHMndVdt_Z', ncycle, list_value)
+figura(AAz, cp1, 4, 'OHMdinert_X', ncycle, false, list_value)
+figura(AAz, cp2, 4, 'OHMdinert_Y', ncycle, false, list_value)
+figura(AAz, cp3, 4, 'OHMdinert_Z', ncycle, false, list_value)
 
 xflow='inflow'
    structure_function
@@ -214,14 +240,18 @@ xflow='outflow'
    structure_function
 
         
-function [] = figura(a,p,n,name,prename, list_value)
+function [] = figura(a,p,n,name,prename,differ, list_value)
 % MYMEAN Example of a local function.
 close all
 
 ndiv=100;
 Np=max(size(a(:)));
 
-dp=fluct(p);
+if (differ)
+    dp=fluct(p);
+else
+    dp=p;
+end    
 
 % figure(n)
 % [totnum,nbinu,xrange,urange]=spaziofasi2(a(:),p(:),ones(Np,1),0,min(a(:)),max(a(:)),min(p(:)),max(p(:)),ndiv);
