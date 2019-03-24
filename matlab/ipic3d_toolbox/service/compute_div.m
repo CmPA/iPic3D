@@ -21,8 +21,14 @@ elseif(cyl==2)
     divA(:,1,:)=0;
     divA = divergence(x,y,z,permute(Ax,[2 1 3]), permute(Ay, [2 1 3]), permute(Az, [2,1,3]));
 elseif(cyl==0)
-    divA = divergence(x,y,z,permute(imgaussfilt3(Ax,radius),[2 1 3]), ...
-        permute(imgaussfilt3(Ay,radius),[2 1 3]), permute(imgaussfilt3(Az,radius),[2 1 3]));
+    [Nx Ny Nz]=size(Ax);
+    if(Nz>1)
+        divA = divergence(x,y,z,permute(imgaussfilt3(Ax,radius),[2 1 3]), ...
+            permute(imgaussfilt3(Ay,radius),[2 1 3]), permute(imgaussfilt3(Az,radius),[2 1 3]));
+    else
+       divA = divergence(mean(x,3),mean(y,3),permute(imgaussfilt3(Ax,radius),[2 1]), ...
+            permute(imgaussfilt3(Ay,radius),[2 1]));
+    end    
 end
 divA = permute(divA, [2 1 3]);
 end

@@ -133,7 +133,8 @@ ycoord = gsmy2z(Y(jr,ir));
     xc=linspace(0, Lx, Nx);
 yc=linspace(0, Ly, Ny);
 AAz=vecpot(xc,yc,mean(Bx,3),mean(By,3));
-
+[x,y,z]=meshgrid(0:dx:Lx,0:dy:Ly,0:dz:Lz);
+radius=0.01;
 
 [cp1, cp2, cp3] = cross_prod(mean(Jex,3), mean(Jey,3), mean(Jez,3), mean(Bx,3), mean(By,3), mean(Bz,3));
 labelc = labelc_power;
@@ -164,6 +165,12 @@ tmp=common_image(xcoord,ycoord,cp1(ir,jr)/qom,AAz(ir,jr),['Yavg'],'OHMinert_X',[
 tmp=common_image(xcoord,ycoord,cp2(ir,jr)/qom,AAz(ir,jr),['Yavg'],'OHMinert_Y',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,cp3(ir,jr)/qom,AAz(ir,jr),['Yavg'],'OHMinert_Z',[-1 1]*0e-10, radius,1);
 
+[cp1, cp2, cp3] = compute_divtensor(x,y,z,mean(Pexx,3),mean(Pexy,3),mean(Pexz,3),mean(Peyy,3), ...
+    mean(Peyz,3),mean(Pezz,3),radius,0);
+tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMdivP_X',[-1 1]*0e-10, radius,1);
+tmp=common_image(xcoord,ycoord,cp2(ir,jr),AAz(ir,jr),['Yavg'],'OHMdivP_Y',[-1 1]*0e-10, radius,1);
+tmp=common_image(xcoord,ycoord,cp3(ir,jr),AAz(ir,jr),['Yavg'],'OHMdivP_Z',[-1 1]*0e-10, radius,1);
+
 
 [cp1, cp2, cp3] = cross_prod(fluct(Jex), fluct(Jey), fluct(Jez), fluct(Bx), fluct(By), fluct(Bz));
 tmp=common_image(xcoord,ycoord,mean(cp1(ir,jr,:),3),AAz(ir,jr),['Yavg'],'OHMdJxdB_X',[-1 1]*0e-10, radius,1);
@@ -171,11 +178,11 @@ tmp=common_image(xcoord,ycoord,mean(cp2(ir,jr,:),3),AAz(ir,jr),['Yavg'],'OHMdJxd
 tmp=common_image(xcoord,ycoord,mean(cp3(ir,jr,:),3),AAz(ir,jr),['Yavg'],'OHMdJxdB_Z',[-1 1]*0e-10, radius,1);
 
 cp1 = mean(fluct(rhoe).*fluct(Ex),3);
-tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMJnE_X',[-1 1]*0e-10, radius,1);
+tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMdndE_X',[-1 1]*0e-10, radius,1);
 cp1 = mean(fluct(rhoe).*fluct(Ey),3);
-tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMJnE_Y',[-1 1]*0e-10, radius,1);
+tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMdndE_Y',[-1 1]*0e-10, radius,1);
 cp1 = mean(fluct(rhoe).*fluct(Ez),3);
-tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMJnE_Z',[-1 1]*0e-10, radius,1);
+tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMdndE_Z',[-1 1]*0e-10, radius,1);
 
 
 [tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jex./rhoe),[2 1 3]),radius), dx, dy, dz);
@@ -193,6 +200,7 @@ cp3 = tx.*fluct(Jex) + ty.*fluct(Jey) + tz.*fluct(Jez);
 tmp=common_image(xcoord,ycoord,mean(cp1(ir,jr,:),3)/qom,AAz(ir,jr),['Yavg'],'OHMdinert_X',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,mean(cp2(ir,jr,:),3)/qom,AAz(ir,jr),['Yavg'],'OHMdinert_Y',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,mean(cp3(ir,jr,:),3)/qom,AAz(ir,jr),['Yavg'],'OHMdinert_Z',[-1 1]*0e-10, radius,1);
+
 
 function [dp] = fluct(p)
 p_avg=mean(p,3);
