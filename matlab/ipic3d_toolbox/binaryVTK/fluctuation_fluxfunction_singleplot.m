@@ -70,7 +70,7 @@ end
 
 [X Y] = meshgrid(0:dx:Lx-dx,0:dy:Ly-dy);
 
-[Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx, By, Bz);
+[Sx, Sy, Sz] = cross_prod(Ex, Ey, Ez, Bx/4/pi, By/4/pi, Bz/4/pi);
 S=sqrt(Sx.^2+Sy.^2+Sz.^2);
 [x,y,z]=meshgrid(0:dx:Lx,0:dy:Ly,0:dz:Lz);
 radius=0.01;
@@ -144,7 +144,7 @@ figura(AAz,divQi,2,'divQi',ncycle, true, list_value)
 figura(AAz,(Bx.*Bx+By.*By+Bz.*Bz)/8/pi,2,'B2',ncycle, true, list_value)
 figura(AAz,(Ex.*Ex+Ey.*Ey+Ez.*Ez)/8/pi,2,'E2',ncycle, true, list_value)
 [dBx,dBy,dBz]=compute_curl(x,y,z,Ex,Ey,Ez);
-dBdt=(Bx.*dBx+By.*dBy+dBz.*Bz)/8/pi;
+dBdt=-(Bx.*dBx+By.*dBy+dBz.*Bz)/4/pi;
 figura(AAz,dBdt,2,'dBdt',ncycle, true, list_value)
 figura(AAz,0.5*(Jex.^2+Jey.^2+Jez.^2)./rhoe/qom,2,'Ubulke',ncycle, true, list_value)
 figura(AAz,0.5*(Pexx+Peyy+Pezz),2,'Uthe',ncycle, true, list_value);
