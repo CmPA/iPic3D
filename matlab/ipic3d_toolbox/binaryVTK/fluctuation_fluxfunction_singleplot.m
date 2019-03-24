@@ -182,6 +182,32 @@ figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle, list_value)
         JdotEp=(Jex+Jix).*Epx + (Jey+Jiy).*Epy + (Jez+Jiz).*Epz;
 figura(AAz,JdotEp,4,'JEp',ncycle, list_value)
      
+[cp1, cp2, cp3] = cross_prod(fluct(Jex), fluct(Jey), fluct(Jez), fluct(Bx), fluct(By), fluct(Bz));
+
+figura(AAz, cp1, 4, 'OHMJxB_X', ncycle, list_value)
+figura(AAz, cp2, 4, 'OHMJxB_Y', ncycle, list_value)
+figura(AAz, cp3, 4, 'OHMJxB_Z', ncycle, list_value)
+
+figura(AAz, flcut(rhoe).*flcut(Ex), 4, 'OHMnE_X', ncycle, list_value)
+figura(AAz, flcut(rhoe).*flcut(Ey), 4, 'OHMnE_X', ncycle, list_value)
+figura(AAz, flcut(rhoe).*flcut(Ez), 4, 'OHMnE_X', ncycle, list_value)
+
+[tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jex./rhoe),[2 1 3]),radius), dx, dy, dz);
+tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
+cp1 = tx.*Jex + ty.*Jey + tz.*Jez;
+
+[tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jey./rhoe),[2 1 3]),radius), dx, dy, dz);
+tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
+cp2 = tx.*Jex + ty.*Jey + tz.*Jez;
+
+[tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jez./rhoe),[2 1 3]),radius), dx, dy, dz);
+tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
+cp3 = tx.*Jex + ty.*Jey + tz.*Jez;
+
+figura(AAz, cp1, 4, 'OHMndVdt_X', ncycle, list_value)
+figura(AAz, cp2, 4, 'OHMndVdt_Y', ncycle, list_value)
+figura(AAz, cp3, 4, 'OHMndVdt_Z', ncycle, list_value)
+
 xflow='inflow'
    structure_function
 xflow='outflow'
@@ -194,12 +220,9 @@ close all
 
 ndiv=100;
 Np=max(size(a(:)));
-p_avg=mean(p,3);
-[Nx Ny Nz]=size(p);
-dp=p;
-for k=1:Nz
-    dp(:,:,k)=p(:,:,k)-p_avg;
-end
+
+dp=fluct(p);
+
 % figure(n)
 % [totnum,nbinu,xrange,urange]=spaziofasi2(a(:),p(:),ones(Np,1),0,min(a(:)),max(a(:)),min(p(:)),max(p(:)),ndiv);
 % imagesc(xrange,urange,log10(nbinu))
@@ -258,53 +281,12 @@ close(n)
 
 end
 
-function [] = fluctuation_integral(a,p,q1,q2,q3,n,name,prename, list_value)
-% MYMEAN Example of a local function.
-close all
 
-ndiv=100;
-Np=max(size(a(:)));
+function [dp] = fluct(p)
 p_avg=mean(p,3);
 [Nx Ny Nz]=size(p);
 dp=p;
 for k=1:Nz
     dp(:,:,k)=p(:,:,k)-p_avg;
 end
-
-q1_avg=mean(q1,3);
-dq1=q1;
-for k=1:Nz
-    dq1(:,:,k)=q1(:,:,k)-q1_avg;
 end
-q2_avg=mean(q2,3);
-dq2=q2;
-for k=1:Nz
-    dq2(:,:,k)=q2(:,:,k)-q2_avg;
-end
-q3_avg=mean(q3,3);
-dq3=q3;
-for k=1:Nz
-    dq3(:,:,k)=q3(:,:,k)-q3_avg;
-end
-figure(n)
-
-dpq=dp.*dq1;
-[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
-int1=urange*nbinpq;
-dpq=dp.*dq2;
-[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
-int2=urange*nbinpq;
-dpq=dp.*dq3;
-[totnum,nbinpq,xrange,urange]=spaziofasi2(a(:),dpq(:),ones(Np,1),0,min(a(:)),max(a(:)),min(dpq(:)),max(dpq(:)),ndiv);
-int3=urange*nbinpq;
-
-semilogy(xrange,int1,xrange,int2,xrange,int3);
-
-figure(n)  
-set(gca,'fontsize',[14])
-print('-dpng','-r300',[prename '_sum_' name])
-%close(n)
-end
-
-
-
