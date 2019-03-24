@@ -180,59 +180,10 @@ figura(AAz,Jix.*Ex+Jiy.*Ey+Jiz.*Ez,4,'JiE',ncycle, true, list_value)
         
         JdotEp=(Jex+Jix).*Epx + (Jey+Jiy).*Epy + (Jez+Jiz).*Epz;
 figura(AAz,JdotEp,4,'JEp',ncycle, true, list_value)
-     
-[cp1, cp2, cp3] = cross_prod(mean(Jex,3), mean(Jey,3), mean(Jez,3), mean(Bx,3), mean(By,3), mean(Bz,3));
-
-figura(AAz, cp1, 4, 'OHMJxdB_X', ncycle, false, list_value)
-figura(AAz, cp2, 4, 'OHMJxdB_Y', ncycle, false, list_value)
-figura(AAz, cp3, 4, 'OHMJxdB_Z', ncycle, false, list_value)
-
-figura(AAz, mean(rhoe,3).*mean(Ex,3), 4, 'OHMnE_X', ncycle, false, list_value)
-figura(AAz, mean(rhoe,3).*mean(Ey,3), 4, 'OHMnE_X', ncycle, false, list_value)
-figura(AAz, mean(rhoe,3).*mean(Ez,3), 4, 'OHMnE_X', ncycle, false, list_value)
-
-[tx, ty, tz] = gradient(imgaussfilt3(permute(mean(Jex./rhoe,3),[2 1 3]),radius), dx, dy, dz);
-tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-cp1 = tx.*mean(Jex,3) + ty.*mean(Jey,3) + tz.*mean(Jez,3);
-
-[tx, ty, tz] = gradient(imgaussfilt3(permute(mean(Jey./rhoe,3),[2 1 3]),radius), dx, dy, dz);
-tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-cp2 = tx.*mean(Jex,3) + ty.*mean(Jey,3) + tz.*mean(Jez,3);
-
-[tx, ty, tz] = gradient(imgaussfilt3(permute(mean(Jez./rhoe,3),[2 1 3]),radius), dx, dy, dz);
-tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-cp3 = tx.*mean(Jex,3) + ty.*mean(Jey,3) + tz.*mean(Jez,3);
-
-figura(AAz, cp1, 4, 'OHMdinert_X', ncycle, false, list_value)
-figura(AAz, cp2, 4, 'OHMdinert_Y', ncycle, false, list_value)
-figura(AAz, cp3, 4, 'OHMdinert_Z', ncycle, false, list_value)
-
-
-[cp1, cp2, cp3] = cross_prod(fluct(Jex), fluct(Jey), fluct(Jez), fluct(Bx), fluct(By), fluct(Bz));
-
-figura(AAz, cp1, 4, 'OHMdJxdB_X', ncycle, false, list_value)
-figura(AAz, cp2, 4, 'OHMdJxdB_Y', ncycle, false, list_value)
-figura(AAz, cp3, 4, 'OHMdJxdB_Z', ncycle, false, list_value)
-
-figura(AAz, flcut(rhoe).*fluct(Ex), 4, 'OHMdndE_X', ncycle, false, list_value)
-figura(AAz, flcut(rhoe).*fluct(Ey), 4, 'OHMdndE_X', ncycle, false, list_value)
-figura(AAz, flcut(rhoe).*fluct(Ez), 4, 'OHMdndE_X', ncycle, false, list_value)
-
-[tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jex./rhoe),[2 1 3]),radius), dx, dy, dz);
-tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-cp1 = tx.*fluct(Jex) + ty.*fluct(Jey) + tz.*fluct(Jez);
-
-[tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jey./rhoe),[2 1 3]),radius), dx, dy, dz);
-tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-cp2 = tx.*fluct(Jex) + ty.*fluct(Jey) + tz.*fluct(Jez);
-
-[tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jez./rhoe),[2 1 3]),radius), dx, dy, dz);
-tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
-cp3 = tx.*fluct(Jex) + ty.*fluct(Jey) + tz.*fluct(Jez);
-
-figura(AAz, cp1, 4, 'OHMdinert_X', ncycle, false, list_value)
-figura(AAz, cp2, 4, 'OHMdinert_Y', ncycle, false, list_value)
-figura(AAz, cp3, 4, 'OHMdinert_Z', ncycle, false, list_value)
+ 
+%
+%   Structure function calculation - still experimental
+%
 
 xflow='inflow'
    structure_function
