@@ -7,7 +7,7 @@ must_read=true;
 leggo='h5';
 if(must_read)
 
-sim_name='tred82'
+sim_name='tred81'
 switch sim_name
 case 'tred77'
 TRED77;

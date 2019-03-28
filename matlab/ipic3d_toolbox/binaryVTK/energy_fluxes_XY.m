@@ -3,11 +3,12 @@
 %
 
 close all
+!rm *.png
 addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
 
-sim_name='tred82'
+sim_name='tred81'
 switch sim_name    
     case 'tred74'
 tred74;

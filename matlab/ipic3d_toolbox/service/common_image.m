@@ -50,9 +50,14 @@ elseif (color_choice==1)
         colormap(cm_kbwrk)
 elseif (color_choice==2)
         colormap hot
-        elseif (color_choice==3)
+elseif (color_choice==3)
         load cm_multi4
         colormap(cm_cool_hot_2)
+elseif (color_choice==4)
+        colormap hsv
+elseif (color_choice==5)
+        load gist_ncar
+        colormap(gist_ncar)       
 elseif (color_choice==-1)
         colormap parula
 end
@@ -60,11 +65,11 @@ end
 ch=colorbar
 set(get(ch,'title'),'string',labelc);
 
-set(gca,'fontsize',[20])
+set(gca,'fontsize',[14])
 
 
-xlabel(labelx,'fontsize',[20])
-ylabel(labely,'fontsize',[20])
+xlabel(labelx,'fontsize',[14])
+ylabel(labely,'fontsize',[14])
 
 
 title([name '  ' nlabel ],'fontsize',[14])

@@ -1,7 +1,7 @@
 %
 % Energy plots in the XZ plane averaging on the whole range in y
 %
-
+!rm *.png
 close all
 addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
@@ -12,7 +12,7 @@ must_read=true;
 leggo='h5';
 
 
-sim_name='tred82'
+sim_name='tred81'
 switch sim_name    
     case 'tred74'
 tred74;
@@ -136,18 +136,24 @@ AAz=vecpot(xc,yc,mean(Bx,3),mean(By,3));
 [x,y,z]=meshgrid(0:dx:Lx,0:dy:Ly,0:dz:Lz);
 radius=0.01;
 
+iy=round(Ny/2);
+
 [cp1, cp2, cp3] = cross_prod(mean(Jex,3), mean(Jey,3), mean(Jez,3), mean(Bx,3), mean(By,3), mean(Bz,3));
 labelc = labelc_power;
 tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMJxB_X',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,cp2(ir,jr),AAz(ir,jr),['Yavg'],'OHMJxB_Y',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,cp3(ir,jr),AAz(ir,jr),['Yavg'],'OHMJxB_Z',[-1 1]*0e-10, radius,1);
 
+ohmJxBZ= cp3(:,iy);
+
 cp1 = mean(rhoe,3).*mean(Ex,3)
-tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMJnE_X',[-1 1]*0e-10, radius,1);
+tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMnE_X',[-1 1]*0e-10, radius,1);
 cp1 = mean(rhoe,3).*mean(Ey,3)
-tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMJnE_Y',[-1 1]*0e-10, radius,1);
+tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMnE_Y',[-1 1]*0e-10, radius,1);
 cp1 = mean(rhoe,3).*mean(Ez,3)
-tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMJnE_Z',[-1 1]*0e-10, radius,1);
+tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMnE_Z',[-1 1]*0e-10, radius,1);
+
+ohmnEZ= cp1(:,iy);
 
 [tx, ty] = gradient(imgaussfilt3(permute(mean(Jex./rhoe,3),[2 1]),radius), dx, dy);
 tx=permute(tx,[2 1]);ty=permute(ty,[2 1]);
@@ -155,11 +161,13 @@ cp1 = tx.*mean(Jex,3) + ty.*mean(Jey,3);
 
 [tx, ty] = gradient(imgaussfilt3(permute(mean(Jey./rhoe,3),[2 1]),radius), dx, dy);
 tx=permute(tx,[2 1]);ty=permute(ty,[2 1]);
-cp1 = tx.*mean(Jex,3) + ty.*mean(Jey,3);
+cp2 = tx.*mean(Jex,3) + ty.*mean(Jey,3);
 
 [tx, ty] = gradient(imgaussfilt3(permute(mean(Jez./rhoe,3),[2 1]),radius), dx, dy);
 tx=permute(tx,[2 1]);ty=permute(ty,[2 1]);
-cp1 = tx.*mean(Jex,3) + ty.*mean(Jey,3);
+cp3 = tx.*mean(Jex,3) + ty.*mean(Jey,3);
+
+ohmi= cp3(:,iy)/qom;
 
 tmp=common_image(xcoord,ycoord,cp1(ir,jr)/qom,AAz(ir,jr),['Yavg'],'OHMinert_X',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,cp2(ir,jr)/qom,AAz(ir,jr),['Yavg'],'OHMinert_Y',[-1 1]*0e-10, radius,1);
@@ -170,12 +178,13 @@ tmp=common_image(xcoord,ycoord,cp3(ir,jr)/qom,AAz(ir,jr),['Yavg'],'OHMinert_Z',[
 tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMdivP_X',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,cp2(ir,jr),AAz(ir,jr),['Yavg'],'OHMdivP_Y',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,cp3(ir,jr),AAz(ir,jr),['Yavg'],'OHMdivP_Z',[-1 1]*0e-10, radius,1);
-
+ohmdivP= cp3(:,iy);
 
 [cp1, cp2, cp3] = cross_prod(fluct(Jex), fluct(Jey), fluct(Jez), fluct(Bx), fluct(By), fluct(Bz));
 tmp=common_image(xcoord,ycoord,mean(cp1(ir,jr,:),3),AAz(ir,jr),['Yavg'],'OHMdJxdB_X',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,mean(cp2(ir,jr,:),3),AAz(ir,jr),['Yavg'],'OHMdJxdB_Y',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,mean(cp3(ir,jr,:),3),AAz(ir,jr),['Yavg'],'OHMdJxdB_Z',[-1 1]*0e-10, radius,1);
+ohmdJxcBZ= mean(cp3(:,iy-2:iy+2),2);
 
 cp1 = mean(fluct(rhoe).*fluct(Ex),3);
 tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMdndE_X',[-1 1]*0e-10, radius,1);
@@ -184,6 +193,7 @@ tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMdndE_Y',[-1 1]
 cp1 = mean(fluct(rhoe).*fluct(Ez),3);
 tmp=common_image(xcoord,ycoord,cp1(ir,jr),AAz(ir,jr),['Yavg'],'OHMdndE_Z',[-1 1]*0e-10, radius,1);
 
+ohmdndEZ= cp1(:,iy);
 
 [tx, ty, tz] = gradient(imgaussfilt3(permute(fluct(Jex./rhoe),[2 1 3]),radius), dx, dy, dz);
 tx=permute(tx,[2 1 3]);ty=permute(ty,[2 1 3]);tz=permute(tz,[2 1 3]);
@@ -200,8 +210,23 @@ cp3 = tx.*fluct(Jex) + ty.*fluct(Jey) + tz.*fluct(Jez);
 tmp=common_image(xcoord,ycoord,mean(cp1(ir,jr,:),3)/qom,AAz(ir,jr),['Yavg'],'OHMdinert_X',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,mean(cp2(ir,jr,:),3)/qom,AAz(ir,jr),['Yavg'],'OHMdinert_Y',[-1 1]*0e-10, radius,1);
 tmp=common_image(xcoord,ycoord,mean(cp3(ir,jr,:),3)/qom,AAz(ir,jr),['Yavg'],'OHMdinert_Z',[-1 1]*0e-10, radius,1);
+ohmdi= cp3(:,iy)/qom;
 
-
+figure(100)
+xrange=linspace(0,Lx,Nx);
+subplot(2,1,1)
+plot(xrange, -ohmJxBZ, xrange, ohmnEZ,xrange, -ohmi, xrange, -ohmdivP)
+legend({'JxB','nE','ndV/dt','div P'},'Location','North')%,'NumColumns',2)
+subplot(2,1,2)
+plot(xrange, -ohmdJxcBZ, xrange, -ohmdndEZ,xrange, -ohmdi)
+legend('\delta Jx\delta B','\delta n\delta E','\delta nd \delta V/dt','location','North')
+xlabel(labelx,'fontsize',[14])
+%ylabel(labely,'fontsize',[14])
+print('-dpng','-r300','OHMalongX.png')
+%subplot(3,1,3)
+%semilogy(xrange, abs(ohmdJxcBZ./ohmnEZ), xrange, abs(ohmdndEZ./ohmnEZ),xrange, abs(ohmdi./ohmnEZ))
+%legend('\delta Jx\delta B','\delta n\delta E','\delta nd \delta V/dt','location','EastOutside')
+%ylim([.01, 1])
 function [dp] = fluct(p)
 p_avg=mean(p,3);
 [Nx Ny Nz]=size(p);

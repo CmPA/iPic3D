@@ -132,26 +132,26 @@ close all
 
 skippa=false
 if(skippa)
-work_horse(Sx,'Sx',Lx,Ly);
-work_horse(Sy,'Sy',Lx,Ly);
-work_horse(Sz,'Sz',Lx,Ly);
-work_horse(S,'S',Lx,Ly);
-work_horse(divS,'divS',Lx,Ly);
-work_horse(Ex,'Ex',Lx,Ly);
-work_horse(Ey,'Ey',Lx,Ly);
-work_horse(Ez,'Ez',Lx,Ly);
-work_horse(Bx,'Bx',Lx,Ly);
-work_horse(By,'By',Lx,Ly);
-work_horse(Bz,'Bz',Lx,Ly);
+work_horse_y(Sx,'Sx',Lx,Ly);
+work_horse_y(Sy,'Sy',Lx,Ly);
+work_horse_y(Sz,'Sz',Lx,Ly);
+work_horse_y(S,'S',Lx,Ly);
+work_horse_y(divS,'divS',Lx,Ly);
+work_horse_y(Ex,'Ex',Lx,Ly);
+work_horse_y(Ey,'Ey',Lx,Ly);
+work_horse_y(Ez,'Ez',Lx,Ly);
+work_horse_y(Bx,'Bx',Lx,Ly);
+work_horse_y(By,'By',Lx,Ly);
+work_horse_y(Bz,'Bz',Lx,Ly);
 end
-
+work_horse_y(divS,'divS',Lx,Ly,Lz);
         
         Epx = Ex + (Jey.*Bz - Jez.*By)./rhoe;
         Epy = Ey + (Jez.*Bx - Jex.*Bz)./rhoe;
         Epz = Ez + (Jex.*By - Jey.*Bx)./rhoe;
         
         JdotEp=(Jex+Jix).*Epx + (Jey+Jiy).*Epy + (Jez+Jiz).*Epz;
-work_horse(imgaussfilt3(JdotEp,2.0),'JEp',Lx,Ly,Lz);
+work_horse_y(imgaussfilt3(JdotEp,2.0),'JEp',Lx,Ly,Lz);
         
 %saveas(h,'tred70.fig')
 %print -dpng -r1200 tred70.png
@@ -202,3 +202,45 @@ end
 out=1;
 end
 
+function [out]=work_horse_y(S,varname,Lx,Ly,Lz)
+
+%spectrum = fft(Ez.*By-Bz.*Ey,[],3);
+spectrum = fft(S,[],3);
+a=(abs(squeeze(spectrum(:,96,:)))');
+a=a(2:40,:);
+V=a*(diag(1./sum(a)))
+imagesc([0 Lx], [2-1 40-1]*2*pi/Lz, log(a*(diag(1./sum(a)))))
+load gist_ncar
+colormap(gist_ncar)
+set(gca,'fontsize',[14])
+xlabel('x/d_i','fontsize',[14])
+ylabel('k_zd_i','fontsize',[14])
+
+
+title(varname,'fontsize',[14])
+
+axis image
+axis xy
+colorbar
+caxis([-10 0])
+% subplot(2,1,2)
+% imagesc(angle(spectrum(:,:,i))')%.*abs(spectrum(:,:,i))')
+% load cm_new
+% %colormap(cm_kbwrk)
+% xlabel('x/d_i')
+% ylabel('y/d_i')
+% title([varname '(x,y) m_z=' num2str(i-1) ])
+% colorbar
+print('-dpng', '-r300',['FFTZ_Y_' varname '_m' num2str(i-1,'%03.f') '.png'])
+
+semilogy(linspace(1,39,39)*2*pi/Lz, mean(V,2))
+ylabel(['FFT - ' varname] ,'fontsize',[14])
+xlabel('k_zd_i','fontsize',[14])
+print('-dpng', '-r300',['FFTZ_YX_' varname '_m' num2str(i-1,'%03.f') '.png'])
+ciplot(min(log10(V')),max(log10(V')),linspace(1,39,39)*2*pi/Lz,'yellow')
+ylabel(['FFT - ' varname] ,'fontsize',[14])
+xlabel('k_zd_i','fontsize',[14])
+print('-dpng', '-r300',['FFTZ_YXband_' varname '_m' num2str(i-1,'%03.f') '.png'])
+%export_fig(['eFFTZ_' varname '_m' num2str(i-1,'%03.f') '.png'],'-png')
+%caxis([-2 2]*1e-3)
+end
