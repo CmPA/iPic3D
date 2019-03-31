@@ -1,3 +1,6 @@
+% Function to save a VTK binary file from a MATLAB matrix
+% By Giovanni Lapenta
+
 function savevtk_bin(array, filename,label,dx,dy,dz,Ox,Oy,Oz)
 if (nargin<7)
 Ox=-dx/2;

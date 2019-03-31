@@ -1,3 +1,7 @@
+% Function to convert an ensemble of particles to a 3D MATLAB velocity ditribution
+% matrix
+% By Giovanni Lapenta
+
 function [vdf]=spaziofasi3D(u,v,w,q,umin,umax,ndiv)
 
 du=(-umin+umax)/ndiv;

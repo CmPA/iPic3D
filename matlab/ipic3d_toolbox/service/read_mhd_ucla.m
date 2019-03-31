@@ -150,6 +150,26 @@ Jxpic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
 Jypic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
 Jzpic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
 
+if(invertYZ) 
+    %exchange y with z and z with -y
+    Tpic=permute(Tpic,[1 3 2]);
+    npic=permute(npic,[1 3 2]);
+    Bxpic=permute(Bxpic,[1 3 2]);
+    tmp=permute(Bzpic,[1 3 2]);
+    Bzpic=-permute(Bypic,[1 3 2]);
+    Bypic=tmp;
+    Expic=permute(Expic,[1 3 2]);
+    tmp=permute(Ezpic,[1 3 2]);
+    Ezpic=-permute(Eypic,[1 3 2]);
+    Eypic=tmp;
+    Jxpic=permute(Jxpic,[1 3 2 4]);
+    tmp=permute(Jzpic,[1 3 2 4]);
+    Jzpic=-permute(Jypic,[1 3 2 4]);
+    Jypic= tmp;
+    tmp = Nzpic;
+    Nzpic = Nypic;
+    Nypic = tmp;
+else    
 ns=2;
 !rm Initial4sp-Fields_000000.h5
 %opath='Initial-Fields_000000.h5'
