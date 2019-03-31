@@ -7,12 +7,13 @@
 %nome='psy501.iPic_mp_gbox.0020.dat'; %Jean17
 %nome='~/Dropbox/Science/ucla/7feb09/feb0709iPICBox.035800UT.dat'; %
 %nome='/data1/gianni/7feb09HR/feb0709iPICBox.035800UT.dat'; %7feb09
-%nome='/nobackup/glapenta/EArth/feb0709iPICBoxRC.035800UT.dat'; %7feb09 EARTH Centered
-density_adjust = false;
+nome='/nobackup/glapenta/EArth/feb0709iPICBoxRC.035800UT.dat'; %7feb09 EARTH Centered
+nome='/data1/gianni/EArth/feb0709iPICBoxRC.035800UT.dat'; %7feb09 EARTH Centered on buteo
+density_adjust = true;
 
 %nome='~/Documents/storage/ucla/ucla/HRmaha3D3/feb1508iPIC.034800UT.dat'; %HRmaha3D3
 %nome='~/psy501.mp_EC_3DT01_box.0020.dat'
-nome = '/nobackupp2/glapenta/generic/gc009iPICBox_lg.013000UT.dat'; % Generic run
+%nome = '/nobackupp2/glapenta/generic/gc009iPICBox_lg.013000UT.dat'; % Generic run at nasa
 
 [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] =   code_units(256,0);
 e= 1.6022e-19;
@@ -96,7 +97,10 @@ Ly=ymax-ymin
 %Nxpic=400+1; Nypic= 300+1; Nzpic=300+1; % 3D 7feb09
 Nxpic=200+1; Nypic= 150+1; Nzpic=1+1; % 3D 7feb09
 
-Nxpic=400+1;Nypic=200+1; Nzpic=280+1; %generic
+Nxpic=400+1; Nypic=200+1; Nzpic= 280+1; %generic
+Nxpic=200+1; Nypic=150+1; Nzpic= 140+1; %Earth 
+Nxpic=200+1; Nypic=150+1; Nzpic= 1+1; %Earth 2D meridian
+Nxpic=200+1; Nypic=1+1; Nzpic= 140+1; %Earth 2D equatorial
 
 dx=(xmax-xmin)/Nxpic;
 dy=(ymax-ymin)/Nypic;
@@ -110,7 +114,11 @@ if(Nzpic<=2)
 else
     zpic=linspace(zmin,zmax,Nzpic);
 end
-
+if(Nypic<=2) 
+    ypic=[(ymin+ymax)/2 (ymin+ymax)/2] ;
+else
+    ypic=linspace(ymin,ymax,Nypic);
+end
 [Xpic,Ypic,Zpic]=ndgrid(xpic,ypic,zpic);
 
 Tpic=interpmio(x,y,z,T,Xpic,Ypic,Zpic); 
@@ -142,8 +150,9 @@ Jxpic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
 Jypic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
 Jzpic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
 
-ns=4;
+ns=2;
 !rm Initial4sp-Fields_000000.h5
+%opath='Initial-Fields_000000.h5'
 opath='Initial4sp-Fields_000000.h5'
 h5create(opath,'/Step#0/Block/Bx/0',[Nxpic, Nypic, Nzpic]);
 h5write(opath,'/Step#0/Block/Bx/0',Bxpic)

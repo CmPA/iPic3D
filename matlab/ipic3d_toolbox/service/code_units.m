@@ -46,7 +46,8 @@ function [code_n, code_J, code_V, code_T, code_E, code_B, momentum_corrector] = 
 
 %disp('Protons')
  wpp=sqrt(np*e^2/mp/eps0);
- dp=cphys/wpp;
+wpp
+dp=cphys/wpp;
  vthp=sqrt(k*Tp/mp);
  wcp=e*B_ref/mp;
  rhop=vthp/wcp;

@@ -137,6 +137,7 @@ elseif(strcmp(leggo,'h5'))
     % uncomment this for a list of varibales available
     %hinfo.GroupHierarchy.Groups.Groups.Groups(:).Name
     
+    Ns = hinfo.GroupHierarchy.Groups.Attributes.Value;
 
     Bx = hdf5read(fn,'/Step#0/Block/Bx/0/');
     By = hdf5read(fn,'/Step#0/Block/By/0/');
@@ -144,29 +145,70 @@ elseif(strcmp(leggo,'h5'))
     Ex = hdf5read(fn,'/Step#0/Block/Ex/0/');
     Ey = hdf5read(fn,'/Step#0/Block/Ey/0/');
     Ez = hdf5read(fn,'/Step#0/Block/Ez/0/');
+    
+    
+    if(Ns>2)
+    rhoe = hdf5read(fn,'/Step#0/Block/rho_0/0/') + hdf5read(fn,'/Step#0/Block/rho_2/0/');
     Jex = hdf5read(fn,'/Step#0/Block/Jx_0/0/') + hdf5read(fn,'/Step#0/Block/Jx_2/0/');
     Jey = hdf5read(fn,'/Step#0/Block/Jy_0/0/') + hdf5read(fn,'/Step#0/Block/Jy_2/0/');
     Jez = hdf5read(fn,'/Step#0/Block/Jz_0/0/') + hdf5read(fn,'/Step#0/Block/Jz_2/0/');
-    Jix = hdf5read(fn,'/Step#0/Block/Jx_1/0/') + hdf5read(fn,'/Step#0/Block/Jx_3/0/');
-    Jiy = hdf5read(fn,'/Step#0/Block/Jy_1/0/') + hdf5read(fn,'/Step#0/Block/Jy_3/0/');
-    Jiz = hdf5read(fn,'/Step#0/Block/Jz_1/0/') + hdf5read(fn,'/Step#0/Block/Jz_3/0/');
-    
-    rhoe = hdf5read(fn,'/Step#0/Block/rho_0/0/') + hdf5read(fn,'/Step#0/Block/rho_2/0/');
-    rhoi = hdf5read(fn,'/Step#0/Block/rho_1/0/') + hdf5read(fn,'/Step#0/Block/rho_3/0/');
-
     Pexx = hdf5read(fn,'/Step#0/Block/Pxx_0/0/') + hdf5read(fn,'/Step#0/Block/Pxx_2/0/');
     Peyy = hdf5read(fn,'/Step#0/Block/Pyy_0/0/') + hdf5read(fn,'/Step#0/Block/Pyy_2/0/');
     Pezz = hdf5read(fn,'/Step#0/Block/Pzz_0/0/') + hdf5read(fn,'/Step#0/Block/Pzz_2/0/');
     Pexy = hdf5read(fn,'/Step#0/Block/Pxy_0/0/') + hdf5read(fn,'/Step#0/Block/Pxy_2/0/');    
     Pexz = hdf5read(fn,'/Step#0/Block/Pxz_0/0/') + hdf5read(fn,'/Step#0/Block/Pxz_2/0/');
     Peyz = hdf5read(fn,'/Step#0/Block/Pyz_0/0/') + hdf5read(fn,'/Step#0/Block/Pyz_2/0/');
+    Qex = hdf5read(fn,'/Step#0/Block/EFx_0/0/') + hdf5read(fn,'/Step#0/Block/EFx_2/0/');
+    Qey = hdf5read(fn,'/Step#0/Block/EFy_0/0/') + hdf5read(fn,'/Step#0/Block/EFy_2/0/');
+    Qez = hdf5read(fn,'/Step#0/Block/EFz_0/0/') + hdf5read(fn,'/Step#0/Block/EFz_2/0/');
+    else
+    rhoe = hdf5read(fn,'/Step#0/Block/rho_0/0/') ;
+    Jex = hdf5read(fn,'/Step#0/Block/Jx_0/0/') ;
+    Jey = hdf5read(fn,'/Step#0/Block/Jy_0/0/') ;
+    Jez = hdf5read(fn,'/Step#0/Block/Jz_0/0/') ;
+    Pexx = hdf5read(fn,'/Step#0/Block/Pxx_0/0/') ;
+    Peyy = hdf5read(fn,'/Step#0/Block/Pyy_0/0/') ;
+    Pezz = hdf5read(fn,'/Step#0/Block/Pzz_0/0/') ;
+    Pexy = hdf5read(fn,'/Step#0/Block/Pxy_0/0/') ;    
+    Pexz = hdf5read(fn,'/Step#0/Block/Pxz_0/0/') ;
+    Peyz = hdf5read(fn,'/Step#0/Block/Pyz_0/0/') ;
+    Qex = hdf5read(fn,'/Step#0/Block/EFx_0/0/') ;
+    Qey = hdf5read(fn,'/Step#0/Block/EFy_0/0/') ;
+    Qez = hdf5read(fn,'/Step#0/Block/EFz_0/0/') ;
+    end
     
+    
+    if(Ns>3)
+    rhoi = hdf5read(fn,'/Step#0/Block/rho_1/0/') + hdf5read(fn,'/Step#0/Block/rho_3/0/');
+    Jix = hdf5read(fn,'/Step#0/Block/Jx_1/0/') + hdf5read(fn,'/Step#0/Block/Jx_3/0/');
+    Jiy = hdf5read(fn,'/Step#0/Block/Jy_1/0/') + hdf5read(fn,'/Step#0/Block/Jy_3/0/');
+    Jiz = hdf5read(fn,'/Step#0/Block/Jz_1/0/') + hdf5read(fn,'/Step#0/Block/Jz_3/0/');
     Pixx = hdf5read(fn,'/Step#0/Block/Pxx_1/0/') + hdf5read(fn,'/Step#0/Block/Pxx_3/0/');
     Piyy = hdf5read(fn,'/Step#0/Block/Pyy_1/0/') + hdf5read(fn,'/Step#0/Block/Pyy_3/0/');
     Pizz = hdf5read(fn,'/Step#0/Block/Pzz_1/0/') + hdf5read(fn,'/Step#0/Block/Pzz_3/0/');
     Pixy = hdf5read(fn,'/Step#0/Block/Pxy_1/0/') + hdf5read(fn,'/Step#0/Block/Pxy_3/0/');    
     Pixz = hdf5read(fn,'/Step#0/Block/Pxz_1/0/') + hdf5read(fn,'/Step#0/Block/Pxz_3/0/');
     Piyz = hdf5read(fn,'/Step#0/Block/Pyz_1/0/') + hdf5read(fn,'/Step#0/Block/Pyz_3/0/');
+    Qix = hdf5read(fn,'/Step#0/Block/EFx_1/0/') + hdf5read(fn,'/Step#0/Block/EFx_3/0/');
+    Qiy = hdf5read(fn,'/Step#0/Block/EFy_1/0/') + hdf5read(fn,'/Step#0/Block/EFy_3/0/');
+    Qiz = hdf5read(fn,'/Step#0/Block/EFz_1/0/') + hdf5read(fn,'/Step#0/Block/EFz_3/0/');
+    else
+    rhoi = hdf5read(fn,'/Step#0/Block/rho_1/0/') ;
+    Jix = hdf5read(fn,'/Step#0/Block/Jx_1/0/') ;
+    Jiy = hdf5read(fn,'/Step#0/Block/Jy_1/0/') ;
+    Jiz = hdf5read(fn,'/Step#0/Block/Jz_1/0/') ;
+    Pixx = hdf5read(fn,'/Step#0/Block/Pxx_1/0/') ;
+    Piyy = hdf5read(fn,'/Step#0/Block/Pyy_1/0/') ;
+    Pizz = hdf5read(fn,'/Step#0/Block/Pzz_1/0/') ;
+    Pixy = hdf5read(fn,'/Step#0/Block/Pxy_1/0/') ;    
+    Pixz = hdf5read(fn,'/Step#0/Block/Pxz_1/0/') ;
+    Piyz = hdf5read(fn,'/Step#0/Block/Pyz_1/0/') ;
+    Qix = hdf5read(fn,'/Step#0/Block/EFx_1/0/') ;
+    Qiy = hdf5read(fn,'/Step#0/Block/EFy_1/0/') ;
+    Qiz = hdf5read(fn,'/Step#0/Block/EFz_1/0/') ;
+    end
+    
+    
     B=sqrt(Bx.*Bx+By.*By+Bz.*Bz);
     B2D=sqrt(Bx.^2+By.^2);
     perp2x=Bz.*Bx./(B.*B2D);
@@ -176,13 +218,7 @@ elseif(strcmp(leggo,'h5'))
 
     [Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Pepar,Peper1,Peper2]=compute_pressure(Bx,By,Bz,Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Jex,Jey,Jez,rhoe, qom);
     [Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Pipar,Piper1,Piper2]=compute_pressure(Bx,By,Bz,Pixx,Piyy,Pizz,Pixy,Pixz,Piyz,Jix,Jiy,Jiz,rhoi, 1.0);
-    
-    Qex = hdf5read(fn,'/Step#0/Block/EFx_0/0/') + hdf5read(fn,'/Step#0/Block/EFx_2/0/');
-    Qey = hdf5read(fn,'/Step#0/Block/EFy_0/0/') + hdf5read(fn,'/Step#0/Block/EFy_2/0/');
-    Qez = hdf5read(fn,'/Step#0/Block/EFz_0/0/') + hdf5read(fn,'/Step#0/Block/EFz_2/0/');    
-    Qix = hdf5read(fn,'/Step#0/Block/EFx_1/0/') + hdf5read(fn,'/Step#0/Block/EFx_3/0/');
-    Qiy = hdf5read(fn,'/Step#0/Block/EFy_1/0/') + hdf5read(fn,'/Step#0/Block/EFy_3/0/');
-    Qiz = hdf5read(fn,'/Step#0/Block/EFz_1/0/') + hdf5read(fn,'/Step#0/Block/EFz_3/0/'); 
+   
   
     [Qenthex,Qenthey,Qenthez,Qbulkex,Qbulkey,Qbulkez,Qhfex,Qhfey,Qhfez] = ...
     compute_energy_fluxes(Pexx,Peyy,Pezz,Pexy,Pexz,Peyz,Qex,Qey,Qez,Jex,Jey,Jez,rhoe, qom);

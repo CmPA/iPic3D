@@ -99,13 +99,18 @@ tmp= common_image(X(jr,ir),Y(jr,ir),value(ir,jr),AAz(ir,jr) ,'Zavg','ZQe',[-1 1]
 value = mean(Jex./rhoe,3);
 tmp= common_image(X(jr,ir),Y(jr,ir),value(ir,jr),AAz(ir,jr) ,'Zavg','ZVex',[-1 1]*0e-9, radius, 4);
 JedotE=dot(Jex,Jey,Jez,Ex,Ey,Ez);
+%value = JedotE(:,:,round(Nz/2));
 value = mean(JedotE,3);
 %value = sign(value).*log10(abs(value)/1e-18+1);
-tmp= common_image(X(jr,ir),Y(jr,ir),value(ir,jr),AAz(ir,jr) ,'Zavg','ZJedotE',[-1 1]*0e-8, radius, 4);
+color_choice = 3;
+tmp= common_image(X(jr,ir),Y(jr,ir),value(ir,jr),AAz(ir,jr) ,'Zavg','ZJedotE',[-.5 .5]*1e-8, radius, 4);
 value=mean((Pexx+Pixx+Peyy+Piyy+Pezz+Pizz)./(B.^2/8/pi),3);
-value=real(log10(value))
+value=real(log10(value));
+color_choice = 5;
 tmp= common_image(X(jr,ir),Y(jr,ir),value(ir,jr),AAz(ir,jr) ,'Zavg','Zlog_beta',[-1 1]*0e-8, radius, 4);
 
+
+labely = 'z/d_i'
 xc=linspace(0, Lx, Nx);
 zc=linspace(0, Lz, Nz);
 iy=round(Ny/2);

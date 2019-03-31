@@ -3,10 +3,11 @@
 %
 
 close all
+unix('rm *.png')
 addpath(genpath('../../ipic3d_toolbox')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
-sim_name='tred82'
+sim_name='7feb09'
 switch sim_name
 case 'tred77'
 TRED77;
@@ -56,13 +57,14 @@ time=60*(cycle/75000.0*Dt/.125); %*4 %times four to correct for change in dt bet
 % time=60*(cycle/75000.0) *2 %times two to correct for change in dt between 2D and 3D
 %ADD initial time of the RUN
 time=time+initial_time; %(03*60+48)*60
+leggo='h5'
 otherwise
 print('no recognised case selected')
 end
 
-poynting=false;
-electrons=false;
-ions=false;
+poynting=true;
+electrons=true;
+ions=true;
 saveVTK=false;
 agyro=false;
 
@@ -199,8 +201,14 @@ tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Jed
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQbulk(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQbulke',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQenth(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQenthe',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQhf(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQhfe',[-1 1]*0e-10, radius,1);
+divQe = compute_div(x,y,z,Qex,Qey,Qez, radius, cyl);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQe(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQe',[-1 1]*0e-10, radius,1);
 
 labelc = labelc_flux;
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qex(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Qex',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qey(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qey',[-1 1]*0e-9, radius, 3);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qez(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Qez',[-1 1]*0e-9, radius, 4);
+
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qbulkex(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Qbulkex',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkey(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) , 'MAXP','Qbulkey',[-1 1]*0e-9, radius, 3);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkez(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Qbulkez',[-1 1]*0e-9, radius, 4);
@@ -246,6 +254,9 @@ tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','DUbulkeDt',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','DUtheDt',[-1 1]*0e-9, radius, 2);
 
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubulk(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','Ubulke',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','Uthe',[-1 1]*0e-9, radius, 2);
+
 end
 
 if(ions)
@@ -266,8 +277,14 @@ tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Jid
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQbulk(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','divQbulki',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQenth(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'MAXP','divQenthi',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQhf(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','divQhfi',[-1 1]*0e-10, radius,1);
+divQi = compute_div(x,y,z,Qix,Qiy,Qiz, radius, cyl);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQi(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'MAXP','divQi',[-1 1]*0e-10, radius,1);
 
 labelc = labelc_flux;
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qix(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qix',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qiy(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qiy',[-1 1]*0e-9, radius, 3);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qiz(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qiz',[-1 1]*0e-9, radius, 4);
+
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qbulkix(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qbulkix',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiy(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qbulkiy',[-1 1]*0e-9, radius, 3);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Qbulkiz(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qbulkiz',[-1 1]*0e-9, radius, 4);
@@ -311,8 +328,24 @@ tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','DUbulkiDt',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','DUthiDt',[-1 1]*0e-9, radius, 2);
 
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubulk(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Ubulki',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Uthi',[-1 1]*0e-9, radius, 2);
+
 end
 
+if(saveVTK)
+    savevtkvector_bin(Bx*code_B, By*code_B, Bz*code_B, [dir 'B' ncycle '.vtk'],'B',dx,dy,dz,0,0,0);
+    radius=1;
+    savevtkvector_bin(imgaussfilt3(Qix,radius)*mWm2, imgaussfilt3(Qiy,radius)*mWm2, imgaussfilt3(Qiz,radius)*mWm2, [dir 'Qi' ncycle '.vtk'],'Qi',dx,dy,dz,0,0,0);
+    savevtkvector_bin(imgaussfilt3(Qex,radius)*mWm2, imgaussfilt3(Qey,radius)*mWm2, imgaussfilt3(Qez,radius)*mWm2, [dir 'Qe' ncycle '.vtk'],'Qe',dx,dy,dz,0,0,0);
+    savevtk_bin(JedotE*nWm3,[dir 'JedotE' ncycle '.vtk'],'JedotE',dx,dy,dz,0,0,0);
+    savevtk_bin(JidotE*nWm3,[dir 'JidotE' ncycle '.vtk'],'JidotE',dx,dy,dz,0,0,0);
+    savevtk_bin(divS,[dir 'divS' ncycle '.vtk'],'divS',dx,dy,dz,0,0,0);
+    savevtk_bin(divS,[dir 'divQe' ncycle '.vtk'],'divQe',dx,dy,dz,0,0,0);
+    savevtk_bin(divS,[dir 'divQi' ncycle '.vtk'],'divQi',dx,dy,dz,0,0,0);
+    savevtk_bin(rhoe*code_n,[dir 'rhoe' ncycle '.vtk'],'rhoe',dx,dy,dz,0,0,0);
+
+end
 
 if(agyro)
     
@@ -330,9 +363,9 @@ end
 
 
 
-!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png
+%!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png
 
-!/usr/local/bin/convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
+%!/usr/local/bin/convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
 
 unix('convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png')
 
