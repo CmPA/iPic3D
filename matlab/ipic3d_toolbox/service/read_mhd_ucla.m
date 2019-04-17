@@ -110,12 +110,12 @@ xpic=linspace(xmin,xmax,Nxpic);
 
 ypic=linspace(ymin,ymax,Nypic);
 if(Nzpic<=2) 
-    zpic=[(zmin+zmax)/2 (zmin+zmax)/2] ;
+    zpic=[0 0];%[(zmin+zmax)/2 (zmin+zmax)/2] ;
 else
     zpic=linspace(zmin,zmax,Nzpic);
 end
 if(Nypic<=2) 
-    ypic=[(ymin+ymax)/2 (ymin+ymax)/2] ;
+    ypic=[0 0];%[(ymin+ymax)/2 (ymin+ymax)/2] ;
 else
     ypic=linspace(ymin,ymax,Nypic);
 end
@@ -150,6 +150,7 @@ Jxpic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
 Jypic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
 Jzpic(1:Nxpic,1:Nypic,1:Nzpic,3:4)=0.0;
 
+invertYZ = true;
 if(invertYZ) 
     %exchange y with z and z with -y
     Tpic=permute(Tpic,[1 3 2]);
@@ -169,11 +170,11 @@ if(invertYZ)
     tmp = Nzpic;
     Nzpic = Nypic;
     Nypic = tmp;
-else    
+end    
 ns=2;
-!rm Initial4sp-Fields_000000.h5
-%opath='Initial-Fields_000000.h5'
-opath='Initial4sp-Fields_000000.h5'
+!rm EArthequator-Fields_000000.h5
+opath='EArthequator-Fields_000000.h5'
+%opath='Initial4sp-Fields_000000.h5'
 h5create(opath,'/Step#0/Block/Bx/0',[Nxpic, Nypic, Nzpic]);
 h5write(opath,'/Step#0/Block/Bx/0',Bxpic)
 

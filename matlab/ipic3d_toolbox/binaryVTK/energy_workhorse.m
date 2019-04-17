@@ -34,7 +34,7 @@ divVi = compute_div(x,y,z,Vix,Viy,Viz, radius, cyl);
 
 
 
-AAz=vecpot(xc,yc,-mean(Bx(:,:,kr),3),mean(By(:,:,kr),3));
+AAz=vecpot(xc,yc,signx*mean(Bx(:,:,kr),3),mean(By(:,:,kr),3));
 Vx=signx*mean(Bx(:,:,kr),3);
 Vy=mean(By(:,:,kr),3);
 

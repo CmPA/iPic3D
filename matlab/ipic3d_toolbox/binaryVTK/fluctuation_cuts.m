@@ -92,7 +92,8 @@ AAz=vecpot(xc,yc,mean(Bx,3),mean(By,3));
 [X Y] = meshgrid(0:dx:Lx,0:dy:Ly);
 %imagesc([0 Lx], [0 Ly],squeeze(log10(moment(divS,2,3)')));colorbar
 value=log10(moment(divS,2,3));
-tmp= common_image(X(jr,ir),Y(jr,ir),value(ir,jr),AAz(ir,jr) ,'Zavg','ZdivS',[-1 1]*0e-9, radius, 4);
+value=log10(std(divS,0,3));
+tmp= common_image(X(jr,ir),Y(jr,ir),value(ir,jr),AAz(ir,jr) ,'Zavg','ZdivSstd',[-1 1]*0e-9, radius, 4);
 AAz=vecpot(xc,yc,mean(Bx,3),mean(By,3));
 value=log10(sqrt(mean(Qex,3).^2+mean(Qey,3).^2+mean(Qez,3).^2));
 tmp= common_image(X(jr,ir),Y(jr,ir),value(ir,jr),AAz(ir,jr) ,'Zavg','ZQe',[-1 1]*0e-9, radius, 4);

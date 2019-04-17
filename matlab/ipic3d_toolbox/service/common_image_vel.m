@@ -36,8 +36,8 @@ hold on
 %contour(x,y,Az',30,'k')
 %caxis(clmt)
 
-scale=2
-quiver(x(1,1:skip:end),y(1:skip:end,1),Ax(1:skip:end,1:skip:end)',Ay(1:skip:end,1:skip:end)',scale,'color',[0 0 0],'LineWidth',[1]);
+scale=2.5
+qq=quiver(x(1,1:skip:end),y(1:skip:end,1),Ax(1:skip:end,1:skip:end)',Ay(1:skip:end,1:skip:end)',scale,'color',[0 0 0],'LineWidth',[1],'MaxHeadSize',3);
 
 if(color_choice==0)
         colormap jet
@@ -76,5 +76,6 @@ if(reversey==1)
 end
 %set(gca,'xdir','reverse','TickDir','out')
 %print('-depsc','-r300',[name '.eps'])
-print('-dpng','-r300',[name Ncycle '.png'])
+print('-dpng','-r300',[nlabel name Ncycle '.png'])
 %saveas(gcf,[name '.fig'])
+close all

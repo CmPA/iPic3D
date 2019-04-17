@@ -49,6 +49,7 @@ time=time+initial_time; %(03*60+48)*60
 case '7feb09'
 FEB09;
 cycle=18000
+%cycle=1
 case_name='MHDUCLA'
 %cycle = 80000  % for vtk binary
 % for HRmaha3D1:
@@ -90,6 +91,7 @@ jr=-3:3; % span around the maximum plane for integration
 
 radius=1; %radius=4
 
+e=1.6e-19;
 
 global color_choice symmetric_color labelx labely labelc reversex reversey Ncycle skip
 
@@ -156,7 +158,7 @@ if(poynting)
 Sx=Sx*code_E*code_B/mu0;
 Sy=Sy*code_E*code_B/mu0;
 Sz=Sz*code_E*code_B/mu0;
-divS = divS*nWm3;
+divS = divS*nWm3/4/pi;
 % the poynting flux is not in W/m^2 that is in SI unit.
 %
 % I verified that if instead one computes from code units, then divides it
@@ -171,13 +173,14 @@ divS = divS*nWm3;
 % multiplication, but not the Poynting flux that is based on the fields.
 %
 
-
+[dBx,dBy,dBz]=compute_curl(x,y,z,Ex,Ey,Ez);
+dBdt=-(Bx.*dBx+By.*dBy+dBz.*Bz)/4/pi*nWm3;
 
 labelc = labelc_power;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotE(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','JE',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotEp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','JEp',[-1 1]*0e-10, radius,1);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divS(ir,:,kr),Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','divS',[-1 1]*0e-9, radius, 4);
-
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotE(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','JE',[-1 1]*1e-1, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JdotEp(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','JEp',[-1 1]*1e-1, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divS(ir,:,kr),Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','divS',[-1 1]*1e-1, radius, 4);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),dBdt(ir,:,kr),Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','dW_Bdt',[-1 1]*1e-1,radius, 4);
 
 % The poynting flux is in SI units, W/m^3 so we need multiplication by 1e3
 % to have it in mW/m^2
@@ -197,12 +200,12 @@ end
 if(electrons)
 
 labelc = labelc_power;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JedotE(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','JeE',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JedotE(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','JeE',[-1 1]*6e-2, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQbulk(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQbulke',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQenth(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQenthe',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQhf(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQhfe',[-1 1]*0e-10, radius,1);
 divQe = compute_div(x,y,z,Qex,Qey,Qez, radius, cyl);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQe(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQe',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQe(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr),'MAXP','divQe',[-1 1]*6e-2, radius,1);
 
 labelc = labelc_flux;
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qex(ir,:,kr)*mWm2,Vex_plane(ir,kr),Vez_plane(ir,kr) ,'MAXP','Qex',[-1 1]*0e-9, radius, 2);
@@ -251,11 +254,12 @@ tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubu
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','UthdivVe',[-1 1]*0e-9, radius, 2);
 
 
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','DUbulkeDt',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','DUtheDt',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','DUbulkeDt',[-1 1]*6e-2, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','DUtheDt',[-1 1]*6e-2, radius, 2);
 
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubulk(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','Ubulke',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr)*nWm3,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','Uthe',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),2/3*Uth(ir,:,kr)./abs(rhoe(ir,:,kr))*code_T/e,Vex_plane(ir,kr),Vez_plane(ir,kr), 'MAXP','Te',[-1 1]*0e-9, radius, 2);
 
 end
 
@@ -273,12 +277,12 @@ end
 if(ions)
 
 labelc = labelc_power;
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JidotE(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'MAXP','JiE',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),JidotE(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'MAXP','JiE',[-1 1]*1e-1, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQbulk(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','divQbulki',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQenth(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'MAXP','divQenthi',[-1 1]*0e-10, radius,1);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQhf(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','divQhfi',[-1 1]*0e-10, radius,1);
 divQi = compute_div(x,y,z,Qix,Qiy,Qiz, radius, cyl);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQi(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'MAXP','divQi',[-1 1]*0e-10, radius,1);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),divQi(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr),'MAXP','divQi',[-1 1]*1e-1, radius,1);
 
 labelc = labelc_flux;
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),signx*Qix(ir,:,kr)*mWm2,Vix_plane(ir,kr),Viz_plane(ir,kr) , 'MAXP','Qix',[-1 1]*0e-9, radius, 2);
@@ -325,11 +329,12 @@ tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Pgr
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubulk(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','UbulkdivVi',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr).*divVe(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','UthdivVi',[-1 1]*0e-9, radius, 2);
 
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','DUbulkiDt',[-1 1]*0e-9, radius, 2);
-tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','DUthiDt',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUbulkDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','DUbulkiDt',[-1 1]*1e-1, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),DUthDt(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','DUthiDt',[-1 1]*1e-1, radius, 2);
 
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Ubulk(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Ubulki',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),Uth(ir,:,kr)*nWm3,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Uthi',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel_maxp(iy_plane(ir,kr),jr,gsmx(X(kr,ir)),gsmz2y(Z(kr,ir)),2/3.*Uth(ir,:,kr)./(rhoi(ir,:,kr))*code_T/e,Vix_plane(ir,kr),Viz_plane(ir,kr), 'MAXP','Ti',[-1 1]*0e-9, radius, 2);
 
 end
 
