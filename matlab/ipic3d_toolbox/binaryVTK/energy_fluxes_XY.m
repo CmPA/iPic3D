@@ -3,7 +3,7 @@
 %
 
 close all
-!rm *.png
+%!rm *.png
 addpath(genpath('../')); % Point to the directory where the iPic3D toolbox is
 %dir='/data1/gianni/HRmaha3D3/vtk/'; %directory where the files are
 
@@ -68,6 +68,7 @@ otherwise
     print('no recognised case selected')
 end
 
+
 poynting=true;
 electrons=true;
 ions=true;
@@ -128,7 +129,7 @@ case {'tred81','tred82','tred77','AH'}
     reversey=0;
 otherwise
     labelx ='x/R_E';
-    labely ='y/R_E';
+    labely ='z/R_E';
     labelc_flux = 'mW/m^2';
     labelc_power = 'nW/m^3';
     signx = -1;
@@ -137,6 +138,7 @@ otherwise
     mWm2= Wm3*code_dp*1e3
     reversex=1;
     reversey=0;
+    vrange = [-1,1]*1e-1;
 end
 
 skip=10;
@@ -160,15 +162,15 @@ Sz=Sz*code_E*code_B/mu0;
 divS = divS/4/pi*nWm3;
 
 labelc = labelc_power;
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JdotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JE',[-1 1]*0e-10, radius,1);
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JdotEp(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JEp',[-1 1]*0e-10, radius,1);
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divS(ir,jr,kr),3),AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'divS',[-1 1]*0e-9, radius, 4);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JdotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JE',vrange, radius,1);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JdotEp(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JEp',vrange, radius,1);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divS(ir,jr,kr),3),AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'divS',vrange, radius, 4);
 
 
 % The poynting flux is in SI units, W/m^3 so we need multiplication by 1e3
 % to have it in mW/m^2
 labelc = labelc_flux;
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Sx(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Sx',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Sx(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Sx',vrange, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sy(ir,jr,kr),3)*1e3,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Sy',[-1 1]*0e-9, radius, 3);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Sz(ir,jr,kr),3)*1e3,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Sz',[-1 1]*0e-9, radius, 4);
 
@@ -202,17 +204,17 @@ if(saveVTK)
 end
 
 labelc = labelc_power;
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JedotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JeE',[-1 1]*0e-10, radius,1);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JedotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JeE',vrange*.6, radius,1);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQbulk(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'divQbulke',[-1 1]*0e-10, radius,1);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQenth(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'divQenthe',[-1 1]*0e-10, radius,1);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQhf(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'divQhfe',[-1 1]*0e-10, radius,1);
 
 labelc = labelc_flux;
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Qex(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Qex',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Qex(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Qex',vrange, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qey(ir,jr,kr),3)*mWm2,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Qey',[-1 1]*0e-9, radius, 3);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qez(ir,jr,kr),3)*mWm2,AAz(ir,jr) ,['Y=' num2str(gsmz2y(z(1,1,iz)))],'Qez',[-1 1]*0e-9, radius, 4);
 
-tmp=common_image_vel(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Qex(ir,jr,kr),3)*mWm2,signx*mean(Vex(ir,jr,kr),3),mean(Vey(ir,jr,kr),3) ,'AVGVEL','Qex',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Qex(ir,jr,kr),3)*mWm2,signx*mean(Vex(ir,jr,kr),3),mean(Vey(ir,jr,kr),3) ,'AVGVEL','Qex',vrange, radius, 2);
 tmp=common_image_vel(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qey(ir,jr,kr),3)*mWm2,signx*mean(Vex(ir,jr,kr),3),mean(Vey(ir,jr,kr),3) ,'AVGVEL','Qey',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qez(ir,jr,kr),3)*mWm2,signx*mean(Vex(ir,jr,kr),3),mean(Vey(ir,jr,kr),3) ,'AVGVEL','Qez',[-1 1]*0e-9, radius, 2);
 
@@ -286,18 +288,18 @@ if(saveVTK)
     savevtk_bin(divUP*nWm3, [dir 'divUPi' ncycle '.vtk'],'divUPi',dx,dy,dz,0,0,0);
 end
 labelc = labelc_power;
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JidotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JiE',[-1 1]*0e-10, radius,1);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(JidotE(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'JiE',vrange, radius,1);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQbulk(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'divQbulki',[-1 1]*0e-10, radius,1);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQenth(ir,jr,kr),3)*nWm3,AAz(ir,jr),['Y=' num2str(gsmz2y(z(1,1,iz)))],'divQenthi',[-1 1]*0e-10, radius,1);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(divQhf(ir,jr,kr),3)*nWm3,AAz(ir,jr), ['Y=' num2str(gsmz2y(z(1,1,iz)))],'divQhfi',[-1 1]*0e-10, radius,1);
 
 labelc = labelc_flux;
-tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Qix(ir,jr,kr),3)*mWm2,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Qix',[-1 1]*0e-9, radius, 2);
+tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Qix(ir,jr,kr),3)*mWm2,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Qix',vrange*3, radius, 2);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qiy(ir,jr,kr),3)*mWm2,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Qiy',[-1 1]*0e-9, radius, 3);
 tmp=common_image(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qiz(ir,jr,kr),3)*mWm2,AAz(ir,jr) , ['Y=' num2str(gsmz2y(z(1,1,iz)))],'Qiz',[-1 1]*0e-9, radius, 4);
 
 
-tmp=common_image_vel(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Qix(ir,jr,kr),3)*mWm2,signx*mean(Vix(ir,jr,kr),3),mean(Viy(ir,jr,kr),3) ,'AVGVEL','Qix',[-1 1]*0e-9, radius, 2);
+tmp=common_image_vel(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),signx*mean(Qix(ir,jr,kr),3)*mWm2,signx*mean(Vix(ir,jr,kr),3),mean(Viy(ir,jr,kr),3) ,'AVGVEL','Qix',vrange*3, radius, 2);
 tmp=common_image_vel(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qiy(ir,jr,kr),3)*mWm2,signx*mean(Vix(ir,jr,kr),3),mean(Viy(ir,jr,kr),3) ,'AVGVEL','Qiy',[-1 1]*0e-9, radius, 2);
 tmp=common_image_vel(gsmx(X(jr,ir)),gsmy2z(Y(jr,ir)),mean(Qiz(ir,jr,kr),3)*mWm2,signx*mean(Vix(ir,jr,kr),3),mean(Viy(ir,jr,kr),3) ,'AVGVEL','Qiz',[-1 1]*0e-9, radius, 2);
 
@@ -367,14 +369,12 @@ if(agyro)
 
 end
 
+%!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png
 
+%!/usr/local/bin/convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
 
-!/usr/local/bin/convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png
+%unix('convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png')
 
-!/usr/local/bin/convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png
-
-unix('convert \( PgradVe.png -trim pdivVe.png -trim offPgradVe.png -trim -append \)  \( UdivPe.png -trim Ugradpe.png -trim offUdivPe.png -trim -append \) \( divUPe.png -trim JeE.png -trim JEp.png -trim -append \) \( Agyro.png -trim Agyro-aunai.png -trim Nongyro-swisdak.png -trim -append \) +append comboe.png')
-
-unix('convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png')
+%unix('convert \( PgradVi.png -trim pdivVi.png -trim offPgradVi.png -trim -append \)  \( UdivPi.png -trim Ugradpi.png -trim offUdivPi.png -trim -append \) divUPi.png -trim +append comboi.png')
 
 

@@ -31,6 +31,11 @@ code_T = 1.50326e-10;
 code_n = 0.25;
 code_dp = 4.5541e+05; %ion skin depth for code unit conversion
 e=1.6e-19;
+mp=1.6726e-27;
+eps0=8.8542e-12;
+c=2.9979e8;
+n0=code_n*1e6;
+wp=sqrt(n0*e^2/mp/eps0);
 mu0 = 4*pi*1e-7;
 %convert to keV
 %TeoTi=1/5;
