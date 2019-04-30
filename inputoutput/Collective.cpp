@@ -21,9 +21,9 @@ void Collective::ReadInput(string inputfile) {
 
     dt = config.read < double >("dt");
     ncycles = config.read < int >("ncycles");
-    th = config.read < double >("th");
-    config.readInto(Smooth, "Smooth");
-	Nvolte = config.read<int>( "Nvolte" );
+    th = config.read < double >("th", 1.0);
+    config.readInto(Smooth, "Smooth", 1.0);
+	Nvolte = config.read<int>( "Nvolte",6);
     SaveDirName = config.read < string > ("SaveDirName");
     RestartDirName = config.read < string > ("RestartDirName");
     ns = config.read < int >("ns");
@@ -34,12 +34,9 @@ void Collective::ReadInput(string inputfile) {
     B0z = config.read <double>("B0z");
 
     // Earth parameters
-    B1x = 0.0;
-    B1y = 0.0;
-    B1z = 0.0;
-    B1x = config.read <double>("B1x");
-    B1y = config.read <double>("B1y");
-    B1z = config.read <double>("B1z");
+    B1x = config.read <double>("B1x",0.0);
+    B1y = config.read <double>("B1y",0.0);
+    B1z = config.read <double>("B1z",0.0);
 
     delta = config.read < double >("delta");
 
@@ -98,7 +95,7 @@ void Collective::ReadInput(string inputfile) {
     PERIODICX = config.read < bool >("PERIODICX");
     PERIODICY = config.read < bool >("PERIODICY");
     PERIODICZ = config.read < bool >("PERIODICZ");
-    cylindrical = config.read < bool >("cylindrical");
+    cylindrical = config.read < bool >("cylindrical",0);
 
   }
 
@@ -110,7 +107,7 @@ void Collective::ReadInput(string inputfile) {
     
     if (!SOLINIT1) last_cycle = -1;
     restart_status = 0;
-    c = config.read < double >("c");
+    c = config.read < double >("c",1.0);
 
 #ifdef BATSRUS
     // set grid size and resolution based on the initial file from fluid code
@@ -129,13 +126,13 @@ void Collective::ReadInput(string inputfile) {
     nzc = config.read < int >("nzc");
 #endif
 
-    x_center = config.read < double >("x_center");
-    y_center = config.read < double >("y_center");
-    z_center = config.read < double >("z_center");
-    L_square = config.read < double >("L_square");
-    L_outer = config.read < double >("L_outer");
-	coilD = config.read<double>( "CoilD" );
-	coilSpacing = config.read<double>( "CoilSpacing" );
+    x_center = config.read < double >("x_center", 0.);
+    y_center = config.read < double >("y_center", 0.);
+    z_center = config.read < double >("z_center",0.);
+    L_square = config.read < double >("L_square",0.);
+    L_outer = config.read < double >("L_outer",0.);
+	coilD = config.read<double>( "CoilD", 0. );
+	coilSpacing = config.read<double>( "CoilSpacing", 0. );
 
     npcelx = new int[ns];
     npcely = new int[ns];
@@ -240,7 +237,7 @@ void Collective::ReadInput(string inputfile) {
     PERIODICX = config.read < bool >("PERIODICX");
     PERIODICY = config.read < bool >("PERIODICY");
     PERIODICZ = config.read < bool >("PERIODICZ");
-    cylindrical = config.read < bool >("cylindrical");
+    cylindrical = config.read < bool >("cylindrical",0.0);
 
     // PHI Electrostatic Potential 
     bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
@@ -357,7 +354,7 @@ void Collective::ReadInput(string inputfile) {
 
     if (!SOLINIT1) last_cycle = -1;
     restart_status = 0;
-    c = config.read < double >("c");
+    c = config.read < double >("c", 1.0);
 
 #ifdef BATSRUS
     // set grid size and resolution based on the initial file from fluid code
@@ -379,10 +376,10 @@ void Collective::ReadInput(string inputfile) {
     x_center = config.read < double >("x_center");
     y_center = config.read < double >("y_center");
     z_center = config.read < double >("z_center");
-    L_square = config.read < double >("L_square");
-    L_outer = config.read < double >("L_outer");
-    coilD = config.read<double>( "CoilD" );
-    coilSpacing = config.read<double>( "CoilSpacing" );
+    L_square = config.read < double >("L_square",0.0);
+    L_outer = config.read < double >("L_outer",0.0);
+    coilD = config.read<double>( "CoilD",0.0 );
+    coilSpacing = config.read<double>( "CoilSpacing",0.0 );
 
 
     npcelx = new int[ns];
