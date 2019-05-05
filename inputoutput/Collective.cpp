@@ -76,11 +76,11 @@ void Collective::ReadInput(string inputfile) {
       rhoINJECT[5]=rhoINJECT0.f;
 
     // take the tolerance of the solvers
-    CGtol = config.read < double >("CGtol");
-    GMREStol = config.read < double >("GMREStol");
-    NiterMover = config.read < int >("NiterMover");
+    CGtol = config.read < double >("CGtol",1e-3);
+    GMREStol = config.read < double >("GMREStol",1e-3);
+    NiterMover = config.read < int >("NiterMover",3);
     // take the injection of the particless
-    Vinj = config.read < double >("Vinj");
+    Vinj = config.read < double >("Vinj",0.0);
 
     // take the output cycles
     FieldOutputCycle = config.read < int >("FieldOutputCycle");
