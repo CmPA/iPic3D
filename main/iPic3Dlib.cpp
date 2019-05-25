@@ -351,7 +351,8 @@ bool c_Solver::ParticlesMover() {
   {
 	  if(cylindrical){
 		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-		  mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
+		  //mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
+		  mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme
 	  }
 	  else{
 		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)

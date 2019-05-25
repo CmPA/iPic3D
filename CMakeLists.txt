@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.8.5)
 
+#cmake_policy(SET CMP0074 NEW) # CMake 3.12
+
 #
 # Set project name
 #
@@ -9,6 +11,8 @@ project(iPic3D)
 #
 # Find packages (already managed by CMake)
 #
+
+
 
 find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
@@ -64,6 +68,7 @@ target_link_libraries(
     iPic3Dlib
     ${MPI_LIBRARIES}
     ${HDF5_LIBRARIES}
+    ${HDF5_HL_LIBRARIES}
     ${PETSC_LIBRARIES}
 )
 

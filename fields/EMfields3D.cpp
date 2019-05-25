@@ -277,8 +277,8 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
 
   // apply to smooth to electric field 3 times
   smoothE(Smooth, Nvolte, vct, col);
-  smoothE(Smooth, Nvolte, vct, col);
-  smoothE(Smooth, Nvolte, vct, col);
+  //smoothE(Smooth, Nvolte, vct, col);
+  //smoothE(Smooth, Nvolte, vct, col);
   communicateNodeBC(nxn, nyn, nzn, Ex,   col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
@@ -427,14 +427,18 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   grid->gradC2N(tempX, tempY, tempZ, divC);
 
   // -lap(E(n +theta)) - grad(div(mu dot E(n + theta))
-  sub(imageX, tempX, nxn, nyn, nzn);
-  sub(imageY, tempY, nxn, nyn, nzn);
-  sub(imageZ, tempZ, nxn, nyn, nzn);
+  //sub(imageX, tempX, nxn, nyn, nzn);
+  //sub(imageY, tempY, nxn, nyn, nzn);
+  //sub(imageZ, tempZ, nxn, nyn, nzn);
 
   // scale delt*delt
   scale(imageX, delt * delt, nxn, nyn, nzn);
   scale(imageY, delt * delt, nxn, nyn, nzn);
   scale(imageZ, delt * delt, nxn, nyn, nzn);
+  // -lap(E(n +theta)) - grad(div(mu dot E(n + theta))
+  sub(imageX, tempX, nxn, nyn, nzn);
+  sub(imageY, tempY, nxn, nyn, nzn);
+  sub(imageZ, tempZ, nxn, nyn, nzn);
 
   // -lap(E(n +theta)) - grad(div(mu dot E(n + theta))) + eps dot E(n + theta)
   sum(imageX, Dx, nxn, nyn, nzn);
@@ -530,12 +534,12 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
+      double alpha;
+      int nx, ny, nz;
 
   for (int icount = 1; icount < nvolte + 1; icount++) {
 
     if (value != 1.0) {
-      double alpha;
-      int nx, ny, nz;
       switch (type) {
         case (0):
           nx = grid->getNXC();
@@ -570,6 +574,14 @@ void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Gr
       delArr3(temp, nx, ny);
     }
   }
+      switch (type) {
+        case (0):
+          communicateCenterBoxStencilBC_P(nx, ny, nz, vector, 2, 2, 2, 2, 2, 2, vct);
+          break;
+        case (1):
+          communicateNodeBoxStencilBC_P(nx, ny, nz, vector, 2, 2, 2, 2, 2, 2, vct);
+          break;
+      }
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smoothE(double value,  int nvolte, VirtualTopology3D * vct, Collective *col) {
@@ -1217,8 +1229,10 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
     sum(tempYN, Jys, nxn, nyn, nzn, is);
     sum(tempZN, Jzs, nxn, nyn, nzn, is);
     // PIDOT
-    PIdot(Jxh, Jyh, Jzh, tempXN, tempYN, tempZN, is, grid);
-
+    //PIdot(Jxh, Jyh, Jzh, tempXN, tempYN, tempZN, is, grid);
+    sum(Jxh, tempXN, nxn, nyn, nzn);
+    sum(Jyh, tempYN, nxn, nyn, nzn);
+    sum(Jzh, tempZN, nxn, nyn, nzn);
   }
   // smooth j
   smooth(Smooth, Nvolte, Jxh, 1, grid, vct);
@@ -1232,6 +1246,7 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
   eq(rhoh, tempXC, nxc, nyc, nzc);
   // communicate rhoh
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
+  smooth(Smooth, Nvolte, rhoh, 0, grid, vct); 
 }
 /*! Image of Poisson Solver */
 void EMfields3D::PoissonImage(double *image, double *vector, Grid * grid, VirtualTopology3D * vct) {

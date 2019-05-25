@@ -271,6 +271,12 @@ void Grid3DCU::lapC2C(double ***lapC, double ***scFieldC, VirtualTopology3D * vc
   double ***gradZN = newArr3(double, nxn, nyn, nzn);
 
   gradC2N(gradXN, gradYN, gradZN, scFieldC);
+
+  communicateNodeBC(nxn, nyn, nzn, gradXN, 2,2,2,2,2,2,vct);
+  communicateNodeBC(nxn, nyn, nzn, gradYN, 2,2,2,2,2,2,vct);
+  communicateNodeBC(nxn, nyn, nzn, gradZN, 2,2,2,2,2,2,vct);
+
+
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
     for (int ii = 0; ii < nxn; ii++)
       for (int kk = 0; kk < nzn; kk++) {

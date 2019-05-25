@@ -168,6 +168,8 @@ public:
   double getTotalQ();
   /** get the total charge inventory in the prescribed core region **/
   double getCoreQ(double radius);
+  /** Added interpolation of field with Particles3Dcomm to be similar to celeste3d */
+  void get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz);
 
   /** Print particles info: positions, velocities */
   void Print(VirtualTopology3D * ptVCT) const;

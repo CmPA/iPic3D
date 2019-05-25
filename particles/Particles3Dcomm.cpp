@@ -442,12 +442,27 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
 
 /** Interpolation Particle --> Grid */
 void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
+	double weights[2][2][2];
+	double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+	double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+	double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+    double Bxl = 0.0;
+    double Byl = 0.0;
+    double Bzl = 0.0;
+    double uptilde;
+    double vptilde;
+    double wptilde;
+    double udotb;
+
   const double inv_dx = 1.0 / dx;
   const double inv_dy = 1.0 / dy;
   const double inv_dz = 1.0 / dz;
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
+
+
+
   //#pragma omp parallel
   {
     //Moments speciesMoments(nxn,nyn,nzn,invVOL);
@@ -472,6 +487,18 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
           for (int kk = 0; kk < 2; kk++) {
             weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
           }
+
+      get_Bl(weight, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz);
+      const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+
+      // end interpolation
+      const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
+      const double denom = 1.0 / (1.0 + omdtsq);
+      udotb = u[i] * Bxl + v[i] * Byl + w[i] * Bzl;
+      uptilde = (u[i] + qomdt2 * (v[i] * Bzl - w[i] * Byl + qomdt2 * udotb * Bxl)) * denom;
+      vptilde = (v[i] + qomdt2 * (w[i] * Bxl - u[i] * Bzl + qomdt2 * udotb * Byl)) * denom;
+      wptilde = (w[i] + qomdt2 * (u[i] * Byl - v[i] * Bxl + qomdt2 * udotb * Bzl)) * denom;
+
       //weight[0][0][0] = q[i] * xi[0] * eta[0] * zeta[0] * invVOL;
       //weight[0][0][1] = q[i] * xi[0] * eta[0] * zeta[1] * invVOL;
       //weight[0][1][0] = q[i] * xi[0] * eta[1] * zeta[0] * invVOL;
@@ -486,19 +513,19 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
+            temp[ii][jj][kk] = uptilde * weight[ii][jj][kk];
       EMf->addJx(temp, ix, iy, iz, ns);
       // add current density - Y
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
+            temp[ii][jj][kk] = vptilde * weight[ii][jj][kk];
       EMf->addJy(temp, ix, iy, iz, ns);
       // add current density - Z
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
+            temp[ii][jj][kk] = wptilde * weight[ii][jj][kk];
       EMf->addJz(temp, ix, iy, iz, ns);
       // add energy flux density - X
       for (int ii = 0; ii < 2; ii++)
@@ -522,37 +549,37 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
+            temp[ii][jj][kk] = uptilde * uptilde * weight[ii][jj][kk];
       EMf->addPxx(temp, ix, iy, iz, ns);
       // Pxy - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
+            temp[ii][jj][kk] = uptilde * vptilde * weight[ii][jj][kk];
       EMf->addPxy(temp, ix, iy, iz, ns);
       // Pxz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
+            temp[ii][jj][kk] = uptilde * wptilde * weight[ii][jj][kk];
       EMf->addPxz(temp, ix, iy, iz, ns);
       // Pyy - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
+            temp[ii][jj][kk] = vptilde * vptilde * weight[ii][jj][kk];
       EMf->addPyy(temp, ix, iy, iz, ns);
       // Pyz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
+            temp[ii][jj][kk] = vptilde * wptilde * weight[ii][jj][kk];
       EMf->addPyz(temp, ix, iy, iz, ns);
       // Pzz - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
+            temp[ii][jj][kk] = wptilde * wptilde * weight[ii][jj][kk];
       EMf->addPzz(temp, ix, iy, iz, ns);
     }
     // change this to allow more parallelization after implementing array class
@@ -1188,4 +1215,20 @@ void Particles3Dcomm::PrintNp(VirtualTopology3D * ptVCT)  const {
   cout << "Number of Particles of species " << ns << ": " << nop << endl;
   cout << "Subgrid (" << ptVCT->getCoordinates(0) << "," << ptVCT->getCoordinates(1) << "," << ptVCT->getCoordinates(2) << ")" << endl;
   cout << endl;
+}
+void Particles3Dcomm::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz){
+
+  Bxl = 0.0;
+  Byl = 0.0;
+  Bzl = 0.0;
+
+  int l = 0;
+  for (int i=0; i<=1; i++)
+    for (int j=0; j<=1; j++)
+      for (int k=0; k<=1; k++) {
+        Bxl += weights[i][j][k] * (Bx[ix-i][iy-j][iz-k]);
+        Byl += weights[i][j][k] * (By[ix-i][iy-j][iz-k] );
+        Bzl += weights[i][j][k] * (Bz[ix-i][iy-j][iz-k] );
+        l = l + 1;
+      }
 }
