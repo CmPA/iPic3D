@@ -427,18 +427,21 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   grid->gradC2N(tempX, tempY, tempZ, divC);
 
   // -lap(E(n +theta)) - grad(div(mu dot E(n + theta))
-  //sub(imageX, tempX, nxn, nyn, nzn);
-  //sub(imageY, tempY, nxn, nyn, nzn);
-  //sub(imageZ, tempZ, nxn, nyn, nzn);
+  sub(imageX, tempX, nxn, nyn, nzn);
+  sub(imageY, tempY, nxn, nyn, nzn);
+  sub(imageZ, tempZ, nxn, nyn, nzn);
 
   // scale delt*delt
   scale(imageX, delt * delt, nxn, nyn, nzn);
   scale(imageY, delt * delt, nxn, nyn, nzn);
   scale(imageZ, delt * delt, nxn, nyn, nzn);
-  // -lap(E(n +theta)) - grad(div(mu dot E(n + theta))
+
+  /* Failed test inspired by mis-reading Celeste3D
+   * / -lap(E(n +theta)) - grad(div(mu dot E(n + theta))
   sub(imageX, tempX, nxn, nyn, nzn);
   sub(imageY, tempY, nxn, nyn, nzn);
   sub(imageZ, tempZ, nxn, nyn, nzn);
+*/
 
   // -lap(E(n +theta)) - grad(div(mu dot E(n + theta))) + eps dot E(n + theta)
   sum(imageX, Dx, nxn, nyn, nzn);
@@ -1228,8 +1231,10 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
     sum(tempXN, Jxs, nxn, nyn, nzn, is);
     sum(tempYN, Jys, nxn, nyn, nzn, is);
     sum(tempZN, Jzs, nxn, nyn, nzn, is);
-    // PIDOT
+    // PIDOT - Done as in Ricci et al, JCp, 2002
     //PIdot(Jxh, Jyh, Jzh, tempXN, tempYN, tempZN, is, grid);
+
+    // Done as in Celeste3D, summing form uhat of the particles
     sum(Jxh, tempXN, nxn, nyn, nzn);
     sum(Jyh, tempYN, nxn, nyn, nzn);
     sum(Jzh, tempZN, nxn, nyn, nzn);
