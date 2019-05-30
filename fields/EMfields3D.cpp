@@ -93,6 +93,12 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   RestartDirName = col->getRestartDirName();
   Case = col->getCase();
 
+  // Define Mass Matrix (It really is a dyadic product of a vector
+  mass_matrix = new double[3];
+  mass_matrix[0]=1./6.;
+  mass_matrix[1]=2./3.;
+  mass_matrix[2]=1./6.;
+
   // OpenBC
   injFieldsLeft   = new injInfoFields(nxn, nyn, nzn);
   injFieldsRight  = new injInfoFields(nxn, nyn, nzn);
@@ -417,7 +423,8 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   neg(imageY, nxn, nyn, nzn);
   neg(imageZ, nxn, nyn, nzn);
   // grad(div(mu dot E(n + theta)) mu dot E(n + theta) = D
-  MUdot(Dx, Dy, Dz, vectX, vectY, vectZ, grid);
+  //MUdot(Dx, Dy, Dz, vectX, vectY, vectZ, grid);
+  MUdot_mm(Dx, Dy, Dz, temp2X, temp2Y, temp2Z, vectX, vectY, vectZ, grid);
   grid->divN2C(divC, Dx, Dy, Dz);
   // communicate you should put BC 
   // think about the Physics 
@@ -533,6 +540,44 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
         }
 
   }
+
+}
+/*! Calculate MU dot using mass matrix (vectX, vectY, vectZ) */
+void EMfields3D::MUdot_mm(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***tempX, double ***tempY, double ***tempZ,double ***vectX, double ***vectY, double ***vectZ, Grid * grid) {
+  double beta, edotb, omcx, omcy, omcz, denom;
+  eqValue(0.0, MUdotX, nxn, nyn, nzn);
+  eqValue(0.0, MUdotY, nxn, nyn, nzn);
+  eqValue(0.0, MUdotY, nxn, nyn, nzn);
+  eqValue(0.0, tempX, nxn, nyn, nzn);
+  eqValue(0.0, tempY, nxn, nyn, nzn);
+  eqValue(0.0, tempZ, nxn, nyn, nzn);
+
+  for (int is = 0; is < ns; is++) {
+    beta = .5 * qom[is] * dt / c;
+    for (int i = 1; i < nxn - 1; i++)
+      for (int j = 1; j < nyn - 1; j++)
+        for (int k = 1; k < nzn - 1; k++) {
+          omcx = beta * (Bxn[i][j][k] + Fext*Bx_ext[i][j][k]);
+          omcy = beta * (Byn[i][j][k] + Fext*By_ext[i][j][k]);
+          omcz = beta * (Bzn[i][j][k] + Fext*Bz_ext[i][j][k]);
+          edotb = vectX[i][j][k] * omcx + vectY[i][j][k] * omcy + vectZ[i][j][k] * omcz;
+          denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+          tempX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
+          tempY[i][j][k] += (vectY[i][j][k] + (vectZ[i][j][k] * omcx - vectX[i][j][k] * omcz + edotb * omcy)) * denom;
+          tempZ[i][j][k] += (vectZ[i][j][k] + (vectX[i][j][k] * omcy - vectY[i][j][k] * omcx + edotb * omcz)) * denom;
+        }
+  }
+  for (int i = 1; i < nxn - 1; i++)
+      for (int j = 1; j < nyn - 1; j++)
+          for (int k = 1; k < nzn - 1; k++)
+        	  for (int ix = -1; ix < 2; ix++)
+        		  for (int iy = -1; iy < 2; iy++)
+        			  for (int iz = -1; iz < 2; iz++){
+        	  MUdotX[i][j][k] += tempX[i + ix][j + iy][k + iz] * mass_matrix[ix+1]  * mass_matrix[iy+1]* mass_matrix[iz+1];
+           	  MUdotY[i][j][k] += tempY[i + ix][j + iy][k + iz] * mass_matrix[ix+1]  * mass_matrix[iy+1]* mass_matrix[iz+1];
+           	  MUdotZ[i][j][k] += tempZ[i + ix][j + iy][k + iz] * mass_matrix[ix+1]  * mass_matrix[iy+1]* mass_matrix[iz+1];
+
+        			  }
 
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */

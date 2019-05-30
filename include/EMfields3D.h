@@ -249,6 +249,9 @@ class EMfields3D                // :public Field
     void PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid);
     /*! Calculate the three components of mu (implicit permeattivity) cross image vector */
     void MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid);
+    /*! Calculate the three components of mu (implicit permettivity) cross image vector using mass matrix */
+    void MUdot_mm(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***tempX, double ***tempY, double ***tempZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid);
+
     /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
     void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
 
@@ -508,6 +511,8 @@ class EMfields3D                // :public Field
     double *qom;
     /*! Boundary electron speed */
     double ue0, ve0, we0;
+    /* Poorman mass matrix */
+    double *mass_matrix;
 
     // KEEP IN MEMORY GUARD CELLS ARE INCLUDED
     /*! number of cells - X direction, including + 2 (guard cells) */
