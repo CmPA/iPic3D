@@ -445,11 +445,13 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 
 */
   // TEST : Avoindusing Poisson and solve directyl from MAxwell
-  grid->gradC2N(vectX, vectY, vectZ, divC)
-		// -lap(E(n +theta)) + grad(div( E(n + theta))
-		  sum(imageX, tempX, nxn, nyn, nzn);
-		  sum(imageY, tempY, nxn, nyn, nzn);
-		  sum(imageZ, tempZ, nxn, nyn, nzn);
+
+  grid->gradC2N(vectX, vectY, vectZ, divC);
+  // -lap(E(n +theta)) + grad(div( E(n + theta))
+
+  sum(imageX, tempX, nxn, nyn, nzn);
+  sum(imageY, tempY, nxn, nyn, nzn);
+  sum(imageZ, tempZ, nxn, nyn, nzn);
 
   // scale delt*delt
   scale(imageX, delt * delt, nxn, nyn, nzn);
