@@ -358,10 +358,11 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
   grid->gradC2N(tempX, tempY, tempZ, rhoh);
 
+  // TEST Avoid using Poisson eqation and solve directly for E from Maxwell
   // cdt^2 * 4pi * grad(rho_hat)
-  scale(tempX, -delt * delt * FourPI, nxn, nyn, nzn);
-  scale(tempY, -delt * delt * FourPI, nxn, nyn, nzn);
-  scale(tempZ, -delt * delt * FourPI, nxn, nyn, nzn);
+  scale(tempX, -delt * delt * FourPI * 0.0, nxn, nyn, nzn);
+  scale(tempY, -delt * delt * FourPI * 0.0, nxn, nyn, nzn);
+  scale(tempZ, -delt * delt * FourPI * 0.0, nxn, nyn, nzn);
 
   // sum E, past values:  E + cdt^2 * 4pi * grad(rho_hat)
   sum(tempX, Ex, nxn, nyn, nzn);
@@ -422,6 +423,10 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   neg(imageX, nxn, nyn, nzn);
   neg(imageY, nxn, nyn, nzn);
   neg(imageZ, nxn, nyn, nzn);
+
+  /* TEST : Avoindusing Poisson and solve directyl from MAxwell
+   *
+
   // grad(div(mu dot E(n + theta)) mu dot E(n + theta) = D
   //MUdot(Dx, Dy, Dz, vectX, vectY, vectZ, grid);
   MUdot_mm(Dx, Dy, Dz, temp2X, temp2Y, temp2Z, vectX, vectY, vectZ, grid);
@@ -437,6 +442,14 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sub(imageX, tempX, nxn, nyn, nzn);
   sub(imageY, tempY, nxn, nyn, nzn);
   sub(imageZ, tempZ, nxn, nyn, nzn);
+
+*/
+  // TEST : Avoindusing Poisson and solve directyl from MAxwell
+  grid->gradC2N(vectX, vectY, vectZ, divC)
+		// -lap(E(n +theta)) + grad(div( E(n + theta))
+		  sum(imageX, tempX, nxn, nyn, nzn);
+		  sum(imageY, tempY, nxn, nyn, nzn);
+		  sum(imageZ, tempZ, nxn, nyn, nzn);
 
   // scale delt*delt
   scale(imageX, delt * delt, nxn, nyn, nzn);
