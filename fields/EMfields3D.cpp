@@ -561,24 +561,24 @@ void EMfields3D::MUdot_mm(double ***MUdotX, double ***MUdotY, double ***MUdotZ, 
           omcy = beta * (Byn[i][j][k] + Fext*By_ext[i][j][k]);
           omcz = beta * (Bzn[i][j][k] + Fext*Bz_ext[i][j][k]);
           edotb = vectX[i][j][k] * omcx + vectY[i][j][k] * omcy + vectZ[i][j][k] * omcz;
-          denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+          //denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
+          denom = FourPI / 2 * delt * dt / c   / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
           tempX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
           tempY[i][j][k] += (vectY[i][j][k] + (vectZ[i][j][k] * omcx - vectX[i][j][k] * omcz + edotb * omcy)) * denom;
           tempZ[i][j][k] += (vectZ[i][j][k] + (vectX[i][j][k] * omcy - vectY[i][j][k] * omcx + edotb * omcz)) * denom;
         }
-  }
   for (int i = 1; i < nxn - 1; i++)
       for (int j = 1; j < nyn - 1; j++)
           for (int k = 1; k < nzn - 1; k++)
         	  for (int ix = -1; ix < 2; ix++)
         		  for (int iy = -1; iy < 2; iy++)
         			  for (int iz = -1; iz < 2; iz++){
-        	  MUdotX[i][j][k] += tempX[i + ix][j + iy][k + iz] * mass_matrix[ix+1]  * mass_matrix[iy+1]* mass_matrix[iz+1];
-           	  MUdotY[i][j][k] += tempY[i + ix][j + iy][k + iz] * mass_matrix[ix+1]  * mass_matrix[iy+1]* mass_matrix[iz+1];
-           	  MUdotZ[i][j][k] += tempZ[i + ix][j + iy][k + iz] * mass_matrix[ix+1]  * mass_matrix[iy+1]* mass_matrix[iz+1];
+        	  MUdotX[i][j][k] += tempX[i + ix][j + iy][k + iz] * qom[is] * rhons[is][i+ix][j+iy][k+iz] * mass_matrix[ix+1]  * mass_matrix[iy+1]* mass_matrix[iz+1];
+           	  MUdotY[i][j][k] += tempY[i + ix][j + iy][k + iz] * qom[is] * rhons[is][i+ix][j+iy][k+iz] * mass_matrix[ix+1]  * mass_matrix[iy+1]* mass_matrix[iz+1];
+           	  MUdotZ[i][j][k] += tempZ[i + ix][j + iy][k + iz] * qom[is] * rhons[is][i+ix][j+iy][k+iz] * mass_matrix[ix+1]  * mass_matrix[iy+1]* mass_matrix[iz+1];
 
         			  }
-
+  }
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
