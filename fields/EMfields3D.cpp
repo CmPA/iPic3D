@@ -446,7 +446,13 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 */
   // TEST : Avoindusing Poisson and solve directyl from MAxwell
 
-  grid->gradC2N(vectX, vectY, vectZ, divC);
+  grid->divN2C(divC, vectX, vectY, vectZ);
+  // communicate you should put BC
+  // think about the Physics
+  // communicateCenterBC(nxc,nyc,nzc,divC,1,1,1,1,1,1,vct);
+  communicateCenterBC(nxc, nyc, nzc, divC, 2, 2, 2, 2, 2, 2, vct);  // GO with Neumann, now then go with rho
+
+  grid->gradC2N(tempX, tempY, tempZ, divC);
   // -lap(E(n +theta)) + grad(div( E(n + theta))
 
   sum(imageX, tempX, nxn, nyn, nzn);
