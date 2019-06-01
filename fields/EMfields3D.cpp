@@ -634,6 +634,7 @@ void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Gr
       else {
         value = 0.5;
       }
+      value=0.5;
       alpha = (1.0 - value) / 6;
       for (int i = 1; i < nx - 1; i++)
         for (int j = 1; j < ny - 1; j++)
@@ -672,6 +673,7 @@ void EMfields3D::smoothE(double value,  int nvolte, VirtualTopology3D * vct, Col
       else {
         value = 0.5;
       }
+      value=0.5;
       alpha = (1.0 - value) / 6;
       // Exth
       for (int i = 1; i < nxn - 1; i++)
