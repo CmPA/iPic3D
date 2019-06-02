@@ -647,6 +647,7 @@ void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Gr
       delArr3(temp, nx, ny);
     }
   }
+  if ((value != 1.0) && (nvolte>0) ) {
       switch (type) {
         case (0):
           communicateCenterBoxStencilBC_P(nx, ny, nz, vector, 2, 2, 2, 2, 2, 2, vct);
@@ -655,6 +656,7 @@ void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Gr
           communicateNodeBoxStencilBC_P(nx, ny, nz, vector, 2, 2, 2, 2, 2, 2, vct);
           break;
       }
+  }
 }
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smoothE(double value,  int nvolte, VirtualTopology3D * vct, Collective *col) {
