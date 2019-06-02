@@ -572,11 +572,12 @@ void EMfields3D::MUdot_mm(double ***MUdotX, double ***MUdotY, double ***MUdotZ, 
   eqValue(0.0, MUdotX, nxn, nyn, nzn);
   eqValue(0.0, MUdotY, nxn, nyn, nzn);
   eqValue(0.0, MUdotY, nxn, nyn, nzn);
-  eqValue(0.0, tempX, nxn, nyn, nzn);
-  eqValue(0.0, tempY, nxn, nyn, nzn);
-  eqValue(0.0, tempZ, nxn, nyn, nzn);
+
 
   for (int is = 0; is < ns; is++) {
+	  eqValue(0.0, tempX, nxn, nyn, nzn);
+	  eqValue(0.0, tempY, nxn, nyn, nzn);
+	  eqValue(0.0, tempZ, nxn, nyn, nzn);
     beta = .5 * qom[is] * dt / c;
     for (int i = 1; i < nxn - 1; i++)
       for (int j = 1; j < nyn - 1; j++)
