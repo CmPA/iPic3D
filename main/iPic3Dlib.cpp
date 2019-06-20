@@ -74,6 +74,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="BxPert")    EMf->initBxPert(vct,grid,col);
     else if (col->getCase()=="ExPert")    EMf->initExPert(vct,grid,col);
     else if (col->getCase()=="NPert")    EMf->initNPert(vct,grid,col);
+    else if (col->getCase()=="HarrisDP_noPert")    EMf->initDoublePeriodicHarrisNoPerturbation(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -115,6 +116,8 @@ int c_Solver::Init(int argc, char **argv) {
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
         else if (col->getPartInit()=="MaxWhistler") part[i].maxwellian_WhistlerCurrent(grid, EMf, vct);
+        else if (col->getPartInit()=="HarrisDP_noPert") part[i].maxwellian_HarrisDoublePeriodic(grid, EMf, vct);
+      
         else                                  part[i].maxwellian(grid, EMf, vct);
 
     }

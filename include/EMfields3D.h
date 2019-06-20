@@ -182,6 +182,7 @@ class EMfields3D                // :public Field
     void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initDoublePeriodicHarrisNoPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with dipole-like tail without perturbation */
     void initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with no Perturbation */
