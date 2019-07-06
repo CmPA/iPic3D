@@ -579,18 +579,18 @@ void EMfields3D::MUdot_mm(double ***MUdotX, double ***MUdotY, double ***MUdotZ, 
 	  eqValue(0.0, tempY, nxn, nyn, nzn);
 	  eqValue(0.0, tempZ, nxn, nyn, nzn);
     beta = .5 * qom[is] * dt / c;
-    for (int i = 1; i < nxn - 1; i++)
-      for (int j = 1; j < nyn - 1; j++)
-        for (int k = 1; k < nzn - 1; k++) {
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
           omcx = beta * (Bxn[i][j][k] + Fext*Bx_ext[i][j][k]);
           omcy = beta * (Byn[i][j][k] + Fext*By_ext[i][j][k]);
           omcz = beta * (Bzn[i][j][k] + Fext*Bz_ext[i][j][k]);
           edotb = vectX[i][j][k] * omcx + vectY[i][j][k] * omcy + vectZ[i][j][k] * omcz;
           //denom = FourPI / 2 * delt * dt / c * qom[is] * rhons[is][i][j][k] / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
           denom = FourPI / 2 * delt * dt / c   / (1.0 + omcx * omcx + omcy * omcy + omcz * omcz);
-          tempX[i][j][k] += (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
-          tempY[i][j][k] += (vectY[i][j][k] + (vectZ[i][j][k] * omcx - vectX[i][j][k] * omcz + edotb * omcy)) * denom;
-          tempZ[i][j][k] += (vectZ[i][j][k] + (vectX[i][j][k] * omcy - vectY[i][j][k] * omcx + edotb * omcz)) * denom;
+          tempX[i][j][k] = (vectX[i][j][k] + (vectY[i][j][k] * omcz - vectZ[i][j][k] * omcy + edotb * omcx)) * denom;
+          tempY[i][j][k] = (vectY[i][j][k] + (vectZ[i][j][k] * omcx - vectX[i][j][k] * omcz + edotb * omcy)) * denom;
+          tempZ[i][j][k] = (vectZ[i][j][k] + (vectX[i][j][k] * omcy - vectY[i][j][k] * omcx + edotb * omcz)) * denom;
         }
   for (int i = 1; i < nxn - 1; i++)
       for (int j = 1; j < nyn - 1; j++)
