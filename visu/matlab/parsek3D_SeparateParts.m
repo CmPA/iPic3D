@@ -1108,6 +1108,7 @@ for nspec=1:Ns
         eval(['pyz_slab=pyz_slab' num2str(nspec-1) ';']);
         pyz_slab=(pyz_slab(1:end-1,:,:,:,:)+pyz_slab(2:end,:,:,:,:))*0.5;
         pyz_slab=(pyz_slab(:,1:end-1,:,:,:)+pyz_slab(:,2:end,:,:,:))*0.5;
+        pyz_slab=(pyy_slab(:,:,1:end-1,:,:)+pyz_slab(:,:,2:end,:,:))*0.5;
         pyz=[];pyz_row=[];pyz_col=[];
         for i=1:XLEN
             for j=1:YLEN
