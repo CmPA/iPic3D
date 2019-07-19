@@ -91,7 +91,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/energy')
     for ii=1:nnGroups
 
       if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/energy/electric') & strfind (variable_list, 'e_energy')
-        E_nrg_time=uint16([]);
+        E_nrg_time=uint32([]);
         ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
         for time=1:ntime
             E_nrg_slab(time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -101,7 +101,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/energy')
       end
       
      if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/energy/magnetic') & strfind (variable_list, 'b_energy')
-        B_nrg_time=uint16([]);
+        B_nrg_time=uint32([]);
         ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
         for time=1:ntime
             B_nrg_slab(time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -117,7 +117,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/energy')
           for iii=1:nnnGroups
             for nspec=1:Ns
                 if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/energy/kinetic/species_',num2str(nspec-1)])
-                 k_nrg_time=uint16([]);
+                 k_nrg_time=uint32([]);
                  ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                     for time=1:ntime
                      eval(['k_nrg_slab' num2str(nspec-1) '(time,PROC)= hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);         
@@ -140,7 +140,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/fields')
     for ii=1:nnGroups
 
        if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/fields/Bx') & strfind (variable_list, 'B')
-            Bx_time=uint16([]);
+            Bx_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Bx_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -150,7 +150,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/fields')
        end
 
        if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/fields/By') & strfind (variable_list, 'B')
-            By_time=uint16([]);
+            By_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             By_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -160,7 +160,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/fields')
        end
 
        if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/fields/Bz') & strfind (variable_list, 'B')
-            Bz_time=uint16([]);
+            Bz_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Bz_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -171,7 +171,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/fields')
        
        %%% external fields
        if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/fields/Bx_ext') & strfind (variable_list, 'B')
-            Bx_ext_time=uint16([]);
+            Bx_ext_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Bx_ext_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -181,7 +181,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/fields')
        end
 
        if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/fields/By_ext') & strfind (variable_list, 'B')
-            By_ext_time=uint16([]);
+            By_ext_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             By_ext_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -191,7 +191,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/fields')
        end
        
        if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/fields/Bz_ext') & strfind (variable_list, 'B')
-            Bz_ext_time=uint16([]);
+            Bz_ext_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Bz_ext_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -202,7 +202,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/fields')
        %%% end external fields
 
         if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/fields/Ex') & strfind (variable_list, 'E')
-            Ex_time=uint16([]);
+            Ex_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Ex_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -212,7 +212,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/fields')
        end
 
         if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/fields/Ey') & strfind (variable_list, 'E')
-            Ey_time=uint16([]);
+            Ey_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Ey_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -222,7 +222,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/fields')
        end
    
         if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/fields/Ez') & strfind (variable_list, 'E')
-            Ez_time=uint16([]);
+            Ez_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Ez_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -242,7 +242,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/potentials')
 
 
         if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/potentials/phi') & strfind (variable_list, 'phi')
-            phi_time=uint16([]);
+            phi_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             phi_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -268,7 +268,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/moments')
                  for iii=1:nnnGroups
                  
                   if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/moments/species_',num2str(nspec-1),'/Jx']) & strfind (variable_list, 'J')
-                    Jxs_time=uint16([]);
+                    Jxs_time=uint32([]);
                     ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                     for time=1:ntime
                         eval(['Jxs_slab' num2str(nspec-1) '(:,:,:,time,PROC) = hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);
@@ -278,7 +278,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/moments')
                   end
 
                   if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/moments/species_',num2str(nspec-1),'/Jy']) & strfind (variable_list, 'J')
-                      Jys_time=uint16([]);
+                      Jys_time=uint32([]);
                       ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                      for time=1:ntime
                         eval(['Jys_slab' num2str(nspec-1) '(:,:,:,time,PROC) = hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);
@@ -288,7 +288,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/moments')
                   end
                                     
                   if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/moments/species_',num2str(nspec-1),'/Jz']) & strfind (variable_list, 'J')
-                    Jzs_time=uint16([]);
+                    Jzs_time=uint32([]);
                       ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                      for time=1:ntime
                         eval(['Jzs_slab' num2str(nspec-1) '(:,:,:,time,PROC) = hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);
@@ -298,7 +298,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/moments')
                   end
                   
                   if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/moments/species_',num2str(nspec-1),'/rho']) & strfind (variable_list, 'rho')
-                      rhos_time=uint16([]);
+                      rhos_time=uint32([]);
                       ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                      for time=1:ntime
                         eval(['rhos_slab' num2str(nspec-1) '(:,:,:,time,PROC) = hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);
@@ -308,7 +308,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/moments')
                   end
 
                   if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/moments/species_',num2str(nspec-1),'/pXX']) & strfind (variable_list, 'pressure')
-                     p_time=uint16([]);
+                     p_time=uint32([]);
                       ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                      for time=1:ntime
                          eval(['pxx_slab' num2str(nspec-1) '(:,:,:,time,PROC) = hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);
@@ -355,7 +355,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/moments')
                 
 
         if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/moments/Jx') & strfind (variable_list, 'J')
-            Jx_time=uint16([]);
+            Jx_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Jx_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -365,7 +365,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/moments')
         end
 
         if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/moments/Jy') & strfind (variable_list, 'J')
-            Jy_time=uint16([]);
+            Jy_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Jy_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -375,7 +375,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/moments')
         end
 
         if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/moments/Jz') & strfind (variable_list, 'J')
-            Jz_time=uint16([]);
+            Jz_time=uint32([]);
             ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             Jz_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -385,7 +385,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/moments')
         end
 
         if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Name,'/moments/rho') & strfind (variable_list, 'rho')
-           rho_time=uint16([]);
+           rho_time=uint32([]);
            ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Datasets,2);
            for time=1:ntime
             rho_slab(:,:,:,time,PROC)=hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Datasets(time));
@@ -412,7 +412,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/particles')
                  
                          
                           if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/particles/species_',num2str(nspec-1),'/x']) & strfind (variable_list, 'x') 
-                                x_time=uint16([]);
+                                x_time=uint32([]);
                                 ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                                 for time=1:ntime
                                 eval(['x_slab' num2str(nspec-1) '.time' num2str(time) '.PROC' num2str(PROC) '= hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);
@@ -422,7 +422,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/particles')
                           end
                           
                           if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/particles/species_',num2str(nspec-1),'/y']) & strfind (variable_list, 'x')
-                                y_time=uint16([]);   
+                                y_time=uint32([]);   
                                 ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                                 for time=1:ntime
                                     eval(['y_slab' num2str(nspec-1) '.time' num2str(time) '.PROC' num2str(PROC) '= hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);                  
@@ -431,7 +431,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/particles')
                                 [y_time,y_index]=intersect(y_time,sort(y_time),'rows');
                           end
                           if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/particles/species_',num2str(nspec-1),'/z']) & strfind (variable_list, 'x')
-                                z_time=uint16([]);
+                                z_time=uint32([]);
                                 ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                                 for time=1:ntime
                                     eval(['z_slab' num2str(nspec-1) '.time' num2str(time) '.PROC' num2str(PROC) '= hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);                 
@@ -440,7 +440,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/particles')
                                 [z_time,z_index]=intersect(z_time,sort(z_time),'rows');
                           end
                           if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/particles/species_',num2str(nspec-1),'/u']) & strfind (variable_list, 'v')
-                                u_time=uint16([]); 
+                                u_time=uint32([]); 
                                 ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                                 for time=1:ntime
                                      eval(['u_slab' num2str(nspec-1) '.time' num2str(time) '.PROC' num2str(PROC) '= hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);                  
@@ -449,7 +449,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/particles')
                                 [u_time,u_index]=intersect(u_time,sort(u_time),'rows');
                           end
                           if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/particles/species_',num2str(nspec-1),'/v']) & strfind (variable_list, 'v')
-                                v_time=uint16([]);
+                                v_time=uint32([]);
                                 ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                                 for time=1:ntime
                                      eval(['v_slab' num2str(nspec-1) '.time' num2str(time) '.PROC' num2str(PROC) '= hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);         
@@ -458,7 +458,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/particles')
                                 [v_time,v_index]=intersect(v_time,sort(v_time),'rows');
                           end
                           if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/particles/species_',num2str(nspec-1),'/w']) & strfind (variable_list, 'v')
-                                w_time=uint16([]);
+                                w_time=uint32([]);
                                 ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                                 for time=1:ntime
                                      eval(['w_slab' num2str(nspec-1) '.time' num2str(time) '.PROC' num2str(PROC) '= hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);     
@@ -467,7 +467,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/particles')
                                 [w_time,w_index]=intersect(w_time,sort(w_time),'rows');
                           end
                           if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/particles/species_',num2str(nspec-1),'/q']) & strfind (variable_list, 'q')
-                                q_time=uint16([]);
+                                q_time=uint32([]);
                                 ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                                 for time=1:ntime
                                      eval(['q_slab' num2str(nspec-1) '.time' num2str(time) '.PROC' num2str(PROC) '= hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);     
@@ -476,7 +476,7 @@ if strcmp(info.GroupHierarchy.Groups(i).Name,'/particles')
                                 [q_time,q_index]=intersect(q_time,sort(q_time),'rows');
                           end
                           if strcmp(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Name,['/particles/species_',num2str(nspec-1),'/ID']) & strfind (variable_list, 'ID')
-                                ID_time=uint16([]);  
+                                ID_time=uint32([]);  
                                 ntime=size(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets,2);
                                 for time=1:ntime
                                       eval(['ID_slab' num2str(nspec-1) '.time' num2str(time) '.PROC' num2str(PROC) '= hdf5read(info.GroupHierarchy.Groups(i).Groups(ii).Groups(iii).Datasets(time));']);              
