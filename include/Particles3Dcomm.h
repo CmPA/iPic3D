@@ -360,6 +360,10 @@ protected:
   double deltaB;
   int ElectronSpNumber;
   /* end initial parameters for whistler, real frequency and perpendicular field */
+
+  /* copying here the EB parameters, for various tests */
+  double UEB;
+  double REB; 
 };
 
 #endif

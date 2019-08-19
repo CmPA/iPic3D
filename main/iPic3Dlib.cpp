@@ -117,7 +117,7 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
         else if (col->getPartInit()=="MaxWhistler") part[i].maxwellian_WhistlerCurrent(grid, EMf, vct);
         else if (col->getPartInit()=="HarrisDP_noPert") part[i].maxwellian_HarrisDoublePeriodic(grid, EMf, vct);
-      
+        else if (col->getPartInit()=="Max_EBDeformed") part[i].maxwellian_EBDeformationWithoutInteraction(grid, EMf, vct);
         else                                  part[i].maxwellian(grid, EMf, vct);
 
     }

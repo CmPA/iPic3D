@@ -298,6 +298,156 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
 }
 
+/**** maxwellian expansion deformed *****/
+void Particles3D::maxwellian_EBDeformationWithoutInteraction(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+  
+  
+  /* the reason for this: 
+     assuming absence of interaction, VDF gets deformed during expansion, apart from the expected 1/R
+     in the perpendicular direction;
+     deformation is expected larger for sub-sonic species (in our case, electron), see Landi et al, 2012, Fig 2
+     so here I want to start from the deformed VDF expected at a certain, hardcoded R, and see if a field is
+     generated such that the deformation is dissipated 
+
+     how to do it:
+     particle per particle, first I generate a "regular maxwellian"
+     then I impose (copied from the matlab script)
+     ---vvy= v0./R_R0;
+     ---vvz= w0./R_R0;
+
+     conservation of energy, keeping into account the UEB
+     it's important here to select the right solution when solving the equation
+     the correct solution is one that does not artificially scatter the particle parallely
+
+     ---vperp_0= sqrt(v0.^2 + w0.^2);
+     ---vperp= sqrt(vvy.^2 +vvz.^2 );
+
+     ---%%% just substitute v before with sqrt(v^2 + w^2)
+
+     ---a= 1;
+     ---b= 2*U0;
+     ---c= vperp.^2 + U0^2- ( (U0 + u0).^2 + vperp_0.^2);
+
+     ---ff= sqrt(b.^2 -4.*a.*c);
+
+     ---vvx1=( -b + ff)./ (2*a);
+     ---vvx2=( -b - ff)./ (2*a);
+
+     ---q= ones(size(vvy));
+     ---%%% select the right solution, avoiding paralleling scattering
+
+     ---%%% NB: if i do not add the +U0, I am selecting the wrong solution for
+     ---%%% part of the population
+     ---cond1= find(u0+ U0>=0);
+     ---cond2= find(u0+ U0<0);
+
+
+     ---vx1=vvx1(cond1);
+     ---vx2=vvx2(cond2);
+
+     ---vy1=vvy(cond1);
+     ---vy2=vvy(cond2);
+
+     ---vz1=vvz(cond1);
+     ---vz2=vvz(cond2);
+
+     ---q1=q(cond1);
+     ---q2=q(cond2); 
+
+
+     ---vx= [vx1; vx2];
+     ---vy= [vy1 ;vy2];
+     ---vz= [vz1 ;vz2];
+        
+     ---q= [q1; q2];
+
+
+     Warning: this thing is not correct if there are transverse B components, because it is
+     assumed that the yz directions (transverse directions) are also perpendicular
+     also, I am assuming there are no drift velocities, I did not think of what happens 
+     with drifts
+
+     /*
+  
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+     double R= 196;
+     double R_R0= R/REB;
+     cout << "In maxwellian_EBDeformationWithoutInteraction, I am using an hardcoded value of R, R=" << 196 <<endl;
+     cout << "R/R_0= " << R_R0 << ", U0_EB" << UEB << endl;
+
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+
+	      double u_tmp;
+	      double v_tmp;
+	      double w_tmp;
+
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+	      
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              //u[counter] = u0 + uth * prob * cos(theta);
+	      u_tmp= u0 + uth * prob * cos(theta);
+              // v
+              //v[counter] = v0 + vth * prob * sin(theta);
+	      v_tmp= v0 + vth * prob * sin(theta);  
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              //w[counter] = w0 + wth * prob * cos(theta);
+	      w_tmp = w0 + wth * prob * cos(theta); 
+
+
+	      double vperp0= sqrt(v_tmp*v_tmp + w_tmp*w_tmp);
+	      v[counter]= v_tmp/R_R0;
+	      w[counter]= w_tmp/R_R0;
+
+	      double vperp= sqrt(v[counter]* v[counter]+ w[counter]*w[counter]);
+
+	      double a=1;
+	      double b=2*UEB;
+	      double c= vperp*vperp + UEB*UEB - ((UEB + u_tmp)* (UEB + u_tmp) + vperp0*vperp0  );
+	      double ff= sqrt(b*b - 4 *a*c);
+
+	      double sol1= (-b + ff)/ (2*a);
+	      double sol2= (-b - ff)/ (2*a);
+
+	      if (u_tmp+ UEB > 0 ){
+		u[counter]= sol1;
+		  }else{
+		u[counter]= sol2;
+	      }
+
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+	      // now, fake expansion
+
+              counter++;
+            }
+
+
+}
+
+/**** end maxwellian expansion-deformed ****/
 
 /** maxwellian with perpendicular current oscillations for electrons supporting whistler **/
 void Particles3D::maxwellian_WhistlerCurrent(Grid * grid, Field * EMf, VirtualTopology3D * vct) {

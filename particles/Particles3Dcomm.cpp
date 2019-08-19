@@ -329,6 +329,10 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     status = H5Fclose(file_id);
   }
 
+  // I copy these values here, even if the box is not expanding, for the tests
+  UEB= col->getUEB_0(); 
+  REB= col->getREB_0();  
+
   // //FOR TEST:
   // nvDistLoc = 3;
   // vDist     = new c_vDist[nvDistLoc];

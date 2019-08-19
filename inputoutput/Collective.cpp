@@ -50,11 +50,11 @@ void Collective::ReadInput(string inputfile) {
     PoissonCorrection = config.read<string>("PoissonCorrection");
 
     /* expanding box parameters*/
-#ifdef EB
+    // I want them read even when I am not expanding, for exotic applications
     UEB_0 = config.read <double>("UEB_0", 0.0);
     REB_0 = config.read <double>("REB_0", 0.0);
     //cout << "Expanding box parameters: UEB_0= " << UEB_0 << ", REB_0= " << REB_0 << endl;
-#endif
+
     /* end expanding box parameters*/
 
     /* whistler init parameters */
