@@ -96,11 +96,12 @@ int main (int argc, char **argv) {
 	double*** TPER2 = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** EPS = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 
+/*
 	double*** agyro_scudder = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** agyro_aunai = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** nongyro_swisdak = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
 	double*** align = newArr3(double,nxn*XLEN,nyn*YLEN,nzn*ZLEN);
-
+*/
 	string temp;
 
 		temp = "recflux.txt";
@@ -173,6 +174,8 @@ int main (int argc, char **argv) {
           TXX, TXY, TXZ, TYY, TYZ, TZZ, TPAR, TPER1, TPER2, EPS);
     writeVTKtensor_binary(it, "P", "e", TXX, TXY, TXZ, TYY, TYZ, TZZ,
     	  TPAR, TPER1, TPER2, EPS);
+
+/*
     cout << "smoothing" << endl;
     int Nsmooth = 3;
     smooth(Nsmooth, TXX, nxn*XLEN, nyn*YLEN, nzn*ZLEN);
@@ -189,7 +192,7 @@ int main (int argc, char **argv) {
     writeVTKscalar_binary(it, "agyro_aunai", "", agyro_aunai);
     writeVTKscalar_binary(it, "nongyro_swisdak", "", nongyro_swisdak);
     writeVTKscalar_binary(it, "align", "", align);
-
+*/
 
     //Currents species1
     readvect(it,"/moments/species_1/","J",  VX, VY, VZ);
@@ -255,11 +258,12 @@ int main (int argc, char **argv) {
 	delArr3(TPER1,nxn*XLEN,nyn*YLEN);
 	delArr3(TPER2,nxn*XLEN,nyn*YLEN);
 	delArr3(EPS,nxn*XLEN,nyn*YLEN);
+/*
 	delArr3(agyro_scudder,nxn*XLEN,nyn*YLEN);
 	delArr3(agyro_aunai,nxn*XLEN,nyn*YLEN);
 	delArr3(nongyro_swisdak,nxn*XLEN,nyn*YLEN);
 	delArr3(align,nxn*XLEN,nyn*YLEN);
-
+*/
 	delete[] temp_storageX;
 	delete[] temp_storageY;
 	delete[] temp_storageZ;
