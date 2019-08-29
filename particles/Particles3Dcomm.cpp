@@ -336,7 +336,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     status = H5Fclose(file_id);
 
     // it checks internally if needed ()
-    Do_EBRestart_RelocPart();
+    Do_EBRestart_RelocPart(vct);
   }
 
   // I copy these values here, even if the box is not expanding, for the tests
@@ -1390,15 +1390,16 @@ void Particles3Dcomm::WriteTracking(int cycle, VirtualTopology3D * vct, Collecti
 /** this is used if you are restarting a non EB simulation from an EB simulation                                        
    the particle position in the transverse direction is scaled to keep into account volume transverse expansion;
    in the inputfile, scale L_trans= L_0 R/R_0**/
-void Particles3Dcomm::Do_EBRestart_RelocPart(){
+void Particles3Dcomm::Do_EBRestart_RelocPart(VirtualTopology3D * vct){
   // NB: this is done within a "if restart", so that has not to be checked
 
   if (!EBRestart_RelocPart)
     return;
 
-  if (ns == 0){
+  if (vct->getCartesian_rank() == 0 && ns == 0){
     cout << "RESTART: I AM RELOCATING PARTICLES TO ACCOUNT FOR VOLUME EXPANSION!!!!" << endl;
     cout << "(if you are not restarting a non EB sim, from an EB run, you should not see this)" << endl;
+    cout << "Lx: " << Lx << ", Ly: "<< Ly << ", Lz: " << Lz << endl;
   }
   for (int i=0; i< nop; i++){
     y[i]= y[i]*EBRestart_RdivR0;

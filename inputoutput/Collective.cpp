@@ -632,6 +632,14 @@ int Collective::ReadRestart(string inputfile) {
   status = H5Dclose(dataset_id);
   status = H5Fclose(file_id);
 
+  /// here: if EBRestart_RelocPart, I have rescaling transverse direction
+  /// EBRestart_RelocPart has to be set to true only if you are restarting a non EB sim from a EB sim
+  if (EBRestart_RelocPart){
+    Ly= Ly*EBRestart_RdivR0;
+    Lz= Lz*EBRestart_RdivR0;
+  }
+
+
   // deallocate
   delete[]name_species;
   delete[]ss;

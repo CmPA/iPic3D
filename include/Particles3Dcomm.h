@@ -103,7 +103,7 @@ public:
   /** this is used if you are restarting a non EB simulation from an EB simulation
    the particle position in the transverse direction is scaled to keep into account volume transverse expansion
    in the inputfile, scale L_trans= L_0 R/R_0**/
-  void Do_EBRestart_RelocPart();
+  void Do_EBRestart_RelocPart(VirtualTopology3D * vct);
 
   /** resize the receiving buffer */
   void resize_buffers(int new_buffer_size);
