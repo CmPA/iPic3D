@@ -80,6 +80,11 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   npcely = col->getNpcely(species);
   npcelz = col->getNpcelz(species);
 
+
+  // these are used if you are restarting a non EB simulation from a EB simulation       
+  EBRestart_RdivR0= col->getEBRestart_RdivR0();
+  EBRestart_RelocPart= col->getEBRestart_RelocPart();
+
   // This if is necessary to restart with H5hut-io
   if (initnpmax==0){
     long ncproc = int(col->getNxc()/col->getXLEN()) *
@@ -304,6 +309,8 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, q);
     status = H5Dclose(dataset_id);
+
+
     // ID 
     if (TrackParticleID) {
       // herr_t (*old_func)(void*); // HDF 1.6
@@ -327,6 +334,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     }
     // close the hdf file
     status = H5Fclose(file_id);
+
+    // it checks internally if needed ()
+    Do_EBRestart_RelocPart();
   }
 
   // I copy these values here, even if the box is not expanding, for the tests
@@ -1375,5 +1385,25 @@ void Particles3Dcomm::WriteTracking(int cycle, VirtualTopology3D * vct, Collecti
   }
   cout << "Proc " << num_proc.str() << " wrote " << nop << " particles, sp " << num_sp << endl; 
   my_file.close();
+}
+
+/** this is used if you are restarting a non EB simulation from an EB simulation                                        
+   the particle position in the transverse direction is scaled to keep into account volume transverse expansion;
+   in the inputfile, scale L_trans= L_0 R/R_0**/
+void Particles3Dcomm::Do_EBRestart_RelocPart(){
+  // NB: this is done within a "if restart", so that has not to be checked
+
+  if (!EBRestart_RelocPart)
+    return;
+
+  if (ns == 0){
+    cout << "RESTART: I AM RELOCATING PARTICLES TO ACCOUNT FOR VOLUME EXPANSION!!!!" << endl;
+    cout << "(if you are not restarting a non EB sim, from an EB run, you should not see this)" << endl;
+  }
+  for (int i=0; i< nop; i++){
+    y[i]= y[i]*EBRestart_RdivR0;
+    z[i]= z[i]*EBRestart_RdivR0;
+  }
+
 }
 

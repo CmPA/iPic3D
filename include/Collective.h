@@ -217,6 +217,10 @@ class Collective
     /*! get the parameters for whistler wave init: perpendicular field */
     double getDeltaB();
 
+    /*! get the parameters to restart a non EB run from an EB run */
+    double getEBRestart_RdivR0();
+    bool getEBRestart_RelocPart();
+
     /*! get the boolean value for verbose results */
     bool getVerbose();
 
@@ -431,6 +435,10 @@ class Collective
     /* init for whistler wave: real frequency and perpendicular field */
     double omega_r;
     double deltaB;
+
+    /* to restart a non EB sim from an EB sim */
+    double EBRestart_RdivR0;
+    bool EBRestart_RelocPart;
 
     /*! boolean value for verbose results */
     bool verbose;

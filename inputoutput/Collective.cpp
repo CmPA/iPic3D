@@ -55,6 +55,10 @@ void Collective::ReadInput(string inputfile) {
     REB_0 = config.read <double>("REB_0", 0.0);
     //cout << "Expanding box parameters: UEB_0= " << UEB_0 << ", REB_0= " << REB_0 << endl;
 
+    // to restart a non EB sim from an EB sim
+    EBRestart_RdivR0= config.read <double>("EBRestart_RdivR0", 1.0);
+    EBRestart_RelocPart= config.read <bool>("EBRestart_RelocPart", false);
+
     /* end expanding box parameters*/
 
     /* whistler init parameters */
@@ -1152,6 +1156,13 @@ double Collective::getOmega_r(){
 double Collective::getDeltaB(){
   return deltaB;
 }
+double Collective::getEBRestart_RdivR0(){
+  return EBRestart_RdivR0;
+}
+bool Collective::getEBRestart_RelocPart(){
+  return EBRestart_RelocPart;
+}
+
 bool Collective::getTrackSpecies(int is){
   return TrackSpecies[is];
 }

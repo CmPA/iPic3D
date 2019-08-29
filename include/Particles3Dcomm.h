@@ -100,6 +100,11 @@ public:
   /** method to debuild the buffer received */
   int unbuffer(double *b_);
 
+  /** this is used if you are restarting a non EB simulation from an EB simulation
+   the particle position in the transverse direction is scaled to keep into account volume transverse expansion
+   in the inputfile, scale L_trans= L_0 R/R_0**/
+  void Do_EBRestart_RelocPart();
+
   /** resize the receiving buffer */
   void resize_buffers(int new_buffer_size);
   /** a method to compute how many particles are not in the right domain */
@@ -363,7 +368,10 @@ protected:
 
   /* copying here the EB parameters, for various tests */
   double UEB;
-  double REB; 
+  double REB;
+  /* these are used if you are restarting a non EB simulation from a EB simulation */
+  double EBRestart_RdivR0;
+  bool EBRestart_RelocPart;
 };
 
 #endif
