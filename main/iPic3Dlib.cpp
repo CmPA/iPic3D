@@ -359,7 +359,7 @@ bool c_Solver::ParticlesMover() {
 		  if(col->getCase()=="GEMRelativity")
 			  mem_avail = part[i].mover_relativistic(grid, vct, EMf);
 		  else
-			  mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
+			  mem_avail = part[i].mover_PC_old(grid, vct, EMf); // use the Predictor Corrector scheme
 	  }
   }
   // timeTasks.end(TimeTasks::PARTICLES);

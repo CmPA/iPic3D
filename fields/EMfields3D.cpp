@@ -43,6 +43,8 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   delt = c * th * dt;
   PoissonCorrection = false;
   if (col->getPoissonCorrection()=="yes") PoissonCorrection = true;
+  LambdaDamping = false;
+  if (col->getLambdaDamping()=="yes") LambdaDamping = true;
   CGtol = col->getCGtol();
   GMREStol = col->getGMREStol();
   qom = new double[ns];
@@ -444,6 +446,7 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sum(imageY, vectY, nxn, nyn, nzn);
   sum(imageZ, vectZ, nxn, nyn, nzn);
 
+  if(LambdaDamping){
   // Temporal damping
 //  sumscalprod(imageX, delt, vectX, Lambda, nxn, nyn, nzn);
 //  sumscalprod(imageY, delt, vectY, Lambda, nxn, nyn, nzn);
@@ -452,7 +455,7 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sumscalprod(imageX, Maxwell_damping,vectX,Lambda,nxn,nyn,nzn);
   sumscalprod(imageY, Maxwell_damping,vectY,Lambda,nxn,nyn,nzn);
   sumscalprod(imageZ, Maxwell_damping,vectZ,Lambda,nxn,nyn,nzn);
-
+  }
   // boundary condition: Xleft
   if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);

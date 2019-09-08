@@ -711,6 +711,10 @@ class EMfields3D                // :public Field
 
     /*! boolean for divergence cleaning */
     bool PoissonCorrection;
+
+    /*! boolean for Lambda Damping */
+    bool LambdaDamping;
+
     /*! RESTART BOOLEAN */
     int restart1;
     /*! String with the directory for the restart file */

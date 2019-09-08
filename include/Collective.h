@@ -157,6 +157,8 @@ class Collective
     string getSimName();
     /*! get poisson correction flag */
     string getPoissonCorrection();
+    /*! get Lambda damping flag */
+    string getLambdaDamping();
 
     /*! get initial solution flag */
     bool getSolInit();
@@ -359,6 +361,8 @@ class Collective
     string SimName;
     /*! Poisson correction flag */
     string PoissonCorrection;
+    /*! LAmbda Damping flag */
+    string LambdaDamping;
 
     /*! HDF5 initial solution flag */
     bool SolInit;

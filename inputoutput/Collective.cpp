@@ -45,7 +45,9 @@ void Collective::ReadInput(string inputfile) {
     PartInit          = config.read<string>("PartInit");
     wmethod           = config.read<string>("WriteMethod");
     SimName           = config.read<string>("SimulationName");
-    PoissonCorrection = config.read<string>("PoissonCorrection");
+
+    PoissonCorrection = config.read<string>("PoissonCorrection","no");
+    LambdaDamping	  = config.read<string>("LambdaDamping","no");
 
     rhoINIT = new double[ns];
     array_double rhoINIT0 = config.read < array_double > ("rhoINIT");
@@ -1289,6 +1291,10 @@ string Collective::getWriteMethod() {
 /*! get Poisson correction flag */
 string Collective::getPoissonCorrection() {
   return (PoissonCorrection);
+}
+/*! get Lambda Damping flag */
+string Collective::getLambdaDamping() {
+  return (LambdaDamping);
 }
 /*! get initial solution flag */
 bool Collective::getSolInit() {

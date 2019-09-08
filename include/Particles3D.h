@@ -86,6 +86,8 @@ class Particles3D:public Particles3Dcomm {
     void get_Bl(const double weights[2][2][2], int ix, int iy, int iz, double& Bxl, double& Byl, double& Bzl, double*** Bx, double*** By, double*** Bz, double*** Bx_ext, double*** By_ext, double*** Bz_ext, double Fext);
     void get_El(const double weights[2][2][2], int ix, int iy, int iz, double& Exl, double& Eyl, double& Ezl, double*** Ex, double*** Ey, double*** Ez);
     void get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]);
+    /** mover with a Predictor-Corrector Scheme  woith older code versions*/
+    int mover_PC_old(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** mover with a Predictor-Corrector Scheme */
     int mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     int mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf);
