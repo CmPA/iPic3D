@@ -68,11 +68,25 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   B0x = col->getB0x();
   B0y = col->getB0y();
   B0z = col->getB0z();
+  delta = col->getDelta();
   // Earth Simulation
   B1x = col->getB1x();
   B1y = col->getB1y();
   B1z = col->getB1z();
-  delta = col->getDelta();
+  // External magnetic field
+  B0x_ext = col->getB0x_ext();
+  B0y_ext = col->getB0y_ext();
+  B0z_ext = col->getB0z_ext();
+
+  // Initial electric field
+  E0x = col->getE0x();
+  E0y = col->getE0y();
+  E0z = col->getE0z();
+  // External electric field
+  E0x_ext = col->getE0x_ext();
+  E0y_ext = col->getE0y_ext();
+  E0z_ext = col->getE0z_ext();
+
   Smooth = col->getSmooth();
   Nvolte = col->getNvolte();
 
@@ -124,6 +138,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Bx_ext = newArr3(double,nxn,nyn,nzn);
   By_ext = newArr3(double,nxn,nyn,nzn);
   Bz_ext = newArr3(double,nxn,nyn,nzn);
+  Ex_ext = newArr3(double,nxn,nyn,nzn);
+  Ey_ext = newArr3(double,nxn,nyn,nzn);
+  Ez_ext = newArr3(double,nxn,nyn,nzn);
   Jx_ext = newArr3(double,nxn,nyn,nzn);
   Jy_ext = newArr3(double,nxn,nyn,nzn);
   Jz_ext = newArr3(double,nxn,nyn,nzn);
@@ -178,7 +195,92 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   arr = newArr3(double,nxn,nyn,nzn);
 
   Lambda = newArr3(double, nxn, nyn, nzn);
+  // Set to zero all the memory allocated
+  setAllzero();
 }
+void EMfields3D::setAllzero()
+{
+   eqValue(0.0, Ex, nxn, nyn, nzn);
+   eqValue(0.0, Ey, nxn, nyn, nzn);
+   eqValue(0.0, Ez, nxn, nyn, nzn);
+   eqValue(0.0, Exth, nxn, nyn, nzn);
+   eqValue(0.0, Eyth, nxn, nyn, nzn);
+   eqValue(0.0, Ezth, nxn, nyn, nzn);
+   eqValue(0.0, Bxn, nxn, nyn, nzn);
+   eqValue(0.0, Byn, nxn, nyn, nzn);
+   eqValue(0.0, Bzn, nxn, nyn, nzn);
+   eqValue(0.0, rhon, nxn, nyn, nzn);
+
+   eqValue(0.0, Jxh, nxn, nyn, nzn);
+   eqValue(0.0, Jyh, nxn, nyn, nzn);
+   eqValue(0.0, Jzh, nxn, nyn, nzn);
+
+
+
+   eqValue(0.0, Jxs, ns, nxn, nyn, nzn);
+   eqValue(0.0, Jys, ns, nxn, nyn, nzn);
+   eqValue(0.0, Jzs, ns, nxn, nyn, nzn);
+   eqValue(0.0, EFxs, ns, nxn, nyn, nzn);
+   eqValue(0.0, EFys, ns, nxn, nyn, nzn);
+   eqValue(0.0, EFzs, ns, nxn, nyn, nzn);
+
+
+   eqValue(0.0, pXXsn, ns, nxn, nyn, nzn);
+   eqValue(0.0, pXYsn, ns, nxn, nyn, nzn);
+   eqValue(0.0, pXZsn, ns, nxn, nyn, nzn);
+   eqValue(0.0, pYYsn, ns, nxn, nyn, nzn);
+   eqValue(0.0, pYZsn, ns, nxn, nyn, nzn);
+   eqValue(0.0, pZZsn, ns, nxn, nyn, nzn);
+
+
+
+   eqValue(0.0, Bx_ext, nxn, nyn, nzn);
+   eqValue(0.0, By_ext, nxn, nyn, nzn);
+   eqValue(0.0, Bz_ext, nxn, nyn, nzn);
+   eqValue(0.0, Ex_ext, nxn, nyn, nzn);
+   eqValue(0.0, Ey_ext, nxn, nyn, nzn);
+   eqValue(0.0, Ez_ext, nxn, nyn, nzn);
+
+   eqValue(0.0,rhons, ns, nxn, nyn, nzn);
+   eqValue(0.0,rhocs, ns, nxc, nyc, nzc);
+
+
+   eqValue(0.0, Bxc, nxc, nyc, nzc);
+   eqValue(0.0, Byc, nxc, nyc, nzc);
+   eqValue(0.0, Bzc, nxc, nyc, nzc);
+   eqValue(0.0, rhoc, nxc, nyc, nzc);
+
+   eqValue(0.0, tempXC, nxc, nyc, nzc);
+   eqValue(0.0, tempYC, nxc, nyc, nzc);
+   eqValue(0.0, tempZC, nxc, nyc, nzc);
+   eqValue(0.0, tempXN, nxn, nyn, nzn);
+   eqValue(0.0, tempYN, nxn, nyn, nzn);
+   eqValue(0.0, tempZN, nxn, nyn, nzn);
+   eqValue(0.0, tempC, nxc, nyc, nzc);
+   eqValue(0.0, tempX, nxn, nyn, nzn);
+   eqValue(0.0, tempY, nxn, nyn, nzn);
+   eqValue(0.0, tempZ, nxn, nyn, nzn);
+   eqValue(0.0, temp2X, nxn, nyn, nzn);
+   eqValue(0.0, temp2Y, nxn, nyn, nzn);
+   eqValue(0.0, temp2Z, nxn, nyn, nzn);
+
+   eqValue(0.0, imageX, nxn, nyn, nzn);
+   eqValue(0.0, imageY, nxn, nyn, nzn);
+   eqValue(0.0, imageZ, nxn, nyn, nzn);
+   eqValue(0.0, vectX, nxn, nyn, nzn);
+   eqValue(0.0, vectY, nxn, nyn, nzn);
+   eqValue(0.0, vectZ, nxn, nyn, nzn);
+   eqValue(0.0, arr, nxn, nyn, nzn);
+
+   eqValue(0.0, Jx_ext, nxn, nyn, nzn);
+   eqValue(0.0, Jy_ext, nxn, nyn, nzn);
+   eqValue(0.0, Jz_ext, nxn, nyn, nzn);
+
+
+   eqValue(0.0, Lambda, nxn, nyn, nzn);
+
+}
+
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
 void EMfields3D::startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col) {
@@ -3012,6 +3114,10 @@ void EMfields3D::initForceFreeWithGaussianHumpPerturbation(VirtualTopology3D * v
     const double pertX = 0.4*0.0;
     const double deltax = 8.*delta;
     const double deltay = 4.*delta;
+
+    // Set External Force
+    Fext = 1.0;
+
     if (restart1 ==0){
         // initialize
         if (vct->getCartesian_rank() ==0){
@@ -3043,10 +3149,22 @@ void EMfields3D::initForceFreeWithGaussianHumpPerturbation(VirtualTopology3D * v
                     for (int is=0; is < ns; is++){
                             rhons[is][i][j][k] = rhoINIT[is]/FourPI;
                     }
+
                     // electric field
-                    Ex[i][j][k] =  0.0;
-                    Ey[i][j][k] =  0.0;
-                    Ez[i][j][k] =  0.0;
+                    Ex[i][j][k] =  E0x;
+                    Ey[i][j][k] =  E0y;
+                    Ez[i][j][k] =  E0z;
+
+                    // external electric field
+                    Ex_ext[i][j][k] =  E0x_ext;
+                    Ey_ext[i][j][k] =  E0y_ext;
+                    Ez_ext[i][j][k] =  E0z_ext;
+
+                    // external magnetic field
+                    Bx_ext[i][j][k] =  B0x_ext;
+                    By_ext[i][j][k] =  B0y_ext;
+                    Bz_ext[i][j][k] =  B0z_ext;
+
                     // Magnetic field
                     Bxn[i][j][k] = B0x*(-1.0+tanh(yBd)-tanh(yTd));
                     Byn[i][j][k] = B0y;
@@ -4403,6 +4521,33 @@ double ***& EMfields3D::getRHOcs(int is, int dummy) {
   return (rhocs[is]);
 }
 
+/*! get Ex_ext(X,Y,Z)  */
+double &EMfields3D::getEx_ext(int indexX, int indexY, int indexZ) const{
+  return(Ex_ext[indexX][indexY][indexZ]);
+}
+/*!  get By_ext(X,Y,Z) */
+double &EMfields3D::getEy_ext(int indexX, int indexY, int indexZ) const{
+  return(Ey_ext[indexX][indexY][indexZ]);
+}
+/*!  get Ez_ext(X,Y,Z) */
+double &EMfields3D::getEz_ext(int indexX, int indexY, int indexZ) const{
+  return(Ez_ext[indexX][indexY][indexZ]);
+}
+
+/*! get Ex_ext  */
+double ***EMfields3D::getEx_ext() {
+  return(Ex_ext);
+}
+/*!  get Ey_ext */
+double ***EMfields3D::getEy_ext() {
+  return(Ey_ext);
+}
+/*!  get Ez_ext */
+double ***EMfields3D::getEz_ext() {
+  return(Ez_ext);
+}
+
+
 /*! get Bx_ext(X,Y,Z)  */
 double &EMfields3D::getBx_ext(int indexX, int indexY, int indexZ) const{
   return(Bx_ext[indexX][indexY][indexZ]);
@@ -4428,6 +4573,7 @@ double ***EMfields3D::getBy_ext() {
 double ***EMfields3D::getBz_ext() {
   return(Bz_ext);
 }
+
 
 double ***&EMfields3D::getBxTot(){
   for (int i = 0; i < nxn; i++)

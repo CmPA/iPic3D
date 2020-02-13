@@ -219,6 +219,26 @@ class Collective
     double getB1y();
     /*! get the amplitude of the magnetic field 1 along z */
     double getB1z();
+    /*! get the amplitude of the external magnetic field along x */
+    double getB0x_ext();
+    /*! get the amplitude of the external magnetic field along y */
+    double getB0y_ext();
+    /*! get the amplitude of the external magnetic field along z */
+    double getB0z_ext();
+
+    /*! get the amplitude of the electric field along x */
+        double getE0x();
+        /*! get the amplitude of the electric field along y */
+        double getE0y();
+        /*! get the amplitude of the electric field along z */
+        double getE0z();
+        /*! get the amplitude of the external electric field along x */
+        double getE0x_ext();
+        /*! get the amplitude of the external electric field along y */
+        double getE0y_ext();
+        /*! get the amplitude of the external electric field along z */
+        double getE0z_ext();
+
 
     /*! get the boolean value for verbose results */
     bool getVerbose();
@@ -433,7 +453,15 @@ class Collective
     double B1x;
     double B1y;
     double B1z;
-
+    double B0x_ext;
+    double B0y_ext;
+    double B0z_ext;
+    double E0x;
+    double E0y;
+    double E0z;
+    double E0x_ext;
+    double E0y_ext;
+    double E0z_ext;
 
     /*! boolean value for verbose results */
     bool verbose;

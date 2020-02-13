@@ -1083,6 +1083,7 @@ int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
 	double weight[P_SAME_TIME][2][2][2];
 	double xi[2]; double eta[2]; double zeta[2];
 	double inv_dx = 1.0/dx, inv_dy = 1.0/dy, inv_dz = 1.0/dz;
+	double Fext      = EMf->getFext();
 	// move each particle with new fields: MOVE P_SAME_TIME PARTICLES AT THE SAME TIME TO ALLOW AUTOVECTORIZATION
 	int i;
 	for (i=0; i <  (nop-(P_SAME_TIME-1)); i+=P_SAME_TIME){
@@ -1131,6 +1132,13 @@ int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
 				     Bxlp[p] = EMf->getBx(ix[p] - ii,iy[p] -jj,iz[p] - kk);
 				     Bylp[p] = EMf->getBy(ix[p] - ii,iy[p] -jj,iz[p] - kk);
 				     Bzlp[p] = EMf->getBz(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+				     // Add external fields
+				     Exlp[p] += Fext * EMf->getEx_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+				     Eylp[p] += Fext * EMf->getEy_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+				     Ezlp[p] += Fext * EMf->getEz_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+				     Bxlp[p] += Fext * EMf->getBx_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+				     Bylp[p] += Fext * EMf->getBy_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+				     Bzlp[p] += Fext * EMf->getBz_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
 				   }
 				   for(int p = 0; p < P_SAME_TIME; p++){ // VECTORIZED
 				      Exlp[p] = weight[p][ii][jj][kk]*Exlp[p];

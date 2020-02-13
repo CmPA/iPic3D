@@ -173,6 +173,9 @@ class EMfields3D                // :public Field
     /*! destructor */
     ~EMfields3D();
 
+    /* Set all the arrays to zero */
+    void setAllzero();
+
     /*! initialize the electromagnetic fields with constant values */
     void init(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! init beam */
@@ -388,19 +391,33 @@ class EMfields3D                // :public Field
     double ***getRHOcs(int is);
     double ***& getRHOcs(int is, int dummy);
 
-    /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
-    double &getBx_ext(int indexX, int indexY, int indexZ) const;
-    /** get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
-    double &getBy_ext(int indexX, int indexY, int indexZ) const;
-    /** get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
-    double &getBz_ext(int indexX, int indexY, int indexZ) const;
+    /** get Electric Field component X defined on node(indexX,indexY,indexZ) */
+    double &getEx_ext(int indexX, int indexY, int indexZ) const;
+    /** get Electric Field component Y defined on node(indexX,indexY,indexZ) */
+    double &getEy_ext(int indexX, int indexY, int indexZ) const;
+    /** get Electric Field component Z defined on node(indexX,indexY,indexZ) */
+    double &getEz_ext(int indexX, int indexY, int indexZ) const;
 
-    /** get Magnetic Field component X */
-    double ***getBx_ext();
-    /** get Magnetic Field component Y */
-    double ***getBy_ext();
-    /** get Magnetic Field component Z */
-    double ***getBz_ext();
+    /** get Electric Field component X */
+    double ***getEx_ext();
+    /** get Electric Field component Y */
+    double ***getEy_ext();
+    /** get Electric Field component Z */
+    double ***getEz_ext();
+
+    /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
+        double &getBx_ext(int indexX, int indexY, int indexZ) const;
+        /** get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
+        double &getBy_ext(int indexX, int indexY, int indexZ) const;
+        /** get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
+        double &getBz_ext(int indexX, int indexY, int indexZ) const;
+
+        /** get Magnetic Field component X */
+        double ***getBx_ext();
+        /** get Magnetic Field component Y */
+        double ***getBy_ext();
+        /** get Magnetic Field component Z */
+        double ***getBz_ext();
 
     double ***&getBxTot();
     double ***&getByTot();
@@ -504,7 +521,13 @@ class EMfields3D                // :public Field
     double B0x, B0y, B0z, delta;
     /** Earth Model parameters */
     double B1x, B1y, B1z;
+    /*! External uniform magnetic field */
+    double B0x_ext, B0y_ext, B0z_ext;
     /*! charge to mass ratio array for different species */
+    /*! Initial uniform electric field */
+    double E0x, E0y, E0z;
+    /*! External uniform electric field */
+    double E0x_ext, E0y_ext, E0z_ext;
     double *qom;
     /*! Boundary electron speed */
     double ue0, ve0, we0;
@@ -650,6 +673,12 @@ class EMfields3D                // :public Field
     double***  By_ext;
     /*! External magnetic field component-Z, defined on nodes */
     double***  Bz_ext;
+    /*! External electric field component-X, defined on nodes */
+    double***  Ex_ext;
+    /*! External electric field component-Y, defined on nodes */
+    double***  Ey_ext;
+    /*! External electric field component-Z, defined on nodes */
+    double***  Ez_ext;
     /*! External current field component-X, defined on nodes */
     double***  Jx_ext;
     /*! External current field component-Y, defined on nodes */

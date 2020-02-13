@@ -38,6 +38,19 @@ void Collective::ReadInput(string inputfile) {
     B1y = config.read <double>("B1y",0.0);
     B1z = config.read <double>("B1z",0.0);
 
+    // Initial Electric Field
+    E0x = config.read <double>("E0x",0.0);
+    E0y = config.read <double>("E0y",0.0);
+    E0z = config.read <double>("E0z",0.0);
+    // External Electric Field
+    E0x_ext = config.read <double>("E0x_ext",0.0);
+    E0y_ext = config.read <double>("E0y_ext",0.0);
+    E0z_ext = config.read <double>("E0z_Ext",0.0);
+    // External MAgnetic Field
+    B0x_ext = config.read <double>("B0x_ext",0.0);
+    B0y_ext = config.read <double>("B0y_ext",0.0);
+    B0z_ext = config.read <double>("B0z_Ext",0.0);
+
     delta = config.read < double >("delta");
 
     Case              = config.read<string>("Case");
@@ -1244,6 +1257,35 @@ double Collective::getB1y(){
 }
 double Collective::getB1z(){
   return (B1z);
+}
+double Collective::getB0x_ext() {
+  return (B0x_ext);
+}
+double Collective::getB0y_ext() {
+  return (B0y_ext);
+}
+double Collective::getB0z_ext() {
+  return (B0z_ext);
+}
+
+double Collective::getE0x() {
+  return (E0x);
+}
+double Collective::getE0y() {
+  return (E0y);
+}
+double Collective::getE0z() {
+  return (E0z);
+}
+
+double Collective::getE0x_ext() {
+  return (E0x_ext);
+}
+double Collective::getE0y_ext() {
+  return (E0y_ext);
+}
+double Collective::getE0z_ext() {
+  return (E0z_ext);
 }
 /*! get the boolean value for verbose results */
 bool Collective::getVerbose() {
