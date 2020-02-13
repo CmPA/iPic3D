@@ -1068,9 +1068,7 @@ void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, 
 /** mover with a Predictor-Corrector scheme */
 int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
 
-	if (vct->getCartesian_rank()==0){
-		cout << "*** MOVER species " << ns << " ***" << NiterMover <<" ITERATIONS   ****" << endl;
-	}
+
 	int avail;
 	double dto2 = .5*dt, qomdt2 = qom*dto2/c;
 	double omdtsq[P_SAME_TIME], denom[P_SAME_TIME], ut[P_SAME_TIME], vt[P_SAME_TIME], wt[P_SAME_TIME], udotb[P_SAME_TIME];
@@ -1084,6 +1082,11 @@ int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
 	double xi[2]; double eta[2]; double zeta[2];
 	double inv_dx = 1.0/dx, inv_dy = 1.0/dy, inv_dz = 1.0/dz;
 	double Fext      = EMf->getFext();
+
+	if (vct->getCartesian_rank()==0){
+		cout << "*** MOVER species " << ns << " ***" << NiterMover <<" ITERATIONS   ****" << "Fext=" << Fext << endl;
+	}
+
 	// move each particle with new fields: MOVE P_SAME_TIME PARTICLES AT THE SAME TIME TO ALLOW AUTOVECTORIZATION
 	int i;
 	for (i=0; i <  (nop-(P_SAME_TIME-1)); i+=P_SAME_TIME){
@@ -1231,6 +1234,14 @@ int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
 						Bxlp[0] = weight[0][ii][jj][kk]*EMf->getBx(ix[0] - ii,iy[0] -jj,iz[0] -kk );
 						Bylp[0] = weight[0][ii][jj][kk]*EMf->getBy(ix[0] - ii,iy[0] -jj,iz[0] -kk );
 						Bzlp[0] = weight[0][ii][jj][kk]*EMf->getBz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+
+						Exlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEx_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+					    Eylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEy_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+						Ezlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+						Bxlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBx_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+						Bylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBy_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+						Bzlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+
 						Exl[0] += Exlp[0];
 						Eyl[0] += Eylp[0];
 						Ezl[0] += Ezlp[0];

@@ -45,11 +45,11 @@ void Collective::ReadInput(string inputfile) {
     // External Electric Field
     E0x_ext = config.read <double>("E0x_ext",0.0);
     E0y_ext = config.read <double>("E0y_ext",0.0);
-    E0z_ext = config.read <double>("E0z_Ext",0.0);
+    E0z_ext = config.read <double>("E0z_ext",0.0);
     // External MAgnetic Field
     B0x_ext = config.read <double>("B0x_ext",0.0);
     B0y_ext = config.read <double>("B0y_ext",0.0);
-    B0z_ext = config.read <double>("B0z_Ext",0.0);
+    B0z_ext = config.read <double>("B0z_ext",0.0);
 
     delta = config.read < double >("delta");
 
