@@ -88,7 +88,7 @@ inline double psi(int m)
   double eulerg = 0.5772156649015328606065120;
   
   double psi = 0.;
-  for (auto n=1; n<m; n++) {
+  for (int n=1; n<m; n++) {
     psi += 1. / double(n);
   }
   psi -= eulerg;
@@ -123,7 +123,7 @@ inline double BesselKi(int nu, double z)
 
   fact1 = 1;
   fact2 = 1;
-  for (auto ii=0; ii<nu; ii++) {
+  for (int ii=0; ii<nu; ii++) {
     if (ii > 0) fact1 *= ii;
     if (ii != nu-1) fact2 *= nu - ii - 1;
     else fact2 = 1;
@@ -403,7 +403,7 @@ void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
     double nmax = 10;
 
     /* Produce a table of values to draw pz from */
-    for (auto ii=1; ii<Npoints; ii++) {
+    for (int ii=1; ii<Npoints; ii++) {
       double dz = dzmax;
       double z = z0;
       double J = 3.1553e-10;
@@ -424,7 +424,7 @@ void Particles3D::relgem2D(Grid * grid, VirtualTopology3D * vct) {
     }
 
     /* Now initialise the particle velocity with the proper distribution */
-    for (auto i=0; i<counter; i++) {
+    for (int i=0; i<counter; i++) {
 
       // Drift component drawn from the values stored previously
       harvest = rand() / (double) RAND_MAX;

@@ -9,7 +9,7 @@ project(iPic3D)
 # Find PETSc
 #
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
-
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 #
 # Find packages (already managed by CMake)
