@@ -422,8 +422,9 @@ void c_Solver::WriteOutput(int cycle) {
     /* -------------------------------------------- */
 
     if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0 &&
-        cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    //if (cycle%(col->getParticlesOutputCycle())==0 &&
+    //    cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    if (cycle%(col->getParticlesOutputCycle())==0 )      WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
   }
   else
