@@ -585,6 +585,17 @@ public:
       }
     }
 
+    if (tag.find("Flux", 0) != string::npos) {
+      for (int i = 0; i < ns; ++i) {
+        stringstream ii;
+        ii << i;
+        this->output_adaptor.write("/moments/species_" + ii.str() + "/EFx/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFxs());
+        this->output_adaptor.write("/moments/species_" + ii.str() + "/EFy/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFys());
+        this->output_adaptor.write("/moments/species_" + ii.str() + "/EFz/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFzs());
+      }
+    }
+
+
     // kinetic energy for species s (normalized on q)
     if (tag.find("k_energy", 0) != string::npos) {
       double K_en;

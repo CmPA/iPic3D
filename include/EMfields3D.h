@@ -288,6 +288,13 @@ class EMfields3D                // :public Field
     /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
     void addJz(double weight[][2][2], int X, int Y, int Z, int is);
 
+    /*! add an amount of Energy Flux - direction X  at node X,Y,Z */
+    void addEFx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of Energy Flux - direction Y at node X,Y,Z */
+    void addEFy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of Energy Flux - direction Z at node X,Y,Z */
+    void addEFz(double weight[][2][2], int X, int Y, int Z, int is);
+
     /*! add an amount of pressure density - direction XX to current density field at node X,Y,Z */
     void addPxx(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction XY to current density field at node X,Y,Z */
@@ -459,6 +466,23 @@ class EMfields3D                // :public Field
     double ***&getJys(int is);
     double ***&getJzs(int is);
 
+    /*! SPECIES: get Energy Fluxes  */
+    double ***&getEFxs(int is);
+    double ***&getEFys(int is);
+    double ***&getEFzs(int is);
+    double ****getEFxs();
+    double ****getEFys();
+    double ****getEFzs();
+
+
+    double ***&getPxxs(int is);
+    double ***&getPxys(int is);
+    double ***&getPxzs(int is);
+    double ***&getPyys(int is);
+    double ***&getPyzs(int is);
+    double ***&getPzzs(int is);
+
+
     /*! get the electric field energy */
     double getEenergy();
     /*! get the magnetic field energy */
@@ -618,6 +642,15 @@ class EMfields3D                // :public Field
     double ****Jys;
     /*! SPECIES: current density component-Z for species, defined on nodes */
     double ****Jzs;
+
+    /*! SPECIES: Energy Flux density component-X for species, defined on nodes */
+    double ****EFxs;
+    /*! SPECIES: Energy Flux density component-Y for species, defined on nodes */
+    double ****EFys;
+    /*! SPECIES: Energy Flux component-Z for species, defined on nodes */
+    double ****EFzs;
+
+
     /*! External magnetic field component-X, defined on nodes */
     double***  Bx_ext;
     /*! External magnetic field component-Y, defined on nodes */

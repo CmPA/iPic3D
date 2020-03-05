@@ -125,6 +125,9 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Jxs = newArr4(double, ns, nxn, nyn, nzn);
   Jys = newArr4(double, ns, nxn, nyn, nzn);
   Jzs = newArr4(double, ns, nxn, nyn, nzn);
+  EFxs = newArr4(double, ns, nxn, nyn, nzn);
+  EFys = newArr4(double, ns, nxn, nyn, nzn);
+  EFzs = newArr4(double, ns, nxn, nyn, nzn);
   pXXsn = newArr4(double, ns, nxn, nyn, nzn);
   pXYsn = newArr4(double, ns, nxn, nyn, nzn);
   pXZsn = newArr4(double, ns, nxn, nyn, nzn);
@@ -1492,6 +1495,11 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   communicateInterp(nxn, nyn, nzn, ns, Jxs, 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, Jys, 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, Jzs, 0, 0, 0, 0, 0, 0, vct);
+
+  communicateInterp(nxn, nyn, nzn, ns, EFxs, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFys, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFzs, 0, 0, 0, 0, 0, 0, vct);
+
   communicateInterp(nxn, nyn, nzn, ns, pXXsn, 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, pXYsn, 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, pXZsn, 0, 0, 0, 0, 0, 0, vct);
@@ -1506,6 +1514,11 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   communicateNode_P(nxn, nyn, nzn, Jxs, ns, vct);
   communicateNode_P(nxn, nyn, nzn, Jys, ns, vct);
   communicateNode_P(nxn, nyn, nzn, Jzs, ns, vct);
+
+  communicateNode_P(nxn, nyn, nzn, EFxs, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFys, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFzs, ns, vct);
+
   communicateNode_P(nxn, nyn, nzn, pXXsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pXYsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pXZsn, ns, vct);
@@ -1552,6 +1565,7 @@ void Moments::addJz(double weight[][2][2], int X, int Y, int Z) {
         Jz[X - i][Y - j][Z - k] += temp;
       }
 }
+
 /** add an amount of pressure density - direction XX to current density field on the node */
 void Moments::addPxx(double weight[][2][2], int X, int Y, int Z) {
   for (int i = 0; i < 2; i++)
@@ -1699,7 +1713,27 @@ void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is) {
         pZZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-
+/*! add an amount of charge energy to EF density - direction X to EF density field on the node */
+void EMfields3D::addEFx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        EFxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of  energy flyx to EF  - direction Y to EF density field on the node */
+void EMfields3D::addEFy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        EFys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of energy flux to EF  - direction Z to EF density field on the node */
+void EMfields3D::addEFz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
 
 /*! set to 0 all the densities fields */
 void EMfields3D::setZeroDensities() {
@@ -1728,6 +1762,11 @@ void EMfields3D::setZeroDensities() {
           Jxs  [kk][i][j][k] = 0.0;
           Jys  [kk][i][j][k] = 0.0;
           Jzs  [kk][i][j][k] = 0.0;
+
+	  EFxs  [kk][i][j][k] = 0.0;
+          EFys  [kk][i][j][k] = 0.0;
+          EFzs  [kk][i][j][k] = 0.0;
+
           pXXsn[kk][i][j][k] = 0.0;
           pXYsn[kk][i][j][k] = 0.0;
           pXZsn[kk][i][j][k] = 0.0;
@@ -4011,6 +4050,49 @@ double ***EMfields3D::getJzsc(int is) {
 
   return arr;
 }
+
+double ***& EMfields3D::getPxxs(int is) {
+  return (pXXsn[is]);
+}
+double ***& EMfields3D::getPxys(int is) {
+  return (pXYsn[is]);
+}
+double ***& EMfields3D::getPxzs(int is) {
+  return (pXZsn[is]);
+}
+double ***& EMfields3D::getPyys(int is) {
+  return (pYYsn[is]);
+}
+double ***& EMfields3D::getPyzs(int is) {
+  return (pYZsn[is]);
+}
+double ***& EMfields3D::getPzzs(int is) {
+  return (pZZsn[is]);
+}
+
+/*! get the Energy Fluxes */
+double ***& EMfields3D::getEFxs(int is) {
+  return (EFxs[is]);
+}
+double ***& EMfields3D::getEFys(int is) {
+  return (EFys[is]);
+}
+double ***& EMfields3D::getEFzs(int is) {
+  return (EFzs[is]);
+}
+
+/*! get the Energy Fluxes */
+double **** EMfields3D::getEFxs() {
+  return (EFxs);
+}
+double **** EMfields3D::getEFys() {
+  return (EFys);
+}
+double **** EMfields3D::getEFzs() {
+  return (EFzs);
+}
+
+
 /*! get the electric field energy */
 double EMfields3D::getEenergy(void) {
   double localEenergy = 0.0;
@@ -4080,6 +4162,9 @@ EMfields3D::~EMfields3D() {
   delArr4(pYYsn, ns, nxn, nyn);
   delArr4(pYZsn, ns, nxn, nyn);
   delArr4(pZZsn, ns, nxn, nyn);
+  delArr4(EFxs, nxn, nyn, nzn);
+  delArr4(EFys, nxn, nyn, nzn);
+  delArr4(EFzs, nxn, nyn, nzn);
   // central points
   delArr3(PHI, nxc, nyc);
   delArr3(Bxc, nxc, nyc);

@@ -434,9 +434,9 @@ void c_Solver::WriteOutput(int cycle) {
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
 #ifdef EB
-      output_mgr.output("Eall + Ball + rhos + Jsall + pressure + Bext", cycle);
+      output_mgr.output("Eall + Ball + rhos + Jsall + pressure + Bext + Flux", cycle);
 #else
-      output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
+      output_mgr.output("Eall + Ball + rhos + Jsall + pressure + Flux", cycle);
 #endif
       // Pressure tensor is available
       hdf5_agent.close();

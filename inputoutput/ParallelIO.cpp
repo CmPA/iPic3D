@@ -161,6 +161,20 @@ void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *co
     file.WriteFields(EMf->getJxs(is),   "Jx_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
     file.WriteFields(EMf->getJys(is),   "Jy_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
     file.WriteFields(EMf->getJzs(is),   "Jz_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+
+    // heat flux
+    file.WriteFields(EMf->getEFxs(is),   "EFx_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getEFys(is),   "EFy_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getEFzs(is),   "EFz_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+
+    // added pressures
+    file.WriteFields(EMf->getPxxs(is), "Pxx_"+ s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getPxys(is), "Pxy_"+ s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getPxzs(is), "Pxz_"+ s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getPyys(is), "Pyy_"+ s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getPyzs(is), "Pyz_"+ s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+    file.WriteFields(EMf->getPzzs(is), "Pzz_"+ s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+
   }
 
   file.CloseFieldsFile();
