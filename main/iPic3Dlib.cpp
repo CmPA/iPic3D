@@ -194,7 +194,7 @@ int c_Solver::Init(int argc, char **argv) {
   my_clock = new Timing(myrank);
 
 #ifdef EB
-  ebox= new EBox(col);
+  ebox= new EBox(col, restart);
   if (myrank==0){
     cout <<"Expanding box initialised: U_EB_0= " << ebox->getUEB_0() << ", R_EB_0=" << ebox->getREB_0() << endl;
   }

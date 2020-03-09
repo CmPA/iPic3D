@@ -17,7 +17,7 @@ class EBox
 {
 public:
   /** constructor */
-  EBox(Collective * col);
+  EBox(Collective * col, int restart);
   /** destructor */
   ~EBox();
   /** update expanding box parameters, 

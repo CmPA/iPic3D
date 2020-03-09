@@ -2,18 +2,24 @@
 #include <iomanip>
 using std::showpoint;
 /*! constructor */
-EBox::EBox(Collective * col) {
+EBox::EBox(Collective * col, int restart) {
 
   dt    = col->getDt();
   th    = col->getTh();
   UEB_0 = col->getUEB_0();
   REB_0 = col->getREB_0();
 
-  //so it becomes REB_0 + dt*UEB_0*th at the first update
-  R_nth  = REB_0- dt*UEB_0 + dt*UEB_0*th; 
 
-  //so it becomes REB_0 at tge first update
-  R  = REB_0- dt*UEB_0;
+  if (restart ==0) {
+    //so it becomes REB_0 + dt*UEB_0*th at the first update
+    R_nth  = REB_0- dt*UEB_0 + dt*UEB_0*th; 
+    //so it becomes REB_0 at tge first update
+    R  = REB_0- dt*UEB_0;}
+  else // restart, either for hdf5 or h5hut
+    {
+      R= REB_0 + col->getLast_cycle()*dt*UEB_0   - dt*UEB_0;
+      R_nth= R+    dt*UEB_0*th;
+    }
 }
 
 /*! destructor */

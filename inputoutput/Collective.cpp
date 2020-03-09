@@ -184,6 +184,14 @@ void Collective::ReadInput(string inputfile) {
 
       initfile = ff;
 
+      /// here: if EBRestart_RelocPart, I have rescaling transverse direction    
+      /// EBRestart_RelocPart has to be set to true only if you are restarting a non EB sim from a EB sim   
+      // (this done separately if restart from hdf5)
+      if (EBRestart_RelocPart){
+	Ly= Ly*EBRestart_RdivR0;
+	Lz= Lz*EBRestart_RdivR0;
+      }
+
     }
     else {
       cout << " ERROR: The name of the initial file is incorrect, please verify that you are " << endl;
