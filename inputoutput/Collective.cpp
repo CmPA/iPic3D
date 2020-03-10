@@ -1084,7 +1084,7 @@ int Collective::getRestart_status() {
   return (restart_status);
 }
 int Collective::getrestart_or_solinit() {
-  return (getrestart_or_solinit);
+  return (restart_or_solinit);
 }
 /*! get SaveDirName */
 string Collective::getSaveDirName() {
