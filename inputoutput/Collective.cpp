@@ -7,6 +7,7 @@ void Collective::ReadInput(string inputfile) {
   int test_verbose;
   // Loading the input file 
   ConfigFile config(inputfile);
+  restart_or_solinit=0;
   // the following variables are ALWAYS taken from inputfile, even if restarting 
   try {
   {
@@ -145,9 +146,11 @@ void Collective::ReadInput(string inputfile) {
 
     RestartDirName = config.read < string > ("RestartDirName");
     ReadRestart(RestartDirName);
+    restart_or_solinit=1;
   }
   else if (SOLINIT1) {
 #ifdef USEH5HUT
+    restart_or_solinit=1;
     SolInit  = true;
     initfile = FieldsInit;
 
@@ -1079,6 +1082,9 @@ bool Collective::getTrackParticleID(int nspecies) {
 }
 int Collective::getRestart_status() {
   return (restart_status);
+}
+int Collective::getrestart_or_solinit() {
+  return (getrestart_or_solinit);
 }
 /*! get SaveDirName */
 string Collective::getSaveDirName() {

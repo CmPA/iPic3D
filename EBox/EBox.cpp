@@ -2,7 +2,7 @@
 #include <iomanip>
 using std::showpoint;
 /*! constructor */
-EBox::EBox(Collective * col, int restart) {
+EBox::EBox(Collective * col) {
 
   dt    = col->getDt();
   th    = col->getTh();
@@ -10,7 +10,8 @@ EBox::EBox(Collective * col, int restart) {
   REB_0 = col->getREB_0();
 
 
-  if (restart ==0) {
+  int restart_or_solinit= col->getrestart_or_solinit();
+  if (restart_or_solinit ==0) {
     //so it becomes REB_0 + dt*UEB_0*th at the first update
     R_nth  = REB_0- dt*UEB_0 + dt*UEB_0*th; 
     //so it becomes REB_0 at tge first update

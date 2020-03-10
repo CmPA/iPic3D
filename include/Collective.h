@@ -190,6 +190,8 @@ class Collective
 
     /*! get RESTART */
     int getRestart_status();
+    /*! ge restart_or_solinit */
+    int getrestart_or_solinit();
 
     /*! get the sheet thickness */
     double getDelta();
@@ -373,6 +375,8 @@ class Collective
     int restart_status;
     /*! last cycle */
     int last_cycle;
+    /* 0 if no restart or solinit, 1 if any of the two */
+    int restart_or_solinit;
 
     /*! Boundary condition on particles 0 = exit 1 = perfect mirror 2 = riemission */
     /*! Boundary Condition Particles: FaceXright */
