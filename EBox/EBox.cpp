@@ -18,7 +18,7 @@ EBox::EBox(Collective * col) {
     R  = REB_0- dt*UEB_0;}
   else // restart, either for hdf5 or h5hut
     {
-      R= REB_0 + col->getLast_cycle()*dt*UEB_0   - dt*UEB_0;
+      R= REB_0 + col->getLast_cycle()*dt*UEB_0 ; // check: you do not have to remove dt*UEB_0
       R_nth= R+    dt*UEB_0*th;
     }
 }
