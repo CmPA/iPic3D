@@ -321,6 +321,7 @@ public:
     rho -> number density
     rhos -> number densities for each species
     pressure -> pressure tensor for each species
+    energyflux -> Energy Flux
     position -> particle position (x,y,z)
     velocity -> particle velocity (u,v,w)
     q -> particle charge
@@ -566,6 +567,17 @@ public:
         this->output_adaptor.write("/moments/species_" + ii.str() + "/pZZ/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getpZZsn());
       }
     }
+
+    // pressure for species s is written without ghost cells and defined in nodes
+        if (tag.find("energyflux", 0) != string::npos) {
+          for (int i = 0; i < ns; ++i) {
+            stringstream ii;
+            ii << i;
+            this->output_adaptor.write("/moments/species_" + ii.str() + "/EFx/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFxsn());
+            this->output_adaptor.write("/moments/species_" + ii.str() + "/EFy/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFysn());
+            this->output_adaptor.write("/moments/species_" + ii.str() + "/EFz/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFzsn());
+             }
+        }
 
     // kinetic energy for species s (normalized on q)
     if (tag.find("k_energy", 0) != string::npos) {

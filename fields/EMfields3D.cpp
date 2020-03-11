@@ -4747,6 +4747,18 @@ double ***& EMfields3D::getEFzs(int is) {
   return (EFzs[is]);
 }
 
+/*! SPECIES: get energy flux  component X defined on nodes */
+double ****EMfields3D::getEFxsn() {
+  return (EFxs);
+}
+double ****EMfields3D::getEFysn() {
+  return (EFys);
+}
+double ****EMfields3D::getEFzsn() {
+  return (EFzs);
+}
+
+
 /*! get the electric field energy */
 double EMfields3D::getEenergy(void) {
   double localEenergy = 0.0;

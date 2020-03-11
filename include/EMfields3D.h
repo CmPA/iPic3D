@@ -486,6 +486,10 @@ class EMfields3D                // :public Field
     double ***&getEFxs(int is);
     double ***&getEFys(int is);
     double ***&getEFzs(int is);
+    /*! SPECIES: get Energy Fluxes  */
+    double ****getEFxsn();
+    double ****getEFysn();
+    double ****getEFzsn();
 
     /*! get the electric field energy */
     double getEenergy();
