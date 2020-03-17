@@ -160,6 +160,9 @@ int c_Solver::Init(int argc, char **argv) {
 
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
+  qx = new double[ns];
+  qy = new double[ns];
+  qz = new double[ns];
   momentum = new double[ns];
   cq = SaveDirName + "/ConservedQuantities.txt";
   if (myrank == 0) {
@@ -377,6 +380,11 @@ void c_Solver::WriteConserved(int cycle) {
     TOTmomentum = 0.0;
     for (int is = 0; is < ns; is++) {
       Ke[is] = part[is].getKe();
+      // divide by number of particles
+      long long ntot= part[is].getNOP();
+      qx[is] = part[is].getqx()/ double(ntot);
+      qy[is] = part[is].getqy()/ double(ntot);
+      qz[is] = part[is].getqz()/ double(ntot);
       TOTenergy += Ke[is];
       momentum[is] = part[is].getP();
       TOTmomentum += momentum[is];
@@ -386,6 +394,11 @@ void c_Solver::WriteConserved(int cycle) {
       my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy  << "\t";
       for (int is = 0; is < ns; is++) {
 	my_file << Ke[is] << "\t" ;
+      }
+      for (int is = 0; is < ns; is++) {
+        my_file << qx[is] << "\t" ;
+	my_file << qy[is] << "\t" ;
+	my_file << qz[is] << "\t" ;
       }
       my_file << endl;
       my_file.close();
@@ -493,6 +506,9 @@ void c_Solver::Finalize() {
   // deallocate
   delete[]Ke;
   delete[]momentum;
+  delete[]qx;
+  delete[]qy;
+  delete[]qz;
   // close MPI
   mpi->finalize_mpi();
 }

@@ -60,6 +60,11 @@ namespace iPic3D {
     Particles3D   *part;
     double        *Ke;
     double        *momentum;
+    // heat flux in the three direction, calculated summing particle by particle
+    // (also saved at grid point)
+    double        *qx;
+    double        *qy;
+    double        *qz;
     double        *Qremoved;
     unsigned long *VelocityDist;
     Timing        *my_clock;

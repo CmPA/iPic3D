@@ -183,6 +183,12 @@ public:
   void AssignParticlesID(VirtualTopology3D * vct);
   void WriteTracking(int cycle, VirtualTopology3D * vct, Collective * col, Field * EMf,  Grid * grid);
 
+  /** return the heat flux in the x direction */
+  double getqx();
+  /** return the heat flux in the y direction */
+  double getqy();
+  /** return the heat flux in the z direction */
+  double getqz();
 
 protected:
   /** number of species */

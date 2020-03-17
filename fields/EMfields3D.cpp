@@ -997,6 +997,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         Jxs  [is][1][i][k] += Jxs  [is][1][i][k];
         Jys  [is][1][i][k] += Jys  [is][1][i][k];
         Jzs  [is][1][i][k] += Jzs  [is][1][i][k];
+	EFxs  [is][1][i][k] += EFxs  [is][1][i][k];
+        EFys  [is][1][i][k] += EFys  [is][1][i][k];
+        EFzs  [is][1][i][k] += EFzs  [is][1][i][k];
         pXXsn[is][1][i][k] += pXXsn[is][1][i][k];
         pXYsn[is][1][i][k] += pXYsn[is][1][i][k];
         pXZsn[is][1][i][k] += pXZsn[is][1][i][k];
@@ -1012,6 +1015,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         Jxs  [is][i][1][k] += Jxs  [is][i][1][k];
         Jys  [is][i][1][k] += Jys  [is][i][1][k];
         Jzs  [is][i][1][k] += Jzs  [is][i][1][k];
+	EFxs  [is][i][1][k] += EFxs  [is][i][1][k];
+        EFys  [is][i][1][k] += EFys  [is][i][1][k];
+        EFzs  [is][i][1][k] += EFzs  [is][i][1][k];
         pXXsn[is][i][1][k] += pXXsn[is][i][1][k];
         pXYsn[is][i][1][k] += pXYsn[is][i][1][k];
         pXZsn[is][i][1][k] += pXZsn[is][i][1][k];
@@ -1027,6 +1033,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         Jxs  [is][i][j][1] += Jxs  [is][i][j][1];
         Jys  [is][i][j][1] += Jys  [is][i][j][1];
         Jzs  [is][i][j][1] += Jzs  [is][i][j][1];
+	EFxs  [is][i][j][1] += EFxs  [is][i][j][1];
+        EFys  [is][i][j][1] += EFys  [is][i][j][1];
+        EFzs  [is][i][j][1] += EFzs  [is][i][j][1];
         pXXsn[is][i][j][1] += pXXsn[is][i][j][1];
         pXYsn[is][i][j][1] += pXYsn[is][i][j][1];
         pXZsn[is][i][j][1] += pXZsn[is][i][j][1];
@@ -1042,6 +1051,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         Jxs  [is][nxn - 2][i][k] += Jxs  [is][nxn - 2][i][k];
         Jys  [is][nxn - 2][i][k] += Jys  [is][nxn - 2][i][k];
         Jzs  [is][nxn - 2][i][k] += Jzs  [is][nxn - 2][i][k];
+	EFxs  [is][nxn - 2][i][k] += EFxs  [is][nxn - 2][i][k];
+        EFys  [is][nxn - 2][i][k] += EFys  [is][nxn - 2][i][k];
+        EFzs  [is][nxn - 2][i][k] += EFzs  [is][nxn - 2][i][k];
         pXXsn[is][nxn - 2][i][k] += pXXsn[is][nxn - 2][i][k];
         pXYsn[is][nxn - 2][i][k] += pXYsn[is][nxn - 2][i][k];
         pXZsn[is][nxn - 2][i][k] += pXZsn[is][nxn - 2][i][k];
@@ -1057,6 +1069,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         Jxs  [is][i][nyn - 2][k] += Jxs  [is][i][nyn - 2][k];
         Jys  [is][i][nyn - 2][k] += Jys  [is][i][nyn - 2][k];
         Jzs  [is][i][nyn - 2][k] += Jzs  [is][i][nyn - 2][k];
+	EFxs  [is][i][nyn - 2][k] += EFxs  [is][i][nyn - 2][k];
+        EFys  [is][i][nyn - 2][k] += EFys  [is][i][nyn - 2][k];
+        EFzs  [is][i][nyn - 2][k] += EFzs  [is][i][nyn - 2][k];
         pXXsn[is][i][nyn - 2][k] += pXXsn[is][i][nyn - 2][k];
         pXYsn[is][i][nyn - 2][k] += pXYsn[is][i][nyn - 2][k];
         pXZsn[is][i][nyn - 2][k] += pXZsn[is][i][nyn - 2][k];
@@ -1072,6 +1087,9 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         Jxs  [is][i][j][nzn - 2] += Jxs  [is][i][j][nzn - 2];
         Jys  [is][i][j][nzn - 2] += Jys  [is][i][j][nzn - 2];
         Jzs  [is][i][j][nzn - 2] += Jzs  [is][i][j][nzn - 2];
+	EFxs  [is][i][j][nzn - 2] += EFxs  [is][i][j][nzn - 2];
+        EFys  [is][i][j][nzn - 2] += EFys  [is][i][j][nzn - 2];
+        EFzs  [is][i][j][nzn - 2] += EFzs  [is][i][j][nzn - 2];
         pXXsn[is][i][j][nzn - 2] += pXXsn[is][i][j][nzn - 2];
         pXYsn[is][i][j][nzn - 2] += pXYsn[is][i][j][nzn - 2];
         pXZsn[is][i][j][nzn - 2] += pXZsn[is][i][j][nzn - 2];

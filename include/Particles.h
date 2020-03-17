@@ -93,5 +93,11 @@ public:
   /** Print the number of particles of this subdomain */
   virtual void PrintNp(VirtualTopology3D * ptVCT) const = 0;
 
+  /** return the heat flux in the x direction */
+  virtual double getqx()=0;
+  /** return the heat flux in the y direction */
+  virtual double getqy()=0;
+  /** return the heat flux in the z direction */
+  virtual double getqz()=0;
 };
 #endif
