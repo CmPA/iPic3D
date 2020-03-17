@@ -596,21 +596,24 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       for (int ii = 0; ii < 2; ii++)
 	for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * 0.5 * (q[i]/qom) * (u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+            //temp[ii][jj][kk] = u[i] * 0.5 * (q[i]/qom) * (u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk]; // this from ecsim, where q[i] is not included in the weight; I am still keeping out qom, for simmetry with the pressure
+	    temp[ii][jj][kk] = u[i] * 0.5  * (u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
       EMf->addEFx(temp, ix, iy, iz, ns);
 
       // add energy flux density - Y
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * 0.5 * (q[i]/qom) *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+            // temp[ii][jj][kk] = v[i] * 0.5 * (q[i]/qom) *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk]; // this from ecsim, where q[i] is not included in the weight; I am still keeping out qom, for simmetry with the pressure 
+	    temp[ii][jj][kk] = v[i] * 0.5 * (u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
       EMf->addEFy(temp, ix, iy, iz, ns);
 
       // add energy flux density - Z
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = w[i] * 0.5 * (q[i]/qom) *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+            //temp[ii][jj][kk] = w[i] * 0.5 * (q[i]/qom) *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk]; // this from ecsim, where q[i] is not included in the weight; I am still keeping out qom, for simmetry with the pressure
+	    temp[ii][jj][kk] = w[i] * 0.5 * (u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
       EMf->addEFz(temp, ix, iy, iz, ns);
 
     }
