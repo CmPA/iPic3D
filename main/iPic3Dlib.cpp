@@ -380,11 +380,9 @@ void c_Solver::WriteConserved(int cycle) {
     TOTmomentum = 0.0;
     for (int is = 0; is < ns; is++) {
       Ke[is] = part[is].getKe();
-      // divide by number of particles
-      long long ntot= part[is].getNOP();
-      qx[is] = part[is].getqx()/ double(ntot);
-      qy[is] = part[is].getqy()/ double(ntot);
-      qz[is] = part[is].getqz()/ double(ntot);
+      qx[is] = part[is].getqx();
+      qy[is] = part[is].getqy();
+      qz[is] = part[is].getqz();
       TOTenergy += Ke[is];
       momentum[is] = part[is].getP();
       TOTmomentum += momentum[is];

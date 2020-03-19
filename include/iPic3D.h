@@ -60,8 +60,8 @@ namespace iPic3D {
     Particles3D   *part;
     double        *Ke;
     double        *momentum;
-    // heat flux in the three direction, calculated summing particle by particle
-    // (also saved at grid point)
+    // heat flux in the three directions, calculated summing particle by particle
+    // NB: EFx, EFy, EFz saved at grid points are the heat flux DENSITIES
     double        *qx;
     double        *qy;
     double        *qz;
