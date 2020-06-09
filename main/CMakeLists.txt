@@ -19,6 +19,11 @@ set(IPIC_HOME ${CMAKE_CURRENT_SOURCE_DIR}/..)
 
 find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
+find_package(PETSC)
+if(PETSC_FOUND)
+include_directories(${PETSC_INCLUDE_DIR})
+add_definitions( "-DHAS_PETSC" )
+endif()
 
 #
 # Header file list
