@@ -94,6 +94,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="TwoCoils")  EMf->initTwoCoils(vct,grid,col);
     else if (col->getCase()=="FluxRope")  EMf->initFluxRope(vct,grid,col);
     else if (col->getCase()=="GEMNoVelShear")  EMf->initHarrisNoVelShear(vct, grid,col);
+    else if (col->getCase()=="Relativistic")  EMf->init(vct, grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -144,6 +145,7 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="Whistler")    part[i].maxwellian_whistler(grid, EMf, vct);
         else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
         else if (col->getCase()=="GEMRelativity")    part[i].relativistic_maxwellian(grid, EMf, vct);
+        else if (col->getCase()=="Relativistic")  part[i].twostream1D(grid, vct, 3);
         else if (col->getCase()=="GEM" || col->getCase()=="GEMNoVelShear"){
         	if(i<2)
         		part[i].maxwellian(grid, EMf, vct);
@@ -356,7 +358,7 @@ bool c_Solver::ParticlesMover() {
 	  else{
 		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
 		  //mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
-		  if(col->getCase()=="GEMRelativity")
+		  if(col->getCase()=="GEMRelativity" || col->getCase()=="Relativistic")
 			  mem_avail = part[i].mover_relativistic(grid, vct, EMf);
 		  else
 			  mem_avail = part[i].mover_PC_old(grid, vct, EMf); // use the Predictor Corrector scheme
@@ -443,6 +445,8 @@ void c_Solver::InjectBoundaryParticles(){
 				mem_avail = part[i].injector_rand_box_mono(grid,vct,EMf);
 		}
       }
+      else if (col->getCase()=="Relativistic");
+      // Do nothing//
       else{
     	     /* --------------------------------------- */
     	      /* Remove particles from depopulation area */
@@ -539,8 +543,9 @@ void c_Solver::WriteOutput(int cycle) {
     /* -------------------------------------------- */
 
     if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0 &&
-        cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    //if (cycle%(col->getParticlesOutputCycle())==0 &&
+    //    cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    if (cycle%(col->getParticlesOutputCycle())==0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
   }
   else

@@ -23,7 +23,8 @@ void H5output::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, in
   std::string       filename;
 
   filenmbr << std::setfill('0') << std::setw(6) << cycle;
-  filename = basename + "-Fields" + "_" + filenmbr.str() + ".h5";
+  if (dtype=="Cell") filename = basename + "-fieldB" + "_" + filenmbr.str() + ".h5";
+  else               filename = basename + "-Fields" + "_" + filenmbr.str() + ".h5";
 
   int d = -1;
   if (dtype=="Cell") d = 0;
@@ -36,7 +37,8 @@ void H5output::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, in
   /* Open HDF5 file */
   /* -------------- */
 
-  fldsfile = H5OpenFile(filename.c_str(), H5_O_RDWR, CART_COMM);
+//fldsfile = H5OpenFile(filename.c_str(), H5_O_RDWR, CART_COMM);
+  fldsfile = H5OpenFile(filename.c_str(), H5_O_RDWR, H5_PROP_DEFAULT);
   H5SetStep(fldsfile,0);
   H5WriteStepAttribInt32(fldsfile, "nspec", &nspec, 1);
   H5Block3dSetGrid(fldsfile, pdims[0], pdims[1], pdims[2]);
@@ -67,7 +69,6 @@ void H5output::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, in
   H5Block3dSetView(fldsfile, irange[0], irange[1],
                              jrange[0], jrange[1],
                              krange[0], krange[1]);
-
 }
 
 void H5output::CloseFieldsFile(){
@@ -105,7 +106,8 @@ void H5output::OpenPartclFile(int nspec, MPI_Comm CART_COMM){
   /* Open HDF5 file */
   /* -------------- */
 
-  partfile = H5OpenFile(filename.c_str(), H5_O_WRONLY, CART_COMM);
+//  partfile = H5OpenFile(filename.c_str(), H5_O_WRONLY, CART_COMM);
+  partfile = H5OpenFile(filename.c_str(), H5_O_WRONLY, H5_PROP_DEFAULT);
   H5SetStep(partfile,0);
   H5WriteStepAttribInt32(partfile, "nspec", &nspec, 1);
 
@@ -180,6 +182,186 @@ void H5output::WriteParticles(int ispec, long long np, double *q, double *x, dou
 
 }
 
+void H5output::WriteParticles(int ispec, long long np, long long *rank, long long* id,  double *q, double *x, double *y, double *z, double *u, double *v, double *w, MPI_Comm CART_COMM){
+
+  /* --------------------------------------------------------------------- */
+  /* Find out the total number of particles of species i in all the domain */
+  /* --------------------------------------------------------------------- */
+
+  long long ntpart;
+
+  MPI_Allreduce(&np, &ntpart, 1, MPI_LONG_LONG, MPI_SUM, CART_COMM);
+  const h5_int64_t ntp = ntpart;
+
+  /* --------------------------------------------- */
+  /* Write the number of particles as an attribute */
+  /* --------------------------------------------- */
+
+  std::stringstream sstm;
+
+  sstm << "npart_" << ispec;
+  std::string nparti = sstm.str();
+  H5WriteStepAttribInt64(partfile, nparti.c_str(), &ntp, 1);
+  sstm.str("");
+
+  H5PartSetNumParticles(partfile,np);
+
+  /* ------------------ */
+  /* Write the datasets */
+  /* ------------------ */
+
+  sstm << "tagR_" << ispec;
+  std::string dtset = sstm.str();
+  H5PartWriteDataInt64(partfile,dtset.c_str(),(const int64_t*) rank);
+  sstm.str("");
+
+  sstm << "tagP_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataInt64(partfile,dtset.c_str(),(const int64_t*) id);
+  sstm.str("");
+
+  sstm << "q_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),q);
+  sstm.str("");
+
+  sstm << "x_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),x);
+  sstm.str("");
+
+  sstm << "y_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),y);
+  sstm.str("");
+
+  sstm << "z_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),z);
+  sstm.str("");
+
+  sstm << "u_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),u);
+  sstm.str("");
+
+  sstm << "v_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),v);
+  sstm.str("");
+
+  sstm << "w_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),w);
+  sstm.str("");
+
+}
+
+void H5output::WriteTestParticles(int ispec, long long np, long long *rank, long long* id,  double *q, double *x, double *y, double *z, double *u, double *v, double *w, double* Exl, double* Eyl, double* Ezl, double* Bxl, double *Byl, double* Bzl, MPI_Comm CART_COMM){
+
+  /* --------------------------------------------------------------------- */
+  /* Find out the total number of particles of species i in all the domain */
+  /* --------------------------------------------------------------------- */
+
+  long long ntpart;
+
+  MPI_Allreduce(&np, &ntpart, 1, MPI_LONG_LONG, MPI_SUM, CART_COMM);
+  const h5_int64_t ntp = ntpart;
+
+  /* --------------------------------------------- */
+  /* Write the number of particles as an attribute */
+  /* --------------------------------------------- */
+
+  std::stringstream sstm;
+
+  sstm << "npart_" << ispec;
+  std::string nparti = sstm.str();
+  H5WriteStepAttribInt64(partfile, nparti.c_str(), &ntp, 1);
+  sstm.str("");
+
+  H5PartSetNumParticles(partfile,np);
+
+  /* ------------------ */
+  /* Write the datasets */
+  /* ------------------ */
+
+  sstm << "tagR_" << ispec;
+  std::string dtset = sstm.str();
+  H5PartWriteDataInt64(partfile,dtset.c_str(),(const int64_t*) rank);
+  sstm.str("");
+
+  sstm << "tagP_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataInt64(partfile,dtset.c_str(),(const int64_t*) id);
+  sstm.str("");
+
+  sstm << "q_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),q);
+  sstm.str("");
+
+  sstm << "x_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),x);
+  sstm.str("");
+
+  sstm << "y_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),y);
+  sstm.str("");
+
+  sstm << "z_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),z);
+  sstm.str("");
+
+  sstm << "u_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),u);
+  sstm.str("");
+
+  sstm << "v_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),v);
+  sstm.str("");
+
+  sstm << "w_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),w);
+  sstm.str("");
+
+  sstm << "Exl_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),Exl);
+  sstm.str("");
+
+  sstm << "Eyl_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),Eyl);
+  sstm.str("");
+
+  sstm << "Ezl_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),Ezl);
+  sstm.str("");
+
+  sstm << "Bxl_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),Bxl);
+  sstm.str("");
+
+  sstm << "Byl_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),Byl);
+  sstm.str("");
+
+  sstm << "Bzl_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),Bzl);
+  sstm.str("");
+
+}
+
 /* ====================== */
 /*         INPUT          */
 /* ====================== */
@@ -189,7 +371,7 @@ void H5input::SetNameCycle(std::string name, int rc){
   recycle  = rc;
 }
 
-void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *pdims, MPI_Comm CART_COMM){
+int H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *pdims, MPI_Comm CART_COMM){
 
   int file_nspec;
 
@@ -197,7 +379,8 @@ void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int
   std::string       filename;
 
   filenmbr << std::setfill('0') << std::setw(6) << recycle;
-  filename = basename + "-Fields" + "_" + filenmbr.str() + ".h5";
+  if (dtype=="Cell") filename = basename + "-fieldB" + "_" + filenmbr.str() + ".h5";
+  else               filename = basename + "-Fields" + "_" + filenmbr.str() + ".h5";
 
   int d = -1;
   if (dtype=="Cell") d = 0;
@@ -210,7 +393,15 @@ void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int
   /* Open HDF5 file */
   /* -------------- */
 
-  fldsfile = H5OpenFile(filename.c_str(), H5_O_RDONLY, CART_COMM);
+  // Control to see if the files exits
+  int rank;
+  MPI_Comm_rank(CART_COMM, &rank);
+  FILE* fd = fopen(filename.c_str(),"rb");
+  if (fd == 0) return -1;
+  else fclose(fd);
+
+//  fldsfile = H5OpenFile(filename.c_str(), H5_O_RDONLY, CART_COMM);
+  fldsfile = H5OpenFile(filename.c_str(), H5_O_RDONLY, H5_PROP_DEFAULT);
   H5SetStep(fldsfile, 0);
   H5ReadStepAttribInt32(fldsfile, "nspec", &file_nspec);
 
@@ -230,7 +421,8 @@ void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int
   h5_size_t  f_rank, f_dims[3], e_rank;
   h5_int64_t f_type;
 
-  H5BlockGetFieldInfoByName(fldsfile, "Ex", &f_rank, f_dims, &e_rank, &f_type);
+  if (dtype=="Cell") H5BlockGetFieldInfoByName(fldsfile, "Bxc", &f_rank, f_dims, &e_rank, &f_type);
+  else               H5BlockGetFieldInfoByName(fldsfile, "Ex", &f_rank, f_dims, &e_rank, &f_type);
 
   int ndim = 3; // By default 2D is considered as a 'flat' 3D
 
@@ -291,15 +483,16 @@ void H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int
                              jrange[0], jrange[1],
                              krange[0], krange[1]);
 
+  return 0;
 }
 
-void H5input::ReadFields(double ***field, std::string fname, int nx, int ny, int nz, int rank){
+int H5input::ReadFields(double ***field, std::string fname, int nx, int ny, int nz, int rank){
 
   h5_float64_t*     buffer;
 
   buffer = new h5_float64_t[nz*ny*nx];
 
-  H5Block3dReadScalarFieldFloat64(fldsfile, fname.c_str(), buffer);
+  int err = H5Block3dReadScalarFieldFloat64(fldsfile, fname.c_str(), buffer);
 
   int n = 0;
   for (int k=1; k<nz-1; k++) {
@@ -311,6 +504,7 @@ void H5input::ReadFields(double ***field, std::string fname, int nx, int ny, int
   }
 
   delete [] buffer;
+  return err;
 }
 
 void H5input::CloseFieldsFile(){
