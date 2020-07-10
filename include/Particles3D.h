@@ -51,6 +51,8 @@ class Particles3D:public Particles3Dcomm {
     /** Initial condition: deformed at R/R0, assuming expansion without interaction
 	(Landi et al, 2012, Fig 2) **/
     void maxwellian_EBDeformationWithoutInteraction(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Init. for turbulence*/
+    void alfredoturbulence(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective* col);
     /** Linear_perturbation */
     void linear_perturbation(double deltaBX, double kx, double ky, double theta, double omega_r, double omega_i, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /**Add a periodic perturbation in velocity exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/

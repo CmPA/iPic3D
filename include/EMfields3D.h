@@ -203,6 +203,8 @@ class EMfields3D                // :public Field
     void initBxPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initExPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initNPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! Papini's turbulence initialization */
+    void alfredo_turbulence(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! add a perturbattion to charge density */
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */

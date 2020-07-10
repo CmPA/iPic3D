@@ -4684,3 +4684,181 @@ void EMfields3D::initDoublePeriodicHarrisNoPerturbation(VirtualTopology3D * vct,
     init(vct, grid, col);            // use the fields from restart file
   }
 }
+
+// Initilaize field for turbulence
+void EMfields3D::alfredo_turbulence(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+
+  double globalx;
+  double globaly;
+  double globalz;
+  const double pi = 3.141592653589793;
+  const double Lx = col->getLx();
+  const double Ly = col->getLy();
+  const double amp0 = .06 ;
+  const double slope = 0.;
+  const double rkx0 = 2*pi/Lx;
+  const double rky0 = 2*pi/Ly;
+  const int    mkx0 = -3;
+  const int    mkx1 = 3;
+  const int    mky0 = -3;
+  const int    mky1 = 3;
+  int    idummy=0;
+  //double* rphb = new double[mkx1-mkx0+1,mky1-mky0+1];
+  double rphb[(mkx1-mkx0+1)*(mky1-mky0+1)];
+
+  double fact;
+  int ikx,iky;
+  double kx,ky;
+  double localvarx=0.0;
+  double localvary=0.0;
+
+  const double coarsedx= grid->getDX();
+  const double coarsedy= grid->getDY();
+  const double coarsedz= grid->getDZ();
+
+
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize turbulence "             << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "mkx0, mkx1                       = " << mkx0 << ", " << mkx1  << endl;
+      cout << "mky0, mky1                       = " << mky0 << ", " << mky1  << endl;
+      cout << "rkx0, rky0                       = " << rkx0 << ", " << rky0 << endl;
+      cout << "amp0, slope                      = " << amp0 << ", " << slope << endl;
+      cout << "-------------------------" << endl;
+    }
+
+
+
+    //ofstream filephase;
+    //filephase.open("phases.txt");
+    //ofstream filefact;
+    //filefact.open("fact.txt");
+
+    //stringstream num_proc;
+    //num_proc << "pippo"<< vct->getCartesian_rank();
+    //std::ofstream filecx(num_proc.str().c_str());
+    ////ofstream filecx;
+    ////num_proc << "xcoord" << vct->getCartesian_rank();
+    ////filecx.open(num_proc.c_str());
+
+    //filephase << mkx1-mkx0+1 << endl;
+    //filephase << mky1-mky0+1 << endl; 
+    //generating random phases
+    srand48(4);
+    for ( ikx = mkx0; ikx <= mkx1; ikx++)
+      for ( iky = mky0; iky <= mky1; iky++)
+	{
+	  //srand48(idummy);
+	  //rphb[ikx-mkx0,iky-mky0] = drand48()*2*pi;
+	  rphb[idummy] = drand48()*2*pi;
+	  //filephase << rphb[idummy]  << endl;
+	  fact = amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.);
+	  //filefact << fact << endl;
+	  idummy++;
+	}
+    //filephase.close();
+    //filefact.close();
+    //double rphb[5][5]={{1.07334,0.261571,5.73298,4.92121,4.10944},{3.29766,2.48589,1.67412,0.862345,0.0505722},{5.52198,4.71021,3.89844,3.08667,2.27489},{1.46312,0.651346,6.12276,5.31099,4.49921},{3.68744,2.87567,2.06389,1.25212,0.440347}};
+    
+    for (int i = 0; i < nxn; i++)
+      {
+	//filecx << grid->getXN(i, 0, 0) + coarsedx << endl;
+	for (int j = 0; j < nyn; j++)
+	  for (int k = 0; k < nzn; k++)
+	    {
+	      globalx= grid->getXN(i, j, k) + coarsedx;
+	      globaly= grid->getYN(i, j, k) + coarsedy;
+	      globalz= grid->getZN(i, j, k) + coarsedz;
+
+	      // initialize the density for species
+	      for (int is = 0; is < ns; is++)
+		{
+		  rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+		}
+
+	      // electric field
+	      Ex[i][j][k] = 0.0;
+	      Ey[i][j][k] = 0.0;
+	      Ez[i][j][k] = 0.0;
+	      // Magnetic field
+	      Bxn[i][j][k] = B0x;  //B0x should be zero
+	      Byn[i][j][k] = B0y;  //B0y should be zero
+	      Bzn[i][j][k] = B0z;
+
+
+	      Bx_ext[i][j][k] = 0;
+	      By_ext[i][j][k] = 0;
+	      Bz_ext[i][j][k] = 0;
+
+
+	      // initialize alfven like fluctuations in Bx and By        
+              idummy=0;
+              for ( ikx = mkx0; ikx <= mkx1; ikx++)
+                for ( iky = mky0; iky <= mky1; iky++)
+                  {
+                    //skip the k=0 point
+                    if ((iky != 0) || (ikx != 0)) {
+
+                      kx = rkx0*ikx;
+                      ky = rky0*iky;
+
+                      fact = B0z*amp0*pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
+                      //fact = pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
+
+                      Bxn[i][j][k] = Bxn[i][j][k] + fact*ky*cos( kx*globalx + ky*globaly + rphb[idummy]);
+		      //+ rphb[ikx-mkx0,iky-mky0]);
+                      Byn[i][j][k] = Byn[i][j][k] - fact*kx*cos( kx*globalx + ky*globaly + rphb[idummy]);
+		      //+ rphb[ikx-mkx0,iky-mky0]);
+                       
+		    }
+		    idummy++;
+                  }
+	      //localvarx+= pow(Bxn[i][j][k],2);
+	      //localvary+= pow(Byn[i][j][k],2);
+	    }}
+    //filecx.close();
+    // communicate ghost
+    //CALCULATING RMS   
+    /*
+    MPI_Allreduce(MPI_IN_PLACE, &localvarx, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE, &localvary, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    totalrms = B0z*amp0/sqrt(totalrms) ;
+
+    for (int i = 0; i < nxn; i++)
+    {
+    //filecx << grid->getXN(i, 0, 0) + coarsedx << endl;
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++)
+                {
+		  Bxn[i][j][k] = Bxn[i][j][k] /sqrt(localrmsx);
+		    Byn[i][j][k] = Byn[i][j][k] /sqrt(localrmsy);
+		    }
+		    }*/
+ 
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    // initialize B on centers
+    // initialize B on centers
+    grid->interpN2C(Bxc,Bxn);
+    grid->interpN2C(Byc,Byn);
+    grid->interpN2C(Bzc,Bzn);
+    // communicate ghost
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+  //  delete[] rphb;
+}
+

@@ -2048,3 +2048,115 @@ void Particles3D::maxwellian_HarrisDoublePeriodic(Grid * grid, Field * EMf, Virt
 
 
 }
+// Papini's turbulence initialization
+void Particles3D::alfredoturbulence(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective* col) {
+
+  const double coarsedx = grid->getDX();
+  const double coarsedy = grid->getDY();
+  double globalxC,globalyC;
+
+  double prob, theta, sign;
+  long long counter = 0;
+
+  double uu0;
+  double vv0;
+
+  const double pi = 3.141592653589793;
+  const double Lx = col->getLx();
+  const double Ly = col->getLy();
+  const double amp0 = .06 ;
+  const double slope = 0.;
+  const double rkx0 = 2*pi/Lx;
+  const double rky0 = 2*pi/Ly;
+  const int    mkx0 = -3;
+  const int    mkx1 = 3;
+  const int    mky0 = -3;
+  const int    mky1 = 3;
+  int    idummy=0;
+  long int myseed=vct->getCartesian_rank()+47 + ns*vct->getNprocs();
+  double B0z;
+  double rphv[(mkx1-mkx0+1)*(mky1-mky0+1)];
+  //double* rphv = new double[mkx1-mkx0+1,mky1-mky0+1];
+
+  double fact;
+  int ikx,iky;
+  double totalrms=0.0;
+
+  //B0z = EMf->getB0z();
+  B0z= col->getB0z(); 
+  //totalrms=EMf->getBrms();
+
+  //cout << "rank, seed, ns " <<vct->getCartesian_rank() << ", "<< myseed << ", " <<ns << endl;
+
+
+  srand48(1);
+  for ( ikx = mkx0; ikx <= mkx1; ikx++)
+    for ( iky = mky0; iky <= mky1; iky++)
+      {
+	rphv[idummy] = drand48()*2*pi;
+	idummy++;
+	//rphv[ikx-mkx0,iky-mky0] = drand48()*2*pi;
+      }
+
+
+  srand48(myseed);
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++){
+	//need variables in the center of the cell to calculate fluctuations
+	globalxC= grid->getXN(i, j, k) + coarsedx/2;
+	globalyC= grid->getYN(i, j, k) + coarsedy/2;
+	uu0=0.;
+	vv0=0.;
+	// initialize alfven like fluctuations in uthp and vthp       
+	idummy=0;
+	for ( ikx = mkx0; ikx <= mkx1; ikx++)
+	  for ( iky = mky0; iky <= mky1; iky++)
+	    {
+	      //skip the k=0 point
+	      if ((iky != 0) || (ikx != 0)) {
+		fact = B0z*amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.);
+
+		uu0 += + fact*rky0*iky*cos( rkx0*ikx*globalxC + rky0*iky*globalyC +rphv[idummy]);
+		vv0 += - fact*rkx0*ikx*cos( rkx0*ikx*globalxC + rky0*iky*globalyC +rphv[idummy]);
+	      }
+	      idummy++;
+	    }
+
+	for (int ii = 0; ii < npcelx; ii++)
+	  for (int jj = 0; jj < npcely; jj++)
+	    for (int kk = 0; kk < npcelz; kk++) {
+
+
+
+	      //x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+	      //y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+	      //z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+	      x[counter] = (1.0 - .999999 * drand48())* dx  + grid->getXN(i, j, k);
+	      y[counter] = (1.0 - .999999 * drand48())* dy  + grid->getYN(i, j, k);
+	      z[counter] = (1.0 - .999999 * drand48())* dz  + grid->getZN(i, j, k);
+	      // q = charge
+	      q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+	      // u
+	      prob = sqrt(-2.0 * log(1.0 - .999999 * drand48()));
+	      //theta = 2.0 * M_PI * drand48();
+	      theta = 2.0 * pi * drand48();
+	      u[counter] = u0 + uu0 + uth * prob * cos(theta);
+	      // v
+	      v[counter] = v0 + vv0 + vth * prob * sin(theta);
+	      // w
+	      prob = sqrt(-2.0 * log(1.0 - .999999 * drand48()));
+	      //theta = 2.0 * M_PI * drand48();
+	      theta = 2.0 * pi * drand48();
+	      w[counter] = w0 + wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+	      counter++;
+	    }
+      }
+
+
+  nop = counter;
+}
+
+
