@@ -4685,7 +4685,7 @@ void EMfields3D::initDoublePeriodicHarrisNoPerturbation(VirtualTopology3D * vct,
   }
 }
 
-// Initilaize field for turbulence
+// Initilaize field for turbulence, pert in the xy plane
 void EMfields3D::alfredo_turbulence(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 
   double globalx;
@@ -4861,4 +4861,151 @@ void EMfields3D::alfredo_turbulence(VirtualTopology3D * vct, Grid * grid, Collec
   }
   //  delete[] rphb;
 }
+
+// Initilaize field for turbulence, pert in the yz plane
+void EMfields3D::alfredo_turbulence_yz(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // VERY IMP: modified from alfredo_turbulence to init turbulence in the yz plane
+  // I do NOT modify the variable names, but I set them up properly so that former x is current y, and former y is current z
+  double globalx;
+  double globaly;
+  double globalz;
+  const double pi = 3.141592653589793;
+  const double Lx = col->getLx();
+  const double Ly = col->getLy();
+  const double amp0 = .06 ;
+  const double slope = 0.;
+  /*const double rkx0 = 2*pi/Lx;
+    const double rky0 = 2*pi/Ly;*/
+  // inverted here
+  const double rkx0 = 2*pi/Ly;
+  const double rky0 = 2*pi/Lz;
+  const int    mkx0 = -3;
+  const int    mkx1 = 3;
+  const int    mky0 = -3;
+  const int    mky1 = 3;
+  int    idummy=0;
+
+  double rphb[(mkx1-mkx0+1)*(mky1-mky0+1)];
+
+  double fact;
+  int ikx,iky;
+  double kx,ky;
+  double localvarx=0.0;
+  double localvary=0.0;
+
+  const double coarsedx= grid->getDX();
+  const double coarsedy= grid->getDY();
+  const double coarsedz= grid->getDZ();
+
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize turbulence, yz plane "             << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      /*cout << "mkx0, mkx1                       = " << mkx0 << ", " << mkx1  << endl;
+      cout << "mky0, mky1                       = " << mky0 << ", " << mky1  << endl;
+      cout << "rkx0, rky0                       = " << rkx0 << ", " << rky0 << endl;*/
+      cout << "mky0, mky1                       = " << mkx0 << ", " << mkx1  << endl;
+      cout << "mkz0, mkz1                       = " << mky0 << ", " << mky1  << endl;
+      cout << "rky0, rkz0                       = " << rkx0 << ", " << rky0 << endl;
+      cout << "amp0, slope                      = " << amp0 << ", " << slope << endl;
+      cout << "-------------------------" << endl;
+    }
+
+    srand48(4);
+    for ( ikx = mkx0; ikx <= mkx1; ikx++)
+      for ( iky = mky0; iky <= mky1; iky++)
+	{
+	  rphb[idummy] = drand48()*2*pi;
+	  fact = amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.);
+	  idummy++;
+	}
+
+    for (int i = 0; i < nxn; i++)
+      {
+	for (int j = 0; j < nyn; j++)
+	  for (int k = 0; k < nzn; k++)
+	    {
+	      /*globalx= grid->getXN(i, j, k) + coarsedx;
+		globaly= grid->getYN(i, j, k) + coarsedy;*/
+	      // inverted here
+	      globalx= grid->getYN(i, j, k) + coarsedy;
+	      globaly= grid->getZN(i, j, k) + coarsedz;
+
+	      // initialize the density for species
+	      for (int is = 0; is < ns; is++)
+		{
+		  rhons[is][i][j][k] = rhoINIT[is]/FourPI;
+		}
+
+	      // electric field
+	      Ex[i][j][k] = 0.0;
+	      Ey[i][j][k] = 0.0;
+	      Ez[i][j][k] = 0.0;
+	      // Magnetic field
+	      Bxn[i][j][k] = B0x;  
+	      Byn[i][j][k] = B0y;  
+	      Bzn[i][j][k] = B0z;
+
+
+	      Bx_ext[i][j][k] = 0;
+	      By_ext[i][j][k] = 0;
+	      Bz_ext[i][j][k] = 0;
+
+
+	      // initialize alfven like fluctuations in Bx and By        
+              idummy=0;
+              for ( ikx = mkx0; ikx <= mkx1; ikx++)
+                for ( iky = mky0; iky <= mky1; iky++)
+                  {
+                    //skip the k=0 point
+                    if ((iky != 0) || (ikx != 0)) {
+
+                      kx = rkx0*ikx;
+                      ky = rky0*iky;
+
+                      /*fact = B0z*amp0*pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
+                      Bxn[i][j][k] = Bxn[i][j][k] + fact*ky*cos( kx*globalx + ky*globaly + rphb[idummy]);
+		      Byn[i][j][k] = Byn[i][j][k] - fact*kx*cos( kx*globalx + ky*globaly + rphb[idummy]);*/
+
+		      // NB: variable named ky is actually kz
+		      // variable named kx is actually ky
+		      // guide filed is on x, not z
+		      fact = B0x*amp0*pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
+                      Byn[i][j][k] = Byn[i][j][k] + fact*ky*cos( kx*globalx + ky*globaly + rphb[idummy]);
+		      Bzn[i][j][k] = Bzn[i][j][k] - fact*kx*cos( kx*globalx + ky*globaly + rphb[idummy]);
+		      
+                       
+		    }
+		    idummy++;
+                  }
+
+	    }}
+    
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    // initialize B on centers
+    // initialize B on centers
+    grid->interpN2C(Bxc,Bxn);
+    grid->interpN2C(Byc,Byn);
+    grid->interpN2C(Bzc,Bzn);
+    // communicate ghost
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+  //  delete[] rphb;
+}
+
+
 

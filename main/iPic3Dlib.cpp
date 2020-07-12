@@ -75,8 +75,10 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="ExPert")    EMf->initExPert(vct,grid,col);
     else if (col->getCase()=="NPert")    EMf->initNPert(vct,grid,col);
     else if (col->getCase()=="HarrisDP_noPert")    EMf->initDoublePeriodicHarrisNoPerturbation(vct,grid,col);
-    // this is Papini's turbulence init for Alfredo
+    // this is Papini's turbulence init for Alfredo, perturbation in the xy plane
     else if (col->getCase()=="alfredo")   EMf->alfredo_turbulence(vct,grid,col);
+    // this is Papini's turbulence init for Alfredo, perturbation in the yz plane
+    else if (col->getCase()=="alfredo_yz")   EMf->alfredo_turbulence_yz(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -120,8 +122,10 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getPartInit()=="MaxWhistler") part[i].maxwellian_WhistlerCurrent(grid, EMf, vct);
         else if (col->getPartInit()=="HarrisDP_noPert") part[i].maxwellian_HarrisDoublePeriodic(grid, EMf, vct);
         else if (col->getPartInit()=="Max_EBDeformed") part[i].maxwellian_EBDeformationWithoutInteraction(grid, EMf, vct);
-      // this is Papini's turbulence initialization for Alfredo
+        // this is Papini's turbulence initialization for Alfredo, perturbation in the xy plane
 	else if (col->getCase()=="alfredo")   part[i].alfredoturbulence(grid, EMf, vct,col);
+        // this is Papini's turbulence initialization for Alfredo, perturbation in the yz plane
+	else if (col->getCase()=="alfredo_yz")   part[i].alfredoturbulence_yz(grid, EMf, vct,col);
         else                                  part[i].maxwellian(grid, EMf, vct);
 
     }
