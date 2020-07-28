@@ -349,6 +349,9 @@ protected:
   /** density of the injection of the particles */
   double Ninj;
 
+  /** Seed for random numbers generator */
+  long long seed;
+
   int nvDistLoc;
   c_vDist* vDist;
 

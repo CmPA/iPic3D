@@ -16,12 +16,13 @@ int main(int argc, char **argv) {
   KCode.Init(argc, argv);
   KCode.InjectBoundaryParticles();
   KCode.GatherMoments();
+  KCode.WriteOutput(KCode.FirstCycle());
+
 
   /* ------------ */
   /* 1- Main loop */
   /* ------------ */
-
-  for (int i = KCode.FirstCycle(); i <= KCode.LastCycle(); i++) {
+  for (int i = KCode.FirstCycle()+1; i <= KCode.LastCycle(); i++) {
 
     if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
 
@@ -33,6 +34,8 @@ int main(int argc, char **argv) {
     KCode.UpdateCycleInfo(i);
     KCode.CalculateField(i);
 
+    cout << "*** out of field ***" << endl;
+
     b_err = KCode.ParticlesMover();
 
     if (!b_err) KCode.CalculateBField();
@@ -42,7 +45,6 @@ int main(int argc, char **argv) {
     /* --------------- */
     /* 3- Output files */
     /* --------------- */
-
     KCode.WriteOutput(i);
     KCode.WriteConserved(i);
     KCode.WriteRestart(i);

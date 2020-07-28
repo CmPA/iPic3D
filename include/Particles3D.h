@@ -42,9 +42,11 @@ class Particles3D:public Particles3Dcomm {
     void maxwellian_WhistlerCurrent(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
     void MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct);
-    /** Initial condition: uniform in space and maxwellian in velocity, double periodic */
+    /** Initial condition: uniform in space and maxwellian in velocity, double periodic **/
     void maxwellian_HarrisDoublePeriodic(Grid * grid, Field * EMf, VirtualTopology3D * vct);
-    /** Force Free initialization (JxB=0) for particles */
+    /** Maxellian distribution depending on space, goes with Force Free **/
+    void Maxwellianspacedist(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Force Free initialization (JxB=0) for particles **/
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
     void alt_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);

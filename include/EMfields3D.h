@@ -191,6 +191,8 @@ class EMfields3D                // :public Field
     void initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective * col);
     /*! Random initial field */
     void initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! Init Force Free (JxB=0) double periodic with one current sheet perturbed*/
+    void initForceFreePert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! Init Force Free (JxB=0) */
     void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialized with rotated magnetic field */

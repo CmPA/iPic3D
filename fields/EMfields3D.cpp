@@ -1285,11 +1285,13 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   addscale(-c * dt, 1, Byc, tempYC, nxc, nyc, nzc);
   addscale(-c * dt, 1, Bzc, tempZC, nxc, nyc, nzc);
 
+  
   // communicate ghost 
   communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
+  
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
@@ -1305,7 +1307,6 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
-
 
 }
 
@@ -2518,6 +2519,82 @@ void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid, Collectiv
     init(vct, grid, col);            // use the fields from restart file
   }
   delArr2(modes_seed, 7);
+}
+
+void EMfields3D::initForceFreePert(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+
+double globalX, globalY;
+
+if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize Force Free with perturbation on half CS" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+           globalY = grid->getYN(i, j, k);
+           globalX = grid->getXN(i, j, k);
+           double yB = globalY - .25 * Ly;
+           double yT = globalY - .75 * Ly;
+           double yBd = yB / delta;
+           double yTd = yT / delta;
+           double yB4d = yB / (4 * delta);
+           double xB = globalX - .25 * Lx;
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+             rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }  
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          Bxn[i][j][k] = B0x * (-1.0 + tanh(yBd) + tanh(-yTd));
+          Byn[i][j][k] = 0.0;
+          Bzn[i][j][k] = B0x * sqrt( (1/cosh(yBd) * 1/cosh(yBd) ) + ( 1/cosh(yTd) * 1/cosh(yTd) ) + B0z * B0z );
+ 
+          if (globalY <= 0.5 * Ly){
+             Bxn[i][j][k] -= B0x/10 * M_PI/Ly * cos( 2 * M_PI * xB / Lx ) * sin ( M_PI * yB / Ly ) * exp( - yB4d * yB4d ); 
+             Byn[i][j][k] += B0x/10 * 2 * M_PI/Lx * sin ( 2 * M_PI * xB / Lx ) * cos ( M_PI * yB / Ly) * exp( - yB4d * yB4d );
+          }
+          Bx_ext[i][j][k] = 0;
+          By_ext[i][j][k] = 0;
+          Bz_ext[i][j][k] = 0;
+        } 
+    // communicate ghost
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    // initialize B on centers
+    // initialize B on centers
+        grid->interpN2C(Bxc,Bxn);
+        grid->interpN2C(Byc,Byn);
+        grid->interpN2C(Bzc,Bzn);
+    // communicate ghost
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
 }
 
 /*! Init Force Free (JxB=0) */

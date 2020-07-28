@@ -812,6 +812,8 @@ void Collective::save() {
   my_file << "---------------------------" << endl;
   my_file << "Time step                = " << dt << endl;
   my_file << "Number of cycles         = " << ncycles << endl;
+  my_file << "ndump field              = " << DiagnosticsOutputCycle << endl;
+  my_file << "ndump particles          = " << ParticlesOutputCycle << endl;
   my_file << "---------------------------" << endl;
   for (int is = 0; is < ns; is++){
     my_file << "rho init species   " << is << " = " << rhoINIT[is] << endl;
