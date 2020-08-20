@@ -4793,6 +4793,8 @@ void EMfields3D::alfredo_turbulence(VirtualTopology3D * vct, Grid * grid, Collec
   const double coarsedy= grid->getDY();
   const double coarsedz= grid->getDZ();
 
+  // to be free to set the guide field in any direction                
+  double B0=  sqrt(B0x* B0x + B0y* B0y + B0z* B0z);
 
   if (restart1 == 0) {
     // initialize
@@ -4885,8 +4887,9 @@ void EMfields3D::alfredo_turbulence(VirtualTopology3D * vct, Grid * grid, Collec
                       kx = rkx0*ikx;
                       ky = rky0*iky;
 
-                      fact = B0z*amp0*pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
-                      //fact = pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
+		      fact = B0*amp0*pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.); 
+                      //fact = B0z*amp0*pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
+                      ////fact = pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
 
                       Bxn[i][j][k] = Bxn[i][j][k] + fact*ky*cos( kx*globalx + ky*globaly + rphb[idummy]);
 		      //+ rphb[ikx-mkx0,iky-mky0]);
@@ -4974,6 +4977,9 @@ void EMfields3D::alfredo_turbulence_yz(VirtualTopology3D * vct, Grid * grid, Col
   const double coarsedy= grid->getDY();
   const double coarsedz= grid->getDZ();
 
+  // to be free to set the guide field in any direction                         
+  double B0=  sqrt(B0x* B0x + B0y* B0y + B0z* B0z);
+  
   if (restart1 == 0) {
     // initialize
     if (vct->getCartesian_rank() == 0) {
@@ -5052,7 +5058,8 @@ void EMfields3D::alfredo_turbulence_yz(VirtualTopology3D * vct, Grid * grid, Col
 		      // NB: variable named ky is actually kz
 		      // variable named kx is actually ky
 		      // guide filed is on x, not z
-		      fact = B0x*amp0*pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
+		      fact = B0*amp0*pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.); 
+		      //fact = B0x*amp0*pow(sqrt(pow(kx,2) + pow(ky,2) ),slope-1.);
                       Byn[i][j][k] = Byn[i][j][k] + fact*ky*cos( kx*globalx + ky*globaly + rphb[idummy]);
 		      Bzn[i][j][k] = Bzn[i][j][k] - fact*kx*cos( kx*globalx + ky*globaly + rphb[idummy]);
 		      

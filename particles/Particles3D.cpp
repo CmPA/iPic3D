@@ -2150,6 +2150,8 @@ void Particles3D::alfredoturbulence(Grid * grid, Field * EMf, VirtualTopology3D 
   int    idummy=0;
   long int myseed=vct->getCartesian_rank()+47 + ns*vct->getNprocs();
   double B0z;
+  double B0y;
+  double B0x;
   double rphv[(mkx1-mkx0+1)*(mky1-mky0+1)];
   //double* rphv = new double[mkx1-mkx0+1,mky1-mky0+1];
 
@@ -2157,8 +2159,13 @@ void Particles3D::alfredoturbulence(Grid * grid, Field * EMf, VirtualTopology3D 
   int ikx,iky;
   double totalrms=0.0;
 
-  //B0z = EMf->getB0z();
-  B0z= col->getB0z(); 
+  B0z= col->getB0z();
+  B0y= col->getB0y();
+  B0x= col->getB0x();
+
+  // to be free to set the guide field in any direction                         
+  double B0=  sqrt(B0x* B0x + B0y* B0y + B0z* B0z);
+
   //totalrms=EMf->getBrms();
 
   //cout << "rank, seed, ns " <<vct->getCartesian_rank() << ", "<< myseed << ", " <<ns << endl;
@@ -2190,7 +2197,8 @@ void Particles3D::alfredoturbulence(Grid * grid, Field * EMf, VirtualTopology3D 
 	    {
 	      //skip the k=0 point
 	      if ((iky != 0) || (ikx != 0)) {
-		fact = B0z*amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.);
+		fact = B0*amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.);
+		//fact = B0z*amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.);
 
 		uu0 += + fact*rky0*iky*cos( rkx0*ikx*globalxC + rky0*iky*globalyC +rphv[idummy]);
 		vv0 += - fact*rkx0*ikx*cos( rkx0*ikx*globalxC + rky0*iky*globalyC +rphv[idummy]);
@@ -2266,7 +2274,8 @@ void Particles3D::alfredoturbulence_yz(Grid * grid, Field * EMf, VirtualTopology
   const int    mky1 = 3;
   int    idummy=0;
   long int myseed=vct->getCartesian_rank()+47 + ns*vct->getNprocs();
-  //double B0z;
+  double B0z;
+  double B0y;
   double B0x;
   double rphv[(mkx1-mkx0+1)*(mky1-mky0+1)];
   //double* rphv = new double[mkx1-mkx0+1,mky1-mky0+1];
@@ -2275,9 +2284,12 @@ void Particles3D::alfredoturbulence_yz(Grid * grid, Field * EMf, VirtualTopology
   int ikx,iky;
   double totalrms=0.0;
 
-  //B0z= col->getB0z();
+  B0z= col->getB0z();
+  B0y= col->getB0y();
   B0x= col->getB0x(); 
 
+  double B0=  sqrt(B0x* B0x + B0y* B0y + B0z* B0z);
+  
   srand48(1);
   for ( ikx = mkx0; ikx <= mkx1; ikx++)
     for ( iky = mky0; iky <= mky1; iky++)
@@ -2308,7 +2320,8 @@ void Particles3D::alfredoturbulence_yz(Grid * grid, Field * EMf, VirtualTopology
 	      //skip the k=0 point
 	      if ((iky != 0) || (ikx != 0)) {
 		//fact = B0z*amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.);
-		fact = B0x*amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.);
+		//fact = B0x*amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.);
+		fact = B0*amp0*pow(sqrt(pow(rkx0*ikx,2) + pow(rky0*iky,2) ),slope-1.); 
 		// uu0, vv0 are actually in y and z
 		uu0 += + fact*rky0*iky*cos( rkx0*ikx*globalxC + rky0*iky*globalyC +rphv[idummy]);
 		vv0 += - fact*rkx0*ikx*cos( rkx0*ikx*globalxC + rky0*iky*globalyC +rphv[idummy]);
