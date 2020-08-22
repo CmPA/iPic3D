@@ -34,7 +34,7 @@ int main(int argc, char **argv) {
     KCode.UpdateCycleInfo(i);
     KCode.CalculateField(i);
 
-    cout << "*** out of field ***" << endl;
+    //cout << "*** out of field ***" << endl;
 
     b_err = KCode.ParticlesMover();
 
