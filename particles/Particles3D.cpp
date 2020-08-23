@@ -264,6 +264,9 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
   double harvest;
   double prob, theta, sign;
   long long counter = 0;
+  if (vct->getCartesian_rank() == 0) {
+  cout << "I am in the normal Maxwellian" << endl;
+  }
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++)
@@ -2080,6 +2083,7 @@ void Particles3D::maxwellian_HarrisDoublePeriodic(Grid * grid, Field * EMf, Virt
   double flvx, flvy, flvz;
   double shaperx, shapery, shaperz;
   long long counter = 0;
+  
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++)
@@ -2099,11 +2103,22 @@ void Particles3D::maxwellian_HarrisDoublePeriodic(Grid * grid, Field * EMf, Virt
 
 	      shaperz= 1.0;
 	      shapery= 1.0 ;
-              shaperz= -tanh((grid->getYN(i, j, k) - Ly/2)/delta) ;
+              shaperz= tanh((grid->getYN(i, j, k) - Ly/2)/delta) ;
+              //if (y[counter] < Ly/2) {
+              //   shaperz = -1;
+              //   if (vct->getCartesian_rank() == 0)
+              //   cout << "*** shaperz = -1 ***" << endl;
+              //}
+              //else {
+              //    shaperz = 1;
+              //    if (vct->getCartesian_rank() == 0)
+              //    cout << "*** shaperz = 1 ***" << endl;
+              //}
 
 	      flvx =u0*shaperx;
 	      flvy =v0*shapery;
 	      flvz =w0*shaperz;
+//              cout << "*** shaperz = -1 ***" << endl;
 
               u[counter] = flvx + uth * prob * cos(theta);
               // v

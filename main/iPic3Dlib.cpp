@@ -121,7 +121,7 @@ int c_Solver::Init(int argc, char **argv) {
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
         else if (col->getPartInit()=="MaxWhistler") part[i].maxwellian_WhistlerCurrent(grid, EMf, vct);
-        else if (col->getPartInit()=="HarrisDP_noPert") part[i].maxwellian_HarrisDoublePeriodic(grid, EMf, vct);
+        else if (col->getCase()=="HarrisDP_noPert") part[i].maxwellian_HarrisDoublePeriodic(grid, EMf, vct);
         else if (col->getPartInit()=="Max_EBDeformed") part[i].maxwellian_EBDeformationWithoutInteraction(grid, EMf, vct);
         else if (col->getCase()=="FF") part[i].Maxwellianspacedist(col,grid,EMf,vct);
         // this is Papini's turbulence initialization for Alfredo, perturbation in the xy plane

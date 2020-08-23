@@ -204,7 +204,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
      in an apposite species */
   TrackSpecies= col->getTrackSpecies(ns);
   TrackingSpOutputCycle= col->getTrackingOutputCycle();
-  cout <<"sp " << ns << " TrackSpecies: "<< TrackSpecies << ", TrackingSpOutputCycle: " << TrackingSpOutputCycle << endl;
+  //cout <<"sp " << ns << " TrackSpecies: "<< TrackSpecies << ", TrackingSpOutputCycle: " << TrackingSpOutputCycle << endl;
   if (TrackSpecies){  
     TrackSpBirthRank = new unsigned long[npmax];
     TrackSpID        = new unsigned long[npmax];

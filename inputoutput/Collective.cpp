@@ -133,9 +133,9 @@ void Collective::ReadInput(string inputfile) {
 
     TrackingOutputCycle      = config.read < int > ("TrackingOutputCycle",1000);
 
-    for (int i=0; i< ns ; i++){
-      cout << "In collective, sp " << i << " TrackSpecies[i] " << TrackSpecies[i] << endl;
-    }
+    ;for (int i=0; i< ns ; i++){
+    ;  cout << "In collective, sp " << i << " TrackSpecies[i] " << TrackSpecies[i] << endl;
+    ; }
 
 
   }
