@@ -223,6 +223,9 @@ class Collective
     double getEBRestart_RdivR0();
     bool getEBRestart_RelocPart();
 
+    /*! get the parameters for R value when restarting EB sim from non EB */
+    bool getRestart_From_REB_0();
+
     /*! get the boolean value for verbose results */
     bool getVerbose();
 
@@ -443,6 +446,9 @@ class Collective
     /* to restart a non EB sim from an EB sim */
     double EBRestart_RdivR0;
     bool EBRestart_RelocPart;
+
+    /* to restart an EB sim from a non EB sim*/
+    bool Restart_From_REB_0;
 
     /*! boolean value for verbose results */
     bool verbose;

@@ -60,6 +60,9 @@ void Collective::ReadInput(string inputfile) {
     EBRestart_RdivR0= config.read <double>("EBRestart_RdivR0", 1.0);
     EBRestart_RelocPart= config.read <bool>("EBRestart_RelocPart", false);
 
+    // to restart an EB sim from a non EB sim
+    Restart_From_REB_0= config.read <bool>("Restart_From_REB_0", false);
+    
     /* end expanding box parameters*/
 
     /* whistler init parameters */
@@ -1185,6 +1188,9 @@ double Collective::getEBRestart_RdivR0(){
 }
 bool Collective::getEBRestart_RelocPart(){
   return EBRestart_RelocPart;
+}
+bool Collective::getRestart_From_REB_0(){
+  return Restart_From_REB_0;
 }
 
 bool Collective::getTrackSpecies(int is){

@@ -9,18 +9,25 @@ EBox::EBox(Collective * col) {
   UEB_0 = col->getUEB_0();
   REB_0 = col->getREB_0();
 
-
+  // this variable is to be used when restarting an EB simulation starting
+  // from a non EB one
+  // if it is false, R= R_0 + U_0*dt*cycles
+  // if it is true, R= R_0
+  bool Restart_From_REB_0= col->getRestart_From_REB_0();
+  
   int restart_or_solinit= col->getrestart_or_solinit();
-  if (restart_or_solinit ==0) {
+  if (restart_or_solinit ==0 or (restart_or_solinit ==1 and Restart_From_REB_0 )) {
     //so it becomes REB_0 + dt*UEB_0*th at the first update
     R_nth  = REB_0- dt*UEB_0 + dt*UEB_0*th; 
     //so it becomes REB_0 at tge first update
-    R  = REB_0- dt*UEB_0;}
+    R  = REB_0- dt*UEB_0;
+  }
   else // restart, either for hdf5 or h5hut
     {
       R= REB_0 + col->getLast_cycle()*dt*UEB_0 ; // check: you do not have to remove dt*UEB_0
       R_nth= R+    dt*UEB_0*th;
     }
+  
 }
 
 /*! destructor */
