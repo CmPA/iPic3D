@@ -246,6 +246,44 @@ void WritePartclH5hut(int nspec, Grid3DCU *grid, Particles3Dcomm *part, Collecti
 
 }
 
+void WriteTestPartclH5hut(int nspec, Grid3DCU *grid, Particles3Dcomm *part, Collective *col, VCtopology3D *vct, int cycle, string subfolder){
+
+#ifdef USEH5HUT
+
+  H5output file;
+
+  string filename = col->getSaveDirName() + "/" + col->getSimName() + subfolder;
+
+  file.SetNameCycle(filename, cycle);
+
+  /* ------------------- */
+  /* Write the particles */
+  /* ------------------- */
+
+  file.OpenPartclFile(nspec, vct->getComm());
+  for (int i=0; i<nspec; i++){
+    if (part[i].GetTrackSpecies()){
+       file.WriteParticles(i, part[i].getNOP(),
+                           part[i].getQall(),
+                           part[i].getXall(),
+                           part[i].getYall(),
+                           part[i].getZall(),
+                           part[i].getUall(),
+                           part[i].getVall(),
+                           part[i].getWall(),
+                           vct->getComm());
+   }
+  }
+  file.ClosePartclFile();
+
+#else
+  cout << " ERROR: The input file request the use of the H5hut library, but the code has been compiled using other method. " << endl;
+  cout << "        Recompile the code using the H5hut options or change the input file. " << endl;
+  abort();
+#endif
+
+}
+
 void ReadPartclH5hut(int nspec, Particles3Dcomm *part, Collective *col, VCtopology3D *vct, Grid3DCU *grid){
 #ifdef USEH5HUT
 

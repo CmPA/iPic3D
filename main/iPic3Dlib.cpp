@@ -447,6 +447,9 @@ void c_Solver::WriteOutput(int cycle) {
     //    cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
     if (cycle%(col->getParticlesOutputCycle())==0 )      WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
+    for (int i=0; i< ns; i++){
+        if (cycle%(col->getTrackingOutputCycle())==0)      WriteTestPartclH5hut(ns, grid, part, col, vct, cycle, "_track");
+    }
   }
   else
   {
@@ -490,14 +493,14 @@ void c_Solver::WriteOutput(int cycle) {
     }
   }
 
-  for (int i=0; i< ns; i++){
+//  for (int i=0; i< ns; i++){
 
-    if ((cycle % part[i].GetTrackingSpOutputCycle() == 0 || cycle == first_cycle) && part[i].GetTrackSpecies() ){
-      cout << "Proc " << vct->getCartesian_rank() << " sp " << i << " is writing tracking info" << endl;
-      part[i].WriteTracking(cycle, vct, col, EMf, grid);
+//    if ((cycle % part[i].GetTrackingSpOutputCycle() == 0 || cycle == first_cycle) && part[i].GetTrackSpecies() ){
+//      cout << "Proc " << vct->getCartesian_rank() << " sp " << i << " is writing tracking info" << endl;
+//      part[i].WriteTracking(cycle, vct, col, EMf, grid);
       
-    }
-  }
+//    }
+//  }
 
 }
 
