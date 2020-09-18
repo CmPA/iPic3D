@@ -59,7 +59,9 @@ public:
   virtual double *& getQref() = 0;
 
   /** get ID array for all the particles */
-  virtual unsigned long *getParticleIDall() const = 0;
+  virtual long long *getParticleIDall() const = 0;
+  /** get rank array for all the particles */
+  virtual long long *getParticleRankall() const = 0;
   /**get charge of particle array */
   virtual double *getQall() const = 0;
   /** get X-position of particle with label indexPart */
@@ -75,7 +77,9 @@ public:
   /** get w (Z-velocity) of particle with label indexPart */
   virtual double getW(long long indexPart) const = 0;
   /** get ID of particle with label indexPart */
-  virtual unsigned long getParticleID(long long indexPart) const = 0;
+  virtual long long getParticleID(long long indexPart) const = 0;
+  /** get rank ID of particle with label indexPart */
+  virtual long long getParticleRank(long long indexPart) const = 0;
   /**get charge of particle with label indexPart */
   virtual double getQ(long long indexPart) const = 0;
   /** get the number of particles of this subdomain */

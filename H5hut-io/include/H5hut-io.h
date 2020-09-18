@@ -21,8 +21,9 @@ class H5output{
 
     void OpenPartclFile(int nspec, MPI_Comm CART_COMM);
     void WriteParticles(int ispec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, MPI_Comm CART_COMM);
+    void WriteTrackParticles(int spec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, long long *TrackSpID, long long *partRank, MPI_Comm CART_COMM);
     void ClosePartclFile();
-    
+     
   private:
     int         cycle;
     std::string basename;

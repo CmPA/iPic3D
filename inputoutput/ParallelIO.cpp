@@ -263,7 +263,7 @@ void WriteTestPartclH5hut(int nspec, Grid3DCU *grid, Particles3Dcomm *part, Coll
   file.OpenPartclFile(nspec, vct->getComm());
   for (int i=0; i<nspec; i++){
     if (part[i].GetTrackSpecies()){
-       file.WriteParticles(i, part[i].getNOP(),
+       file.WriteTrackParticles(i, part[i].getNOP(),
                            part[i].getQall(),
                            part[i].getXall(),
                            part[i].getYall(),
@@ -271,6 +271,8 @@ void WriteTestPartclH5hut(int nspec, Grid3DCU *grid, Particles3Dcomm *part, Coll
                            part[i].getUall(),
                            part[i].getVall(),
                            part[i].getWall(),
+                           part[i].getParticleIDall(),
+                           part[i].getParticleRankall(),
                            vct->getComm());
    }
   }

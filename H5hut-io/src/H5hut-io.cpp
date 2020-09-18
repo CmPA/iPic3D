@@ -180,6 +180,81 @@ void H5output::WriteParticles(int ispec, long long np, double *q, double *x, dou
 
 }
 
+
+void H5output::WriteTrackParticles(int ispec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, long long *TrackSpID, long long *partRank, MPI_Comm CART_COMM){
+
+  /* --------------------------------------------------------------------- */
+  /* Find out the total number of particles of species i in all the domain */
+  /* --------------------------------------------------------------------- */
+
+  long long ntpart;
+
+  MPI_Allreduce(&np, &ntpart, 1, MPI_LONG_LONG, MPI_SUM, CART_COMM);
+  const h5_int64_t ntp = ntpart;
+
+  /* --------------------------------------------- */
+  /* Write the number of particles as an attribute */
+  /* --------------------------------------------- */
+
+  std::stringstream sstm;
+
+  sstm << "npart_" << ispec;
+  std::string nparti = sstm.str();
+  H5WriteStepAttribInt64(partfile, nparti.c_str(), &ntp, 1);
+  sstm.str("");
+
+  H5PartSetNumParticles(partfile,np);
+
+  /* ------------------ */
+  /* Write the datasets */
+  /* ------------------ */
+
+  sstm << "q_" << ispec;
+  std::string dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),q);
+  sstm.str("");
+
+  sstm << "x_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),x);
+  sstm.str("");
+
+  sstm << "y_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),y);
+  sstm.str("");
+
+  sstm << "z_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),z);
+  sstm.str("");
+
+  sstm << "u_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),u);
+  sstm.str("");
+
+  sstm << "v_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),v);
+  sstm.str("");
+
+  sstm << "w_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataFloat64(partfile,dtset.c_str(),w);
+  sstm.str("");
+
+  sstm << "tag_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataInt64(partfile,dtset.c_str(),TrackSpID);
+  sstm.str("");
+
+  sstm << "proc_" << ispec;
+  dtset = sstm.str();
+  H5PartWriteDataInt64(partfile,dtset.c_str(),partRank);
+  sstm.str("");
+}
+
 /* ====================== */
 /*         INPUT          */
 /* ====================== */
