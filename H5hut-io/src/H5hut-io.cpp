@@ -246,12 +246,12 @@ void H5output::WriteTrackParticles(int ispec, long long np, double *q, double *x
 
   sstm << "tag_" << ispec;
   dtset = sstm.str();
-  H5PartWriteDataInt64(partfile,dtset.c_str(),TrackSpID);
+  H5PartWriteDataInt64(partfile,dtset.c_str(),(const int64_t*) TrackSpID);
   sstm.str("");
 
   sstm << "proc_" << ispec;
   dtset = sstm.str();
-  H5PartWriteDataInt64(partfile,dtset.c_str(),partRank);
+  H5PartWriteDataInt64(partfile,dtset.c_str(),(const int64_t*) partRank);
   sstm.str("");
 }
 
