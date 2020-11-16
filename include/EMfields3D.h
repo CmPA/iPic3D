@@ -512,6 +512,8 @@ class EMfields3D                // :public Field
     double th;
     /*! Smoothing value */
     double Smooth;
+    /*! Nvolte value, for smoothing */
+  int Nvolte;
     /*! delt = c*th*dt */
     double delt;
     /*! number of particles species */

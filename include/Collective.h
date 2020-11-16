@@ -90,6 +90,8 @@ class Collective
     double getTh();
     /*! get the Smoothing value */
     double getSmooth();
+    /*! get the Nvolte value - for smoothing */
+    int getNvolte();
     /*! get the number of time cycles */
     int getNcycles();
     /*! get the number of species */
@@ -277,6 +279,8 @@ class Collective
     double th;
     /*! Smoothing value */
     double Smooth;
+    /*! Nvolte value -- for smoothing */
+    int Nvolte;
     /*! number of time cycles */
     int ncycles;
     /*! physical space dimensions */

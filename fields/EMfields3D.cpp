@@ -68,6 +68,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   B1z = col->getB1z();
   delta = col->getDelta();
   Smooth = col->getSmooth();
+  Nvolte= col->getNvolte();
   // get the density background for the gem Challange
   rhoINIT   = new double[ns];
   rhoINJECT = new double[ns];
@@ -834,7 +835,8 @@ void EMfields3D::MUdot_EB(double ***MUdotX, double ***MUdotY, double ***MUdotZ, 
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
 
-  int nvolte = 6;
+  //int nvolte = 6;
+  int nvolte= Nvolte; // use the inputfile value
   for (int icount = 1; icount < nvolte + 1; icount++) {
 
     if (value != 1.0) {
@@ -856,12 +858,12 @@ void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, V
           break;
       }
       double ***temp = newArr3(double, nx, ny, nz);
-      if (icount % 2 == 1) {
+      /*if (icount % 2 == 1) {
         value = 0.;
       }
       else {
         value = 0.5;
-      }
+	}*/
       alpha = (1.0 - value) / 6;
       for (int i = 1; i < nx - 1; i++)
         for (int j = 1; j < ny - 1; j++)
@@ -878,7 +880,8 @@ void EMfields3D::smooth(double value, double ***vector, int type, Grid * grid, V
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col) {
 
-  int nvolte = 6;
+  //int nvolte = 6;
+  int nvolte = Nvolte; // use the inputfile value
   for (int icount = 1; icount < nvolte + 1; icount++) {
     if (value != 1.0) {
       double alpha;
@@ -887,12 +890,12 @@ void EMfields3D::smoothE(double value, VirtualTopology3D * vct, Collective *col)
       communicateNodeBoxStencilBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
       double ***temp = newArr3(double, nxn, nyn, nzn);
-      if (icount % 2 == 1) {
+      /*if (icount % 2 == 1) {
         value = 0.;
       }
       else {
         value = 0.5;
-      }
+	}*/
       alpha = (1.0 - value) / 6;
       // Exth
       for (int i = 1; i < nxn - 1; i++)
