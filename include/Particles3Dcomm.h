@@ -140,7 +140,9 @@ public:
   /** get q array for all the particles by reference */
   double *& getQref();
   /** get the ID array   */
-  unsigned long *getParticleIDall() const;
+  long long *getParticleIDall() const;
+  /** get the Rank array */
+  long long *getParticleRankall() const;
   /** get X-position of particle with label indexPart */
   double getX(long long indexPart) const;
   /** get Y-position of particle with label indexPart */
@@ -154,7 +156,10 @@ public:
   /** get w (Z-velocity) of particle with label indexPart */
   double getW(long long indexPart) const;
   /** get ID of particle with label indexPart */
-  unsigned long getParticleID(long long indexPart) const;
+  long long getParticleID(long long indexPart) const;
+   /** get rank of particle with label indexPart */
+  long long getParticleRank(long long indexPart) const;
+  
   /**get charge of particle with label indexPart */
   double getQ(long long indexPart) const;
   /** get charge of array for ID particles */
@@ -238,7 +243,10 @@ protected:
   /** TrackParticleID */
   bool TrackParticleID;
   /** ParticleID */
-  unsigned long *ParticleID;
+  long long *ParticleID;
+  long long npTracked;
+  /** Particle Rank */
+  long long *partRank;
   /** rank of processor in which particle is created (for ID) */
   int BirthRank[2];
   /** number of variables to be stored in buffer for communication for each particle  */
@@ -363,7 +371,7 @@ protected:
   /* where they are born */
   unsigned long *TrackSpBirthRank;
   /* ID within the rank of birth */
-  unsigned long *TrackSpID;
+  long long *TrackSpID;
   /* file for output */
   string cqTr;
   /* where in the communication buffer start writing Tracking */

@@ -264,10 +264,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
   double harvest;
   double prob, theta, sign;
   long long counter = 0;
-  if (vct->getCartesian_rank() == 0) {
-  cout << "I am in the normal Maxwellian" << endl;
-  }
-  for (int i = 1; i < grid->getNXC() - 1; i++)
+   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++)
         for (int ii = 0; ii < npcelx; ii++)
@@ -300,10 +297,11 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
               w[counter] = w0 + wth * prob * cos(theta);
-              if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
-
-
+              if (TrackParticleID){
+                ParticleID[counter] = npTracked; //counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                partRank[counter] = vct->getCartesian_rank();
+                npTracked++;
+              }
               counter++;
             }
 
@@ -595,8 +593,15 @@ void Particles3D::Maxwellianspacedist(Collective * col, Grid * grid, Field * EMf
               theta = 2.0 * M_PI * Drand48(seed);
               w[counter] = w0p + wth * prob * cos(theta);
 
-              if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+              if (TrackParticleID){
+                ParticleID[counter] = npTracked; //counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                partRank[counter] = vct->getCartesian_rank();
+                npTracked++;
+              }
+
+
+//              if (TrackParticleID)
+//                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
               
               counter++;
             }

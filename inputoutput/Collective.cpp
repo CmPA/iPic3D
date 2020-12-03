@@ -807,6 +807,11 @@ void Collective::save() {
   my_file << "Number of species    = " << ns << endl;
   for (int i = 0; i < ns; i++)
     my_file << "Number of particles per proc of species " << i << " = " << np[i] << "\t (MAX = " << npMax[i] << ")" << "  QOM = " << qom[i] << endl;
+  for (int i = 0; i < ns; i++){  
+      if (TrackSpecies[i]){ 
+         my_file << "Tracked species   = " << i << endl;
+      }
+  } 
   my_file << "---------------------------" << endl;
   my_file << "x-Length                 = " << Lx << endl;
   my_file << "y-Length                 = " << Ly << endl;
@@ -819,6 +824,7 @@ void Collective::save() {
   my_file << "Number of cycles         = " << ncycles << endl;
   my_file << "ndump field              = " << DiagnosticsOutputCycle << endl;
   my_file << "ndump particles          = " << ParticlesOutputCycle << endl;
+  my_file << "ndump tracks             = " << TrackingOutputCycle << endl;
   my_file << "---------------------------" << endl;
   for (int is = 0; is < ns; is++){
     my_file << "rho init species   " << is << " = " << rhoINIT[is] << endl;
