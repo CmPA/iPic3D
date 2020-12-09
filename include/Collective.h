@@ -151,6 +151,8 @@ class Collective
     string getCase();
     /*! get particle initialization type */
     string getPartInit();
+    /*! get particle initialization symmetric yes/no */
+    bool getPartSymmetric();
     /*! get output writing method */
     string getWriteMethod();
     /*! get simulation name */
@@ -375,6 +377,8 @@ class Collective
     string FieldsInit;
     /*! Particle initialization type */
     string PartInit;
+    /*! Particle initialization symmetric yes/no */
+    bool PartSymmetric;
     /*! Output writing method */
     string wmethod;
     /*! Simulation name */

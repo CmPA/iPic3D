@@ -688,6 +688,101 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
 }
 
+/** For KAW Turbulence: Maxwellian random velocity, uniform spatial distribution BUT variable number os ppc */
+/** Also a perturbation in velocity on top */
+void Particles3D::KAWTurbulencePert(Grid * grid, Field * EMf, VirtualTopology3D * vct, double B0x, double mime, double TiTe, bool symmetric) {
+
+  long long seed = (vct->getCartesian_rank() + 1)*20 + ns;
+  srand(seed);
+  srand48(seed);
+
+  // Profile parameters
+  double h = 0.2;
+  double r = 10.;
+  // Magnetic field parameters
+  double B0 = B0x;
+  double Bm = 2.*B0x;
+  double alpha = (Bm-B0)*r/(2.*pow(2*h,r)*pow(1.+pow(2*h,-r),2));
+  // Density parameters
+  double betam = 0.5;
+  double rhom = rhoINIT/4./M_PI;
+  double vthi = sqrt(betam*Bm*Bm/2./4./M_PI/rhom);
+  double vthe = vthi*sqrt(mime/TiTe);
+  double Ptot = Bm*Bm/2./4./M_PI + rhom*(vthi*vthi + vthe*vthe/mime);
+  // Perturbation parameters
+  double a = Bm/10.;
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++) {
+	
+        // Density in this cell
+        double rho = fabs(EMf->getRHOcs(i, j, k, ns));
+        // Calculate nppc in this cell: it will be scaled according to rho/rhom
+        double fs=1.;
+        if (symmetric) fs=2.;
+        int npcelhere = (int) (double(npcel) * rho/rhom / fs);
+        int npcelxhere = (int) sqrt(double(npcelhere));
+        int npcelyhere = npcelhere/npcelxhere;
+        int npcelzhere = 1;
+        for (int ii = 0; ii < npcelxhere; ii++)
+          for (int jj = 0; jj < npcelyhere; jj++)
+            for (int kk = 0; kk < npcelzhere; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelxhere) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / npcelyhere) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelzhere) + grid->getZN(i, j, k);
+              
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (rho / (double(npcelhere)*fs)) * (1.0 / invVOL);
+
+              // Drfit velocities for this particle
+              double curlB_z = (Bm-B0)*r*pow(y[counter]-Ly/2.,r-1.)/pow(Ly*h,r)/pow(1.+pow((y[counter]-Ly/2.)/Ly/h,r),2)
+                               - 2.*alpha/(Ly/2.)*(y[counter]/(Ly/2.)-1);
+              double wdrift = curlB_z/4./M_PI/rho*(qom/fabs(qom)) / (1.+1./mime)*fabs(qom)/mime;
+              double curlB_y = a*2.*M_PI/Lx*sin(2.*M_PI/Lx*x[counter]);
+              double vdrift = curlB_y/4./M_PI/rho*(qom/fabs(qom)) / (1.+1./mime)*fabs(qom)/mime;
+              // Add perturbation
+              wdrift -= a*cos(2.*M_PI/Lx*x[counter])/sqrt(4.*M_PI*(1.+1./mime)*rho);
+              
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = uth * prob * cos(theta);
+              // v
+              v[counter] = vdrift + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = wdrift + wth * prob * cos(theta);
+              
+              counter++;
+
+              // Symmetric case: place another particle here
+              // Same position, opposite thermal velocity
+              if (symmetric) {
+                x[counter] = x[counter-1];
+                y[counter] = y[counter-1];
+                z[counter] = z[counter-1];
+                q[counter] = q[counter-1];
+                
+                u[counter] = -u[counter-1];
+                v[counter] = 2.*vdrift - v[counter-1];
+                w[counter] = 2.*wdrift - w[counter-1];
+               
+                counter++;
+              }
+            }
+      }
+  nop = counter;
+}
+
 /** Maxellian random velocity and uniform spatial distribution */
 int Particles3D::maxwell_box(Grid* grid,Field* EMf,VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center, double multiple){
 

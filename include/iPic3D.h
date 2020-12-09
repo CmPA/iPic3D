@@ -58,6 +58,7 @@ namespace iPic3D {
     EMfields3D    *EMf;
     Particles3D   *part;
     double        *Ke;
+    double        *BulkEnergy;
     double        *momentum;
     double        *Qremoved;
     unsigned long *VelocityDist;

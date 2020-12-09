@@ -185,6 +185,8 @@ class EMfields3D                // :public Field
     /*! initialize GEM challenge */
     void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! Initialize KAW Turbulence */
+    void initKAWTurbulencePert(VirtualTopology3D * vct, Grid * grid, Collective *col, double mime, double TiTe);
     /*! initialize Harris in steps */
     void initHarris_Steps(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize doubel harris with Hump perturbation (Alex Johnson) */
@@ -495,7 +497,8 @@ class EMfields3D                // :public Field
     double getEenergy();
     /*! get the magnetic field energy */
     double getBenergy();
-
+    /*! get bulk kinetic energy*/
+    double getBulkEnergy(int is);
 
     /*! print electromagnetic fields info */
     void print(void) const;

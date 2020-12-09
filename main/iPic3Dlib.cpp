@@ -83,6 +83,11 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
     else if (col->getCase()=="ForceFreeHump") EMf->initForceFreeWithGaussianHumpPerturbation(vct,grid,col);
     else if ((col->getCase()=="GEM") || (col->getCase()=="GEMRelativity"))  EMf->initGEM(vct, grid,col);
+    else if (col->getCase()=="KAWTurbulencePert") {
+      double mime = fabs(col->getQOM(0)/col->getQOM(1));
+      double TiTe = pow(col->getUth(1)/col->getUth(0), 2.0)*mime;
+      EMf->initKAWTurbulencePert(vct, grid, col, mime, TiTe);
+    }
     else if (col->getCase()=="HarrisSteps")       EMf->initDoublePeriodicHarrisSteps(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
@@ -141,6 +146,11 @@ int c_Solver::Init(int argc, char **argv) {
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
         else if (col->getCase()=="DoubleHarris")    part[i].maxwellian_reversed(grid, EMf, vct);
+        else if (col->getCase()=="KAWTurbulencePert") {
+          double mime = fabs(col->getQOM(0)/col->getQOM(1));
+          double TiTe = pow(col->getUth(1)/col->getUth(0), 2.0)*mime;
+          part[i].KAWTurbulencePert(grid, EMf, vct, col->getB0x(), mime, TiTe, col->getPartSymmetric());
+        }
         else if (col->getCase()=="Whistler")    part[i].maxwellian_whistler(grid, EMf, vct);
         else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
         else if (col->getCase()=="GEMRelativity")    part[i].relativistic_maxwellian(grid, EMf, vct);
@@ -207,6 +217,7 @@ int c_Solver::Init(int argc, char **argv) {
 
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
+  BulkEnergy = new double[ns];
   momentum = new double[ns];
   Qtot = new double[ns]; Qtot[0] = Qtot[1] = 0;
   totParticles = new int[ns];
@@ -236,7 +247,7 @@ int c_Solver::Init(int argc, char **argv) {
   //num_proc << myrank;
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
-  ofstream my_file(cqsat.c_str(), fstream::binary);
+/*  ofstream my_file(cqsat.c_str(), fstream::binary);
 
   nsatx=3;
   nsaty=3;
@@ -260,6 +271,7 @@ int c_Solver::Init(int argc, char **argv) {
     	    my_file <<  grid->getXC(index1,index2,index3) << "\t" << grid->getYC(index1,index2,index3) << "\t" << grid->getZC(index1,index2,index3) << endl;
       }}}
   my_file.close();
+*/
 
 
   Qremoved = new double[ns];
@@ -478,6 +490,7 @@ void c_Solver::WriteConserved(int cycle) {
 
     for (int is = 0; is < ns; is++) {
       Ke[is] = part[is].getKe();
+      BulkEnergy[is] = EMf->getBulkEnergy(is);
       TOTenergy += Ke[is];
       momentum[is] = part[is].getP();
       TOTmomentum += momentum[is];
@@ -490,13 +503,16 @@ void c_Solver::WriteConserved(int cycle) {
     }
     if (myrank == 0) {
       ofstream my_file(cq.c_str(), fstream::app);
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      my_file << cycle << "\t" << setprecision(15);
+      my_file << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
       my_file.close();
       ofstream my_file2(cq2.c_str(),fstream::app);
 
                my_file2 << cycle << "\t" <<setprecision(15);
      		for (int i = 0; i < ns; i++)
      			my_file2 << Ke[i] << "\t";
+     		for (int i = 0; i < ns; i++)
+     			my_file2 << BulkEnergy[i] << "\t";
      		for (int i = 0; i < ns; i++)
      			my_file2 << Qtot[i] << "\t";
      		for (int i = 0; i < ns; i++)
@@ -560,8 +576,8 @@ void c_Solver::WriteOutput(int cycle) {
     }
   }
     // write the virtual satellite traces
-
-    bool binary_satellites = true;
+/*
+    bool binary_satellites = false;
     if(binary_satellites){
 	float time_counter = cycle;
 	float trace_counter = 0.0;
@@ -659,6 +675,7 @@ void c_Solver::WriteOutput(int cycle) {
       my_file.close();
     }
     }
+*/
 }
 
 void c_Solver::Finalize() {
@@ -673,6 +690,7 @@ void c_Solver::Finalize() {
 
   // deallocate
   delete[]Ke;
+  delete[]BulkEnergy;
   delete[]momentum;
   delete[] Qtot;
   delete[] Qremoved;

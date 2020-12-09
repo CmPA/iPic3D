@@ -56,6 +56,7 @@ void Collective::ReadInput(string inputfile) {
     Case              = config.read<string>("Case");
     FieldsInit        = config.read<string>("FieldsInit");
     PartInit          = config.read<string>("PartInit");
+    PartSymmetric     = config.read< bool >("PartSymmetric",0);
     wmethod           = config.read<string>("WriteMethod");
     SimName           = config.read<string>("SimulationName");
 
@@ -1321,6 +1322,10 @@ string Collective::getCase() {
 /*! get Particle initialization type */
 string Collective::getPartInit() {
   return (PartInit);
+}
+/*! get Particle initialization symmetric yes/no */
+bool Collective::getPartSymmetric() {
+  return (PartSymmetric);
 }
 /*! get simulation name */
 string Collective::getSimName() {

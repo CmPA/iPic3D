@@ -693,35 +693,66 @@ void EMfields3D::smoothE(double value,  int nvolte, VirtualTopology3D * vct, Col
       else {
         value = 0.5;
       }
-      alpha = (1.0 - value) / 6;
-      // Exth
-      for (int i = 1; i < nxn - 1; i++)
-        for (int j = 1; j < nyn - 1; j++)
-          for (int k = 1; k < nzn - 1; k++)
-            temp[i][j][k] = value * Ex[i][j][k] + alpha * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
-      for (int i = 1; i < nxn - 1; i++)
-        for (int j = 1; j < nyn - 1; j++)
-          for (int k = 1; k < nzn - 1; k++)
-            Ex[i][j][k] = temp[i][j][k];
-      // Eyth
-      for (int i = 1; i < nxn - 1; i++)
-        for (int j = 1; j < nyn - 1; j++)
-          for (int k = 1; k < nzn - 1; k++)
-            temp[i][j][k] = value * Ey[i][j][k] + alpha * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
-      for (int i = 1; i < nxn - 1; i++)
-        for (int j = 1; j < nyn - 1; j++)
-          for (int k = 1; k < nzn - 1; k++)
+      if (col->getNzc() == 1) { // 2D case
+        alpha = (1.0 - value) / 4.;
+        // Exth
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              temp[i][j][k] = value * Ex[i][j][k] + alpha * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k]);
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              Ex[i][j][k] = temp[i][j][k];
+        // Eyth
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              temp[i][j][k] = value * Ey[i][j][k] + alpha * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k]);
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
             Ey[i][j][k] = temp[i][j][k];
-      // Ezth
-      for (int i = 1; i < nxn - 1; i++)
-        for (int j = 1; j < nyn - 1; j++)
-          for (int k = 1; k < nzn - 1; k++)
-            temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
-      for (int i = 1; i < nxn - 1; i++)
-        for (int j = 1; j < nyn - 1; j++)
-          for (int k = 1; k < nzn - 1; k++)
-            Ez[i][j][k] = temp[i][j][k];
-
+        // Ezth
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k]);
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              Ez[i][j][k] = temp[i][j][k];
+      }
+      else { // 3D case
+        alpha = (1.0 - value) / 6;
+        // Exth
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              temp[i][j][k] = value * Ex[i][j][k] + alpha * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              Ex[i][j][k] = temp[i][j][k];
+        // Eyth
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              temp[i][j][k] = value * Ey[i][j][k] + alpha * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              Ey[i][j][k] = temp[i][j][k];
+        // Ezth
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
+        for (int i = 1; i < nxn - 1; i++)
+          for (int j = 1; j < nyn - 1; j++)
+            for (int k = 1; k < nzn - 1; k++)
+              Ez[i][j][k] = temp[i][j][k];
+      }
 
       delArr3(temp, nxn, nyn);
     }
@@ -2206,6 +2237,100 @@ void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collectiv
         }
     for (int is = 0; is < ns; is++)
       grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+void EMfields3D::initKAWTurbulencePert(VirtualTopology3D * vct, Grid * grid, Collective *col, double mime, double TiTe) {
+  // Turbulence setup: Fabio Bacchini, Francesco Pucci
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "-------------------------------------------" << endl;
+      cout << "Initialize KAW Turbulence with Perturbation" << endl;
+      cout << "-------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "-------------------------" << endl;
+    }
+    
+    // Profile parameters
+    double h = 0.2;
+    double r = 10.;
+    // Magnetic field parameters
+    double B0 = B0x;
+    double Bm = 2.*B0x;
+    double alpha = (Bm-B0)*r/(2.*pow(2*h,r)*pow(1.+pow(2*h,-r),2));
+    // Density parameters
+    double betam = 0.5; // This is the ion beta at the centre
+    double rhom = rhoINIT[0]/FourPI;
+    double vthi = sqrt(betam*Bm*Bm/2./FourPI/rhom);
+    double vthe = vthi*sqrt(mime/TiTe);
+    double Ptot = Bm*Bm/2./FourPI + rhom*(vthi*vthi + vthe*vthe/mime);
+    // Perturbation parameters
+    double a = Bm/10.;
+
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          double yN = grid->getYN(i, j, k);
+          Bxn[i][j][k] = B0 + (Bm-B0)/(1.+pow((yN-Ly/2.)/Ly/h,r)) + alpha*pow(yN/Ly*2.-1,2);
+          // initialize the density for species
+          for (int is = 0; is < ns; is++)
+             rhons[is][i][j][k] = (Ptot - Bxn[i][j][k]*Bxn[i][j][k]/2./FourPI)/(vthi*vthi+vthe*vthe/mime);
+          // add the initial KAW perturbation
+          double xN = grid->getXN(i, j, k);
+          Byn[i][j][k] = 0.;
+          Bzn[i][j][k] = a*cos(2.*M_PI/Lx*xN);
+        }
+    // initialize B on centers
+    for (int i = 0; i < nxc; i++)
+      for (int j = 0; j < nyc; j++)
+        for (int k = 0; k < nzc; k++) {
+          // Magnetic field
+          double yC = grid->getYC(i, j, k);
+          Bxc[i][j][k] =  B0 + (Bm-B0)/(1.+pow((yC-Ly/2.)/Ly/h,r)) + alpha*pow(yC/Ly*2.-1,2);
+          // add the initial perturbation
+          double xC = grid->getXC(i, j, k);
+          Byc[i][j][k] = 0.;
+          Bzc[i][j][k] = a*cos(2.*M_PI/Lx*xC);
+        }
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+
+    // Now make E equal to Ohms law
+    grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc); // here you calculate curl(B)
+    communicateNodeBC(nxn, nyn, nzn, tempXN, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, tempYN, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, tempZN, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+    for (int i = 0; i < nxc; i++)
+      for (int j = 0; j < nyc; j++)
+        for (int k = 0; k < nzc; k++)
+          tempXC[i][j][k] = fabs(rhocs[0][i][j][k]);
+    communicateCenterBC_P(nxc, nyc, nzc, tempXC, 2, 2, 2, 2, 2, 2, vct);
+    grid->gradC2N(tempX, tempY, tempZ, tempXC);
+    communicateNodeBC(nxn, nyn, nzn, tempX, 2, 2, 2, 2, 1, 1, vct);
+    communicateNodeBC(nxn, nyn, nzn, tempY, 2, 2, 2, 2, 2, 2, vct);
+    communicateNodeBC(nxn, nyn, nzn, tempZ, 2, 2, 2, 2, 2, 2, vct);
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+          // drift velocity
+          double xN = grid->getXN(i, j, k);
+          double yN = grid->getYN(i, j, k);
+          double vdz = -a*cos(2.*M_PI/Lx*xN)/sqrt(4.*M_PI*(1.+1./mime)*fabs(rhons[0][i][j][k]));
+          Ex[i][j][k] = tempYN[i][j][k]*Bzn[i][j][k]/4./M_PI/fabs(rhons[0][i][j][k]);
+          Ey[i][j][k] = -vdz*Bxn[i][j][k] + ((tempZN[i][j][k]*Bxn[i][j][k])/4./M_PI - vthe*vthe*tempY[i][j][k])/fabs(rhons[0][i][j][k]);
+          Ez[i][j][k] = -tempYN[i][j][k]*Bxn[i][j][k]/4./M_PI/fabs(rhons[0][i][j][k]);
+        }
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
@@ -4792,6 +4917,18 @@ double EMfields3D::getBenergy(void) {
   return (totalBenergy);
 }
 
+/*! get bulk kinetic energy*/
+double EMfields3D::getBulkEnergy(int is) {
+
+  double localBenergy = 0.0;
+  double totalBenergy = 0.0;
+  for (int i = 1; i < nxn - 2; i++)
+    for (int j = 1; j < nyn - 2; j++)
+      for (int k = 1; k < nzn - 2; k++)
+        localBenergy += .5 * dx * dy * dz * (Jxs[is][i][j][k] * Jxs[is][i][j][k] + Jys[is][i][j][k] * Jys[is][i][j][k] + Jzs[is][i][j][k] * Jzs[is][i][j][k]) / (rhons[is][i][j][k]);
+        MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  return (totalBenergy / qom[is]);
+}
 
 /*! Print info about electromagnetic field */
 void EMfields3D::print(void) const {

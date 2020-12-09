@@ -52,6 +52,8 @@ class Particles3D:public Particles3Dcomm {
     void MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Force Free initialization (JxB=0) for particles */
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** KAW turbulence setup */
+    void KAWTurbulencePert(Grid * grid, Field * EMf, VirtualTopology3D * vct, double B0x, double mime, double TiTe, bool symmetric);  
     /** Initial condition: uniform in space and maxwellian in velocity */
     void alt_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: localised in a box and monoenergetic in velocity */
