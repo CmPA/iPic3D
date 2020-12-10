@@ -134,6 +134,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   dz = grid->getDZ();
   delta = col->getDelta();
   TrackParticleID = col->getTrackParticleID(species);
+  npTracked = 0;
   c = col->getC();
   // info for mover
   NiterMover = col->getNiterMover();
@@ -185,7 +186,8 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   q = new double[npmax];
   // ID
   if (TrackParticleID) {
-    ParticleID = new unsigned long[npmax];
+    ParticleID = new long long[npmax];
+    partRank = new long long[npmax];
     BirthRank[0] = vct->getCartesian_rank();
     if (vct->getNprocs() > 1)
       BirthRank[1] = (int) ceil(log10((double) (vct->getNprocs())));  // Number of digits needed for # of process in ID
@@ -207,7 +209,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   //cout <<"sp " << ns << " TrackSpecies: "<< TrackSpecies << ", TrackingSpOutputCycle: " << TrackingSpOutputCycle << endl;
   if (TrackSpecies){  
     TrackSpBirthRank = new unsigned long[npmax];
-    TrackSpID        = new unsigned long[npmax];
+    TrackSpID        = new long long[npmax];
   }
   // BUFFERS
   // the buffer size should be decided depending on number of particles
@@ -907,8 +909,10 @@ void Particles3Dcomm::bufferXleft(double *b_, long long np_current, VirtualTopol
   b_[npExitXleft * nVar + 4] = v[np_current];
   b_[npExitXleft * nVar + 5] = w[np_current];
   b_[npExitXleft * nVar + 6] = q[np_current];
-  if (TrackParticleID)
+  if (TrackParticleID){
     b_[npExitXleft * nVar + 7] = ParticleID[np_current];
+    b_[npExitXleft * nVar + 8] = partRank[np_current];
+  }
   if (TrackSpecies){
     b_[npExitXleft * nVar + startTr +0] = TrackSpBirthRank[np_current]; 
     b_[npExitXleft * nVar + startTr +1] = TrackSpID[np_current];
@@ -926,8 +930,10 @@ void Particles3Dcomm::bufferXright(double *b_, long long np_current, VirtualTopo
   b_[npExitXright * nVar + 4] = v[np_current];
   b_[npExitXright * nVar + 5] = w[np_current];
   b_[npExitXright * nVar + 6] = q[np_current];
-  if (TrackParticleID)
+  if (TrackParticleID){
     b_[npExitXright * nVar + 7] = ParticleID[np_current];
+    b_[npExitXright * nVar + 8] = partRank[np_current];
+  }
   if (TrackSpecies){
     b_[npExitXright * nVar + startTr +0] = TrackSpBirthRank[np_current];
     b_[npExitXright * nVar + startTr +1] = TrackSpID[np_current];
@@ -945,8 +951,10 @@ inline void Particles3Dcomm::bufferYleft(double *b_, long long np_current, Virtu
   b_[npExitYleft * nVar + 4] = v[np_current];
   b_[npExitYleft * nVar + 5] = w[np_current];
   b_[npExitYleft * nVar + 6] = q[np_current];
-  if (TrackParticleID)
+  if (TrackParticleID){
     b_[npExitYleft * nVar + 7] = ParticleID[np_current];
+    b_[npExitYleft * nVar + 8] = partRank[np_current];
+  }
   if (TrackSpecies){
     b_[npExitYleft * nVar + startTr +0] = TrackSpBirthRank[np_current];
     b_[npExitYleft * nVar + startTr +1] = TrackSpID[np_current];
@@ -964,8 +972,10 @@ inline void Particles3Dcomm::bufferYright(double *b_, long long np_current, Virt
   b_[npExitYright * nVar + 4] = v[np_current];
   b_[npExitYright * nVar + 5] = w[np_current];
   b_[npExitYright * nVar + 6] = q[np_current];
-  if (TrackParticleID)
+  if (TrackParticleID){
     b_[npExitYright * nVar + 7] = ParticleID[np_current];
+    b_[npExitYright * nVar + 8] = partRank[np_current];
+  }
   if (TrackSpecies){
     b_[npExitYright * nVar + startTr +0] = TrackSpBirthRank[np_current];
     b_[npExitYright * nVar + startTr +1] = TrackSpID[np_current];
@@ -983,8 +993,10 @@ inline void Particles3Dcomm::bufferZleft(double *b_, long long np_current, Virtu
   b_[npExitZleft * nVar + 4] = v[np_current];
   b_[npExitZleft * nVar + 5] = w[np_current];
   b_[npExitZleft * nVar + 6] = q[np_current];
-  if (TrackParticleID)
+  if (TrackParticleID){
     b_[npExitZleft * nVar + 7] = ParticleID[np_current];
+    b_[npExitZleft * nVar + 8] = partRank[np_current];
+  }
   if (TrackSpecies){
     b_[npExitZleft * nVar + startTr +0] = TrackSpBirthRank[np_current];
     b_[npExitZleft * nVar + startTr +1] = TrackSpID[np_current];
@@ -1002,8 +1014,10 @@ inline void Particles3Dcomm::bufferZright(double *b_, long long np_current, Virt
   b_[npExitZright * nVar + 4] = v[np_current];
   b_[npExitZright * nVar + 5] = w[np_current];
   b_[npExitZright * nVar + 6] = q[np_current];
-  if (TrackParticleID)
+  if (TrackParticleID){
     b_[npExitZright * nVar + 7] = ParticleID[np_current];
+    b_[npExitZright * nVar + 8] = partRank[np_current];
+  }
   if (TrackSpecies){
     b_[npExitZright * nVar + startTr +0] = TrackSpBirthRank[np_current];
     b_[npExitZright * nVar + startTr +1] = TrackSpID[np_current];
@@ -1021,11 +1035,13 @@ int Particles3Dcomm::unbuffer(double *b_) {
     v[nop] = b_[nVar * np_current + 4];
     w[nop] = b_[nVar * np_current + 5];
     q[nop] = b_[nVar * np_current + 6];
-    if (TrackParticleID)
+    if (TrackParticleID){
       ParticleID[nop] = (unsigned long) b_[nVar * np_current + 7];
+      partRank[nop] = (long) b_[nVar * np_current +8];
+    }
     if (TrackSpecies){
       TrackSpBirthRank[nop] = (unsigned long) b_[nVar * np_current + startTr +0];
-      TrackSpID[nop]        = (unsigned long) b_[nVar * np_current + startTr +1];
+      TrackSpID[nop]        = (long long) b_[nVar * np_current + startTr +1];
     }
     np_current++;
     // these particles need further communication
@@ -1055,8 +1071,10 @@ void Particles3Dcomm::del_pack(long long np_current, long long *nplast) {
   v[np_current] = v[*nplast];
   w[np_current] = w[*nplast];
   q[np_current] = q[*nplast];
-  if (TrackParticleID)
+  if (TrackParticleID){
     ParticleID[np_current] = ParticleID[*nplast];
+    partRank[np_current] = partRank[*nplast];
+  }
   if (TrackSpecies){
     TrackSpBirthRank[np_current] = TrackSpBirthRank[*nplast];
     TrackSpID[np_current]        = TrackSpID[*nplast];
@@ -1115,8 +1133,12 @@ double *Particles3Dcomm::getWall()  const {
   return (w);
 }
 /**get ID of particle with label indexPart */
-unsigned long *Particles3Dcomm::getParticleIDall()  const {
+long long *Particles3Dcomm::getParticleIDall()  const {
   return (ParticleID);
+}
+/**get proc of particle with label indexPart */
+long long *Particles3Dcomm::getParticleRankall()  const {
+  return (partRank);
 }
 /**get charge of particle with label indexPart */
 double *Particles3Dcomm::getQall()  const {
@@ -1175,8 +1197,12 @@ double Particles3Dcomm::getW(long long indexPart)  const {
   return (w[indexPart]);
 }
 /**get ID of particle with label indexPart */
-unsigned long Particles3Dcomm::getParticleID(long long indexPart)  const {
+long long Particles3Dcomm::getParticleID(long long indexPart)  const {
   return (ParticleID[indexPart]);
+}
+/**get rank ID of particle with label indexPart */
+long long Particles3Dcomm::getParticleRank(long long indexPart)  const {
+  return (partRank[indexPart]);
 }
 /**get charge of particle with label indexPart */
 double Particles3Dcomm::getQ(long long indexPart)  const {

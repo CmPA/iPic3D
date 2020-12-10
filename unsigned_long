@@ -1,0 +1,29 @@
+./H5hut-io/include/H5hut-io.h:    void WriteTrackParticles(int spec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, unsigned long *TrackSpID, MPI_Comm CART_COMM);    void ClosePartclFile();
+Binary file ./H5hut-io/src/.H5hut-io.cpp.swp matches
+./H5hut-io/src/H5hut-io.cpp:void H5output::WriteTrackParticles(int ispec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, unsigned long *TrackSpID, MPI_Comm CART_COMM){
+./H5hut-io/src/H5hut-io.cpp:  H5PartWriteDataInt64(partfile,dtset.c_str(),TrackSpID);
+./include/Particles3Dcomm.h:  unsigned long *TrackSpID;
+./particles/Particles3Dcomm.cpp:    delete[]TrackSpID;
+./particles/Particles3Dcomm.cpp:    TrackSpID        = new unsigned long[npmax];
+./particles/Particles3Dcomm.cpp:    b_[npExitXleft * nVar + startTr +1] = TrackSpID[np_current];
+./particles/Particles3Dcomm.cpp:    b_[npExitXright * nVar + startTr +1] = TrackSpID[np_current];
+./particles/Particles3Dcomm.cpp:    b_[npExitYleft * nVar + startTr +1] = TrackSpID[np_current];
+./particles/Particles3Dcomm.cpp:    b_[npExitYright * nVar + startTr +1] = TrackSpID[np_current];
+./particles/Particles3Dcomm.cpp:    b_[npExitZleft * nVar + startTr +1] = TrackSpID[np_current];
+./particles/Particles3Dcomm.cpp:    b_[npExitZright * nVar + startTr +1] = TrackSpID[np_current];
+./particles/Particles3Dcomm.cpp:      TrackSpID[nop]        = (unsigned long) b_[nVar * np_current + startTr +1];
+./particles/Particles3Dcomm.cpp:    TrackSpID[np_current]        = TrackSpID[*nplast];
+./particles/Particles3Dcomm.cpp:    TrackSpID[i]        = i;
+./particles/Particles3Dcomm.cpp:    my_file << TrackSpBirthRank[i] <<" " << TrackSpID[i] <<" " << x[i]<<" " << y[i]<<" " << z[i]<<" " << q[i]<<" " << u[i]<<" " << v[i]<<" " << w[i] << " " << Exl << " " << Eyl << " " << Ezl << " " << Bxl << " " << Byl << " " << Bzl << endl;
+./preprocessing_tools/h5hut-test/H5hut-io/include/H5hut-io.h:    void WriteTrackParticles(int spec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, unsigned long *TrackSpID, MPI_Comm CART_COMM);    void ClosePartclFile();
+Binary file ./preprocessing_tools/h5hut-test/H5hut-io/src/.H5hut-io.cpp.swp matches
+./preprocessing_tools/h5hut-test/H5hut-io/src/H5hut-io.cpp:void H5output::WriteTrackParticles(int ispec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, unsigned long *TrackSpID, MPI_Comm CART_COMM){
+./preprocessing_tools/h5hut-test/H5hut-io/src/H5hut-io.cpp:  H5PartWriteDataInt64(partfile,dtset.c_str(),TrackSpID);
+./preprocessing_tools/SolInit-GEM/H5hut-io/include/H5hut-io.h:    void WriteTrackParticles(int spec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, unsigned long *TrackSpID, MPI_Comm CART_COMM);    void ClosePartclFile();
+Binary file ./preprocessing_tools/SolInit-GEM/H5hut-io/src/.H5hut-io.cpp.swp matches
+./preprocessing_tools/SolInit-GEM/H5hut-io/src/H5hut-io.cpp:void H5output::WriteTrackParticles(int ispec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, unsigned long *TrackSpID, MPI_Comm CART_COMM){
+./preprocessing_tools/SolInit-GEM/H5hut-io/src/H5hut-io.cpp:  H5PartWriteDataInt64(partfile,dtset.c_str(),TrackSpID);
+./preprocessing_tools/h5hut-write/H5hut-io/include/H5hut-io.h:    void WriteTrackParticles(int spec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, unsigned long *TrackSpID, MPI_Comm CART_COMM);    void ClosePartclFile();
+Binary file ./preprocessing_tools/h5hut-write/H5hut-io/src/.H5hut-io.cpp.swp matches
+./preprocessing_tools/h5hut-write/H5hut-io/src/H5hut-io.cpp:void H5output::WriteTrackParticles(int ispec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, unsigned long *TrackSpID, MPI_Comm CART_COMM){
+./preprocessing_tools/h5hut-write/H5hut-io/src/H5hut-io.cpp:  H5PartWriteDataInt64(partfile,dtset.c_str(),TrackSpID);
