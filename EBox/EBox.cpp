@@ -64,3 +64,10 @@ double EBox::getUEB_0() {return UEB_0;}
 double EBox::getREB_0() {return REB_0;}
 double EBox::getR_nth() {return R_nth;}
 double EBox::getR() {return R;}
+
+/** reverse EB direction (expansion into contraction and vice-versa) **/
+void EBox::reverseEBdirection(){
+  /** I have decided to change direction of expansion by reversing UEB_0
+      rather than EEB_0 **/
+  UEB_0= UEB_0*(-1.0);
+}

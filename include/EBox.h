@@ -24,6 +24,9 @@ public:
       to be executed at the beginning of each cycle **/
   void UpdateEbParameter();
 
+  /** reverse expansion into contraction and vice-versa **/
+  void reverseEBdirection();
+  
   /** output **/
   double getUEB_0();
   double getREB_0();

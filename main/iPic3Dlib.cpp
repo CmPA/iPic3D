@@ -211,6 +211,8 @@ int c_Solver::Init(int argc, char **argv) {
   if (myrank==0){
     cout <<"Expanding box initialised: U_EB_0= " << ebox->getUEB_0() << ", R_EB_0=" << ebox->getREB_0() << endl;
   }
+
+  cycle_reverseEBdir= col->getCycle_reverseEBdir();
 #endif
 
 
@@ -251,12 +253,41 @@ void c_Solver::UpdateCycleInfo(int cycle) {
   }
 
 #ifdef EB
+
+  double UEB0;
+  double REB0;
+  if (cycle_reverseEBdir >0){
+    if ((cycle % cycle_reverseEBdir ==0) and (cycle != first_cycle)){
+
+      if (myrank == 0) {
+	cout << "Cycle " << cycle <<": I am reverting expansion "<< endl;
+	cout << "Before reverting: U_0: " << ebox->getUEB_0() << ", R_0: " << ebox->getREB_0() << endl;
+      }
+      // reverse direction of R0 or U0 in EBox
+      ebox->reverseEBdirection();
+      // get updated values from EBox
+      UEB0= ebox->getUEB_0();
+      REB0= ebox->getREB_0();
+      // set them in fields 
+      EMf->set_UEB_0(UEB0);
+      EMf->set_REB_0(REB0);
+      // and particles
+      for (int i = 0; i < ns; i++){
+	part[i].set_UEB_0(UEB0);
+	part[i].set_REB_0(REB0);
+      }
+      if (myrank == 0) {
+	cout << "After reverting: U_0: " << ebox->getUEB_0() << ", R_0: " << ebox->getREB_0() << endl;
+      }
+    }// end if ((cycle % cycle_reverseEBdir ==0) and (cycle != first_cycle)){
+  } // end if (cycle_reverseEBdir >0){
+  
   // so it enters, as old magnetic field, in the En+theta calculation
   ebox->UpdateEbParameter();
   EMf->UpdateEBVectors(grid, ebox);
 
   // try damping E the first gyroperiod
-  EMf->SetLambda(grid, cycle);
+  //EMf->SetLambda(grid, cycle);
 
 #endif
 
@@ -383,7 +414,9 @@ void c_Solver::WriteRestart(int cycle) {
 
 void c_Solver::WriteConserved(int cycle) {
   // write the conserved quantities
-  if (cycle % col->getDiagnosticsOutputCycle() == 0) {
+  // regarding the second part of the statement: I want to print only "real" first cycle,
+  // not the first restart cycle
+  if (cycle % col->getDiagnosticsOutputCycle() == 0 || cycle == 0) {
     Eenergy = EMf->getEenergy();
     Benergy = EMf->getBenergy();
     TOTenergy = 0.0;

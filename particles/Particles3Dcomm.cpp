@@ -1464,3 +1464,11 @@ double Particles3Dcomm::getqz() {
   MPI_Allreduce(&localqz, &totalqz, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalqz);
 }
+
+void Particles3Dcomm::set_UEB_0(double UE0){
+  UEB= UE0;
+}
+
+void Particles3Dcomm::set_REB_0(double RE0){
+  REB= RE0;
+}

@@ -105,6 +105,12 @@ public:
    in the inputfile, scale L_trans= L_0 R/R_0**/
   void Do_EBRestart_RelocPart(VirtualTopology3D * vct);
 
+  /** set UEB_0 **/
+  void set_UEB_0(double UE0);
+
+  /** set REB_0 **/
+  void set_REB_0(double RE0);
+
   /** resize the receiving buffer */
   void resize_buffers(int new_buffer_size);
   /** a method to compute how many particles are not in the right domain */

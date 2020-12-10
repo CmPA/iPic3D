@@ -63,7 +63,8 @@ void Collective::ReadInput(string inputfile) {
 
     // to restart an EB sim from a non EB sim
     Restart_From_REB_0= config.read <bool>("Restart_From_REB_0", false);
-    
+
+    cycle_reverseEBdir= config.read <int>("cycle_reverseEBdir", 0);
     /* end expanding box parameters*/
 
     /* whistler init parameters */
@@ -1208,4 +1209,9 @@ bool Collective::getTrackSpecies(int is){
 /* how often */
 int Collective::getTrackingOutputCycle(){
   return TrackingOutputCycle;
+}
+
+/*! get the cycle number when to reverse expansion */
+int Collective::getCycle_reverseEBdir(){
+  return cycle_reverseEBdir;
 }

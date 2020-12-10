@@ -215,6 +215,9 @@ class Collective
     /*! get the expanding box value REB_0: distance from the Sun */
     double getREB_0();
 
+    /*! get the cycle number when to reverse expansion */
+    int getCycle_reverseEBdir();
+    
     /*! get the parameters for whistler wave init: real frequency */
     double getOmega_r();
 
@@ -453,6 +456,9 @@ class Collective
 
     /* to restart an EB sim from a non EB sim*/
     bool Restart_From_REB_0;
+
+    /* cycle when to inverse expansion */
+    int cycle_reverseEBdir;
 
     /*! boolean value for verbose results */
     bool verbose;

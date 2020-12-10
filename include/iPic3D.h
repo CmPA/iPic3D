@@ -96,6 +96,8 @@ namespace iPic3D {
     double Benergy;
     double TOTenergy;
     double TOTmomentum;
+    /* the cycle where to revert expansion */
+    int cycle_reverseEBdir;
   };
 
   inline int c_Solver::FirstCycle() {
