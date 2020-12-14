@@ -42,6 +42,9 @@ class Moments {
     double ***Jx;
     double ***Jy;
     double ***Jz;
+    double ***Jxh;
+    double ***Jyh;
+    double ***Jzh;
 
     /** pressure tensor components, defined on nodes */
     double ***pXX;
@@ -50,6 +53,23 @@ class Moments {
     double ***pYY;
     double ***pYZ;
     double ***pZZ;
+    double ***phXX;
+    double ***phXY;
+    double ***phXZ;
+    double ***phYY;
+    double ***phYZ;
+    double ***phZZ;
+
+    /** mu tensor components, defined on nodes */
+    double ***muxx;
+    double ***muxy;
+    double ***muxz;
+    double ***muyx;
+    double ***muyy;
+    double ***muyz;
+    double ***muzx;
+    double ***muzy;
+    double ***muzz;
     int nx;
     int ny;
     int nz;
@@ -78,6 +98,15 @@ class Moments {
     double get_Jz(int i, int j, int k) const {
       return Jz[i][j][k];
     }
+    double get_Jxh(int i, int j, int k) const {
+      return Jxh[i][j][k];
+    }
+    double get_Jyh(int i, int j, int k) const {
+      return Jyh[i][j][k];
+    }
+    double get_Jzh(int i, int j, int k) const {
+      return Jzh[i][j][k];
+    }
     double get_pXX(int i, int j, int k) const {
       return pXX[i][j][k];
     }
@@ -96,6 +125,51 @@ class Moments {
     double get_pZZ(int i, int j, int k) const {
       return pZZ[i][j][k];
     }
+    double get_phXX(int i, int j, int k) const {
+      return phXX[i][j][k];
+    }
+    double get_phXY(int i, int j, int k) const {
+      return phXY[i][j][k];
+    }
+    double get_phXZ(int i, int j, int k) const {
+      return phXZ[i][j][k];
+    }
+    double get_phYY(int i, int j, int k) const {
+      return phYY[i][j][k];
+    }
+    double get_phYZ(int i, int j, int k) const {
+      return phYZ[i][j][k];
+    }
+    double get_phZZ(int i, int j, int k) const {
+      return phZZ[i][j][k];
+    }
+    double get_muxx(int i, int j, int k) const {
+      return muxx[i][j][k];
+    }
+    double get_muxy(int i, int j, int k) const {
+      return muxy[i][j][k];
+    }
+    double get_muxz(int i, int j, int k) const {
+      return muxz[i][j][k];
+    }
+    double get_muyx(int i, int j, int k) const {
+      return muyx[i][j][k];
+    }
+    double get_muyy(int i, int j, int k) const {
+      return muyy[i][j][k];
+    }
+    double get_muyz(int i, int j, int k) const {
+      return muyz[i][j][k];
+    }
+    double get_muzx(int i, int j, int k) const {
+      return muzx[i][j][k];
+    }
+    double get_muzy(int i, int j, int k) const {
+      return muzy[i][j][k];
+    }
+    double get_muzz(int i, int j, int k) const {
+      return muzz[i][j][k];
+    }
   public:
     Moments() {
     };
@@ -106,6 +180,9 @@ class Moments {
     void addJx(double weight[][2][2], int X, int Y, int Z);
     void addJy(double weight[][2][2], int X, int Y, int Z);
     void addJz(double weight[][2][2], int X, int Y, int Z);
+    void addJxh(double weight[][2][2], int X, int Y, int Z);
+    void addJyh(double weight[][2][2], int X, int Y, int Z);
+    void addJzh(double weight[][2][2], int X, int Y, int Z);
 
     void addPxx(double weight[][2][2], int X, int Y, int Z);
     void addPxy(double weight[][2][2], int X, int Y, int Z);
@@ -113,6 +190,22 @@ class Moments {
     void addPyy(double weight[][2][2], int X, int Y, int Z);
     void addPyz(double weight[][2][2], int X, int Y, int Z);
     void addPzz(double weight[][2][2], int X, int Y, int Z);
+    void addPhxx(double weight[][2][2], int X, int Y, int Z);
+    void addPhxy(double weight[][2][2], int X, int Y, int Z);
+    void addPhxz(double weight[][2][2], int X, int Y, int Z);
+    void addPhyy(double weight[][2][2], int X, int Y, int Z);
+    void addPhyz(double weight[][2][2], int X, int Y, int Z);
+    void addPhzz(double weight[][2][2], int X, int Y, int Z);
+
+    void addmuxx(double weight[][2][2], int X, int Y, int Z);
+    void addmuxy(double weight[][2][2], int X, int Y, int Z);
+    void addmuxz(double weight[][2][2], int X, int Y, int Z);
+    void addmuyx(double weight[][2][2], int X, int Y, int Z);
+    void addmuyy(double weight[][2][2], int X, int Y, int Z);
+    void addmuyz(double weight[][2][2], int X, int Y, int Z);
+    void addmuzx(double weight[][2][2], int X, int Y, int Z);
+    void addmuzy(double weight[][2][2], int X, int Y, int Z);
+    void addmuzz(double weight[][2][2], int X, int Y, int Z);
 };
 
 // construct empty instance (not zeroed)
@@ -125,12 +218,30 @@ inline Moments::Moments(int nx_, int ny_, int nz_, double invVOL_) {
   Jx = newArr3(double, nx, ny, nz);
   Jy = newArr3(double, nx, ny, nz);
   Jz = newArr3(double, nx, ny, nz);
+  Jxh = newArr3(double, nx, ny, nz);
+  Jyh = newArr3(double, nx, ny, nz);
+  Jzh = newArr3(double, nx, ny, nz);
   pXX = newArr3(double, nx, ny, nz);
   pXY = newArr3(double, nx, ny, nz);
   pXZ = newArr3(double, nx, ny, nz);
   pYY = newArr3(double, nx, ny, nz);
   pYZ = newArr3(double, nx, ny, nz);
   pZZ = newArr3(double, nx, ny, nz);
+  phXX = newArr3(double, nx, ny, nz);
+  phXY = newArr3(double, nx, ny, nz);
+  phXZ = newArr3(double, nx, ny, nz);
+  phYY = newArr3(double, nx, ny, nz);
+  phYZ = newArr3(double, nx, ny, nz);
+  phZZ = newArr3(double, nx, ny, nz);
+  muxx = newArr3(double, nx, ny, nz);
+  muxy = newArr3(double, nx, ny, nz);
+  muxz = newArr3(double, nx, ny, nz);
+  muyx = newArr3(double, nx, ny, nz);
+  muyy = newArr3(double, nx, ny, nz);
+  muyz = newArr3(double, nx, ny, nz);
+  muzx = newArr3(double, nx, ny, nz);
+  muzy = newArr3(double, nx, ny, nz);
+  muzz = newArr3(double, nx, ny, nz);
 }
 
 inline Moments::~Moments() {
@@ -139,12 +250,30 @@ inline Moments::~Moments() {
   delArr3(Jx, nx, ny);
   delArr3(Jy, nx, ny);
   delArr3(Jz, nx, ny);
+  delArr3(Jxh, nx, ny);
+  delArr3(Jyh, nx, ny);
+  delArr3(Jzh, nx, ny);
   delArr3(pXX, nx, ny);
   delArr3(pXY, nx, ny);
   delArr3(pXZ, nx, ny);
   delArr3(pYY, nx, ny);
   delArr3(pYZ, nx, ny);
   delArr3(pZZ, nx, ny);
+  delArr3(phXX, nx, ny);
+  delArr3(phXY, nx, ny);
+  delArr3(phXZ, nx, ny);
+  delArr3(phYY, nx, ny);
+  delArr3(phYZ, nx, ny);
+  delArr3(phZZ, nx, ny);
+  delArr3(muxx, nx, ny);
+  delArr3(muxy, nx, ny);
+  delArr3(muxz, nx, ny);
+  delArr3(muyz, nx, ny);
+  delArr3(muyy, nx, ny);
+  delArr3(muyz, nx, ny);
+  delArr3(muzx, nx, ny);
+  delArr3(muzy, nx, ny);
+  delArr3(muzz, nx, ny);
 }
 
 inline void Moments::set_to_zero() {
@@ -156,12 +285,30 @@ inline void Moments::set_to_zero() {
         Jx[i][j][k] = 0.0;
         Jy[i][j][k] = 0.0;
         Jz[i][j][k] = 0.0;
+        Jxh[i][j][k] = 0.0;
+        Jyh[i][j][k] = 0.0;
+        Jzh[i][j][k] = 0.0;
         pXX[i][j][k] = 0.0;
         pXY[i][j][k] = 0.0;
         pXZ[i][j][k] = 0.0;
         pYY[i][j][k] = 0.0;
         pYZ[i][j][k] = 0.0;
         pZZ[i][j][k] = 0.0;
+        phXX[i][j][k] = 0.0;
+        phXY[i][j][k] = 0.0;
+        phXZ[i][j][k] = 0.0;
+        phYY[i][j][k] = 0.0;
+        phYZ[i][j][k] = 0.0;
+        phZZ[i][j][k] = 0.0;
+        muxx[i][j][k] = 0.0;
+        muxy[i][j][k] = 0.0;
+        muxz[i][j][k] = 0.0;
+        muyx[i][j][k] = 0.0;
+        muyy[i][j][k] = 0.0;
+        muyz[i][j][k] = 0.0;
+        muzx[i][j][k] = 0.0;
+        muzy[i][j][k] = 0.0;
+        muzz[i][j][k] = 0.0;
       }
 }
 
@@ -288,6 +435,12 @@ class EMfields3D                // :public Field
     void addJy(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
     void addJz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of current density hat - direction X to current density field at node X,Y,Z */
+    void addJxh(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of current density hat - direction Y to current density field at node X,Y,Z */
+    void addJyh(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of current density hat - direction Z to current density field at node X,Y,Z */
+    void addJzh(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! add an amount of EF - direction X  at node X,Y,Z */
     void addEFx(double weight[][2][2], int X, int Y, int Z, int is);
@@ -308,6 +461,37 @@ class EMfields3D                // :public Field
     void addPyz(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction ZZ to current density field at node X,Y,Z */
     void addPzz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density hat - direction XX to current density field at node X,Y,Z */
+    void addPhxx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density hat - direction XY to current density field at node X,Y,Z */
+    void addPhxy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density hat - direction XZ to current density field at node X,Y,Z */
+    void addPhxz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density hat - direction YY to current density field at node X,Y,Z */
+    void addPhyy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density hat - direction YZ to current density field at node X,Y,Z */
+    void addPhyz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density hat - direction ZZ to current density field at node X,Y,Z */
+    void addPhzz(double weight[][2][2], int X, int Y, int Z, int is);
+
+    /*! add an amount of mu tensor - direction XX to current density field at node X,Y,Z */
+    void addmuxx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor - direction XY to current density field at node X,Y,Z */
+    void addmuxy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor - direction XZ to current density field at node X,Y,Z */
+    void addmuxz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor - direction YX to current density field at node X,Y,Z */
+    void addmuyx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor - direction YY to current density field at node X,Y,Z */
+    void addmuyy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor - direction YZ to current density field at node X,Y,Z */
+    void addmuyz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor - direction ZX to current density field at node X,Y,Z */
+    void addmuzx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor - direction ZY to current density field at node X,Y,Z */
+    void addmuzy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor - direction ZZ to current density field at node X,Y,Z */
+    void addmuzz(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! adjust densities on boundaries that are not periodic */
     void adjustNonPeriodicDensities(int is, VirtualTopology3D * vct);
@@ -347,6 +531,12 @@ class EMfields3D                // :public Field
     double ***getEz();
     /*! get Electric field Z component cell array without the ghost cells */
     double ***getEzc();
+    /*! get Electric field th X component array */
+    double ***getExth();
+    /*! get Electric field th Y component array */
+    double ***getEyth();
+    /*! get Electric field th Z component array */
+    double ***getEzth();
     /*! get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
     double &getBx(int indexX, int indexY, int indexZ) const;
     /*! get Magnetic field X component array */
@@ -668,6 +858,12 @@ class EMfields3D                // :public Field
     double ****Jys;
     /*! SPECIES: current density component-Z for species, defined on nodes */
     double ****Jzs;
+    /*! SPECIES: current density hat component-X for species, defined on nodes */
+    double ****Jxhs;
+    /*! SPECIES: current density hat component-Y for species, defined on nodes */
+    double ****Jyhs;
+    /*! SPECIES: current density hat component-Z for species, defined on nodes */
+    double ****Jzhs;
     /*! SPECIES: Energy Flux density component-X for species, defined on nodes */
     double ****EFxs;
     /*! SPECIES: Energy Flux density component-Y for species, defined on nodes */
@@ -707,7 +903,37 @@ class EMfields3D                // :public Field
     double ****pYZsn;
     /*! SPECIES: pressure tensor component-ZZ, defined on nodes */
     double ****pZZsn;
+    /*! SPECIES: pressure tensor hat component-XX, defined on nodes */
+    double ****phXXsn;
+    /*! SPECIES: pressure tensor hat component-XY, defined on nodes */
+    double ****phXYsn;
+    /*! SPECIES: pressure tensor hat component-XZ, defined on nodes */
+    double ****phXZsn;
+    /*! SPECIES: pressure tensor hat component-XZ, defined on nodes */
+    double ****phYYsn;
+    /*! SPECIES: pressure tensor hat component-YZ, defined on nodes */
+    double ****phYZsn;
+    /*! SPECIES: pressure tensor hat component-ZZ, defined on nodes */
+    double ****phZZsn;
 
+    /*! SPECIES: mu tensor component-XX, defined on nodes */
+    double ****muxxs;
+    /*! SPECIES: mu tensor component-XY, defined on nodes */
+    double ****muxys;
+    /*! SPECIES: mu tensor component-XZ, defined on nodes */
+    double ****muxzs;
+    /*! SPECIES: mu tensor component-YX, defined on nodes */
+    double ****muyxs;
+    /*! SPECIES: mu tensor component-YY, defined on nodes */
+    double ****muyys;
+    /*! SPECIES: mu tensor component-YZ, defined on nodes */
+    double ****muyzs;
+    /*! SPECIES: mu tensor component-ZX, defined on nodes */
+    double ****muzxs;
+    /*! SPECIES: mu tensor component-ZY, defined on nodes */
+    double ****muzys;
+    /*! SPECIES: mu tensor component-ZZ, defined on nodes */
+    double ****muzzs;
 
     /*! Field Boundary Condition 0 = Dirichlet Boundary Condition: specifies the value to take on the boundary of the domain 1 = Neumann Boundary Condition: specifies the value of derivative to take on the boundary of the domain 2 = Periodic condition */
 

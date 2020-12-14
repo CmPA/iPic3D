@@ -40,6 +40,7 @@ SRC = \
  $(IPIC_HOME)/bc/BcParticles.cpp \
  $(IPIC_HOME)/bc/BcFields3D.cpp \
  $(IPIC_HOME)/mathlib/EllipticF.cpp \
+ $(IPIC_HOME)/mathlib/PolyRoots.cpp \
  $(IPIC_HOME)/solvers/CG.cpp \
  $(IPIC_HOME)/solvers/GMRES.cpp \
  $(IPIC_HOME)/ConfigFile/src/ConfigFile.cpp \

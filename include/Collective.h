@@ -153,6 +153,8 @@ class Collective
     string getPartInit();
     /*! get particle initialization symmetric yes/no */
     bool getPartSymmetric();
+    /*! get relativistic yes/no */
+    bool getRelativistic();
     /*! get output writing method */
     string getWriteMethod();
     /*! get simulation name */
@@ -379,6 +381,8 @@ class Collective
     string PartInit;
     /*! Particle initialization symmetric yes/no */
     bool PartSymmetric;
+    /*! Relativistic yes/no */
+    bool Relativistic;
     /*! Output writing method */
     string wmethod;
     /*! Simulation name */

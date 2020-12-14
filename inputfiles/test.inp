@@ -27,29 +27,29 @@ B1z = 0.000
 delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-dt = 0.05               # dt = time step  
-ncycles = 1          # cycles
+dt = 0.1125               # dt = time step  
+ncycles =66000          # cycles
 th = 1.0               # th =   decentering parameter
 c = 1.0                # c = light speed 
 
 #  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
 Smooth = 0.5           # Smoothing value (5-points stencil)
-Nvolte = 6
+Nvolte =3
 
 
 # %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
-Lx =   3.2            # Lx = simulation box length - x direction   
+Lx =   32.0            # Lx = simulation box length - x direction   
 Ly =   1.0            # Ly = simulation box length - y direction
-Lz =   3.2             # Lz = simulation box length - z direction   
+Lz =   1.0             # Lz = simulation box length - z direction   
 
 x_center =   1.        # Lx = simulation box length - x direction in m  
 y_center =   1.        # Ly = simulation box length - y direction in m
 z_center =   1.        # Lz = simulation box length - z direction in m  
 L_square =   .1
 
-nxc =  4              # nxc = number of cells - x direction        
-nyc =  2              # nyc = number of cells - y direction
-nzc =  4               # nzc = number of cells - z direction        
+nxc =  128             # nxc = number of cells - x direction        
+nyc =  1              # nyc = number of cells - y direction
+nzc =  1               # nzc = number of cells - z direction        
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
 XLEN = 1               # Number of subdomains in the X direction
@@ -63,22 +63,22 @@ ZLEN = 1               # Number of subdomains in the X direction
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ns = 2                               # Number of particles
-rhoINIT         = 1.0  1.0           # Initial density (make sure you are neutral)
-rhoINJECT       = 0.  0.           # Injection density (make sure you are neutral)
-TrackParticleID = 0    0             # TrackParticleID[species] = 1=true, 0=false 
+rhoINIT         = 1.0  1.0 1.0 1.0           # Initial density (make sure you are neutral)
+rhoINJECT       = 0. 0. 0. 0.          # Injection density (make sure you are neutral)
+TrackParticleID = 0  0 0 0            # TrackParticleID[species] = 1=true, 0=false 
 
-npcelx          = 3    3             # Particles per cell in X
-npcely          = 1    1             # Particles per cell in Y
-npcelz          = 3    3             # Particles per cell in Z
+npcelx          = 156   156   16   16            # Particles per cell in X
+npcely          = 1    1    1    1     # Particles per cell in Y
+npcelz          = 1    1    1    1     # Particles per cell in Z
 NpMaxNpRatio    = 6.0                # Maximum number of particles allocated
 
-qom             = 1.0  1.0        # Charge/mass ratio
-uth             = 0.01   0.01     # Thermal velocity in X
-vth             = 0.01   0.01     # Thermal velocity in Y
-wth             = 0.01   0.01     # Thermal velocity in Z
-u0              = 0.2    -0.2        # Drift velocity in X
-v0              = 0.0    0.0        # Drift velocity in X
-w0              = 0.0    0.0      # Drift velocity in X
+qom             = 1.0    1.0   -1.0    -1.0    # Charge/mass ratio
+uth             = 0.01   0.01   0.01    0.01   # Thermal velocity in X
+vth             = 0.01   0.01   0.01    0.01  # Thermal velocity in Y
+wth             = 0.01   0.01   0.01    0.01   # Thermal velocity in Z
+u0              = 0.5    -0.5   0.5     -0.5     # Drift velocity in X
+v0              = 0.0    0.0    0.0     0.0    # Drift velocity in X
+w0              = 0.0    0.0    0.0     0.0   # Drift velocity in X
 
 # %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
 PERIODICX       = 1                  # In direction X (1=true, 0=false)
@@ -124,9 +124,9 @@ PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
 verbose                = 1        # Print to video results
 Vinj                   = 0.0      # Velocity of the injection from the wall
 CGtol                  = 1E-3     # CG solver stopping criterium tolerance
-GMREStol               = 1E-3     # GMRES solver stopping criterium tolerance
-NiterMover             = 3        # mover predictor corrector iteration
-FieldOutputCycle       = 10      # Output for field
-ParticlesOutputCycle   = 50      # Output for particles if 1 it doesnt save particles data
+GMREStol               = 1E-5     # GMRES solver stopping criterium tolerance
+NiterMover             = 5        # mover predictor corrector iteration
+FieldOutputCycle       = 100      # Output for field
+ParticlesOutputCycle   = 1000      # Output for particles if 1 it doesnt save particles data
 RestartOutputCycle     = 4000     # restart cycle
 DiagnosticsOutputCycle = 1        # Diagnostics cycle

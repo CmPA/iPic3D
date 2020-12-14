@@ -57,6 +57,7 @@ void Collective::ReadInput(string inputfile) {
     FieldsInit        = config.read<string>("FieldsInit");
     PartInit          = config.read<string>("PartInit");
     PartSymmetric     = config.read< bool >("PartSymmetric",0);
+    Relativistic      = config.read< bool >("Relativistic", 1);
     wmethod           = config.read<string>("WriteMethod");
     SimName           = config.read<string>("SimulationName");
 
@@ -1326,6 +1327,10 @@ string Collective::getPartInit() {
 /*! get Particle initialization symmetric yes/no */
 bool Collective::getPartSymmetric() {
   return (PartSymmetric);
+}
+/*! relativistic yes/no */
+bool Collective::getRelativistic() {
+  return (Relativistic);
 }
 /*! get simulation name */
 string Collective::getSimName() {

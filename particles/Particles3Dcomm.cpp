@@ -439,7 +439,6 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
         weight[i][j][k] = xi[i] * eta[j] * zeta[k] * invVOL;
 }
 
-
 /** Interpolation Particle --> Grid */
 void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
   const double inv_dx = 1.0 / dx;
@@ -448,6 +447,17 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
+  double ***Ex = asgArr3(double, nxn, nyn, nzn, EMf->getEx());
+  double ***Ey = asgArr3(double, nxn, nyn, nzn, EMf->getEy());
+  double ***Ez = asgArr3(double, nxn, nyn, nzn, EMf->getEz());
+  double ***Bx = asgArr3(double, nxn, nyn, nzn, EMf->getBx());
+  double ***By = asgArr3(double, nxn, nyn, nzn, EMf->getBy());
+  double ***Bz = asgArr3(double, nxn, nyn, nzn, EMf->getBz());
+  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+  double Fext = EMf->getFext();
+
   //#pragma omp parallel
   {
     //Moments speciesMoments(nxn,nyn,nzn,invVOL);
@@ -467,10 +477,12 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       eta[1] = grid->getYN(ix, iy, iz) - y[i];
       zeta[1] = grid->getZN(ix, iy, iz) - z[i];
       double weight[2][2][2];
+      double weights[2][2][2];
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++) {
             weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+            weights[ii][jj][kk] = xi[ii] * eta[jj] * zeta[kk] * invVOL;
           }
       //weight[0][0][0] = q[i] * xi[0] * eta[0] * zeta[0] * invVOL;
       //weight[0][0][1] = q[i] * xi[0] * eta[0] * zeta[1] * invVOL;
@@ -554,6 +566,156 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
       EMf->addPzz(temp, ix, iy, iz, ns);
+
+      // Stuff for relativistic quantities
+      double Bxl = 0.0;
+      double Byl = 0.0;
+      double Bzl = 0.0;
+      double Exl = 0.0;
+      double Eyl = 0.0;
+      double Ezl = 0.0;
+
+      int ll = 0;
+      for (int il=0; il<=1; il++)
+        for (int jl=0; jl<=1; jl++)
+          for (int kl=0; kl<=1; kl++) {
+            Bxl += weights[il][jl][kl] * (Bx[ix-il][iy-jl][iz-kl] + Fext*Bx_ext[ix-il][iy-jl][iz-kl]);
+            Byl += weights[il][jl][kl] * (By[ix-il][iy-jl][iz-kl] + Fext*By_ext[ix-il][iy-jl][iz-kl]);
+            Bzl += weights[il][jl][kl] * (Bz[ix-il][iy-jl][iz-kl] + Fext*Bz_ext[ix-il][iy-jl][iz-kl]);
+            Exl += weights[il][jl][kl] * Ex[ix-il][iy-jl][iz-kl];
+            Eyl += weights[il][jl][kl] * Ey[ix-il][iy-jl][iz-kl];
+            Ezl += weights[il][jl][kl] * Ez[ix-il][iy-jl][iz-kl];
+            ll = ll + 1;
+            }
+
+      double gn = 1./sqrt(1.-u[i]*u[i]-v[i]*v[i]-w[i]*w[i]);
+      double G = qom*dt/2.*(Exl*u[i]+Eyl*v[i]+Ezl*w[i]) + gn;
+      Bxl *= qom*dt/2./G;
+      Byl *= qom*dt/2./G;
+      Bzl *= qom*dt/2./G;
+      double D = G*(1.+Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+      double axx = (1.+Bxl*Bxl)/D;
+      double axy = (Bxl*Byl + Bzl)/D;
+      double axz = (Bxl*Bzl - Byl)/D;
+      double ayx = (Bxl*Byl - Bzl)/D;
+      double ayy = (1.+Byl*Byl)/D;
+      double ayz = (Byl*Bzl + Bxl)/D;
+      double azx = (Bxl*Bzl + Byl)/D;
+      double azy = (Byl*Bzl - Bxl)/D;
+      double azz = (1.+Bzl*Bzl)/D;
+      double uhat = axx*u[i]*gn + axy*v[i]*gn + axz*w[i]*gn;
+      double vhat = ayx*u[i]*gn + ayy*v[i]*gn + ayz*w[i]*gn;
+      double what = azx*u[i]*gn + azy*v[i]*gn + azz*w[i]*gn;
+
+      // Gather hat quantities
+      // add current density hat - X
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = uhat * weight[ii][jj][kk];
+      EMf->addJxh(temp, ix, iy, iz, ns);
+      // add current density hat - Y
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vhat * weight[ii][jj][kk];
+      EMf->addJyh(temp, ix, iy, iz, ns);
+      // add current density hat - Z
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = what * weight[ii][jj][kk];
+      EMf->addJzh(temp, ix, iy, iz, ns);
+      // Phxx - add pressure tensor hat
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = uhat*uhat * weight[ii][jj][kk];
+      EMf->addPhxx(temp, ix, iy, iz, ns);
+      // Phxy - add pressure tensor hat
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = uhat*vhat * weight[ii][jj][kk];
+      EMf->addPhxy(temp, ix, iy, iz, ns);
+      // Phxz - add pressure tensor hat
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = uhat*what * weight[ii][jj][kk];
+      EMf->addPhxz(temp, ix, iy, iz, ns);
+      // Phyy - add pressure tensor hat
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vhat*vhat * weight[ii][jj][kk];
+      EMf->addPhyy(temp, ix, iy, iz, ns);
+      // Phyz - add pressure tensor hat
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vhat*what * weight[ii][jj][kk];
+      EMf->addPhyz(temp, ix, iy, iz, ns);
+      // Phzz - add pressure tensor hat
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = what*what * weight[ii][jj][kk];
+      EMf->addPhzz(temp, ix, iy, iz, ns);
+      // muxx - add mu tensor
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = axx * weight[ii][jj][kk];
+      EMf->addmuxx(temp, ix, iy, iz, ns);
+      // muxy - add mu tensor
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = axy * weight[ii][jj][kk];
+      EMf->addmuxy(temp, ix, iy, iz, ns);
+      // muxz - add mu tensor
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = axz * weight[ii][jj][kk];
+      EMf->addmuxz(temp, ix, iy, iz, ns);
+      // muyx - add mu tensor
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = ayx * weight[ii][jj][kk];
+      EMf->addmuyx(temp, ix, iy, iz, ns);
+      // muyy - add mu tensor
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = ayy * weight[ii][jj][kk];
+      EMf->addmuyy(temp, ix, iy, iz, ns);
+      // muyz - add mu tensor
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = ayz * weight[ii][jj][kk];
+      EMf->addmuyz(temp, ix, iy, iz, ns);
+      // muzx - add mu tensor
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = azx * weight[ii][jj][kk];
+      EMf->addmuzx(temp, ix, iy, iz, ns);
+      // muzy - add mu tensor
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = azy * weight[ii][jj][kk];
+      EMf->addmuzy(temp, ix, iy, iz, ns);
+      // muzz - add mu tensor
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = azz * weight[ii][jj][kk];
+      EMf->addmuzz(temp, ix, iy, iz, ns);
     }
     // change this to allow more parallelization after implementing array class
     //#pragma omp critical
