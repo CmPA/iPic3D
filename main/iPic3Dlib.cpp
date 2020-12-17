@@ -232,9 +232,13 @@ int c_Solver::Init(int argc, char **argv) {
     ds_vz= new string [ns];
     
     for (int i=0; i< ns; i++){
-      ds_vx[i] = SaveDirName + "/VDF_sp_" + std::to_string(i) + "_vx.txt";
-      ds_vy[i] = SaveDirName + "/VDF_sp_" + std::to_string(i) + "_vy.txt";
-      ds_vz[i] = SaveDirName + "/VDF_sp_" + std::to_string(i) + "_vz.txt";
+
+      std::ostringstream os;
+      os << i;
+      
+      ds_vx[i] = SaveDirName + "/VDF_sp_" + os.str() + "_vx.txt";
+      ds_vy[i] = SaveDirName + "/VDF_sp_" + os.str() + "_vy.txt";
+      ds_vz[i] = SaveDirName + "/VDF_sp_" + os.str() + "_vz.txt";
     }
     if (myrank == 0) {
       for (int i=0; i< ns; i++){
