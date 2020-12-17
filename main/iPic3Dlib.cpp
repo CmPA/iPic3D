@@ -188,6 +188,7 @@ int c_Solver::Init(int argc, char **argv) {
   //   ofstream my_file(ds.c_str());
   //   my_file.close();
   // }
+
   cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
   ofstream my_file(cqsat.c_str(), fstream::binary);
@@ -214,6 +215,38 @@ int c_Solver::Init(int argc, char **argv) {
 
   cycle_reverseEBdir= col->getCycle_reverseEBdir();
 #endif
+
+  /* for VDF */
+  /* whether to write VDF, vx, vy, vz */
+
+  WriteVDF_xyz= col->getWriteVDF_xyz();
+
+  if (WriteVDF_xyz){
+  
+    // Distribution functions
+    nDistributionBins = 200;
+    VelocityDist_dir = new long double[nDistributionBins];
+    
+    ds_vx= new string [ns];
+    ds_vy= new string [ns];
+    ds_vz= new string [ns];
+    
+    for (int i=0; i< ns; i++){
+      ds_vx[i] = SaveDirName + "/VDF_sp_" + std::to_string(i) + "_vx.txt";
+      ds_vy[i] = SaveDirName + "/VDF_sp_" + std::to_string(i) + "_vy.txt";
+      ds_vz[i] = SaveDirName + "/VDF_sp_" + std::to_string(i) + "_vz.txt";
+    }
+    if (myrank == 0) {
+      for (int i=0; i< ns; i++){
+	ofstream my_file1(ds_vx[i].c_str());
+	my_file1.close();
+	ofstream my_file2(ds_vy[i].c_str());
+        my_file2.close();
+	ofstream my_file3(ds_vz[i].c_str());
+        my_file3.close();	
+	}
+    }
+  }// end if (WriteVDF_xyz)
 
 
   return 0;
@@ -457,7 +490,66 @@ void c_Solver::WriteConserved(int cycle) {
     //     my_file.close();
     //   }
     // }
+
+  } // end if (cycle % col->getDiagnosticsOutputCycle() == 0 || cycle == 0) {
+
+  if (cycle % col->getFieldOutputCycle() == 0 || cycle == 0) {  
+    if (WriteVDF_xyz){
+      double minVel, maxVel;
+      for (int is = 0; is < ns; is++) {
+	// vx
+	minVel= part[is].getMinVelocity_x();
+	maxVel= part[is].getMaxVelocity_x();
+	
+	VelocityDist_dir = part[is].getVelocityDistribution_x(nDistributionBins, minVel, maxVel);
+	
+	if (myrank == 0) {
+	  ofstream my_file(ds_vx[is].c_str(), fstream::app);
+	  my_file << cycle << "\t"  << minVel  << "\t" << maxVel << "\t" << nDistributionBins << endl;
+	  for (int i = 0; i < nDistributionBins; i++){
+	    my_file  << VelocityDist_dir[i] <<"\t";
+	  }
+	  my_file << endl;
+	  my_file.close();
+	} // end if (myrank == 0) {
+
+	// vy
+	minVel= part[is].getMinVelocity_y();
+	maxVel= part[is].getMaxVelocity_y();
+	
+	VelocityDist_dir = part[is].getVelocityDistribution_y(nDistributionBins, minVel, maxVel);
+	
+	if (myrank == 0) {
+	  ofstream my_file(ds_vy[is].c_str(), fstream::app);
+	  my_file << cycle << "\t"  << minVel  << "\t" << maxVel << "\t" << nDistributionBins << endl;
+	  for (int i = 0; i < nDistributionBins; i++)
+	    my_file << "\t" << VelocityDist_dir[i];
+	  my_file << endl;
+	  my_file.close();
+	} // end if (myrank == 0) {
+
+	// vz
+	minVel= part[is].getMinVelocity_z();
+	maxVel= part[is].getMaxVelocity_z();
+	
+	VelocityDist_dir = part[is].getVelocityDistribution_z(nDistributionBins, minVel, maxVel);
+	
+	if (myrank == 0) {
+	  ofstream my_file(ds_vz[is].c_str(), fstream::app);
+	  my_file << cycle << "\t"  << minVel  << "\t" << maxVel << "\t" << nDistributionBins << endl;
+	  for (int i = 0; i < nDistributionBins; i++)
+	    my_file << "\t" << VelocityDist_dir[i];
+	  my_file << endl;
+	  my_file.close();
+	} // end if (myrank == 0) {
+	
+	
+      } // end for (int is = 0; is < ns; is++) {
+    } // end if (WriteVDF_xyz){
+
   }
+    
+  
   
   //if (cycle%(col->getFieldOutputCycle())==0){
   //  for (int is = 0; is < ns; is++) {

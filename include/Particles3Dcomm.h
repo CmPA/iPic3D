@@ -178,6 +178,23 @@ public:
   double getMaxVelocity();
   /** return energy distribution */
   unsigned long *getVelocityDistribution(int nBins, double maxVel);
+
+  /** for VDF: get min, max VELOCITY (not energy) and VELOCITY (not energy) distr
+      in vx, vy, vz **/
+  // get min velocity
+  double getMinVelocity_x();
+  double getMinVelocity_y();
+  double getMinVelocity_z();
+  // get max velocity
+  double getMaxVelocity_x();
+  double getMaxVelocity_y();
+  double getMaxVelocity_z();
+  // get distributions
+  long double *getVelocityDistribution_x(int nDistributionBins, double minVel, double maxVel);
+  long double *getVelocityDistribution_y(int nDistributionBins, double minVel, double maxVel);
+  long double *getVelocityDistribution_z(int nDistributionBins, double minVel, double maxVel);
+  /** end for VDF **/
+  
   /** return the momentum */
   double getP();
   /** Print particles info: positions, velocities */

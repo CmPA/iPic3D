@@ -267,6 +267,10 @@ class Collective
     /* how often */
     int getTrackingOutputCycle();
 
+    /* for VDF */
+    /* whether to print VDF for the entire domain - vx, vy, vz */
+    int getWriteVDF_xyz();
+    
   private:
     /*! inputfile */
     string inputfile;
@@ -491,6 +495,10 @@ class Collective
     bool *TrackSpecies;
     /* how often */
     int TrackingOutputCycle;
+
+    /* for VDF */
+    /* whether to print VDF for the entire domain - vx, vy, vz */
+    int WriteVDF_xyz;
 };
 
 #endif

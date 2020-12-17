@@ -142,7 +142,10 @@ void Collective::ReadInput(string inputfile) {
     ;  cout << "In collective, sp " << i << " TrackSpecies[i] " << TrackSpecies[i] << endl;
     ; }
 
+    /* for VDF */
+    WriteVDF_xyz= config.read <int>("WriteVDF_xyz", 0);
 
+    
   }
 
   SolInit = false;
@@ -1220,4 +1223,9 @@ int Collective::getTrackingOutputCycle(){
 /*! get the cycle number when to reverse expansion */
 int Collective::getCycle_reverseEBdir(){
   return cycle_reverseEBdir;
+}
+
+/*! whether to write VDF - vx, vy, vz */
+int Collective::getWriteVDF_xyz(){
+  return WriteVDF_xyz;
 }

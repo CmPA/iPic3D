@@ -1242,6 +1242,66 @@ double Particles3Dcomm::getMaxVelocity() {
   return (maxVel);
 }
 
+/** return the lowest VELOCITY in the x dir */
+double Particles3Dcomm::getMinVelocity_x() {
+  double localVel = 1.0;
+  double minVel = 1.0;
+  for (long long i = 0; i < nop; i++)
+    localVel = min(localVel, u[i]);
+  MPI_Allreduce(&localVel, &minVel, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  return (minVel);
+}
+
+/** return the lowest VELOCITY in the x dir */
+double Particles3Dcomm::getMinVelocity_y() {
+  double localVel = 1.0;
+  double minVel = 1.0;
+  for (long long i = 0; i < nop; i++)
+    localVel = min(localVel, v[i]);
+  MPI_Allreduce(&localVel, &minVel, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  return (minVel);
+}
+
+/** return the lowest VELOCITY in the z dir */
+double Particles3Dcomm::getMinVelocity_z() {
+  double localVel = 1.0;
+  double minVel = 1.0;
+  for (long long i = 0; i < nop; i++)
+    localVel = min(localVel, w[i]);
+  MPI_Allreduce(&localVel, &minVel, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+  return (minVel);
+}
+
+/** return the highest VELOCITY in the x dir */
+double Particles3Dcomm::getMaxVelocity_x() {
+  double localVel = 0.0;
+  double maxVel = 0.0;
+  for (long long i = 0; i < nop; i++)
+    localVel = max(localVel, u[i]);
+  MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  return (maxVel);
+}
+
+/** return the highest VELOCITY in the y dir */
+double Particles3Dcomm::getMaxVelocity_y() {
+  double localVel = 0.0;
+  double maxVel = 0.0;
+  for (long long i = 0; i < nop; i++)
+    localVel = max(localVel, v[i]);
+  MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  return (maxVel);
+}
+
+/** return the highest VELOCITY in the z dir */
+double Particles3Dcomm::getMaxVelocity_z() {
+  double localVel = 0.0;
+  double maxVel = 0.0;
+  for (long long i = 0; i < nop; i++)
+    localVel = max(localVel, w[i]);
+  MPI_Allreduce(&localVel, &maxVel, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+  return (maxVel);
+}
+
 /** get energy spectrum */
 unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel) {
   unsigned long *f = new unsigned long[nBins];
@@ -1260,6 +1320,72 @@ unsigned long *Particles3Dcomm::getVelocityDistribution(int nBins, double maxVel
   }
 
   MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_LONG, MPI_SUM, MPI_COMM_WORLD);
+
+  return f;
+}
+
+/** get VELOCITY distribution in x */
+long double *Particles3Dcomm::getVelocityDistribution_x(int nBins, double minVel, double maxVel) {
+  long double *f = new long double [nBins];
+  for (int i = 0; i < nBins; i++)
+    f[i] = 0.0;
+  double Vel = 0.0;
+  double dv = (maxVel - minVel) / nBins;
+  int bin = 0;
+  for (long long i = 0; i < nop; i++) {
+    Vel = u[i] ;
+    bin = int (floor((Vel-minVel) / dv));
+    if (bin >= nBins)
+      f[nBins - 1] += q[i];
+    else
+      f[bin] +=  q[i];
+  }
+
+  MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  return f;
+}
+
+/** get VELOCITY distribution in y */
+long double *Particles3Dcomm::getVelocityDistribution_y(int nBins, double minVel, double maxVel) {
+  long double  *f = new long double [nBins];
+  for (int i = 0; i < nBins; i++)
+    f[i] = 0.0;
+  double Vel = 0.0;
+  double dv = (maxVel - minVel) / nBins;
+  int bin = 0;
+  for (long long i = 0; i < nop; i++) {
+    Vel = v[i] ;
+    bin = int (floor((Vel-minVel) / dv));
+    if (bin >= nBins)
+      f[nBins - 1] +=  q[i];
+    else
+      f[bin] +=  q[i];
+  }
+
+  MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  return f;
+}
+
+/** get VELOCITY distribution in z */
+long double *Particles3Dcomm::getVelocityDistribution_z(int nBins, double minVel, double maxVel) {
+  long double  *f = new long double [nBins];
+  for (int i = 0; i < nBins; i++)
+    f[i] = 0.0;
+  double Vel = 0.0;
+  double dv = (maxVel - minVel) / nBins;
+  int bin = 0;
+  for (long long i = 0; i < nop; i++) {
+    Vel = w[i] ;
+    bin = int (floor((Vel-minVel) / dv));
+    if (bin >= nBins)
+      f[nBins - 1] +=  q[i];
+    else
+      f[bin] +=  q[i];
+  }
+
+  MPI_Allreduce(MPI_IN_PLACE, f, nBins, MPI_LONG_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
   return f;
 }
