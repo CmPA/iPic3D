@@ -2,13 +2,13 @@
 # 2 Species
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
-SaveDirName    = test     # Output directory
-RestartDirName = test     # Restart directory (for WriteMethod=default)
+SaveDirName    = testMJ     # Output directory
+RestartDirName = testMJ     # Restart directory (for WriteMethod=default)
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
 
 FieldsInit        = Default # Initial fields h5 file
-PartInit          = Maxwell                         # Initial particles [ Maxwell | File ]
+PartInit          = MJ                         # Initial particles [ Maxwell | File ]
 WriteMethod       = h5hut                         # Output method [ default | Parallel ]
 PoissonCorrection = no                             # Poisson correction [ yes | no ]
 SimulationName    = test                             # Simulation name for the output
@@ -26,18 +26,18 @@ B1z = 0.000
 delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-dt = 0.1125               # dt = time step  
-ncycles = 1000          # cycles
+CFL = 0.45               # dt = time step  
+ncycles = 10080         # cycles
 th = 1.0               # th =   decentering parameter
 c = 1.0                # c = light speed 
 
 #  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
 Smooth = 0.5           # Smoothing value (5-points stencil)
-Nvolte =3
+Nvolte =0
 
 
 # %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
-Lx =   32.0            # Lx = simulation box length - x direction   
+Lx =   45.2544            # Lx = simulation box length - x direction   
 Ly =   1.0            # Ly = simulation box length - y direction
 Lz =   1.0             # Lz = simulation box length - z direction   
 
@@ -46,12 +46,12 @@ y_center =   1.        # Ly = simulation box length - y direction in m
 z_center =   1.        # Lz = simulation box length - z direction in m  
 L_square =   .1
 
-nxc =  128             # nxc = number of cells - x direction        
+nxc =  1024             # nxc = number of cells - x direction        
 nyc =  1              # nyc = number of cells - y direction
 nzc =  1               # nzc = number of cells - z direction        
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
-XLEN = 1               # Number of subdomains in the X direction
+XLEN = 4               # Number of subdomains in the X direction
 YLEN = 1               # Number of subdomains in the X direction
 ZLEN = 1               # Number of subdomains in the X direction
 
@@ -61,12 +61,12 @@ ZLEN = 1               # Number of subdomains in the X direction
 #    2,3,4,5,... = ions
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-ns = 2                               # Number of particles
-rhoINIT         = 1.0  1.0 1.0 1.0           # Initial density (make sure you are neutral)
+ns = 4                               # Number of particles
+rhoINIT         = 0.5  0.5 0.5 0.5           # Initial density (make sure you are neutral)
 rhoINJECT       = 0. 0. 0. 0.          # Injection density (make sure you are neutral)
 TrackParticleID = 0  0 0 0            # TrackParticleID[species] = 1=true, 0=false 
 
-npcelx          = 156   156   16   16            # Particles per cell in X
+npcelx          = 156   156   156   156            # Particles per cell in X
 npcely          = 1    1    1    1     # Particles per cell in Y
 npcelz          = 1    1    1    1     # Particles per cell in Z
 NpMaxNpRatio    = 6.0                # Maximum number of particles allocated
@@ -75,9 +75,9 @@ qom             = 1.0    1.0   -1.0    -1.0    # Charge/mass ratio
 uth             = 0.01   0.01   0.01    0.01   # Thermal velocity in X
 vth             = 0.01   0.01   0.01    0.01  # Thermal velocity in Y
 wth             = 0.01   0.01   0.01    0.01   # Thermal velocity in Z
-u0              = 0.5    -0.5   0.5     -0.5     # Drift velocity in X
+u0              = 0.0    0.0    0.0     0.0     # Drift velocity in X
 v0              = 0.0    0.0    0.0     0.0    # Drift velocity in X
-w0              = 0.0    0.0    0.0     0.0   # Drift velocity in X
+w0              = 2.0    -2.0    2.0     -2.0   # Drift velocity in X
 
 # %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
 PERIODICX       = 1                  # In direction X (1=true, 0=false)
@@ -125,7 +125,7 @@ Vinj                   = 0.0      # Velocity of the injection from the wall
 CGtol                  = 1E-3     # CG solver stopping criterium tolerance
 GMREStol               = 1E-5     # GMRES solver stopping criterium tolerance
 NiterMover             = 5        # mover predictor corrector iteration
-FieldOutputCycle       = 100      # Output for field
-ParticlesOutputCycle   = 100      # Output for particles if 1 it doesnt save particles data
+FieldOutputCycle       = 100000      # Output for field
+ParticlesOutputCycle   = 100000      # Output for particles if 1 it doesnt save particles data
 RestartOutputCycle     = 4000     # restart cycle
 DiagnosticsOutputCycle = 1        # Diagnostics cycle

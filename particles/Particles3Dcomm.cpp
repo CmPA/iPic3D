@@ -606,6 +606,7 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       double uhat = axx*u[i]*gn + axy*v[i]*gn + axz*w[i]*gn;
       double vhat = ayx*u[i]*gn + ayy*v[i]*gn + ayz*w[i]*gn;
       double what = azx*u[i]*gn + azy*v[i]*gn + azz*w[i]*gn;
+//cout << "deposit particle " << i << " u,v,w, axx, axy, axz, ayx, ayy, ayz, azx, azy, azz " <<u[i]<<" " << v[i] << " " << w[i] << " " << axx << " " <<axy << " " << axz << " " << ayx << " " <<ayy << " " << ayz << " " << azx << " " << azy<< " " << azz << endl;
 
       // Gather hat quantities
       // add current density hat - X
@@ -1257,7 +1258,7 @@ double Particles3Dcomm::getKe() {
   double localKe = 0.0;
   double totalKe = 0.0;
   for (register long long i = 0; i < nop; i++)
-    localKe += .5 * (q[i] / qom) * (u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    localKe +=  (q[i] / qom) * (1./sqrt(1.-u[i]*u[i]-v[i]*v[i]-w[i]*w[i]) - 1.);
   MPI_Allreduce(&localKe, &totalKe, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalKe);
 }
@@ -1292,7 +1293,7 @@ double Particles3Dcomm::getP() {
   double localP = 0.0;
   double totalP = 0.0;
   for (register long long i = 0; i < nop; i++)
-    localP += (q[i] / qom) * sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+    localP += (q[i] / qom) * sqrt(u[i]*u[i]+v[i]*v[i]+w[i]*w[i]) / sqrt(1.-u[i]*u[i]-v[i]*v[i]-w[i]*w[i]);
   MPI_Allreduce(&localP, &totalP, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalP);
 }

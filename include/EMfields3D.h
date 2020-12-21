@@ -325,50 +325,8 @@ class EMfields3D                // :public Field
 
     /*! initialize the electromagnetic fields with constant values */
     void init(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /*! init beam */
-    void initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col, double x_center, double y_center, double z_center, double radius);
-    /*! initiliaze Harris plus background but with less shear a-la Fujimoto */
-    void initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /*! initialize GEM challenge */
-    void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    void initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! Initialize KAW Turbulence */
     void initKAWTurbulencePert(VirtualTopology3D * vct, Grid * grid, Collective *col, double mime, double TiTe);
-    /*! initialize Harris in steps */
-    void initHarris_Steps(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /*! initialize doubel harris with Hump perturbation (Alex Johnson) */
-    void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /*! initialize doubel harris one normal and one with steps */
-    void initDoublePeriodicHarrisSteps(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /*! initialize GEM challenge with dipole-like tail without perturbation */
-    void initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /*! initialize GEM challenge with no Perturbation */
-    void initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /*! initialize from BATSRUS */
-    void initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective * col);
-    /*! Random initial field */
-    void initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /*! Init Force Free (JxB=0) */
-    void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /*! Init Force Free for the series of Stefan's runs */
-    void initForceFreeWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
-    /**  Init WB8 */
-    void initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col);
-    /**  Init Two Coils */
-    void initTwoCoils(VirtualTopology3D *vct, Grid *grid, Collective *col);
-    /** Init Flux Rope based on pressure equilibrium */
-    void initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *col);
-    /*! initialized with rotated magnetic field */
-    void initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta);
-    /*! add a perturbattion to charge density */
-    void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
-    /*! add a perturbattion to the EM field */
-    void AddPerturbation(double deltaBoB, double kx, double ky, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, double B0, Grid * grid);
-    /*! Initialise a combination of magnetic dipoles */
-    void initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col);
-    void initDipole_2(VirtualTopology3D *vct, Grid *grid, Collective *col);
-    void SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
-    void SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
     void startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col);
@@ -417,12 +375,9 @@ class EMfields3D                // :public Field
     /*! Sum current over different species */
     void sumOverSpeciesJ();
     /*! Smoothing after the interpolation* */
-    void smooth(double value, int Nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct);
+    void smooth(double smvalue, int ntimes, int smtype, double ***vector, int type, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft,  Grid * grid, VirtualTopology3D * vct);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
-    void smooth(double value, int Nvolte, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
-    /*! smooth the electric field */
-    void smoothE(double value, int Nvolte, VirtualTopology3D * vct, Collective *col);
-
+    void smooths(double smvalue, int ntimes, int smtype, double ****vector, int type, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft,  Grid * grid, VirtualTopology3D * vct, int nspecies);
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
@@ -706,10 +661,12 @@ class EMfields3D                // :public Field
     double dt;
     /*! decentering parameter */
     double th;
+    /*! Smoothing type */
+    int TypeSmooth;
     /*! Smoothing value */
-    double Smooth;
-    /** Nvolte value*/
-    int Nvolte;
+    double ValSmooth;
+    /** number of smoothing passes */
+    int nsmooth;
     /*! delt = c*th*dt */
     double delt;
     /*! number of particles species */
@@ -981,8 +938,8 @@ class EMfields3D                // :public Field
     int restart1;
     /*! String with the directory for the restart file */
     string RestartDirName;
-    /*! Case */
-    string Case;
+    /*! Field Init */
+    string FieldInit;
 
     /*! CG tolerance criterium for stopping iterations */
     double CGtol;
