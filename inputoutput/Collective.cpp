@@ -23,7 +23,7 @@ void Collective::ReadInput(string inputfile) {
     th = config.read < double >("th", 1.0);
     TypeSmooth = config.read < string >("TypeSmooth");
     config.readInto(ValSmooth, "ValSmooth", 0.5);
-    nsmooth = config.read<int>( "NSmooth",3);
+    nsmooth = config.read<int>( "NSmooth");
     SaveDirName = config.read < string > ("SaveDirName");
     RestartDirName = config.read < string > ("RestartDirName");
     ns = config.read < int >("ns");

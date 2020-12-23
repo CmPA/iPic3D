@@ -374,6 +374,10 @@ class EMfields3D                // :public Field
     void sumOverSpecies(VirtualTopology3D * vct);
     /*! Sum current over different species */
     void sumOverSpeciesJ();
+    /* Smooth E and store smoothed E field */
+    void smoothE(VirtualTopology3D * vct, Grid * grid, Collective * col);
+    /* Smooth Eth and store smoothed Eth field */
+    void smoothEth(VirtualTopology3D * vct, Grid * grid, Collective * col);
     /*! Smoothing after the interpolation* */
     void smooth(double smvalue, int ntimes, int smtype, double ***vector, int type, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft,  Grid * grid, VirtualTopology3D * vct);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
@@ -492,6 +496,18 @@ class EMfields3D                // :public Field
     double ***getEyth();
     /*! get Electric field th Z component array */
     double ***getEzth();
+    /*! get SMOOTHED Electric field th X component array */
+    double ***getExthsm();
+    /*! get SMOOTHED Electric field th Y component array */
+    double ***getEythsm();
+    /*! get SMOOTHED Electric field th Z component array */
+    double ***getEzthsm();
+    /*! get SMOOTHED Electric field X component array */
+    double ***getExsm();
+    /*! get SMOOTHED Electric field Y component array */
+    double ***getEysm();
+    /*! get SMOOTHED Electric field Z component array */
+    double ***getEzsm();
     /*! get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
     double &getBx(int indexX, int indexY, int indexZ) const;
     /*! get Magnetic field X component array */
@@ -738,6 +754,18 @@ class EMfields3D                // :public Field
     double ***Ez;
     /*! Ezth: implicit electric field Z-component (indexX, indexY, indexZ), defined on nodes */
     double ***Ezth;
+    /*! Exsm: SMOOTHED electric field X-component (indexX, indexY, indexZ), defined on nodes */
+    double ***Exsm;
+    /*! Exthsm: SMOOTHED implicit electric field X-component (indexX, indexY, indexZ), defined on nodes */
+    double ***Exthsm;
+    /*! Eysm: SMOOTHED electric field Y-component (indexX, indexY, indexZ), defined on nodes */
+    double ***Eysm;
+    /*! Eythsm: SMOOTHED implicit electric field Y-component (indexX, indexY, indexZ), defined on nodes */
+    double ***Eythsm;
+    /*! Ezsm: SMOOTHED electric field Z-component (indexX, indexY, indexZ, #species), defined on nodes */
+    double ***Ezsm;
+    /*! Ezthsm: SMOOTHED implicit electric field Z-component (indexX, indexY, indexZ), defined on nodes */
+    double ***Ezthsm;
     /*! Bxc: magnetic field X-component (indexX, indexY, indexZ), defined on central points between nodes */
     double ***Bxc;
     /*! Byc: magnetic field Y-component (indexX, indexY, indexZ), defined on central points between nodes */

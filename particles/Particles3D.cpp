@@ -493,9 +493,9 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
 	  }
 	  double start_mover_PC = MPI_Wtime();
 	  double weights[2][2][2];
-	  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getExth());
-	  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEyth());
-	  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEzth());
+	  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getExthsm());
+	  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEythsm());
+	  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEzthsm());
 	  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
 	  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
 	  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
@@ -663,6 +663,14 @@ cout << "!!!!!!!!!!!!!!!!!!!! subcycle " << innter <<" particle " << rest << " g
                 uynew = 2.*uybar - uy0;
                 uznew = 2.*uzbar - uz0;
                 gamma_new = 2.*gbar - gamma0;
+/*
+                if (fabs(gamma_new-gamma0) > gamma0) { // We are violating basic assumptions
+                  uxnew = ux0;
+                  uynew = uy0;
+                  uznew = uz0;
+                  gamma_new =gamma0;
+                }
+*/                  
 
 	      } // end of velocity iteration
 	      // update the final position and velocity

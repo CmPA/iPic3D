@@ -176,14 +176,13 @@ int c_Solver::Init(int argc, char **argv) {
   speciesTemp = new double[ns];
 
   cq = SaveDirName + "/ConservedQuantities.txt";
-  cq2 = SaveDirName + "/SummaryQuantities.txt";
+//  cq2 = SaveDirName + "/SummaryQuantities.txt";
 
   if (myrank == 0) {
     ofstream my_file(cq.c_str(), fstream::app);
     my_file.close();
-    ofstream my_file2(cq2.c_str(), fstream::app);
-    my_file2.close();
-
+//    ofstream my_file2(cq2.c_str(), fstream::app);
+//    my_file2.close();
   }
   
   // // Distribution functions
@@ -196,7 +195,7 @@ int c_Solver::Init(int argc, char **argv) {
   // }
 
   //num_proc << myrank;
-  cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
+//  cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
 /*  ofstream my_file(cqsat.c_str(), fstream::binary);
 
@@ -239,6 +238,7 @@ void c_Solver::GatherMoments(){
 
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
+  EMf->smoothE(vct, grid, col); // Smooth E field before deposit
 
   for (int i = 0; i < ns; i++)
     part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
@@ -264,7 +264,7 @@ void c_Solver::CalculateField() {
   MPI_Barrier(MPI_COMM_WORLD);
   // timeTasks.end(TimeTasks::MOMENTS);
 
-  // MAXWELL'S SOLVER
+  // MAXWELL SOLVER
   // timeTasks.start(TimeTasks::FIELDS);
   #ifdef __PETSC_SOLVER__
     petscSolver->solveE();
@@ -289,6 +289,8 @@ void c_Solver::CalculateBField() {
 }
 
 bool c_Solver::ParticlesMover() {
+
+  EMf->smoothEth(vct, grid, col); // Smooth Eth field before push
 
   /*  -------------- */
   /*  Particle mover */
@@ -359,29 +361,33 @@ void c_Solver::WriteConserved(int cycle) {
   if (cycle % col->getDiagnosticsOutputCycle() == 0) {
     Eenergy = EMf->getEenergy();
     Benergy = EMf->getBenergy();
-    TOTenergy = 0.0;
+    TOTenergy = Eenergy+Benergy;
+/* Not saving anything else than E, B, K energies for now
     TOTmomentum = 0.0;
-	totParticles[0] = totParticles[1] = 0;
-	globalTotParticles[0] = globalTotParticles[1] = 0;
+    totParticles[0] = totParticles[1] = 0;
+    globalTotParticles[0] = globalTotParticles[1] = 0;
+*/
 
     for (int is = 0; is < ns; is++) {
       Ke[is] = part[is].getKe();
-      BulkEnergy[is] = EMf->getBulkEnergy(is);
+//      BulkEnergy[is] = EMf->getBulkEnergy(is);
       TOTenergy += Ke[is];
-      momentum[is] = part[is].getP();
-      TOTmomentum += momentum[is];
-      totParticles[is] = part[is].getNOP();
-
-      MPI_Allreduce(&totParticles[is], &globalTotParticles[is], 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-      Qtot[is] = part[is].getTotalQ();
-      speciesTemp[is] = (double)((double)Ke[is]/(Qtot[is]/qom[is]));
-
+//      momentum[is] = part[is].getP();
+//      TOTmomentum += momentum[is];
+//      totParticles[is] = part[is].getNOP();
+//      MPI_Allreduce(&totParticles[is], &globalTotParticles[is], 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+//      Qtot[is] = part[is].getTotalQ();
+//      speciesTemp[is] = (double)((double)Ke[is]/(Qtot[is]/qom[is]));
     }
+
     if (myrank == 0) {
       ofstream my_file(cq.c_str(), fstream::app);
       my_file << cycle << "\t" << setprecision(15);
-      my_file << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      my_file << TOTenergy << "\t" << Eenergy << "\t" << Benergy;
+      for (int i = 0; i < ns; i++) my_file << "\t" << Ke[i];
+      my_file << endl;
       my_file.close();
+/*
       ofstream my_file2(cq2.c_str(),fstream::app);
 
                my_file2 << cycle << "\t" <<setprecision(15);
@@ -397,7 +403,7 @@ void c_Solver::WriteConserved(int cycle) {
      			my_file2 << speciesTemp[i] << "\t";
      		my_file2 << endl;
                 my_file2.close();
-
+*/
     }
     // // Velocity distribution
     // for (int is = 0; is < ns; is++) {

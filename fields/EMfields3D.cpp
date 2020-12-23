@@ -125,6 +125,12 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Exth = newArr3(double, nxn, nyn, nzn);
   Eyth = newArr3(double, nxn, nyn, nzn);
   Ezth = newArr3(double, nxn, nyn, nzn);
+  Exsm = newArr3(double, nxn, nyn, nzn);
+  Eysm = newArr3(double, nxn, nyn, nzn);
+  Ezsm = newArr3(double, nxn, nyn, nzn);
+  Exthsm = newArr3(double, nxn, nyn, nzn);
+  Eythsm = newArr3(double, nxn, nyn, nzn);
+  Ezthsm = newArr3(double, nxn, nyn, nzn);
   Bxn = newArr3(double, nxn, nyn, nzn);
   Byn = newArr3(double, nxn, nyn, nzn);
   Bzn = newArr3(double, nxn, nyn, nzn);
@@ -425,24 +431,15 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
-  // apply to smooth to electric field 3 times
-//  smoothE(Smooth, Nvolte, vct, col);
-//  smoothE(Smooth, Nvolte, vct, col);
-//  smoothE(Smooth, Nvolte, vct, col);
-  smooth(ValSmooth, nsmooth, TypeSmooth, Exth, 1, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], grid, vct);
-  smooth(ValSmooth, nsmooth, TypeSmooth, Eyth, 1, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], grid, vct);
-  smooth(ValSmooth, nsmooth, TypeSmooth, Ezth, 1, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], grid, vct);
-
   communicateNodeBC(nxn, nyn, nzn, Ex,   col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
-
   // OpenBC
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
   BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
-  // Apply damper on boundary
 
+  // Apply damper on boundary
   weight_tapering(Ex,Lambda,nxc,nyc,nzc);
   weight_tapering(Ey,Lambda,nxc,nyc,nzc);
   weight_tapering(Ez,Lambda,nxc,nyc,nzc);
@@ -669,6 +666,36 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
 
 }
 
+/* Smooth E and store smoothed E field */
+void EMfields3D::smoothE(VirtualTopology3D * vct, Grid * grid, Collective * col) {
+
+  for (int i=0; i<nxn; i++)
+    for (int j=0; j<nyn; j++)
+      for (int k=0; k<nzn; k++) {
+        Exsm[i][j][k] = Ex[i][j][k];
+        Eysm[i][j][k] = Ey[i][j][k];
+        Ezsm[i][j][k] = Ez[i][j][k];
+      }  
+  smooth(ValSmooth, nsmooth, TypeSmooth, Exsm, 1, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], grid, vct);
+  smooth(ValSmooth, nsmooth, TypeSmooth, Eysm, 1, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], grid, vct);
+  smooth(ValSmooth, nsmooth, TypeSmooth, Ezsm, 1, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], grid, vct);
+
+}
+/* Smooth Eth and store smoothed Eth field */
+void EMfields3D::smoothEth(VirtualTopology3D * vct, Grid * grid, Collective * col) {
+
+  for (int i=0; i<nxn; i++)
+    for (int j=0; j<nyn; j++)
+      for (int k=0; k<nzn; k++) {
+        Exthsm[i][j][k] = Exth[i][j][k];
+        Eythsm[i][j][k] = Eyth[i][j][k];
+        Ezthsm[i][j][k] = Ezth[i][j][k];
+      }  
+  smooth(ValSmooth, nsmooth, TypeSmooth, Exthsm, 1, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], grid, vct);
+  smooth(ValSmooth, nsmooth, TypeSmooth, Eythsm, 1, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], grid, vct);
+  smooth(ValSmooth, nsmooth, TypeSmooth, Ezthsm, 1, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], grid, vct);
+}
+
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
 void EMfields3D::smooth(double smvalue, int ntimes, int smtype, double ***vector, int type, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft,  Grid * grid, VirtualTopology3D * vct) {
 
@@ -689,6 +716,7 @@ void EMfields3D::smooth(double smvalue, int ntimes, int smtype, double ***vector
       double ***temp = newArr3(double, nx, ny, nz);
 
       if (smvalue != 1.0) {
+
         double alpha;
         if (type==0) // Centre-based quantity
           communicateCenterBoxStencilBC_P(nx, ny, nz, vector, bcFaceXright, bcFaceXleft, bcFaceYright, bcFaceYleft, bcFaceZright, bcFaceZleft, vct);
@@ -2280,6 +2308,9 @@ void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
     delete[]temp_storage;
     delete[]species_name;
   }
+
+
+
 }
 
 double floor0( double value )
@@ -3243,6 +3274,30 @@ double ***EMfields3D::getEyth() {
 /*! get Electric field th component Z array */
 double ***EMfields3D::getEzth() {
   return (Ezth);
+}
+/*! get SMOOTHED Electric field th component X array */
+double ***EMfields3D::getExthsm() {
+  return (Exthsm);
+}
+/*! get SMOOTHED Electric field th component Y array */
+double ***EMfields3D::getEythsm() {
+  return (Eythsm);
+}
+/*! get SMOOTHED Electric field th component Z array */
+double ***EMfields3D::getEzthsm() {
+  return (Ezthsm);
+}
+/*! get SMOOTHED Electric field component X array */
+double ***EMfields3D::getExsm() {
+  return (Exsm);
+}
+/*! get SMOOTHED Electric field component Y array */
+double ***EMfields3D::getEysm() {
+ return (Eysm);
+}
+/*! get SMOOTHED Electric field component Z array */
+double ***EMfields3D::getEzsm() {
+  return (Ezsm);
 }
 /*! get Bx(X,Y,Z) */
 double &EMfields3D::getBx(int indexX, int indexY, int indexZ) const {

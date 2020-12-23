@@ -447,9 +447,9 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
-  double ***Ex = asgArr3(double, nxn, nyn, nzn, EMf->getEx());
-  double ***Ey = asgArr3(double, nxn, nyn, nzn, EMf->getEy());
-  double ***Ez = asgArr3(double, nxn, nyn, nzn, EMf->getEz());
+  double ***Ex = asgArr3(double, nxn, nyn, nzn, EMf->getExsm());
+  double ***Ey = asgArr3(double, nxn, nyn, nzn, EMf->getEysm());
+  double ***Ez = asgArr3(double, nxn, nyn, nzn, EMf->getEzsm());
   double ***Bx = asgArr3(double, nxn, nyn, nzn, EMf->getBx());
   double ***By = asgArr3(double, nxn, nyn, nzn, EMf->getBy());
   double ***Bz = asgArr3(double, nxn, nyn, nzn, EMf->getBz());
