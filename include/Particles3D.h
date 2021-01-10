@@ -46,6 +46,10 @@ class Particles3D:public Particles3Dcomm {
     void maxwellian_HarrisDoublePeriodic(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Maxellian distribution depending on space, goes with Force Free **/
     void Maxwellianspacedist(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Kappa random velocity and uniform spatial distribution */
+    void kappa(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Kappa distribution with drift velocity depending on space, goes with Force Free */
+    void Kappaspacedist(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Force Free initialization (JxB=0) for particles **/
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */

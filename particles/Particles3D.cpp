@@ -538,6 +538,7 @@ void Particles3D::maxwellian_WhistlerCurrent(Grid * grid, Field * EMf, VirtualTo
 /* end maxwellian with perpendicular current oscillations for electrons supporting whistler */
 
 /** Maxellian distribution depending on space, goes with Force Free */
+/** Drift velocity computed directly from the fields for species with u0 = 1 */
 void Particles3D::Maxwellianspacedist(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
   const double B0x = col->getB0x();
@@ -609,6 +610,170 @@ void Particles3D::Maxwellianspacedist(Collective * col, Grid * grid, Field * EMf
    nop = counter;
 
 }
+
+/** Kappa distribution with drift velocity depending on space, goes with Force Free */
+/** Drift velocity computed directly from the fields for species with u0 = 1 */
+void Particles3D::Kappaspacedist(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  const double B0x = col->getB0x();
+  const double B0z = col->getB0z();
+
+  double yp;
+  double u0p, v0p, w0p;
+  double ypB, ypT, ypBd, ypTd;
+
+  /* initialize random generator with different seed on different processor */
+  long long seed = (vct->getCartesian_rank() + 1)*20 + ns;
+  srand(seed);
+  srand48(seed);
+
+  double harvest;
+  double theta;
+  long long counter = 0;
+
+  // the following variables should be coming from input file, eventually
+  double k_kappa = 5.0;//has to be larger than 1.5
+  double apar = vth*vth*2.0*(k_kappa-1.5)/k_kappa;
+  double aperp = uth*uth*2.0*(k_kappa-1.5)/k_kappa;
+
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+              yp = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              y[counter] = yp;
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+
+              ypB = yp - 0.25 * Ly;
+              ypT = yp - 0.75 * Ly;
+              ypBd = ypB / delta;
+              ypTd = ypT / delta;
+
+              if (u0 > 0) {
+              // u
+              u0p = (qom / fabs(qom)) *  (-B0x * ( 1/cosh(ypBd) * 1/cosh(ypBd) * tanh(ypBd) + 1/cosh(ypTd) * 1/cosh(ypTd) * tanh(ypTd) )/( delta * sqrt( B0z * B0z + 1/cosh(ypBd) * 1/cosh(ypBd) +  1/cosh(ypTd) * 1/cosh(ypTd) ) ) );
+              }
+              else {
+              u0p = u0;
+              }
+              // v
+              v0p = v0;
+              // w
+              if (u0 > 0) {
+              w0p = ( qom / fabs(qom) ) * (B0x * (- 1/cosh(ypBd) * 1/cosh(ypBd) +  1/cosh(ypTd) * 1/cosh(ypTd) ) / delta);
+              }
+              else {
+              w0p = w0;
+              }
+    
+              // thermal spread
+              //harvest = rand() / (double) RAND_MAX; 
+              harvest = Drand48(seed);
+              theta = 2.0 * M_PI * harvest;
+              //harvest = rand() / (double) RAND_MAX;
+              harvest = Drand48(seed);
+              double vpar=sqrt(k_kappa*apar*(pow(harvest,-1.0/(k_kappa-0.5))-1.0))*cos(theta);
+              //harvest = rand() / (double) RAND_MAX;
+              harvest = Drand48(seed);
+              double vperp=sqrt(k_kappa*aperp*(1.0+vpar*vpar/(k_kappa*apar+1e-10))*(pow(1.0-harvest,-1.0/k_kappa)-1.0));
+              //harvest = rand() / (double) RAND_MAX;
+              harvest = Drand48(seed);
+              theta = 2.0 * M_PI * harvest;
+
+              // bulk + spread
+              u[counter] = u0p + vpar;
+              // v
+              v[counter] = v0p + vperp * cos(theta);
+              // w
+              w[counter] = w0p + vperp * sin(theta);
+
+              if (TrackParticleID){
+                ParticleID[counter] = npTracked; //counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                partRank[counter] = vct->getCartesian_rank();
+                npTracked++;
+              }
+
+
+//              if (TrackParticleID)
+//                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+              
+              counter++;
+            }
+
+   nop = counter;
+
+}
+
+
+
+/** Kappa random velocity and uniform spatial distribution */
+void Particles3D::kappa(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  long long seed = (vct->getCartesian_rank() + 1)*20 + ns;
+  srand(seed);
+  srand48(seed);
+  //srand(vct->getCartesian_rank() + 2);
+  double harvest;
+  double reverser;
+  double prob, theta, sign;
+  // the following variables should be coming form input file, eventually
+  double k_kappa = 3.0;//has to be larger than 1.5
+  double apar = vth*vth*2.0*(k_kappa-1.5)/k_kappa;
+  double aperp = uth*uth*2.0*(k_kappa-1.5)/k_kappa;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+
+
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              //harvest = rand() / (double) RAND_MAX;
+              harvest = Drand48(seed);
+              theta = 2.0 * M_PI * harvest;
+              //harvest = rand() / (double) RAND_MAX;
+              harvest = Drand48(seed);
+              double vpar=sqrt(k_kappa*apar*(pow(harvest,-1.0/(k_kappa-0.5))-1.0))*cos(theta);
+
+              //harvest = rand() / (double) RAND_MAX;
+              harvest = Drand48(seed);
+              double vperp=sqrt(k_kappa*aperp*(1.0+vpar*vpar/(k_kappa*apar+1e-10))*(pow(1.0-harvest,-1.0/k_kappa)-1.0));
+   
+              //harvest = rand() / (double) RAND_MAX;
+              harvest = Drand48(seed);
+              theta = 2.0 * M_PI * harvest;
+              
+              // Assuming now perp to be y and z and parallel x
+              v[counter] = v0 + vperp * cos(theta);
+
+              w[counter] = w0 + vperp * sin(theta);
+
+              u[counter] = u0 + vpar;
+
+              if (TrackParticleID)
+                 {
+                   ParticleID[counter] = npTracked; //counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                   partRank[counter] = vct->getCartesian_rank();
+                   npTracked++;
+                 }
+              counter++;
+            }
+ nop = counter;
+}
+
 
 /** Force Free initialization (JxB=0) for particles */
 void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
