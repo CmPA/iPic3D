@@ -17,8 +17,10 @@ int main(int argc, char **argv) {
   KCode.InjectBoundaryParticles();
   KCode.GatherMoments();
   KCode.WriteOutput(KCode.FirstCycle());
+  
 
-
+  KCode.WriteConserved(0);
+  
   /* ------------ */
   /* 1- Main loop */
   /* ------------ */

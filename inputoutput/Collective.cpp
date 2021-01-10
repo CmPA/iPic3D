@@ -63,7 +63,8 @@ void Collective::ReadInput(string inputfile) {
 
     // to restart an EB sim from a non EB sim
     Restart_From_REB_0= config.read <bool>("Restart_From_REB_0", false);
-    
+
+    cycle_reverseEBdir= config.read <int>("cycle_reverseEBdir", 0);
     /* end expanding box parameters*/
 
     /* whistler init parameters */
@@ -141,7 +142,10 @@ void Collective::ReadInput(string inputfile) {
     ;  cout << "In collective, sp " << i << " TrackSpecies[i] " << TrackSpecies[i] << endl;
     ; }
 
+    /* for VDF */
+    WriteVDF_xyz= config.read <int>("WriteVDF_xyz", 0);
 
+    
   }
 
   SolInit = false;
@@ -1214,4 +1218,14 @@ bool Collective::getTrackSpecies(int is){
 /* how often */
 int Collective::getTrackingOutputCycle(){
   return TrackingOutputCycle;
+}
+
+/*! get the cycle number when to reverse expansion */
+int Collective::getCycle_reverseEBdir(){
+  return cycle_reverseEBdir;
+}
+
+/*! whether to write VDF - vx, vy, vz */
+int Collective::getWriteVDF_xyz(){
+  return WriteVDF_xyz;
 }

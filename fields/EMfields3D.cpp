@@ -5094,5 +5094,13 @@ void EMfields3D::alfredo_turbulence_yz(VirtualTopology3D * vct, Grid * grid, Col
   //  delete[] rphb;
 }
 
+void EMfields3D::set_UEB_0(double UE0){
+  UEB_0= UE0;
+}
+
+void EMfields3D::set_REB_0(double RE0){
+  REB_0= RE0;
+}
+
 
 

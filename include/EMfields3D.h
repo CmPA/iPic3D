@@ -336,7 +336,13 @@ class EMfields3D                // :public Field
     void UpdateEBVectors(Grid *grid, EBox *ebox);
     /*! Update background field for expanding box !*/
     void SetBackgroundEBoxB(VirtualTopology3D *vct, Grid* grid, Collective *col);
-    
+
+    /** set UEB_0 **/
+    void set_UEB_0(double UE0);
+  
+    /** set REB_0 **/
+    void set_REB_0(double RE0);
+  
     /*! get Potential array */
     double ***getPHI();
     /*! get Electric Field component X defined on node(indexX,indexY,indexZ) */

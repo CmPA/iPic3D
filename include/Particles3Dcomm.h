@@ -105,6 +105,12 @@ public:
    in the inputfile, scale L_trans= L_0 R/R_0**/
   void Do_EBRestart_RelocPart(VirtualTopology3D * vct);
 
+  /** set UEB_0 **/
+  void set_UEB_0(double UE0);
+
+  /** set REB_0 **/
+  void set_REB_0(double RE0);
+
   /** resize the receiving buffer */
   void resize_buffers(int new_buffer_size);
   /** a method to compute how many particles are not in the right domain */
@@ -172,6 +178,23 @@ public:
   double getMaxVelocity();
   /** return energy distribution */
   unsigned long *getVelocityDistribution(int nBins, double maxVel);
+
+  /** for VDF: get min, max VELOCITY (not energy) and VELOCITY (not energy) distr
+      in vx, vy, vz **/
+  // get min velocity
+  double getMinVelocity_x();
+  double getMinVelocity_y();
+  double getMinVelocity_z();
+  // get max velocity
+  double getMaxVelocity_x();
+  double getMaxVelocity_y();
+  double getMaxVelocity_z();
+  // get distributions
+  long double *getVelocityDistribution_x(int nDistributionBins, double minVel, double maxVel);
+  long double *getVelocityDistribution_y(int nDistributionBins, double minVel, double maxVel);
+  long double *getVelocityDistribution_z(int nDistributionBins, double minVel, double maxVel);
+  /** end for VDF **/
+  
   /** return the momentum */
   double getP();
   /** Print particles info: positions, velocities */

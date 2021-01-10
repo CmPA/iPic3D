@@ -67,6 +67,10 @@ namespace iPic3D {
     double        *qz;
     double        *Qremoved;
     unsigned long *VelocityDist;
+
+    /* velocity distribribution - vx, vy, vz */
+    long double *VelocityDist_dir;
+    
     Timing        *my_clock;
 
     EBox          *ebox;
@@ -79,6 +83,9 @@ namespace iPic3D {
     string cqsat;
     string cq;
     string ds;
+    string *ds_vx;
+    string *ds_vy;
+    string *ds_vz;
     stringstream num_proc;
     int restart_cycle;
     int restart;
@@ -96,6 +103,12 @@ namespace iPic3D {
     double Benergy;
     double TOTenergy;
     double TOTmomentum;
+    /* the cycle where to revert expansion */
+    int cycle_reverseEBdir;
+
+    /* whether to print VDF, vx, vy, vz */
+    int WriteVDF_xyz; 
+    
   };
 
   inline int c_Solver::FirstCycle() {
