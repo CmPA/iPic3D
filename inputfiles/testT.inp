@@ -10,7 +10,7 @@ RestartDirName = testT     # Restart directory (for WriteMethod=default)
 FieldsInit        = Default # Initial fields h5 file
 PartInit          = MJ                         # Initial particles [ Maxwell | File ]
 WriteMethod       = h5hut                         # Output method [ default | Parallel ]
-PoissonCorrection = no                             # Poisson correction [ yes | no ]
+PoissonCorrection = yes                             # Poisson correction [ yes | no ]
 SimulationName    = test                             # Simulation name for the output
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
@@ -27,22 +27,24 @@ delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
 CFL = 0.45               # dt = time step  
-ncycles = 275         # up until 1000 relativistic oscillations
+ncycles = 2222         # up until 1000 relativistic oscillations
 th = 1.0               # th =   decentering parameter
 c = 1.0                # c = light speed 
 
 #  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
 TypeSmooth = binomial
 ValSmooth = 0.5           # Smoothing value (5-points stencil)
-NSmooth = 4
+NSmooth = 16
 
 # %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
 #Lx =   74.6873  # 64 relativistic skin depths when T=0.1
 #Ly =   74.6873  
-Lx =   117.4961  # 64 relativistic skin depths when T=1 
-Ly =   117.4961  
+#Lx =   117.4961  # 64 relativistic skin depths when T=1 
+#Ly =   117.4961  
 #Lx =   350.8309  # 64 relativistic skin depths when T=10
 #Ly =   350.8309  
+Lx =   128.0  # 64 relativistic skin depths when g=4
+Ly =   128.0  
 Lz =   1.0             # Lz = simulation box length - z direction   
 
 x_center =   1.        # Lx = simulation box length - x direction in m  
@@ -50,13 +52,13 @@ y_center =   1.        # Ly = simulation box length - y direction in m
 z_center =   1.        # Lz = simulation box length - z direction in m  
 L_square =   .1
 
-nxc =  8              # nxc = number of cells - x direction        
-nyc =  8              # nyc = number of cells - y direction
+nxc =  64              # nxc = number of cells - x direction        
+nyc =  64              # nyc = number of cells - y direction
 nzc =  1               # nzc = number of cells - z direction        
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
-XLEN = 2               # Number of subdomains in the X direction
-YLEN = 2               # Number of subdomains in the X direction
+XLEN = 4               # Number of subdomains in the X direction
+YLEN = 4               # Number of subdomains in the X direction
 ZLEN = 1               # Number of subdomains in the X direction
 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
@@ -76,10 +78,10 @@ npcelz          = 1    1             # Particles per cell in Z
 NpMaxNpRatio    = 6.0                # Maximum number of particles allocated
 
 qom             = -1.0    1.0       # Charge/mass ratio
-uth             = 1.   1.     # Thermal velocity in X
+uth             = 0.001   0.001     # Thermal velocity in X
 vth             = 0.0   0.0    # Thermal velocity in Y
 wth             = 0.0   0.0     # Thermal velocity in Z
-u0              = 0.0    0.0       # Drift velocity in X
+u0              = 4.0    4.0       # Drift velocity in X
 v0              = 0.0    0.0      # Drift velocity in X
 w0              = 0.0    0.0     # Drift velocity in X
 
@@ -126,8 +128,8 @@ PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
 # %%%%%%%%%%%% Numerics options %%%%%%%%%%%%%%%
 verbose                = 1        # Print to video results
 Vinj                   = 0.0      # Velocity of the injection from the wall
-CGtol                  = 1E-3     # CG solver stopping criterium tolerance
-GMREStol               = 1E-5     # GMRES solver stopping criterium tolerance
+CGtol                  = 1E-15     # CG solver stopping criterium tolerance
+GMREStol               = 1E-15     # GMRES solver stopping criterium tolerance
 NiterMover             = 5        # mover predictor corrector iteration
 FieldOutputCycle       = 2222      # Output for field
 ParticlesOutputCycle   = 2222      # Output for particles if 1 it doesnt save particles data

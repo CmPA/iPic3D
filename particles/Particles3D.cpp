@@ -560,6 +560,8 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
 
 	    const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
 
+            string mover = "boris";
+
 	    // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
 
 	    for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
@@ -575,104 +577,95 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
               gamma_new = gamma0;
 	      for (int innter = 0; innter < nit; innter++) {
 
-                // update position (mid of the time step)
-	        xp = xp0 + (uxnew + ux0) /(gamma_new + gamma0) * dto2;
-	        yp = yp0 + (uynew + uy0) /(gamma_new + gamma0) * dto2;
-	        zp = zp0 + (uznew + uz0) /(gamma_new + gamma0) * dto2;
+                if (mover == "boris") { // Boris method
+                  xp = xp0 + (uxnew + ux0) /(2.*gamma_new) * dto2;
+	          yp = yp0 + (uynew + uy0) /(2.*gamma_new) * dto2;
+	          zp = zp0 + (uznew + uz0) /(2.*gamma_new) * dto2;
 
-	        // interpolation G-->P
-	        get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
-	        get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
-	        get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
-
-	        // solve the momentum equation: 4th order polynomial
-                long double epsx = qomdt2*Exl;
-                long double epsy = qomdt2*Eyl;
-                long double epsz = qomdt2*Ezl;
-                long double betax = qomdt2*Bxl;
-                long double betay = qomdt2*Byl;
-                long double betaz = qomdt2*Bzl;
-                long double beta2 = betax*betax+betay*betay+betaz*betaz;
-                long double upx = ux0 + epsx;
-                long double upy = uy0 + epsy;
-                long double upz = uz0 + epsz;
-//cout << "subcycle " << cyc_cnt <<" particle " << rest << " epsx, betax, upx " << epsx << " "<< betax << " " << upx << endl;
-                
-                // Polynomial coefficients
-                long double updote = upx*epsx+upy*epsy+upz*epsz;
-//                if (fabs(updote)<1.e-14) updote = 0.;
-                long double bdote = betax*epsx+betay*epsy+betaz*epsz;
-//                if (fabs(bdote)<1.e-14) bdote = 0.;
-                long double updotb = upx*betax+upy*betay+upz*betaz;
-//                if (fabs(updotb)<1.e-14) updotb = 0.;
-                long double upcrossb_x = (upy*betaz-upz*betay);
-                long double upcrossb_y = (-upx*betaz+upz*betax);
-                long double upcrossb_z = (upx*betay-upy*betax);
-//                if (fabs(updotb-sqrt(upx*upx+upy*upy+upz*upz))<1.e-14) {
-//                  upcrossb_x = 0.;
-//                  upcrossb_y = 0.;
-//                  upcrossb_z = 0.;
-//                }                
-                long double aa = updote - beta2;
-                long double bb = upcrossb_x*epsx+upcrossb_y*epsy+upcrossb_z*epsz+ gamma0*beta2;
-                long double cc = updotb*bdote;
-//cout << "subcycle " << cyc_cnt <<" particle " << rest << " coeffs0 " << aa << " "<< bb << " " << cc << endl;
-                /* METHOD 1: DIRECT SOLVE */
-                
-                // Solution coefficients
-                double AA = 2.*aa/3.+gamma0*gamma0/4.;
-                double BB = 4.*aa*gamma0+8.*bb+gamma0*gamma0*gamma0;
-                double DD = aa*aa-3.*bb*gamma0-12.*cc;
-                double FF = -2.*aa*aa*aa+9.*aa*bb*gamma0-72.*aa*cc+27.*bb*bb-27.*cc*gamma0*gamma0;
-                std::complex<double> GG = FF*FF-4.*DD*DD*DD;
-//                if (fabs(GG)<1.e-14) GG = 0.;
-//                std::complex<double> EE = cbrt((FF+sqrt(GG))/2.); // pow((FF+sqrt(GG))/2.,1./3.);
-                std::complex<double> EE;
-                if (std::real((FF+sqrt(GG))/2.)<0.) EE = -pow(-(FF+sqrt(GG))/2.,1./3.);
-                else EE = pow((FF+sqrt(GG))/2.,1./3.);
-                std::complex<double> CC = DD/(EE+1.e-20)/3.+EE/3.;
-                // Solution
-                std::complex<double> gbarc = gamma0/4.+sqrt(2.*AA+BB/4./sqrt(AA+CC+1.e-20)-CC)/2.+sqrt(AA+CC)/2.;
-                double gbar = (double) std::real(gbarc);
-//cout << "subcycle " << innter <<" particle " << rest << " coeffs " << AA << " "<< BB << " " << CC << " " << DD << " " << EE << " " << FF << " " << GG << endl;
-                
-                /* METHOD 2: PolyRoots */
-                /*
-                long double rrr[4];
-                long double iii[4];
-                long double ccc[5];
-                ccc[0] = -1.; ccc[1] = gamma0; ccc[2] = aa; ccc[3] = bb; ccc[4] = cc;
-if (ccc[4]<0.) ccc[4] = -ccc[4];
-if (fabs(ccc[4])<1.e-13) ccc[4] = 0.;
-                QuadCubicRoots(ccc, 4, rrr, iii);
-                double gbar = 1.0;
-                for (int im=0; im<4; im++)
-                  if (iii[im] == 0. && rrr[im]>gbar) gbar = rrr[im];
-cout << "co " << ccc[1] <<" " << ccc[2] << " " << ccc[3] << " " << ccc[4] << endl;
-cout << "im " << iii[0] <<" " << iii[1] << " " << iii[2] << " " << iii[3] << endl;
-cout << "re " << rrr[0] <<" " << rrr[1] << " " << rrr[2] << " " << rrr[3] << endl;
-cout << "!!!!!!!!!!!!!!!!!!!! subcycle " << innter <<" particle " << rest << " gbar " << gbar << endl;
-                */
-
-//abort();
-                double uxbar = (upx+(upx*betax+upy*betay+upz*betaz)*betax/(gbar*gbar)+(upy*betaz-upz*betay)/gbar)/(1.+beta2/gbar/gbar);
-                double uybar = (upy+(upx*betax+upy*betay+upz*betaz)*betay/(gbar*gbar)+(-upx*betaz+upz*betax)/gbar)/(1.+beta2/gbar/gbar);
-                double uzbar = (upz+(upx*betax+upy*betay+upz*betaz)*betaz/(gbar*gbar)+(upx*betay-upy*betax)/gbar)/(1.+beta2/gbar/gbar);
-                
-                uxnew = 2.*uxbar - ux0;
-                uynew = 2.*uybar - uy0;
-                uznew = 2.*uzbar - uz0;
-                gamma_new = 2.*gbar - gamma0;
-/*
-                if (fabs(gamma_new-gamma0) > gamma0) { // We are violating basic assumptions
-                  uxnew = ux0;
-                  uynew = uy0;
-                  uznew = uz0;
-                  gamma_new =gamma0;
+  	          // interpolation G-->P
+                  get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+  	          get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+  	          get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+  
+  	          // solve the momentum equation
+                  double epsx = qomdt2*Exl;
+                  double epsy = qomdt2*Eyl;
+                  double epsz = qomdt2*Ezl;
+                  double upx = ux0 + epsx;
+                  double upy = uy0 + epsy;
+                  double upz = uz0 + epsz;
+                  double gbar = sqrt(1. + upx*upx+upy*upy+upz*upz);
+                  double betax = qomdt2*Bxl/gbar;
+                  double betay = qomdt2*Byl/gbar;
+                  double betaz = qomdt2*Bzl/gbar;
+                  double beta2 = betax*betax+betay*betay+betaz*betaz;
+                  double upcrossb_x = (upy*betaz-upz*betay);
+                  double upcrossb_y = (-upx*betaz+upz*betax);
+                  double upcrossb_z = (upx*betay-upy*betax);
+                  
+                  uxnew = upx + epsx + 2./(1.+beta2)*((upy+upcrossb_y)*betaz-(upz+upcrossb_z)*betay);
+                  uynew = upy + epsy + 2./(1.+beta2)*(-(upx+upcrossb_x)*betaz+(upz+upcrossb_z)*betax);
+                  uznew = upz + epsz + 2./(1.+beta2)*((upx+upcrossb_x)*betay-(upy+upcrossb_y)*betax);
+                  gamma_new = gbar;
                 }
-*/                  
-
-	      } // end of velocity iteration
+                else if (mover == "LM") { // Lapenta-Markidis method
+                  // update position (mid of the time step)
+                  xp = xp0 + (uxnew + ux0) /(gamma_new + gamma0) * dto2;
+  	          yp = yp0 + (uynew + uy0) /(gamma_new + gamma0) * dto2;
+  	          zp = zp0 + (uznew + uz0) /(gamma_new + gamma0) * dto2;
+  
+  	          // interpolation G-->P
+                  get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+  	          get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+  	          get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+  
+  	          // solve the momentum equation
+                  long double epsx = qomdt2*Exl;
+                  long double epsy = qomdt2*Eyl;
+                  long double epsz = qomdt2*Ezl;
+                  long double betax = qomdt2*Bxl;
+                  long double betay = qomdt2*Byl;
+                  long double betaz = qomdt2*Bzl;
+                  long double beta2 = betax*betax+betay*betay+betaz*betaz;
+                  long double upx = ux0 + epsx;
+                  long double upy = uy0 + epsy;
+                  long double upz = uz0 + epsz;
+                  
+                  // Polynomial coefficients
+                  long double updote = upx*epsx+upy*epsy+upz*epsz;
+                  long double bdote = betax*epsx+betay*epsy+betaz*epsz;
+                  long double updotb = upx*betax+upy*betay+upz*betaz;
+                  long double upcrossb_x = (upy*betaz-upz*betay);
+                  long double upcrossb_y = (-upx*betaz+upz*betax);
+                  long double upcrossb_z = (upx*betay-upy*betax);
+                  long double aa = updote - beta2;
+                  long double bb = upcrossb_x*epsx+upcrossb_y*epsy+upcrossb_z*epsz+ gamma0*beta2;
+                  long double cc = updotb*bdote;
+                  
+                  // Solution coefficients
+                  double AA = 2.*aa/3.+gamma0*gamma0/4.;
+                  double BB = 4.*aa*gamma0+8.*bb+gamma0*gamma0*gamma0;
+                  double DD = aa*aa-3.*bb*gamma0-12.*cc;
+                  double FF = -2.*aa*aa*aa+9.*aa*bb*gamma0-72.*aa*cc+27.*bb*bb-27.*cc*gamma0*gamma0;
+                  std::complex<double> GG = FF*FF-4.*DD*DD*DD;
+                  std::complex<double> EE;
+                  if (std::real((FF+sqrt(GG))/2.)<0.) EE = -pow(-(FF+sqrt(GG))/2.,1./3.);
+                  else EE = pow((FF+sqrt(GG))/2.,1./3.);
+                  std::complex<double> CC = DD/(EE+1.e-20)/3.+EE/3.;
+                  // Solution
+                  std::complex<double> gbarc = gamma0/4.+sqrt(2.*AA+BB/4./sqrt(AA+CC+1.e-20)-CC)/2.+sqrt(AA+CC)/2.;
+                  double gbar = (double) std::real(gbarc);
+                  
+                  double uxbar = (upx+(upx*betax+upy*betay+upz*betaz)*betax/(gbar*gbar)+(upy*betaz-upz*betay)/gbar)/(1.+beta2/gbar/gbar);
+                  double uybar = (upy+(upx*betax+upy*betay+upz*betaz)*betay/(gbar*gbar)+(-upx*betaz+upz*betax)/gbar)/(1.+beta2/gbar/gbar);
+                  double uzbar = (upz+(upx*betax+upy*betay+upz*betaz)*betaz/(gbar*gbar)+(upx*betay-upy*betax)/gbar)/(1.+beta2/gbar/gbar);
+                  
+                  uxnew = 2.*uxbar - ux0;
+                  uynew = 2.*uybar - uy0;
+                  uznew = 2.*uzbar - uz0;
+                  gamma_new = 2.*gbar - gamma0;
+                }
+	      } // end of position-velocity iteration
 	      // update the final position and velocity
 
               gamma_new = sqrt(1.+uxnew*uxnew+uynew*uynew+uznew*uznew); 
@@ -680,10 +673,16 @@ cout << "!!!!!!!!!!!!!!!!!!!! subcycle " << innter <<" particle " << rest << " g
 	      v[rest] = uynew/gamma_new;
 	      w[rest] = uznew/gamma_new;
 
-	      x[rest] = xp0 + (uxnew + ux0)/(gamma_new + gamma0) * dt;
-	      y[rest] = yp0 + (uynew + uy0)/(gamma_new + gamma0) * dt;
-	      z[rest] = zp0 + (uznew + uz0)/(gamma_new + gamma0) * dt;
-
+              if (mover == "boris") {
+                x[rest] = 2.*xp - xp0;
+                y[rest] = 2.*yp - yp0;
+                z[rest] = 2.*zp - zp0;
+              }
+              else if (mover == "LM") {
+                x[rest] = xp0 + (uxnew + ux0)/(gamma_new + gamma0) * dt;
+	        y[rest] = yp0 + (uynew + uy0)/(gamma_new + gamma0) * dt;
+	        z[rest] = zp0 + (uznew + uz0)/(gamma_new + gamma0) * dt;
+              }
 	    } // END  OF SUBCYCLING LOOP
 //cout << "final: particle " << rest << " ux " << u[rest] << endl;
 //if (fabs(u[rest])>1. || fabs(v[rest])>1. || fabs(w[rest])>1.)

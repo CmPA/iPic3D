@@ -588,8 +588,12 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
             ll = ll + 1;
             }
 
+
+      string mover = "boris";
       double gn = 1./sqrt(1.-u[i]*u[i]-v[i]*v[i]-w[i]*w[i]);
-      double G = qom*dt/2.*(Exl*u[i]+Eyl*v[i]+Ezl*w[i]) + gn;
+      double G;
+      if (mover == "boris") G = sqrt(1.+(u[i]*gn+Exl)*(u[i]*gn+Exl)+(v[i]*gn+Eyl)*(v[i]*gn+Eyl)+(w[i]*gn+Ezl)*(w[i]*gn+Ezl));
+      else if (mover == "LM") G = qom*dt/2.*(Exl*u[i]+Eyl*v[i]+Ezl*w[i]) + gn;
       Bxl *= qom*dt/2./G;
       Byl *= qom*dt/2./G;
       Bzl *= qom*dt/2./G;
