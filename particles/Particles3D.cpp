@@ -377,9 +377,8 @@ void Particles3D::maxwellian_EBDeformationWithoutInteraction(Grid * grid, Field 
      also, I am assuming there are no drift velocities, I did not think of what happens 
      with drifts
 
-     /*
   
-  /* initialize random generator with different seed on different processor */
+  /* initialize random generator with different seed on different processor */ 
   srand(vct->getCartesian_rank() + 2);
 
      double R= 196;
@@ -536,6 +535,86 @@ void Particles3D::maxwellian_WhistlerCurrent(Grid * grid, Field * EMf, VirtualTo
 }
 
 /* end maxwellian with perpendicular current oscillations for electrons supporting whistler */
+
+/** Maxellian distribution for asymmetric Harris current sheet */
+/** Drift velocity computed directly from the fields for drifting species */
+void Particles3D::MaxwellianAsymmetric(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  const double B0x = col->getB0x();
+  const double B0z = col->getB0z();
+  
+  double Jz;
+  double yp;
+  double u0p, v0p, w0p;
+  double ypB, ypT, ypBd, ypTd;
+
+  double prob, theta, sign;
+  long long counter = 0;
+
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+
+              double rho = EMf->getRHOcs(i,j,k,ns);
+              //cout << "rho in particles = " << rho << endl;
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+              yp = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              y[counter] = yp;
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(rho) / npcel) * (1.0 / grid->getInvVOL());
+
+              ypB = yp - 0.25 * Ly;
+              ypT = yp - 0.75 * Ly;
+              ypBd = ypB / delta;
+              ypTd = ypT / delta;
+
+              u0p = u0;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * Drand48(seed)));
+              theta = 2.0 * M_PI * Drand48(seed);
+              u[counter] = u0p + uth * prob * cos(theta);
+              // v
+              v0p = v0;
+              v[counter] = v0p + vth * prob * sin(theta);
+              // w
+              if (w0 > 0 && qom < 0) {
+                 Jz = -(1/ (4.0*M_PI)) * B0x / delta * (1/cosh(ypBd) * 1/cosh(ypBd) - 1/cosh(ypTd) * 1/cosh(ypTd));
+                 w0p = ( qom / fabs(qom) ) * Jz / fabs(rho); 
+              }
+              else if (w0 > 0 && qom > 0) {
+                 w0p = 0;
+              }
+              else {
+              w0p = w0;
+              }
+              prob = sqrt(-2.0 * log(1.0 - .999999 * Drand48(seed)));
+              theta = 2.0 * M_PI * Drand48(seed);
+              w[counter] = w0p + wth * prob * cos(theta);
+
+              if (TrackParticleID){
+                ParticleID[counter] = npTracked; //counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                partRank[counter] = vct->getCartesian_rank();
+                npTracked++;
+              }
+
+
+//              if (TrackParticleID)
+//                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+              
+              counter++;
+            }
+
+   nop = counter;
+
+}
+
+
+
+
+
 
 /** Maxellian distribution depending on space, goes with Force Free */
 /** Drift velocity computed directly from the fields for species with u0 = 1 */

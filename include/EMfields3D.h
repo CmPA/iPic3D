@@ -191,6 +191,9 @@ class EMfields3D                // :public Field
     void initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective * col);
     /*! Random initial field */
     void initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /* Initialisation for asymmetric Harris equilibrium; lower current sheet is perturbed */
+    /* The initailisation follows Cazzola et al., Phys. Plasmas 22, 092901 (2015) */
+    void initAsymmetric(VirtualTopology3D * vct, Grid * grid, Collective *col); 
     /*! Init Force Free (JxB=0) double periodic with one current sheet perturbed*/
     void initForceFreePert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! Init Force Free (JxB=0) */
