@@ -2525,17 +2525,18 @@ void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid, Collectiv
 }
 
 /* Initialisation for asymmetric Harris equilibrium; lower current sheet is perturbed */
-/* The initailisation follows Cazzola et al., Phys. Plasmas 22, 092901 (2015) */
+/* The initailisation follows Sang et al., ApJ 877, 155 (2019) */
 void EMfields3D::initAsymmetric(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 
 double globalX, globalY;
-double alpha;
+double alpha1, alpha2;
 double R = 0.5;
 
 if (restart1 == 0) {
     // initialize
     if (vct->getCartesian_rank() == 0) {
-      alpha = 1.0/3;
+      alpha1 = 0.025;
+      alpha2 = 0.025;
       cout << "------------------------------------------" << endl;
       cout << "Initialize Asymmetric Harris with perturbation on half CS" << endl;
       cout << "------------------------------------------" << endl;
@@ -2566,10 +2567,15 @@ if (restart1 == 0) {
           // initialize the density for species
           for (int is = 0; is < ns; is++) {
              if (DriftSpecies[is]) {
-                rhons[is][i][j][k] = rhoINIT[is]/FourPI * (0.5 - alpha * tanh(-yBd) - alpha * tanh(-yBd) * tanh(-yBd)) + rhoINIT[is]/FourPI * (0.5 - alpha * tanh(yTd) - alpha * tanh(yTd) * tanh(yTd));
+                if (globalY <= 0.5 * Ly) {
+                rhons[is][i][j][k] = rhoINIT[is]/FourPI * (1 - alpha1 * tanh(yBd) - alpha2 * tanh(yBd) * tanh(yBd));
+                }
+                else {
+                 rhons[is][i][j][k] = rhoINIT[is]/FourPI * (1 - alpha1 * tanh(-yTd) - alpha2 * tanh(-yTd) * tanh(-yTd));
                 //cout << "yBd = " << yBd << endl;
                 //cout << "alpha = " << alpha << endl;
                 //cout << "rhons = " << rhons[is][i][j][k] << endl; 
+                }
              }              
              else
              {
