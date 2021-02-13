@@ -571,18 +571,20 @@ void c_Solver::WriteConserved(int cycle) {
 void c_Solver::WriteOutput(int cycle) {
 
   if (col->getWriteMethod() == "h5hut") {
-
     /* -------------------------------------------- */
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
-
-    if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    /* -------------------------------------------- */
+    if (col->getFieldOutputCycle() != 0){
+       if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);}
     //if (cycle%(col->getParticlesOutputCycle())==0 &&
     //    cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0 )      WritePartclH5hut(ns, grid, part, col, vct, cycle);
-
-    for (int i=0; i< ns; i++){
-        if (cycle%(col->getTrackingOutputCycle())==0)      WriteTestPartclH5hut(ns, grid, part, col, vct, cycle, "_track");
+   if (col->getParticlesOutputCycle() != 0)
+       if (cycle%(col->getParticlesOutputCycle())==0 )      WritePartclH5hut(ns, grid, part, col, vct, cycle);    
+    if (col->getTrackingOutputCycle() != 0) {
+       for (int i=0; i< ns; i++){
+           if (cycle%(col->getTrackingOutputCycle())==0)      WriteTestPartclH5hut(ns, grid, part, col, vct, cycle, "_track");
+       }
     }
   }
   else

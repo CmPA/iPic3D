@@ -10,6 +10,35 @@ project(iPic3D)
 # Find packages (already managed by CMake)
 #
 
+find_package(Git QUIET REQUIRED)
+
+execute_process(
+    COMMAND "${GIT_EXECUTABLE}" describe --always HEAD
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    RESULT_VARIABLE res
+    OUTPUT_VARIABLE MYAPP_VERSION
+    ERROR_QUIET
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+set_property(GLOBAL APPEND
+    PROPERTY CMAKE_CONFIGURE_DEPENDS
+    "${CMAKE_SOURCE_DIR}/.git/index")
+
+string(REGEX REPLACE "^([0-9]+)\\.([0-9]+)\\.([0-9]+).*$"
+"\\1;\\2;\\3" _ver_parts "${MYAPP_VERSION}")
+#[[list(GET _ver_parts 0 MYAPP_VERSION_MAJOR)
+list(GET _ver_parts 1 MYAPP_VERSION_MINOR)
+list(GET _ver_parts 2 MYAPP_VERSION_PATCH)]]
+
+if("${MYAPP_VERSION}" MATCHES "^.*-(.*)-g.*$")
+    string(REGEX REPLACE "^.*-(.*)-g.*$" "\\1" MYAPP_VERSION_MICRO
+"${MYAPP_VERSION}")
+else()
+    set(MYAPP_VERSION_MICRO "0")
+endif()
+
+message("Code revision: ${MYAPP_VERSION}")
+
 find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
 
@@ -43,7 +72,7 @@ add_definitions("-DMPICH_IGNORE_CXX_SEEK")
 #
 
 add_executable(
-    iPic3D
+    iPic3D-${MYAPP_VERSION}
     iPic3D.cpp
 )
 
@@ -52,12 +81,17 @@ add_executable(
 #
 
 target_link_libraries(
-    iPic3D
+    iPic3D-${MYAPP_VERSION}
     iPic3Dlib
     ${MPI_LIBRARIES}
     ${HDF5_LIBRARIES}
     ${HDF5_HL_LIBRARIES}	
 )
+
+SET( legacy_link iPic3D)
+SET( legacy_target iPic3D-${MYAPP_VERSION})
+ADD_CUSTOM_TARGET(link_target ALL
+                  COMMAND ${CMAKE_COMMAND} -E create_symlink ${legacy_target} ${legacy_link})
 
 #
 # Code testing
