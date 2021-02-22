@@ -90,6 +90,16 @@ class Collective
     double getTh();
     /*! get the Smoothing value */
     double getSmooth();
+    /*! get the problem dimensionality for smoothing. */
+    int getSmoothDim();
+    /*! get number of smoothing cycles. */
+    int getnvolte();
+    /*! get h for magnetic shear. */
+    double getH();
+    /*! get r for magnetic shear. */
+    double getR();
+    /*! get a for magnetic shear. */
+    double getA();
     /*! get the number of time cycles */
     int getNcycles();
     /*! get the number of species */
@@ -141,6 +151,8 @@ class Collective
     string getPartInit();
     /*! get output writing method */
     string getWriteMethod();
+    /*! get blended output writing method */
+    string getBlendedWriteMethod();
     /*! get simulation name */
     string getSimName();
     /*! get poisson correction flag */
@@ -223,6 +235,8 @@ class Collective
     int getFieldOutputCycle();
     /*! output of particles */
     int getParticlesOutputCycle();
+    /*! output of test particles */
+    int getTestParticlesOutputCycle() { return TestParticlesOutputCycle; }
     /*! output of restart */
     int getRestartOutputCycle();
     /*! output of diagnostics */
@@ -251,10 +265,20 @@ class Collective
     double th;
     /*! Smoothing value */
     double Smooth;
+    /*! h for magnetic shear */
+    double h;
+    /*! r for magnetic shear */
+    double r;
+    /*! a for magnetic shear */
+    double a;
     /*! number of time cycles */
     int ncycles;
     /*! physical space dimensions */
     int dim;
+    /*! Smoothing type */
+    int SmoothDim;
+    /*! number of smoothing cycles */
+    int nvolte;
     /*! simulation box length - X direction */
     double Lx;
     /*! simulation box length - Y direction */
@@ -332,6 +356,8 @@ class Collective
     string PartInit;
     /*! Output writing method */
     string wmethod;
+    /*! Blended Output writing method */
+    string bwmethod;
     /*! Simulation name */
     string SimName;
     /*! Poisson correction flag */
@@ -429,6 +455,8 @@ class Collective
     int FieldOutputCycle;
     /*! Output for particles */
     int ParticlesOutputCycle;
+    /*! Output for test particles */
+    int TestParticlesOutputCycle;
     /*! restart cycle */
     int RestartOutputCycle;
     /*! Output for diagnostics */

@@ -22,7 +22,8 @@ void writeRESTART(string SaveDirName, int myrank, int cycle, int ns, MPIdata * m
   hdf5_agent.open_append(SaveDirName + "/restart" + ss.str() + ".hdf");
   output_mgr.output("proc_topology ", 0);
   output_mgr.output("Eall + Ball + rhos", cycle);
-  output_mgr.output("position + velocity + q ", cycle, 0);
+  output_mgr.output("position + velocity + q + ID ", cycle, 0);
+//  output_mgr.output("position + velocity + q  ", cycle, 0);
   hdf5_agent.close();
 
 }
@@ -42,10 +43,19 @@ void writeRESTART(string SaveDirName, int myrank, int cycle, int ns, MPIdata * m
   // Print Collective informations
   stringstream ss;
   ss << myrank;
+
+//  cout << SaveDirName + "/restart" + ss.str() + ".hdf" << endl;
+//  cout << "son qui 1";
+//  MPI_Barrier(MPI_COMM_WORLD);
   hdf5_agent.open(SaveDirName + "/restart" + ss.str() + ".hdf");
+//  hdf5_agent.open_append(SaveDirName + "/restart" + ss.str() + ".hdf");
+//  MPI_Barrier(MPI_COMM_WORLD); 
+//  cout << "son qui 2";
+//  MPI_Barrier(MPI_COMM_WORLD);
   output_mgr.output("proc_topology ", 0);
   output_mgr.output("Eall + Ball + rhos", 0);
-  output_mgr.output("position + velocity + q ", 0, 0);
+  output_mgr.output("position + velocity + q + ID", 0, 0);
+//  output_mgr.output("position + velocity + q ", 0, 0);
   output_mgr.output("last_cycle", cycle);
   hdf5_agent.close();
 

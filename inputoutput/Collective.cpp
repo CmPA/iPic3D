@@ -23,6 +23,9 @@ void Collective::ReadInput(string inputfile) {
     ncycles = config.read < int >("ncycles");
     th = config.read < double >("th");
     config.readInto(Smooth, "Smooth");
+    // When 0 - smoothing is 3D, when 1 - smoothing is in XY plane.
+    SmoothDim  = config.read < int >("SmoothDim", 0);
+    nvolte  = config.read < int >("nvolte", 6);
     SaveDirName = config.read < string > ("SaveDirName");
     RestartDirName = config.read < string > ("RestartDirName");
     ns = config.read < int >("ns");
@@ -40,12 +43,18 @@ void Collective::ReadInput(string inputfile) {
     B1y = config.read <double>("B1y");
     B1z = config.read <double>("B1z");
 
+    // Magnetic shear parameters
+    h = config.read <double>("h_MS", 0.0);
+    r = config.read <double>("r_MS", 0.0);
+    a = config.read <double>("a_MS", 0.0);
+  
     delta = config.read < double >("delta");
 
     Case              = config.read<string>("Case");
     FieldsInit        = config.read<string>("FieldsInit");
     PartInit          = config.read<string>("PartInit");
     wmethod           = config.read<string>("WriteMethod");
+    bwmethod          = config.read<string>("BlendedWriteMethod","no");
     SimName           = config.read<string>("SimulationName");
     PoissonCorrection = config.read<string>("PoissonCorrection");
 
@@ -87,6 +96,7 @@ void Collective::ReadInput(string inputfile) {
     // take the output cycles
     FieldOutputCycle = config.read < int >("FieldOutputCycle");
     ParticlesOutputCycle = config.read < int >("ParticlesOutputCycle");
+    TestParticlesOutputCycle = config.read < int >("TestParticlesOutputCycle", -1);
     RestartOutputCycle = config.read < int >("RestartOutputCycle");
     DiagnosticsOutputCycle = config.read < int >("DiagnosticsOutputCycle", FieldOutputCycle);
 
@@ -575,6 +585,10 @@ int Collective::ReadRestart(string inputfile) {
     dataset_id = H5Dopen2(file_id, "/collective/Smooth", H5P_DEFAULT); // HDF 1.8.8
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &Smooth);
     status = H5Dclose(dataset_id);
+    // read Dimension
+    //dataset_id = H5Dopen2(file_id, "/collective/SmoothDim", H5P_DEFAULT); // HDF 1.8.8
+    //status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, &SmoothDim);
+    //status = H5Dclose(dataset_id); 
   }
 
   status = H5Fclose(file_id);
@@ -765,6 +779,8 @@ void Collective::save() {
   my_file << "B0z                      = " << B0z << endl;
   my_file << "---------------------------" << endl;
   my_file << "Smooth                   = " << Smooth << endl;
+  my_file << "2D smoothing?            = " << SmoothDim << endl;
+  my_file << "nvolte ?                 = " << nvolte << endl;
   my_file << "GMRES error tolerance    = " << GMREStol << endl;
   my_file << "CG error tolerance       = " << CGtol << endl;
   my_file << "Mover error tolerance    = " << NiterMover << endl;
@@ -776,7 +792,9 @@ void Collective::save() {
 
 }
 
-/*! get the physical space dimensions */
+/*! get the physical space dimensions 
+TODO: this routine is a redundant leftover? Not used anywhere.
+*/
 int Collective::getDim() {
   return (dim);
 }
@@ -848,7 +866,30 @@ double Collective::getTh() {
 double Collective::getSmooth() {
   return (Smooth);
 }
-
+/*! get nvolte, number of smoothing cycles */
+int Collective::getnvolte() {
+  return (nvolte);
+}
+/*! get the dimension (2D ore 3D) for smoothing. 
+  0 - 3D smoothing
+  1 - 2D smoothing in XY
+  2 - 2D smoothing in XZ, not implemented yet!
+*/
+int Collective::getSmoothDim() {
+  return (SmoothDim);
+}
+/*! get h parameter for magnetic shear */
+double Collective::getH() {
+  return (h);
+}
+/*! get r parameter for magnetic shear */
+double Collective::getR() {
+  return (r);
+}
+/*! get a parameter for magnetic shear */
+double Collective::getA() {
+  return (a);
+}
 /*! get the number of time cycles */
 int Collective::getNcycles() {
   return (ncycles);
@@ -1056,6 +1097,10 @@ string Collective::getSimName() {
 /*! get output writing method */
 string Collective::getWriteMethod() {
   return (wmethod);
+}
+/*! get output writing method */
+string Collective::getBlendedWriteMethod() {
+  return (bwmethod);
 }
 /*! get Poisson correction flag */
 string Collective::getPoissonCorrection() {

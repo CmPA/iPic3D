@@ -140,7 +140,7 @@ void Grid3DCU::divSymmTensorN2C(double ***divCX, double ***divCY, double ***divC
         comp1Z = .25 * (pXZ[ns][i][j][k + 1] - pXZ[ns][i][j][k]) * invdz + .25 * (pXZ[ns][i + 1][j][k + 1] - pXZ[ns][i + 1][j][k]) * invdz + .25 * (pXZ[ns][i][j + 1][k + 1] - pXZ[ns][i][j + 1][k]) * invdz + .25 * (pXZ[ns][i + 1][j + 1][k + 1] - pXZ[ns][i + 1][j + 1][k]) * invdz;
         comp2Z = .25 * (pYZ[ns][i][j][k + 1] - pYZ[ns][i][j][k]) * invdz + .25 * (pYZ[ns][i + 1][j][k + 1] - pYZ[ns][i + 1][j][k]) * invdz + .25 * (pYZ[ns][i][j + 1][k + 1] - pYZ[ns][i][j + 1][k]) * invdz + .25 * (pYZ[ns][i + 1][j + 1][k + 1] - pYZ[ns][i + 1][j + 1][k]) * invdz;
         comp3Z = .25 * (pZZ[ns][i][j][k + 1] - pZZ[ns][i][j][k]) * invdz + .25 * (pZZ[ns][i + 1][j][k + 1] - pZZ[ns][i + 1][j][k]) * invdz + .25 * (pZZ[ns][i][j + 1][k + 1] - pZZ[ns][i][j + 1][k]) * invdz + .25 * (pZZ[ns][i + 1][j + 1][k + 1] - pZZ[ns][i + 1][j + 1][k]) * invdz;
-	divCX[i][j][k] = comp1X + comp1Y + comp1Z;
+        divCX[i][j][k] = comp1X + comp1Y + comp1Z;
         divCY[i][j][k] = comp2X + comp2Y + comp2Z;
         divCZ[i][j][k] = comp3X + comp3Y + comp3Z;
       }
@@ -227,6 +227,8 @@ void Grid3DCU::lapN2N(double ***lapN, double ***scFieldN, VirtualTopology3D * vc
   communicateCenterBC(nxc, nyc, nzc, gradYC, 1, 1, 1, 1, 1, 1, vct);
   communicateCenterBC(nxc, nyc, nzc, gradZC, 1, 1, 1, 1, 1, 1, vct);
   divC2N(lapN, gradXC, gradYC, gradZC);
+  // WARNING, FPUCCI I have added a communication here as it is don in Parsek2D
+  communicateNode(nxn, nyn, nzn, lapN, vct); 
   // deallocate
   delArr3(gradXC, nxc, nyc);
   delArr3(gradYC, nxc, nyc);

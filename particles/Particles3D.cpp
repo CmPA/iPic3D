@@ -133,7 +133,7 @@ void Particles3D::MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* v
 #endif
 }
 
-void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long* ParticleID)
+void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long * ParticleID)
 {
 #ifdef BATSRUS
   /*
@@ -176,14 +176,142 @@ void Particles3D::MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, i
         theta = 2.0*M_PI*harvest;
         w[ip] = col->getFluidUz(i,j,k,is) + col->getFluidUthz(i,j,k,is)*prob*cos(theta);
         if (TrackParticleID)
-          ParticleID[ip]= ip*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+          ParticleID[ip]= ip*(unsigned long )pow(10.0,BirthRank[1])+BirthRank[0];
         ip++ ;
       }
 #endif
 }
 
+void Particles3D::MaxwellianFromFieldFile(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+  /*cout << "Maxwellian From Field File" << endl;*/
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  if (vct->getCartesian_rank() ==0){
+		cout << "------------------------------------------------------------" << endl;
+		cout << "    Initialize particle with MaxwellianFromFieldFile        " << endl;
+		cout << "------------------------------------------------------------" << endl;
+	}	
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++) {
+
+        double M_rho = EMf->getRHOcs(i, j, k, ns);
+        double M_u0  = EMf->getJxcs (i,j,k,ns)/M_rho;
+        double M_v0  = EMf->getJycs (i,j,k,ns)/M_rho;
+        double M_w0  = EMf->getJzcs (i,j,k,ns)/M_rho;
+        // The module of rho to be used for computing the charge
+        double M_rho_abs = fabs(EMf->getRHOcs(i, j, k, ns));
+
+//        cout << " M_rho=" << M_rho;
+//        cout << " M_u0=" << M_u0;
+//        cout << " M_v0=" << M_v0;
+//        cout << " M_w0=" << M_w0 <<endl;
+ 
+        for (int ii = 0; ii < npcelx; ii++){
+          for (int jj = 0; jj < npcely; jj++){
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (M_rho_abs / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = M_u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = M_v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = M_w0 + wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long ) pow(10.0, BirthRank[1]) + BirthRank[0];
+              counter++;
+            }
+          }
+        }
+      }
+
+//  cout << "Particle initialization complete" << endl;
+}
+
+void Particles3D::MaxwellianFromFieldFileTestParticles(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+  /*cout << "Maxwellian From Field File" << endl;*/
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+
+  if (vct->getCartesian_rank() ==0){
+		cout << "---------------------------------------------------------------------" << endl;
+		cout << "    Initialize particle with MaxwellianFromFieldFileTestParticles    " << endl;
+		cout << "---------------------------------------------------------------------" << endl;
+	}	
+
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++) {
+
+        double M_rho = EMf->getRHOcs(i, j, k, ns);
+        double M_u0  = EMf->getJxcs (i,j,k,ns)/M_rho;
+        double M_v0  = EMf->getJycs (i,j,k,ns)/M_rho;
+        double M_w0  = EMf->getJzcs (i,j,k,ns)/M_rho;
+        // The module of rho to be used for computing the charge
+        double M_rho_abs = fabs(EMf->getRHOcs(i, j, k, ns));
+
+        for (int ii = 0; ii < npcelx; ii++){
+          for (int jj = 0; jj < npcely; jj++){
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (M_rho_abs / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = M_u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = M_v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = M_w0 + wth * prob * cos(theta);
+              if (TrackParticleID)
+               if (ns < 2) {
+                ParticleID[counter] = 0;
+                }
+                else{
+                ParticleID[counter] = BirthRank[0]*nop + counter;
+                }
+              counter++;
+            }
+          }
+        }
+      }
+
+//  cout << "Particle initialization complete" << endl;
+}
+
 /** Maxellian random velocity and uniform spatial distribution */
-void Particles3D::MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+void Particles3D::MaxwellianFromExB(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
   /* initialize random generator with different seed on different processor */
   srand(vct->getCartesian_rank() + 2);
@@ -236,7 +364,7 @@ void Particles3D::MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology
               theta = 2.0 * M_PI * harvest;
               w[counter] = vec[2] + wth * prob * cos(theta);
               if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                ParticleID[counter] = counter * (unsigned long ) pow(10.0, BirthRank[1]) + BirthRank[0];
 
 
               counter++;
@@ -251,7 +379,11 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
 
   /* initialize random generator with different seed on different processor */
   srand(vct->getCartesian_rank() + 2);
-
+  if (vct->getCartesian_rank() ==0){
+		cout << "-------------------------------------------" << endl;
+		cout << "    Initialize particle with maxwellian    " << endl;
+		cout << "-------------------------------------------" << endl;
+	}	
   double harvest;
   double prob, theta, sign;
   long long counter = 0;
@@ -281,14 +413,252 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               theta = 2.0 * M_PI * harvest;
               w[counter] = w0 + wth * prob * cos(theta);
               if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
-
-
+                ParticleID[counter] = counter * (unsigned long ) pow(10.0, BirthRank[1]) + BirthRank[0];
               counter++;
             }
 
+  if (vct->getCartesian_rank() ==0){
+		cout << "-------------------------------------------" << endl;
+		cout << "    End of particle initialization         " << endl;
+		cout << "-------------------------------------------" << endl;
+	}
+}
+
+/** Maxellian random velocity gyrotropic with respect to the guide field direction and uniform spatial distribution */
+void Particles3D::gyromaxwellian(Collective * col , Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+  if (vct->getCartesian_rank() ==0){
+		cout << "------------------------------------------------------" << endl;
+		cout << "    Initialize particle with gyrotropic maxwellian    " << endl;
+		cout << "------------------------------------------------------" << endl;
+	}	
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  double B0x=col->getB0x();
+  double B0y=col->getB0y();
+  double B0z=col->getB0z();
+  double B0;
+  B0=sqrt(B0x*B0x+B0y*B0y+B0z*B0z);  // magnetic field amplitude
+  double bx, by, bz, bperp; // magnetic field versor
+  double rx,ry,rz; //rotation versor
+  double r11,r12,r13,r21,r22,r23,r31,r32,r33; //rotation matrix
+  double cospsi,sinpsi; //rotation angle
+  double uu,vv,ww;//not yet rotated speeds
+  bx = B0x/B0;
+  by = B0y/B0;
+  bz = B0z/B0;
+  bperp = sqrt(bx*bx+by*by); 
+  cospsi = bz;
+  sinpsi = bperp;
+  rx = -bz*by/bperp;
+  ry = bx*bz/bperp;
+  rz = 0.0;
+  r11 = cospsi+rx*rx*(1.0-cospsi);
+  r12 = rx*ry*(1.0-cospsi)-rz*sinpsi;
+  r13 = rx*rz*(1.0-cospsi)+ry*sinpsi;
+  r21 = ry*rx*(1.0-sinpsi)+rz*sinpsi;
+  r22 = cospsi+ry*ry*(1.0-cospsi);
+  r23 = ry*rz*(1.0-cospsi)-rx*sinpsi;
+  r31 = rz*rx*(1.0-cospsi)-ry*sinpsi;
+  r32 = rz*ry*(1.0-cospsi)+rx*sinpsi;
+  r33 = cospsi+rz*rz*(1.0-cospsi);
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              uu = u0 + uth * prob * cos(theta);
+              // v
+              vv = v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              ww = w0 + wth * prob * cos(theta);
+              //Rotate particle speed to obtain a gyrotropic maxwellian
+              u[counter] = r11*uu+r12*vv+r13*ww;
+              v[counter] = r21*uu+r22*vv+r23*ww;
+              w[counter] = r31*uu+r32*vv+r33*ww;
+
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long ) pow(10.0, BirthRank[1]) + BirthRank[0];
+              counter++;
+            }
+
+  if (vct->getCartesian_rank() ==0){
+		cout << "-------------------------------------------" << endl;
+		cout << "    End of particle initialization         " << endl;
+		cout << "-------------------------------------------" << endl;
+	}
+}
+
+
+/** Turbulence setup (Vasconez et al. 2015) */
+void Particles3D::MagneticShear(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  double harvest;
+  double b0;     // = 0.01; // B magnitude away from the shear
+  double bm;     // = 0.02; // B magnitude at the shear centre
+  double h;      // = 0.2;
+  double r;      // = 10.;
+  double a;      // = 0.; // perturbation amplitude
+  double vthp;  // proton vth  
+  double beta;   // = .5; // plasma beta at the shear centre
+  double ptot;   // = 3.1831e-5; // Total pressure
+  double alpha;  // = (bm-b0)*r / (2.*pow(2.*h,r)*pow(1.+pow(1./2./h,r),2.));
+  double mratio; // = 25.; // me/mi ratio
+
+  const double coarsedy= grid->getDY();
+  const double coarsedx= grid->getDX();
+  double globaly;
+  double globalx;
+  double shaperz;
+  double rho0; //= 1. / 4. / M_PI;
+  
+  double prob, theta, sign;
+  long long counter = 0;
+
+  //parameters for magnetic shear
+  b0 = B0x_MS;
+  vthp = vthp_MS; 
+  h = h_MS;
+  r = r_MS;
+  a = a_MS;
+  // 
+  bm = 2.0*b0;
+  beta = vthp*vthp/bm/bm*2.0; 
+  ptot = bm*bm/8.0/M_PI+2.0/4.0/M_PI*vthp*vthp;
+  alpha = (bm-b0)*r / (2.*pow(2.*h,r)*pow(1.+pow(1./2./h,r),2.));
+  rho0 = 1.0/4./M_PI;
+  mratio = mime; 
+
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++) {
+        // Calculate the drift z-velocity in this cell
+        globaly = grid->getYN(i,j,k)+ coarsedy;
+        globalx = grid->getXN(i,j,k)+ coarsedx;
+        // - curl(B)
+        double curlB = (bm-b0)*r*pow(globaly-Ly/2.,r-1.)/pow(Ly*h,r)
+                         / pow(1.+pow((globaly-Ly/2.)/Ly/h,r),2.)
+                       - 2.*alpha/(Ly/2.)*(globaly/(Ly/2.)-1.);
+        // uz_s = curl(B)_z * (ms/me) /(8 pi rho) /(1+me/mi) * sgn(q_s)
+        double udz = curlB*fabs(qom/mratio)/4./M_PI/fabs(EMf->getRHOcs(i, j, k, ns))/(1.+1./mratio) * fabs(qom)/qom;
+        // duz = -a (4 pi (me+mi)n)^-1/2 cos(2pi/Lx x)
+        double dudz = -a / sqrt(4.*M_PI*(1.+1./mratio)*fabs(EMf->getRHOcs(i, j, k, ns))) * cos(2.*M_PI/Lx*globalx);
+        // Calculate number of particles in this cell
+        int npc = floor(double(npcel) * fabs(EMf->getRHOcs(i, j, k, ns) / rho0));
+        int npcy = (int) max(floor(sqrt(double(npc) * dy/dx)), 1);
+        int npcx = (int) ceil(double(npc) / double(npcy));
+//cout << EMf->getRHOcs(i, j, k, ns) << " " << npc << " " << npcy << " " << npcx << endl;
+        // Then place them uniformly and assign drift
+        int npcz = 1;
+        for (int ii = 0; ii < npcx; ii++)
+          for (int jj = 0; jj < npcy; jj++)
+            for (int kk = 0; kk < npcz; kk++) {
+              x[counter] = (ii + .5) * (dx / double(npcx)) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / double(npcy)) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / double(npcz)) + grid->getZN(i, j, k);
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = udz + dudz + wth * prob * cos(theta);
+             // if (TrackParticleID) {
+             //   partID[counter]   = npTracked;
+             //   partRank[counter] = rank;
+             //   npTracked++;
+             // }
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (rho0 / npcel) * (1.0 / grid->getInvVOL()); // all particles with the same charge
+              counter++;
+            }
+      }
+  nop = counter;
 
 }
+
+/** Maxellian random velocity and uniform spatial distribution */
+void Particles3D::maxwellian_for_KH_tests(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+  if (vct->getCartesian_rank() ==0){
+		cout << "-----------------------------------------------------" << endl;
+		cout << "    Initialize particle with maxwellian for KH tests " << endl;
+		cout << "-----------------------------------------------------" << endl;
+	}	
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = w0 + wth * prob * cos(theta);
+//              if (TrackParticleID)
+//                ParticleID[counter] = counter * (unsigned long ) pow(10.0, BirthRank[1]) + BirthRank[0];
+ 	      if (TrackParticleID){
+		if ( (y[counter] < (0.25*Ly) ) || (y[counter] > (0.75*Ly) ) ) {
+			ParticleID[counter]=1;
+		} else {
+			ParticleID[counter]=0;
+			}
+	      }
+             counter++;
+            }
+
+  if (vct->getCartesian_rank() ==0){
+		cout << "-------------------------------------------" << endl;
+		cout << "    End of particle initialization         " << endl;
+		cout << "-------------------------------------------" << endl;
+	}
+}
+
 
 /** Force Free initialization (JxB=0) for particles */
 void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
@@ -342,10 +712,373 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
                 w[counter] = flvz + wth * prob * cos(theta);
               }
               if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                ParticleID[counter] = counter * (unsigned long ) pow(10.0, BirthRank[1]) + BirthRank[0];
 
               counter++;
             }
+
+}
+
+/*
+ * 
+ * Maxellian random velocity with uniform spatial distribution 
+ * and velocity profile vx(y) = V_0 tanh(y/L)
+ *
+*/
+void Particles3D::initmaxwellianKH(Collective * col , Grid * grid, Field * EMf, VirtualTopology3D* vct){
+	double harvest, prob, theta, dx = grid->getDX(),dy = grid->getDY();
+
+	//--- Initialisation shear flow
+	double udrift; // x-velocity drift (identical for electrons and ions)
+	const double Vshear = u0; 	
+	
+	//--- Initial incompressibe velocity perturbation on the first modes
+	double amp_pert = v0;
+	double kx_pert;
+	double TwoPI =8*atan(1.0);
+	kx_pert = TwoPI/Lx;
+	double u_pert;
+	double v_pert;	
+	int nbpert = 5; // nb of initial perturbation modes
+        double*** phase = newArr3(double,nbpert,2,1);	
+        double fy_pert;
+        double dyfy_pert;
+	//---------  
+
+	// initialize
+	if (vct->getCartesian_rank() ==0){
+		cout << "-------------------------------------------" << endl;
+		cout << "    Initialize velocity shear (MHD like)   " << endl;
+		cout << "-------------------------------------------" << endl;
+		cout << "delta (velocity shear thickness) = " << delta   << endl;
+		cout << "Vshear                           = " << Vshear   << endl;
+		cout << "-------------------------------------------" << endl;
+	}
+	
+	int counter=0;
+
+	/* initialize random generator */
+	srand (vct->getCartesian_rank()+1+ns);
+
+	// Initialize phase for initial random noise
+	for (int iipert=0; iipert < 2; iipert++){
+		for (int ipert=0; ipert < nbpert; ipert++){                                                
+//			harvest =   rand()/(double)RAND_MAX;
+			phase[ipert][iipert][0] = 2.0*M_PI*(0.5*ipert/nbpert+0.5*iipert);
+		}
+	}
+//	phase[0][0][0]=0.0;
+//	phase[0][1][0]=0.5*M_PI;
+
+	for (int i=1; i< grid->getNXC()-1;i++)
+		for (int j=1; j< grid->getNYC()-1;j++)
+		    for (int k=1; k< grid->getNZC()-1;k++)
+			
+			for (int ii=0; ii < npcelx; ii++)
+				for (int jj=0; jj < npcely; jj++)
+				      for (int kk=0; kk < npcelz; kk++){
+
+					// position
+					x[counter] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);
+					y[counter] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+					z[counter] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+//--- Initialize random positions for HPM profiling: //---HPM
+// harvest =   rand()/(double)RAND_MAX;
+// x[counter] = harvest*((npcelx - .5)*(dx/npcelx)) + grid->getXN(i,j,0);
+// harvest =   rand()/(double)RAND_MAX;
+// y[counter] = harvest*((npcely - .5)*(dy/npcely)) + grid->getYN(i,j,0);
+
+					
+					// charge
+					q[counter] = (qom/fabs(qom))*(EMf->getRHOcs(i,j,k,ns)/npcel)*(1.0/invVOL);
+
+					// thermal velocity
+					// u
+					u[counter] = c; v[counter] = c; w[counter] = c;
+					while ((fabs(u[counter])>=c) | (fabs(v[counter])>=c) | (fabs(w[counter])>=c)){
+						harvest =   rand()/(double)RAND_MAX;
+						prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+						harvest =   rand()/(double)RAND_MAX;
+						theta = 2.0*M_PI*harvest;
+						u[counter] = uth*prob*cos(theta);
+						// v
+						v[counter] = vth*prob*sin(theta);
+						// w
+						harvest =   rand()/(double)RAND_MAX;
+						prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+						harvest =   rand()/(double)RAND_MAX;
+						theta = 2.0*M_PI*harvest;
+						w[counter] = wth*prob*cos(theta);}
+
+					// add drift velocity
+//					udrift = Vshear*(tanh((y[counter] - Ly/2)/delta));
+					udrift = Vshear*(tanh((y[counter]-0.25*Ly)/delta) - tanh((y[counter]-0.75*Ly)/delta)-1.0);
+					u[counter] += udrift;
+
+					// add initial perturbation on velocity 
+					// perturbation for y=yL/4
+                                        u_pert = 0.0;
+                                        v_pert = 0.0;
+					for (int ipert=1; ipert < (nbpert+1); ipert++){
+						u_pert += cos(ipert*kx_pert*x[counter]+phase[ipert-1][0][0]);
+						v_pert += (ipert*kx_pert)*sin(ipert*kx_pert*x[counter]+phase[ipert-1][0][0]);
+					}
+					fy_pert   = amp_pert * exp( - (y[counter]-0.25*Ly)*(y[counter]-0.25*Ly) / (delta*delta) );
+					dyfy_pert = -2.0*(y[counter]-0.25*Ly)/(delta*delta)*fy_pert;
+                                        u[counter] += dyfy_pert*u_pert;
+                                        v[counter] += fy_pert*v_pert;
+
+                                        // perturbation	for y=yL*3/4
+                                        u_pert = 0.0;
+                                        v_pert = 0.0;
+                                        for (int ipert=1; ipert < (nbpert+1); ipert++){
+                                                u_pert += cos(ipert*kx_pert*x[counter]+phase[ipert-1][1][0]);
+                                                v_pert += (ipert*kx_pert)*sin(ipert*kx_pert*x[counter]+phase[ipert-1][1][0]);
+                                        }
+                                        fy_pert   = amp_pert * exp( - ( y[counter]-0.75*Ly)*(y[counter]-0.75*Ly) / (delta*delta) );
+                                        dyfy_pert = -2.0*(y[counter]-0.75*Ly)/(delta*delta)*fy_pert;
+                                        u[counter] += dyfy_pert*u_pert;
+                                        v[counter] += fy_pert*v_pert;
+
+
+					if (TrackParticleID){
+//						ParticleID[counter]= counter*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+						if ( (y[counter] < (0.25*Ly) ) || (y[counter] > (0.75*Ly) ) ) {
+							ParticleID[counter]=1;
+						} else {
+							ParticleID[counter]=0;
+						}
+					}
+
+					counter++ ;
+				}
+
+        delArr3(phase,nbpert,2);
+
+}
+
+
+
+/*
+ *
+ * Maxellian random velocity with uniform spatial distribution
+ * and velocity profile vx(y) = V_0 tanh(y/L)
+ *
+*/
+void Particles3D::initmaxwellianKHFLR(Collective * col, Grid* grid, Field* EMf, VirtualTopology3D* vct){
+
+        double harvest, prob, theta, dx = grid->getDX(),dy = grid->getDY();
+
+        //--- Initialisation shear flow
+        double udrift; // x-velocity drift (identical for electrons and ions)
+        const double Vshear = u0;
+        //---------
+
+        //--- Initial incompressibe velocity perturbation on the first modes
+        double amp_pert = v0;
+        double kx_pert;
+        double TwoPI =8*atan(1.0);
+        kx_pert = TwoPI/Lx;
+        double u_pert;
+        double v_pert;
+        int nbpert = 5; // nb of initial perturbation modes
+        double*** phase = newArr3(double,nbpert,2,1);
+        double fy_pert;
+        double dyfy_pert;
+        //---------
+
+        //--------------------------------
+        //--- Needed for FLR corrections:
+        double B0x=col->getB0x();
+        double B0y=col->getB0y();
+        double B0z=col->getB0z();
+        double B0;
+        B0=sqrt(B0x*B0x+B0y*B0y+B0z*B0z);  // magnetic field amplitude
+        int nspecies=col->getNs(); // get the number of particle species involved in simulation
+
+        //--- For FLR corrections (PARAMETERS)
+        const double gammae = 1.0;       //--- ISOTHERMAL ELECTRONS
+        const double gammaiperp = 2.0;   //--- IONS
+        const double gammaipar = 1.0;    //--- IONS
+        const double s3 = -1.0;          //--- +/-1 (Here -1 : Ux(y) or 1 : Uy(x))
+        const double Omega_ci = B0;      //--- Cf. normalisation qom = 1 for ions
+
+        //--- For FLR corrections
+        double puissance;
+        double gammabar;
+        double betae0, betae0bar;
+        double betaiperp0, betaiperp0bar;
+        double C0, Cinf;
+        double vthperp, vthpar, vthx, vthy;
+        double ypos,ay,finf;            //--- Used for centers
+
+        double Vthe, Vthi, qome, qomi;
+        for (int is=0; is < nspecies; is++){
+                if (col->getQOM(is) > 0.0){
+                       Vthi = col->getUth(is);   //--- ion thermal velocity (supposed isotropic far from velocity shear layer)
+                       qomi = col->getQOM(is);   //--- ion charge to mass ratio
+                        } else {
+                       Vthe = col->getUth(is);   //--- Electron thermal velocity (supposed isotropic far from velocity shear layer)
+                       qome = col->getQOM(is);   //--- Electron charge to mass ratio
+                }
+        }
+        double TeTi; //--- Electron to ion temperature ratio from input file parameters
+        TeTi = -qomi/qome * (Vthe/Vthi) * (Vthe/Vthi);
+        double beta; //--- Ion plasma beta from input file parameters //--- ATTENTION ICI beta = beta_i!
+        //--- beta = 2.0 * (rho_Li / d_i)**2
+        beta = 2.0*(Vthi/B0)*(Vthi/B0);
+
+        //--- For ion FLR corrections:
+        gammabar  = gammae/gammaiperp - 1.0;
+        betaiperp0 = beta;
+        betae0 = TeTi*betaiperp0;
+        betae0bar = betae0 / (1.0 + betae0 + betaiperp0);
+        betaiperp0bar = betaiperp0 / (1.0 + betae0 + betaiperp0);
+        C0 = 0.5*s3*betaiperp0bar*Vshear/(Omega_ci*delta);
+        Cinf = C0/(1.0 + gammabar*betae0bar);
+        //--------------------------------
+
+        
+        //--- initialize
+        if (vct->getCartesian_rank() ==0){
+                cout << "--------------------------------------------------" << endl;
+                cout << "    Initialize particles for velocity shear (FLR corrections)   " << endl;
+                cout << "--------------------------------------------------" << endl;
+                cout << "delta (velocity shear thickness) = " << delta   << endl;
+                cout << "Vshear                           = " << Vshear   << endl;
+                cout << "Electron thermal velocity        = " << Vthe << endl;
+                cout << "Ion thermal velocity             = " << Vthi << endl;
+                cout << "Temperature ration Te/Ti         = " << TeTi << endl;
+                cout << "Ion plasma beta                  = " << beta << endl;
+                cout << "-----------------------------------" << endl;
+
+                cout << " " << endl;
+                cout << " No initial mean velocity perturbation: test effect SVP " << endl;
+                cout << " " << endl;
+        }
+
+        int counter=0;
+
+        /* initialize random generator */
+        srand (vct->getCartesian_rank()+1+ns);
+
+        // Initialize phase for initial random noise
+        for (int iipert=0; iipert < 2; iipert++){
+                for (int ipert=0; ipert < nbpert; ipert++){
+//                      harvest =   rand()/(double)RAND_MAX;
+                        phase[ipert][iipert][0] = 2.0*M_PI*(0.5*ipert/nbpert+0.5*iipert);
+                }
+        }
+//      phase[0][0][0]=0.0;
+//      phase[0][1][0]=0.5*M_PI;
+
+        if (vct->getCartesian_rank() ==0)
+                cout << "---- Initialisation loop on particles ----" << endl;
+
+        for (int i=1; i< grid->getNXC()-1;i++)
+             for (int j=1; j< grid->getNYC()-1;j++)
+                 for (int k=1; k< grid->getNZC()-1;k++)
+
+                        for (int ii=0; ii < npcelx; ii++)
+                                for (int jj=0; jj < npcely; jj++)
+                                     for (int kk=0; kk < npcelz; kk++){
+
+	                                //.******************************
+        	                        //--- For ion FLR corrections:
+                	                ypos = grid->getYC(i,j,k);  //--- y-position on centers
+                        	        ay = 1.0/pow((cosh((ypos -0.25*Ly)/delta)),2.0) - 1.0/pow((cosh((ypos-0.75*Ly)/delta)),2.0);
+                                	finf = 1.0/(1.0 - Cinf*ay);
+                                	//.******************************
+
+                                        //--- position
+                                        x[counter] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);
+                                        y[counter] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+                                        z[counter] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+//--- Initialize random positions for HPM profiling: //---HPM
+// harvest =   rand()/(double)RAND_MAX;
+// x[counter] = harvest*((npcelx - .5)*(dx/npcelx)) + grid->getXN(i,j,0);
+// harvest =   rand()/(double)RAND_MAX;
+// y[counter] = harvest*((npcely - .5)*(dy/npcely)) + grid->getYN(i,j,0);
+
+                                        //--- charge
+                                        q[counter] = (qom/fabs(qom))*(EMf->getRHOcs(i,j,k,ns)/npcel)*(1.0/invVOL);
+
+                                        //--- thermal velocity (should be isotropic in input!!!)
+                                        if(qom < 0){   				//--- Electrons
+						vthx = uth;
+						vthy = uth;
+						vthpar = uth;
+					} else {				//--- Ions
+						puissance = (gammaiperp-1.0)/(2.0*gammaiperp);
+						vthperp = uth*pow( finf, puissance );
+						vthx = vthperp*sqrt(1.0+s3*0.5*Vshear/(Omega_ci*delta)*ay);     //--- ion FLR along x
+						vthy = vthperp*sqrt(1.0-s3*0.5*Vshear/(Omega_ci*delta)*ay);     //--- ion FLR along y
+                                        	puissance = (gammaipar-1.0)/(2.0*gammaiperp); 
+						vthpar  = uth*pow( finf, puissance ); //--- FLR along z
+	                                }
+
+				        u[counter] = c; v[counter] = c; w[counter] = c;
+                                        while ((fabs(u[counter])>=c) | (fabs(v[counter])>=c) | (fabs(w[counter])>=c)){
+                                
+                                                theta = 2.0*M_PI*harvest;
+                                                //--- u
+						u[counter] = vthx*prob*cos(theta);
+                                                //--- v
+                                                v[counter] = vthy*prob*sin(theta);
+                                                //--- w
+                                                harvest =   rand()/(double)RAND_MAX;
+                                                prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                                                harvest =   rand()/(double)RAND_MAX;
+                                                theta = 2.0*M_PI*harvest;
+                                                w[counter] = vthpar*prob*cos(theta);}
+
+                                        // add drift velocity
+//                                      udrift = Vshear*(tanh((y[counter] - Ly/2)/delta));
+                                        udrift = Vshear*(tanh((y[counter]-0.25*Ly)/delta) - tanh((y[counter]-0.75*Ly)/delta)-1.0);
+                                        u[counter] += udrift;
+
+                                        // add initial perturbation on velocity
+                                        // perturbation for y=yL/4
+                                        u_pert = 0.0;
+                                        v_pert = 0.0;
+                                        for (int ipert=1; ipert < (nbpert+1); ipert++){
+                                                u_pert += cos(ipert*kx_pert*x[counter]+phase[ipert-1][0][0]);
+                                                v_pert += (ipert*kx_pert)*sin(ipert*kx_pert*x[counter]+phase[ipert-1][0][0]);
+                                        }
+                                        fy_pert   = amp_pert * exp( - (y[counter]-0.25*Ly)*(y[counter]-0.25*Ly) / (delta*delta) );
+                                        dyfy_pert = -2.0*(y[counter]-0.25*Ly)/(delta*delta)*fy_pert;
+                                        u[counter] += dyfy_pert*u_pert;
+                                        v[counter] += fy_pert*v_pert;
+
+                                        // perturbation for y=yL*3/4
+                                        u_pert = 0.0;
+                                        v_pert = 0.0;
+                                        for (int ipert=1; ipert < (nbpert+1); ipert++){
+                                                u_pert += cos(ipert*kx_pert*x[counter]+phase[ipert-1][1][0]);
+                                                v_pert += (ipert*kx_pert)*sin(ipert*kx_pert*x[counter]+phase[ipert-1][1][0]);
+                                        }
+                                        fy_pert   = amp_pert * exp( - ( y[counter]-0.75*Ly)*(y[counter]-0.75*Ly) / (delta*delta) );
+                                        dyfy_pert = -2.0*(y[counter]-0.75*Ly)/(delta*delta)*fy_pert;
+                                        u[counter] += dyfy_pert*u_pert;
+                                        v[counter] += fy_pert*v_pert;
+
+
+                                        if (TrackParticleID){
+//                                              ParticleID[counter]= counter*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                                                if ( (y[counter] < (0.25*Ly) ) || (y[counter] > (0.75*Ly) ) ) {
+                                                        ParticleID[counter]=1;
+                                                } else {
+                                                        ParticleID[counter]=0;
+                                                }
+                                        }
+
+                                        counter++ ;
+                                }
+
+        delArr3(phase,nbpert,2);
+       
+	if (vct->getCartesian_rank() ==0)
+                cout << "---- Fin initialisation loop on particles ----" << endl;
 
 }
 
@@ -472,8 +1205,8 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.
-#pragma omp parallel for
-#pragma simd                    // this just slows things down (why?)
+// #pragma omp parallel for    // ERA PRESENTE NELLA VERSIONE DI JORGE MA DAVA UN WARNING SU MARCONI
+// #pragma simd                    // this just slows things down (why?)
   for (long long rest = 0; rest < nop; rest++) {
     // copy the particle
     double xp = x[rest];
@@ -689,6 +1422,34 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
   double Fext = EMf->getFext();
 
+//  cout <<"TO REMOVE" << endl;
+/*  double TESTS;
+  TESTS = 0.0;
+  for (int i=0; i<nxn; i++)
+    for (int j=0; j<nyn; j++)
+      for (int k=0; k<nzn; k++) {
+	if (fabs(Bx_ext[i][j][k]) > TESTS) TESTS= fabs(Bx_ext[i][j][k]);
+      }  
+  if (TESTS > 0 ) cout << "Bx_ext = " << TESTS <<endl;  
+
+  TESTS = 0.0;
+  for (int i=0; i<nxn; i++)
+    for (int j=0; j<nyn; j++)
+      for (int k=0; k<nzn; k++) {
+	if (fabs(By_ext[i][j][k]) > TESTS) TESTS= fabs(By_ext[i][j][k]);
+      }
+  if (TESTS > 0 ) cout << "By_ext = " << TESTS <<endl;  
+  
+  TESTS = 0.0;
+  for (int i=0; i<nxn; i++)
+    for (int j=0; j<nyn; j++)
+      for (int k=0; k<nzn; k++) {
+	if (fabs(Bz_ext[i][j][k]) > TESTS) TESTS= fabs(Bz_ext[i][j][k]);
+      }
+  
+  if (TESTS > 0 ) cout << "Bz_ext = " << TESTS <<endl;*/  
+// TO REMOVE	  
+						    
   // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
@@ -877,7 +1638,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 w[particles_index] = w0 + wth*prob*cos(theta);
 
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(unsigned long )pow(10.0,BirthRank[1])+BirthRank[0];
 
 
                 particles_index++ ;
@@ -941,7 +1702,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(unsigned long )pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -1002,7 +1763,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(unsigned long )pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -1062,7 +1823,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(unsigned long )pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -1123,7 +1884,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(unsigned long )pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -1184,7 +1945,7 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
                 theta = 2.0*M_PI*harvest;
                 w[particles_index] = w0 + wth*prob*cos(theta);
                 if (TrackParticleID)
-                  ParticleID[particles_index]= particles_index*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+                  ParticleID[particles_index]= particles_index*(unsigned long )pow(10.0,BirthRank[1])+BirthRank[0];
 
                 particles_index++ ;
               }
@@ -1256,6 +2017,7 @@ void Particles3D::interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * 
 void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
   double weight[2][2][2];
   double temp[2][2][2];
+  double ep;
   int ix, iy, iz, temp2, temp1, temp3;
   for (register long long i = 0; i < nop; i++) {
     ix = 2 + int (floor((x[i] - grid->getXstart()) / grid->getDX()));
@@ -1267,10 +2029,15 @@ void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * v
     ix = (int) max(temp1, 2);
     iy = (int) max(temp2, 2);
     iz = (int) max(temp3, 2);
+ 
+    ep = 0.5 / qom *( u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
+
     calculateWeights(weight, x[i], y[i], z[i], ix, iy, iz, grid);
     scale(weight, q[i], 2, 2, 2);
     // rho
     EMf->addRho(weight, ix, iy, iz, ns);
+    if (ParticleID[i]==1)        
+      EMf->addRhotag(weight, ix, iy, iz, ns);
     // Jx
     eqValue(0.0, temp, 2, 2, 2);
     addscale(u[i], temp, weight, 2, 2, 2);
@@ -1283,6 +2050,18 @@ void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * v
     eqValue(0.0, temp, 2, 2, 2);
     addscale(w[i], temp, weight, 2, 2, 2);
     EMf->addJz(temp, ix, iy, iz, ns);
+    // EFx
+    eqValue(0.0, temp, 2, 2, 2);
+    addscale(u[i]*ep, temp, weight, 2, 2, 2);
+    EMf->addEFx(temp, ix, iy, iz, ns);
+    // EFy
+    eqValue(0.0, temp, 2, 2, 2);
+    addscale(v[i]*ep, temp, weight, 2, 2, 2);
+    EMf->addEFy(temp, ix, iy, iz, ns);
+    // EFz
+    eqValue(0.0, temp, 2, 2, 2);
+    addscale(w[i]*ep, temp, weight, 2, 2, 2);
+    EMf->addEFz(temp, ix, iy, iz, ns);
 
   }
   // communicate contribution from ghost cells 
@@ -1371,7 +2150,7 @@ void Particles3D::linear_perturbation(double deltaBoB, double kx, double ky, dou
 
           }
           if (TrackParticleID)
-            ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+            ParticleID[counter] = counter * (unsigned long ) pow(10.0, BirthRank[1]) + BirthRank[0];
           counter++;
         }
   nop = counter + 1;

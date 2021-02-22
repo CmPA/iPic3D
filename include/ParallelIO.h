@@ -21,7 +21,7 @@
 #include "Particles3Dcomm.h"
 #include "ComNodes3D.h"
 
-void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *col, VCtopology3D *vct, int cycle);
+void WriteFieldsH5hut(int nspec, bool writeext, Grid3DCU *grid, EMfields3D *EMf, Collective *col, VCtopology3D *vct, int cycle);
 void WritePartclH5hut(int nspec, Grid3DCU *grid, Particles3Dcomm *part, Collective *col, VCtopology3D *vct, int cycle);
 
 void ReadPartclH5hut(int nspec, Particles3Dcomm *part, Collective *col, VCtopology3D *vct, Grid3DCU *grid);

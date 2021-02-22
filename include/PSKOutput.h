@@ -321,6 +321,7 @@ public:
     rho -> number density
     rhos -> number densities for each species
     pressure -> pressure tensor for each species
+    energyflux -> energy flux EFx EFy EFz for each species
     position -> particle position (x,y)
     velocity -> particle velocity (u,v,w)
     q -> particle charge
@@ -545,6 +546,16 @@ public:
         this->output_adaptor.write("/moments/species_" + ii.str() + "/rho/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getRHOns());
       }
     }
+    // rhostag (number density for species s) tagged particles is written without ghost cells and defined in nodes
+    if (tag.find("rhostag", 0) != string::npos) {
+
+      for (int i = 0; i < ns; ++i) {
+        stringstream ii;
+        ii << i;
+        this->output_adaptor.write("/moments/species_" + ii.str() + "/rhotag/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getRHOnstag());
+      }
+    }
+
 
     // rho (number density ) is written without ghost cells and defined in nodes
     if (tag.find("rho", 0) != string::npos) {
@@ -563,6 +574,18 @@ public:
         this->output_adaptor.write("/moments/species_" + ii.str() + "/pZZ/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getpZZsn());
       }
     }
+
+    // energyflux for species s is written without ghost cells and defined in nodes
+    if (tag.find("energyflux", 0) != string::npos) {
+      for (int i = 0; i < ns; ++i) {
+        stringstream ii;
+        ii << i;
+        this->output_adaptor.write("/moments/species_" + ii.str() + "/EFx/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFxs());
+        this->output_adaptor.write("/moments/species_" + ii.str() + "/EFy/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFys());
+        this->output_adaptor.write("/moments/species_" + ii.str() + "/EFz/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFzs());
+      }
+    }
+
 
     // kinetic energy for species s (normalized on q)
     if (tag.find("k_energy", 0) != string::npos) {
@@ -673,6 +696,27 @@ public:
 
       }
     }
+//TestParticle ''position'' printing for sample!=0
+    else if (tag.find("testpos", 0) != string::npos & sample != 0) {
+      std::vector < double >X, Y, Z;
+      for (int i = 2; i < ns; ++i) {
+        stringstream ii;
+        ii << i;
+        for (int n = 0; n < _part[i]->getNOP(); n += sample) {
+          X.push_back(_part[i]->getX(n));
+          Y.push_back(_part[i]->getY(n));
+          Z.push_back(_part[i]->getZ(n));
+        }
+        this->output_adaptor.write("/particles/species_" + ii.str() + "/x/cycle_" + cc.str(), PSK::Dimens(X.size()), X);
+        this->output_adaptor.write("/particles/species_" + ii.str() + "/y/cycle_" + cc.str(), PSK::Dimens(Y.size()), Y);
+        this->output_adaptor.write("/particles/species_" + ii.str() + "/z/cycle_" + cc.str(), PSK::Dimens(Z.size()), Z);
+        X.clear();
+        Y.clear();
+        Z.clear();
+      }
+    }
+
+
 
 
     // Particle velocity
@@ -732,6 +776,27 @@ public:
 
       }
     }
+//TestParticle ''velocity'' printing for sample!=0
+    else if (tag.find("testvel", 0) != string::npos & sample != 0) {
+      std::vector < double >U, V, W;
+      for (int i = 2; i < ns; ++i) {
+        stringstream ii;
+        ii << i;
+        for (int n = 0; n < _part[i]->getNOP(); n += sample) {
+          U.push_back(_part[i]->getU(n));
+          V.push_back(_part[i]->getV(n));
+          W.push_back(_part[i]->getW(n));
+        }
+        this->output_adaptor.write("/particles/species_" + ii.str() + "/u/cycle_" + cc.str(), PSK::Dimens(U.size()), U);
+        this->output_adaptor.write("/particles/species_" + ii.str() + "/v/cycle_" + cc.str(), PSK::Dimens(V.size()), V);
+        this->output_adaptor.write("/particles/species_" + ii.str() + "/w/cycle_" + cc.str(), PSK::Dimens(W.size()), W);
+        U.clear();
+        V.clear();
+        W.clear();
+      }
+    }
+
+
     // Particle charge
     if (tag.find("q", 0) != string::npos & sample == 0) {
       for (int i = 0; i < ns; ++i) {
@@ -743,6 +808,19 @@ public:
     else if (tag.find("q", 0) != string::npos & sample != 0) {
       std::vector < double >Q;
       for (int i = 0; i < ns; ++i) {
+        stringstream ii;
+        ii << i;
+        for (int n = 0; n < _part[i]->getNOP(); n += sample) {
+          Q.push_back(_part[i]->getQ(n));
+        }
+        this->output_adaptor.write("/particles/species_" + ii.str() + "/q/cycle_" + cc.str(), PSK::Dimens(Q.size()), Q);
+        Q.clear();
+      }
+    }
+//TestParticle ''charge'' printing for sample!=0
+    else if (tag.find("testcharge", 0) != string::npos & sample != 0) {
+      std::vector < double >Q;
+      for (int i = 2; i < ns; ++i) {
         stringstream ii;
         ii << i;
         for (int n = 0; n < _part[i]->getNOP(); n += sample) {
@@ -783,6 +861,23 @@ public:
           cout << "Can't write particle ID for species " + ii.str() + " because TrackParticleID is = false " << endl;
       }
     }
+//TestParticle ''ID'' printing for sample!=0
+    else if (tag.find("testid", 0) != string::npos & sample != 0) {
+
+      for (int i = 2; i < ns; ++i) {
+        std::vector < long >ID;
+        stringstream ii;
+        ii << i;
+        if (_col->getTrackParticleID(i) == true) {
+          for (int n = 0; n < _part[i]->getNOP(); n += sample)
+            ID.push_back((long) _part[i]->getParticleID(n));
+          this->output_adaptor.write("/particles/species_" + ii.str() + "/ID/cycle_" + cc.str(), PSK::Dimens(ID.size()), ID);
+        }
+        else if (_vct->getCartesian_rank() == 0)
+          cout << "Can't write particle ID for species " + ii.str() + " because TrackParticleID is = false " << endl;
+      }
+    }
+
   }
 
 };

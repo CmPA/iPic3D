@@ -102,7 +102,7 @@ class Moments {
     Moments(int nx_, int ny_, int nz_, double invVOL_);
     ~Moments();
     void set_to_zero();
-    void addRho(double weight[][2][2], int X, int Y, int Z);
+    void addRho(double weight[][2][2], int X, int Y, int Z); 
     void addJx(double weight[][2][2], int X, int Y, int Z);
     void addJy(double weight[][2][2], int X, int Y, int Z);
     void addJz(double weight[][2][2], int X, int Y, int Z);
@@ -177,10 +177,18 @@ class EMfields3D                // :public Field
     void init(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! init beam */
     void initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col, double x_center, double y_center, double z_center, double radius);
+    /*! initialize KH test*/
+    void init_KH_test(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize KH MHD*/
+    void initShearFlow(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize KH MHD with FLR*/
+    void initShearFlowFLR(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge */
     void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize fields for magnetic shear */
+    void initMagneticShear(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with dipole-like tail without perturbation */
     void initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with no Perturbation */
@@ -221,6 +229,8 @@ class EMfields3D                // :public Field
     void calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! fix B on the boundary for gem challange */
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
+    /*! fix B on the boundary for shock case */
+    void fixBshock(Grid * grid, VirtualTopology3D * vct);
     /*! fix B on the boundary for gem challange */
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
 
@@ -246,6 +256,7 @@ class EMfields3D                // :public Field
     /*! Smoothing after the interpolation* */
     void smooth(double value, double ***vector, int type, Grid * grid, VirtualTopology3D * vct);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
+    // NOT IMPLEMENTED IN THE CODE (VOID FUNCTION)
     void smooth(double value, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
     /*! smooth the electric field */
     void smoothE(double value, VirtualTopology3D * vct, Collective *col);
@@ -256,12 +267,21 @@ class EMfields3D                // :public Field
     void addToSpeciesMoments(const Moments & in, int is);
     /*! add an amount of charge density to charge density field at node X,Y,Z */
     void addRho(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of tagged charge density to the tagged charge density field */
+    void addRhotag(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction X to current density field at node X,Y,Z */
     void addJx(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction Y to current density field at node X,Y,Z */
     void addJy(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
     void addJz(double weight[][2][2], int X, int Y, int Z, int is);
+
+    /*! add an amount of EF - direction X  at node X,Y,Z */
+    void addEFx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of EF - direction Y at node X,Y,Z */
+    void addEFy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of EF - direction Z at node X,Y,Z */
+    void addEFz(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! add an amount of pressure density - direction XX to current density field at node X,Y,Z */
     void addPxx(double weight[][2][2], int X, int Y, int Z, int is);
@@ -290,9 +310,12 @@ class EMfields3D                // :public Field
     void perfectConductorRightS(double ***vectorX, double ***vectorY, double ***vectorZ, int dir);
 
     /*! Calculate the sysceptibility tensor on the boundary */
-    void sustensorX(double **susxx, double **susxy, double **susxz, int N);
-    void sustensorY (double **susyx, double **susyy, double **susyz, int N);
-    void sustensorZ(double **suszx, double **suszy, double **suszz, int N);
+    void sustensorRightX(double **susxx, double **susyx, double **suszx);
+    void sustensorLeftX (double **susxx, double **susyx, double **suszx);
+    void sustensorRightY(double **susxy, double **susyy, double **suszy);
+    void sustensorLeftY (double **susxy, double **susyy, double **suszy);
+    void sustensorRightZ(double **susxz, double **susyz, double **suszz);
+    void sustensorLeftZ (double **susxz, double **susyz, double **suszz);
 
     /*! get Potential array */
     double ***getPHI();
@@ -301,18 +324,24 @@ class EMfields3D                // :public Field
     /*! get Electric field X component array */
     double ***getEx();
     /*! get Electric field X component cell array without the ghost cells */
+    double ***getExth();
+    /*! get Electric field th X component cell array without the ghost cells */
     double ***getExc();
     /*! get Electric Field component Y defined on node(indexX,indexY,indexZ) */
     double &getEy(int indexX, int indexY, int indexZ) const;
     /*! get Electric field Y component array */
     double ***getEy();
     /*! get Electric field Y component cell array without the ghost cells */
+    double ***getEyth();
+    /*! get Electric field th Y component cell array without the ghost cells */
     double ***getEyc();
     /*! get Electric Field component Z defined on node(indexX,indexY,indexZ) */
     double &getEz(int indexX, int indexY, int indexZ) const;
     /*! get Electric field Z component array */
     double ***getEz();
     /*! get Electric field Z component cell array without the ghost cells */
+    double ***getEzth();
+    /*! get Electric field th Z component cell array without the ghost cells */
     double ***getEzc();
     /*! get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
     double &getBx(int indexX, int indexY, int indexZ) const;
@@ -359,6 +388,10 @@ class EMfields3D                // :public Field
     /*! SPECIES: get density array on cells without the ghost cells */
     double ***getRHOcs(int is);
     double ***& getRHOcs(int is, int dummy);
+    /*! SPECIES: get tagged density array on nodes */
+    double ****getRHOnstag();
+    /*! SPECIES: get tagged density array on nodes */
+    double ***&getRHOnstag(int is);
 
     /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
     double &getBx_ext(int indexX, int indexY, int indexZ) const;
@@ -429,11 +462,33 @@ class EMfields3D                // :public Field
     double ***&getJys(int is);
     double ***&getJzs(int is);
 
+    
+    double ***&getPxxs(int is);
+    double ***&getPxys(int is);
+    double ***&getPxzs(int is);
+    double ***&getPyys(int is);
+    double ***&getPyzs(int is);
+    double ***&getPzzs(int is);
+
+    /*! SPECIES: get Energy Fluxes  */
+    double ***&getEFxs(int is);
+    double ****getEFxs();
+    double ***&getEFys(int is);
+    double ****getEFys();
+    double ***&getEFzs(int is);
+    double ****getEFzs();
+
+    double getJxcs(int i, int j, int k, int is);
+    double getJycs(int i, int j, int k, int is);
+    double getJzcs(int i, int j, int k, int is);
+
     /*! get the electric field energy */
     double getEenergy();
     /*! get the magnetic field energy */
     double getBenergy();
-
+    /*! get the bulk kinetic energy */
+    double getBulkEnergy(int is);
+    
 
     /*! print electromagnetic fields info */
     void print(void) const;
@@ -453,6 +508,10 @@ class EMfields3D                // :public Field
     double th;
     /*! Smoothing value */
     double Smooth;
+    /*! Dimension for smoothing */
+    int SmoothDim;
+    /*! number of smoothing cycles */
+    int nvolte;
     /*! delt = c*th*dt */
     double delt;
     /*! number of particles species */
@@ -463,9 +522,13 @@ class EMfields3D                // :public Field
     double B1x, B1y, B1z;
     /*! charge to mass ratio array for different species */
     double *qom;
+    /*! Thermal speeds */
+    double  *uth, *vth, *wth;
     /*! Boundary electron speed */
     double ue0, ve0, we0;
-
+    /*! proton drift speed */
+    double up0, vp0, wp0;
+   
     // KEEP IN MEMORY GUARD CELLS ARE INCLUDED
     /*! number of cells - X direction, including + 2 (guard cells) */
     int nxc;
@@ -569,6 +632,8 @@ class EMfields3D                // :public Field
     double ***rhoh;
     /*! SPECIES: charge density for each species, defined on nodes */
     double ****rhons;
+    /*! SPECIES: tagged charge density for each species, defined on nodes */
+    double ****rhonstag;
     /*! SPECIES: charge density for each species, defined on central points of the cell */
     double ****rhocs;
     /*! Current density component-X, defined on nodes */
@@ -589,6 +654,12 @@ class EMfields3D                // :public Field
     double ****Jys;
     /*! SPECIES: current density component-Z for species, defined on nodes */
     double ****Jzs;
+    /*! SPECIES: Energy Flux density component-X for species, defined on nodes */
+    double ****EFxs;
+    /*! SPECIES: Energy Flux density component-Y for species, defined on nodes */
+    double ****EFys;
+    /*! SPECIES: Energy Flux component-Z for species, defined on nodes */
+    double ****EFzs;
     /*! External magnetic field component-X, defined on nodes */
     double***  Bx_ext;
     /*! External magnetic field component-Y, defined on nodes */

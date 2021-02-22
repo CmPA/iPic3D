@@ -65,10 +65,13 @@ int c_Solver::Init(int argc, char **argv) {
     /* If using 'default' IO initialize fields depending on case */
     /* --------------------------------------------------------- */
     if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
+    else if (col->getCase()=="KH_test")   EMf->init_KH_test(vct,grid,col);
+    else if (col->getCase()=="KH_FLR")    EMf->initShearFlowFLR(vct,grid,col);
     else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
     else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
     else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
     else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+    else if (col->getCase()=="MagneticShear")    EMf->initMagneticShear(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -88,11 +91,13 @@ int c_Solver::Init(int argc, char **argv) {
   if (col->getSolInit()) {
     if (col->getPartInit()=="File") ReadPartclH5hut(ns, part, col, vct, grid);
     else {
-      if (myrank==0) cout << "WARNING: Particle drift velocity from ExB " << endl;
+      if (myrank==0) cout << "WARNING: Particle drift velocity from " << col->getPartInit() << endl;
       for (int i = 0; i < ns; i++){
         part[i].allocate(i, 0, col, vct, grid);
-        if (col->getPartInit()=="EixB") part[i].MaxwellianFromFields(grid, EMf, vct);
-        else                            part[i].maxwellian(grid, EMf, vct);
+        if      (col->getPartInit()=="ExB")            part[i].MaxwellianFromExB      (grid, EMf, vct);
+        else if (col->getPartInit()=="FromFieldFile")  part[i].MaxwellianFromFieldFile(grid, EMf, vct);
+        else if (col->getPartInit()=="FromFieldFileTestParticles")  part[i].MaxwellianFromFieldFileTestParticles(grid, EMf, vct);
+        else                                           part[i].maxwellian(grid, EMf, vct);
       }
     }
   }
@@ -105,11 +110,16 @@ int c_Solver::Init(int argc, char **argv) {
       // wave = new Planewave(col, EMf, grid, vct);
       // wave->Wave_Rotated(part); // Single Plane Wave
       for (int i = 0; i < ns; i++)
-        if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
-        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
-        else                                  part[i].maxwellian(grid, EMf, vct);
+        if      (col->getCase()=="ForceFree")       part[i].force_free(grid,EMf,vct);
+        else if (col->getCase()=="BATSRUS")         part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+        else if (col->getCase()=="KH_FLR")          part[i].initmaxwellianKHFLR(col,grid,EMf,vct);
+        else if (col->getCase()=="KH_test")         part[i].maxwellian_for_KH_tests(grid,EMf,vct);
+        else if (col->getCase()=="MagneticShear")   part[i].MagneticShear(grid,EMf,vct);
+        else if (col->getPartInit()=="gyromaxwellian") part[i].gyromaxwellian(col, grid, EMf, vct);
+        else                                        part[i].maxwellian(grid, EMf, vct);
 
     }
+
   }
 
   if (col->getWriteMethod() == "default") {
@@ -142,14 +152,17 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
+  MPI_Barrier( MPI_COMM_WORLD ) ;
+//  if (myrank == 0 ) {cout << "Sono qui 1" << endl;}
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
+  BulkEnergy = new double[ns];
   momentum = new double[ns];
   cq = SaveDirName + "/ConservedQuantities.txt";
-  if (myrank == 0) {
-    ofstream my_file(cq.c_str());
-    my_file.close();
-  }
+  //if (myrank == 0) {
+  //  ofstream my_file(cq.c_str());
+  //  my_file.close();
+  //}
   
   // // Distribution functions
   // nDistributionBins = 1000;
@@ -159,23 +172,60 @@ int c_Solver::Init(int argc, char **argv) {
   //   ofstream my_file(ds.c_str());
   //   my_file.close();
   // }
-  cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
-  // if(myrank==0){
-  ofstream my_file(cqsat.c_str(), fstream::binary);
-  nsat = 3;
-  for (int isat = 0; isat < nsat; isat++) {
-    for (int jsat = 0; jsat < nsat; jsat++) {
-      for (int ksat = 0; ksat < nsat; ksat++) {
-        int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
-        int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
-        int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
-        my_file << grid->getXC(index1, index2, index3) << "\t" << grid->getYC(index1, index2, index3) << "\t" << grid->getZC(index1, index2, index3) << endl;
-      }}}
-  my_file.close();
+
+  cqsat = SaveDirName + "/VirtualSatelliteTraces"+num_proc.str()+".txt";
+
+  //  if(myrank==0){
+  //ofstream my_file(cqsat.c_str(),ofstream::binary,ofstream::app);
+  ofstream my_file(cqsat.c_str(),ofstream::out); // ofstream:: delete existing files and opens new one, old data is lost
+  nsatx=3;
+  nsaty=3;
+  nsatz=3;
+  if(vct->getXLEN() == 1){
+  nsatx=1;
+  }
+  if(vct->getYLEN() == 1){
+  nsaty=1;
+  }
+  if(vct->getZLEN() == 1){
+  nsatz=1;
+  }
+
+//  MPI_Barrier( MPI_COMM_WORLD ) ;
+//  if (myrank == 0 ) {cout << "Sono qui 2" << endl;}
+  my_file << nsatx*nsaty*nsatz << "\t" <<nsatx << "\t" <<nsaty << "\t" <<nsatz << endl;
+  for (int isat=0; isat < nsatx; isat++){
+   for (int jsat=0; jsat < nsaty; jsat++){
+    for (int ksat=0; ksat < nsatz; ksat++){
+     int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+     int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+     int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
+     my_file <<  grid->getXC(index1,index2,index3) << "\t" << grid->getYC(index1,index2,index3) << "\t" << grid->getZC(index1,index2,index3) << endl;
+     }}}
+     my_file.close();
+
+//  cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
+//  if(myrank==0){
+//  ofstream my_file(cqsat.c_str(), fstream::binary);
+//  nsat = 3;
+//  for (int isat = 0; isat < nsat; isat++) {
+//    for (int jsat = 0; jsat < nsat; jsat++) {
+//     for (int ksat = 0; ksat < nsat; ksat++) {
+//        int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
+//        int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
+//        int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
+//        my_file << grid->getXC(index1, index2, index3) << "\t" << grid->getYC(index1, index2, index3) << "\t" << grid->getZC(index1, index2, index3) << endl;
+//         double xx[3] = {grid->getXC(index1, index2, index3), grid->getYC(index1, index2, index3), grid->getZC(index1, index2, index3)};
+//     my_file.write((char *) xx, sizeof(double));
+//   }}}
+// my_file.close();
 
   Qremoved = new double[ns];
 
   my_clock = new Timing(myrank);
+
+//  MPI_Barrier( MPI_COMM_WORLD ) ;
+//  if (myrank == 0 ) {cout << "Sono qui 3" << endl;}
 
   return 0;
 }
@@ -257,7 +307,9 @@ bool c_Solver::ParticlesMover() {
   for (int i = 0; i < ns; i++)  // move each species
   {
     // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-    mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
+     /// WARNING, FPucci, I have substituted the particle mover with the old one
+     //mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme 
+     mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme 
   }
   // timeTasks.end(TimeTasks::PARTICLES);
 
@@ -291,24 +343,21 @@ bool c_Solver::ParticlesMover() {
 
 void c_Solver::InjectBoundaryParticles(){
 
-    /* --------------------------------------- */
-    /* Remove particles from depopulation area */
-    /* --------------------------------------- */
+  for (int i=0; i < ns; i++) {
+    if (col->getRHOinject(i)>0.0){
 
-    if (col->getCase()=="Dipole") {
-      for (int i=0; i < ns; i++)
+      mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+
+      /* --------------------------------------- */
+      /* Remove particles from depopulation area */
+      /* --------------------------------------- */
+
+      if (col->getCase()=="Dipole") {
+        for (int i=0; i < ns; i++)
           Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
 
+      }
     }
-
-    /* ------------------------------------------------------------------------ */
-    /* Remove all old particles and inject new ones only in the injeciton faces */
-    /* ------------------------------------------------------------------------ */
-
-    for (int i=0; i < ns; i++)
-      if (col->getRHOinject(i)>0.0){
-        mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
-
   }
 
 }
@@ -318,7 +367,7 @@ void c_Solver::WriteRestart(int cycle) {
   if (cycle % restart_cycle == 0 && cycle != first_cycle) {
     if (col->getWriteMethod() != "h5hut") {
       // without ,0 add to restart file
-      writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0);
+      writeRESTART(SaveDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0);
     }
   }
 
@@ -333,13 +382,19 @@ void c_Solver::WriteConserved(int cycle) {
     TOTmomentum = 0.0;
     for (int is = 0; is < ns; is++) {
       Ke[is] = part[is].getKe();
+      BulkEnergy[is] = EMf->getBulkEnergy(is);
       TOTenergy += Ke[is];
       momentum[is] = part[is].getP();
       TOTmomentum += momentum[is];
     }
     if (myrank == 0) {
       ofstream my_file(cq.c_str(), fstream::app);
-      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      if(cycle == 0)my_file << "\t" << "\t" << "\t" << "Total_Energy" << "\t" << "Momentum" << "\t" << "Eenergy" << "\t" << "Benergy" << "\t" << "Kenergy" << "\t" << "Kenergy(species)" << "\t" << "BulkEnergy(species)" << endl;
+//      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      my_file << cycle << "\t" << "\t" << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy;
+      for (int is = 0; is < ns; is++) my_file << "\t" << Ke[is];
+      for (int is = 0; is < ns; is++) my_file << "\t" << BulkEnergy[is];
+      my_file << endl;
       my_file.close();
     }
     // // Velocity distribution
@@ -373,7 +428,7 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, false, grid, EMf,  col, vct, cycle);
     if (cycle%(col->getParticlesOutputCycle())==0 &&
         cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
@@ -381,45 +436,140 @@ void c_Solver::WriteOutput(int cycle) {
   else
   {
 
+//    MPI_Barrier(MPI_COMM_WORLD);
+//    if (myrank == 0) cout << "Siamo qui, adesso stampiamo i campi" << endl;
+
     // OUTPUT to large file, called proc**
     if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
+      output_mgr.output("Eall + Ball + rhos + rhostag + Jsall + pressure + energyflux", cycle);
       // Pressure tensor is available
       hdf5_agent.close();
     }
+    
     if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("position + velocity + q ", cycle, 1);
+      output_mgr.output("position + velocity + q + ID ", cycle, 1);
       hdf5_agent.close();
     }
+    else if (cycle % (col->getTestParticlesOutputCycle()) == 0 && col->getTestParticlesOutputCycle() > 0 ) {      
+      if (myrank==0) cout << "test particle writing" << endl; 
+      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+      output_mgr.output("testpos + testvel + testcharge + testid ", cycle, 1);
+      hdf5_agent.close();
+    }
+
+
+//    MPI_Barrier(MPI_COMM_WORLD);
+//    if (myrank == 0) cout << "Siamo qui, abbiamo stampato i campi e le particelle" << endl;
+
     // write the virtual satellite traces
 
-    if (ns > 2) {
-      ofstream my_file(cqsat.c_str(), fstream::app);
-      for (int isat = 0; isat < nsat; isat++) {
-        for (int jsat = 0; jsat < nsat; jsat++) {
-          for (int ksat = 0; ksat < nsat; ksat++) {
-            int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
-            int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
-            int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
-            my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
-            my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
-            my_file << EMf->getJxs(index1, index2, index3, 0) + EMf->getJxs(index1, index2, index3, 2) << "\t" << EMf->getJys(index1, index2, index3, 0) + EMf->getJys(index1, index2, index3, 2) << "\t" << EMf->getJzs(index1, index2, index3, 0) + EMf->getJzs(index1, index2, index3, 2) << "\t";
-            my_file << EMf->getJxs(index1, index2, index3, 1) + EMf->getJxs(index1, index2, index3, 3) << "\t" << EMf->getJys(index1, index2, index3, 1) + EMf->getJys(index1, index2, index3, 3) << "\t" << EMf->getJzs(index1, index2, index3, 1) + EMf->getJzs(index1, index2, index3, 3) << "\t";
-            my_file << EMf->getRHOns(index1, index2, index3, 0) + EMf->getRHOns(index1, index2, index3, 2) << "\t";
-            my_file << EMf->getRHOns(index1, index2, index3, 1) + EMf->getRHOns(index1, index2, index3, 3) << "\t";
-          }}}
-      my_file << endl;
-      my_file.close();
-    }
+      float time_counter = cycle;
+      float trace_counter = 0.0;
+      float outta = 0.0;
+      ofstream my_file(cqsat.c_str(),ofstream::app | ofstream::binary );
+		             for (int isat=0; isat < nsatx; isat++)
+			             for (int jsat=0; jsat < nsaty; jsat++)
+				             for (int ksat=0; ksat < nsatz; ksat++){
+			             	         int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+			             	         int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+			              	         int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
+			              		 trace_counter = trace_counter +1.0;
+				            	 my_file.write((char*)&time_counter,sizeof(float));
+				            	 my_file.write((char*)&trace_counter,sizeof(float));
+				            	 //my_file << time_counter << "\t" <<trace_counter << "\t";
+                                                 // write B
+				            	 outta = EMf->getBx(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+				            	 outta = EMf->getBy(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+				            	 outta = EMf->getBz(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+                                                 //write E
+				            	 outta = EMf->getEx(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+				            	 outta = EMf->getEy(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+				            	 outta = EMf->getEz(index1,index2,index3);
+				            	 my_file.write((char*)&outta,sizeof(float));
+				            	 //my_file << outta << "\t";
+
+              			            	 for (int is=0;is < 2; is++){
+				            		 outta = EMf->getRHOns(index1,index2,index3,is);
+				            		 if(ns>3)outta += EMf->getRHOns(index1,index2,index3,is+2);
+				            		 my_file.write((char*)&outta,sizeof(float));
+					            	 //my_file << outta << "\t";
+				            		 outta = EMf->getJxs(index1,index2,index3,is);
+				            		 if(ns>3)outta += EMf->getJxs(index1,index2,index3,is+2);
+				            		 my_file.write((char*)&outta,sizeof(float));
+					            	 //my_file << outta << "\t";
+				            		 outta = EMf->getJys(index1,index2,index3,is);
+				            		 if(ns>3)outta += EMf->getJys(index1,index2,index3,is+2);
+				            		 my_file.write((char*)&outta,sizeof(float));
+					            	 //my_file << outta << "\t";
+				            		 outta = EMf->getJzs(index1,index2,index3,is);
+				            		 if(ns>3)outta += EMf->getJzs(index1,index2,index3,is+2);
+				            		 my_file.write((char*)&outta,sizeof(float));
+				            		 //my_file << outta << "\t"
+				            	 }
+				            	 //my_file  << endl;
+				             }
+			         my_file.close();
+
+
+// done with VIRTUAL SATELLITES OUPUT
+//
+//
+// OLD OUTPUT
+//    if (ns > 2) {
+//    ofstream my_file(cqsat.c_str(), fstream::app);
+//      for (int isat = 0; isat < nsat; isat++) {
+///        for (int jsat = 0; jsat < nsat; jsat++) {
+//          for (int ksat = 0; ksat < nsat; ksat++) {
+//            int index1 = 1 + isat * nx0 / nsat + nx0 / nsat / 2;
+//            int index2 = 1 + jsat * ny0 / nsat + ny0 / nsat / 2;
+//            int index3 = 1 + ksat * nz0 / nsat + nz0 / nsat / 2;
+//            my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
+//            my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
+//           for (int is = 0; is < ns; is++){ 
+//                  my_file << EMf->getJxs(index1, index2, index3, is) << "\t" <<  EMf->getJys(index1, index2, index3, is) << "\t" <<  EMf->getJzs(index1, index2, index3, is) << "\t" ;
+//                  }
+//            for (int is = 0; is < ns; is++){ 
+//                  my_file << EMf->getRHOns(index1, index2, index3, is) << "\t" ;
+//            } 
+//            my_file << EMf->getJxs(index1, index2, index3, 0) + EMf->getJxs(index1, index2, index3, 2) << "\t" << EMf->getJys(index1, index2, index3, 0) + EMf->getJys(index1, index2, index3, 2) << "\t" << EMf->getJzs(index1, index2, index3, 0) + EMf->getJzs(index1, index2, index3, 2) << "\t";
+//            my_file << EMf->getJxs(index1, index2, index3, 1) + EMf->getJxs(index1, index2, index3, 3) << "\t" << EMf->getJys(index1, index2, index3, 1) + EMf->getJys(index1, index2, index3, 3) << "\t" << EMf->getJzs(index1, index2, index3, 1) + EMf->getJzs(index1, index2, index3, 3) << "\t";
+//            my_file << EMf->getRHOns(index1, index2, index3, 0) + EMf->getRHOns(index1, index2, index3, 2) << "\t";
+//            my_file << EMf->getRHOns(index1, index2, index3, 1) + EMf->getRHOns(index1, index2, index3, 3) << "\t";
+//          }}}
+//      my_file << endl;
+//      my_file.close();
+//    }
+
   }
+  if (col->getBlendedWriteMethod()=="yes") {
+
+    /* -------------------------------------------- */
+    /* Parallel HDF5 output using the H5hut library */
+    /* -------------------------------------------- */
+
+    if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, false, grid, EMf,  col, vct, cycle);
+    // if (cycle%(col->getParticlesOutputCycle())==0 &&
+    // cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+  }
+
 }
 
 void c_Solver::Finalize() {
   if (mem_avail == 0) {          // write the restart only if the simulation finished succesfully
     if (col->getWriteMethod() != "h5hut") {
-      writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
+      writeRESTART(SaveDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
     }
   }
 
@@ -428,6 +578,7 @@ void c_Solver::Finalize() {
 
   // deallocate
   delete[]Ke;
+  delete[]BulkEnergy;
   delete[]momentum;
   // close MPI
   mpi->finalize_mpi();

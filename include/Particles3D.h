@@ -36,8 +36,22 @@ class Particles3D:public Particles3Dcomm {
     void constantVelocity(double vel, int dim, Grid * grid, Field * EMf);
     /** Initial condition: uniform in space and maxwellian in velocity */
     void maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: uniform in space and gyrotropic maxwellian in velocity */
+    void gyromaxwellian(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition for Alfven waves in magnetic shear*/
+    void MagneticShear(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: uniform in space and maxwellian in velocity plus Trackparticle ID for rho tag in KH */
+    void maxwellian_for_KH_tests(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: MHD equilibrium  KH */
+    void initmaxwellianKH(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: 2Fluids equilibrium KH with FLR corrections */
+    void initmaxwellianKHFLR(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
-    void MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    void MaxwellianFromExB(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: from field values in the restart file */
+    void MaxwellianFromFieldFile(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** Initial condition: drifting maxwellians computed from current in field file and test particle ID definition */
+    void MaxwellianFromFieldFileTestParticles( Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Force Free initialization (JxB=0) for particles */
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity */
@@ -79,7 +93,7 @@ class Particles3D:public Particles3Dcomm {
     /*! Initial condition: given a fluid model (BATSRUS) */
     void MaxwellianFromFluid(Grid* grid,Field* EMf,VirtualTopology3D* vct,Collective *col, int is);
     /*! Initiate dist. func. for a single cell form a fluid model (BATSRUS) */
-    void MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long* ParticleID);
+    void MaxwellianFromFluidCell(Grid* grid, Collective *col, int is, int i, int j, int k, int &ip, double *x, double *y, double *z, double *q, double *vx, double *vy, double *vz, unsigned long * ParticleID);
 
 };
 

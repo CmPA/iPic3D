@@ -9,8 +9,8 @@ RestartDirName = data     # Restart directory (for WriteMethod=default)
 
 Case              = GEM                             # Case [ GEM | Dipole | ... ]
 FieldsInit        = ./data/Initial-Fields_000000.h5 # Initial fields h5 file
-PartInit          = Maxwell                         # Initial particles [ Maxwell | File ]
-WriteMethod       = default                         # Output method [ default | Parallel ]
+PartInit          = Fromfluid                       # Initial particles [ Maxwell | File ]
+WriteMethod       = h5hut                           # Output method [ default | Parallel ]
 PoissonCorrection = yes                             # Poisson correction [ yes | no ]
 SimulationName    = GEM                             # Simulation name for the output
 

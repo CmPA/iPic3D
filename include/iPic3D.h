@@ -57,6 +57,7 @@ namespace iPic3D {
     EMfields3D    *EMf;
     Particles3D   *part;
     double        *Ke;
+    double        *BulkEnergy;
     double        *momentum;
     double        *Qremoved;
     unsigned long *VelocityDist;
@@ -80,6 +81,9 @@ namespace iPic3D {
     int myrank;
     int mem_avail;
     int nsat;
+    int nsatx;
+    int nsaty;
+    int nsatz;
     int nx0;
     int ny0;
     int nz0;

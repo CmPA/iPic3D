@@ -16,6 +16,7 @@ int main(int argc, char **argv) {
   KCode.Init(argc, argv);
   KCode.InjectBoundaryParticles();
   KCode.GatherMoments();
+ 
 
   /* ------------ */
   /* 1- Main loop */

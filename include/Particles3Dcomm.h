@@ -135,7 +135,7 @@ public:
   /** get q array for all the particles by reference */
   double *& getQref();
   /** get the ID array   */
-  unsigned long *getParticleIDall() const;
+  unsigned long  *getParticleIDall() const;
   /** get X-position of particle with label indexPart */
   double getX(long long indexPart) const;
   /** get Y-position of particle with label indexPart */
@@ -149,7 +149,7 @@ public:
   /** get w (Z-velocity) of particle with label indexPart */
   double getW(long long indexPart) const;
   /** get ID of particle with label indexPart */
-  unsigned long getParticleID(long long indexPart) const;
+  unsigned long  getParticleID(long long indexPart) const;
   /**get charge of particle with label indexPart */
   double getQ(long long indexPart) const;
   /** get charge of array for ID particles */
@@ -191,6 +191,18 @@ protected:
   int npcelz;
   /** charge to mass ratio */
   double qom;
+  /** B0x for magnetic shear */
+  double B0x_MS;
+  /** vthp for magnetic shear */
+  double vthp_MS;
+  /** h for magnetic shear */
+  double h_MS;
+  /** r for magnetic shear */
+  double r_MS;
+  /** a for magnetic shear */
+  double a_MS;
+  /** mi/me for magnetic shear */
+  double mime;
   /** recon thick */
   double delta;
   /** thermal velocity  - Direction X*/
@@ -220,7 +232,7 @@ protected:
   /** TrackParticleID */
   bool TrackParticleID;
   /** ParticleID */
-  unsigned long *ParticleID;
+  unsigned long  *ParticleID;
   /** rank of processor in which particle is created (for ID) */
   int BirthRank[2];
   /** number of variables to be stored in buffer for communication for each particle  */

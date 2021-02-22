@@ -91,6 +91,14 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   rhoINIT   = col->getRHOinit(species);
   rhoINJECT = col->getRHOinject(species);
 
+  // Parameters for magnetic shear //
+  B0x_MS  = col->getB0x();
+  vthp_MS  = col->getUth(1);
+  h_MS = col->getH();   
+  r_MS = col->getR();
+  a_MS = col->getA();
+  mime = fabs(col->getQOM(0));
+  //
   qom = col->getQOM(species);
   uth = col->getUth(species);
   vth = col->getVth(species);
@@ -158,16 +166,17 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   q = new double[npmax];
   // ID
   if (TrackParticleID) {
-    ParticleID = new unsigned long[npmax];
+    ParticleID = new unsigned long  [npmax];
     BirthRank[0] = vct->getCartesian_rank();
     if (vct->getNprocs() > 1)
       BirthRank[1] = (int) ceil(log10((double) (vct->getNprocs())));  // Number of digits needed for # of process in ID
     else
       BirthRank[1] = 1;
     if (BirthRank[1] + (int) ceil(log10((double) (npmax))) > 10 && BirthRank[0] == 0) {
-      cerr << "Error: can't Track particles in Particles3Dcomm::allocate" << endl;
-      cerr << "Unsigned long 'ParticleID' cannot store all the particles" << endl;
-      return;
+//      cerr << "Error: can't Track particles in Particles3Dcomm::allocate" << endl; 
+//      cerr << "Unsigned long 'ParticleID' cannot store all the particles" << endl;
+//      return;
+//      MODIFICA AL CHECK SU ParticleID IMPORTANTE 
     }
   }
   // BUFFERS
@@ -268,7 +277,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     status = H5Dclose(dataset_id);
     // ID 
     if (TrackParticleID) {
-      // herr_t (*old_func)(void*); // HDF 1.6
+       // herr_t (*old_func)(void*); // HDF 1.6
       H5E_auto2_t old_func;      // HDF 1.8.8
       void *old_client_data;
       H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8.8
@@ -277,15 +286,20 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
       H5Eset_auto2(H5E_DEFAULT, 0, 0); // HDF 1.8
       name_dataset = "/particles/species_" + species_name.str() + "/ID/cycle_0";
       dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-
       // H5Eset_auto(old_func, old_client_data); // HDF 1.6
       H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data);
-      if (dataset_id > 0)
-        status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID);
-      else {
-        for (register long long counter = 0; counter < nop; counter++)
-          ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
-      }
+       if (dataset_id > 0){
+         if (vct -> getCartesian_rank() == 0){
+         cout << "READING PARTICLE ID" << endl;}
+         status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID);
+         status = H5Dclose(dataset_id);}
+       else {
+         if (vct -> getCartesian_rank() == 0){
+         cout << "ASSIGNING PARTICLE ID" << endl;}
+         for (register long long counter = 0; counter < nop; counter++){
+           ParticleID[counter] = counter * (unsigned long ) pow(10.0, BirthRank[1]) + BirthRank[0];}
+         status = H5Dclose(dataset_id);
+       }
     }
     // close the hdf file
     status = H5Fclose(file_id);
@@ -468,8 +482,12 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       //weight[1][0][1] = q[i] * xi[1] * eta[0] * zeta[1] * invVOL;
       //weight[1][1][0] = q[i] * xi[1] * eta[1] * zeta[0] * invVOL;
       //weight[1][1][1] = q[i] * xi[1] * eta[1] * zeta[1] * invVOL;
+
       // add charge density
       EMf->addRho(weight, ix, iy, iz, ns);
+      // add tagged charge density
+      if (ParticleID[i] == 1)
+             EMf->addRhotag(weight, ix, iy, iz, ns);
       // add current density - X
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
@@ -488,6 +506,24 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
       EMf->addJz(temp, ix, iy, iz, ns);
+      // add energy flux density - X
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = u[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+      EMf->addEFx(temp, ix, iy, iz, ns);
+      // add energy flux density - Y
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = v[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+      EMf->addEFy(temp, ix, iy, iz, ns);
+      // add energy flux density - Z
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = w[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+      EMf->addEFz(temp, ix, iy, iz, ns);
       // Pxx - add pressure tensor
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
@@ -989,7 +1025,7 @@ double *Particles3Dcomm::getWall()  const {
   return (w);
 }
 /**get ID of particle with label indexPart */
-unsigned long *Particles3Dcomm::getParticleIDall()  const {
+unsigned long  *Particles3Dcomm::getParticleIDall()  const {
   return (ParticleID);
 }
 /**get charge of particle with label indexPart */
@@ -1049,7 +1085,7 @@ double Particles3Dcomm::getW(long long indexPart)  const {
   return (w[indexPart]);
 }
 /**get ID of particle with label indexPart */
-unsigned long Particles3Dcomm::getParticleID(long long indexPart)  const {
+unsigned long  Particles3Dcomm::getParticleID(long long indexPart)  const {
   return (ParticleID[indexPart]);
 }
 /**get charge of particle with label indexPart */
