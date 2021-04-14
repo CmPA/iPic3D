@@ -26,6 +26,8 @@
 #include "BCStructure.h"
 
 #include "EBox.h"
+
+//#include "OutputChunks.h"
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -168,7 +170,12 @@ inline void Moments::set_to_zero() {
 
 class EMfields3D                // :public Field
 {
+
+  
   public:
+
+  friend class OutputChunks;
+  
     /*! constructor */
     EMfields3D(Collective * col, Grid * grid);
     /*! destructor */

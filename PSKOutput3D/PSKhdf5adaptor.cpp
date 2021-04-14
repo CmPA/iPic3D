@@ -707,7 +707,95 @@ void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, 
     throw e;
   }
 }
+/*** - chunks ***/
+void HDF5OutputAdaptor::write_chunk(const std::string & objname, const Dimens dimens, double ***d_array, int Xstart, int Ystart, int Zstart) {
+  // in this case, ns is the sampling point
+  if (dimens.size() != 3) {
+    PSK::OutputException e("Dimens size not 3 for object " + objname, "HDF5OutputAdaptor::write_chunk(double*** array)");
+    throw e;
+  }
 
+  try {
+    int nels = dimens.nels();
+    double *d_array_p = new double[nels];
+    const int di = dimens[0];
+    const int dj = dimens[1];
+
+
+    const int dk = dimens[2];
+    const int djk = dk * dj;
+    for (int i = 0; i < di; ++i)
+      for (int j = 0; j < dj; ++j)
+        for (int k = 0; k < dk; ++k) {
+	  // this was printing fields, getting as input nx-2, ny-2, nz-2
+          /*if (dk != 1)
+            d_array_p[i * djk + j * dk + k] = d_array[i + 1][j + 1][k + 1]; // I am not writing ghost cells
+          else if (dj != 1)
+            d_array_p[i * djk + j * dk] = d_array[i + 1][j + 1][0];
+          else
+	  d_array_p[i * djk + j * dk] = d_array[i + 1][0][0];*/
+
+	  if (dk != 1)
+            d_array_p[i * djk + j * dk + k] = d_array[Xstart+i][Ystart+j][Zstart+k]; // here there are no ghost cells
+          else if (dj != 1)
+            d_array_p[i * djk + j * dk] = d_array[Xstart+i][Ystart+j][0];
+          else
+            d_array_p[i * djk + j * dk] = d_array[Xstart+i][0][0];
+        }
+    write(objname, dimens, d_array_p);
+    delete[]d_array_p;
+  }
+  catch(PSK::Exception & e) {
+    e.push("In HDF5OutputAdaptor::write(double*** array)");
+    throw e;
+  }
+}
+void HDF5OutputAdaptor::write_chunk(const std::string & objname, const Dimens dimens, int ns, double ****d_array, int Xstart, int Ystart, int Zstart) {
+  if (dimens.size() != 3) {
+    PSK::OutputException e("Dimens size not 3 for object " + objname, "HDF5OutputAdaptor::write(double**** array)");
+    throw e;
+  }
+
+  try {
+    int nels = dimens.nels();
+    double *d_array_p = new double[nels];
+    const int di = dimens[0];
+    const int dj = dimens[1];
+
+
+    const int dk = dimens[2];
+    const int djk = dk * dj;
+    // this the original one for moments, w/o ghost cells, with nx-2, ny-2, nz-2 as inputs
+    /*for (int i = 0; i < di; ++i) 
+      for (int j = 0; j < dj; ++j)
+        for (int k = 0; k < dk; ++k) {
+          if (dk != 1)
+            d_array_p[i * djk + j * dk + k] = d_array[ns][i + 1][j + 1][k + 1]; // I am not writing ghost cells
+          else if (dj != 1)
+            d_array_p[i * djk + j * dk] = d_array[ns][i + 1][j + 1][0];
+          else
+            d_array_p[i * djk + j * dk] = d_array[ns][i + 1][0][0];
+	    }*/
+    for (int i = 0; i < di; ++i) 
+      for (int j = 0; j < dj; ++j)
+        for (int k = 0; k < dk; ++k) {
+          if (dk != 1)
+            d_array_p[i * djk + j * dk + k] = d_array[ns][Xstart+i ][Ystart+j ][Zstart+k ]; // I am not writing ghost cells
+          else if (dj != 1)
+            d_array_p[i * djk + j * dk] = d_array[ns][Xstart+i ][Ystart+j ][0];
+          else
+            d_array_p[i * djk + j * dk] = d_array[ns][Xstart+i ][0][0];
+	}
+    write(objname, dimens, d_array_p);
+    delete[]d_array_p;
+  }
+  catch(PSK::Exception & e) {
+    e.push("In HDF5OutputAdaptor::write(double**** array)");
+    throw e;
+  }
+}
+
+/*** - end chunks ***/
 void HDF5OutputAdaptor::write(const std::string & objname, const Dimens dimens, double **d_array) {
   if (dimens.size() != 2) {
     PSK::OutputException e("Dimens size not 2 for object " + objname, "HDF5OutputAdaptor::write(double** array)");

@@ -5,7 +5,7 @@ using namespace iPic3D;
 
 int c_Solver::Init(int argc, char **argv) {
   // initialize MPI environment
-  // nprocs = number of processors
+  // nproOBcs = number of processors
   // myrank = rank of tha process*/
   mpi = new MPIdata(&argc, &argv);
   nprocs = mpi->nprocs;
@@ -138,11 +138,21 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
+
+  /// initialization of OutputChunks (donw before setting up printing methods)
+  outputChunk = new OutputChunks(col, grid);
+  
+  ///
+
   if (col->getWriteMethod() == "default") {
     // Initialize the output (simulation results and restart file)
     // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
     // myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent; // Create an Output Agent for HDF5 output
     hdf5_agent.set_simulation_pointers(EMf, grid, vct, mpi, col);
+    if (outputChunk->PrintingChunks){
+      // add the outputChunks simulation pointer
+      hdf5_agent.set_OutputChunks_simulation_pointer(outputChunk);
+    }
     for (int i = 0; i < ns; ++i)
       hdf5_agent.set_simulation_pointers_part(&part[i]);
     output_mgr.push_back(&hdf5_agent);  // Add the HDF5 output agent to the Output Manager's list
@@ -257,7 +267,14 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }// end if (WriteVDF_xyz)
 
+  if (outputChunk->PrintingChunks){ // here read if to do this
 
+    //num_proc << myrank; 
+    hdf5_agent.open(SaveDirName + "/Chunks_"+ num_proc.str() + ".hdf");
+    output_mgr.output("printInfoCh", 0);
+    hdf5_agent.close();
+  }
+  
   return 0;
 }
 
@@ -567,6 +584,20 @@ void c_Solver::WriteConserved(int cycle) {
   //  }
   //}
 }
+
+void c_Solver::WriteChunks(int cycle) {
+
+  if (outputChunk->PrintingChunks){
+    // packs the field chunks                                                
+  //outputChunk->PackChunks(EMf);                                 
+  //cout << "End of PackChunks" << endl;             
+  // and now the print 
+    hdf5_agent.open_append(SaveDirName + "/Chunks_"+ num_proc.str() + ".hdf");
+    output_mgr.output("Chunks", cycle);
+    hdf5_agent.close();
+  }
+}
+
 
 void c_Solver::WriteOutput(int cycle) {
 

@@ -57,6 +57,11 @@ namespace PSK {
 
     void write(const std::string & objname, const Dimens dimens, const int i, double ***d_array);
 
+    // chunks
+    // chunks do not have ghost cells
+    void write_chunk(const std::string & objname, const Dimens dimens, double ***d_array, int Xstart, int Ystart, int Zstart);
+    void write_chunk(const std::string & objname, const Dimens dimens, int ns, double ****d_array, int Xstart, int Ystart, int Zstart);
+
   };
 
 }                               // namespace

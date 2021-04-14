@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
   
 
   KCode.WriteConserved(0);
-  
+  KCode.WriteChunks(0);
   /* ------------ */
   /* 1- Main loop */
   /* ------------ */
@@ -51,6 +51,7 @@ int main(int argc, char **argv) {
     KCode.WriteConserved(i);
     KCode.WriteRestart(i);
 
+    KCode.WriteChunks(i);
   }
 
   KCode.Finalize();

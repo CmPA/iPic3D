@@ -1,4 +1,4 @@
-/*******************************************************************************************
+/****************A***************************************************************************
   PSKOutput.h  -  Framework classes for PARSEK output
   -------------------
 developers: D. Burgess, June/July 2006
@@ -20,6 +20,7 @@ developers: D. Burgess, June/July 2006
 #include "Collective.h"
 #include "VCtopology3D.h"
 #include "MPIdata.h"
+#include "OutputChunks.h"
 
 using std::string;
 using std::stringstream;
@@ -283,6 +284,7 @@ template < class Toa > class myOutputAgent:public PSK::OutputAgent < Toa > {
   VCtopology3D *_vct;
   MPIdata *_mpi;
   Collective *_col;
+  OutputChunks *_ouputChunks;
   int ns;
   // std::vector<Particles1DX*> _part;
   std::vector < Particles * >_part;
@@ -303,6 +305,9 @@ public:
     _part.push_back(part);
   }
 
+  void set_OutputChunks_simulation_pointer(OutputChunks * ouputChunks){
+    _ouputChunks= ouputChunks;
+  }
 
   /** method to write on disk. Acceptable tags are:
 
@@ -639,6 +644,91 @@ public:
       this->output_adaptor.write("/energy/electric/cycle_" + cc.str(), E_en);
     }
 
+    // OutputChunks                                                                                                                                                                                     
+    if (tag.find("printInfoCh", 0) != string::npos ) {
+      
+      // these are values that I need to reconstruct the chunks
+      // dx, dy, dz
+      this->output_adaptor.write("dx",  _ouputChunks->get_dx());
+      this->output_adaptor.write("dy",  _ouputChunks->get_dy());
+      this->output_adaptor.write("dz",  _ouputChunks->get_dz());
+
+      // chunk dimensions, in nodes
+      this->output_adaptor.write("NXSampling",  _ouputChunks->get_NXSampling());
+      this->output_adaptor.write("NYSampling",  _ouputChunks->get_NYSampling());
+      this->output_adaptor.write("NZSampling",  _ouputChunks->get_NZSampling());
+
+            
+      for (int s=0; s< _ouputChunks->get_NSampling(); s++){
+	        
+	stringstream sspp; // this is the sampling point
+
+	sspp <<s;
+	// starting index of the chunk
+        this->output_adaptor.write("Chunk_" + sspp.str() +"/X_index", _ouputChunks->get_X_index(s));
+        this->output_adaptor.write("Chunk_" + sspp.str() +"/Y_index", _ouputChunks->get_Y_index(s));
+        this->output_adaptor.write("Chunk_" + sspp.str() +"/Z_index", _ouputChunks->get_Z_index(s));
+	// starting coordinate of the chunk
+	this->output_adaptor.write("Chunk_" + sspp.str() +"/X_Coord_first", _ouputChunks->get_X_Coord_first(s));
+        this->output_adaptor.write("Chunk_" + sspp.str() +"/Y_Coord_first", _ouputChunks->get_Y_Coord_first(s));
+	this->output_adaptor.write("Chunk_" + sspp.str() +"/Z_Coord_first", _ouputChunks->get_Z_Coord_first(s));
+	
+      } // end for
+      
+    } // end if
+
+    if (tag.find("Chunks", 0) != string::npos ) {
+
+      for (int s=0; s< _ouputChunks->get_NSampling(); s++){
+	stringstream sspp;
+
+        sspp <<s;
+
+	int NX_size= _ouputChunks->get_NXSampling();
+	int Ny_size= _ouputChunks->get_NYSampling();
+	int Nz_size= _ouputChunks->get_NZSampling();
+
+	int Xstart= _ouputChunks->get_X_index(s);
+	int Ystart= _ouputChunks->get_Y_index(s);
+	int Zstart= _ouputChunks->get_Z_index(s);
+
+	// write_chunk is in PSKhdf5adaptor.cpp
+	this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/Ex/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), _field->getEx(),  Xstart, Ystart, Zstart);
+	this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/Ey/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), _field->getEy(),  Xstart, Ystart, Zstart);	
+	this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/Ez/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), _field->getEz(),  Xstart, Ystart, Zstart);
+
+	this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/Bx/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), _field->getBx(),  Xstart, Ystart, Zstart);
+	this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/By/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), _field->getBy(),  Xstart, Ystart, Zstart);	
+	this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/Bz/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), _field->getBz(),  Xstart, Ystart, Zstart);
+
+	
+	for (int is=0; is< ns; is ++){
+	  stringstream is_ss;
+	  is_ss << is;
+	  //write_chunk(const std::string & objname, const Dimens dimens, int ns, double ****d_array, int Xstart, int Ystart, int Zstart)
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/rhos/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getRHOns(), Xstart, Ystart, Zstart);
+	  
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/Jxs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getJxs(), Xstart, Ystart, Zstart);
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/Jys/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getJys(), Xstart, Ystart, Zstart);
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/Jzs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getJzs(), Xstart, Ystart, Zstart);
+
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/pXXs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getpXXsn(), Xstart, Ystart, Zstart);
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/pXYs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getpXYsn(), Xstart, Ystart, Zstart);
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/pXZs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getpXZsn(), Xstart, Ystart, Zstart);
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/pYYs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getpYYsn(), Xstart, Ystart, Zstart);
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/pYZs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getpYZsn(), Xstart, Ystart, Zstart);
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/pZZs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getpZZsn(), Xstart, Ystart, Zstart);
+
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/EFxs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getEFxs(), Xstart, Ystart, Zstart);
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/EFys/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getEFys(), Xstart, Ystart, Zstart);
+	  this->output_adaptor.write_chunk("Chunk_" + sspp.str() + "/sp_" + is_ss.str()  +"/EFzs/cycle_" + cc.str(), PSK::Dimens(NX_size, Ny_size, Nz_size), is, _field->getEFzs(), Xstart, Ystart, Zstart);
+	  
+	} // end species cycle
+	
+      }// end sampling point cycle
+      cout << "end print chunk" << endl;
+    }// end if -- print chunk
+    
   }
 
   void output(const string & tag, int cycle, int sample) {
@@ -815,8 +905,13 @@ public:
           cout << "Can't write particle ID for species " + ii.str() + " because TrackParticleID is = false " << endl;
       }
     }
+
+
   }
 
+  
+
+  
 };
 
 #endif // _PSK_OUTPUT_H_

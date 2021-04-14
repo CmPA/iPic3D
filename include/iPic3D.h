@@ -17,6 +17,7 @@
 #include "ParallelIO.h"
 
 #include "EBox.h"
+#include "OutputChunks.h"
 
 #include <iostream>
 #include <fstream>
@@ -47,6 +48,8 @@ namespace iPic3D {
     void UpdateCycleInfo(int cycle);
     void Finalize();
 
+    void WriteChunks(int cycle);
+    
     inline int FirstCycle();
     inline int LastCycle();
     inline int get_myrank();
@@ -74,6 +77,9 @@ namespace iPic3D {
     Timing        *my_clock;
 
     EBox          *ebox;
+
+    OutputChunks  *outputChunk;
+    
     PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
     myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent;  // Create an Output Agent for HDF5 output
 
