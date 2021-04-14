@@ -15,9 +15,9 @@ OutputChunks::OutputChunks(Collective * col, Grid * grid){
   
   // hard-coded, for now
 
-  PrintingChunks= true; // this should be read from inputfile
+  //PrintingChunks= true; // this should be read from inputfile
 
-  //PrintingChunks= false;  // this should be read from inputfile
+  PrintingChunks= false;  // this should be read from inputfile
   
   NSampling= 5;  
 

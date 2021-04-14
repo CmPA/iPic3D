@@ -288,6 +288,7 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
+	      
               u[counter] = u0 + uth * prob * cos(theta);
               // v
               v[counter] = v0 + vth * prob * sin(theta);
@@ -2322,9 +2323,10 @@ double Particles3D::deleteParticlesInsideSphere(double R, double x_center, doubl
 
 /** Maxellian random velocity and uniform spatial distribution 
  double periodic, current sign switched in the two half planes*/
+// this version is buggy for some reason; use DoubleGEM; pay attention to the sign of Jz
 void Particles3D::maxwellian_HarrisDoublePeriodic(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
-  /* initialize random generator with different seed on different processor */
+  // initialize random generator with different seed on different processor 
   srand(vct->getCartesian_rank() + 2);
 
   double harvest;
@@ -2352,17 +2354,17 @@ void Particles3D::maxwellian_HarrisDoublePeriodic(Grid * grid, Field * EMf, Virt
 
 	      shaperz= 1.0;
 	      shapery= 1.0 ;
-              shaperz= tanh((grid->getYN(i, j, k) - Ly/2)/delta) ;
-              //if (y[counter] < Ly/2) {
-              //   shaperz = -1;
-              //   if (vct->getCartesian_rank() == 0)
-              //   cout << "*** shaperz = -1 ***" << endl;
-              //}
-              //else {
-              //    shaperz = 1;
-              //    if (vct->getCartesian_rank() == 0)
-              //    cout << "*** shaperz = 1 ***" << endl;
-              //}
+              //shaperz= tanh((grid->getYN(i, j, k) - Ly/2)/delta) ;
+              if (y[counter] < Ly/2) {
+                 shaperz = -1;
+                 //if (vct->getCartesian_rank() == 0)
+                 //cout << "*** shaperz = -1 ***" << endl;
+              }
+              else {
+                  shaperz = 1;
+                  //if (vct->getCartesian_rank() == 0)
+                  //cout << "*** shaperz = 1 ***" << endl;
+              }
 
 	      flvx =u0*shaperx;
 	      flvy =v0*shapery;
@@ -2378,15 +2380,77 @@ void Particles3D::maxwellian_HarrisDoublePeriodic(Grid * grid, Field * EMf, Virt
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
               w[counter] = flvz + wth * prob * cos(theta);
-              if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
-
+              //if (TrackParticleID)
+              //  ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+	      if (TrackParticleID){
+                ParticleID[counter] = npTracked; //counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                partRank[counter] = vct->getCartesian_rank();
+                npTracked++;
+              }
 
               counter++;
             }
 
 
 }
+// new version
+void Particles3D::maxwellian_DoubleGEM(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+   for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+	      /*      #ifdef EB
+	      if (nyn==4){ // meaning it's 1D; now particles are populated around y=0
+		y[counter]-=Ly/2;
+	      }
+	      if (nzn==4){ // meaning it's 1D
+		z[counter]-=Lz/2;
+	      }
+	      #endif*/
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+
+	      double shaperz;                                                                                                    
+              if (y[counter] < Ly/2) {                                                                                                              shaperz = 1;                                                                                                                  }                                                                                                                                 else {                                                                                                                                shaperz = -1;                                                                                                                     }
+	      
+              u[counter] = u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              //w[counter] = w0 + wth * prob * cos(theta);
+	      w[counter] = w0*shaperz + wth * prob * cos(theta); 
+              if (TrackParticleID){
+                ParticleID[counter] = npTracked; //counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                partRank[counter] = vct->getCartesian_rank();
+                npTracked++;
+              }
+              counter++;
+            }
+
+
+}
+
 // Papini's turbulence initialization, in the xy plane
 void Particles3D::alfredoturbulence(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective* col) {
 

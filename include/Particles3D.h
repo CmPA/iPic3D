@@ -44,6 +44,8 @@ class Particles3D:public Particles3Dcomm {
     void MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian in velocity, double periodic **/
     void maxwellian_HarrisDoublePeriodic(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** particle init to use with initDoubleGEM **/
+  void maxwellian_DoubleGEM(Grid * grid, Field * EMf, VirtualTopology3D * vct) ;
     /** Maxellian distribution depending on space, goes with Force Free **/
     void Maxwellianspacedist(Collective * col, Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Kappa random velocity and uniform spatial distribution */

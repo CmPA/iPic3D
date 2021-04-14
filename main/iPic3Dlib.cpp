@@ -82,6 +82,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="alfredo")   EMf->alfredo_turbulence(vct,grid,col);
     // this is Papini's turbulence init for Alfredo, perturbation in the yz plane
     else if (col->getCase()=="alfredo_yz")   EMf->alfredo_turbulence_yz(vct,grid,col);
+    else if (col->getCase()=="DoubleGEM")   EMf->initDoubleGEM(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -133,8 +134,9 @@ int c_Solver::Init(int argc, char **argv) {
 	else if (col->getCase()=="alfredo")   part[i].alfredoturbulence(grid, EMf, vct,col);
         // this is Papini's turbulence initialization for Alfredo, perturbation in the yz plane
 	else if (col->getCase()=="alfredo_yz")   part[i].alfredoturbulence_yz(grid, EMf, vct,col);
-        else                                  part[i].maxwellian(grid, EMf, vct);
-
+        else if (col->getCase()=="DoubleGEM")   part[i].maxwellian_DoubleGEM(grid, EMf, vct);
+	else                                  part[i].maxwellian(grid, EMf, vct);
+	
     }
   }
 
