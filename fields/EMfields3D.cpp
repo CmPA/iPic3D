@@ -5351,4 +5351,137 @@ void EMfields3D::initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective 
 }
 
 
+/// double periodic
+/// -- lower layer perturbed with the same modified GEM perturbation as in DoubleGEM
+/// -- upper layer unperturbed
+void EMfields3D::initDP_lowerGEMPerturbed_upperUnperturbed(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+
+  // perturbation localized in X
+
+  const double pertX = 0.4;
+  const double pertGEM = 0.0;
+
+  double globalx;
+  double globaly;
+  double globalz;
+
+  const double deltax= Lx/2.0;
+  const double deltay= Ly/2.0;
+ 
+
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize double periodic - lower layer with GEM perturbation" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+
+	  globalx= grid->getXN(i, j, k); 
+	  globaly= grid->getYN(i, j, k); 
+	  globalz= grid->getZN(i, j, k); 
+
+          double yB = globaly - .25 * Ly;
+	  double yT = globaly - .75 * Ly;
+          double yBd = yB / delta;
+          double yTd = yT / delta;
+
+	  double xB = globalx - .5 * Lx;
+	  double xBd = xB / delta;
+
+	  double xpert;
+	  double ypert;
+
+          // initialize the density for species
+
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is]) {
+              double sech_yBd = 1. / cosh(yBd);
+              double sech_yTd = 1. / cosh(yTd);
+              rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
+              rhons[is][i][j][k] += rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
+            }
+            else
+              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          Bxn[i][j][k] = B0x * (-1.0 + tanh(yBd) + tanh(-yTd));
+          // add the initial GEM perturbation
+          Bxn[i][j][k] += 0.;
+          Byn[i][j][k] = B0y;
+          // add the initial X perturbation
+	  xpert = globalx- Lx/2;
+	  ypert = globaly- Ly/4;
+	  double deltax= Lx/2.0;
+	  double deltay= Ly/2.0;
+	  if (xpert < Lx/2 and ypert < Ly/2)
+	    {
+	      Bxn[i][j][k] +=(B0x*pertGEM)*(M_PI/deltay)*cos(2*M_PI*xpert/deltax)*sin(M_PI*ypert/deltay  );
+	      Byn[i][j][k] = B0y -(B0x*pertGEM)*(2*M_PI/deltax)*sin(2*M_PI*xpert/deltax)*cos(M_PI*ypert/deltay);
+	    }
+
+	  double exp_pert;
+	  // add the initial X perturbation
+	  xpert = globalx- Lx/2;
+	  ypert = globaly- Ly/4;
+	  exp_pert = exp(-(xpert/delta)*(xpert/delta)-(ypert/delta)*(ypert/delta));
+	  Bxn[i][j][k] +=(B0x*pertX)*exp_pert*(
+					       -cos(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*2.0*ypert/delta
+					       -cos(M_PI*xpert/10.0/delta)*sin(M_PI*ypert/10.0/delta)*M_PI/10.0
+					       );
+
+	  Byn[i][j][k] +=(B0x*pertX)*exp_pert*(
+					       cos(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*2.0*xpert/delta
+					       +sin(M_PI*xpert/10.0/delta)*cos(M_PI*ypert/10.0/delta)*M_PI/10.0
+					       );
+
+	  // guide field                                                                                         
+	  Bzn[i][j][k] = B0z;
+        }
+    // communicate ghost
+    communicateNode(nxn, nyn, nzn, Bxn, vct);
+    communicateNode(nxn, nyn, nzn, Byn, vct);
+    communicateNode(nxn, nyn, nzn, Bzn, vct);
+    // initialize B on centers; same thing as on nodes but on centers
+    grid->interpN2C(Bxc, Bxn);
+    grid->interpN2C(Byc, Byn);
+    grid->interpN2C(Bzc, Bzn);
+
+    // end initialize B on centers 
+    communicateCenter(nxc, nyc, nzc, Bxc, vct);
+    communicateCenter(nxc, nyc, nzc, Byc, vct);
+    communicateCenter(nxc, nyc, nzc, Bzc, vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+
+
+
 
