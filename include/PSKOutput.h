@@ -597,6 +597,21 @@ public:
         this->output_adaptor.write("/moments/species_" + ii.str() + "/EFx/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFxs());
         this->output_adaptor.write("/moments/species_" + ii.str() + "/EFy/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFys());
         this->output_adaptor.write("/moments/species_" + ii.str() + "/EFz/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN() - 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFzs());
+
+
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFxxx/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFxxxs());
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFyyy/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFyyys());
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFzzz/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFzzzs());
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFxxy/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFxxys());
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFxxz/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFxxzs());
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFyyx/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFyyxs());
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFyyz/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFyyzs());
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFzzx/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFzzxs());
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFzzy/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFzzys());
+	this->output_adaptor.write("/moments/species_" + ii.str() + "/EFxyz/cycle_" + cc.str(), PSK::Dimens(_grid->getNXN()- 2, _grid->getNYN() - 2, _grid->getNZN() - 2), i, _field->getEFxyzs());
+
+
+	
       }
     }
 

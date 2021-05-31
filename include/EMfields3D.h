@@ -315,6 +315,27 @@ class EMfields3D                // :public Field
     /*! add an amount of Energy Flux - direction Z at node X,Y,Z */
     void addEFz(double weight[][2][2], int X, int Y, int Z, int is);
 
+    /*! add energy flux - XXX, at node X, Y, Z */
+    void addEFxxx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add energy flux - YYY, at node X, Y, Z */
+    void addEFyyy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add energy flux - ZZZ, at node X, Y, Z */
+    void addEFzzz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add energy flux - XXY, at node X, Y, Z */
+    void addEFxxy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add energy flux - XXZ, at node X, Y, Z */
+    void addEFxxz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add energy flux - YYX, at node X, Y, Z */
+    void addEFyyx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add energy flux - YYZ, at node X, Y, Z */
+    void addEFyyz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add energy flux - ZZX, at node X, Y, Z */
+    void addEFzzx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add energy flux - ZZY, at node X, Y, Z */
+    void addEFzzy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add energy flux - XYZ, at node X, Y, Z */
+    void addEFxyz(double weight[][2][2], int X, int Y, int Z, int is);
+  
     /*! add an amount of pressure density - direction XX to current density field at node X,Y,Z */
     void addPxx(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction XY to current density field at node X,Y,Z */
@@ -500,6 +521,27 @@ class EMfields3D                // :public Field
     double ****getEFys();
     double ****getEFzs();
 
+    double ***&getEFxxxs(int is);
+    double ***&getEFyyys(int is);
+    double ***&getEFzzzs(int is);
+    double ***&getEFxxys(int is);
+    double ***&getEFxxzs(int is);
+    double ***&getEFyyxs(int is);
+    double ***&getEFyyzs(int is);
+    double ***&getEFzzxs(int is);
+    double ***&getEFzzys(int is);
+    double ***&getEFxyzs(int is);
+
+    double ****getEFxxxs();
+    double ****getEFyyys();
+    double ****getEFzzzs();
+    double ****getEFxxys();
+    double ****getEFxxzs();
+    double ****getEFyyxs();
+    double ****getEFyyzs();
+    double ****getEFzzxs();
+    double ****getEFzzys();
+    double ****getEFxyzs();
 
     double ***&getPxxs(int is);
     double ***&getPxys(int is);
@@ -678,7 +720,18 @@ class EMfields3D                // :public Field
     /*! SPECIES: Energy Flux component-Z for species, defined on nodes */
     double ****EFzs;
 
-
+    /*! SPECIES: Energy Flux density components (all components) for species, defined on nodes */
+    double ****EFxxxs;
+    double ****EFyyys;
+    double ****EFzzzs;
+    double ****EFxxys;
+    double ****EFxxzs;
+    double ****EFyyxs;
+    double ****EFyyzs;
+    double ****EFzzxs;
+    double ****EFzzys;
+    double ****EFxyzs;
+  
     /*! External magnetic field component-X, defined on nodes */
     double***  Bx_ext;
     /*! External magnetic field component-Y, defined on nodes */

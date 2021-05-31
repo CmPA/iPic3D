@@ -129,6 +129,18 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   EFxs = newArr4(double, ns, nxn, nyn, nzn);
   EFys = newArr4(double, ns, nxn, nyn, nzn);
   EFzs = newArr4(double, ns, nxn, nyn, nzn);
+
+  EFxxxs = newArr4(double, ns, nxn, nyn, nzn);
+  EFyyys = newArr4(double, ns, nxn, nyn, nzn);
+  EFzzzs = newArr4(double, ns, nxn, nyn, nzn);
+  EFxxys = newArr4(double, ns, nxn, nyn, nzn);
+  EFxxzs = newArr4(double, ns, nxn, nyn, nzn);
+  EFyyxs = newArr4(double, ns, nxn, nyn, nzn);
+  EFyyzs = newArr4(double, ns, nxn, nyn, nzn);
+  EFzzxs = newArr4(double, ns, nxn, nyn, nzn);
+  EFzzys = newArr4(double, ns, nxn, nyn, nzn);
+  EFxyzs = newArr4(double, ns, nxn, nyn, nzn);
+  
   pXXsn = newArr4(double, ns, nxn, nyn, nzn);
   pXYsn = newArr4(double, ns, nxn, nyn, nzn);
   pXZsn = newArr4(double, ns, nxn, nyn, nzn);
@@ -1009,6 +1021,17 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         pYYsn[is][1][i][k] += pYYsn[is][1][i][k];
         pYZsn[is][1][i][k] += pYZsn[is][1][i][k];
         pZZsn[is][1][i][k] += pZZsn[is][1][i][k];
+
+	EFxxxs[is][1][i][k] += EFxxxs[is][1][i][k];
+        EFyyys[is][1][i][k] += EFyyys[is][1][i][k];
+        EFzzzs[is][1][i][k] += EFzzzs[is][1][i][k];
+        EFxxys[is][1][i][k] += EFxxys[is][1][i][k];
+        EFxxzs[is][1][i][k] += EFxxzs[is][1][i][k];
+        EFyyxs[is][1][i][k] += EFyyxs[is][1][i][k];
+        EFyyzs[is][1][i][k] += EFyyzs[is][1][i][k];
+        EFzzxs[is][1][i][k] += EFzzxs[is][1][i][k];
+        EFzzys[is][1][i][k] += EFzzys[is][1][i][k];
+        EFxyzs[is][1][i][k] += EFxyzs[is][1][i][k];
       }
   }
   if (vct->getYleft_neighbor_P() == MPI_PROC_NULL) {
@@ -1027,6 +1050,17 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         pYYsn[is][i][1][k] += pYYsn[is][i][1][k];
         pYZsn[is][i][1][k] += pYZsn[is][i][1][k];
         pZZsn[is][i][1][k] += pZZsn[is][i][1][k];
+
+	EFxxxs[is][i][1][k] += EFxxxs[is][i][1][k];
+        EFyyys[is][i][1][k] += EFyyys[is][i][1][k];
+        EFzzzs[is][i][1][k] += EFzzzs[is][i][1][k];
+        EFxxys[is][i][1][k] += EFxxys[is][i][1][k];
+        EFxxzs[is][i][1][k] += EFxxzs[is][i][1][k];
+        EFyyxs[is][i][1][k] += EFyyxs[is][i][1][k];
+        EFyyzs[is][i][1][k] += EFyyzs[is][i][1][k];
+        EFzzxs[is][i][1][k] += EFzzxs[is][i][1][k];
+        EFzzys[is][i][1][k] += EFzzys[is][i][1][k];
+        EFxyzs[is][i][1][k] += EFxyzs[is][i][1][k];
       }
   }
   if (vct->getZleft_neighbor_P() == MPI_PROC_NULL) {
@@ -1045,6 +1079,17 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         pYYsn[is][i][j][1] += pYYsn[is][i][j][1];
         pYZsn[is][i][j][1] += pYZsn[is][i][j][1];
         pZZsn[is][i][j][1] += pZZsn[is][i][j][1];
+
+	EFxxxs[is][i][j][1] += EFxxxs[is][i][j][1];
+        EFyyys[is][i][j][1] += EFyyys[is][i][j][1];
+        EFzzzs[is][i][j][1] += EFzzzs[is][i][j][1];
+        EFxxys[is][i][j][1] += EFxxys[is][i][j][1];
+        EFxxzs[is][i][j][1] += EFxxzs[is][i][j][1];
+        EFyyxs[is][i][j][1] += EFyyxs[is][i][j][1];
+        EFyyzs[is][i][j][1] += EFyyzs[is][i][j][1];
+        EFzzxs[is][i][j][1] += EFzzxs[is][i][j][1];
+        EFzzys[is][i][j][1] += EFzzys[is][i][j][1];
+        EFxyzs[is][i][j][1] += EFxyzs[is][i][j][1];
       }
   }
   if (vct->getXright_neighbor_P() == MPI_PROC_NULL) {
@@ -1063,6 +1108,17 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         pYYsn[is][nxn - 2][i][k] += pYYsn[is][nxn - 2][i][k];
         pYZsn[is][nxn - 2][i][k] += pYZsn[is][nxn - 2][i][k];
         pZZsn[is][nxn - 2][i][k] += pZZsn[is][nxn - 2][i][k];
+
+	EFxxxs[is][nxn - 2][i][k] += EFxxxs[is][nxn - 2][i][k];
+        EFyyys[is][nxn - 2][i][k] += EFyyys[is][nxn - 2][i][k];
+        EFzzzs[is][nxn - 2][i][k] += EFzzzs[is][nxn - 2][i][k];
+        EFxxys[is][nxn - 2][i][k] += EFxxys[is][nxn - 2][i][k];
+        EFxxzs[is][nxn - 2][i][k] += EFxxzs[is][nxn - 2][i][k];
+        EFyyxs[is][nxn - 2][i][k] += EFyyxs[is][nxn - 2][i][k];
+        EFyyzs[is][nxn - 2][i][k] += EFyyzs[is][nxn - 2][i][k];
+        EFzzxs[is][nxn - 2][i][k] += EFzzxs[is][nxn - 2][i][k];
+        EFzzys[is][nxn - 2][i][k] += EFzzys[is][nxn - 2][i][k];
+        EFxyzs[is][nxn - 2][i][k] += EFxyzs[is][nxn - 2][i][k];
       }
   }
   if (vct->getYright_neighbor_P() == MPI_PROC_NULL) {
@@ -1081,6 +1137,17 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         pYYsn[is][i][nyn - 2][k] += pYYsn[is][i][nyn - 2][k];
         pYZsn[is][i][nyn - 2][k] += pYZsn[is][i][nyn - 2][k];
         pZZsn[is][i][nyn - 2][k] += pZZsn[is][i][nyn - 2][k];
+
+	EFxxxs[is][i][nyn - 2][k] += EFxxxs[is][i][nyn - 2][k];
+        EFyyys[is][i][nyn - 2][k] += EFyyys[is][i][nyn - 2][k];
+        EFzzzs[is][i][nyn - 2][k] += EFzzzs[is][i][nyn - 2][k];
+        EFxxys[is][i][nyn - 2][k] += EFxxys[is][i][nyn - 2][k];
+        EFxxzs[is][i][nyn - 2][k] += EFxxzs[is][i][nyn - 2][k];
+        EFyyxs[is][i][nyn - 2][k] += EFyyxs[is][i][nyn - 2][k];
+        EFyyzs[is][i][nyn - 2][k] += EFyyzs[is][i][nyn - 2][k];
+        EFzzxs[is][i][nyn - 2][k] += EFzzxs[is][i][nyn - 2][k];
+        EFzzys[is][i][nyn - 2][k] += EFzzys[is][i][nyn - 2][k];
+        EFxyzs[is][i][nyn - 2][k] += EFxyzs[is][i][nyn - 2][k];
       }
   }
   if (vct->getZright_neighbor_P() == MPI_PROC_NULL) {
@@ -1099,6 +1166,17 @@ void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
         pYYsn[is][i][j][nzn - 2] += pYYsn[is][i][j][nzn - 2];
         pYZsn[is][i][j][nzn - 2] += pYZsn[is][i][j][nzn - 2];
         pZZsn[is][i][j][nzn - 2] += pZZsn[is][i][j][nzn - 2];
+
+	EFxxxs[is][i][j][nzn - 2] += EFxxxs[is][i][j][nzn - 2];
+        EFyyys[is][i][j][nzn - 2] += EFyyys[is][i][j][nzn - 2];
+        EFzzzs[is][i][j][nzn - 2] += EFzzzs[is][i][j][nzn - 2];
+        EFxxys[is][i][j][nzn - 2] += EFxxys[is][i][j][nzn - 2];
+        EFxxzs[is][i][j][nzn - 2] += EFxxzs[is][i][j][nzn - 2];
+        EFyyxs[is][i][j][nzn - 2] += EFyyxs[is][i][j][nzn - 2];
+        EFyyzs[is][i][j][nzn - 2] += EFyyzs[is][i][j][nzn - 2];
+        EFzzxs[is][i][j][nzn - 2] += EFzzxs[is][i][j][nzn - 2];
+        EFzzys[is][i][j][nzn - 2] += EFzzys[is][i][j][nzn - 2];
+        EFxyzs[is][i][j][nzn - 2] += EFxyzs[is][i][j][nzn - 2];
       }
   }
 }
@@ -1522,6 +1600,17 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   communicateInterp(nxn, nyn, nzn, ns, EFys, 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, EFzs, 0, 0, 0, 0, 0, 0, vct);
 
+  communicateInterp(nxn, nyn, nzn, ns, EFxxxs, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFyyys, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFzzzs, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFxxys, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFxxzs, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFyyxs, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFyyzs, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFzzxs, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFzzys, 0, 0, 0, 0, 0, 0, vct);
+  communicateInterp(nxn, nyn, nzn, ns, EFxyzs, 0, 0, 0, 0, 0, 0, vct);
+  
   communicateInterp(nxn, nyn, nzn, ns, pXXsn, 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, pXYsn, 0, 0, 0, 0, 0, 0, vct);
   communicateInterp(nxn, nyn, nzn, ns, pXZsn, 0, 0, 0, 0, 0, 0, vct);
@@ -1540,7 +1629,18 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
   communicateNode_P(nxn, nyn, nzn, EFxs, ns, vct);
   communicateNode_P(nxn, nyn, nzn, EFys, ns, vct);
   communicateNode_P(nxn, nyn, nzn, EFzs, ns, vct);
-
+ 
+  communicateNode_P(nxn, nyn, nzn, EFxxxs, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFyyys, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFzzzs, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFxxys, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFxxzs, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFyyxs, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFyyzs, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFzzxs, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFzzys, ns, vct);
+  communicateNode_P(nxn, nyn, nzn, EFxyzs, ns, vct);
+  
   communicateNode_P(nxn, nyn, nzn, pXXsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pXYsn, ns, vct);
   communicateNode_P(nxn, nyn, nzn, pXZsn, ns, vct);
@@ -1757,6 +1857,87 @@ void EMfields3D::addEFz(double weight[][2][2], int X, int Y, int Z, int is) {
 	EFzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
+/*! add an amount of energy flux to EF  - direction XXX to EF density field on the node */
+void EMfields3D::addEFxxx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFxxxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+/*! add an amount of energy flux to EF  - direction YYY to EF density field on the node */
+void EMfields3D::addEFyyy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFyyys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+/*! add an amount of energy flux to EF  - direction ZZZ to EF density field on the node */
+void EMfields3D::addEFzzz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFzzzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+/*! add an amount of energy flux to EF  - direction XXY to EF density field on the node */
+void EMfields3D::addEFxxy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFxxys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+/*! add an amount of energy flux to EF  - direction XXZ to EF density field on the node */
+void EMfields3D::addEFxxz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFxxzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+/*! add an amount of energy flux to EF  - direction YYX to EF density field on the node */
+void EMfields3D::addEFyyx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFyyxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+/*! add an amount of energy flux to EF  - direction YYZ to EF density field on the node */
+void EMfields3D::addEFyyz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFyyzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+/*! add an amount of energy flux to EF  - direction ZZX to EF density field on the node */
+void EMfields3D::addEFzzx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFzzxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+/*! add an amount of energy flux to EF  - direction ZZY to EF density field on the node */
+void EMfields3D::addEFzzy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFzzys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+/*! add an amount of energy flux to EF  - direction XYZ to EF density field on the node */
+void EMfields3D::addEFxyz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+	EFxyzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+
+
 /*! set to 0 all the densities fields */
 void EMfields3D::setZeroDensities() {
   for (register int i = 0; i < nxn; i++)
@@ -1795,6 +1976,18 @@ void EMfields3D::setZeroDensities() {
           pYYsn[kk][i][j][k] = 0.0;
           pYZsn[kk][i][j][k] = 0.0;
           pZZsn[kk][i][j][k] = 0.0;
+
+
+	  EFxxxs[kk][i][j][k] = 0.0;
+	  EFyyys[kk][i][j][k] = 0.0;
+	  EFzzzs[kk][i][j][k] = 0.0;
+	  EFxxys[kk][i][j][k] = 0.0;
+	  EFxxzs[kk][i][j][k] = 0.0;
+	  EFyyxs[kk][i][j][k] = 0.0;
+	  EFyyzs[kk][i][j][k] = 0.0;
+	  EFzzxs[kk][i][j][k] = 0.0;
+	  EFzzys[kk][i][j][k] = 0.0;
+	  EFxyzs[kk][i][j][k] = 0.0;
         }
 
 }
@@ -4277,6 +4470,37 @@ double ***& EMfields3D::getEFzs(int is) {
   return (EFzs[is]);
 }
 
+double ***& EMfields3D::getEFxxxs(int is) {
+  return (EFxxxs[is]);
+}
+double ***& EMfields3D::getEFyyys(int is) {
+  return (EFyyys[is]);
+}
+double ***& EMfields3D::getEFzzzs(int is) {
+  return (EFzzzs[is]);
+}
+double ***& EMfields3D::getEFxxys(int is) {
+  return (EFxxys[is]);
+}
+double ***& EMfields3D::getEFxxzs(int is) {
+  return (EFxxzs[is]);
+}
+double ***& EMfields3D::getEFyyxs(int is) {
+  return (EFyyxs[is]);
+}
+double ***& EMfields3D::getEFyyzs(int is) {
+  return (EFyyzs[is]);
+}
+double ***& EMfields3D::getEFzzxs(int is) {
+  return (EFzzxs[is]);
+}
+double ***& EMfields3D::getEFzzys(int is) {
+  return (EFzzys[is]);
+}
+double ***& EMfields3D::getEFxyzs(int is) {
+  return (EFxyzs[is]);
+}
+
 /*! get the Energy Fluxes */
 double **** EMfields3D::getEFxs() {
   return (EFxs);
@@ -4287,6 +4511,38 @@ double **** EMfields3D::getEFys() {
 double **** EMfields3D::getEFzs() {
   return (EFzs);
 }
+
+double **** EMfields3D::getEFxxxs() {
+  return (EFxxxs);
+}
+double **** EMfields3D::getEFyyys() {
+  return (EFyyys);
+}
+double **** EMfields3D::getEFzzzs() {
+  return (EFzzzs);
+}
+double **** EMfields3D::getEFxxys() {
+  return (EFxxys);
+}
+double **** EMfields3D::getEFxxzs() {
+  return (EFxxzs);
+}
+double **** EMfields3D::getEFyyxs() {
+  return (EFyyxs);
+}
+double **** EMfields3D::getEFyyzs() {
+  return (EFyyzs);
+}
+double **** EMfields3D::getEFzzxs() {
+  return (EFzzxs);
+}
+double **** EMfields3D::getEFzzys() {
+  return (EFzzys);
+}
+double **** EMfields3D::getEFxyzs() {
+  return (EFxyzs);
+}
+ 
 
 
 /*! get the electric field energy */
@@ -4358,9 +4614,20 @@ EMfields3D::~EMfields3D() {
   delArr4(pYYsn, ns, nxn, nyn);
   delArr4(pYZsn, ns, nxn, nyn);
   delArr4(pZZsn, ns, nxn, nyn);
-  delArr4(EFxs, nxn, nyn, nzn);
-  delArr4(EFys, nxn, nyn, nzn);
-  delArr4(EFzs, nxn, nyn, nzn);
+  delArr4(EFxs, ns, nxn, nyn);
+  delArr4(EFys, ns, nxn, nyn);
+  delArr4(EFzs, ns, nxn, nyn);
+
+  delArr4(EFxxxs, ns, nxn, nyn);
+  delArr4(EFyyys, ns, nxn, nyn);
+  delArr4(EFzzzs, ns, nxn, nyn);
+  delArr4(EFxxys, ns, nxn, nyn);
+  delArr4(EFxxzs, ns, nxn, nyn);
+  delArr4(EFyyxs, ns, nxn, nyn);
+  delArr4(EFyyzs, ns, nxn, nyn);
+  delArr4(EFzzxs, ns, nxn, nyn);
+  delArr4(EFzzys, ns, nxn, nyn);
+  delArr4(EFxyzs, ns, nxn, nyn);
   // central points
   delArr3(PHI, nxc, nyc);
   delArr3(Bxc, nxc, nyc);

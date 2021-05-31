@@ -620,6 +620,78 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
 	    temp[ii][jj][kk] = w[i] * 0.5/qom * (u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
       EMf->addEFz(temp, ix, iy, iz, ns);
 
+      // Energy flux: all components (xxx, yyy, zzz, xxy, xxz, yyx, yyz, zzx, zzy, xyz)
+      
+      // add energy flux density - xxx                                                                                
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom *u[i]*u[i]*u[i]  * weight[ii][jj][kk];
+      EMf->addEFxxx(temp, ix, iy, iz, ns);
+
+      // add energy flux density - yyy                                                                                
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom * v[i]* v[i] * v[i] * weight[ii][jj][kk];
+      EMf->addEFyyy(temp, ix, iy, iz, ns);
+
+      // add energy flux density - zzz                                                                                 
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom * w[i] * w[i]  * w[i] * weight[ii][jj][kk];
+      EMf->addEFzzz(temp, ix, iy, iz, ns);
+
+      // add energy flux density - xxy                                                                                 
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom *u[i]*u[i]*v[i]  * weight[ii][jj][kk];
+      EMf->addEFxxy(temp, ix, iy, iz, ns);
+
+      // add energy flux density - xxz                                                                                 
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom *u[i]*u[i]*w[i]  * weight[ii][jj][kk];
+      EMf->addEFxxz(temp, ix, iy, iz, ns);
+
+      // add energy flux density - yyx                                                                                   
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom * v[i]*v[i]*u[i]  * weight[ii][jj][kk];
+      EMf->addEFyyx(temp, ix, iy, iz, ns);
+
+      // add energy flux density - yyz                                                                                   
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom * v[i]*v[i]*w[i]  * weight[ii][jj][kk];
+      EMf->addEFyyz(temp, ix, iy, iz, ns);
+
+      // add energy flux density - zzx                                                                                   
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom * w[i]*w[i]*u[i]  * weight[ii][jj][kk];
+      EMf->addEFzzx(temp, ix, iy, iz, ns);
+
+      // add energy flux density - zzy                                                                                 
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom * w[i]*w[i]*v[i]  * weight[ii][jj][kk];
+      EMf->addEFzzy(temp, ix, iy, iz, ns);
+
+      // add energy flux density -  xyz                                                                                  
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] =  0.5/qom * u[i]*v[i]*w[i]  * weight[ii][jj][kk];
+      EMf->addEFxyz(temp, ix, iy, iz, ns);
+      
     }
     // change this to allow more parallelization after implementing array class
     //#pragma omp critical
