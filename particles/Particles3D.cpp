@@ -2704,7 +2704,7 @@ int Particles3D::particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EM
   /* -- END NOTE -- */
 
   if (vct->getCartesian_rank()==0){
-    cout << "*** Repopulator species " << ns << " ***" << endl;
+    cout << "*** Reflector species " << ns << " ***" << endl;
   }
   double weights[2][2][2];
   double B_mag;

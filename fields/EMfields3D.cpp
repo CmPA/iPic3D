@@ -393,13 +393,14 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   BoundaryConditionsE(Ex, Ey, Ez, nxn, nyn, nzn, grid, vct);
   // Apply damper on boundary
 
+  if (LambdaDamping){
   weight_tapering(Ex,Lambda,nxc,nyc,nzc);
   weight_tapering(Ey,Lambda,nxc,nyc,nzc);
   weight_tapering(Ez,Lambda,nxc,nyc,nzc);
   weight_tapering(Exth,Lambda,nxc,nyc,nzc);
   weight_tapering(Eyth,Lambda,nxc,nyc,nzc);
   weight_tapering(Ezth,Lambda,nxc,nyc,nzc);
-
+  }
 
 }
 
@@ -3337,11 +3338,13 @@ void EMfields3D::initForceFreeWithGaussianHumpPerturbation(VirtualTopology3D * v
 //				Lambda[i][j][k] = 2.0 * M_PI / Lx * (exp(-pow(grid->getXN(i,j,k)/(Lx/,2.0))
 //						+ exp(-pow((Lx -grid->getXN(i,j,k))/(Lx/2),2.0)));
 				Lambda[i][j][k]  = 0.0;
+/*
 				if(fabs(grid->getXN(i,j,k)) < 5.0 * dx) Lambda[i][j][k]  = val_Lambda * 2.0 * M_PI / dx;
 				if(fabs(Lx-grid->getXN(i,j,k)) < 5.0 * dx) Lambda[i][j][k]  = val_Lambda * 2.0 * M_PI / dx;
 //				cout << "LAmbda = " << i << "  " << Lambda[i][j][k] << endl;
 				if(fabs(grid->getYN(i,j,k)) < 5.0 * dy) Lambda[i][j][k]  = val_Lambda * 2.0 * M_PI / dy;
 				if(fabs(Ly-grid->getYN(i,j,k)) < 5.0 * dy) Lambda[i][j][k]  = val_Lambda * 2.0 * M_PI / dy;
+*/
 			}
 }
 

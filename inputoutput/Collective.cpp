@@ -108,9 +108,9 @@ void Collective::ReadInput(string inputfile) {
     XLEN      = config.read < int > ("XLEN",1);
     YLEN      = config.read < int > ("YLEN",1);
     ZLEN      = config.read < int > ("ZLEN",1);
-    PERIODICX = config.read < bool >("PERIODICX");
-    PERIODICY = config.read < bool >("PERIODICY");
-    PERIODICZ = config.read < bool >("PERIODICZ");
+    PERIODICX = config.read < bool >("PERIODICX",1);
+    PERIODICY = config.read < bool >("PERIODICY",1);
+    PERIODICZ = config.read < bool >("PERIODICZ",1);
     cylindrical = config.read < bool >("cylindrical",0);
 
   }
