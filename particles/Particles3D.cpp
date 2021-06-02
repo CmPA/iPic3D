@@ -1176,7 +1176,10 @@ int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
 	double weight[P_SAME_TIME][2][2][2];
 	double xi[2]; double eta[2]; double zeta[2];
 	double inv_dx = 1.0/dx, inv_dy = 1.0/dy, inv_dz = 1.0/dz;
-	double Fext      = EMf->getFext();
+	double Fext = EMf->getFext();
+
+	if(Gravity)
+		Fext /= qom;
 
 	if (vct->getCartesian_rank()==0){
 		cout << "*** MOVER species " << ns << " ***" << NiterMover <<" ITERATIONS   ****" << "Fext=" << Fext << endl;

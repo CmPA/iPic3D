@@ -310,6 +310,8 @@ protected:
   /** number of particles not in the right domain   */
   int rightDomain;
 
+  /** Gravity as External Force */
+  bool Gravity;
 
   /** bool for communication verbose */
   bool cVERBOSE;

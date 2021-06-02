@@ -67,7 +67,8 @@ class Collective
     double getcoilD();
     /** getgeometry coild - Coil Spacing */
     double getcoilSpacing();
-
+    /** Gravity as external force */
+    bool getGravity();
 
     /*! Get the number of cells - direction X */
     int getNxc();
@@ -164,6 +165,9 @@ class Collective
 
     /*! get initial solution flag */
     bool getSolInit();
+
+    /** Gravity as external force field marked by E_ext in the input file */
+    bool Gravity;
 
     /*! get Boundary Condition Particles: FaceXright */
     int getBcPfaceXright();

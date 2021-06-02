@@ -62,6 +62,7 @@ void Collective::ReadInput(string inputfile) {
 
     PoissonCorrection = config.read<string>("PoissonCorrection","no");
     LambdaDamping	  = config.read<string>("LambdaDamping","no");
+    Gravity			  = config.read< bool >("Gravity",0);
 
     rhoINIT = new double[ns];
     array_double rhoINIT0 = config.read < array_double > ("rhoINIT");
@@ -1342,6 +1343,10 @@ string Collective::getPoissonCorrection() {
 /*! get Lambda Damping flag */
 string Collective::getLambdaDamping() {
   return (LambdaDamping);
+}
+/*! get Gavity as external field form input file E_ext */
+bool Collective::getGravity() {
+  return (Gravity);
 }
 /*! get initial solution flag */
 bool Collective::getSolInit() {

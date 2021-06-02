@@ -3271,6 +3271,10 @@ void EMfields3D::initForceFreeWithGaussianHumpPerturbation(VirtualTopology3D * v
                      double yT = grid->getYN(i,j,k) - .75*Ly;
                      double yBd = yB/delta;
                      double yTd = yT/delta*10.0;
+                     double xctr = Lx/2.0;
+                     double yctr = Ly/2.0;
+                     double kx = M_PI *2.0/Lx;
+                     double ky = M_PI *2.0/Ly;
                     // initialize the density for species
                     for (int is=0; is < ns; is++){
                             rhons[is][i][j][k] = rhoINIT[is]/FourPI;
@@ -3282,8 +3286,8 @@ void EMfields3D::initForceFreeWithGaussianHumpPerturbation(VirtualTopology3D * v
                     Ez[i][j][k] =  E0z;
 
                     // external electric field
-                    Ex_ext[i][j][k] =  E0x_ext;
-                    Ey_ext[i][j][k] =  E0y_ext;
+                    Ex_ext[i][j][k] =  E0x_ext/kx*sin(kx*(grid->getXN(i,j,k)-xctr))*cos(ky*(grid->getYN(i,j,k)-yctr));
+                    Ey_ext[i][j][k] =  -E0y_ext/ky*cos(kx*(grid->getXN(i,j,k)-xctr))*sin(ky*(grid->getYN(i,j,k)-yctr));
                     Ez_ext[i][j][k] =  E0z_ext;
 
                     // external magnetic field
