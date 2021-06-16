@@ -223,6 +223,8 @@ class EMfields3D                // :public Field
   void initDoubleGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
   /*! double periodic, GEM perturbation (as in initDoubleGEM) only in the lower layer */
   void initDP_lowerGEMPerturbed_upperUnperturbed(VirtualTopology3D * vct, Grid * grid, Collective *col);
+  /*! init for parallel-propagating, left-handed, circularly polarized, monochromatic Alfven wave */
+  void initPar_LH_circPol_mono_Alfven(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! add a perturbattion to charge density */
     void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
     /*! add a perturbattion to the EM field */
@@ -377,6 +379,10 @@ class EMfields3D                // :public Field
   
     /** set REB_0 **/
     void set_REB_0(double RE0);
+
+  /*! calculate characteristic plasma parameters - in the normalization currently used */
+  void calculateCharacteristicParameters();
+
   
     /*! get Potential array */
     double ***getPHI();
@@ -556,6 +562,21 @@ class EMfields3D                // :public Field
     /*! get the magnetic field energy */
     double getBenergy();
 
+    /*! get omega_pi */
+    double getomega_pi();
+    /*! get Omega_ci */
+    double getOmega_ci();
+    /*! get omega_pe */
+    double getomega_pe();
+    /*! get Omega_ce */
+    double getOmega_ce();
+
+    /*! get k0 */
+    double getk0();
+    /*! get omega_r*/
+    double getomega_r();
+  
+  
     /*! print electromagnetic fields info */
     void print(void) const;
 
@@ -857,6 +878,13 @@ class EMfields3D                // :public Field
     /* variables needed for whistler init: real frequency and perpendicular field */
     double omega_r;
     double deltaB;
+    double k0;
+
+    /* characteristic parameters - electron and ion plasma frequency, gyrofrequency - in the normalization used */
+    double omega_pe;
+    double omega_pi;
+    double Omega_ce;
+    double Omega_ci;
 };
 
 typedef EMfields3D Field;

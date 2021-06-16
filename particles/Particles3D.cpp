@@ -2693,3 +2693,98 @@ void Particles3D::alfredoturbulence_yz(Grid * grid, Field * EMf, VirtualTopology
 
 // to here
 
+
+/** parallel-propagating, left-handed, circularly polarized, monochromatic Alfven wave 
+    Sakai 2005, New J Phys 7 233 
+    goes with initPar_LH_circPol_mono_Alfven for fields **/
+
+void Particles3D::maxwellian_Par_LH_circPol_mono_Alfven(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  // NB: this is local
+  double omega_pi= EMf->getomega_pi();
+  double omega_pe= EMf->getomega_pe();
+  double Omega_ci= EMf->getOmega_ci();
+  double Omega_ce= EMf->getOmega_ce();
+
+  // specific of whistler init                                                                                                    
+  double k0= EMf->getk0();
+  omega_r= EMf->getomega_r();
+  
+  if (vct->getCartesian_rank() ==0 ){
+    cout << "--------------------------------------------------------------------------------------------" << endl;
+    cout << "Initialize parallel-propagating, left-handed, circularly polarized, monochomatic Alfven wave" << endl;
+    cout << "Particle init: qom " << qom << endl;
+    cout << "--------------------------------------------------------------------------------------------" << endl;
+    cout << "B0x                              = " << B0x << endl;
+    cout << "deltaB                           = " << deltaB << endl;
+    cout << "omega_r                          = " << omega_r << endl;
+    cout << "omega_pi                         = " << omega_pi << endl;
+    cout << "omega_pe                         = " << omega_pe << endl;
+    cout << "Omega_ci                         = " << Omega_ci << endl;
+    cout << "Omega_ce                         = " << Omega_ce << endl;
+    cout << "k0                               = " << k0 << endl;
+    cout << "--------------------------------------------------------------------------------------------" << endl;
+  }
+  
+  double V0;
+
+  if (qom < 0){
+    // electrons
+    V0= (omega_r - Omega_ci)*(omega_r* omega_r - k0* k0)/(omega_pe*omega_pe + omega_pi*omega_pi)/ k0 - omega_r/ k0;
+  } else if (qom >0){
+    // ions
+    V0= (omega_r + Omega_ce)*(omega_r* omega_r - k0* k0)/(omega_pe*omega_pe + omega_pi*omega_pi) /k0 - omega_r/ k0;
+  }
+
+  double COS, SIN, Vx, Vy, Vz;
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2);
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  
+  for (int i = 1; i < grid->getNXC() - 1; i++){
+    COS= cos(k0* grid->getXN(i, 0, 0));
+    SIN= sin(k0* grid->getXN(i, 0, 0));
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+	      /* the shape of the perp electron current is given through this */
+
+	      Vx= 0.0;
+	      Vy= + V0* deltaB/ B0x * SIN;
+	      Vz= - V0* deltaB/ B0x * COS;
+
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = Vx + uth * prob * cos(theta);
+              // v
+              v[counter] = Vy + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = Vz + wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+
+
+              counter++;
+	    }
+  }
+  
+
+}

@@ -400,9 +400,11 @@ protected:
   /* where in the communication buffer start writing Tracking */
   int startTr;
 
-  /* initial parameters for whistler, real frequency and perpendicular field */
+  /* initial parameters for whistler, real frequency and perpendicular field -
+     also used for monochromatic Alfven */
   double omega_r;
   double deltaB;
+  double B0x;
   int ElectronSpNumber;
   /* end initial parameters for whistler, real frequency and perpendicular field */
 

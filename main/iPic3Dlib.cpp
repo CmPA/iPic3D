@@ -84,6 +84,7 @@ int c_Solver::Init(int argc, char **argv) {
     else if (col->getCase()=="alfredo_yz")   EMf->alfredo_turbulence_yz(vct,grid,col);
     else if (col->getCase()=="DoubleGEM")   EMf->initDoubleGEM(vct,grid,col);
     else if (col->getCase()=="HarrisDP_lowerGEM")   EMf->initDP_lowerGEMPerturbed_upperUnperturbed(vct,grid,col);
+    else if (col->getCase()=="Par_LH_circPol_mono_Alfven") EMf->initPar_LH_circPol_mono_Alfven(vct, grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -137,6 +138,7 @@ int c_Solver::Init(int argc, char **argv) {
 	else if (col->getCase()=="alfredo_yz")   part[i].alfredoturbulence_yz(grid, EMf, vct,col);
         else if (col->getCase()=="DoubleGEM")   part[i].maxwellian_DoubleGEM(grid, EMf, vct);
 	else if (col->getCase()=="HarrisDP_lowerGEM")   part[i].maxwellian_DoubleGEM(grid, EMf, vct);
+	else if (col->getCase()=="Par_LH_circPol_mono_Alfven") part[i].maxwellian_Par_LH_circPol_mono_Alfven(grid, EMf, vct);
 	else                                  part[i].maxwellian(grid, EMf, vct);
 	
     }

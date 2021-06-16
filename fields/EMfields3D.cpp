@@ -205,6 +205,10 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   /* parameters for initialization whistler */
   omega_r= col->getOmega_r();
   deltaB= col->getDeltaB();
+
+  /* calculate characteristic parameters, in the current normalization */
+  calculateCharacteristicParameters();
+  
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -5748,7 +5752,141 @@ void EMfields3D::initDP_lowerGEMPerturbed_upperUnperturbed(VirtualTopology3D * v
   }
 }
 
+/* initialization for parallel-propagating, left-handed, circularly-polarized, monochromatic Alfven wave --
+   Sakai 2005, New J Phys 7 233 
+   goes with maxwellian_Par_LH_circPol_mono_Alfven for particles*/
+
+void EMfields3D::initPar_LH_circPol_mono_Alfven(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+
+  if (restart1 == 0) {
+
+    k0= 2 * M_PI/ Lx*4;
+
+    omega_r= Omega_ce/2 / (1.0 + omega_pe*omega_pe / k0/ k0) * (sqrt(1.0 + 4* omega_pi*omega_pi/ k0/k0)-1.0);
+    //cout << "inside mono init, omega_r: " << omega_r << endl;
+
+    
+    //overwrite w_r with the one calculated here
+    //
+    
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "--------------------------------------------------------------------------------------------" << endl;
+      cout << "Initialize parallel-propagating, left-handed, circularly polarized, monochomatic Alfven wave" << endl;
+      cout << "--------------------------------------------------------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "deltaB                           = " << deltaB << endl;
+      cout << "omega_pi                         = " << omega_pi << endl;
+      cout << "omega_pe                         = " << omega_pe << endl;
+      cout << "Omega_ci                         = " << Omega_ci << endl;
+      cout << "Omega_ce                         = " << Omega_ce << endl;
+      cout << "k0                               = " << k0 << endl;
+      cout << "omega_r                          = " << omega_r << endl;
+      cout << "--------------------------------------------------------------------------------------------" << endl;
+    }
+
+    
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+
+	  double xcoor= grid->getXN(i, j, k);
+	    
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+	    rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = - omega_r/ k0* deltaB* cos(k0 * xcoor) ;
+          Ez[i][j][k] = - omega_r/ k0* deltaB* sin(k0 * xcoor) ;
+          // Magnetic field
+          Bxn[i][j][k] = B0x;
+          Byn[i][j][k] = + deltaB * sin(k0 * xcoor);
+          Bzn[i][j][k] = - deltaB * cos(k0 * xcoor);
+        }
+
+    ///
+    // communicate ghost
+    communicateNode(nxn, nyn, nzn, Bxn, vct);
+    communicateNode(nxn, nyn, nzn, Byn, vct);
+    communicateNode(nxn, nyn, nzn, Bzn, vct);
+    // initialize B on centers; same thing as on nodes but on centers
+    grid->interpN2C(Bxc, Bxn);
+    grid->interpN2C(Byc, Byn);
+    grid->interpN2C(Bzc, Bzn);
+
+    // end initialize B on centers 
+    communicateCenter(nxc, nyc, nzc, Bxc, vct);
+    communicateCenter(nxc, nyc, nzc, Byc, vct);
+    communicateCenter(nxc, nyc, nzc, Bzc, vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+/*! calculate characteristic plasma parameters - in the normalization currently used */
+void EMfields3D::calculateCharacteristicParameters(){
+
+  int normSpecies;
+  int otherSpecies;
+  double B0= sqrt(B0x*B0x + B0y*B0y + B0z*B0z);
+
+  for (int is=0; is < ns; is++){
+    if (abs(qom[is]) ==1){
+      normSpecies= is;
+      break;
+    }
+  }
+
+  otherSpecies= (normSpecies +1)%2;
+  double qom_oS= abs(qom[otherSpecies]);
+  
+  if (qom[normSpecies] ==-1){
+    // electron normalization
+    omega_pe=1.0;
+    Omega_ce=B0;
+    omega_pi=omega_pe* sqrt(qom_oS);
+    Omega_ci=Omega_ce* qom_oS;
+  } else if (qom[normSpecies] ==1) {
+    omega_pi=1.0;
+    Omega_ci=B0;
+    omega_pe=omega_pi* sqrt(qom_oS);
+    Omega_ce=Omega_ci* qom_oS;
+  }
+
+  return;
+}
 
 
-
-
+/*! get omega_pi */
+double EMfields3D::getomega_pi(){
+  return omega_pi;
+}
+/*! get Omega_ci */
+double EMfields3D::getOmega_ci(){
+  return Omega_ci;
+}
+/*! get omega_pe */
+double EMfields3D::getomega_pe(){
+  return omega_pe;
+}
+/*! get Omega_ce */
+double EMfields3D::getOmega_ce(){
+  return Omega_ce;
+}
+/*! get omega_r */
+double EMfields3D::getomega_r(){
+  return omega_r;
+}
+/*! get k0 */
+double EMfields3D::getk0(){
+  return k0;
+}

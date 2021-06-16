@@ -108,6 +108,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   /* initial parameters for whistler */
   omega_r= col->getOmega_r();
   deltaB= col->getDeltaB();
+  B0x= col->getB0x();
   // I need the number of electron species to distribute current
   ElectronSpNumber=0;
   for (int ss=0; ss< col->getNs(); ss++)
@@ -348,7 +349,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // I copy these values here, even if the box is not expanding, for the tests
   UEB= col->getUEB_0(); 
   REB= col->getREB_0();  
-
+  
   // //FOR TEST:
   // nvDistLoc = 3;
   // vDist     = new c_vDist[nvDistLoc];

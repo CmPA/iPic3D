@@ -66,6 +66,8 @@ class Particles3D:public Particles3Dcomm {
     void alfredoturbulence(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective* col);
     /** Init. for turbulence, pert in the yz plane*/
     void alfredoturbulence_yz(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective* col);
+    /** parallel-propagating, left-handed, circularly polarized, monochromatic Alfven wave **/
+    void maxwellian_Par_LH_circPol_mono_Alfven(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Linear_perturbation */
     void linear_perturbation(double deltaBX, double kx, double ky, double theta, double omega_r, double omega_i, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /**Add a periodic perturbation in velocity exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
