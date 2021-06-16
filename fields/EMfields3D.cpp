@@ -5840,14 +5840,14 @@ void EMfields3D::calculateCharacteristicParameters(){
   double B0= sqrt(B0x*B0x + B0y*B0y + B0z*B0z);
 
   for (int is=0; is < ns; is++){
-    if (abs(qom[is]) ==1){
+    if (fabs(qom[is]) ==1){
       normSpecies= is;
       break;
     }
   }
 
   otherSpecies= (normSpecies +1)%2;
-  double qom_oS= abs(qom[otherSpecies]);
+  double qom_oS= fabs(qom[otherSpecies]);
   
   if (qom[normSpecies] ==-1){
     // electron normalization
