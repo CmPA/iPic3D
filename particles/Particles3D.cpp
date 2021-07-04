@@ -1411,6 +1411,9 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
 
   double Fext = EMf->getFext();
 
+  if(Gravity)
+		Fext /= qom;
+
   const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
   // don't bother trying to push any particles simultaneously;
@@ -1632,6 +1635,8 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
   double Fext = EMf->getFext();
+  if(Gravity)
+		Fext /= qom;
 
   // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   // don't bother trying to push any particles simultaneously;
@@ -1765,6 +1770,8 @@ int Particles3D::mover_PC_sub_cyl(Grid * grid, VirtualTopology3D * vct, Field * 
   double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
   double Fext = EMf->getFext();
+  if(Gravity)
+		Fext /= qom;
 
   // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   // don't bother trying to push any particles simultaneously;
@@ -1966,6 +1973,8 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
 	  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
 	  double Fext = EMf->getFext();
+	  if(Gravity)
+			Fext /= qom;
 
 	  // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
 	  // don't bother trying to push any particles simultaneously;
@@ -2133,7 +2142,8 @@ int Particles3D::mover_relativistic_celeste(Grid * grid, VirtualTopology3D * vct
 	  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
 	  double Fext = EMf->getFext();
-
+	  if(Gravity)
+			Fext /= qom;
 	  // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
 	  // don't bother trying to push any particles simultaneously;
 	  // MIC already does vectorization automatically, and trying
