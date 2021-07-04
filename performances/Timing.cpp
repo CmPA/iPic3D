@@ -55,7 +55,7 @@ void Timing::stopTiming() {
     cout << endl;
     cout << endl;
     cout << "*** SIMULATION ENDED SUCESSFULLY ***" << endl;
-    cout << " PARSEK Simulation Time: " << texecution << " sec" << " (" << texecution / 3600 << " hours)" << endl;
+    cout << " iPic3D Simulation Time: " << texecution << " sec" << " (" << texecution / 3600 << " hours)" << endl;
     cout << "***" << endl;
     cout << endl;
   }

@@ -1,7 +1,10 @@
 
 #include "iPic3D.h"
+#include "MyClock.h"
 
 using namespace iPic3D;
+
+extern MyClock *clocks;
 
 int c_Solver::Init(int argc, char **argv) {
   // initialize MPI environment
@@ -10,6 +13,11 @@ int c_Solver::Init(int argc, char **argv) {
   mpi = new MPIdata(&argc, &argv);
   nprocs = mpi->nprocs;
   myrank = mpi->rank;
+
+  clocks = new MyClock(6);
+
+  clocks->start(0);
+  clocks->start(5);
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
   verbose = col->getVerbose();
@@ -280,6 +288,7 @@ int c_Solver::Init(int argc, char **argv) {
 
   my_clock = new Timing(myrank);
 
+  clocks->stop(0);
   return 0;
 }
 
@@ -370,10 +379,12 @@ bool c_Solver::ParticlesMover() {
 	  else{
 		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
 		  //mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
+
 		  if(col->getCase()=="GEMRelativity" || col->getCase()=="Relativistic")
 			  mem_avail = part[i].mover_relativistic(grid, vct, EMf);
 		  else
-			  mem_avail = part[i].mover_PC_old(grid, vct, EMf); // use the Predictor Corrector scheme
+			  mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme
+
 	  }
   }
   // timeTasks.end(TimeTasks::PARTICLES);
@@ -691,20 +702,32 @@ void c_Solver::Finalize() {
   }
 
   // stop profiling
+  clocks->stop(5);
+  // stop profiling
   my_clock->stopTiming();
+
+  //if(myrank == 0) cout << "Deallocating"<<endl;
+
 
   // deallocate
   delete[]Ke;
   delete[]BulkEnergy;
   delete[]momentum;
   delete[] Qtot;
+
   delete[] Qremoved;
-  delete[] VelocityDist;
+  //delete[] VelocityDist;
+
   delete[] totParticles;
   delete[] globalTotParticles;
   delete[] speciesTemp;
   delete[] qom;
 
+
+  //if(myrank == 0) cout << "Closing MPI"<<endl;
+
   // close MPI
   mpi->finalize_mpi();
+
+  //if(myrank == 0) cout << "Closed MPI"<<endl;
 }
