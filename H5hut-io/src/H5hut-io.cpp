@@ -37,6 +37,7 @@ void H5output::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, in
   /* Open HDF5 file */
   /* -------------- */
 
+// Old H5hut uses the next line
 //fldsfile = H5OpenFile(filename.c_str(), H5_O_RDWR, CART_COMM);
   fldsfile = H5OpenFile(filename.c_str(), H5_O_RDWR, H5_PROP_DEFAULT);
   H5SetStep(fldsfile,0);
@@ -106,6 +107,7 @@ void H5output::OpenPartclFile(int nspec, MPI_Comm CART_COMM){
   /* Open HDF5 file */
   /* -------------- */
 
+// Old H5hut uses the next line
 //  partfile = H5OpenFile(filename.c_str(), H5_O_WRONLY, CART_COMM);
   partfile = H5OpenFile(filename.c_str(), H5_O_WRONLY, H5_PROP_DEFAULT);
   H5SetStep(partfile,0);
@@ -400,6 +402,7 @@ int H5input::OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int 
   if (fd == 0) return -1;
   else fclose(fd);
 
+// Old H5hut uses the next line
 //  fldsfile = H5OpenFile(filename.c_str(), H5_O_RDONLY, CART_COMM);
   fldsfile = H5OpenFile(filename.c_str(), H5_O_RDONLY, H5_PROP_DEFAULT);
   H5SetStep(fldsfile, 0);

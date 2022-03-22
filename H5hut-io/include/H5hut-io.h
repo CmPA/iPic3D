@@ -5,6 +5,7 @@
 #include <H5hut.h>
 #include <stdio.h>
 
+#include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <ostream>
@@ -30,6 +31,9 @@ class H5output{
     std::string basename;
     h5_file_t   partfile;
     h5_file_t   fldsfile;
+    // Old H5hut libraries use the next two lines
+    //h5_file_t   *partfile;
+    //h5_file_t   *fldsfile;
 };
 
 class H5input{
@@ -57,6 +61,8 @@ class H5input{
 
     // Field input:
     h5_file_t   fldsfile;
+    // Old H5hut libraries use the next  line
+    //h5_file_t   *fldsfile;
 
     // Particle input PHDF5:
     unsigned int *inproc;
