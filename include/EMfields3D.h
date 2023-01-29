@@ -42,9 +42,6 @@ class Moments {
     double ***Jx;
     double ***Jy;
     double ***Jz;
-    double ***Jxh;
-    double ***Jyh;
-    double ***Jzh;
 
     /** pressure tensor components, defined on nodes */
     double ***pXX;
@@ -53,23 +50,6 @@ class Moments {
     double ***pYY;
     double ***pYZ;
     double ***pZZ;
-    double ***phXX;
-    double ***phXY;
-    double ***phXZ;
-    double ***phYY;
-    double ***phYZ;
-    double ***phZZ;
-
-    /** mu tensor components, defined on nodes */
-    double ***muxx;
-    double ***muxy;
-    double ***muxz;
-    double ***muyx;
-    double ***muyy;
-    double ***muyz;
-    double ***muzx;
-    double ***muzy;
-    double ***muzz;
     int nx;
     int ny;
     int nz;
@@ -98,15 +78,6 @@ class Moments {
     double get_Jz(int i, int j, int k) const {
       return Jz[i][j][k];
     }
-    double get_Jxh(int i, int j, int k) const {
-      return Jxh[i][j][k];
-    }
-    double get_Jyh(int i, int j, int k) const {
-      return Jyh[i][j][k];
-    }
-    double get_Jzh(int i, int j, int k) const {
-      return Jzh[i][j][k];
-    }
     double get_pXX(int i, int j, int k) const {
       return pXX[i][j][k];
     }
@@ -125,51 +96,6 @@ class Moments {
     double get_pZZ(int i, int j, int k) const {
       return pZZ[i][j][k];
     }
-    double get_phXX(int i, int j, int k) const {
-      return phXX[i][j][k];
-    }
-    double get_phXY(int i, int j, int k) const {
-      return phXY[i][j][k];
-    }
-    double get_phXZ(int i, int j, int k) const {
-      return phXZ[i][j][k];
-    }
-    double get_phYY(int i, int j, int k) const {
-      return phYY[i][j][k];
-    }
-    double get_phYZ(int i, int j, int k) const {
-      return phYZ[i][j][k];
-    }
-    double get_phZZ(int i, int j, int k) const {
-      return phZZ[i][j][k];
-    }
-    double get_muxx(int i, int j, int k) const {
-      return muxx[i][j][k];
-    }
-    double get_muxy(int i, int j, int k) const {
-      return muxy[i][j][k];
-    }
-    double get_muxz(int i, int j, int k) const {
-      return muxz[i][j][k];
-    }
-    double get_muyx(int i, int j, int k) const {
-      return muyx[i][j][k];
-    }
-    double get_muyy(int i, int j, int k) const {
-      return muyy[i][j][k];
-    }
-    double get_muyz(int i, int j, int k) const {
-      return muyz[i][j][k];
-    }
-    double get_muzx(int i, int j, int k) const {
-      return muzx[i][j][k];
-    }
-    double get_muzy(int i, int j, int k) const {
-      return muzy[i][j][k];
-    }
-    double get_muzz(int i, int j, int k) const {
-      return muzz[i][j][k];
-    }
   public:
     Moments() {
     };
@@ -180,9 +106,6 @@ class Moments {
     void addJx(double weight[][2][2], int X, int Y, int Z);
     void addJy(double weight[][2][2], int X, int Y, int Z);
     void addJz(double weight[][2][2], int X, int Y, int Z);
-    void addJxh(double weight[][2][2], int X, int Y, int Z);
-    void addJyh(double weight[][2][2], int X, int Y, int Z);
-    void addJzh(double weight[][2][2], int X, int Y, int Z);
 
     void addPxx(double weight[][2][2], int X, int Y, int Z);
     void addPxy(double weight[][2][2], int X, int Y, int Z);
@@ -190,22 +113,6 @@ class Moments {
     void addPyy(double weight[][2][2], int X, int Y, int Z);
     void addPyz(double weight[][2][2], int X, int Y, int Z);
     void addPzz(double weight[][2][2], int X, int Y, int Z);
-    void addPhxx(double weight[][2][2], int X, int Y, int Z);
-    void addPhxy(double weight[][2][2], int X, int Y, int Z);
-    void addPhxz(double weight[][2][2], int X, int Y, int Z);
-    void addPhyy(double weight[][2][2], int X, int Y, int Z);
-    void addPhyz(double weight[][2][2], int X, int Y, int Z);
-    void addPhzz(double weight[][2][2], int X, int Y, int Z);
-
-    void addmuxx(double weight[][2][2], int X, int Y, int Z);
-    void addmuxy(double weight[][2][2], int X, int Y, int Z);
-    void addmuxz(double weight[][2][2], int X, int Y, int Z);
-    void addmuyx(double weight[][2][2], int X, int Y, int Z);
-    void addmuyy(double weight[][2][2], int X, int Y, int Z);
-    void addmuyz(double weight[][2][2], int X, int Y, int Z);
-    void addmuzx(double weight[][2][2], int X, int Y, int Z);
-    void addmuzy(double weight[][2][2], int X, int Y, int Z);
-    void addmuzz(double weight[][2][2], int X, int Y, int Z);
 };
 
 // construct empty instance (not zeroed)
@@ -218,30 +125,12 @@ inline Moments::Moments(int nx_, int ny_, int nz_, double invVOL_) {
   Jx = newArr3(double, nx, ny, nz);
   Jy = newArr3(double, nx, ny, nz);
   Jz = newArr3(double, nx, ny, nz);
-  Jxh = newArr3(double, nx, ny, nz);
-  Jyh = newArr3(double, nx, ny, nz);
-  Jzh = newArr3(double, nx, ny, nz);
   pXX = newArr3(double, nx, ny, nz);
   pXY = newArr3(double, nx, ny, nz);
   pXZ = newArr3(double, nx, ny, nz);
   pYY = newArr3(double, nx, ny, nz);
   pYZ = newArr3(double, nx, ny, nz);
   pZZ = newArr3(double, nx, ny, nz);
-  phXX = newArr3(double, nx, ny, nz);
-  phXY = newArr3(double, nx, ny, nz);
-  phXZ = newArr3(double, nx, ny, nz);
-  phYY = newArr3(double, nx, ny, nz);
-  phYZ = newArr3(double, nx, ny, nz);
-  phZZ = newArr3(double, nx, ny, nz);
-  muxx = newArr3(double, nx, ny, nz);
-  muxy = newArr3(double, nx, ny, nz);
-  muxz = newArr3(double, nx, ny, nz);
-  muyx = newArr3(double, nx, ny, nz);
-  muyy = newArr3(double, nx, ny, nz);
-  muyz = newArr3(double, nx, ny, nz);
-  muzx = newArr3(double, nx, ny, nz);
-  muzy = newArr3(double, nx, ny, nz);
-  muzz = newArr3(double, nx, ny, nz);
 }
 
 inline Moments::~Moments() {
@@ -250,30 +139,12 @@ inline Moments::~Moments() {
   delArr3(Jx, nx, ny);
   delArr3(Jy, nx, ny);
   delArr3(Jz, nx, ny);
-  delArr3(Jxh, nx, ny);
-  delArr3(Jyh, nx, ny);
-  delArr3(Jzh, nx, ny);
   delArr3(pXX, nx, ny);
   delArr3(pXY, nx, ny);
   delArr3(pXZ, nx, ny);
   delArr3(pYY, nx, ny);
   delArr3(pYZ, nx, ny);
   delArr3(pZZ, nx, ny);
-  delArr3(phXX, nx, ny);
-  delArr3(phXY, nx, ny);
-  delArr3(phXZ, nx, ny);
-  delArr3(phYY, nx, ny);
-  delArr3(phYZ, nx, ny);
-  delArr3(phZZ, nx, ny);
-  delArr3(muxx, nx, ny);
-  delArr3(muxy, nx, ny);
-  delArr3(muxz, nx, ny);
-  delArr3(muyz, nx, ny);
-  delArr3(muyy, nx, ny);
-  delArr3(muyz, nx, ny);
-  delArr3(muzx, nx, ny);
-  delArr3(muzy, nx, ny);
-  delArr3(muzz, nx, ny);
 }
 
 inline void Moments::set_to_zero() {
@@ -285,30 +156,12 @@ inline void Moments::set_to_zero() {
         Jx[i][j][k] = 0.0;
         Jy[i][j][k] = 0.0;
         Jz[i][j][k] = 0.0;
-        Jxh[i][j][k] = 0.0;
-        Jyh[i][j][k] = 0.0;
-        Jzh[i][j][k] = 0.0;
         pXX[i][j][k] = 0.0;
         pXY[i][j][k] = 0.0;
         pXZ[i][j][k] = 0.0;
         pYY[i][j][k] = 0.0;
         pYZ[i][j][k] = 0.0;
         pZZ[i][j][k] = 0.0;
-        phXX[i][j][k] = 0.0;
-        phXY[i][j][k] = 0.0;
-        phXZ[i][j][k] = 0.0;
-        phYY[i][j][k] = 0.0;
-        phYZ[i][j][k] = 0.0;
-        phZZ[i][j][k] = 0.0;
-        muxx[i][j][k] = 0.0;
-        muxy[i][j][k] = 0.0;
-        muxz[i][j][k] = 0.0;
-        muyx[i][j][k] = 0.0;
-        muyy[i][j][k] = 0.0;
-        muyz[i][j][k] = 0.0;
-        muzx[i][j][k] = 0.0;
-        muzy[i][j][k] = 0.0;
-        muzz[i][j][k] = 0.0;
       }
 }
 
@@ -325,8 +178,50 @@ class EMfields3D                // :public Field
 
     /*! initialize the electromagnetic fields with constant values */
     void init(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! init beam */
+    void initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col, double x_center, double y_center, double z_center, double radius);
+    /*! initiliaze Harris plus background but with less shear a-la Fujimoto */
+    void initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize GEM challenge */
+    void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! Initialize KAW Turbulence */
     void initKAWTurbulencePert(VirtualTopology3D * vct, Grid * grid, Collective *col, double mime, double TiTe);
+    /*! initialize Harris in steps */
+    void initHarris_Steps(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize doubel harris with Hump perturbation (Alex Johnson) */
+    void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize doubel harris one normal and one with steps */
+    void initDoublePeriodicHarrisSteps(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize GEM challenge with dipole-like tail without perturbation */
+    void initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize GEM challenge with no Perturbation */
+    void initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! initialize from BATSRUS */
+    void initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective * col);
+    /*! Random initial field */
+    void initRandomField(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! Init Force Free (JxB=0) */
+    void initForceFree(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /*! Init Force Free for the series of Stefan's runs */
+    void initForceFreeWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /**  Init WB8 */
+    void initWB8(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    /**  Init Two Coils */
+    void initTwoCoils(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    /** Init Flux Rope based on pressure equilibrium */
+    void initFluxRope(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    /*! initialized with rotated magnetic field */
+    void initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta);
+    /*! add a perturbattion to charge density */
+    void AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid);
+    /*! add a perturbattion to the EM field */
+    void AddPerturbation(double deltaBoB, double kx, double ky, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, double B0, Grid * grid);
+    /*! Initialise a combination of magnetic dipoles */
+    void initDipole(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    void initDipole_2(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    void SetDipole_2Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
+    void SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
 
     /*! Calculate Electric field using the implicit Maxwell solver */
     void startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col);
@@ -374,14 +269,13 @@ class EMfields3D                // :public Field
     void sumOverSpecies(VirtualTopology3D * vct);
     /*! Sum current over different species */
     void sumOverSpeciesJ();
-    /* Smooth E and store smoothed E field */
-    void smoothE(VirtualTopology3D * vct, Grid * grid, Collective * col);
-    /* Smooth Eth and store smoothed Eth field */
-    void smoothEth(VirtualTopology3D * vct, Grid * grid, Collective * col);
     /*! Smoothing after the interpolation* */
-    void smooth(double smvalue, int ntimes, int smtype, double ***vector, int type, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft,  Grid * grid, VirtualTopology3D * vct);
+    void smooth(double value, int Nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
-    void smooths(double smvalue, int ntimes, int smtype, double ****vector, int type, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft,  Grid * grid, VirtualTopology3D * vct, int nspecies);
+    void smooth(double value, int Nvolte, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
+    /*! smooth the electric field */
+    void smoothE(double value, int Nvolte, VirtualTopology3D * vct, Collective *col);
+
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
@@ -394,12 +288,6 @@ class EMfields3D                // :public Field
     void addJy(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
     void addJz(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of current density hat - direction X to current density field at node X,Y,Z */
-    void addJxh(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of current density hat - direction Y to current density field at node X,Y,Z */
-    void addJyh(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of current density hat - direction Z to current density field at node X,Y,Z */
-    void addJzh(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! add an amount of EF - direction X  at node X,Y,Z */
     void addEFx(double weight[][2][2], int X, int Y, int Z, int is);
@@ -420,37 +308,6 @@ class EMfields3D                // :public Field
     void addPyz(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction ZZ to current density field at node X,Y,Z */
     void addPzz(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of pressure density hat - direction XX to current density field at node X,Y,Z */
-    void addPhxx(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of pressure density hat - direction XY to current density field at node X,Y,Z */
-    void addPhxy(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of pressure density hat - direction XZ to current density field at node X,Y,Z */
-    void addPhxz(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of pressure density hat - direction YY to current density field at node X,Y,Z */
-    void addPhyy(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of pressure density hat - direction YZ to current density field at node X,Y,Z */
-    void addPhyz(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of pressure density hat - direction ZZ to current density field at node X,Y,Z */
-    void addPhzz(double weight[][2][2], int X, int Y, int Z, int is);
-
-    /*! add an amount of mu tensor - direction XX to current density field at node X,Y,Z */
-    void addmuxx(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of mu tensor - direction XY to current density field at node X,Y,Z */
-    void addmuxy(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of mu tensor - direction XZ to current density field at node X,Y,Z */
-    void addmuxz(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of mu tensor - direction YX to current density field at node X,Y,Z */
-    void addmuyx(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of mu tensor - direction YY to current density field at node X,Y,Z */
-    void addmuyy(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of mu tensor - direction YZ to current density field at node X,Y,Z */
-    void addmuyz(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of mu tensor - direction ZX to current density field at node X,Y,Z */
-    void addmuzx(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of mu tensor - direction ZY to current density field at node X,Y,Z */
-    void addmuzy(double weight[][2][2], int X, int Y, int Z, int is);
-    /*! add an amount of mu tensor - direction ZZ to current density field at node X,Y,Z */
-    void addmuzz(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! adjust densities on boundaries that are not periodic */
     void adjustNonPeriodicDensities(int is, VirtualTopology3D * vct);
@@ -490,24 +347,6 @@ class EMfields3D                // :public Field
     double ***getEz();
     /*! get Electric field Z component cell array without the ghost cells */
     double ***getEzc();
-    /*! get Electric field th X component array */
-    double ***getExth();
-    /*! get Electric field th Y component array */
-    double ***getEyth();
-    /*! get Electric field th Z component array */
-    double ***getEzth();
-    /*! get SMOOTHED Electric field th X component array */
-    double ***getExthsm();
-    /*! get SMOOTHED Electric field th Y component array */
-    double ***getEythsm();
-    /*! get SMOOTHED Electric field th Z component array */
-    double ***getEzthsm();
-    /*! get SMOOTHED Electric field X component array */
-    double ***getExsm();
-    /*! get SMOOTHED Electric field Y component array */
-    double ***getEysm();
-    /*! get SMOOTHED Electric field Z component array */
-    double ***getEzsm();
     /*! get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
     double &getBx(int indexX, int indexY, int indexZ) const;
     /*! get Magnetic field X component array */
@@ -677,12 +516,10 @@ class EMfields3D                // :public Field
     double dt;
     /*! decentering parameter */
     double th;
-    /*! Smoothing type */
-    int TypeSmooth;
     /*! Smoothing value */
-    double ValSmooth;
-    /** number of smoothing passes */
-    int nsmooth;
+    double Smooth;
+    /** Nvolte value*/
+    int Nvolte;
     /*! delt = c*th*dt */
     double delt;
     /*! number of particles species */
@@ -754,18 +591,6 @@ class EMfields3D                // :public Field
     double ***Ez;
     /*! Ezth: implicit electric field Z-component (indexX, indexY, indexZ), defined on nodes */
     double ***Ezth;
-    /*! Exsm: SMOOTHED electric field X-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Exsm;
-    /*! Exthsm: SMOOTHED implicit electric field X-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Exthsm;
-    /*! Eysm: SMOOTHED electric field Y-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Eysm;
-    /*! Eythsm: SMOOTHED implicit electric field Y-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Eythsm;
-    /*! Ezsm: SMOOTHED electric field Z-component (indexX, indexY, indexZ, #species), defined on nodes */
-    double ***Ezsm;
-    /*! Ezthsm: SMOOTHED implicit electric field Z-component (indexX, indexY, indexZ), defined on nodes */
-    double ***Ezthsm;
     /*! Bxc: magnetic field X-component (indexX, indexY, indexZ), defined on central points between nodes */
     double ***Bxc;
     /*! Byc: magnetic field Y-component (indexX, indexY, indexZ), defined on central points between nodes */
@@ -843,11 +668,11 @@ class EMfields3D                // :public Field
     double ****Jys;
     /*! SPECIES: current density component-Z for species, defined on nodes */
     double ****Jzs;
-    /*! SPECIES: current density hat component-X for species, defined on nodes */
+    /*! SPECIES: current density component-X for species, defined on nodes */
     double ****Jxhs;
-    /*! SPECIES: current density hat component-Y for species, defined on nodes */
+    /*! SPECIES: current density component-Y for species, defined on nodes */
     double ****Jyhs;
-    /*! SPECIES: current density hat component-Z for species, defined on nodes */
+    /*! SPECIES: current density component-Z for species, defined on nodes */
     double ****Jzhs;
     /*! SPECIES: Energy Flux density component-X for species, defined on nodes */
     double ****EFxs;
@@ -888,19 +713,37 @@ class EMfields3D                // :public Field
     double ****pYZsn;
     /*! SPECIES: pressure tensor component-ZZ, defined on nodes */
     double ****pZZsn;
-    /*! SPECIES: pressure tensor hat component-XX, defined on nodes */
+    /*! SPECIES: pressure tensor component-XX, defined on nodes */
     double ****phXXsn;
-    /*! SPECIES: pressure tensor hat component-XY, defined on nodes */
+    /*! SPECIES: pressure tensor component-XY, defined on nodes */
     double ****phXYsn;
-    /*! SPECIES: pressure tensor hat component-XZ, defined on nodes */
+    /*! SPECIES: pressure tensor component-XZ, defined on nodes */
     double ****phXZsn;
-    /*! SPECIES: pressure tensor hat component-XZ, defined on nodes */
+    /*! SPECIES: pressure tensor component-XZ, defined on nodes */
     double ****phYYsn;
-    /*! SPECIES: pressure tensor hat component-YZ, defined on nodes */
+    /*! SPECIES: pressure tensor component-YZ, defined on nodes */
     double ****phYZsn;
-    /*! SPECIES: pressure tensor hat component-ZZ, defined on nodes */
+    /*! SPECIES: pressure tensor component-ZZ, defined on nodes */
     double ****phZZsn;
 
+    /*! mu tensor component-XX, defined on nodes */
+    double ***muxx;
+    /*! mu tensor component-XY, defined on nodes */
+    double ***muxy;
+    /*! mu tensor component-XZ, defined on nodes */
+    double ***muxz;
+    /*! mu tensor component-YX, defined on nodes */
+    double ***muyx;
+    /*! mu tensor component-YY, defined on nodes */
+    double ***muyy;
+    /*! mu tensor component-YZ, defined on nodes */
+    double ***muyz;
+    /*! mu tensor component-ZX, defined on nodes */
+    double ***muzx;
+    /*! mu tensor component-ZY, defined on nodes */
+    double ***muzy;
+    /*! mu tensor component-ZZ, defined on nodes */
+    double ***muzz;
     /*! SPECIES: mu tensor component-XX, defined on nodes */
     double ****muxxs;
     /*! SPECIES: mu tensor component-XY, defined on nodes */
@@ -966,8 +809,8 @@ class EMfields3D                // :public Field
     int restart1;
     /*! String with the directory for the restart file */
     string RestartDirName;
-    /*! Field Init */
-    string FieldInit;
+    /*! Case */
+    string Case;
 
     /*! CG tolerance criterium for stopping iterations */
     double CGtol;

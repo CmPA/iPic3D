@@ -19,11 +19,11 @@ void Collective::ReadInput(string inputfile) {
     }
 #endif
 
+    dt = config.read < double >("dt");
     ncycles = config.read < int >("ncycles");
     th = config.read < double >("th", 1.0);
-    TypeSmooth = config.read < string >("TypeSmooth");
-    config.readInto(ValSmooth, "ValSmooth", 0.5);
-    nsmooth = config.read<int>( "NSmooth");
+    config.readInto(Smooth, "Smooth", 1.0);
+	Nvolte = config.read<int>( "Nvolte",6);
     SaveDirName = config.read < string > ("SaveDirName");
     RestartDirName = config.read < string > ("RestartDirName");
     ns = config.read < int >("ns");
@@ -53,15 +53,16 @@ void Collective::ReadInput(string inputfile) {
 
     delta = config.read < double >("delta");
 
+    Case              = config.read<string>("Case");
     FieldsInit        = config.read<string>("FieldsInit");
     PartInit          = config.read<string>("PartInit");
     PartSymmetric     = config.read< bool >("PartSymmetric",0);
-    Relativistic      = config.read< bool >("Relativistic", 1);
     wmethod           = config.read<string>("WriteMethod");
     SimName           = config.read<string>("SimulationName");
 
     PoissonCorrection = config.read<string>("PoissonCorrection","no");
     LambdaDamping	  = config.read<string>("LambdaDamping","no");
+    Gravity			  = config.read< bool >("Gravity",0);
 
     rhoINIT = new double[ns];
     array_double rhoINIT0 = config.read < array_double > ("rhoINIT");
@@ -108,9 +109,9 @@ void Collective::ReadInput(string inputfile) {
     XLEN      = config.read < int > ("XLEN",1);
     YLEN      = config.read < int > ("YLEN",1);
     ZLEN      = config.read < int > ("ZLEN",1);
-    PERIODICX = config.read < bool >("PERIODICX");
-    PERIODICY = config.read < bool >("PERIODICY");
-    PERIODICZ = config.read < bool >("PERIODICZ");
+    PERIODICX = config.read < bool >("PERIODICX",1);
+    PERIODICY = config.read < bool >("PERIODICY",1);
+    PERIODICZ = config.read < bool >("PERIODICZ",1);
     cylindrical = config.read < bool >("cylindrical",0);
 
   }
@@ -141,9 +142,6 @@ void Collective::ReadInput(string inputfile) {
     nyc = config.read < int >("nyc");
     nzc = config.read < int >("nzc");
 #endif
-   
-    // Time step from CFL condition
-    dt = Lx/double(nxc) * (config.read < double >("CFL"));
 
     x_center = config.read < double >("x_center", 0.);
     y_center = config.read < double >("y_center", 0.);
@@ -391,9 +389,6 @@ void Collective::ReadInput(string inputfile) {
     nyc = config.read < int >("nyc");
     nzc = config.read < int >("nzc");
 #endif
-
-    // Time step from CFL condition
-    dt = Lx/double(nxc) * (config.read < double >("CFL"));
 
     x_center = config.read < double >("x_center");
     y_center = config.read < double >("y_center");
@@ -801,12 +796,12 @@ int Collective::ReadRestart(string inputfile) {
     status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &th);
     status = H5Dclose(dataset_id);
     // read Smooth
-    dataset_id = H5Dopen2(file_id, "/collective/ValSmooth", H5P_DEFAULT); // HDF 1.8.8
-    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &ValSmooth);
+    dataset_id = H5Dopen2(file_id, "/collective/Smooth", H5P_DEFAULT); // HDF 1.8.8
+    status = H5Dread(dataset_id, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, &Smooth);
     status = H5Dclose(dataset_id);
 	// read Nvolte
-	dataset_id = H5Dopen(file_id, "/collective/nsmooth", H5P_DEFAULT);  // HDF 1.8.8
-	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&nsmooth);
+	dataset_id = H5Dopen(file_id, "/collective/Nvolte", H5P_DEFAULT);  // HDF 1.8.8
+	status = H5Dread(dataset_id, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT,&Nvolte);
 	status = H5Dclose(dataset_id);
   }
 
@@ -927,11 +922,42 @@ void Collective::Print() {
   cout << "Time step                = " << dt << endl;
   cout << "Number of cycles         = " << ncycles << endl;
   cout << "Results saved in  : " << SaveDirName << endl;
-  cout << "Field initial conditions         : " << FieldsInit << endl;
-  cout << "Particle initial conditions      : " << PartInit << endl;
+  cout << "Case type         : " << Case << endl;
   cout << "Simulation name   : " << SimName << endl;
   cout << "Poisson correction: " << PoissonCorrection << endl;
   cout << "---------------------" << endl;
+  cout << "Check Simulation Constraints" << endl;
+  cout << "---------------------" << endl;
+  cout << "Accuracy Constraint:  " << endl;
+  for (int i = 0; i < ns; i++) {
+    cout << "u_th < dx/dt species " << i << ".....";
+    if (uth[i] < (dx / dt))
+      cout << "OK" << endl;
+    else
+      cout << "NOT SATISFIED. STOP THE SIMULATION." << endl;
+
+    cout << "v_th < dy/dt species " << i << "......";
+    if (vth[i] < (dy / dt))
+      cout << "OK" << endl;
+    else
+      cout << "NOT SATISFIED. STOP THE SIMULATION." << endl;
+  }
+  cout << endl;
+  cout << "Finite Grid Stability Constraint:  ";
+  cout << endl;
+  for (int is = 0; is < ns; is++) {
+    if (uth[is] * dt / dx > .1)
+      cout << "OK u_th*dt/dx (species " << is << ") = " << uth[is] * dt / dx << " > .1" << endl;
+    else
+      cout << "WARNING.  u_th*dt/dx (species " << is << ") = " << uth[is] * dt / dx << " < .1" << endl;
+
+    if (vth[is] * dt / dy > .1)
+      cout << "OK v_th*dt/dy (species " << is << ") = " << vth[is] * dt / dy << " > .1" << endl;
+    else
+      cout << "WARNING. v_th*dt/dy (species " << is << ") = " << vth[is] * dt / dy << " < .1"  << endl;
+
+  }
+
 
 }
 /*! Print Simulation Parameters */
@@ -966,9 +992,8 @@ void Collective::save() {
   my_file << "BOy                      = " << B0y << endl;
   my_file << "B0z                      = " << B0z << endl;
   my_file << "---------------------------" << endl;
-  my_file << "Smoothing type           = " << TypeSmooth << endl;
-  my_file << "Smoothing value          = " << ValSmooth << endl;
-  my_file << "Smoothing passes         = " << nsmooth  << endl;
+  my_file << "Smooth                   = " << Smooth << endl;
+  my_file  << "Nvolte                   = " << Nvolte  << endl;
   my_file << "GMRES error tolerance    = " << GMREStol << endl;
   my_file << "CG error tolerance       = " << CGtol << endl;
   my_file << "Mover error tolerance    = " << NiterMover << endl;
@@ -1060,17 +1085,14 @@ double Collective::getDt() {
 double Collective::getTh() {
   return (th);
 }
-/*! get the smoothing type  */
-string Collective::getTypeSmooth() {
-  return (TypeSmooth);
-}
 /*! get the smooth parameter */
-double Collective::getValSmooth() {
-  return (ValSmooth);
+double Collective::getSmooth() {
+  return (Smooth);
 }
-/** get the number of smoothing passes */
-int Collective::getNSmooth(){
-	return(nsmooth);
+
+/** get the Nvolte parameter */
+int Collective::getNvolte(){
+	return(Nvolte);
 }
 
 /*! get the number of time cycles */
@@ -1294,9 +1316,9 @@ string Collective::getinputfile() {
 string Collective::getinitfile() {
   return (initfile);
 }
-/*! get Field init type */
-string Collective::getFieldInit() {
-  return (FieldsInit);
+/*! get Case type */
+string Collective::getCase() {
+  return (Case);
 }
 /*! get Particle initialization type */
 string Collective::getPartInit() {
@@ -1305,10 +1327,6 @@ string Collective::getPartInit() {
 /*! get Particle initialization symmetric yes/no */
 bool Collective::getPartSymmetric() {
   return (PartSymmetric);
-}
-/*! relativistic yes/no */
-bool Collective::getRelativistic() {
-  return (Relativistic);
 }
 /*! get simulation name */
 string Collective::getSimName() {
@@ -1325,6 +1343,10 @@ string Collective::getPoissonCorrection() {
 /*! get Lambda Damping flag */
 string Collective::getLambdaDamping() {
   return (LambdaDamping);
+}
+/*! get Gavity as external field form input file E_ext */
+bool Collective::getGravity() {
+  return (Gravity);
 }
 /*! get initial solution flag */
 bool Collective::getSolInit() {

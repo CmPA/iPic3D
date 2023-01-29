@@ -67,7 +67,8 @@ class Collective
     double getcoilD();
     /** getgeometry coild - Coil Spacing */
     double getcoilSpacing();
-
+    /** Gravity as external force */
+    bool getGravity();
 
     /*! Get the number of cells - direction X */
     int getNxc();
@@ -98,12 +99,10 @@ class Collective
     double getDt();
     /*! get the decentering parameter */
     double getTh();
-    /*! get the Smoothing type */
-    string getTypeSmooth();
     /*! get the Smoothing value */
-    double getValSmooth();
-    /** get the number of smoothing passes */
-    int getNSmooth();
+    double getSmooth();
+	/** get the Nvolte value*/
+    int getNvolte();
     /*! get the number of time cycles */
     int getNcycles();
     /*! get the number of species */
@@ -149,14 +148,12 @@ class Collective
     /*! get RestartDirName */
     string getRestartDirName();
 
-    /*! get Field Init type */
-    string getFieldInit();
+    /*! get Case type */
+    string getCase();
     /*! get particle initialization type */
     string getPartInit();
     /*! get particle initialization symmetric yes/no */
     bool getPartSymmetric();
-    /*! get relativistic yes/no */
-    bool getRelativistic();
     /*! get output writing method */
     string getWriteMethod();
     /*! get simulation name */
@@ -168,6 +165,9 @@ class Collective
 
     /*! get initial solution flag */
     bool getSolInit();
+
+    /** Gravity as external force field marked by E_ext in the input file */
+    bool Gravity;
 
     /*! get Boundary Condition Particles: FaceXright */
     int getBcPfaceXright();
@@ -289,12 +289,10 @@ class Collective
     double dt;
     /*! decentering parameter */
     double th;
-    /*! Smoothing type */
-    string TypeSmooth;
     /*! Smoothing value */
-    double ValSmooth;
+    double Smooth;
     /** Smoothing times*/
-    int nsmooth;
+    int Nvolte;
     /*! number of time cycles */
     int ncycles;
     /*! physical space dimensions */
@@ -377,14 +375,14 @@ class Collective
     /*! Drift velocity - Direction Z */
     double *w0;
 
+    /*! Case type */
+    string Case;
     /*! Fields initialization type */
     string FieldsInit;
     /*! Particle initialization type */
     string PartInit;
     /*! Particle initialization symmetric yes/no */
     bool PartSymmetric;
-    /*! Relativistic yes/no */
-    bool Relativistic;
     /*! Output writing method */
     string wmethod;
     /*! Simulation name */

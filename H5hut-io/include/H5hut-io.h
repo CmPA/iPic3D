@@ -5,6 +5,7 @@
 #include <H5hut.h>
 #include <stdio.h>
 
+#include <cstdlib>
 #include <iostream>
 #include <iomanip>
 #include <ostream>
@@ -21,13 +22,18 @@ class H5output{
 
     void OpenPartclFile(int nspec, MPI_Comm CART_COMM);
     void WriteParticles(int ispec, long long np, double *q, double *x, double *y, double *z, double *u, double *v, double *w, MPI_Comm CART_COMM);
+    void WriteParticles(int ispec, long long np, long long* rank, long long *id, double *q, double *x, double *y, double *z, double *u, double *v, double *w, MPI_Comm CART_COMM);
+    void WriteTestParticles(int ispec, long long np, long long *rank, long long* id,  double *q, double *x, double *y, double *z, double *u, double *v, double *w, double* Exl, double* Eyl, double* Ezl, double* Bxl, double *Byl, double* Bzl, MPI_Comm CART_COMM);
     void ClosePartclFile();
     
   private:
     int         cycle;
     std::string basename;
-    h5_file_t   *partfile;
-    h5_file_t   *fldsfile;
+    h5_file_t   partfile;
+    h5_file_t   fldsfile;
+    // Old H5hut libraries use the next two lines
+    //h5_file_t   *partfile;
+    //h5_file_t   *fldsfile;
 };
 
 class H5input{
@@ -35,8 +41,8 @@ class H5input{
     void SetNameCycle(std::string name, int rc);
 
     // Field read functions:
-    void OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *pdims, MPI_Comm CART_COMM);
-    void ReadFields(double ***field, std::string fname, int nx, int ny, int nz, int rank=-1);
+    int  OpenFieldsFile(std::string dtype, int nspec, int ntx, int nty, int ntz, int *coord, int *pdims, MPI_Comm CART_COMM);
+    int ReadFields(double ***field, std::string fname, int nx, int ny, int nz, int rank=-1);
     void CloseFieldsFile();
 
     // Particle read functions:
@@ -54,7 +60,9 @@ class H5input{
     std::string basename;
 
     // Field input:
-    h5_file_t   *fldsfile;
+    h5_file_t   fldsfile;
+    // Old H5hut libraries use the next  line
+    //h5_file_t   *fldsfile;
 
     // Particle input PHDF5:
     unsigned int *inproc;

@@ -1,7 +1,10 @@
 
 #include "iPic3D.h"
+#include "MyClock.h"
 
 using namespace iPic3D;
+
+extern MyClock *clocks;
 
 int c_Solver::Init(int argc, char **argv) {
   // initialize MPI environment
@@ -10,6 +13,11 @@ int c_Solver::Init(int argc, char **argv) {
   mpi = new MPIdata(&argc, &argv);
   nprocs = mpi->nprocs;
   myrank = mpi->rank;
+
+  clocks = new MyClock(6);
+
+  clocks->start(0);
+  clocks->start(5);
 
   col = new Collective(argc, argv); // Every proc loads the parameters of simulation from class Collective
   verbose = col->getVerbose();
@@ -79,20 +87,35 @@ int c_Solver::Init(int argc, char **argv) {
     /* --------------------------------------------------------- */
     /* If using 'default' IO initialize fields depending on case */
     /* --------------------------------------------------------- */
-    if (col->getFieldInit()=="KAWTurbulencePert") {
+    if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
+    else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
+    else if (col->getCase()=="ForceFreeHump") EMf->initForceFreeWithGaussianHumpPerturbation(vct,grid,col);
+    else if ((col->getCase()=="GEM") || (col->getCase()=="GEMRelativity"))  EMf->initGEM(vct, grid,col);
+    else if (col->getCase()=="KAWTurbulencePert") {
       double mime = fabs(col->getQOM(0)/col->getQOM(1));
       double TiTe = pow(col->getUth(1)/col->getUth(0), 2.0)*mime;
       EMf->initKAWTurbulencePert(vct, grid, col, mime, TiTe);
     }
-    else if (col->getFieldInit()=="Default") EMf->init(vct,grid,col);
+    else if (col->getCase()=="HarrisSteps")       EMf->initDoublePeriodicHarrisSteps(vct, grid,col);
+    else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
+    else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+    else if (col->getCase()=="DoubleHarris")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
+    else if (col->getCase()=="Whistler")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
+    else if (col->getCase()=="WhistlerKappa")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
+    else if (col->getCase()=="Coils")  EMf->initWB8(vct,grid,col);
+    else if (col->getCase()=="CoilsMono")  EMf->initWB8(vct,grid,col);
+    else if (col->getCase()=="TwoCoils")  EMf->initTwoCoils(vct,grid,col);
+    else if (col->getCase()=="FluxRope")  EMf->initFluxRope(vct,grid,col);
+    else if (col->getCase()=="GEMNoVelShear")  EMf->initHarrisNoVelShear(vct, grid,col);
+    else if (col->getCase()=="Relativistic")  EMf->init(vct, grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
-        cout << " WARNING: The case '" << col->getFieldInit() << "' was not recognized." << endl;
-        cout << " ABORTING...     " << endl;
+        cout << " WARNING: The case '" << col->getCase() << "' was not recognized. " << endl;
+        cout << "          Runing simulation with the default initialization. " << endl;
         cout << " =========================================================== " << endl;
       }
-      abort();
+      EMf->init(vct,grid,col);
     }
   }
 
@@ -109,10 +132,11 @@ int c_Solver::Init(int argc, char **argv) {
   if (col->getSolInit()) {
     if (col->getPartInit()=="File") ReadPartclH5hut(ns, part, col, vct, grid);
     else {
-      if (myrank==0) cout << "WARNING: PARTICLES NOT INITIALIZED ACCORDING TO RESTART FILE! USING MAXWELLIAN... " << endl;
+      if (myrank==0) cout << "WARNING: Particle drift velocity from ExB " << endl;
       for (int i = 0; i < ns; i++){
         part[i].allocate(i, 0, col, vct, grid);
-        part[i].initMaxwellian(grid, EMf, vct);
+        if (col->getPartInit()=="EixB") part[i].MaxwellianFromFields(grid, EMf, vct);
+        else                            part[i].maxwellian(grid, EMf, vct);
       }
     }
   }
@@ -122,17 +146,52 @@ int c_Solver::Init(int argc, char **argv) {
 
     // Initial Condition for PARTICLES if you are not starting from RESTART
     if (restart == 0) {
-    	cout << "Initializing particles according to case: " << col->getPartInit() << endl;
+      // wave = new Planewave(col, EMf, grid, vct);
+      // wave->Wave_Rotated(part); // Single Plane Wave
+
+    	cout << col->getCase() << endl;
 
       for (int i = 0; i < ns; i++)
-        if (col->getPartInit()=="KAWTurbulencePert") {
+        if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
+        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+        else if (col->getCase()=="DoubleHarris")    part[i].maxwellian_reversed(grid, EMf, vct);
+        else if (col->getCase()=="KAWTurbulencePert") {
           double mime = fabs(col->getQOM(0)/col->getQOM(1));
           double TiTe = pow(col->getUth(1)/col->getUth(0), 2.0)*mime;
           part[i].KAWTurbulencePert(grid, EMf, vct, col->getB0x(), mime, TiTe, col->getPartSymmetric());
         }
-        else if (col->getPartInit()=="AnisotropicKappa")    part[i].initAnisotropicKappa(grid, EMf, vct);
-        else if (col->getPartInit()=="MJ")                  part[i].initMaxwellJuttner(grid, EMf, vct);
-        else                                                part[i].initMaxwellian(grid, EMf, vct);
+        else if (col->getCase()=="Whistler")    part[i].maxwellian_whistler(grid, EMf, vct);
+        else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
+        else if (col->getCase()=="GEMRelativity")    part[i].relativistic_maxwellian(grid, EMf, vct);
+        else if (col->getCase()=="Relativistic")  part[i].twostream1D(grid, vct, 3);
+        else if (col->getCase()=="GEM" || col->getCase()=="GEMNoVelShear"){
+        	if(i<2)
+        		part[i].maxwellian(grid, EMf, vct);
+        	else
+        		if(col->getPartInit()=="Kappa")
+        			part[i].kappa(grid, EMf, vct);
+        		else
+        			part[i].maxwellian(grid, EMf, vct);
+        }
+        else if (col->getCase()=="Coils"){
+           	if (col->getRHOinit(i) > 0.0)
+           		part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+           	else
+       	    	part[i].empty(grid, EMf, vct);
+        								  }
+        else if (col->getCase()=="TwoCoils"){
+                   	if (col->getRHOinit(i) > 0.0)
+                   		part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+                   	else
+               	    	part[i].empty(grid, EMf, vct);
+                								  }
+        else if (col->getCase()=="CoilsMono"){
+                   	if (col->getRHOinit(i) > 0.0)
+                   		part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+                   	else
+               	    	part[i].empty(grid, EMf, vct);
+                								  }
+        else  part[i].maxwellian(grid, EMf, vct);
     }
   }
 
@@ -176,13 +235,14 @@ int c_Solver::Init(int argc, char **argv) {
   speciesTemp = new double[ns];
 
   cq = SaveDirName + "/ConservedQuantities.txt";
-//  cq2 = SaveDirName + "/SummaryQuantities.txt";
+  cq2 = SaveDirName + "/SummaryQuantities.txt";
 
   if (myrank == 0) {
     ofstream my_file(cq.c_str(), fstream::app);
     my_file.close();
-//    ofstream my_file2(cq2.c_str(), fstream::app);
-//    my_file2.close();
+    ofstream my_file2(cq2.c_str(), fstream::app);
+    my_file2.close();
+
   }
   
   // // Distribution functions
@@ -195,7 +255,7 @@ int c_Solver::Init(int argc, char **argv) {
   // }
 
   //num_proc << myrank;
-//  cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
+  cqsat = SaveDirName + "/VirtualSatelliteTraces" + num_proc.str() + ".txt";
   // if(myrank==0){
 /*  ofstream my_file(cqsat.c_str(), fstream::binary);
 
@@ -228,6 +288,7 @@ int c_Solver::Init(int argc, char **argv) {
 
   my_clock = new Timing(myrank);
 
+  clocks->stop(0);
   return 0;
 }
 
@@ -238,18 +299,32 @@ void c_Solver::GatherMoments(){
 
   EMf->updateInfoFields(grid,vct,col);
   EMf->setZeroDensities();                  // set to zero the densities
-  EMf->smoothE(vct, grid, col); // Smooth E field before deposit
 
   for (int i = 0; i < ns; i++)
     part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
+  //
+  // Fill with constant charge the planet
+  if (col->getCase()=="Dipole") {
+    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+  }
+
+  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
+
 }
 
 void c_Solver::UpdateCycleInfo(int cycle) {
 
-//  if (col->getCase()=="Dipole") EMf->UpdateFext(cycle);
-//  if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
+  if (col->getCase()=="Dipole") EMf->UpdateFext(cycle);
+  if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
+  if (cycle == first_cycle) {
+    if (col->getCase()=="Dipole") {
+      EMf->SetDipole_2Bext(vct,grid,col);
+      EMf->SetLambda(grid);
+    }
+  }
+
 
 }
 
@@ -264,7 +339,7 @@ void c_Solver::CalculateField() {
   MPI_Barrier(MPI_COMM_WORLD);
   // timeTasks.end(TimeTasks::MOMENTS);
 
-  // MAXWELL SOLVER
+  // MAXWELL'S SOLVER
   // timeTasks.start(TimeTasks::FIELDS);
   #ifdef __PETSC_SOLVER__
     petscSolver->solveE();
@@ -290,15 +365,27 @@ void c_Solver::CalculateBField() {
 
 bool c_Solver::ParticlesMover() {
 
-  EMf->smoothEth(vct, grid, col); // Smooth Eth field before push
-
   /*  -------------- */
   /*  Particle mover */
   /*  -------------- */
 
   // timeTasks.start(TimeTasks::PARTICLES);
-  for (int i = 0; i < ns; i++) {
-    mem_avail = part[i].mover_relativistic(grid, vct, EMf);
+  for (int i = 0; i < ns; i++)  // move each species
+  {
+	  if(cylindrical){
+		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+		  mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
+	  }
+	  else{
+		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+		  //mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
+
+		  if(col->getCase()=="GEMRelativity" || col->getCase()=="Relativistic")
+			  mem_avail = part[i].mover_relativistic(grid, vct, EMf);
+		  else
+			  mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme
+
+	  }
   }
   // timeTasks.end(TimeTasks::PARTICLES);
 
@@ -333,15 +420,65 @@ bool c_Solver::ParticlesMover() {
 void c_Solver::InjectBoundaryParticles(){
 
 
-//      else{
+      if (col->getCase()=="Dipole") {
+        for (int i=0; i < ns; i++){
+            if (col->getRHOinject(i)>0.0)
+            	mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+          Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+
+      }
+      }
+      else if (col->getCase()=="Coils") {
+	  //Remove particles from outside the simulation box
+		for (int i=0; i < ns; i++){
+			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+/*			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+			if (col->getRHOinject(i) > 0.0)
+				mem_avail = part[i].injector_rand_box(grid,vct,EMf);
+				*/
+			Qremoved[i] = part[i].ReturnToCenterCircle();
+		}
+      }
+      else if (col->getCase()=="TwoCoils") {
+      	  //Remove particles from outside the simulation box
+      		for (int i=0; i < ns; i++){
+      			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+      			  // Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+      	/*		Qremoved[i] =part[i].deleteParticlesOutsideSphere(L_outer, col->getx_center(), col->gety_center(), col->getz_center());
+      			if (col->getRHOinject(i) > 0.0){
+      				double x_center_inect = col->getx_center() ;
+      				double y_center_inect = col->gety_center() + col->getcoilSpacing()/2.0;
+      				double z_center_inect = col->getz_center() ;
+      				mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
+     				x_center_inect = col->getx_center() ;
+      				y_center_inect = col->gety_center() - col->getcoilSpacing()/2.0;
+      				z_center_inect = col->getz_center() ;
+      				mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
+      			}
+      			*/
+      			Qremoved[i] = part[i].ReturnToCenterCircle();
+      		}
+            }
+      else if (col->getCase()=="CoilsMono") {
+	  //Remove particles from outside the simulation box
+		for (int i=0; i < ns; i++){
+			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+			if (col->getRHOinject(i) > 0.0)
+				mem_avail = part[i].injector_rand_box_mono(grid,vct,EMf);
+		}
+      }
+      else if (col->getCase()=="Relativistic");
+      // Do nothing//
+      else{
     	     /* --------------------------------------- */
     	      /* Remove particles from depopulation area */
     	      /* --------------------------------------- */
           for (int i=0; i < ns; i++){
           mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
           mem_avail = part[i].particle_reflector(grid,vct,EMf,i);
-          }
-//      }
+      }
+      }
 }
 
 
@@ -361,33 +498,29 @@ void c_Solver::WriteConserved(int cycle) {
   if (cycle % col->getDiagnosticsOutputCycle() == 0) {
     Eenergy = EMf->getEenergy();
     Benergy = EMf->getBenergy();
-    TOTenergy = Eenergy+Benergy;
-/* Not saving anything else than E, B, K energies for now
+    TOTenergy = 0.0;
     TOTmomentum = 0.0;
-    totParticles[0] = totParticles[1] = 0;
-    globalTotParticles[0] = globalTotParticles[1] = 0;
-*/
+	totParticles[0] = totParticles[1] = 0;
+	globalTotParticles[0] = globalTotParticles[1] = 0;
 
     for (int is = 0; is < ns; is++) {
       Ke[is] = part[is].getKe();
-//      BulkEnergy[is] = EMf->getBulkEnergy(is);
+      BulkEnergy[is] = EMf->getBulkEnergy(is);
       TOTenergy += Ke[is];
-//      momentum[is] = part[is].getP();
-//      TOTmomentum += momentum[is];
-//      totParticles[is] = part[is].getNOP();
-//      MPI_Allreduce(&totParticles[is], &globalTotParticles[is], 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-//      Qtot[is] = part[is].getTotalQ();
-//      speciesTemp[is] = (double)((double)Ke[is]/(Qtot[is]/qom[is]));
-    }
+      momentum[is] = part[is].getP();
+      TOTmomentum += momentum[is];
+      totParticles[is] = part[is].getNOP();
 
+      MPI_Allreduce(&totParticles[is], &globalTotParticles[is], 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+      Qtot[is] = part[is].getTotalQ();
+      speciesTemp[is] = (double)((double)Ke[is]/(Qtot[is]/qom[is]));
+
+    }
     if (myrank == 0) {
       ofstream my_file(cq.c_str(), fstream::app);
       my_file << cycle << "\t" << setprecision(15);
-      my_file << TOTenergy << "\t" << Eenergy << "\t" << Benergy;
-      for (int i = 0; i < ns; i++) my_file << "\t" << Ke[i];
-      my_file << endl;
+      my_file << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
       my_file.close();
-/*
       ofstream my_file2(cq2.c_str(),fstream::app);
 
                my_file2 << cycle << "\t" <<setprecision(15);
@@ -403,7 +536,7 @@ void c_Solver::WriteConserved(int cycle) {
      			my_file2 << speciesTemp[i] << "\t";
      		my_file2 << endl;
                 my_file2.close();
-*/
+
     }
     // // Velocity distribution
     // for (int is = 0; is < ns; is++) {
@@ -437,8 +570,9 @@ void c_Solver::WriteOutput(int cycle) {
     /* -------------------------------------------- */
 
     if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0 &&
-        cycle!=col->getLast_cycle())      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    //if (cycle%(col->getParticlesOutputCycle())==0 &&
+    //    cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    if (cycle%(col->getParticlesOutputCycle())==0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
   }
   else
@@ -568,20 +702,32 @@ void c_Solver::Finalize() {
   }
 
   // stop profiling
+  clocks->stop(5);
+  // stop profiling
   my_clock->stopTiming();
+
+  //if(myrank == 0) cout << "Deallocating"<<endl;
+
 
   // deallocate
   delete[]Ke;
   delete[]BulkEnergy;
   delete[]momentum;
   delete[] Qtot;
+
   delete[] Qremoved;
-  delete[] VelocityDist;
+  //delete[] VelocityDist;
+
   delete[] totParticles;
   delete[] globalTotParticles;
   delete[] speciesTemp;
   delete[] qom;
 
+
+  //if(myrank == 0) cout << "Closing MPI"<<endl;
+
   // close MPI
   mpi->finalize_mpi();
+
+  //if(myrank == 0) cout << "Closed MPI"<<endl;
 }

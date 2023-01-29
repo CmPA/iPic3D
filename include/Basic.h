@@ -11,7 +11,6 @@ developers: Stefano Markidis, Giovanni Lapenta
 
 #include "MPIdata.h"
 #include "EllipticF.h"
-#include "PolyRoots.h"
 
 using std::cout;
 using std::endl;

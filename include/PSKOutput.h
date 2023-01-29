@@ -365,7 +365,7 @@ public:
       this->output_adaptor.write("/collective/Ncycles", _col->getNcycles());
       this->output_adaptor.write("/collective/Ns", _col->getNs());
       this->output_adaptor.write("/collective/c", _col->getC());
-      this->output_adaptor.write("/collective/ValSmooth", _col->getValSmooth());
+      this->output_adaptor.write("/collective/Smooth", _col->getSmooth());
 
       this->output_adaptor.write("/collective/bc/PfaceXright", _col->getBcPfaceXright());
       this->output_adaptor.write("/collective/bc/PfaceXleft", _col->getBcPfaceXleft());
