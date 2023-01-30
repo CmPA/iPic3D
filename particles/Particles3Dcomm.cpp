@@ -66,6 +66,7 @@ Particles3Dcomm::~Particles3Dcomm() {
   delete[]b_Z_RIGHT;
   delete[]b_Z_LEFT;
 }
+
 /** constructors fo a single species*/
 void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
   // info from collectiveIO
@@ -75,11 +76,11 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   npcely = col->getNpcely(species);
   npcelz = col->getNpcelz(species);
 
-  // This if is necessary to restart with H5hut-io
-  if (initnpmax==0){
-    long ncproc = int(col->getNxc()/col->getXLEN()) *
-                  int(col->getNyc()/col->getYLEN()) *
-                  int(col->getNzc()/col->getZLEN());
+  // This is necessary to restart with H5hut-io
+  if (initnpmax==0) {
+    long ncproc = int(col->getNxc()/col->getXLEN())
+                  * int(col->getNyc()/col->getYLEN())
+                  * int(col->getNzc()/col->getZLEN());
     nop   = ncproc * npcel;
     npmax = nop * col->getNpMaxNpRatio();
   }
@@ -90,6 +91,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
 
   rhoINIT   = col->getRHOinit(species);
   rhoINJECT = col->getRHOinject(species);
+  FourPI = 16 * atan(1.0);
 
   qom = col->getQOM(species);
   uth = col->getUth(species);
@@ -98,6 +100,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   u0 = col->getU0(species);
   v0 = col->getV0(species);
   w0 = col->getW0(species);
+  th = col->getTh();
   dt = col->getDt();
   Lx = col->getLx();
   Ly = col->getLy();
@@ -451,13 +454,27 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
+  const double ddd = th*qom*dt*dt/2.*FourPI;  
+  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+  double ***Ex_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx_ext());
+  double ***Ey_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy_ext());
+  double ***Ez_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz_ext());
+  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+  double Fext = EMf->getFext();
+
   //#pragma omp parallel
   {
     //Moments speciesMoments(nxn,nyn,nzn,invVOL);
     //speciesMoments.set_to_zero();
     //#pragma omp for
-    for (register long long i = 0; i < nop; i++)
-    {
+    for (register long long i = 0; i < nop; i++) {
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
       const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
       const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
@@ -469,40 +486,236 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       xi[1] = grid->getXN(ix, iy, iz) - x[i];
       eta[1] = grid->getYN(ix, iy, iz) - y[i];
       zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+     
+      // Fields at particle position
+      double Exl = 0.0;
+      double Eyl = 0.0;
+      double Ezl = 0.0;
+      double Bxl = 0.0;
+      double Byl = 0.0;
+      double Bzl = 0.0;
+
+      const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+      const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+      const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+      const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+      const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+      const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+      const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+      const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+      //
+      Bxl += weight000 * (Bx[ix][iy][iz]             + Fext*Bx_ext[ix][iy][iz]);
+      Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Fext*Bx_ext[ix][iy][iz-1]);
+      Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Fext*Bx_ext[ix][iy-1][iz]);
+      Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Fext*Bx_ext[ix][iy-1][iz-1]);
+      Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Fext*Bx_ext[ix-1][iy][iz]);
+      Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Fext*Bx_ext[ix-1][iy][iz-1]);
+      Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Fext*Bx_ext[ix-1][iy-1][iz]);
+      Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Fext*Bx_ext[ix-1][iy-1][iz-1]);
+      //
+      Byl += weight000 * (By[ix][iy][iz]             + Fext*By_ext[ix][iy][iz]);
+      Byl += weight001 * (By[ix][iy][iz - 1]         + Fext*By_ext[ix][iy][iz-1]);
+      Byl += weight010 * (By[ix][iy - 1][iz]         + Fext*By_ext[ix][iy-1][iz]);
+      Byl += weight011 * (By[ix][iy - 1][iz - 1]     + Fext*By_ext[ix][iy-1][iz-1]);
+      Byl += weight100 * (By[ix - 1][iy][iz]         + Fext*By_ext[ix-1][iy][iz]);
+      Byl += weight101 * (By[ix - 1][iy][iz - 1]     + Fext*By_ext[ix-1][iy][iz-1]);
+      Byl += weight110 * (By[ix - 1][iy - 1][iz]     + Fext*By_ext[ix-1][iy-1][iz]);
+      Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + Fext*By_ext[ix-1][iy-1][iz-1]);
+      //
+      Bzl += weight000 * (Bz[ix][iy][iz]             + Fext*Bz_ext[ix][iy][iz]);
+      Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Fext*Bz_ext[ix][iy][iz-1]);
+      Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Fext*Bz_ext[ix][iy-1][iz]);
+      Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Fext*Bz_ext[ix][iy-1][iz-1]);
+      Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Fext*Bz_ext[ix-1][iy][iz]);
+      Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Fext*Bz_ext[ix-1][iy][iz-1]);
+      Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
+      Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
+      //
+      Exl += weight000 * (Ex[ix][iy][iz] 			 + Fext * Ex_ext[ix][iy][iz]);
+      Exl += weight001 * (Ex[ix][iy][iz - 1] 		 + Fext * Ex_ext[ix][iy][iz - 1]);
+      Exl += weight010 * (Ex[ix][iy - 1][iz] 		 + Fext * Ex_ext[ix][iy - 1][iz]);
+      Exl += weight011 * (Ex[ix][iy - 1][iz - 1] 	 + Fext * Ex_ext[ix][iy - 1][iz - 1]);
+      Exl += weight100 * (Ex[ix - 1][iy][iz] 		 + Fext * Ex_ext[ix - 1][iy][iz]);
+      Exl += weight101 * (Ex[ix - 1][iy][iz - 1] 	 + Fext * Ex_ext[ix - 1][iy][iz - 1]);
+      Exl += weight110 * (Ex[ix - 1][iy - 1][iz] 	 + Fext * Ex_ext[ix - 1][iy - 1][iz]);
+      Exl += weight111 * (Ex[ix - 1][iy - 1][iz - 1] + Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
+      //
+      Eyl += weight000 * (Ey[ix][iy][iz] 			 + Fext * Ey_ext[ix][iy][iz]);
+      Eyl += weight001 * (Ey[ix][iy][iz - 1] 		 + Fext * Ey_ext[ix][iy][iz - 1]);
+      Eyl += weight010 * (Ey[ix][iy - 1][iz] 		 + Fext * Ey_ext[ix][iy - 1][iz]);
+      Eyl += weight011 * (Ey[ix][iy - 1][iz - 1] 	 + Fext * Ey_ext[ix][iy - 1][iz - 1]);
+      Eyl += weight100 * (Ey[ix - 1][iy][iz] 		 + Fext * Ey_ext[ix - 1][iy][iz]);
+      Eyl += weight101 * (Ey[ix - 1][iy][iz - 1] 	 + Fext * Ey_ext[ix - 1][iy][iz - 1]);
+      Eyl += weight110 * (Ey[ix - 1][iy - 1][iz] 	 + Fext * Ey_ext[ix - 1][iy - 1][iz]);
+      Eyl += weight111 * (Ey[ix - 1][iy - 1][iz - 1] + Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
+      //
+      Ezl += weight000 * (Ez[ix][iy][iz] 			 + Fext * Ez_ext[ix][iy][iz]);
+      Ezl += weight001 * (Ez[ix][iy][iz - 1] 		 + Fext * Ez_ext[ix][iy][iz - 1]);
+      Ezl += weight010 * (Ez[ix][iy - 1][iz] 		 + Fext * Ez_ext[ix][iy - 1][iz]);
+      Ezl += weight011 * (Ez[ix][iy - 1][iz - 1] 	 + Fext * Ez_ext[ix][iy - 1][iz - 1]);
+      Ezl += weight100 * (Ez[ix - 1][iy][iz] 		 + Fext * Ez_ext[ix - 1][iy][iz]);
+      Ezl += weight101 * (Ez[ix - 1][iy][iz - 1] 	 + Fext * Ez_ext[ix - 1][iy][iz - 1]);
+      Ezl += weight110 * (Ez[ix - 1][iy - 1][iz] 	 + Fext * Ez_ext[ix - 1][iy - 1][iz]);
+      Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
+
+      // Auxiliary quantities
+      double gn = sqrt(1.+u[i]*u[i]+v[i]*v[i]+w[i]*w[i]);
+      double G = qom*dt/2.*(Exl*u[i]+Eyl*v[i]+Ezl*w[i])/gn + gn;
+      Bxl *= qom*dt/2./G;
+      Byl *= qom*dt/2./G;
+      Bzl *= qom*dt/2./G;
+      double D = G*(1.+Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+      double axx = (1.+Bxl*Bxl)/D;
+      double axy = (Bxl*Byl + Bzl)/D;
+      double axz = (Bxl*Bzl - Byl)/D;
+      double ayx = (Bxl*Byl - Bzl)/D;
+      double ayy = (1.+Byl*Byl)/D;
+      double ayz = (Byl*Bzl + Bxl)/D;
+      double azx = (Bxl*Bzl + Byl)/D;
+      double azy = (Byl*Bzl - Bxl)/D;
+      double azz = (1.+Bzl*Bzl)/D;
+      double uhat = axx*u[i] + axy*v[i] + axz*w[i];
+      double vhat = ayx*u[i] + ayy*v[i] + ayz*w[i];
+      double what = azx*u[i] + azy*v[i] + azz*w[i];
+
+      /* PARTICLE --> GRID DEPOSITION */
       double weight[2][2][2];
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++) {
             weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
           }
-      //weight[0][0][0] = q[i] * xi[0] * eta[0] * zeta[0] * invVOL;
-      //weight[0][0][1] = q[i] * xi[0] * eta[0] * zeta[1] * invVOL;
-      //weight[0][1][0] = q[i] * xi[0] * eta[1] * zeta[0] * invVOL;
-      //weight[0][1][1] = q[i] * xi[0] * eta[1] * zeta[1] * invVOL;
-      //weight[1][0][0] = q[i] * xi[1] * eta[0] * zeta[0] * invVOL;
-      //weight[1][0][1] = q[i] * xi[1] * eta[0] * zeta[1] * invVOL;
-      //weight[1][1][0] = q[i] * xi[1] * eta[1] * zeta[0] * invVOL;
-      //weight[1][1][1] = q[i] * xi[1] * eta[1] * zeta[1] * invVOL;
-      // add charge density
+
+      // Charge density
       EMf->addRho(weight, ix, iy, iz, ns);
-      // add current density - X
+
+      // Hat current - X
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
-      EMf->addJx(temp, ix, iy, iz, ns);
-      // add current density - Y
+            temp[ii][jj][kk] = uhat * weight[ii][jj][kk];
+      EMf->addJxh(temp, ix, iy, iz, ns);
+      // Hat current - Y
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
-      EMf->addJy(temp, ix, iy, iz, ns);
-      // add current density - Z
+            temp[ii][jj][kk] = vhat * weight[ii][jj][kk];
+      EMf->addJyh(temp, ix, iy, iz, ns);
+      // Hat current - Z
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
-      EMf->addJz(temp, ix, iy, iz, ns);
+            temp[ii][jj][kk] = what * weight[ii][jj][kk];
+      EMf->addJzh(temp, ix, iy, iz, ns);
+
+      // Hat pressure tensor - XX
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = uhat * uhat * weight[ii][jj][kk];
+      EMf->addPhxx(temp, ix, iy, iz, ns);
+      // Hat pressure tensor - XY
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = uhat * vhat * weight[ii][jj][kk];
+      EMf->addPhxx(temp, ix, iy, iz, ns);
+      // Hat pressure tensor - XZ
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = uhat * what * weight[ii][jj][kk];
+      EMf->addPhxz(temp, ix, iy, iz, ns);
+      // Hat pressure tensor - YY
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vhat * vhat * weight[ii][jj][kk];
+      EMf->addPhyy(temp, ix, iy, iz, ns);
+      // Hat pressure tensor - YZ
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vhat * what * weight[ii][jj][kk];
+      EMf->addPhyz(temp, ix, iy, iz, ns);
+      // Hat pressure tensor - ZZ
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = what * what * weight[ii][jj][kk];
+      EMf->addPhzz(temp, ix, iy, iz, ns);
+
+      // Mu tensor
+      axx = axx*ddd;
+      axy = axy*ddd;
+      ayz = ayx*ddd;
+      axz = axz*ddd;
+      azx = azx*ddd;
+      ayy = ayy*ddd;
+      ayz = ayz*ddd;
+      azy = azy*ddd;
+      azz = azz*ddd;
+      // Mu tensor - XX
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = axx * weight[ii][jj][kk];
+      EMf->addmuxx(temp, ix, iy, iz, ns);
+      // Mu tensor - XY
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = axy * weight[ii][jj][kk];
+      EMf->addmuxy(temp, ix, iy, iz, ns);
+      // Mu tensor - XZ
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = axz * weight[ii][jj][kk];
+      EMf->addmuxz(temp, ix, iy, iz, ns);
+      // Mu tensor - YX
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = ayx * weight[ii][jj][kk];
+      EMf->addmuyx(temp, ix, iy, iz, ns);
+      // Mu tensor - YY
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = ayy * weight[ii][jj][kk];
+      EMf->addmuyy(temp, ix, iy, iz, ns);
+      // Mu tensor - YZ
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = ayz * weight[ii][jj][kk];
+      EMf->addmuyz(temp, ix, iy, iz, ns);
+      // Mu tensor - ZX
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = azx * weight[ii][jj][kk];
+      EMf->addmuzx(temp, ix, iy, iz, ns);
+      // Mu tensor - ZY
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = azy * weight[ii][jj][kk];
+      EMf->addmuzy(temp, ix, iy, iz, ns);
+      // Mu tensor - ZZ
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = azz * weight[ii][jj][kk];
+      EMf->addmuzz(temp, ix, iy, iz, ns);
+    }
+
+      // change this to allow more parallelization after implementing array class
+      //#pragma omp critical
+      //EMf->addToSpeciesMoments(speciesMoments,ns);
+   
+    /* TODO: OUTPUT-ONLY QUANTITIES, INCLUDING EG ENERGY FLUX DENSITY 
       // add energy flux density - X
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
@@ -521,47 +734,9 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = w[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
       EMf->addEFz(temp, ix, iy, iz, ns);
-      // Pxx - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
-      EMf->addPxx(temp, ix, iy, iz, ns);
-      // Pxy - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
-      EMf->addPxy(temp, ix, iy, iz, ns);
-      // Pxz - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
-      EMf->addPxz(temp, ix, iy, iz, ns);
-      // Pyy - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
-      EMf->addPyy(temp, ix, iy, iz, ns);
-      // Pyz - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
-      EMf->addPyz(temp, ix, iy, iz, ns);
-      // Pzz - add pressure tensor
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
-      EMf->addPzz(temp, ix, iy, iz, ns);
-    }
-    // change this to allow more parallelization after implementing array class
-    //#pragma omp critical
-    //EMf->addToSpeciesMoments(speciesMoments,ns);
+    */
   }
+
   // communicate contribution from ghost cells 
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
 }

@@ -198,6 +198,10 @@ protected:
   double qom;
   /** recon thick */
   double delta;
+  /** theta parameter */
+  double th;
+  /** 4pi */
+  double FourPI;
   /** thermal velocity  - Direction X*/
   double uth;
   /** thermal velocity  - Direction Y*/

@@ -1654,6 +1654,26 @@ void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is) {
         rhons[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 /*! add an amount of charge density to current density - direction X to current density field on the node */
+void EMfields3D::addJxh(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        Jxhs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of current density - direction Y to current density field on the node */
+void EMfields3D::addJyh(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        Jyhs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of current density - direction Z to current density field on the node */
+void EMfields3D::addJzh(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        Jzhs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
 void EMfields3D::addJx(double weight[][2][2], int X, int Y, int Z, int is) {
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
@@ -1694,6 +1714,48 @@ void EMfields3D::addEFz(double weight[][2][2], int X, int Y, int Z, int is) {
     for (int j = 0; j < 2; j++)
       for (int k = 0; k < 2; k++)
         EFzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction XX to current density field on the node */
+void EMfields3D::addPhxx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        phXXsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction XY to current density field on the node */
+void EMfields3D::addPhxy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        phXYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction XZ to current density field on the node */
+void EMfields3D::addPhxz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        phXZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction YY to current density field on the node */
+void EMfields3D::addPhyy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        phYYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction YZ to current density field on the node */
+void EMfields3D::addPhyz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        phYZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of pressure density - direction ZZ to current density field on the node */
+void EMfields3D::addPhzz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        phZZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 /*! add an amount of pressure density - direction XX to current density field on the node */
 void EMfields3D::addPxx(double weight[][2][2], int X, int Y, int Z, int is) {
@@ -1737,8 +1799,69 @@ void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is) {
       for (int k = 0; k < 2; k++)
         pZZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
-
-
+/*! add an amount of mu tensor XX */
+void EMfields3D::addmuxx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        muxxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of mu tensor XY */
+void EMfields3D::addmuxy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        muxys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of mu tensor XZ */
+void EMfields3D::addmuxz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        muxzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of mu tensor YX */
+void EMfields3D::addmuyx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        muyxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of mu tensor YY */
+void EMfields3D::addmuyy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        muyys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of mu tensor YZ */
+void EMfields3D::addmuyz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        muyzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of mu tensor ZX */
+void EMfields3D::addmuzx(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        muzxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of mu tensor ZY */
+void EMfields3D::addmuzy(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        muzys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
+/*! add an amount of mu tensor ZZ */
+void EMfields3D::addmuzz(double weight[][2][2], int X, int Y, int Z, int is) {
+  for (int i = 0; i < 2; i++)
+    for (int j = 0; j < 2; j++)
+      for (int k = 0; k < 2; k++)
+        muzzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
+}
 
 /*! set to 0 all the densities fields */
 void EMfields3D::setZeroDensities() {

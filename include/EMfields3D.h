@@ -288,6 +288,12 @@ class EMfields3D                // :public Field
     void addJy(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
     void addJz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of current density - direction X to current density field at node X,Y,Z */
+    void addJxh(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of current density - direction Y to current density field at node X,Y,Z */
+    void addJyh(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
+    void addJzh(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! add an amount of EF - direction X  at node X,Y,Z */
     void addEFx(double weight[][2][2], int X, int Y, int Z, int is);
@@ -296,6 +302,18 @@ class EMfields3D                // :public Field
     /*! add an amount of EF - direction Z at node X,Y,Z */
     void addEFz(double weight[][2][2], int X, int Y, int Z, int is);
 
+    /*! add an amount of pressure density - direction XX to current density field at node X,Y,Z */
+    void addPhxx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density - direction XY to current density field at node X,Y,Z */
+    void addPhxy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density - direction XZ to current density field at node X,Y,Z */
+    void addPhxz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density - direction YY to current density field at node X,Y,Z */
+    void addPhyy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density - direction YZ to current density field at node X,Y,Z */
+    void addPhyz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of pressure density - direction ZZ to current density field at node X,Y,Z */
+    void addPhzz(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction XX to current density field at node X,Y,Z */
     void addPxx(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction XY to current density field at node X,Y,Z */
@@ -308,6 +326,24 @@ class EMfields3D                // :public Field
     void addPyz(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction ZZ to current density field at node X,Y,Z */
     void addPzz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor XX */
+    void addmuxx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor XY */
+    void addmuxy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor XZ */
+    void addmuxz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor YX */
+    void addmuyx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor YY */
+    void addmuyy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor YZ */
+    void addmuyz(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor ZX */
+    void addmuzx(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor ZY */
+    void addmuzy(double weight[][2][2], int X, int Y, int Z, int is);
+    /*! add an amount of mu tensor ZZ */
+    void addmuzz(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! adjust densities on boundaries that are not periodic */
     void adjustNonPeriodicDensities(int is, VirtualTopology3D * vct);
