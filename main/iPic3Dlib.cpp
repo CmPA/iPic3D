@@ -370,26 +370,24 @@ bool c_Solver::ParticlesMover() {
   /*  -------------- */
 
   // timeTasks.start(TimeTasks::PARTICLES);
-  for (int i = 0; i < ns; i++)  // move each species
-  {
-	  if(cylindrical){
-		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-		  mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
-	  }
-	  else{
-		  // #pragma omp task inout(part[i]) in(grid) target_device(booster)
-		  //mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
-
-		  if(col->getCase()=="GEMRelativity" || col->getCase()=="Relativistic")
-			  mem_avail = part[i].mover_relativistic(grid, vct, EMf);
-		  else
-			  mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme
-
-	  }
+  for (int i = 0; i < ns; i++) {  // move each species
+    if (cylindrical) {
+      // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+      mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
+    }
+    else {
+//      // #pragma omp task inout(part[i]) in(grid) target_device(booster)
+//      //mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
+//      if(col->getCase()=="GEMRelativity" || col->getCase()=="Relativistic")
+//        mem_avail = part[i].mover_relativistic(grid, vct, EMf);
+//      else
+//        mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme
+      mem_avail = part[i].mover_PC_rel(grid, vct, EMf); // use the Predictor Corrector scheme
+    }
   }
   // timeTasks.end(TimeTasks::PARTICLES);
 
-  if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
+  if (mem_avail < 0) { // not enough memory space allocated for particles: stop the simulation
     if (myrank == 0) {
       cout << "*************************************************************" << endl;
       cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
