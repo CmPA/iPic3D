@@ -440,12 +440,12 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   // Apply damper on boundary
 
   if (LambdaDamping){
-  weight_tapering(Ex,Lambda,nxc,nyc,nzc);
-  weight_tapering(Ey,Lambda,nxc,nyc,nzc);
-  weight_tapering(Ez,Lambda,nxc,nyc,nzc);
-  weight_tapering(Exth,Lambda,nxc,nyc,nzc);
-  weight_tapering(Eyth,Lambda,nxc,nyc,nzc);
-  weight_tapering(Ezth,Lambda,nxc,nyc,nzc);
+    weight_tapering(Ex,Lambda,nxc,nyc,nzc);
+    weight_tapering(Ey,Lambda,nxc,nyc,nzc);
+    weight_tapering(Ez,Lambda,nxc,nyc,nzc);
+    weight_tapering(Exth,Lambda,nxc,nyc,nzc);
+    weight_tapering(Eyth,Lambda,nxc,nyc,nzc);
+    weight_tapering(Ezth,Lambda,nxc,nyc,nzc);
   }
 
 }
@@ -5153,35 +5153,56 @@ double ****EMfields3D::getEFzsn() {
 
 
 /*! get the electric field energy */
-double EMfields3D::getEenergy(void) {
-  double localEenergy = 0.0;
-  double totalEenergy = 0.0;
+double *EMfields3D::getEenergy(void) {
+  double *localEenergy;  
+  double *totalEenergy;  
+  localEenergy = new double[3]; 
+  totalEenergy = new double[3]; 
+  for (int i=0; i<3; i++) {
+    localEenergy[i] = 0.;
+    totalEenergy[i] = 0.;
+  }
+
+  // Calculate E energy from all cells
   for (int i = 1; i < nxn - 2; i++)
     for (int j = 1; j < nyn - 2; j++)
-      for (int k = 1; k < nzn - 2; k++)
-        localEenergy += .5 * dx * dy * dz * (Ex[i][j][k] * Ex[i][j][k] + Ey[i][j][k] * Ey[i][j][k] + Ez[i][j][k] * Ez[i][j][k]) / (FourPI);
+      for (int k = 1; k < nzn - 2; k++) {
+        localEenergy[0] += .5 * dx * dy * dz * Ex[i][j][k] * Ex[i][j][k] / FourPI;
+        localEenergy[1] += .5 * dx * dy * dz * Ey[i][j][k] * Ey[i][j][k] / FourPI;
+        localEenergy[2] += .5 * dx * dy * dz * Ez[i][j][k] * Ez[i][j][k] / FourPI;
+      }
 
-  MPI_Allreduce(&localEenergy, &totalEenergy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(localEenergy, totalEenergy, 3, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalEenergy);
-
 }
+
 /*! get the magnetic field energy */
-double EMfields3D::getBenergy(void) {
-  double localBenergy = 0.0;
-  double totalBenergy = 0.0;
+double *EMfields3D::getBenergy(void) {
+  double *localBenergy;  
+  double *totalBenergy;  
+  localBenergy = new double[3]; 
+  totalBenergy = new double[3]; 
+  for (int i=0; i<3; i++) {
+    localBenergy[i] = 0.;
+    totalBenergy[i] = 0.;
+  }
+
+  // Calculate B energy from all cells
   double Bxt = 0.0;
   double Byt = 0.0;
   double Bzt = 0.0;
   for (int i = 1; i < nxn - 2; i++)
     for (int j = 1; j < nyn - 2; j++)
-      for (int k = 1; k < nzn - 2; k++){
+      for (int k = 1; k < nzn - 2; k++) {
         Bxt = Bxn[i][j][k]+Fext*Bx_ext[i][j][k];
+        localBenergy[0] += .5*dx*dy*dz*Bxt*Bxt/FourPI;
         Byt = Byn[i][j][k]+Fext*By_ext[i][j][k];
+        localBenergy[1] += .5*dx*dy*dz*Byt*Byt/FourPI;
         Bzt = Bzn[i][j][k]+Fext*Bz_ext[i][j][k];
-        localBenergy += .5*dx*dy*dz*(Bxt*Bxt + Byt*Byt + Bzt*Bzt)/(FourPI);
+        localBenergy[2] += .5*dx*dy*dz*Bzt*Bzt/FourPI;
       }
 
-  MPI_Allreduce(&localBenergy, &totalBenergy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(localBenergy, totalBenergy, 3, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalBenergy);
 }
 

@@ -619,7 +619,7 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
         for (int jj = 0; jj < 2; jj++)
           for (int kk = 0; kk < 2; kk++)
             temp[ii][jj][kk] = uhat * vhat * weight[ii][jj][kk];
-      EMf->addPhxx(temp, ix, iy, iz, ns);
+      EMf->addPhxy(temp, ix, iy, iz, ns);
       // Hat pressure tensor - XZ
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)
@@ -1268,15 +1268,22 @@ double Particles3Dcomm::getQ(long long indexPart)  const {
 long long Particles3Dcomm::getNOP()  const {
   return (nop);
 }
+
 /** return the Kinetic energy */
 double Particles3Dcomm::getKe() {
   double localKe = 0.0;
   double totalKe = 0.0;
-  for (register long long i = 0; i < nop; i++)
-    localKe += .5 * (q[i] / qom) * (u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
+  double gg;
+
+  // Get energy from all particles
+  for (register long long i = 0; i < nop; i++) {
+    gg = sqrt(1. + u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
+    localKe += (q[i] / qom) * (gg - 1.) * c*c;
+  }
   MPI_Allreduce(&localKe, &totalKe, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalKe);
 }
+
 /** return the total charge */
 double Particles3Dcomm::getTotalQ(){
     double localQ = 0.0;

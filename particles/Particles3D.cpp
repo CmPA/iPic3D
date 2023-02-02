@@ -1798,17 +1798,16 @@ int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf)
       uybar = (upy+(upx*betax+upy*betay+upz*betaz)*betay/(gbar*gbar)+(-upx*betaz+upz*betax)/gbar)/(1.+beta2/gbar/gbar);
       uzbar = (upz+(upx*betax+upy*betay+upz*betaz)*betaz/(gbar*gbar)+(upx*betay-upy*betax)/gbar)/(1.+beta2/gbar/gbar);
       
-      up = 2.*uxbar - upold;
-      vp = 2.*uybar - vpold;
-      wp = 2.*uzbar - wpold;
-      gp = 2.*gbar - gpold;
       // update position
       xp = xpold + uxbar/gbar * dto2;
       yp = ypold + uybar/gbar * dto2;
       zp = zpold + uzbar/gbar * dto2;
     } // end of PC iteration
 
-    // update the final position
+    // update the final velocity and position
+    up = 2.*uxbar - upold;
+    vp = 2.*uybar - vpold;
+    wp = 2.*uzbar - wpold;
     xp = xpold + uxbar/gbar * dt;
     yp = ypold + uybar/gbar * dt;
     zp = zpold + uzbar/gbar * dt;

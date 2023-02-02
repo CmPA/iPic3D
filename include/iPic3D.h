@@ -95,8 +95,8 @@ namespace iPic3D {
     int nz0;
     int nDistributionBins;
     bool cylindrical;
-    double Eenergy;
-    double Benergy;
+    double *Eenergy;
+    double *Benergy;
     double TOTenergy;
     double TOTmomentum;
     double x_center;

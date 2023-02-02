@@ -80,7 +80,6 @@ int c_Solver::Init(int argc, char **argv) {
     /* If using parallel H5hut IO read initial file */
     /* -------------------------------------------- */
     ReadFieldsH5hut(ns, false, EMf, col, vct, grid);
-
   }
   else {
 
@@ -112,7 +111,7 @@ int c_Solver::Init(int argc, char **argv) {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
         cout << " WARNING: The case '" << col->getCase() << "' was not recognized. " << endl;
-        cout << "          Runing simulation with the default initialization. " << endl;
+        cout << "          Running simulation with the default initialization. " << endl;
         cout << " =========================================================== " << endl;
       }
       EMf->init(vct,grid,col);
@@ -141,17 +140,16 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
   else {
-    for (int i = 0; i < ns; i++)
-      part[i].allocate(i, 0, col, vct, grid);
+    for (int i = 0; i < ns; i++) part[i].allocate(i, 0, col, vct, grid);
 
     // Initial Condition for PARTICLES if you are not starting from RESTART
     if (restart == 0) {
       // wave = new Planewave(col, EMf, grid, vct);
       // wave->Wave_Rotated(part); // Single Plane Wave
 
-    	cout << col->getCase() << endl;
+      if (myrank==0) cout << col->getCase() << endl;
 
-      for (int i = 0; i < ns; i++)
+      for (int i = 0; i < ns; i++) {
         if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
         else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
         else if (col->getCase()=="DoubleHarris")    part[i].maxwellian_reversed(grid, EMf, vct);
@@ -164,34 +162,35 @@ int c_Solver::Init(int argc, char **argv) {
         else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
         else if (col->getCase()=="GEMRelativity")    part[i].relativistic_maxwellian(grid, EMf, vct);
         else if (col->getCase()=="Relativistic")  part[i].twostream1D(grid, vct, 3);
-        else if (col->getCase()=="GEM" || col->getCase()=="GEMNoVelShear"){
-        	if(i<2)
-        		part[i].maxwellian(grid, EMf, vct);
-        	else
-        		if(col->getPartInit()=="Kappa")
-        			part[i].kappa(grid, EMf, vct);
-        		else
-        			part[i].maxwellian(grid, EMf, vct);
+        else if (col->getCase()=="GEM" || col->getCase()=="GEMNoVelShear") {
+          if (i<2)
+            part[i].maxwellian(grid, EMf, vct);
+          else
+            if(col->getPartInit()=="Kappa")
+              part[i].kappa(grid, EMf, vct);
+            else
+              part[i].maxwellian(grid, EMf, vct);
         }
-        else if (col->getCase()=="Coils"){
-           	if (col->getRHOinit(i) > 0.0)
-           		part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
-           	else
-       	    	part[i].empty(grid, EMf, vct);
-        								  }
+        else if (col->getCase()=="Coils") {
+          if (col->getRHOinit(i) > 0.0)
+            part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+          else
+       	    part[i].empty(grid, EMf, vct);
+        }
         else if (col->getCase()=="TwoCoils"){
-                   	if (col->getRHOinit(i) > 0.0)
-                   		part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
-                   	else
-               	    	part[i].empty(grid, EMf, vct);
-                								  }
+          if (col->getRHOinit(i) > 0.0)
+            part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+          else
+            part[i].empty(grid, EMf, vct);
+        }
         else if (col->getCase()=="CoilsMono"){
-                   	if (col->getRHOinit(i) > 0.0)
-                   		part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
-                   	else
-               	    	part[i].empty(grid, EMf, vct);
-                								  }
-        else  part[i].maxwellian(grid, EMf, vct);
+          if (col->getRHOinit(i) > 0.0)
+            part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+          else
+            part[i].empty(grid, EMf, vct);
+        }
+        else part[i].maxwellian(grid, EMf, vct);
+      }
     }
   }
 
@@ -417,68 +416,70 @@ bool c_Solver::ParticlesMover() {
 
 void c_Solver::InjectBoundaryParticles(){
 
+  if (col->getCase()=="Dipole") {
+    for (int i=0; i < ns; i++){
+      if (col->getRHOinject(i)>0.0)
+       	mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+        Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+    }
+  }
+  else if (col->getCase()=="Coils") {
+    //Remove particles from outside the simulation box
+    for (int i=0; i < ns; i++){
+      //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+      /*
+      Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+      if (col->getRHOinject(i) > 0.0)
+        mem_avail = part[i].injector_rand_box(grid,vct,EMf);
+      */
+      Qremoved[i] = part[i].ReturnToCenterCircle();
+   }
+  }
+  else if (col->getCase()=="TwoCoils") {
+    //Remove particles from outside the simulation box
+    for (int i=0; i < ns; i++){
+      //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+      // Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+      /*
+      Qremoved[i] =part[i].deleteParticlesOutsideSphere(L_outer, col->getx_center(), col->gety_center(), col->getz_center());
+      if (col->getRHOinject(i) > 0.0){
+        double x_center_inect = col->getx_center() ;
+        double y_center_inect = col->gety_center() + col->getcoilSpacing()/2.0;
+        double z_center_inect = col->getz_center() ;
+        mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
+        x_center_inect = col->getx_center() ;
+        y_center_inect = col->gety_center() - col->getcoilSpacing()/2.0;
+        z_center_inect = col->getz_center() ;
+        mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
+      }
+      */
+      Qremoved[i] = part[i].ReturnToCenterCircle();
+    }
+  }
+  else if (col->getCase()=="CoilsMono") {
+    // Remove particles from outside the simulation box
+    for (int i=0; i < ns; i++){
+      //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
+      Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
+      if (col->getRHOinject(i) > 0.0)
+        mem_avail = part[i].injector_rand_box_mono(grid,vct,EMf);
+    }
+  }
+  else if (col->getCase()=="Relativistic");
+  // Do nothing//
+  else {
 
-      if (col->getCase()=="Dipole") {
-        for (int i=0; i < ns; i++){
-            if (col->getRHOinject(i)>0.0)
-            	mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
-          Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+    // REPOPULATOR HERE: commented out for now
 
-      }
-      }
-      else if (col->getCase()=="Coils") {
-	  //Remove particles from outside the simulation box
-		for (int i=0; i < ns; i++){
-			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
-/*			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
-			if (col->getRHOinject(i) > 0.0)
-				mem_avail = part[i].injector_rand_box(grid,vct,EMf);
-				*/
-			Qremoved[i] = part[i].ReturnToCenterCircle();
-		}
-      }
-      else if (col->getCase()=="TwoCoils") {
-      	  //Remove particles from outside the simulation box
-      		for (int i=0; i < ns; i++){
-      			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
-      			  // Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
-      	/*		Qremoved[i] =part[i].deleteParticlesOutsideSphere(L_outer, col->getx_center(), col->gety_center(), col->getz_center());
-      			if (col->getRHOinject(i) > 0.0){
-      				double x_center_inect = col->getx_center() ;
-      				double y_center_inect = col->gety_center() + col->getcoilSpacing()/2.0;
-      				double z_center_inect = col->getz_center() ;
-      				mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
-     				x_center_inect = col->getx_center() ;
-      				y_center_inect = col->gety_center() - col->getcoilSpacing()/2.0;
-      				z_center_inect = col->getz_center() ;
-      				mem_avail = part[i].injector_rand_box(grid, vct, EMf, x_center_inect, y_center_inect, z_center_inect, L_square );
-      			}
-      			*/
-      			Qremoved[i] = part[i].ReturnToCenterCircle();
-      		}
-            }
-      else if (col->getCase()=="CoilsMono") {
-	  //Remove particles from outside the simulation box
-		for (int i=0; i < ns; i++){
-			   //Qremoved[i] = part[i].deleteParticlesOutsideBox(col->getLx());
-			   Qremoved[i] = part[i].deleteParticlesOuterFrame(6.0,6.0,6.0);
-			if (col->getRHOinject(i) > 0.0)
-				mem_avail = part[i].injector_rand_box_mono(grid,vct,EMf);
-		}
-      }
-      else if (col->getCase()=="Relativistic");
-      // Do nothing//
-      else{
-    	     /* --------------------------------------- */
-    	      /* Remove particles from depopulation area */
-    	      /* --------------------------------------- */
-          for (int i=0; i < ns; i++){
-          mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
-          mem_avail = part[i].particle_reflector(grid,vct,EMf,i);
-      }
-      }
+    // /* --------------------------------------- */
+    // /* Remove particles from depopulation area */
+    // /* --------------------------------------- */
+    // for (int i=0; i < ns; i++){
+    //   mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+    //   mem_avail = part[i].particle_reflector(grid,vct,EMf,i);
+    // }
+  }
 }
-
 
 void c_Solver::WriteRestart(int cycle) {
   // write the RESTART file
@@ -494,48 +495,59 @@ void c_Solver::WriteRestart(int cycle) {
 void c_Solver::WriteConserved(int cycle) {
   // write the conserved quantities
   if (cycle % col->getDiagnosticsOutputCycle() == 0) {
+    // Old quantities (unused)
+    //TOTenergy = 0.0;
+    //TOTmomentum = 0.0;
+    //totParticles[0] = totParticles[1] = 0;
+    //globalTotParticles[0] = globalTotParticles[1] = 0;
+
+    // Get EM energies
     Eenergy = EMf->getEenergy();
     Benergy = EMf->getBenergy();
-    TOTenergy = 0.0;
-    TOTmomentum = 0.0;
-	totParticles[0] = totParticles[1] = 0;
-	globalTotParticles[0] = globalTotParticles[1] = 0;
 
+    // Get particle energies
     for (int is = 0; is < ns; is++) {
       Ke[is] = part[is].getKe();
-      BulkEnergy[is] = EMf->getBulkEnergy(is);
-      TOTenergy += Ke[is];
-      momentum[is] = part[is].getP();
-      TOTmomentum += momentum[is];
-      totParticles[is] = part[is].getNOP();
 
-      MPI_Allreduce(&totParticles[is], &globalTotParticles[is], 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-      Qtot[is] = part[is].getTotalQ();
-      speciesTemp[is] = (double)((double)Ke[is]/(Qtot[is]/qom[is]));
-
+      // Old quantites (unused)
+      //BulkEnergy[is] = EMf->getBulkEnergy(is);
+      //momentum[is] = part[is].getP();
+      //TOTmomentum += momentum[is];
+      //totParticles[is] = part[is].getNOP();
+      //MPI_Allreduce(&totParticles[is], &globalTotParticles[is], 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+      //Qtot[is] = part[is].getTotalQ();
+      //speciesTemp[is] = (double)((double)Ke[is]/(Qtot[is]/qom[is]));
     }
+
+    // Write to file
+    // Structure: cycle - Bx By Bz Ex Ey Ez K0 K1 K2...
     if (myrank == 0) {
       ofstream my_file(cq.c_str(), fstream::app);
-      my_file << cycle << "\t" << setprecision(15);
-      my_file << (Eenergy + Benergy + TOTenergy) << "\t" << TOTmomentum << "\t" << Eenergy << "\t" << Benergy << "\t" << TOTenergy << endl;
+      my_file << cycle << " " << setprecision(15);
+      my_file << Benergy[0] << " " << Benergy[1] << " " << Benergy[2] << " "
+              << Eenergy[0] << " " << Eenergy[1] << " " << Eenergy[2];
+      for (int is=0; is<ns; is++) my_file << " " << Ke[is];
+      my_file << endl;
       my_file.close();
-      ofstream my_file2(cq2.c_str(),fstream::app);
 
-               my_file2 << cycle << "\t" <<setprecision(15);
-     		for (int i = 0; i < ns; i++)
-     			my_file2 << Ke[i] << "\t";
-     		for (int i = 0; i < ns; i++)
-     			my_file2 << BulkEnergy[i] << "\t";
-     		for (int i = 0; i < ns; i++)
-     			my_file2 << Qtot[i] << "\t";
-     		for (int i = 0; i < ns; i++)
-                		my_file2 << globalTotParticles[i] << "\t";
-     		for (int i = 0; i < ns; i++)
-     			my_file2 << speciesTemp[i] << "\t";
-     		my_file2 << endl;
-                my_file2.close();
-
+      // Next is the diagnostics file (SummaryQuantities), to be made user-defined
+      // Unused for now
+      //ofstream my_file2(cq2.c_str(),fstream::app);
+      //my_file2 << cycle << "\t" <<setprecision(15);
+      //for (int i = 0; i < ns; i++)
+      //	my_file2 << Ke[i] << "\t";
+      //for (int i = 0; i < ns; i++)
+      //	my_file2 << BulkEnergy[i] << "\t";
+      //for (int i = 0; i < ns; i++)
+      //	my_file2 << Qtot[i] << "\t";
+      //for (int i = 0; i < ns; i++)
+      //		my_file2 << globalTotParticles[i] << "\t";
+      //for (int i = 0; i < ns; i++)
+      //my_file2 << speciesTemp[i] << "\t";
+      //my_file2 << endl;
+      //my_file2.close();
     }
+
     // // Velocity distribution
     // for (int is = 0; is < ns; is++) {
     //   double maxVel = part[is].getMaxVelocity();

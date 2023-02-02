@@ -530,9 +530,9 @@ class EMfields3D                // :public Field
     double ****getEFzsn();
 
     /*! get the electric field energy */
-    double getEenergy();
+    double *getEenergy();
     /*! get the magnetic field energy */
-    double getBenergy();
+    double *getBenergy();
     /*! get bulk kinetic energy*/
     double getBulkEnergy(int is);
 
