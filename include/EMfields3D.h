@@ -275,6 +275,8 @@ class EMfields3D                // :public Field
     void smooth(double value, int Nvolte, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
     /*! smooth the electric field */
     void smoothE(double value, int Nvolte, VirtualTopology3D * vct, Collective *col);
+    /*! smooth the electric field th */
+    void smoothEth(double value, int Nvolte, VirtualTopology3D * vct, Collective *col);
 
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
@@ -367,6 +369,8 @@ class EMfields3D                // :public Field
     double ***getPHI();
     /*! get Electric Field component X defined on node(indexX,indexY,indexZ) */
     double &getEx(int indexX, int indexY, int indexZ) const;
+    /*! get Electric field th X component array */
+    double ***getExth();
     /*! get Electric field X component array */
     double ***getEx();
     /*! get Electric field X component cell array without the ghost cells */
@@ -375,10 +379,14 @@ class EMfields3D                // :public Field
     double &getEy(int indexX, int indexY, int indexZ) const;
     /*! get Electric field Y component array */
     double ***getEy();
+    /*! get Electric field th Y component array */
+    double ***getEyth();
     /*! get Electric field Y component cell array without the ghost cells */
     double ***getEyc();
     /*! get Electric Field component Z defined on node(indexX,indexY,indexZ) */
     double &getEz(int indexX, int indexY, int indexZ) const;
+    /*! get Electric field th Z component array */
+    double ***getEzth();
     /*! get Electric field Z component array */
     double ***getEz();
     /*! get Electric field Z component cell array without the ghost cells */

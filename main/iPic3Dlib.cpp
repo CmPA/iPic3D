@@ -303,14 +303,6 @@ void c_Solver::GatherMoments(){
     part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
 
   EMf->sumOverSpecies(vct);                 // sum all over the species
-  //
-  // Fill with constant charge the planet
-  if (col->getCase()=="Dipole") {
-    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
-  }
-
-  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
-
 }
 
 void c_Solver::UpdateCycleInfo(int cycle) {
@@ -360,6 +352,44 @@ void c_Solver::CalculateBField() {
 
   // print out total time for all tasks
   // timeTasks.print_cycle_times();
+}
+
+bool c_Solver::PushParticles() {
+
+  /*  ------------------------ */
+  /*  Particle position pusher */
+  /*  ------------------------ */
+
+  // timeTasks.start(TimeTasks::PARTICLES);
+  for (int i = 0; i < ns; i++) {  // move each species
+    mem_avail = part[i].push_particles(grid, vct);
+  }
+
+  if (mem_avail < 0) { // not enough memory space allocated for particles: stop the simulation
+    if (myrank == 0) {
+      cout << "*************************************************************" << endl;
+      cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
+      cout << "*************************************************************" << endl;
+    }
+    return (true);              // exit from the time loop
+  }
+
+  /* -------------------------------------- */
+  /* Repopulate the buffer zone at the edge */
+  /* -------------------------------------- */
+
+  InjectBoundaryParticles();
+
+  if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
+    if (myrank == 0) {
+      cout << "*************************************************************" << endl;
+      cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
+      cout << "*************************************************************" << endl;
+    }
+    return (true);              // exit from the time loop
+  }
+
+  return (false);
 }
 
 bool c_Solver::ParticlesMover() {

@@ -90,6 +90,8 @@ class Particles3D:public Particles3Dcomm {
     void get_weights(Grid * grid, double xp, double yp, double zp, int& ix, int& iy, int& iz, double weights[2][2][2]);
     /** mover with a Predictor-Corrector Scheme  woith older code versions*/
     int mover_PC_old(Grid * grid, VirtualTopology3D * vct, Field * EMf);
+    /** relativistic position pusher */
+    int push_particles(Grid * grid, VirtualTopology3D * vct);
     /** relativistic mover with a Predictor-Corrector Scheme */
     int mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf);
     /** mover with a Predictor-Corrector Scheme */

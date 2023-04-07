@@ -254,7 +254,7 @@ void Particles3D::MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology
 void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
   /* initialize random generator with different seed on different processor */
-  srand(vct->getCartesian_rank() + 2);
+  srand(vct->getCartesian_rank() + 2 + ns);
 
   double harvest;
   double prob, theta, sign;
@@ -1605,30 +1605,12 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
   return (0);                   // exit succcesfully (hopefully)
 }
 
-/** relativistic mover with a Predictor-Corrector scheme */
-int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+/** relativistic position pusher */
+int Particles3D::push_particles(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getCartesian_rank() == 0) {
-    cout << "*** MOVER species " << ns << " ***" << " with " << nop << " particles ***" << NiterMover << " ITERATIONS   ****" << endl;
+    cout << "*** POSITION MOVER species " << ns << " ***" << " with " << nop << " particles ***" << endl;
   }
-  double start_mover_PC = MPI_Wtime();
-  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
-  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
-  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
-  double ***Ex_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx_ext());
-  double ***Ey_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy_ext());
-  double ***Ez_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz_ext());
-  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
-  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
-  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
-  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
-  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
-  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
-  double Fext = EMf->getFext();
-  
-  if(Gravity) Fext /= qom;
-  
-  const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
-  const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+
   // don't bother trying to push any particles simultaneously;
   // MIC already does vectorization automatically, and trying
   // to do it by hand only hurts performance.
@@ -1642,179 +1624,15 @@ int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     double up = u[rest];
     double vp = v[rest];
     double wp = w[rest];
-    double gp = sqrt(1.+up*up+vp*vp+wp*wp);
-    const double xpold = xp;
-    const double ypold = yp;
-    const double zpold = zp;
-    const double upold = up;
-    const double vpold = vp;
-    const double wpold = wp;
-    const double gpold = gp;
-    double uxbar, uybar, uzbar, gbar;
+    double gp = sqrt(1.+(up*up+vp*vp+wp*wp)/c/c);
 
-    // calculate the average velocity iteratively
-    for (int innter = 0; innter < NiterMover; innter++) {
-      // interpolation G-->P
-      const double ixd = floor((xp - xstart) * inv_dx);
-      const double iyd = floor((yp - ystart) * inv_dy);
-      const double izd = floor((zp - zstart) * inv_dz);
-      int ix = 2 + int (ixd);
-      int iy = 2 + int (iyd);
-      int iz = 2 + int (izd);
-      if (ix < 1)
-      	ix = 1;
-      if (iy < 1)
-      	iy = 1;
-      if (iz < 1)
-      	iz = 1;
-      if (ix > nxn - 1)
-      	ix = nxn - 1;
-      if (iy > nyn - 1)
-      	iy = nyn - 1;
-      if (iz > nzn - 1)
-      	iz = nzn - 1;
-      
-      double xi  [2];
-      double eta [2];
-      double zeta[2];
-      
-      xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
-      eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
-      zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
-      xi  [1] = grid->getXN(ix,iy,iz) - xp;
-      eta [1] = grid->getYN(ix,iy,iz) - yp;
-      zeta[1] = grid->getZN(ix,iy,iz) - zp;
-      
-      double Exl = 0.0;
-      double Eyl = 0.0;
-      double Ezl = 0.0;
-      double Bxl = 0.0;
-      double Byl = 0.0;
-      double Bzl = 0.0;
-
-      const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
-      const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
-      const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
-      const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
-      const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
-      const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
-      const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
-      const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
-      //
-      Bxl += weight000 * (Bx[ix][iy][iz]             + Fext*Bx_ext[ix][iy][iz]);
-      Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Fext*Bx_ext[ix][iy][iz-1]);
-      Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Fext*Bx_ext[ix][iy-1][iz]);
-      Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Fext*Bx_ext[ix][iy-1][iz-1]);
-      Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Fext*Bx_ext[ix-1][iy][iz]);
-      Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Fext*Bx_ext[ix-1][iy][iz-1]);
-      Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Fext*Bx_ext[ix-1][iy-1][iz]);
-      Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Fext*Bx_ext[ix-1][iy-1][iz-1]);
-      //
-      Byl += weight000 * (By[ix][iy][iz]             + Fext*By_ext[ix][iy][iz]);
-      Byl += weight001 * (By[ix][iy][iz - 1]         + Fext*By_ext[ix][iy][iz-1]);
-      Byl += weight010 * (By[ix][iy - 1][iz]         + Fext*By_ext[ix][iy-1][iz]);
-      Byl += weight011 * (By[ix][iy - 1][iz - 1]     + Fext*By_ext[ix][iy-1][iz-1]);
-      Byl += weight100 * (By[ix - 1][iy][iz]         + Fext*By_ext[ix-1][iy][iz]);
-      Byl += weight101 * (By[ix - 1][iy][iz - 1]     + Fext*By_ext[ix-1][iy][iz-1]);
-      Byl += weight110 * (By[ix - 1][iy - 1][iz]     + Fext*By_ext[ix-1][iy-1][iz]);
-      Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + Fext*By_ext[ix-1][iy-1][iz-1]);
-      //
-      Bzl += weight000 * (Bz[ix][iy][iz]             + Fext*Bz_ext[ix][iy][iz]);
-      Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Fext*Bz_ext[ix][iy][iz-1]);
-      Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Fext*Bz_ext[ix][iy-1][iz]);
-      Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Fext*Bz_ext[ix][iy-1][iz-1]);
-      Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Fext*Bz_ext[ix-1][iy][iz]);
-      Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Fext*Bz_ext[ix-1][iy][iz-1]);
-      Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
-      Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
-      //
-      Exl += weight000 * (Ex[ix][iy][iz] 			 + Fext * Ex_ext[ix][iy][iz]);
-      Exl += weight001 * (Ex[ix][iy][iz - 1] 		 + Fext * Ex_ext[ix][iy][iz - 1]);
-      Exl += weight010 * (Ex[ix][iy - 1][iz] 		 + Fext * Ex_ext[ix][iy - 1][iz]);
-      Exl += weight011 * (Ex[ix][iy - 1][iz - 1] 	 + Fext * Ex_ext[ix][iy - 1][iz - 1]);
-      Exl += weight100 * (Ex[ix - 1][iy][iz] 		 + Fext * Ex_ext[ix - 1][iy][iz]);
-      Exl += weight101 * (Ex[ix - 1][iy][iz - 1] 	 + Fext * Ex_ext[ix - 1][iy][iz - 1]);
-      Exl += weight110 * (Ex[ix - 1][iy - 1][iz] 	 + Fext * Ex_ext[ix - 1][iy - 1][iz]);
-      Exl += weight111 * (Ex[ix - 1][iy - 1][iz - 1] + Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
-      //
-      Eyl += weight000 * (Ey[ix][iy][iz] 			 + Fext * Ey_ext[ix][iy][iz]);
-      Eyl += weight001 * (Ey[ix][iy][iz - 1] 		 + Fext * Ey_ext[ix][iy][iz - 1]);
-      Eyl += weight010 * (Ey[ix][iy - 1][iz] 		 + Fext * Ey_ext[ix][iy - 1][iz]);
-      Eyl += weight011 * (Ey[ix][iy - 1][iz - 1] 	 + Fext * Ey_ext[ix][iy - 1][iz - 1]);
-      Eyl += weight100 * (Ey[ix - 1][iy][iz] 		 + Fext * Ey_ext[ix - 1][iy][iz]);
-      Eyl += weight101 * (Ey[ix - 1][iy][iz - 1] 	 + Fext * Ey_ext[ix - 1][iy][iz - 1]);
-      Eyl += weight110 * (Ey[ix - 1][iy - 1][iz] 	 + Fext * Ey_ext[ix - 1][iy - 1][iz]);
-      Eyl += weight111 * (Ey[ix - 1][iy - 1][iz - 1] + Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
-      
-      Ezl += weight000 * (Ez[ix][iy][iz] 			 + Fext * Ez_ext[ix][iy][iz]);
-      Ezl += weight001 * (Ez[ix][iy][iz - 1] 		 + Fext * Ez_ext[ix][iy][iz - 1]);
-      Ezl += weight010 * (Ez[ix][iy - 1][iz] 		 + Fext * Ez_ext[ix][iy - 1][iz]);
-      Ezl += weight011 * (Ez[ix][iy - 1][iz - 1] 	 + Fext * Ez_ext[ix][iy - 1][iz - 1]);
-      Ezl += weight100 * (Ez[ix - 1][iy][iz] 		 + Fext * Ez_ext[ix - 1][iy][iz]);
-      Ezl += weight101 * (Ez[ix - 1][iy][iz - 1] 	 + Fext * Ez_ext[ix - 1][iy][iz - 1]);
-      Ezl += weight110 * (Ez[ix - 1][iy - 1][iz] 	 + Fext * Ez_ext[ix - 1][iy - 1][iz]);
-      Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
-      
-      // end interpolation
-      double epsx = qomdt2*Exl;
-      double epsy = qomdt2*Eyl;
-      double epsz = qomdt2*Ezl;
-      double betax = qomdt2*Bxl;
-      double betay = qomdt2*Byl;
-      double betaz = qomdt2*Bzl;
-      double beta2 = betax*betax+betay*betay+betaz*betaz;
-      double upx = upold + epsx;
-      double upy = vpold + epsy;
-      double upz = wpold + epsz;
-
-      // Polynomial coefficients
-      double updote = upx*epsx+upy*epsy+upz*epsz;
-      double bdote = betax*epsx+betay*epsy+betaz*epsz;
-      double updotb = upx*betax+upy*betay+upz*betaz;
-      double upcrossb_x = (upy*betaz-upz*betay);
-      double upcrossb_y = (-upx*betaz+upz*betax);
-      double upcrossb_z = (upx*betay-upy*betax);
-      double aa = updote - beta2;
-      double bb = upcrossb_x*epsx+upcrossb_y*epsy+upcrossb_z*epsz+ gpold*beta2;
-      double cc = updotb*bdote;
-      
-      // Solution coefficients
-      double AA = 2.*aa/3.+gpold*gpold/4.;
-      double BB = 4.*aa*gpold+8.*bb+gpold*gpold*gpold;
-      double DD = aa*aa-3.*bb*gpold-12.*cc;
-      double FF = -2.*aa*aa*aa+9.*aa*bb*gpold-72.*aa*cc+27.*bb*bb-27.*cc*gpold*gpold;
-      std::complex<double> GG = FF*FF-4.*DD*DD*DD;
-      std::complex<double> EE;
-      if (std::real((FF+sqrt(GG))/2.)<0.) EE = -pow(-(FF+sqrt(GG))/2.,1./3.);
-      else EE = pow((FF+sqrt(GG))/2.,1./3.);
-      std::complex<double> CC = DD/(EE+1.e-20)/3.+EE/3.;
-      // Solution
-      std::complex<double> gbarc = gpold/4.+sqrt(2.*AA+BB/4./sqrt(AA+CC+1.e-20)-CC)/2.+sqrt(AA+CC)/2.;
-      gbar = (double) std::real(gbarc);
-      
-      uxbar = (upx+(upx*betax+upy*betay+upz*betaz)*betax/(gbar*gbar)+(upy*betaz-upz*betay)/gbar)/(1.+beta2/gbar/gbar);
-      uybar = (upy+(upx*betax+upy*betay+upz*betaz)*betay/(gbar*gbar)+(-upx*betaz+upz*betax)/gbar)/(1.+beta2/gbar/gbar);
-      uzbar = (upz+(upx*betax+upy*betay+upz*betaz)*betaz/(gbar*gbar)+(upx*betay-upy*betax)/gbar)/(1.+beta2/gbar/gbar);
-      
-      // update position
-      xp = xpold + uxbar/gbar * dto2;
-      yp = ypold + uybar/gbar * dto2;
-      zp = zpold + uzbar/gbar * dto2;
-    } // end of PC iteration
-
-    // update the final velocity and position
-    up = 2.*uxbar - upold;
-    vp = 2.*uybar - vpold;
-    wp = 2.*uzbar - wpold;
-    xp = xpold + uxbar/gbar * dt;
-    yp = ypold + uybar/gbar * dt;
-    zp = zpold + uzbar/gbar * dt;
+    // update position
+    xp = xp + up/gp * dt;
+    yp = yp + vp/gp * dt;
+    zp = zp + wp/gp * dt;
     x[rest] = xp;
     y[rest] = yp;
     z[rest] = zp;
-    u[rest] = up;
-    v[rest] = vp;
-    w[rest] = wp;
   } // END OF ALL THE PARTICLES
   
   // ********************//
@@ -1832,6 +1650,231 @@ int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     MPI_Barrier(MPI_COMM_WORLD);
   }
   // timeTasks.addto_communicate();
+  return (0);                   // exit succcesfully (hopefully)
+}
+
+/** relativistic mover with a Predictor-Corrector scheme */
+int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
+  if (vct->getCartesian_rank() == 0) {
+    cout << "*** MOVER species " << ns << " ***" << " with " << nop << " particles ***" << endl;
+  }
+  double start_mover_PC = MPI_Wtime();
+  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getExth());
+  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEyth());
+  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEzth());
+//  double ***Ex_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx_ext());
+//  double ***Ey_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy_ext());
+//  double ***Ez_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz_ext());
+  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+//  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+//  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+//  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+//  double Fext = EMf->getFext();
+  
+//  if(Gravity) Fext /= qom;
+  
+  const double dto2 = .5 * dt, qomdt2 = qom * dto2;
+  const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
+  // don't bother trying to push any particles simultaneously;
+  // MIC already does vectorization automatically, and trying
+  // to do it by hand only hurts performance.
+#pragma omp parallel for
+#pragma simd                    // this just slows things down (why?)
+  for (long long rest = 0; rest < nop; rest++) {
+    // copy the particle
+    double xp = x[rest];
+    double yp = y[rest];
+    double zp = z[rest];
+    double up = u[rest];
+    double vp = v[rest];
+    double wp = w[rest];
+    double gp = sqrt(1.+(up*up+vp*vp+wp*wp)/c/c);
+    const double upold = up;
+    const double vpold = vp;
+    const double wpold = wp;
+    const double gpold = gp;
+    double uxbar, uybar, uzbar, gbar;
+
+    // interpolation G-->P
+    const double ixd = floor((xp - xstart) * inv_dx);
+    const double iyd = floor((yp - ystart) * inv_dy);
+    const double izd = floor((zp - zstart) * inv_dz);
+    int ix = 2 + int (ixd);
+    int iy = 2 + int (iyd);
+    int iz = 2 + int (izd);
+    if (ix < 1)
+    	ix = 1;
+    if (iy < 1)
+    	iy = 1;
+    if (iz < 1)
+    	iz = 1;
+    if (ix > nxn - 1)
+    	ix = nxn - 1;
+    if (iy > nyn - 1)
+    	iy = nyn - 1;
+    if (iz > nzn - 1)
+    	iz = nzn - 1;
+    
+    double xi  [2];
+    double eta [2];
+    double zeta[2];
+    
+    xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+    eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+    zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+    xi  [1] = grid->getXN(ix,iy,iz) - xp;
+    eta [1] = grid->getYN(ix,iy,iz) - yp;
+    zeta[1] = grid->getZN(ix,iy,iz) - zp;
+    
+    double Exl = 0.0;
+    double Eyl = 0.0;
+    double Ezl = 0.0;
+    double Bxl = 0.0;
+    double Byl = 0.0;
+    double Bzl = 0.0;
+
+    const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+    const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+    const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+    const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+    const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+    const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+    const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+    const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+    //
+    Bxl += weight000 * Bx[ix][iy][iz]            ; // + Fext*Bx_ext[ix][iy][iz]);
+    Bxl += weight001 * Bx[ix][iy][iz - 1]        ; // + Fext*Bx_ext[ix][iy][iz-1]);
+    Bxl += weight010 * Bx[ix][iy - 1][iz]        ; // + Fext*Bx_ext[ix][iy-1][iz]);
+    Bxl += weight011 * Bx[ix][iy - 1][iz - 1]    ; // + Fext*Bx_ext[ix][iy-1][iz-1]);
+    Bxl += weight100 * Bx[ix - 1][iy][iz]        ; // + Fext*Bx_ext[ix-1][iy][iz]);
+    Bxl += weight101 * Bx[ix - 1][iy][iz - 1]    ; // + Fext*Bx_ext[ix-1][iy][iz-1]);
+    Bxl += weight110 * Bx[ix - 1][iy - 1][iz]    ; // + Fext*Bx_ext[ix-1][iy-1][iz]);
+    Bxl += weight111 * Bx[ix - 1][iy - 1][iz - 1]; // + Fext*Bx_ext[ix-1][iy-1][iz-1]);
+    //
+    Byl += weight000 * By[ix][iy][iz]            ; // + Fext*By_ext[ix][iy][iz]);
+    Byl += weight001 * By[ix][iy][iz - 1]        ; // + Fext*By_ext[ix][iy][iz-1]);
+    Byl += weight010 * By[ix][iy - 1][iz]        ; // + Fext*By_ext[ix][iy-1][iz]);
+    Byl += weight011 * By[ix][iy - 1][iz - 1]    ; // + Fext*By_ext[ix][iy-1][iz-1]);
+    Byl += weight100 * By[ix - 1][iy][iz]        ; // + Fext*By_ext[ix-1][iy][iz]);
+    Byl += weight101 * By[ix - 1][iy][iz - 1]    ; // + Fext*By_ext[ix-1][iy][iz-1]);
+    Byl += weight110 * By[ix - 1][iy - 1][iz]    ; // + Fext*By_ext[ix-1][iy-1][iz]);
+    Byl += weight111 * By[ix - 1][iy - 1][iz - 1]; // + Fext*By_ext[ix-1][iy-1][iz-1]);
+    //
+    Bzl += weight000 * Bz[ix][iy][iz]            ; // + Fext*Bz_ext[ix][iy][iz]);
+    Bzl += weight001 * Bz[ix][iy][iz - 1]        ; // + Fext*Bz_ext[ix][iy][iz-1]);
+    Bzl += weight010 * Bz[ix][iy - 1][iz]        ; // + Fext*Bz_ext[ix][iy-1][iz]);
+    Bzl += weight011 * Bz[ix][iy - 1][iz - 1]    ; // + Fext*Bz_ext[ix][iy-1][iz-1]);
+    Bzl += weight100 * Bz[ix - 1][iy][iz]        ; // + Fext*Bz_ext[ix-1][iy][iz]);
+    Bzl += weight101 * Bz[ix - 1][iy][iz - 1]    ; // + Fext*Bz_ext[ix-1][iy][iz-1]);
+    Bzl += weight110 * Bz[ix - 1][iy - 1][iz]    ; // + Fext*Bz_ext[ix-1][iy-1][iz]);
+    Bzl += weight111 * Bz[ix - 1][iy - 1][iz - 1]; // + Fext*Bz_ext[ix-1][iy-1][iz-1]);
+    //
+    Exl += weight000 * Ex[ix][iy][iz] 		 ; //        + Fext * Ex_ext[ix][iy][iz]);
+    Exl += weight001 * Ex[ix][iy][iz - 1] 	 ; //        + Fext * Ex_ext[ix][iy][iz - 1]);
+    Exl += weight010 * Ex[ix][iy - 1][iz] 	 ; //        + Fext * Ex_ext[ix][iy - 1][iz]);
+    Exl += weight011 * Ex[ix][iy - 1][iz - 1] 	 ; //+ Fext * Ex_ext[ix][iy - 1][iz - 1]);
+    Exl += weight100 * Ex[ix - 1][iy][iz] 	 ; //        + Fext * Ex_ext[ix - 1][iy][iz]);
+    Exl += weight101 * Ex[ix - 1][iy][iz - 1] 	 ; //+ Fext * Ex_ext[ix - 1][iy][iz - 1]);
+    Exl += weight110 * Ex[ix - 1][iy - 1][iz] 	 ; //+ Fext * Ex_ext[ix - 1][iy - 1][iz]);
+    Exl += weight111 * Ex[ix - 1][iy - 1][iz - 1]; // + Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
+    //
+    Eyl += weight000 * Ey[ix][iy][iz] 		 ; //        + Fext * Ey_ext[ix][iy][iz]);
+    Eyl += weight001 * Ey[ix][iy][iz - 1] 	 ; //        + Fext * Ey_ext[ix][iy][iz - 1]);
+    Eyl += weight010 * Ey[ix][iy - 1][iz] 	 ; //        + Fext * Ey_ext[ix][iy - 1][iz]);
+    Eyl += weight011 * Ey[ix][iy - 1][iz - 1] 	 ; //+ Fext * Ey_ext[ix][iy - 1][iz - 1]);
+    Eyl += weight100 * Ey[ix - 1][iy][iz] 	 ; //        + Fext * Ey_ext[ix - 1][iy][iz]);
+    Eyl += weight101 * Ey[ix - 1][iy][iz - 1] 	 ; //+ Fext * Ey_ext[ix - 1][iy][iz - 1]);
+    Eyl += weight110 * Ey[ix - 1][iy - 1][iz] 	 ; //+ Fext * Ey_ext[ix - 1][iy - 1][iz]);
+    Eyl += weight111 * Ey[ix - 1][iy - 1][iz - 1]; // + Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
+    
+    Ezl += weight000 * Ez[ix][iy][iz] 		 ; //        + Fext * Ez_ext[ix][iy][iz]);
+    Ezl += weight001 * Ez[ix][iy][iz - 1] 	 ; //        + Fext * Ez_ext[ix][iy][iz - 1]);
+    Ezl += weight010 * Ez[ix][iy - 1][iz] 	 ; //        + Fext * Ez_ext[ix][iy - 1][iz]);
+    Ezl += weight011 * Ez[ix][iy - 1][iz - 1] 	 ; //+ Fext * Ez_ext[ix][iy - 1][iz - 1]);
+    Ezl += weight100 * Ez[ix - 1][iy][iz] 	 ; //        + Fext * Ez_ext[ix - 1][iy][iz]);
+    Ezl += weight101 * Ez[ix - 1][iy][iz - 1] 	 ; //+ Fext * Ez_ext[ix - 1][iy][iz - 1]);
+    Ezl += weight110 * Ez[ix - 1][iy - 1][iz] 	 ; //+ Fext * Ez_ext[ix - 1][iy - 1][iz]);
+    Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1]; // + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);    
+    // end interpolation
+
+    /////////////////// LM
+    double epsx = qomdt2*Exl;
+    double epsy = qomdt2*Eyl;
+    double epsz = qomdt2*Ezl;
+    double betax = qomdt2*Bxl/c;
+    double betay = qomdt2*Byl/c;
+    double betaz = qomdt2*Bzl/c;
+    double beta2 = betax*betax+betay*betay+betaz*betaz;
+    double upx = upold + epsx;
+    double upy = vpold + epsy;
+    double upz = wpold + epsz;
+
+    // Polynomial coefficients
+    double updote = upx*epsx+upy*epsy+upz*epsz;
+    double bdote = betax*epsx+betay*epsy+betaz*epsz;
+    double updotb = upx*betax+upy*betay+upz*betaz;
+    double upcrossb_x = (upy*betaz-upz*betay);
+    double upcrossb_y = (-upx*betaz+upz*betax);
+    double upcrossb_z = (upx*betay-upy*betax);
+    double aa = updote - beta2;
+    double bb = upcrossb_x*epsx+upcrossb_y*epsy+upcrossb_z*epsz+ gpold*beta2;
+    double cc = updotb*bdote;
+    
+    // Solution coefficients
+    double AA = 2.*aa/3.+gpold*gpold/4.;
+    double BB = 4.*aa*gpold+8.*bb+gpold*gpold*gpold;
+    double DD = aa*aa-3.*bb*gpold-12.*cc;
+    double FF = -2.*aa*aa*aa+9.*aa*bb*gpold-72.*aa*cc+27.*bb*bb-27.*cc*gpold*gpold;
+    std::complex<double> GG = FF*FF-4.*DD*DD*DD;
+    std::complex<double> EE;
+    if (std::real((FF+sqrt(GG))/2.)<0.) EE = -pow(-(FF+sqrt(GG))/2.,1./3.);
+    else EE = pow((FF+sqrt(GG))/2.,1./3.);
+    std::complex<double> CC = DD/(EE+1.e-20)/3.+EE/3.;
+    // Solution
+    std::complex<double> gbarc = gpold/4.+sqrt(2.*AA+BB/4./sqrt(AA+CC+1.e-20)-CC)/2.+sqrt(AA+CC)/2.;
+    gbar = (double) std::real(gbarc);
+    
+    uxbar = (upx+(upx*betax+upy*betay+upz*betaz)*betax/(gbar*gbar)+(upy*betaz-upz*betay)/gbar)/(1.+beta2/gbar/gbar);
+    uybar = (upy+(upx*betax+upy*betay+upz*betaz)*betay/(gbar*gbar)+(-upx*betaz+upz*betax)/gbar)/(1.+beta2/gbar/gbar);
+    uzbar = (upz+(upx*betax+upy*betay+upz*betaz)*betaz/(gbar*gbar)+(upx*betay-upy*betax)/gbar)/(1.+beta2/gbar/gbar);
+    // update the final velocity
+    up = 2.*uxbar - upold;
+    vp = 2.*uybar - vpold;
+    wp = 2.*uzbar - wpold;
+
+//    /////////////////// Boris
+//    double epsx = qomdt2*Exl;
+//    double epsy = qomdt2*Eyl;
+//    double epsz = qomdt2*Ezl;
+//    double upx = upold + epsx;
+//    double upy = vpold + epsy;
+//    double upz = wpold + epsz;
+//    gbar = sqrt(1. + (upx*upx+upy*upy+upz*upz)/c/c);
+//    double betax = qomdt2*Bxl/c/gbar;
+//    double betay = qomdt2*Byl/c/gbar;
+//    double betaz = qomdt2*Bzl/c/gbar;
+//    double beta2 = betax*betax+betay*betay+betaz*betaz;
+//
+//    double upcrossb_x = (upy*betaz-upz*betay);
+//    double upcrossb_y = (-upx*betaz+upz*betax);
+//    double upcrossb_z = (upx*betay-upy*betax);
+//    upx = upx + upcrossb_x;
+//    upy = upy + upcrossb_y;
+//    upz = upz + upcrossb_z;
+//    upcrossb_x = (upy*betaz-upz*betay)/(1.+beta2);
+//    upcrossb_y = (-upx*betaz+upz*betax)/(1.+beta2);
+//    upcrossb_z = (upx*betay-upy*betax)/(1.+beta2);
+//    up = upx + upcrossb_x + epsx;
+//    vp = upy + upcrossb_y + epsy;
+//    wp = upz + upcrossb_z + epsz;
+
+    u[rest] = up;
+    v[rest] = vp;
+    w[rest] = wp;
+  } // END OF ALL THE PARTICLES
+  
   return (0);                   // exit succcesfully (hopefully)
 }
 

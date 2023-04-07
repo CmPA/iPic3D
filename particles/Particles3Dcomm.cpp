@@ -454,20 +454,20 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
   const double nxn = grid->getNXN();
   const double nyn = grid->getNYN();
   const double nzn = grid->getNZN();
-  const double ddd = th*qom*dt*dt/2.*FourPI;  
+  const double ddd = qom*dt/2;  
   double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
   double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
   double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
-  double ***Ex_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx_ext());
-  double ***Ey_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy_ext());
-  double ***Ez_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz_ext());
+//  double ***Ex_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx_ext());
+//  double ***Ey_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy_ext());
+//  double ***Ez_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz_ext());
   double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
   double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
   double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
-  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
-  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
-  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
-  double Fext = EMf->getFext();
+//  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+//  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+//  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+//  double Fext = EMf->getFext();
 
   //#pragma omp parallel
   {
@@ -504,66 +504,72 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
       const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
       //
-      Bxl += weight000 * (Bx[ix][iy][iz]             + Fext*Bx_ext[ix][iy][iz]);
-      Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Fext*Bx_ext[ix][iy][iz-1]);
-      Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Fext*Bx_ext[ix][iy-1][iz]);
-      Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Fext*Bx_ext[ix][iy-1][iz-1]);
-      Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Fext*Bx_ext[ix-1][iy][iz]);
-      Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Fext*Bx_ext[ix-1][iy][iz-1]);
-      Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Fext*Bx_ext[ix-1][iy-1][iz]);
-      Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Fext*Bx_ext[ix-1][iy-1][iz-1]);
+      Bxl += weight000 * Bx[ix][iy][iz]            ; //+ Fext*Bx_ext[ix][iy][iz]);
+      Bxl += weight001 * Bx[ix][iy][iz - 1]        ; //+ Fext*Bx_ext[ix][iy][iz-1]);
+      Bxl += weight010 * Bx[ix][iy - 1][iz]        ; //+ Fext*Bx_ext[ix][iy-1][iz]);
+      Bxl += weight011 * Bx[ix][iy - 1][iz - 1]    ; //+ Fext*Bx_ext[ix][iy-1][iz-1]);
+      Bxl += weight100 * Bx[ix - 1][iy][iz]        ; //+ Fext*Bx_ext[ix-1][iy][iz]);
+      Bxl += weight101 * Bx[ix - 1][iy][iz - 1]    ; //+ Fext*Bx_ext[ix-1][iy][iz-1]);
+      Bxl += weight110 * Bx[ix - 1][iy - 1][iz]    ; //+ Fext*Bx_ext[ix-1][iy-1][iz]);
+      Bxl += weight111 * Bx[ix - 1][iy - 1][iz - 1]; //+ Fext*Bx_ext[ix-1][iy-1][iz-1]);
       //
-      Byl += weight000 * (By[ix][iy][iz]             + Fext*By_ext[ix][iy][iz]);
-      Byl += weight001 * (By[ix][iy][iz - 1]         + Fext*By_ext[ix][iy][iz-1]);
-      Byl += weight010 * (By[ix][iy - 1][iz]         + Fext*By_ext[ix][iy-1][iz]);
-      Byl += weight011 * (By[ix][iy - 1][iz - 1]     + Fext*By_ext[ix][iy-1][iz-1]);
-      Byl += weight100 * (By[ix - 1][iy][iz]         + Fext*By_ext[ix-1][iy][iz]);
-      Byl += weight101 * (By[ix - 1][iy][iz - 1]     + Fext*By_ext[ix-1][iy][iz-1]);
-      Byl += weight110 * (By[ix - 1][iy - 1][iz]     + Fext*By_ext[ix-1][iy-1][iz]);
-      Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + Fext*By_ext[ix-1][iy-1][iz-1]);
+      Byl += weight000 * By[ix][iy][iz]            ; //+ Fext*By_ext[ix][iy][iz]);
+      Byl += weight001 * By[ix][iy][iz - 1]        ; //+ Fext*By_ext[ix][iy][iz-1]);
+      Byl += weight010 * By[ix][iy - 1][iz]        ; //+ Fext*By_ext[ix][iy-1][iz]);
+      Byl += weight011 * By[ix][iy - 1][iz - 1]    ; //+ Fext*By_ext[ix][iy-1][iz-1]);
+      Byl += weight100 * By[ix - 1][iy][iz]        ; //+ Fext*By_ext[ix-1][iy][iz]);
+      Byl += weight101 * By[ix - 1][iy][iz - 1]    ; //+ Fext*By_ext[ix-1][iy][iz-1]);
+      Byl += weight110 * By[ix - 1][iy - 1][iz]    ; //+ Fext*By_ext[ix-1][iy-1][iz]);
+      Byl += weight111 * By[ix - 1][iy - 1][iz - 1]; //+ Fext*By_ext[ix-1][iy-1][iz-1]);
       //
-      Bzl += weight000 * (Bz[ix][iy][iz]             + Fext*Bz_ext[ix][iy][iz]);
-      Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Fext*Bz_ext[ix][iy][iz-1]);
-      Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Fext*Bz_ext[ix][iy-1][iz]);
-      Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Fext*Bz_ext[ix][iy-1][iz-1]);
-      Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Fext*Bz_ext[ix-1][iy][iz]);
-      Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Fext*Bz_ext[ix-1][iy][iz-1]);
-      Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
-      Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
+      Bzl += weight000 * Bz[ix][iy][iz]            ; //+ Fext*Bz_ext[ix][iy][iz]);
+      Bzl += weight001 * Bz[ix][iy][iz - 1]        ; //+ Fext*Bz_ext[ix][iy][iz-1]);
+      Bzl += weight010 * Bz[ix][iy - 1][iz]        ; //+ Fext*Bz_ext[ix][iy-1][iz]);
+      Bzl += weight011 * Bz[ix][iy - 1][iz - 1]    ; //+ Fext*Bz_ext[ix][iy-1][iz-1]);
+      Bzl += weight100 * Bz[ix - 1][iy][iz]        ; //+ Fext*Bz_ext[ix-1][iy][iz]);
+      Bzl += weight101 * Bz[ix - 1][iy][iz - 1]    ; //+ Fext*Bz_ext[ix-1][iy][iz-1]);
+      Bzl += weight110 * Bz[ix - 1][iy - 1][iz]    ; //+ Fext*Bz_ext[ix-1][iy-1][iz]);
+      Bzl += weight111 * Bz[ix - 1][iy - 1][iz - 1]; //+ Fext*Bz_ext[ix-1][iy-1][iz-1]);
       //
-      Exl += weight000 * (Ex[ix][iy][iz]	     + Fext * Ex_ext[ix][iy][iz]);
-      Exl += weight001 * (Ex[ix][iy][iz - 1] 	     + Fext * Ex_ext[ix][iy][iz - 1]);
-      Exl += weight010 * (Ex[ix][iy - 1][iz] 	     + Fext * Ex_ext[ix][iy - 1][iz]);
-      Exl += weight011 * (Ex[ix][iy - 1][iz - 1]     + Fext * Ex_ext[ix][iy - 1][iz - 1]);
-      Exl += weight100 * (Ex[ix - 1][iy][iz] 	     + Fext * Ex_ext[ix - 1][iy][iz]);
-      Exl += weight101 * (Ex[ix - 1][iy][iz - 1]     + Fext * Ex_ext[ix - 1][iy][iz - 1]);
-      Exl += weight110 * (Ex[ix - 1][iy - 1][iz]     + Fext * Ex_ext[ix - 1][iy - 1][iz]);
-      Exl += weight111 * (Ex[ix - 1][iy - 1][iz - 1] + Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
+      Exl += weight000 * Ex[ix][iy][iz]	           ; //+ Fext * Ex_ext[ix][iy][iz]);
+      Exl += weight001 * Ex[ix][iy][iz - 1] 	   ; //+ Fext * Ex_ext[ix][iy][iz - 1]);
+      Exl += weight010 * Ex[ix][iy - 1][iz] 	   ; //+ Fext * Ex_ext[ix][iy - 1][iz]);
+      Exl += weight011 * Ex[ix][iy - 1][iz - 1]    ; //+ Fext * Ex_ext[ix][iy - 1][iz - 1]);
+      Exl += weight100 * Ex[ix - 1][iy][iz] 	   ; //+ Fext * Ex_ext[ix - 1][iy][iz]);
+      Exl += weight101 * Ex[ix - 1][iy][iz - 1]    ; //+ Fext * Ex_ext[ix - 1][iy][iz - 1]);
+      Exl += weight110 * Ex[ix - 1][iy - 1][iz]    ; //+ Fext * Ex_ext[ix - 1][iy - 1][iz]);
+      Exl += weight111 * Ex[ix - 1][iy - 1][iz - 1]; //+ Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
       //
-      Eyl += weight000 * (Ey[ix][iy][iz] 	     + Fext * Ey_ext[ix][iy][iz]);
-      Eyl += weight001 * (Ey[ix][iy][iz - 1] 	     + Fext * Ey_ext[ix][iy][iz - 1]);
-      Eyl += weight010 * (Ey[ix][iy - 1][iz] 	     + Fext * Ey_ext[ix][iy - 1][iz]);
-      Eyl += weight011 * (Ey[ix][iy - 1][iz - 1]     + Fext * Ey_ext[ix][iy - 1][iz - 1]);
-      Eyl += weight100 * (Ey[ix - 1][iy][iz] 	     + Fext * Ey_ext[ix - 1][iy][iz]);
-      Eyl += weight101 * (Ey[ix - 1][iy][iz - 1]     + Fext * Ey_ext[ix - 1][iy][iz - 1]);
-      Eyl += weight110 * (Ey[ix - 1][iy - 1][iz]     + Fext * Ey_ext[ix - 1][iy - 1][iz]);
-      Eyl += weight111 * (Ey[ix - 1][iy - 1][iz - 1] + Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
+      Eyl += weight000 * Ey[ix][iy][iz]            ; //+ Fext * Ey_ext[ix][iy][iz]);
+      Eyl += weight001 * Ey[ix][iy][iz - 1]        ; //+ Fext * Ey_ext[ix][iy][iz - 1]);
+      Eyl += weight010 * Ey[ix][iy - 1][iz]        ; //+ Fext * Ey_ext[ix][iy - 1][iz]);
+      Eyl += weight011 * Ey[ix][iy - 1][iz - 1]    ; //+ Fext * Ey_ext[ix][iy - 1][iz - 1]);
+      Eyl += weight100 * Ey[ix - 1][iy][iz] 	   ; //+ Fext * Ey_ext[ix - 1][iy][iz]);
+      Eyl += weight101 * Ey[ix - 1][iy][iz - 1]    ; //+ Fext * Ey_ext[ix - 1][iy][iz - 1]);
+      Eyl += weight110 * Ey[ix - 1][iy - 1][iz]    ; //+ Fext * Ey_ext[ix - 1][iy - 1][iz]);
+      Eyl += weight111 * Ey[ix - 1][iy - 1][iz - 1]; //+ Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
       //
-      Ezl += weight000 * (Ez[ix][iy][iz] 	     + Fext * Ez_ext[ix][iy][iz]);
-      Ezl += weight001 * (Ez[ix][iy][iz - 1] 	     + Fext * Ez_ext[ix][iy][iz - 1]);
-      Ezl += weight010 * (Ez[ix][iy - 1][iz] 	     + Fext * Ez_ext[ix][iy - 1][iz]);
-      Ezl += weight011 * (Ez[ix][iy - 1][iz - 1]     + Fext * Ez_ext[ix][iy - 1][iz - 1]);
-      Ezl += weight100 * (Ez[ix - 1][iy][iz] 	     + Fext * Ez_ext[ix - 1][iy][iz]);
-      Ezl += weight101 * (Ez[ix - 1][iy][iz - 1]     + Fext * Ez_ext[ix - 1][iy][iz - 1]);
-      Ezl += weight110 * (Ez[ix - 1][iy - 1][iz]     + Fext * Ez_ext[ix - 1][iy - 1][iz]);
-      Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
+      Ezl += weight000 * Ez[ix][iy][iz]            ; //+ Fext * Ez_ext[ix][iy][iz]);
+      Ezl += weight001 * Ez[ix][iy][iz - 1]        ; //+ Fext * Ez_ext[ix][iy][iz - 1]);
+      Ezl += weight010 * Ez[ix][iy - 1][iz]        ; //+ Fext * Ez_ext[ix][iy - 1][iz]);
+      Ezl += weight011 * Ez[ix][iy - 1][iz - 1]    ; //+ Fext * Ez_ext[ix][iy - 1][iz - 1]);
+      Ezl += weight100 * Ez[ix - 1][iy][iz] 	   ; //+ Fext * Ez_ext[ix - 1][iy][iz]);
+      Ezl += weight101 * Ez[ix - 1][iy][iz - 1]    ; //+ Fext * Ez_ext[ix - 1][iy][iz - 1]);
+      Ezl += weight110 * Ez[ix - 1][iy - 1][iz]    ; //+ Fext * Ez_ext[ix - 1][iy - 1][iz]);
+      Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1]; //+ Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
 
       // Auxiliary quantities
-      double gn = sqrt(1.+u[i]*u[i]+v[i]*v[i]+w[i]*w[i]);
+      double gn = sqrt(1.+(u[i]*u[i]+v[i]*v[i]+w[i]*w[i])/c/c);
+      /////// LM:
       double G = qom*dt/2.*(Exl*u[i]+Eyl*v[i]+Ezl*w[i])/gn + gn;
-      Bxl *= qom*dt/2./G;
-      Byl *= qom*dt/2./G;
-      Bzl *= qom*dt/2./G;
+      /////// Boris:
+//      double upx = u[i] + qom*dt/2.*Exl;
+//      double upy = v[i] + qom*dt/2.*Eyl;
+//      double upz = w[i] + qom*dt/2.*Ezl;
+//      double G = sqrt(1. + (upx*upx+upy*upy+upz*upz)/c/c);
+      Bxl *= qom*dt/2./G/c;
+      Byl *= qom*dt/2./G/c;
+      Bzl *= qom*dt/2./G/c;
       double D = G*(1.+Bxl*Bxl+Byl*Byl+Bzl*Bzl);
       double axx = (1.+Bxl*Bxl)/D;
       double axy = (Bxl*Byl + Bzl)/D;
@@ -577,6 +583,9 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       double uhat = axx*u[i] + axy*v[i] + axz*w[i];
       double vhat = ayx*u[i] + ayy*v[i] + ayz*w[i];
       double what = azx*u[i] + azy*v[i] + azz*w[i];
+      axx *= ddd; axy *= ddd; axz *= ddd;
+      ayx *= ddd; ayy *= ddd; ayz *= ddd;
+      azx *= ddd; azy *= ddd; azz *= ddd;
 
       /* PARTICLE --> GRID DEPOSITION */
       double weight[2][2][2];
@@ -608,53 +617,44 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
             temp[ii][jj][kk] = what * weight[ii][jj][kk];
       EMf->addJzh(temp, ix, iy, iz, ns);
 
-      // Hat pressure tensor - XX
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = uhat * uhat * weight[ii][jj][kk];
-      EMf->addPhxx(temp, ix, iy, iz, ns);
-      // Hat pressure tensor - XY
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = uhat * vhat * weight[ii][jj][kk];
-      EMf->addPhxy(temp, ix, iy, iz, ns);
-      // Hat pressure tensor - XZ
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = uhat * what * weight[ii][jj][kk];
-      EMf->addPhxz(temp, ix, iy, iz, ns);
-      // Hat pressure tensor - YY
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = vhat * vhat * weight[ii][jj][kk];
-      EMf->addPhyy(temp, ix, iy, iz, ns);
-      // Hat pressure tensor - YZ
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = vhat * what * weight[ii][jj][kk];
-      EMf->addPhyz(temp, ix, iy, iz, ns);
-      // Hat pressure tensor - ZZ
-      for (int ii = 0; ii < 2; ii++)
-        for (int jj = 0; jj < 2; jj++)
-          for (int kk = 0; kk < 2; kk++)
-            temp[ii][jj][kk] = what * what * weight[ii][jj][kk];
-      EMf->addPhzz(temp, ix, iy, iz, ns);
+//      // Hat pressure tensor - XX
+//      for (int ii = 0; ii < 2; ii++)
+//        for (int jj = 0; jj < 2; jj++)
+//          for (int kk = 0; kk < 2; kk++)
+//            temp[ii][jj][kk] = uhat * uhat * weight[ii][jj][kk];
+//      EMf->addPhxx(temp, ix, iy, iz, ns);
+//      // Hat pressure tensor - XY
+//      for (int ii = 0; ii < 2; ii++)
+//        for (int jj = 0; jj < 2; jj++)
+//          for (int kk = 0; kk < 2; kk++)
+//            temp[ii][jj][kk] = uhat * vhat * weight[ii][jj][kk];
+//      EMf->addPhxy(temp, ix, iy, iz, ns);
+//      // Hat pressure tensor - XZ
+//      for (int ii = 0; ii < 2; ii++)
+//        for (int jj = 0; jj < 2; jj++)
+//          for (int kk = 0; kk < 2; kk++)
+//            temp[ii][jj][kk] = uhat * what * weight[ii][jj][kk];
+//      EMf->addPhxz(temp, ix, iy, iz, ns);
+//      // Hat pressure tensor - YY
+//      for (int ii = 0; ii < 2; ii++)
+//        for (int jj = 0; jj < 2; jj++)
+//          for (int kk = 0; kk < 2; kk++)
+//            temp[ii][jj][kk] = vhat * vhat * weight[ii][jj][kk];
+//      EMf->addPhyy(temp, ix, iy, iz, ns);
+//      // Hat pressure tensor - YZ
+//      for (int ii = 0; ii < 2; ii++)
+//        for (int jj = 0; jj < 2; jj++)
+//          for (int kk = 0; kk < 2; kk++)
+//            temp[ii][jj][kk] = vhat * what * weight[ii][jj][kk];
+//      EMf->addPhyz(temp, ix, iy, iz, ns);
+//      // Hat pressure tensor - ZZ
+//      for (int ii = 0; ii < 2; ii++)
+//        for (int jj = 0; jj < 2; jj++)
+//          for (int kk = 0; kk < 2; kk++)
+//            temp[ii][jj][kk] = what * what * weight[ii][jj][kk];
+//      EMf->addPhzz(temp, ix, iy, iz, ns);
 
       // Mu tensor
-      axx = axx*ddd;
-      axy = axy*ddd;
-      ayz = ayx*ddd;
-      axz = axz*ddd;
-      azx = azx*ddd;
-      ayy = ayy*ddd;
-      ayz = ayz*ddd;
-      azy = azy*ddd;
-      azz = azz*ddd;
       // Mu tensor - XX
       for (int ii = 0; ii < 2; ii++)
         for (int jj = 0; jj < 2; jj++)

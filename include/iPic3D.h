@@ -39,6 +39,7 @@ namespace iPic3D {
     void GatherMoments();
     void CalculateField();
     void CalculateBField();
+    bool PushParticles();
     bool ParticlesMover();
     void WriteOutput(int cycle);
     void WriteConserved(int cycle);

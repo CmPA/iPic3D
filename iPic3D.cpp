@@ -35,6 +35,12 @@ int main(int argc, char **argv) {
 
     KCode.UpdateCycleInfo(i);
 
+    KCode.PushParticles();
+
+    clocks->start(1);
+    if (!b_err) KCode.GatherMoments();
+    clocks->stop(1);
+
     clocks->start(2);
     KCode.CalculateField();
     clocks->stop(2);
@@ -42,12 +48,8 @@ int main(int argc, char **argv) {
     clocks->start(3);
     b_err = KCode.ParticlesMover();
 
-
     if (!b_err) KCode.CalculateBField();
     clocks->stop(3);
-    clocks->start(1);
-    if (!b_err) KCode.GatherMoments();
-    clocks->stop(1);
     if ( b_err) i = KCode.LastCycle() + 1;
 
     /* --------------- */
