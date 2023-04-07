@@ -531,31 +531,31 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
       Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
       //
-      Exl += weight000 * (Ex[ix][iy][iz] 			 + Fext * Ex_ext[ix][iy][iz]);
-      Exl += weight001 * (Ex[ix][iy][iz - 1] 		 + Fext * Ex_ext[ix][iy][iz - 1]);
-      Exl += weight010 * (Ex[ix][iy - 1][iz] 		 + Fext * Ex_ext[ix][iy - 1][iz]);
-      Exl += weight011 * (Ex[ix][iy - 1][iz - 1] 	 + Fext * Ex_ext[ix][iy - 1][iz - 1]);
-      Exl += weight100 * (Ex[ix - 1][iy][iz] 		 + Fext * Ex_ext[ix - 1][iy][iz]);
-      Exl += weight101 * (Ex[ix - 1][iy][iz - 1] 	 + Fext * Ex_ext[ix - 1][iy][iz - 1]);
-      Exl += weight110 * (Ex[ix - 1][iy - 1][iz] 	 + Fext * Ex_ext[ix - 1][iy - 1][iz]);
+      Exl += weight000 * (Ex[ix][iy][iz]	     + Fext * Ex_ext[ix][iy][iz]);
+      Exl += weight001 * (Ex[ix][iy][iz - 1] 	     + Fext * Ex_ext[ix][iy][iz - 1]);
+      Exl += weight010 * (Ex[ix][iy - 1][iz] 	     + Fext * Ex_ext[ix][iy - 1][iz]);
+      Exl += weight011 * (Ex[ix][iy - 1][iz - 1]     + Fext * Ex_ext[ix][iy - 1][iz - 1]);
+      Exl += weight100 * (Ex[ix - 1][iy][iz] 	     + Fext * Ex_ext[ix - 1][iy][iz]);
+      Exl += weight101 * (Ex[ix - 1][iy][iz - 1]     + Fext * Ex_ext[ix - 1][iy][iz - 1]);
+      Exl += weight110 * (Ex[ix - 1][iy - 1][iz]     + Fext * Ex_ext[ix - 1][iy - 1][iz]);
       Exl += weight111 * (Ex[ix - 1][iy - 1][iz - 1] + Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
       //
-      Eyl += weight000 * (Ey[ix][iy][iz] 			 + Fext * Ey_ext[ix][iy][iz]);
-      Eyl += weight001 * (Ey[ix][iy][iz - 1] 		 + Fext * Ey_ext[ix][iy][iz - 1]);
-      Eyl += weight010 * (Ey[ix][iy - 1][iz] 		 + Fext * Ey_ext[ix][iy - 1][iz]);
-      Eyl += weight011 * (Ey[ix][iy - 1][iz - 1] 	 + Fext * Ey_ext[ix][iy - 1][iz - 1]);
-      Eyl += weight100 * (Ey[ix - 1][iy][iz] 		 + Fext * Ey_ext[ix - 1][iy][iz]);
-      Eyl += weight101 * (Ey[ix - 1][iy][iz - 1] 	 + Fext * Ey_ext[ix - 1][iy][iz - 1]);
-      Eyl += weight110 * (Ey[ix - 1][iy - 1][iz] 	 + Fext * Ey_ext[ix - 1][iy - 1][iz]);
+      Eyl += weight000 * (Ey[ix][iy][iz] 	     + Fext * Ey_ext[ix][iy][iz]);
+      Eyl += weight001 * (Ey[ix][iy][iz - 1] 	     + Fext * Ey_ext[ix][iy][iz - 1]);
+      Eyl += weight010 * (Ey[ix][iy - 1][iz] 	     + Fext * Ey_ext[ix][iy - 1][iz]);
+      Eyl += weight011 * (Ey[ix][iy - 1][iz - 1]     + Fext * Ey_ext[ix][iy - 1][iz - 1]);
+      Eyl += weight100 * (Ey[ix - 1][iy][iz] 	     + Fext * Ey_ext[ix - 1][iy][iz]);
+      Eyl += weight101 * (Ey[ix - 1][iy][iz - 1]     + Fext * Ey_ext[ix - 1][iy][iz - 1]);
+      Eyl += weight110 * (Ey[ix - 1][iy - 1][iz]     + Fext * Ey_ext[ix - 1][iy - 1][iz]);
       Eyl += weight111 * (Ey[ix - 1][iy - 1][iz - 1] + Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
       //
-      Ezl += weight000 * (Ez[ix][iy][iz] 			 + Fext * Ez_ext[ix][iy][iz]);
-      Ezl += weight001 * (Ez[ix][iy][iz - 1] 		 + Fext * Ez_ext[ix][iy][iz - 1]);
-      Ezl += weight010 * (Ez[ix][iy - 1][iz] 		 + Fext * Ez_ext[ix][iy - 1][iz]);
-      Ezl += weight011 * (Ez[ix][iy - 1][iz - 1] 	 + Fext * Ez_ext[ix][iy - 1][iz - 1]);
-      Ezl += weight100 * (Ez[ix - 1][iy][iz] 		 + Fext * Ez_ext[ix - 1][iy][iz]);
-      Ezl += weight101 * (Ez[ix - 1][iy][iz - 1] 	 + Fext * Ez_ext[ix - 1][iy][iz - 1]);
-      Ezl += weight110 * (Ez[ix - 1][iy - 1][iz] 	 + Fext * Ez_ext[ix - 1][iy - 1][iz]);
+      Ezl += weight000 * (Ez[ix][iy][iz] 	     + Fext * Ez_ext[ix][iy][iz]);
+      Ezl += weight001 * (Ez[ix][iy][iz - 1] 	     + Fext * Ez_ext[ix][iy][iz - 1]);
+      Ezl += weight010 * (Ez[ix][iy - 1][iz] 	     + Fext * Ez_ext[ix][iy - 1][iz]);
+      Ezl += weight011 * (Ez[ix][iy - 1][iz - 1]     + Fext * Ez_ext[ix][iy - 1][iz - 1]);
+      Ezl += weight100 * (Ez[ix - 1][iy][iz] 	     + Fext * Ez_ext[ix - 1][iy][iz]);
+      Ezl += weight101 * (Ez[ix - 1][iy][iz - 1]     + Fext * Ez_ext[ix - 1][iy][iz - 1]);
+      Ezl += weight110 * (Ez[ix - 1][iy - 1][iz]     + Fext * Ez_ext[ix - 1][iy - 1][iz]);
       Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
 
       // Auxiliary quantities

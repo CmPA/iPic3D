@@ -522,13 +522,21 @@ void c_Solver::WriteConserved(int cycle) {
     // Write to file
     // Structure: cycle - Bx By Bz Ex Ey Ez K0 K1 K2...
     if (myrank == 0) {
-      ofstream my_file(cq.c_str(), fstream::app);
-      my_file << cycle << " " << setprecision(15);
-      my_file << Benergy[0] << " " << Benergy[1] << " " << Benergy[2] << " "
-              << Eenergy[0] << " " << Eenergy[1] << " " << Eenergy[2];
-      for (int is=0; is<ns; is++) my_file << " " << Ke[is];
-      my_file << endl;
-      my_file.close();
+//      ofstream my_file(cq.c_str(), fstream::app);
+//      my_file << cycle << " " << setprecision(15);
+//      my_file << Benergy[0] << " " << Benergy[1] << " " << Benergy[2] << " "
+//              << Eenergy[0] << " " << Eenergy[1] << " " << Eenergy[2];
+//      for (int is=0; is<ns; is++) my_file << " " << Ke[is];
+//      my_file << endl;
+//      my_file.close();
+
+      FILE* fd = fopen(cq.c_str(),"a");
+      fprintf(fd,"%5d %.15e %.15e %.15e %.15e %.15e %.15e",
+                cycle,
+                Benergy[0], Benergy[1], Benergy[2], Eenergy[0], Eenergy[1], Eenergy[2]);
+      for (int is = 0; is < ns; is++) fprintf(fd," %.15e", Ke[is]);
+      fprintf(fd,"\n");
+      fclose(fd);
 
       // Next is the diagnostics file (SummaryQuantities), to be made user-defined
       // Unused for now

@@ -286,8 +286,6 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               w[counter] = w0 + wth * prob * cos(theta);
               if (TrackParticleID)
                 ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
-
-
               counter++;
             }
 
