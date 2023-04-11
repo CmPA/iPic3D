@@ -101,7 +101,9 @@ class Collective
     double getTh();
     /*! get the Smoothing value */
     double getSmooth();
-	/** get the Nvolte value*/
+    /*! get the Smoothing type */
+    string getSmoothType();
+    /** get the Nvolte value*/
     int getNvolte();
     /*! get the number of time cycles */
     int getNcycles();
@@ -291,6 +293,8 @@ class Collective
     double th;
     /*! Smoothing value */
     double Smooth;
+    /*! Smoothing type */
+    string SmoothType;
     /** Smoothing times*/
     int Nvolte;
     /*! number of time cycles */

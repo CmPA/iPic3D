@@ -23,7 +23,8 @@ void Collective::ReadInput(string inputfile) {
     ncycles = config.read < int >("ncycles");
     th = config.read < double >("th", 1.0);
     config.readInto(Smooth, "Smooth", 1.0);
-	Nvolte = config.read<int>( "Nvolte",6);
+    SmoothType = config.read < string> ("SmoothType", "default");
+    Nvolte = config.read<int>( "Nvolte",6);
     SaveDirName = config.read < string > ("SaveDirName");
     RestartDirName = config.read < string > ("RestartDirName");
     ns = config.read < int >("ns");
@@ -992,6 +993,7 @@ void Collective::save() {
   my_file << "BOy                      = " << B0y << endl;
   my_file << "B0z                      = " << B0z << endl;
   my_file << "---------------------------" << endl;
+  my_file << "SmoothType               = " << SmoothType << endl;
   my_file << "Smooth                   = " << Smooth << endl;
   my_file  << "Nvolte                   = " << Nvolte  << endl;
   my_file << "GMRES error tolerance    = " << GMREStol << endl;
@@ -1086,10 +1088,13 @@ double Collective::getTh() {
   return (th);
 }
 /*! get the smooth parameter */
+string Collective::getSmoothType() {
+  return (SmoothType);
+}
+/*! get the smooth parameter */
 double Collective::getSmooth() {
   return (Smooth);
 }
-
 /** get the Nvolte parameter */
 int Collective::getNvolte(){
 	return(Nvolte);

@@ -255,7 +255,7 @@ class EMfields3D                // :public Field
     /*! Calculate the three components of mu (implicit permeattivity) cross image vector */
     void MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, double ***vectX, double ***vectY, double ***vectZ, Grid * grid);
     /*! Calculate rho hat, Jx hat, Jy hat, Jz hat */
-    void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct);
+    void calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, Collective *col);
 
     void UpdateRHOcs(Grid * grid);
     void SetLambda  (Grid * grid);
@@ -270,13 +270,15 @@ class EMfields3D                // :public Field
     /*! Sum current over different species */
     void sumOverSpeciesJ();
     /*! Smoothing after the interpolation* */
-    void smooth(double value, int Nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct);
+    void smooth(double value, int Nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct, Collective *col);
+    void smoothBinomial(double value, int Nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct, Collective *col);
     /*! SPECIES: Smoothing after the interpolation for species fields* */
     void smooth(double value, int Nvolte, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct);
     /*! smooth the electric field */
     void smoothE(double value, int Nvolte, VirtualTopology3D * vct, Collective *col);
     /*! smooth the electric field th */
     void smoothEth(double value, int Nvolte, VirtualTopology3D * vct, Collective *col);
+    void smoothBinomialEth(double value, int Nvolte, Grid * grid, VirtualTopology3D * vct, Collective *col);
 
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
@@ -562,6 +564,8 @@ class EMfields3D                // :public Field
     double th;
     /*! Smoothing value */
     double Smooth;
+    /*! Smoothing Type */
+    string SmoothType;
     /** Nvolte value*/
     int Nvolte;
     /*! delt = c*th*dt */

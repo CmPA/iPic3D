@@ -1799,76 +1799,76 @@ int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1]; // + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);    
     // end interpolation
 
-    /////////////////// LM
-    double epsx = qomdt2*Exl;
-    double epsy = qomdt2*Eyl;
-    double epsz = qomdt2*Ezl;
-    double betax = qomdt2*Bxl/c;
-    double betay = qomdt2*Byl/c;
-    double betaz = qomdt2*Bzl/c;
-    double beta2 = betax*betax+betay*betay+betaz*betaz;
-    double upx = upold + epsx;
-    double upy = vpold + epsy;
-    double upz = wpold + epsz;
-
-    // Polynomial coefficients
-    double updote = upx*epsx+upy*epsy+upz*epsz;
-    double bdote = betax*epsx+betay*epsy+betaz*epsz;
-    double updotb = upx*betax+upy*betay+upz*betaz;
-    double upcrossb_x = (upy*betaz-upz*betay);
-    double upcrossb_y = (-upx*betaz+upz*betax);
-    double upcrossb_z = (upx*betay-upy*betax);
-    double aa = updote - beta2;
-    double bb = upcrossb_x*epsx+upcrossb_y*epsy+upcrossb_z*epsz+ gpold*beta2;
-    double cc = updotb*bdote;
-    
-    // Solution coefficients
-    double AA = 2.*aa/3.+gpold*gpold/4.;
-    double BB = 4.*aa*gpold+8.*bb+gpold*gpold*gpold;
-    double DD = aa*aa-3.*bb*gpold-12.*cc;
-    double FF = -2.*aa*aa*aa+9.*aa*bb*gpold-72.*aa*cc+27.*bb*bb-27.*cc*gpold*gpold;
-    std::complex<double> GG = FF*FF-4.*DD*DD*DD;
-    std::complex<double> EE;
-    if (std::real((FF+sqrt(GG))/2.)<0.) EE = -pow(-(FF+sqrt(GG))/2.,1./3.);
-    else EE = pow((FF+sqrt(GG))/2.,1./3.);
-    std::complex<double> CC = DD/(EE+1.e-20)/3.+EE/3.;
-    // Solution
-    std::complex<double> gbarc = gpold/4.+sqrt(2.*AA+BB/4./sqrt(AA+CC+1.e-20)-CC)/2.+sqrt(AA+CC)/2.;
-    gbar = (double) std::real(gbarc);
-    
-    uxbar = (upx+(upx*betax+upy*betay+upz*betaz)*betax/(gbar*gbar)+(upy*betaz-upz*betay)/gbar)/(1.+beta2/gbar/gbar);
-    uybar = (upy+(upx*betax+upy*betay+upz*betaz)*betay/(gbar*gbar)+(-upx*betaz+upz*betax)/gbar)/(1.+beta2/gbar/gbar);
-    uzbar = (upz+(upx*betax+upy*betay+upz*betaz)*betaz/(gbar*gbar)+(upx*betay-upy*betax)/gbar)/(1.+beta2/gbar/gbar);
-    // update the final velocity
-    up = 2.*uxbar - upold;
-    vp = 2.*uybar - vpold;
-    wp = 2.*uzbar - wpold;
-
-//    /////////////////// Boris
+//    /////////////////// LM
 //    double epsx = qomdt2*Exl;
 //    double epsy = qomdt2*Eyl;
 //    double epsz = qomdt2*Ezl;
+//    double betax = qomdt2*Bxl/c;
+//    double betay = qomdt2*Byl/c;
+//    double betaz = qomdt2*Bzl/c;
+//    double beta2 = betax*betax+betay*betay+betaz*betaz;
 //    double upx = upold + epsx;
 //    double upy = vpold + epsy;
 //    double upz = wpold + epsz;
-//    gbar = sqrt(1. + (upx*upx+upy*upy+upz*upz)/c/c);
-//    double betax = qomdt2*Bxl/c/gbar;
-//    double betay = qomdt2*Byl/c/gbar;
-//    double betaz = qomdt2*Bzl/c/gbar;
-//    double beta2 = betax*betax+betay*betay+betaz*betaz;
 //
+//    // Polynomial coefficients
+//    double updote = upx*epsx+upy*epsy+upz*epsz;
+//    double bdote = betax*epsx+betay*epsy+betaz*epsz;
+//    double updotb = upx*betax+upy*betay+upz*betaz;
 //    double upcrossb_x = (upy*betaz-upz*betay);
 //    double upcrossb_y = (-upx*betaz+upz*betax);
 //    double upcrossb_z = (upx*betay-upy*betax);
-//    upx = upx + upcrossb_x;
-//    upy = upy + upcrossb_y;
-//    upz = upz + upcrossb_z;
-//    upcrossb_x = (upy*betaz-upz*betay)/(1.+beta2);
-//    upcrossb_y = (-upx*betaz+upz*betax)/(1.+beta2);
-//    upcrossb_z = (upx*betay-upy*betax)/(1.+beta2);
-//    up = upx + upcrossb_x + epsx;
-//    vp = upy + upcrossb_y + epsy;
-//    wp = upz + upcrossb_z + epsz;
+//    double aa = updote - beta2;
+//    double bb = upcrossb_x*epsx+upcrossb_y*epsy+upcrossb_z*epsz+ gpold*beta2;
+//    double cc = updotb*bdote;
+//    
+//    // Solution coefficients
+//    double AA = 2.*aa/3.+gpold*gpold/4.;
+//    double BB = 4.*aa*gpold+8.*bb+gpold*gpold*gpold;
+//    double DD = aa*aa-3.*bb*gpold-12.*cc;
+//    double FF = -2.*aa*aa*aa+9.*aa*bb*gpold-72.*aa*cc+27.*bb*bb-27.*cc*gpold*gpold;
+//    std::complex<double> GG = FF*FF-4.*DD*DD*DD;
+//    std::complex<double> EE;
+//    if (std::real((FF+sqrt(GG))/2.)<0.) EE = -pow(-(FF+sqrt(GG))/2.,1./3.);
+//    else EE = pow((FF+sqrt(GG))/2.,1./3.);
+//    std::complex<double> CC = DD/(EE+1.e-20)/3.+EE/3.;
+//    // Solution
+//    std::complex<double> gbarc = gpold/4.+sqrt(2.*AA+BB/4./sqrt(AA+CC+1.e-20)-CC)/2.+sqrt(AA+CC)/2.;
+//    gbar = (double) std::real(gbarc);
+//    
+//    uxbar = (upx+(upx*betax+upy*betay+upz*betaz)*betax/(gbar*gbar)+(upy*betaz-upz*betay)/gbar)/(1.+beta2/gbar/gbar);
+//    uybar = (upy+(upx*betax+upy*betay+upz*betaz)*betay/(gbar*gbar)+(-upx*betaz+upz*betax)/gbar)/(1.+beta2/gbar/gbar);
+//    uzbar = (upz+(upx*betax+upy*betay+upz*betaz)*betaz/(gbar*gbar)+(upx*betay-upy*betax)/gbar)/(1.+beta2/gbar/gbar);
+//    // update the final velocity
+//    up = 2.*uxbar - upold;
+//    vp = 2.*uybar - vpold;
+//    wp = 2.*uzbar - wpold;
+
+    /////////////////// Boris
+    double epsx = qomdt2*Exl;
+    double epsy = qomdt2*Eyl;
+    double epsz = qomdt2*Ezl;
+    double upx = upold + epsx;
+    double upy = vpold + epsy;
+    double upz = wpold + epsz;
+    gbar = sqrt(1. + (upx*upx+upy*upy+upz*upz)/c/c);
+    double betax = qomdt2*Bxl/c/gbar;
+    double betay = qomdt2*Byl/c/gbar;
+    double betaz = qomdt2*Bzl/c/gbar;
+    double beta2 = betax*betax+betay*betay+betaz*betaz;
+
+    double upcrossb_x = (upy*betaz-upz*betay);
+    double upcrossb_y = (-upx*betaz+upz*betax);
+    double upcrossb_z = (upx*betay-upy*betax);
+    upx = upx + upcrossb_x;
+    upy = upy + upcrossb_y;
+    upz = upz + upcrossb_z;
+    upcrossb_x = (upy*betaz-upz*betay)/(1.+beta2);
+    upcrossb_y = (-upx*betaz+upz*betax)/(1.+beta2);
+    upcrossb_z = (upx*betay-upy*betax)/(1.+beta2);
+    up = upx + upcrossb_x + epsx;
+    vp = upy + upcrossb_y + epsy;
+    wp = upz + upcrossb_z + epsz;
 
     u[rest] = up;
     v[rest] = vp;

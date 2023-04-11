@@ -88,6 +88,7 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   E0z_ext = col->getE0z_ext();
 
   Smooth = col->getSmooth();
+  SmoothType = col->getSmoothType();
   Nvolte = col->getNvolte();
 
   // get the density background for the gem Challange
@@ -425,14 +426,13 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
-  // apply to smooth to electric field 3 times
-  smoothEth(Smooth, Nvolte, vct, col);
-//  smoothEth(Smooth, Nvolte, vct, col);
-//  smoothEth(Smooth, Nvolte, vct, col);
+  // apply to smooth to electric field Nvolte times
+  if (SmoothType=="default")       smoothEth(Smooth, Nvolte, vct, col);
+  else if (SmoothType=="binomial") smoothBinomialEth(Smooth, Nvolte, grid, vct, col);
 
-  communicateNodeBC(nxn, nyn, nzn, Ex, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-  communicateNodeBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-  communicateNodeBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Eyth, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+  communicateNodeBC(nxn, nyn, nzn, Ezth, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
 
   // OpenBC
@@ -672,8 +672,48 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
 
 }
 
+void EMfields3D::smoothBinomial(double value, int nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct, Collective *col) {
+
+  int nx1, ny1, nz1;
+  int nx2, ny2, nz2;
+  if (type == 0) { // Center vector
+    nx1 = grid->getNXC();
+    ny1 = grid->getNYC();
+    nz1 = grid->getNZC();
+    nx2 = grid->getNXN();
+    ny2 = grid->getNYN();
+    nz2 = grid->getNZN();
+  }
+  else { // Node vector
+    nx1 = grid->getNXN();
+    ny1 = grid->getNYN();
+    nz1 = grid->getNZN();
+    nx2 = grid->getNXC();
+    ny2 = grid->getNYC();
+    nz2 = grid->getNZC();
+  }
+  double ***temp = newArr3(double, nx2, ny2, nz2);
+
+  for (int icount = 1; icount < nvolte + 1; icount++) {
+
+    if (type==0) {
+      grid->interpC2N(temp, vector);
+      communicateNodeBC_P(nx2, ny2, nz2, temp, 2, 2, 2, 2, 2, 2, vct);
+      grid->interpN2C(vector,temp);
+      communicateCenterBC_P(nx1, ny1, nz1, vector, 2, 2, 2, 2, 2, 2, vct);
+    }
+    else {
+      grid->interpN2C(temp, vector);
+      communicateCenterBC_P(nx2, ny2, nz2, temp, 2, 2, 2, 2, 2, 2, vct);
+      grid->interpC2N(vector,temp);
+      communicateNodeBC_P(nx1, ny1, nz1, vector, 2, 2, 2, 2, 2, 2, vct);
+    }
+  }
+  delArr3(temp, nx2, ny2);
+}
+
 /* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct, Collective *col) {
 
   for (int icount = 1; icount < nvolte + 1; icount++) {
 
@@ -702,15 +742,28 @@ void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Gr
       else {
         value = 0.5;
       }
-      alpha = (1.0 - value) / 6;
-      for (int i = 1; i < nx - 1; i++)
-        for (int j = 1; j < ny - 1; j++)
-          for (int k = 1; k < nz - 1; k++)
-            temp[i][j][k] = value * vector[i][j][k] + alpha * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
-      for (int i = 1; i < nx - 1; i++)
-        for (int j = 1; j < ny - 1; j++)
-          for (int k = 1; k < nz - 1; k++)
-            vector[i][j][k] = temp[i][j][k];
+      if (col->getNzc() == 1) { // 2D case
+        alpha = (1.0 - value) / 4.;
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              temp[i][j][k] = value * vector[i][j][k] + alpha * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k]);
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              vector[i][j][k] = temp[i][j][k];
+      }
+      else { // 3D case
+        alpha = (1.0 - value) / 6;
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              temp[i][j][k] = value * vector[i][j][k] + alpha * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              vector[i][j][k] = temp[i][j][k];
+      }
       delArr3(temp, nx, ny);
     }
   }
@@ -879,6 +932,38 @@ void EMfields3D::smoothEth(double value,  int nvolte, VirtualTopology3D * vct, C
       delArr3(temp, nxn, nyn);
     }
   }
+}
+
+void EMfields3D::smoothBinomialEth(double value,  int nvolte, Grid * grid, VirtualTopology3D * vct, Collective *col) {
+
+  int nx1, ny1, nz1;
+  int nx2, ny2, nz2;
+  nx1 = grid->getNXN();
+  ny1 = grid->getNYN();
+  nz1 = grid->getNZN();
+  nx2 = grid->getNXC();
+  ny2 = grid->getNYC();
+  nz2 = grid->getNZC();
+  double ***temp = newArr3(double, nx2, ny2, nz2);
+
+  for (int icount = 1; icount < nvolte + 1; icount++) {
+    // Exth
+    grid->interpN2C(temp, Exth);
+    communicateCenterBC(nx2, ny2, nz2, temp, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+    grid->interpC2N(Exth,temp);
+    communicateCenterBC(nx1, ny1, nz1, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+    // Eyth
+    grid->interpN2C(temp, Eyth);
+    communicateCenterBC(nx2, ny2, nz2, temp, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+    grid->interpC2N(Eyth,temp);
+    communicateCenterBC(nx1, ny1, nz1, Eyth, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+    // Ezth
+    grid->interpN2C(temp, Ezth);
+    communicateCenterBC(nx2, ny2, nz2, temp, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+    grid->interpC2N(Ezth,temp);
+    communicateCenterBC(nx1, ny1, nz1, Ezth, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+  }
+  delArr3(temp, nx2, ny2);
 }
 
 /* SPECIES: Interpolation smoothing TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector type = 1 --> node based vector */
@@ -1456,7 +1541,7 @@ void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, double E
 
 
 /*! Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
-void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
+void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, Collective *col) {
 
   // Sum over species Jhat
   for (int is = 0; is < ns; is++) {
@@ -1464,22 +1549,35 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
     sum(Jyh, Jyhs, nxn, nyn, nzn, is);
     sum(Jzh, Jzhs, nxn, nyn, nzn, is);
   }
+  // communicate Jhat
+  communicateNodeBC_P(nxn, nyn, nzn, Jxh, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, Jyh, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, Jzh, 2, 2, 2, 2, 2, 2, vct);
 
   // Calculate and smooth rhohat = rho^n+1/2 - (th-1/2) dt div(Jhat)
   grid->divN2C(tempXC, Jxh, Jyh, Jzh);
   scale(tempXC, -(th-0.5)*dt, nxc, nyc, nzc);
   sum(tempXC, rhoc, nxc, nyc, nzc);
   eq(rhoh, tempXC, nxc, nyc, nzc);
-  // communicate rhoh
+  // Communicate rhohat
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
-  smooth(Smooth, Nvolte, rhoh, 0, grid, vct);
+  // Smooth rhohat
+  if (SmoothType=="default")       smooth(Smooth, Nvolte, rhoh, 0, grid, vct, col);
+  else if (SmoothType=="binomial") smoothBinomial(Smooth, Nvolte, rhoh, 0, grid, vct, col);
 
   // Smooth Jhat
-  smooth(Smooth, Nvolte, Jxh, 1, grid, vct);
-  smooth(Smooth, Nvolte, Jyh, 1, grid, vct);
-  smooth(Smooth, Nvolte, Jzh, 1, grid, vct);
+  if (SmoothType=="default") {
+    smooth(Smooth, Nvolte, Jxh, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, Jyh, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, Jzh, 1, grid, vct, col);
+  }
+  else if (SmoothType=="binomial") {
+    smoothBinomial(Smooth, Nvolte, Jxh, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, Jyh, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, Jzh, 1, grid, vct, col);
+  }
 
-  // Sum and smooth mu tensor
+  // Sum mu tensor
   for (int is = 0; is < ns; is++) {
     sum(muxx, muxxs, nxn, nyn, nzn, is);
     sum(muxy, muxys, nxn, nyn, nzn, is);
@@ -1491,16 +1589,39 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
     sum(muzy, muzys, nxn, nyn, nzn, is);
     sum(muzz, muzzs, nxn, nyn, nzn, is);
   }
-  smooth(Smooth, Nvolte, muxx, 1, grid, vct);
-  smooth(Smooth, Nvolte, muxy, 1, grid, vct);
-  smooth(Smooth, Nvolte, muyx, 1, grid, vct);
-  smooth(Smooth, Nvolte, muxz, 1, grid, vct);
-  smooth(Smooth, Nvolte, muzx, 1, grid, vct);
-  smooth(Smooth, Nvolte, muyy, 1, grid, vct);
-  smooth(Smooth, Nvolte, muyz, 1, grid, vct);
-  smooth(Smooth, Nvolte, muzy, 1, grid, vct);
-  smooth(Smooth, Nvolte, muzz, 1, grid, vct);
-
+  // Communicate mu tensor
+  communicateNodeBC_P(nxn, nyn, nzn, muxx, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, muxy, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, muxz, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, muyx, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, muyy, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, muyz, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, muzx, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, muzy, 2, 2, 2, 2, 2, 2, vct);
+  communicateNodeBC_P(nxn, nyn, nzn, muzz, 2, 2, 2, 2, 2, 2, vct);
+  // Smooth mu tensor
+  if (SmoothType=="default") {
+    smooth(Smooth, Nvolte, muxx, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, muxy, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, muyx, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, muxz, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, muzx, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, muyy, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, muyz, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, muzy, 1, grid, vct, col);
+    smooth(Smooth, Nvolte, muzz, 1, grid, vct, col);
+  }
+  else if (SmoothType=="binomial") {
+    smoothBinomial(Smooth, Nvolte, muxx, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, muxy, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, muyx, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, muxz, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, muzx, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, muyy, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, muyz, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, muzy, 1, grid, vct, col);
+    smoothBinomial(Smooth, Nvolte, muzz, 1, grid, vct, col);
+  }
 }
 
 /*! Image of Poisson Solver */

@@ -560,13 +560,13 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
 
       // Auxiliary quantities
       double gn = sqrt(1.+(u[i]*u[i]+v[i]*v[i]+w[i]*w[i])/c/c);
-      /////// LM:
-      double G = qom*dt/2.*(Exl*u[i]+Eyl*v[i]+Ezl*w[i])/gn + gn;
+//      /////// LM:
+//      double G = qom*dt/2.*(Exl*u[i]+Eyl*v[i]+Ezl*w[i])/gn + gn;
       /////// Boris:
-//      double upx = u[i] + qom*dt/2.*Exl;
-//      double upy = v[i] + qom*dt/2.*Eyl;
-//      double upz = w[i] + qom*dt/2.*Ezl;
-//      double G = sqrt(1. + (upx*upx+upy*upy+upz*upz)/c/c);
+      double upx = u[i] + qom*dt/2.*Exl;
+      double upy = v[i] + qom*dt/2.*Eyl;
+      double upz = w[i] + qom*dt/2.*Ezl;
+      double G = sqrt(1. + (upx*upx+upy*upy+upz*upz)/c/c);
       Bxl *= qom*dt/2./G/c;
       Byl *= qom*dt/2./G/c;
       Bzl *= qom*dt/2./G/c;
@@ -1277,7 +1277,7 @@ double Particles3Dcomm::getKe() {
 
   // Get energy from all particles
   for (register long long i = 0; i < nop; i++) {
-    gg = sqrt(1. + u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
+    gg = sqrt(1. + (u[i]*u[i] + v[i]*v[i] + w[i]*w[i])/c/c);
     localKe += (q[i] / qom) * (gg - 1.) * c*c;
   }
   MPI_Allreduce(&localKe, &totalKe, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);

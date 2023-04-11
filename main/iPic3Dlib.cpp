@@ -326,7 +326,7 @@ void c_Solver::CalculateField() {
   // timeTasks.start(TimeTasks::MOMENTS);
 
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
-  EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
+  EMf->calculateHatFunctions(grid, vct, col);    // calculate the hat quantities for the implicit method
   MPI_Barrier(MPI_COMM_WORLD);
   // timeTasks.end(TimeTasks::MOMENTS);
 
