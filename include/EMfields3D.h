@@ -263,8 +263,10 @@ class EMfields3D                // :public Field
 
     /*! communicate ghost for densities and interp rho from node to center */
     void interpDensitiesN2C(VirtualTopology3D * vct, Grid * grid);
-    /*! set to 0 all the densities fields */
+    /*! set to 0 all the density fields */
     void setZeroDensities();
+    /*! set to 0 all the density fields NEEDED FOR OUTPUT */
+    void setZeroDensitiesOutput();
     /*! Sum rhon over species */
     void sumOverSpecies(VirtualTopology3D * vct);
     /*! Sum current over different species */
@@ -282,6 +284,9 @@ class EMfields3D                // :public Field
 
     /*! communicate ghost for grid -> Particles interpolation */
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
+    /*! communicate ghost for grid -> Particles interpolation
+        ONLY FOR OUTPUT QUANTITIES                            */
+    void communicateGhostP2GOutput(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
     void addToSpeciesMoments(const Moments & in, int is);
     /*! add an amount of charge density to charge density field at node X,Y,Z */

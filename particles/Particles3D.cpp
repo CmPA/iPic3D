@@ -62,7 +62,7 @@ Particles3D::~Particles3D() {
 }
 /** Empty particle distribution */
 void Particles3D::empty(Grid* grid,Field* EMf,VirtualTopology3D* vct){
-	nop = 0;
+    nop = 0;
 }
 
 /** particles are uniformly distributed with zero velocity   */
@@ -437,20 +437,20 @@ void Particles3D::maxwellian_whistler(Grid * grid, Field * EMf, VirtualTopology3
               double y2 = Ly/2 + Lx/5;
               double shaper_y = (tanh(y[counter]- y1)+tanh(y2-y[counter]))/2.0;
 
-        	  uthx = uth;
-        	  //uthy = vth * shaper_x * shaper_y + uth * (1.0 - shaper_x * shaper_y);
-        	  //Used for the runs after whistler7
-        	  //uthy = vth * shaper_x * shaper_y + uth / 1.1 * (1.0 - shaper_x * shaper_y);
-        	  uthy = vth;
+              uthx = uth;
+              //uthy = vth * shaper_x * shaper_y + uth * (1.0 - shaper_x * shaper_y);
+              //Used for the runs after whistler7
+              //uthy = vth * shaper_x * shaper_y + uth / 1.1 * (1.0 - shaper_x * shaper_y);
+              uthy = vth;
 // Used for whistler 4
-        	  //     	  uthy = vth * shaper_x * shaper_y + (.8*uth+.2*vth) * (1.0 - shaper_x * shaper_y);
-        	  uthz = wth;
+              //           uthy = vth * shaper_x * shaper_y + (.8*uth+.2*vth) * (1.0 - shaper_x * shaper_y);
+              uthz = wth;
 
-        	  /**
+              /**
               if((fabs(x[counter]-Lx/2.0)<Lx/5.0)&&(fabs(y[counter]-Ly/2.0)<Lx/5.0)){
-            	  uthx = uth;
-            	  uthy = vth;
-            	  uthz = wth;
+                  uthx = uth;
+                  uthy = vth;
+                  uthz = wth;
               }
               */
 
@@ -476,73 +476,73 @@ void Particles3D::maxwellian_whistler(Grid * grid, Field * EMf, VirtualTopology3
 
 /** Maxellian velocity from currents and prescribed spatial distribution */
 void Particles3D::drift_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct)
-	{
-	  double harvest, prob, theta;
-	  long long counter = 0;
+    {
+      double harvest, prob, theta;
+      long long counter = 0;
 
 
-		/* initialize random generator with different seed on different processor */
-		srand(vct->getCartesian_rank()+2);
+        /* initialize random generator with different seed on different processor */
+        srand(vct->getCartesian_rank()+2);
 
-		const double q_sgn = (qom / fabs(qom));
-		const double q_factor =  q_sgn / invVOL / npcel;
+        const double q_sgn = (qom / fabs(qom));
+        const double q_factor =  q_sgn / invVOL / npcel;
 
-		for (int i=1; i< grid->getNXC()-1;i++)
-		for (int j=1; j< grid->getNYC()-1;j++)
-		for (int k=1; k< grid->getNZC()-1;k++){
+        for (int i=1; i< grid->getNXC()-1;i++)
+        for (int j=1; j< grid->getNYC()-1;j++)
+        for (int k=1; k< grid->getNZC()-1;k++){
 
-			double shaper_th = fabs(EMf->getRHOcs(i, j, k, ns));
+            double shaper_th = fabs(EMf->getRHOcs(i, j, k, ns));
 
-			const double qpart = q_factor * EMf->getRHOcs(i, j, k, ns);
+            const double qpart = q_factor * EMf->getRHOcs(i, j, k, ns);
 
-			// determine the drift velocity from current X
-			u0 = EMf->getJxs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
-			if (u0 > c){
-				cout << "DRIFT VELOCITY x > c : B init field too high!" << endl;
-				MPI_Abort(MPI_COMM_WORLD,2);
-			}
-			// determine the drift velocity from current Y
-			v0 = EMf->getJys(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
-			if (v0 > c){
-				cout << "DRIFT VELOCITY y > c : B init field too high!" << endl;
-				MPI_Abort(MPI_COMM_WORLD,2);
-			}
-			// determine the drift velocity from current Z
-			w0 = EMf->getJzs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
-			if (w0 > c){
-				cout << "DRIFT VELOCITY z > c : B init field too high!" << endl;
-				MPI_Abort(MPI_COMM_WORLD,2);
-			}
-			for (int ii=0; ii < npcelx; ii++)
-			for (int jj=0; jj < npcely; jj++)
-			for (int kk=0; kk < npcelz; kk++){
+            // determine the drift velocity from current X
+            u0 = EMf->getJxs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+            if (u0 > c){
+                cout << "DRIFT VELOCITY x > c : B init field too high!" << endl;
+                MPI_Abort(MPI_COMM_WORLD,2);
+            }
+            // determine the drift velocity from current Y
+            v0 = EMf->getJys(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+            if (v0 > c){
+                cout << "DRIFT VELOCITY y > c : B init field too high!" << endl;
+                MPI_Abort(MPI_COMM_WORLD,2);
+            }
+            // determine the drift velocity from current Z
+            w0 = EMf->getJzs(i,j,k,ns)/EMf->getRHOns(i,j,k,ns);
+            if (w0 > c){
+                cout << "DRIFT VELOCITY z > c : B init field too high!" << endl;
+                MPI_Abort(MPI_COMM_WORLD,2);
+            }
+            for (int ii=0; ii < npcelx; ii++)
+            for (int jj=0; jj < npcely; jj++)
+            for (int kk=0; kk < npcelz; kk++){
 
-	            x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
-	            y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
-	            z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
-	            // q = charge
-	            q[counter] = qpart;
-				harvest = rand() / (double) RAND_MAX;
-				prob = shaper_th * sqrt(-2.0 * log(1.0 - .999999 * harvest));
-				harvest = rand() / (double) RAND_MAX;
-				theta = 2.0 * M_PI * harvest;
-				// u
-				u[counter] = u0 + uth * prob * cos(theta);
-				// v
-				v[counter] = v0 + vth * prob * sin(theta);
-				// w
-				harvest = rand() / (double) RAND_MAX;
-				prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-				harvest = rand() / (double) RAND_MAX;
-				theta = 2.0 * M_PI * harvest;
-				w[counter] = w0 + wth * prob * cos(theta);
-				if (TrackParticleID)
-				    ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+                x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+                y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+                z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+                // q = charge
+                q[counter] = qpart;
+                harvest = rand() / (double) RAND_MAX;
+                prob = shaper_th * sqrt(-2.0 * log(1.0 - .999999 * harvest));
+                harvest = rand() / (double) RAND_MAX;
+                theta = 2.0 * M_PI * harvest;
+                // u
+                u[counter] = u0 + uth * prob * cos(theta);
+                // v
+                v[counter] = v0 + vth * prob * sin(theta);
+                // w
+                harvest = rand() / (double) RAND_MAX;
+                prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+                harvest = rand() / (double) RAND_MAX;
+                theta = 2.0 * M_PI * harvest;
+                w[counter] = w0 + wth * prob * cos(theta);
+                if (TrackParticleID)
+                    ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
 
-				counter++;
-			}
-		}
-	}
+                counter++;
+            }
+        }
+    }
 
 /** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::relativistic_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
@@ -713,7 +713,7 @@ void Particles3D::KAWTurbulencePert(Grid * grid, Field * EMf, VirtualTopology3D 
   for (int i = 1; i < grid->getNXC() - 1; i++)
     for (int j = 1; j < grid->getNYC() - 1; j++)
       for (int k = 1; k < grid->getNZC() - 1; k++) {
-	
+    
         // Density in this cell
         double rho = fabs(EMf->getRHOcs(i, j, k, ns));
         // Calculate nppc in this cell: it will be scaled according to rho/rhom
@@ -830,58 +830,58 @@ int Particles3D::maxwell_box_thin(Grid* grid,Field* EMf,VirtualTopology3D* vct, 
 /* initialize random generator with different seed on different processor */
  srand(vct->getCartesian_rank()+2);
 
-	double harvest;
-	double prob, theta, sign;
-	long long counter=0;
-	for (int i=1; i< grid->getNXC()-1;i++)
-		for (int j=1; j< grid->getNYC()-1;j++)
-			for (int k=1; k< grid->getNZC()-1;k++)
-				for (int ii=0; ii < npcelx; ii++)
-					for (int jj=0; jj < npcely; jj++)
-						for (int kk=0; kk < npcelz; kk++){
-							x[counter] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);   // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
-							y[counter] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
-							z[counter] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
-							if (fabs(x[counter] - x_center) < L_square/4 && fabs(y[counter] - y_center) < L_square/2 && fabs(z[counter] - z_center) < L_square/2){
-							// q = charg
-							q[counter] =  (qom/fabs(qom))*(EMf->getRHOcs(i,j,k,ns)/npcel)*(1.0/grid->getInvVOL());
-							if (ii == 0 && jj == 0 && kk == 0 && i == 1 && j == 1 && k == 1)
-								cout << "Q at ("<< i<<","<<j<<","<<k<<") = "<<q[counter]<<endl;
-							// u
-							harvest =   rand()/(double)RAND_MAX;
-							prob  = sqrt(-2.0*log(1.0-.999999*harvest));
-							harvest =   rand()/(double)RAND_MAX;
-							theta = 2.0*M_PI*harvest;
-							u[counter] = multiple*u0 + uth*prob*cos(theta);
-							// v
-							v[counter] = multiple*v0 + vth*prob*sin(theta);
-							// w
-							harvest =   rand()/(double)RAND_MAX;
-							prob  = sqrt(-2.0*log(1.0-.999999*harvest));
-							harvest =   rand()/(double)RAND_MAX;
-							theta = 2.0*M_PI*harvest;
-							w[counter] = multiple*w0 + wth*prob*cos(theta);
-							if (TrackParticleID)
-								ParticleID[counter]= counter*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+    double harvest;
+    double prob, theta, sign;
+    long long counter=0;
+    for (int i=1; i< grid->getNXC()-1;i++)
+        for (int j=1; j< grid->getNYC()-1;j++)
+            for (int k=1; k< grid->getNZC()-1;k++)
+                for (int ii=0; ii < npcelx; ii++)
+                    for (int jj=0; jj < npcely; jj++)
+                        for (int kk=0; kk < npcelz; kk++){
+                            x[counter] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);   // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+                            y[counter] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+                            z[counter] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+                            if (fabs(x[counter] - x_center) < L_square/4 && fabs(y[counter] - y_center) < L_square/2 && fabs(z[counter] - z_center) < L_square/2){
+                            // q = charg
+                            q[counter] =  (qom/fabs(qom))*(EMf->getRHOcs(i,j,k,ns)/npcel)*(1.0/grid->getInvVOL());
+                            if (ii == 0 && jj == 0 && kk == 0 && i == 1 && j == 1 && k == 1)
+                                cout << "Q at ("<< i<<","<<j<<","<<k<<") = "<<q[counter]<<endl;
+                            // u
+                            harvest =   rand()/(double)RAND_MAX;
+                            prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                            harvest =   rand()/(double)RAND_MAX;
+                            theta = 2.0*M_PI*harvest;
+                            u[counter] = multiple*u0 + uth*prob*cos(theta);
+                            // v
+                            v[counter] = multiple*v0 + vth*prob*sin(theta);
+                            // w
+                            harvest =   rand()/(double)RAND_MAX;
+                            prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+                            harvest =   rand()/(double)RAND_MAX;
+                            theta = 2.0*M_PI*harvest;
+                            w[counter] = multiple*w0 + wth*prob*cos(theta);
+                            if (TrackParticleID)
+                                ParticleID[counter]= counter*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
 
 
-							counter++ ;
-							}
-						}
+                            counter++ ;
+                            }
+                        }
 
-	nop = counter - 1;
-	return nop;
+    nop = counter - 1;
+    return nop;
 }
 
 /** Maxwellian random velocity and uniform spatial distribution */
 void Particles3D::dual_spark_plug(Grid* grid,Field* EMf,VirtualTopology3D* vct, double L_square, double x_center, double y_center, double z_center){
-	long long storeNop = 0;
-	nop = 0;
+    long long storeNop = 0;
+    nop = 0;
 
-	maxwell_box_thin(grid, EMf, vct, L_square, L_square*(3.0/4.0), y_center, z_center);
-	storeNop = nop;
-	storeNop += maxwell_box_thin(grid, EMf, vct, L_square, Lx-(L_square*(3.0/4.0)), y_center, z_center, -1.0);
-	nop = storeNop;
+    maxwell_box_thin(grid, EMf, vct, L_square, L_square*(3.0/4.0), y_center, z_center);
+    storeNop = nop;
+    storeNop += maxwell_box_thin(grid, EMf, vct, L_square, Lx-(L_square*(3.0/4.0)), y_center, z_center, -1.0);
+    nop = storeNop;
 }
 
 /** Monoenergetic random velocity and uniform spatial distribution */
@@ -890,43 +890,43 @@ int Particles3D::monoenergetic_box(Grid* grid,Field* EMf,VirtualTopology3D* vct,
 /* initialize random generator with different seed on different processor */
  srand(vct->getCartesian_rank()+2);
 
-	double harvest;
-	double prob, theta, sign;
-	long long counter=0;
-	for (int i=1; i< grid->getNXC()-1;i++)
-		for (int j=1; j< grid->getNYC()-1;j++)
-			for (int k=1; k< grid->getNZC()-1;k++)
-				for (int ii=0; ii < npcelx; ii++)
-					for (int jj=0; jj < npcely; jj++)
-						for (int kk=0; kk < npcelz; kk++){
-							x[counter] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);   // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
-							y[counter] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
-							z[counter] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
-							if (fabs(x[counter] - x_center) < L_square/2 && fabs(y[counter] - y_center) < L_square/2 && fabs(z[counter] - z_center) < L_square/2){
-							// q = charg
-							q[counter] =  (qom/fabs(qom))*(EMf->getRHOcs(i,j,k,ns)/npcel)*(1.0/grid->getInvVOL());
-							if (ii == 0 && jj == 0 && kk == 0 && i == 1 && j == 1 && k == 1)
-								cout << "Q at ("<< i<<","<<j<<","<<k<<") = "<<q[counter]<<endl;
-							// u
-							harvest =   rand()/(double)RAND_MAX;
-							theta = 2.0*M_PI*harvest;
-							u[counter] = multiple*u0 + uth*cos(theta);
-							// v
-							v[counter] = multiple*v0 + vth*sin(theta);
-							// w
-							harvest =   rand()/(double)RAND_MAX;
-							theta = 2.0*M_PI*harvest;
-							w[counter] = multiple*w0 + wth*cos(theta);
-							if (TrackParticleID)
-								ParticleID[counter]= counter*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+    double harvest;
+    double prob, theta, sign;
+    long long counter=0;
+    for (int i=1; i< grid->getNXC()-1;i++)
+        for (int j=1; j< grid->getNYC()-1;j++)
+            for (int k=1; k< grid->getNZC()-1;k++)
+                for (int ii=0; ii < npcelx; ii++)
+                    for (int jj=0; jj < npcely; jj++)
+                        for (int kk=0; kk < npcelz; kk++){
+                            x[counter] = (ii + .5)*(dx/npcelx) + grid->getXN(i,j,k);   // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+                            y[counter] = (jj + .5)*(dy/npcely) + grid->getYN(i,j,k);
+                            z[counter] = (kk + .5)*(dz/npcelz) + grid->getZN(i,j,k);
+                            if (fabs(x[counter] - x_center) < L_square/2 && fabs(y[counter] - y_center) < L_square/2 && fabs(z[counter] - z_center) < L_square/2){
+                            // q = charg
+                            q[counter] =  (qom/fabs(qom))*(EMf->getRHOcs(i,j,k,ns)/npcel)*(1.0/grid->getInvVOL());
+                            if (ii == 0 && jj == 0 && kk == 0 && i == 1 && j == 1 && k == 1)
+                                cout << "Q at ("<< i<<","<<j<<","<<k<<") = "<<q[counter]<<endl;
+                            // u
+                            harvest =   rand()/(double)RAND_MAX;
+                            theta = 2.0*M_PI*harvest;
+                            u[counter] = multiple*u0 + uth*cos(theta);
+                            // v
+                            v[counter] = multiple*v0 + vth*sin(theta);
+                            // w
+                            harvest =   rand()/(double)RAND_MAX;
+                            theta = 2.0*M_PI*harvest;
+                            w[counter] = multiple*w0 + wth*cos(theta);
+                            if (TrackParticleID)
+                                ParticleID[counter]= counter*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
 
 
-							counter++ ;
-							}
-						}
+                            counter++ ;
+                            }
+                        }
 
-	nop = counter - 1;
-	return nop;
+    nop = counter - 1;
+    return nop;
 }
 
 
@@ -960,95 +960,95 @@ int getGlobalFlux(int i);
  double fluxEnergy[1];
 void Particles3D::recordFlux(double oldX, double oldY, double oldZ, double newX, double newY, double newZ, int ptcl)
 {
-	double interpX, interpY, interpZ, centerX, centerY, centerZ;
-	centerX = Lx/2.0;
-	centerY = Ly/2.0;
-	centerZ = Lz/2.0;
+    double interpX, interpY, interpZ, centerX, centerY, centerZ;
+    centerX = Lx/2.0;
+    centerY = Ly/2.0;
+    centerZ = Lz/2.0;
 
-	int nFluxLoops = 1;
-	int fluxPlane[1] = {1};
-	double fluxCenterX[1], fluxCenterY[1], fluxCenterZ[1];
-	fluxCenterY[0] = fluxCenterZ[0] = centerY;
-	fluxCenterX[0] = centerX+30;
-	double fluxRadius[1] = {12};
+    int nFluxLoops = 1;
+    int fluxPlane[1] = {1};
+    double fluxCenterX[1], fluxCenterY[1], fluxCenterZ[1];
+    fluxCenterY[0] = fluxCenterZ[0] = centerY;
+    fluxCenterX[0] = centerX+30;
+    double fluxRadius[1] = {12};
 
-	for (int i = 0; i < nFluxLoops; i++)
-	{
+    for (int i = 0; i < nFluxLoops; i++)
+    {
 
-			switch(fluxPlane[i]){
-				case 1:				//the case where the fluxLoop is normal to the x-plane
+            switch(fluxPlane[i]){
+                case 1:                //the case where the fluxLoop is normal to the x-plane
 
-					//interpolate the coordinates up to the position of the flux-loop
-					interpY = oldY + (newY-oldY)*(fluxCenterX[i]-oldX)/(newX-oldX);
-					interpZ = oldZ + (newZ-oldZ)*(fluxCenterX[i]-oldX)/(newX-oldX);
+                    //interpolate the coordinates up to the position of the flux-loop
+                    interpY = oldY + (newY-oldY)*(fluxCenterX[i]-oldX)/(newX-oldX);
+                    interpZ = oldZ + (newZ-oldZ)*(fluxCenterX[i]-oldX)/(newX-oldX);
 
-					//check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
-					if (oldX-centerX < fluxCenterX[i]-centerX && newX-centerX > fluxCenterX[i]-centerX &&
-						pow(interpY-fluxCenterY[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]++;
-						fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
+                    //check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
+                    if (oldX-centerX < fluxCenterX[i]-centerX && newX-centerX > fluxCenterX[i]-centerX &&
+                        pow(interpY-fluxCenterY[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
+                    {
+                        fluxCounter[i]++;
+                        fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+                    }
 
-					//check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
-					else if (oldX-centerX > fluxCenterX[i]-centerX && newX-centerX < fluxCenterX[i]-centerX &&
-						pow(interpY-fluxCenterY[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]--;
-						fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
-				break;
+                    //check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
+                    else if (oldX-centerX > fluxCenterX[i]-centerX && newX-centerX < fluxCenterX[i]-centerX &&
+                        pow(interpY-fluxCenterY[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
+                    {
+                        fluxCounter[i]--;
+                        fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+                    }
+                break;
 
-				case 2:				//the case where the fluxLoop is normal to the y-plane
+                case 2:                //the case where the fluxLoop is normal to the y-plane
 
-					//interpolate the coordinates up to the position of the flux-loop
-					interpX = oldX + (newX-oldX)*(fluxCenterY[i]-oldY)/(newY-oldY);
-					interpZ = oldZ + (newZ-oldZ)*(fluxCenterY[i]-oldY)/(newY-oldY);
+                    //interpolate the coordinates up to the position of the flux-loop
+                    interpX = oldX + (newX-oldX)*(fluxCenterY[i]-oldY)/(newY-oldY);
+                    interpZ = oldZ + (newZ-oldZ)*(fluxCenterY[i]-oldY)/(newY-oldY);
 
-					//check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
-					if (oldY-centerY < fluxCenterY[i]-centerY && newY-centerY > fluxCenterY[i]-centerY &&
-						pow(interpX-fluxCenterX[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]++;
-						fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
+                    //check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
+                    if (oldY-centerY < fluxCenterY[i]-centerY && newY-centerY > fluxCenterY[i]-centerY &&
+                        pow(interpX-fluxCenterX[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
+                    {
+                        fluxCounter[i]++;
+                        fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+                    }
 
-					//check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
-					else if (oldY-centerY > fluxCenterY[i]-centerY && newY-centerY < fluxCenterY[i]-centerY &&
-						pow(interpX-fluxCenterX[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]--;
-						fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
-				break;
+                    //check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
+                    else if (oldY-centerY > fluxCenterY[i]-centerY && newY-centerY < fluxCenterY[i]-centerY &&
+                        pow(interpX-fluxCenterX[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
+                    {
+                        fluxCounter[i]--;
+                        fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+                    }
+                break;
 
-				case 3:				//the case where the fluxLoop is normal to the z-plane
+                case 3:                //the case where the fluxLoop is normal to the z-plane
 
-					//interpolate the coordinates up to the position of the flux-loop
-					interpX = oldX + (newX-oldX)*(fluxCenterY[i]-oldY)/(newY-oldY);
-					interpY = oldZ + (newZ-oldZ)*(fluxCenterY[i]-oldY)/(newY-oldY);
+                    //interpolate the coordinates up to the position of the flux-loop
+                    interpX = oldX + (newX-oldX)*(fluxCenterY[i]-oldY)/(newY-oldY);
+                    interpY = oldZ + (newZ-oldZ)*(fluxCenterY[i]-oldY)/(newY-oldY);
 
-					//check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
-					if (oldZ-centerZ < fluxCenterZ[i]-centerZ && newZ-centerZ > fluxCenterZ[i]-centerZ &&
-						pow(interpX-fluxCenterX[i], 2.0) + pow(interpY-fluxCenterY[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]++;
-						fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
+                    //check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
+                    if (oldZ-centerZ < fluxCenterZ[i]-centerZ && newZ-centerZ > fluxCenterZ[i]-centerZ &&
+                        pow(interpX-fluxCenterX[i], 2.0) + pow(interpY-fluxCenterY[i], 2.0) < pow(fluxRadius[i], 2.0) )
+                    {
+                        fluxCounter[i]++;
+                        fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+                    }
 
-					//check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
-					else if (oldZ-centerZ > fluxCenterZ[i]-centerZ && newZ-centerZ < fluxCenterZ[i]-centerZ &&
-						pow(interpX-fluxCenterX[i], 2.0) + pow(interpY-fluxCenterY[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]--;
-						fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
-				break;
+                    //check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
+                    else if (oldZ-centerZ > fluxCenterZ[i]-centerZ && newZ-centerZ < fluxCenterZ[i]-centerZ &&
+                        pow(interpX-fluxCenterX[i], 2.0) + pow(interpY-fluxCenterY[i], 2.0) < pow(fluxRadius[i], 2.0) )
+                    {
+                        fluxCounter[i]--;
+                        fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
+                    }
+                break;
 
-				default:
-				break;
-		}
-	}
+                default:
+                break;
+        }
+    }
 
 }
 
@@ -1209,14 +1209,14 @@ int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
         for (int ii=0; ii < 2; ii++)
           for (int jj=0; jj < 2; jj++)
             for(int kk=0; kk < 2; kk++)
-        	    weight[p][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
+                weight[p][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
       }
       // clear the electric and the magnetic field field acting on the particles
       for (int p = 0; p < P_SAME_TIME; p++){Exl[p]=0.0; Eyl[p] = 0.0; Ezl[p] = 0.0; Bxl[p] = 0.0; Byl[p] = 0.0; Bzl[p] = 0.0;}
       // calculate fields acting on the particles
       for (int ii=0; ii < 2; ii++)
         for (int jj=0; jj < 2; jj++)
-      	for(int kk=0; kk < 2; kk++) {
+          for(int kk=0; kk < 2; kk++) {
             for(int p = 0; p < P_SAME_TIME; p++) {
               Exlp[p] = EMf->getEx(ix[p] - ii,iy[p] -jj,iz[p] - kk);
               Eylp[p] = EMf->getEy(ix[p] - ii,iy[p] -jj,iz[p] - kk);
@@ -1286,83 +1286,83 @@ int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
   // move each particle with new fields
   for (int rest = (i+1); rest <  nop; rest++){
       // copy the particle
-  	xp[0] = x[rest];   yp[0] = y[rest];   zp[0] = z[rest];   up[0] = u[rest];   vp[0] = v[rest];   wp[0] = w[rest];
-  	xptilde[0] = x[rest];
-  	yptilde[0] = y[rest];
-  	zptilde[0] = z[rest];
-  	// calculate the average velocity iteratively
-  	for(int innter=0; innter < 1; innter++){
-  		// interpolation G-->P
-  		ixd[0] = floor((xp[0]-xstart)*inv_dx);
-  		iyd[0] = floor((yp[0]-ystart)*inv_dy);
-  		izd[0] = floor((zp[0]-zstart)*inv_dz);
-  		ix[0] = 2 +  int(ixd[0]);
-  		iy[0] = 2 +  int(iyd[0]);
-  		iz[0] = 2 +  int(izd[0]);
-  		if(ix[0] < 1) ix[0] = 1;
-  		if(iy[0] < 1) iy[0] = 1;
-  		if(iz[0] < 1) iz[0] = 1;
-  		if(ix[0] > nxn-1) ix[0] = nxn-1;
-  		if(iy[0] > nyn-1) iy[0] = nyn-1;
-  		if(iz[0] > nzn-1) iz[0] = nzn-1;
+      xp[0] = x[rest];   yp[0] = y[rest];   zp[0] = z[rest];   up[0] = u[rest];   vp[0] = v[rest];   wp[0] = w[rest];
+      xptilde[0] = x[rest];
+      yptilde[0] = y[rest];
+      zptilde[0] = z[rest];
+      // calculate the average velocity iteratively
+      for(int innter=0; innter < 1; innter++){
+          // interpolation G-->P
+          ixd[0] = floor((xp[0]-xstart)*inv_dx);
+          iyd[0] = floor((yp[0]-ystart)*inv_dy);
+          izd[0] = floor((zp[0]-zstart)*inv_dz);
+          ix[0] = 2 +  int(ixd[0]);
+          iy[0] = 2 +  int(iyd[0]);
+          iz[0] = 2 +  int(izd[0]);
+          if(ix[0] < 1) ix[0] = 1;
+          if(iy[0] < 1) iy[0] = 1;
+          if(iz[0] < 1) iz[0] = 1;
+          if(ix[0] > nxn-1) ix[0] = nxn-1;
+          if(iy[0] > nyn-1) iy[0] = nyn-1;
+          if(iz[0] > nzn-1) iz[0] = nzn-1;
   
-  		xi[0]   = xp[0] - grid->getXN(ix[0]-1,iy[0],iz[0]); eta[0]  = yp[0] - grid->getYN(ix[0],iy[0]-1,iz[0]); zeta[0] = zp[0] - grid->getZN(ix[0],iy[0],iz[0]-1);
+          xi[0]   = xp[0] - grid->getXN(ix[0]-1,iy[0],iz[0]); eta[0]  = yp[0] - grid->getYN(ix[0],iy[0]-1,iz[0]); zeta[0] = zp[0] - grid->getZN(ix[0],iy[0],iz[0]-1);
       xi[1]   = grid->getXN(ix[0],iy[0],iz[0]) - xp[0];   eta[1]  = grid->getYN(ix[0],iy[0],iz[0]) - yp[0];   zeta[1] = grid->getZN(ix[0],iy[0],iz[0]) - zp[0];
       for (int ii=0; ii < 2; ii++)
-  	      for (int jj=0; jj < 2; jj++)
-  		     for(int kk=0; kk < 2; kk++)
-  			   weight[0][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
+            for (int jj=0; jj < 2; jj++)
+               for(int kk=0; kk < 2; kk++)
+                 weight[0][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
   
-  	Exl[0]=0.0, Eyl[0] = 0.0, Ezl[0] = 0.0, Bxl[0] = 0.0, Byl[0] = 0.0, Bzl[0] = 0.0;
+      Exl[0]=0.0, Eyl[0] = 0.0, Ezl[0] = 0.0, Bxl[0] = 0.0, Byl[0] = 0.0, Bzl[0] = 0.0;
       for (int ii=0; ii < 2; ii++)
-  			for (int jj=0; jj < 2; jj++)
-  				for(int kk=0; kk < 2; kk++){
-  					Exlp[0] = weight[0][ii][jj][kk]*EMf->getEx(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-  					Eylp[0] = weight[0][ii][jj][kk]*EMf->getEy(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-  					Ezlp[0] = weight[0][ii][jj][kk]*EMf->getEz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-  					Bxlp[0] = weight[0][ii][jj][kk]*EMf->getBx(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-  					Bylp[0] = weight[0][ii][jj][kk]*EMf->getBy(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-  					Bzlp[0] = weight[0][ii][jj][kk]*EMf->getBz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+              for (int jj=0; jj < 2; jj++)
+                  for(int kk=0; kk < 2; kk++){
+                      Exlp[0] = weight[0][ii][jj][kk]*EMf->getEx(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+                      Eylp[0] = weight[0][ii][jj][kk]*EMf->getEy(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+                      Ezlp[0] = weight[0][ii][jj][kk]*EMf->getEz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+                      Bxlp[0] = weight[0][ii][jj][kk]*EMf->getBx(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+                      Bylp[0] = weight[0][ii][jj][kk]*EMf->getBy(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+                      Bzlp[0] = weight[0][ii][jj][kk]*EMf->getBz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
   
-  					Exlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEx_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-  				    Eylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEy_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-  					Ezlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-  					Bxlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBx_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-  					Bylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBy_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-  					Bzlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+                      Exlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEx_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+                      Eylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEy_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+                      Ezlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+                      Bxlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBx_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+                      Bylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBy_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+                      Bzlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
   
-  					Exl[0] += Exlp[0];
-  					Eyl[0] += Eylp[0];
-  					Ezl[0] += Ezlp[0];
-  					Bxl[0] += Bxlp[0];
-  					Byl[0] += Bylp[0];
-  					Bzl[0] += Bzlp[0];
-  				}
-  		// end interpolation
-      	omdtsq[0] = qomdt2*qomdt2*(Bxl[0]*Bxl[0]+Byl[0]*Byl[0]+Bzl[0]*Bzl[0]);
-  		denom[0] = 1.0/(1.0 + omdtsq[0]);
-  		// solve the position equation
-  		ut[0]= up[0] + qomdt2*Exl[0];
-  		vt[0]= vp[0] + qomdt2*Eyl[0];
-  		wt[0]= wp[0] + qomdt2*Ezl[0];
-  		udotb[0] = ut[0]*Bxl[0] + vt[0]*Byl[0] + wt[0]*Bzl[0];
-  		// solve the velocity equation
-  		uptilde[0] = (ut[0]+qomdt2*(vt[0]*Bzl[0] -wt[0]*Byl[0] + qomdt2*udotb[0]*Bxl[0]))*denom[0];
-  		vptilde[0] = (vt[0]+qomdt2*(wt[0]*Bxl[0] -ut[0]*Bzl[0] + qomdt2*udotb[0]*Byl[0]))*denom[0];
-  		wptilde[0] = (wt[0]+qomdt2*(ut[0]*Byl[0] -vt[0]*Bxl[0] + qomdt2*udotb[0]*Bzl[0]))*denom[0];
-  		// update position
-  		xp[0] = xptilde[0] + uptilde[0]*dto2;
-  		yp[0] = yptilde[0] + vptilde[0]*dto2;
-  		zp[0] = zptilde[0] + wptilde[0]*dto2;
-  	} // end of iteration
-  	// update the final position and velocity
-  	up[0]= 2.0*uptilde[0] - u[rest];
-  	vp[0]= 2.0*vptilde[0] - v[rest];
-  	wp[0]= 2.0*wptilde[0] - w[rest];
-  	xp[0] = xptilde[0] + uptilde[0]*dt;
-  	yp[0] = yptilde[0] + vptilde[0]*dt;
-  	zp[0] = zptilde[0] + wptilde[0]*dt;
-  	x[rest]   = xp[0]; y[rest]   = yp[0]; z[rest]   = zp[0]; u[rest]   = up[0]; v[rest]   = vp[0]; w[rest]   = wp[0];
+                      Exl[0] += Exlp[0];
+                      Eyl[0] += Eylp[0];
+                      Ezl[0] += Ezlp[0];
+                      Bxl[0] += Bxlp[0];
+                      Byl[0] += Bylp[0];
+                      Bzl[0] += Bzlp[0];
+                  }
+          // end interpolation
+          omdtsq[0] = qomdt2*qomdt2*(Bxl[0]*Bxl[0]+Byl[0]*Byl[0]+Bzl[0]*Bzl[0]);
+          denom[0] = 1.0/(1.0 + omdtsq[0]);
+          // solve the position equation
+          ut[0]= up[0] + qomdt2*Exl[0];
+          vt[0]= vp[0] + qomdt2*Eyl[0];
+          wt[0]= wp[0] + qomdt2*Ezl[0];
+          udotb[0] = ut[0]*Bxl[0] + vt[0]*Byl[0] + wt[0]*Bzl[0];
+          // solve the velocity equation
+          uptilde[0] = (ut[0]+qomdt2*(vt[0]*Bzl[0] -wt[0]*Byl[0] + qomdt2*udotb[0]*Bxl[0]))*denom[0];
+          vptilde[0] = (vt[0]+qomdt2*(wt[0]*Bxl[0] -ut[0]*Bzl[0] + qomdt2*udotb[0]*Byl[0]))*denom[0];
+          wptilde[0] = (wt[0]+qomdt2*(ut[0]*Byl[0] -vt[0]*Bxl[0] + qomdt2*udotb[0]*Bzl[0]))*denom[0];
+          // update position
+          xp[0] = xptilde[0] + uptilde[0]*dto2;
+          yp[0] = yptilde[0] + vptilde[0]*dto2;
+          zp[0] = zptilde[0] + wptilde[0]*dto2;
+      } // end of iteration
+      // update the final position and velocity
+      up[0]= 2.0*uptilde[0] - u[rest];
+      vp[0]= 2.0*vptilde[0] - v[rest];
+      wp[0]= 2.0*wptilde[0] - w[rest];
+      xp[0] = xptilde[0] + uptilde[0]*dt;
+      yp[0] = yptilde[0] + vptilde[0]*dt;
+      zp[0] = zptilde[0] + wptilde[0]*dt;
+      x[rest]   = xp[0]; y[rest]   = yp[0]; z[rest]   = zp[0]; u[rest]   = up[0]; v[rest]   = vp[0]; w[rest]   = wp[0];
   } // END OF ALL THE PARTICLES
   
   //********************//
@@ -1370,14 +1370,14 @@ int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
   // *******************//
     avail = communicate(vct);
     if (avail < 0)
-		return(-1);
+        return(-1);
     MPI_Barrier(MPI_COMM_WORLD);
     // communicate again if particles are not in the correct domain
     while(isMessagingDone(vct) >0){
      // COMMUNICATION
-	 avail = communicate(vct);
-	 if (avail < 0)
-	        return(-1);
+     avail = communicate(vct);
+     if (avail < 0)
+            return(-1);
      MPI_Barrier(MPI_COMM_WORLD);
   }
   return(0); // exit succcesfully (hopefully)
@@ -1436,17 +1436,17 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       int iy = 2 + int (iyd);
       int iz = 2 + int (izd);
       if (ix < 1)
-      	ix = 1;
+          ix = 1;
       if (iy < 1)
-      	iy = 1;
+          iy = 1;
       if (iz < 1)
-      	iz = 1;
+          iz = 1;
       if (ix > nxn - 1)
-      	ix = nxn - 1;
+          ix = nxn - 1;
       if (iy > nyn - 1)
-      	iy = nyn - 1;
+          iy = nyn - 1;
       if (iz > nzn - 1)
-      	iz = nzn - 1;
+          iz = nzn - 1;
       
       double xi  [2];
       double eta [2];
@@ -1528,31 +1528,31 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
       Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
       Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
       //
-      Exl += weight000 * (Ex[ix][iy][iz] 			 + Fext * Ex_ext[ix][iy][iz]);
-      Exl += weight001 * (Ex[ix][iy][iz - 1] 		 + Fext * Ex_ext[ix][iy][iz - 1]);
-      Exl += weight010 * (Ex[ix][iy - 1][iz] 		 + Fext * Ex_ext[ix][iy - 1][iz]);
-      Exl += weight011 * (Ex[ix][iy - 1][iz - 1] 	 + Fext * Ex_ext[ix][iy - 1][iz - 1]);
-      Exl += weight100 * (Ex[ix - 1][iy][iz] 		 + Fext * Ex_ext[ix - 1][iy][iz]);
-      Exl += weight101 * (Ex[ix - 1][iy][iz - 1] 	 + Fext * Ex_ext[ix - 1][iy][iz - 1]);
-      Exl += weight110 * (Ex[ix - 1][iy - 1][iz] 	 + Fext * Ex_ext[ix - 1][iy - 1][iz]);
+      Exl += weight000 * (Ex[ix][iy][iz]              + Fext * Ex_ext[ix][iy][iz]);
+      Exl += weight001 * (Ex[ix][iy][iz - 1]          + Fext * Ex_ext[ix][iy][iz - 1]);
+      Exl += weight010 * (Ex[ix][iy - 1][iz]          + Fext * Ex_ext[ix][iy - 1][iz]);
+      Exl += weight011 * (Ex[ix][iy - 1][iz - 1]      + Fext * Ex_ext[ix][iy - 1][iz - 1]);
+      Exl += weight100 * (Ex[ix - 1][iy][iz]          + Fext * Ex_ext[ix - 1][iy][iz]);
+      Exl += weight101 * (Ex[ix - 1][iy][iz - 1]      + Fext * Ex_ext[ix - 1][iy][iz - 1]);
+      Exl += weight110 * (Ex[ix - 1][iy - 1][iz]      + Fext * Ex_ext[ix - 1][iy - 1][iz]);
       Exl += weight111 * (Ex[ix - 1][iy - 1][iz - 1] + Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
       //
-      Eyl += weight000 * (Ey[ix][iy][iz] 			 + Fext * Ey_ext[ix][iy][iz]);
-      Eyl += weight001 * (Ey[ix][iy][iz - 1] 		 + Fext * Ey_ext[ix][iy][iz - 1]);
-      Eyl += weight010 * (Ey[ix][iy - 1][iz] 		 + Fext * Ey_ext[ix][iy - 1][iz]);
-      Eyl += weight011 * (Ey[ix][iy - 1][iz - 1] 	 + Fext * Ey_ext[ix][iy - 1][iz - 1]);
-      Eyl += weight100 * (Ey[ix - 1][iy][iz] 		 + Fext * Ey_ext[ix - 1][iy][iz]);
-      Eyl += weight101 * (Ey[ix - 1][iy][iz - 1] 	 + Fext * Ey_ext[ix - 1][iy][iz - 1]);
-      Eyl += weight110 * (Ey[ix - 1][iy - 1][iz] 	 + Fext * Ey_ext[ix - 1][iy - 1][iz]);
+      Eyl += weight000 * (Ey[ix][iy][iz]              + Fext * Ey_ext[ix][iy][iz]);
+      Eyl += weight001 * (Ey[ix][iy][iz - 1]          + Fext * Ey_ext[ix][iy][iz - 1]);
+      Eyl += weight010 * (Ey[ix][iy - 1][iz]          + Fext * Ey_ext[ix][iy - 1][iz]);
+      Eyl += weight011 * (Ey[ix][iy - 1][iz - 1]      + Fext * Ey_ext[ix][iy - 1][iz - 1]);
+      Eyl += weight100 * (Ey[ix - 1][iy][iz]          + Fext * Ey_ext[ix - 1][iy][iz]);
+      Eyl += weight101 * (Ey[ix - 1][iy][iz - 1]      + Fext * Ey_ext[ix - 1][iy][iz - 1]);
+      Eyl += weight110 * (Ey[ix - 1][iy - 1][iz]      + Fext * Ey_ext[ix - 1][iy - 1][iz]);
       Eyl += weight111 * (Ey[ix - 1][iy - 1][iz - 1] + Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
       
-      Ezl += weight000 * (Ez[ix][iy][iz] 			 + Fext * Ez_ext[ix][iy][iz]);
-      Ezl += weight001 * (Ez[ix][iy][iz - 1] 		 + Fext * Ez_ext[ix][iy][iz - 1]);
-      Ezl += weight010 * (Ez[ix][iy - 1][iz] 		 + Fext * Ez_ext[ix][iy - 1][iz]);
-      Ezl += weight011 * (Ez[ix][iy - 1][iz - 1] 	 + Fext * Ez_ext[ix][iy - 1][iz - 1]);
-      Ezl += weight100 * (Ez[ix - 1][iy][iz] 		 + Fext * Ez_ext[ix - 1][iy][iz]);
-      Ezl += weight101 * (Ez[ix - 1][iy][iz - 1] 	 + Fext * Ez_ext[ix - 1][iy][iz - 1]);
-      Ezl += weight110 * (Ez[ix - 1][iy - 1][iz] 	 + Fext * Ez_ext[ix - 1][iy - 1][iz]);
+      Ezl += weight000 * (Ez[ix][iy][iz]              + Fext * Ez_ext[ix][iy][iz]);
+      Ezl += weight001 * (Ez[ix][iy][iz - 1]          + Fext * Ez_ext[ix][iy][iz - 1]);
+      Ezl += weight010 * (Ez[ix][iy - 1][iz]          + Fext * Ez_ext[ix][iy - 1][iz]);
+      Ezl += weight011 * (Ez[ix][iy - 1][iz - 1]      + Fext * Ez_ext[ix][iy - 1][iz - 1]);
+      Ezl += weight100 * (Ez[ix - 1][iy][iz]          + Fext * Ez_ext[ix - 1][iy][iz]);
+      Ezl += weight101 * (Ez[ix - 1][iy][iz - 1]      + Fext * Ez_ext[ix - 1][iy][iz - 1]);
+      Ezl += weight110 * (Ez[ix - 1][iy - 1][iz]      + Fext * Ez_ext[ix - 1][iy - 1][iz]);
       Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
       
       // end interpolation
@@ -1705,17 +1705,17 @@ int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     int iy = 2 + int (iyd);
     int iz = 2 + int (izd);
     if (ix < 1)
-    	ix = 1;
+        ix = 1;
     if (iy < 1)
-    	iy = 1;
+        iy = 1;
     if (iz < 1)
-    	iz = 1;
+        iz = 1;
     if (ix > nxn - 1)
-    	ix = nxn - 1;
+        ix = nxn - 1;
     if (iy > nyn - 1)
-    	iy = nyn - 1;
+        iy = nyn - 1;
     if (iz > nzn - 1)
-    	iz = nzn - 1;
+        iz = nzn - 1;
     
     double xi  [2];
     double eta [2];
@@ -1771,31 +1771,31 @@ int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     Bzl += weight110 * Bz[ix - 1][iy - 1][iz]    ; // + Fext*Bz_ext[ix-1][iy-1][iz]);
     Bzl += weight111 * Bz[ix - 1][iy - 1][iz - 1]; // + Fext*Bz_ext[ix-1][iy-1][iz-1]);
     //
-    Exl += weight000 * Ex[ix][iy][iz] 		 ; //        + Fext * Ex_ext[ix][iy][iz]);
-    Exl += weight001 * Ex[ix][iy][iz - 1] 	 ; //        + Fext * Ex_ext[ix][iy][iz - 1]);
-    Exl += weight010 * Ex[ix][iy - 1][iz] 	 ; //        + Fext * Ex_ext[ix][iy - 1][iz]);
-    Exl += weight011 * Ex[ix][iy - 1][iz - 1] 	 ; //+ Fext * Ex_ext[ix][iy - 1][iz - 1]);
-    Exl += weight100 * Ex[ix - 1][iy][iz] 	 ; //        + Fext * Ex_ext[ix - 1][iy][iz]);
-    Exl += weight101 * Ex[ix - 1][iy][iz - 1] 	 ; //+ Fext * Ex_ext[ix - 1][iy][iz - 1]);
-    Exl += weight110 * Ex[ix - 1][iy - 1][iz] 	 ; //+ Fext * Ex_ext[ix - 1][iy - 1][iz]);
+    Exl += weight000 * Ex[ix][iy][iz]          ; //        + Fext * Ex_ext[ix][iy][iz]);
+    Exl += weight001 * Ex[ix][iy][iz - 1]      ; //        + Fext * Ex_ext[ix][iy][iz - 1]);
+    Exl += weight010 * Ex[ix][iy - 1][iz]      ; //        + Fext * Ex_ext[ix][iy - 1][iz]);
+    Exl += weight011 * Ex[ix][iy - 1][iz - 1]      ; //+ Fext * Ex_ext[ix][iy - 1][iz - 1]);
+    Exl += weight100 * Ex[ix - 1][iy][iz]      ; //        + Fext * Ex_ext[ix - 1][iy][iz]);
+    Exl += weight101 * Ex[ix - 1][iy][iz - 1]      ; //+ Fext * Ex_ext[ix - 1][iy][iz - 1]);
+    Exl += weight110 * Ex[ix - 1][iy - 1][iz]      ; //+ Fext * Ex_ext[ix - 1][iy - 1][iz]);
     Exl += weight111 * Ex[ix - 1][iy - 1][iz - 1]; // + Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
     //
-    Eyl += weight000 * Ey[ix][iy][iz] 		 ; //        + Fext * Ey_ext[ix][iy][iz]);
-    Eyl += weight001 * Ey[ix][iy][iz - 1] 	 ; //        + Fext * Ey_ext[ix][iy][iz - 1]);
-    Eyl += weight010 * Ey[ix][iy - 1][iz] 	 ; //        + Fext * Ey_ext[ix][iy - 1][iz]);
-    Eyl += weight011 * Ey[ix][iy - 1][iz - 1] 	 ; //+ Fext * Ey_ext[ix][iy - 1][iz - 1]);
-    Eyl += weight100 * Ey[ix - 1][iy][iz] 	 ; //        + Fext * Ey_ext[ix - 1][iy][iz]);
-    Eyl += weight101 * Ey[ix - 1][iy][iz - 1] 	 ; //+ Fext * Ey_ext[ix - 1][iy][iz - 1]);
-    Eyl += weight110 * Ey[ix - 1][iy - 1][iz] 	 ; //+ Fext * Ey_ext[ix - 1][iy - 1][iz]);
+    Eyl += weight000 * Ey[ix][iy][iz]          ; //        + Fext * Ey_ext[ix][iy][iz]);
+    Eyl += weight001 * Ey[ix][iy][iz - 1]      ; //        + Fext * Ey_ext[ix][iy][iz - 1]);
+    Eyl += weight010 * Ey[ix][iy - 1][iz]      ; //        + Fext * Ey_ext[ix][iy - 1][iz]);
+    Eyl += weight011 * Ey[ix][iy - 1][iz - 1]      ; //+ Fext * Ey_ext[ix][iy - 1][iz - 1]);
+    Eyl += weight100 * Ey[ix - 1][iy][iz]      ; //        + Fext * Ey_ext[ix - 1][iy][iz]);
+    Eyl += weight101 * Ey[ix - 1][iy][iz - 1]      ; //+ Fext * Ey_ext[ix - 1][iy][iz - 1]);
+    Eyl += weight110 * Ey[ix - 1][iy - 1][iz]      ; //+ Fext * Ey_ext[ix - 1][iy - 1][iz]);
     Eyl += weight111 * Ey[ix - 1][iy - 1][iz - 1]; // + Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
     
-    Ezl += weight000 * Ez[ix][iy][iz] 		 ; //        + Fext * Ez_ext[ix][iy][iz]);
-    Ezl += weight001 * Ez[ix][iy][iz - 1] 	 ; //        + Fext * Ez_ext[ix][iy][iz - 1]);
-    Ezl += weight010 * Ez[ix][iy - 1][iz] 	 ; //        + Fext * Ez_ext[ix][iy - 1][iz]);
-    Ezl += weight011 * Ez[ix][iy - 1][iz - 1] 	 ; //+ Fext * Ez_ext[ix][iy - 1][iz - 1]);
-    Ezl += weight100 * Ez[ix - 1][iy][iz] 	 ; //        + Fext * Ez_ext[ix - 1][iy][iz]);
-    Ezl += weight101 * Ez[ix - 1][iy][iz - 1] 	 ; //+ Fext * Ez_ext[ix - 1][iy][iz - 1]);
-    Ezl += weight110 * Ez[ix - 1][iy - 1][iz] 	 ; //+ Fext * Ez_ext[ix - 1][iy - 1][iz]);
+    Ezl += weight000 * Ez[ix][iy][iz]          ; //        + Fext * Ez_ext[ix][iy][iz]);
+    Ezl += weight001 * Ez[ix][iy][iz - 1]      ; //        + Fext * Ez_ext[ix][iy][iz - 1]);
+    Ezl += weight010 * Ez[ix][iy - 1][iz]      ; //        + Fext * Ez_ext[ix][iy - 1][iz]);
+    Ezl += weight011 * Ez[ix][iy - 1][iz - 1]      ; //+ Fext * Ez_ext[ix][iy - 1][iz - 1]);
+    Ezl += weight100 * Ez[ix - 1][iy][iz]      ; //        + Fext * Ez_ext[ix - 1][iy][iz]);
+    Ezl += weight101 * Ez[ix - 1][iy][iz - 1]      ; //+ Fext * Ez_ext[ix - 1][iy][iz - 1]);
+    Ezl += weight110 * Ez[ix - 1][iy - 1][iz]      ; //+ Fext * Ez_ext[ix - 1][iy - 1][iz]);
     Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1]; // + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);    
     // end interpolation
 
@@ -1898,7 +1898,7 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
   double Fext = EMf->getFext();
   if(Gravity)
-		Fext /= qom;
+        Fext /= qom;
 
   // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   // don't bother trying to push any particles simultaneously;
@@ -2033,7 +2033,7 @@ int Particles3D::mover_PC_sub_cyl(Grid * grid, VirtualTopology3D * vct, Field * 
 
   double Fext = EMf->getFext();
   if(Gravity)
-		Fext /= qom;
+        Fext /= qom;
 
   // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
   // don't bother trying to push any particles simultaneously;
@@ -2204,7 +2204,7 @@ void Particles3D::twostream1D(Grid * grid, VirtualTopology3D * vct, int mode) {
               v[counter] = myp / g;
               w[counter] = mzp / g;
               if ( counter % 2 ==0)
-            	  u[counter] = - u[counter];
+                  u[counter] = - u[counter];
               if (TrackParticleID)
                 ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
 
@@ -2218,126 +2218,126 @@ void Particles3D::twostream1D(Grid * grid, VirtualTopology3D * vct, int mode) {
 /** relativistic with a Predictor Corrector based directly
  * on Boris-like rotation  */
 int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
-	  if (vct->getCartesian_rank() == 0) {
-	    cout << "*** MOVER species " << ns << " ***"<< " with " << nop << " particles ***"  << NiterMover << " ITERATIONS   ****" << endl;
-	  }
-	  double start_mover_PC = MPI_Wtime();
-	  double weights[2][2][2];
-	  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
-	  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
-	  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
-	  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
-	  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
-	  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+      if (vct->getCartesian_rank() == 0) {
+        cout << "*** MOVER species " << ns << " ***"<< " with " << nop << " particles ***"  << NiterMover << " ITERATIONS   ****" << endl;
+      }
+      double start_mover_PC = MPI_Wtime();
+      double weights[2][2][2];
+      double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+      double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+      double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+      double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+      double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+      double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
 
-	  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
-	  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
-	  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+      double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+      double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+      double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
-	  double Fext = EMf->getFext();
-	  if(Gravity)
-			Fext /= qom;
+      double Fext = EMf->getFext();
+      if(Gravity)
+            Fext /= qom;
 
-	  // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
-	  // don't bother trying to push any particles simultaneously;
-	  // MIC already does vectorization automatically, and trying
-	  // to do it by hand only hurts performance.
-	//#pragma omp parallel for
-	//#pragma simd                    // this just slows things down (why?)
+      // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+      // don't bother trying to push any particles simultaneously;
+      // MIC already does vectorization automatically, and trying
+      // to do it by hand only hurts performance.
+    //#pragma omp parallel for
+    //#pragma simd                    // this just slows things down (why?)
 
-	  for (long long rest = 0; rest < nop; rest++) {
-	    // copy the particle
-	    double xp = x[rest];
-	    double yp = y[rest];
-	    double zp = z[rest];
-	    double uxp = u[rest];
-	    double uyp = v[rest];
-	    double uzp = w[rest];
-	    double gamma0, gamma, gamma_new;
-	    // Assuming up, vp, wp to be VELOCITY and
+      for (long long rest = 0; rest < nop; rest++) {
+        // copy the particle
+        double xp = x[rest];
+        double yp = y[rest];
+        double zp = z[rest];
+        double uxp = u[rest];
+        double uyp = v[rest];
+        double uzp = w[rest];
+        double gamma0, gamma, gamma_new;
+        // Assuming up, vp, wp to be VELOCITY and
 
-	    gamma0 = 1.0/sqrt(1.0 - uxp*uxp - uyp*uyp - uzp*uzp);
-	    uxp *= gamma0;
-	    uyp *= gamma0;
-	    uzp *= gamma0;
-	    const double xp0 = x[rest];
-	    const double yp0 = y[rest];
-	    const double zp0 = z[rest];
-	    double uxnew;
-	    double uynew;
-	    double uznew;
+        gamma0 = 1.0/sqrt(1.0 - uxp*uxp - uyp*uyp - uzp*uzp);
+        uxp *= gamma0;
+        uyp *= gamma0;
+        uzp *= gamma0;
+        const double xp0 = x[rest];
+        const double yp0 = y[rest];
+        const double zp0 = z[rest];
+        double uxnew;
+        double uynew;
+        double uznew;
 
-	    double Exl = 0.0;
-	    double Eyl = 0.0;
-	    double Ezl = 0.0;
-	    double Bxl = 0.0;
-	    double Byl = 0.0;
-	    double Bzl = 0.0;
-	    int ix;
-	    int iy;
-	    int iz;
+        double Exl = 0.0;
+        double Eyl = 0.0;
+        double Ezl = 0.0;
+        double Bxl = 0.0;
+        double Byl = 0.0;
+        double Bzl = 0.0;
+        int ix;
+        int iy;
+        int iz;
 
-	    // No subcyling in relativisitc case
+        // No subcyling in relativisitc case
 
-	    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
-	    get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+        get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+        get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
 
-	   // const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
-	    //double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
-	    //const int    sub_cycles = int(dt/dt_sub) + 1;
+       // const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+        //double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
+        //const int    sub_cycles = int(dt/dt_sub) + 1;
 
-	    //dt_sub = dt/double(sub_cycles);
-	    double dt_sub = dt;
-	    const int sub_cycles = 1;
+        //dt_sub = dt/double(sub_cycles);
+        double dt_sub = dt;
+        const int sub_cycles = 1;
 
-	    const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
+        const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
 
-	    // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
+        // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
 
-	    for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
+        for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
 
-	      // calculate the average velocity iteratively
-	      int nit = NiterMover;
-	      if (sub_cycles > 2*NiterMover) nit = 1;
+          // calculate the average velocity iteratively
+          int nit = NiterMover;
+          if (sub_cycles > 2*NiterMover) nit = 1;
 
-	      for (int innter = 0; innter < nit; innter++) {
-	        // interpolation G-->P
+          for (int innter = 0; innter < nit; innter++) {
+            // interpolation G-->P
 
-	        get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
-	        get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
-	        get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+            get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+            get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+            get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
 
-	        // end interpolation
+            // end interpolation
 
-	        //relativistic mover
+            //relativistic mover
 
-	        // solve the position equation
-	        const double wx = uxp + qomdt2 * Exl;
-	        const double wy = uyp + qomdt2 * Eyl;
-	        const double wz = uzp + qomdt2 * Ezl;
+            // solve the position equation
+            const double wx = uxp + qomdt2 * Exl;
+            const double wy = uyp + qomdt2 * Eyl;
+            const double wz = uzp + qomdt2 * Ezl;
 
-	        gamma = sqrt(1.0 + wx *wx + wy *wy + wz *wz);
+            gamma = sqrt(1.0 + wx *wx + wy *wy + wz *wz);
 
-			  Bxl *=qomdt2 / gamma;
-			  Byl *=qomdt2 / gamma;
-			  Bzl *=qomdt2 / gamma;
+              Bxl *=qomdt2 / gamma;
+              Byl *=qomdt2 / gamma;
+              Bzl *=qomdt2 / gamma;
 
-	        const double h2 = Bxl * Bxl + Byl * Byl + Bzl * Bzl;
+            const double h2 = Bxl * Bxl + Byl * Byl + Bzl * Bzl;
 
-	        // solve the velocity equation (Relativistic Boris method)
-	       /* uxnew = -(pow(Byl,2)*wx) - pow(Bzl,2)*wx + Bxl*Byl*wy +
-	             2*Bzl*wy - 2*Byl*wz + Bxl*Bzl*wz,
-		    uynew = Bxl*Byl*wx - 2*Bzl*wx - pow(Bxl,2)*wy -
-	             pow(Bzl,2)*wy + 2*Bxl*wz + Byl*Bzl*wz;
+            // solve the velocity equation (Relativistic Boris method)
+           /* uxnew = -(pow(Byl,2)*wx) - pow(Bzl,2)*wx + Bxl*Byl*wy +
+                 2*Bzl*wy - 2*Byl*wz + Bxl*Bzl*wz,
+            uynew = Bxl*Byl*wx - 2*Bzl*wx - pow(Bxl,2)*wy -
+                 pow(Bzl,2)*wy + 2*Bxl*wz + Byl*Bzl*wz;
             uznew = 2*Byl*wx + Bxl*Bzl*wx - 2*Bxl*wy + Byl*Bzl*wy -
-	             pow(Bxl,2)*wz - pow(Byl,2)*wz;
+                 pow(Bxl,2)*wz - pow(Byl,2)*wz;
             */
             uxnew = -(pow(Byl,2)*wx) - pow(Bzl,2)*wx + Bxl*Byl*wy +
-            	             Bzl*wy - Byl*wz + Bxl*Bzl*wz,
+                             Bzl*wy - Byl*wz + Bxl*Bzl*wz,
             uynew = Bxl*Byl*wx - Bzl*wx - pow(Bxl,2)*wy -
-            	             pow(Bzl,2)*wy + Bxl*wz + Byl*Bzl*wz;
+                             pow(Bzl,2)*wy + Bxl*wz + Byl*Bzl*wz;
             uznew = Byl*wx + Bxl*Bzl*wx - Bxl*wy + Byl*Bzl*wy -
-            	             pow(Bxl,2)*wz - pow(Byl,2)*wz;
+                             pow(Bxl,2)*wz - pow(Byl,2)*wz;
 
             uxnew = wx + uxnew *2.0/(1+h2) + qomdt2 * Exl;
             uynew = wy + uynew *2.0/(1+h2) + qomdt2 * Eyl;
@@ -2346,220 +2346,220 @@ int Particles3D::mover_relativistic(Grid * grid, VirtualTopology3D * vct, Field 
             gamma_new = sqrt(1.0 + uxnew *uxnew + uynew *uynew + uznew *uznew);
 
             // update position (mid of the time step)
-	        xp = xp0 + (uxnew + uxp) /(gamma_new + gamma0) * dto2;
-	        yp = yp0 + (uynew + uyp) /(gamma_new + gamma0) * dto2;
-	        zp = zp0 + (uznew + uzp) /(gamma_new + gamma0) * dto2;
-	      }                           // end of iteration
-	      // update the final position and velocity
+            xp = xp0 + (uxnew + uxp) /(gamma_new + gamma0) * dto2;
+            yp = yp0 + (uynew + uyp) /(gamma_new + gamma0) * dto2;
+            zp = zp0 + (uznew + uzp) /(gamma_new + gamma0) * dto2;
+          }                           // end of iteration
+          // update the final position and velocity
 
 
-	      u[rest] = uxnew/ gamma_new;
-	      v[rest] = uynew/ gamma_new;
-	      w[rest] = uznew/ gamma_new;
+          u[rest] = uxnew/ gamma_new;
+          v[rest] = uynew/ gamma_new;
+          w[rest] = uznew/ gamma_new;
 
 
-	      x[rest] = xp0 +  (uxnew + uxp) /(gamma_new + gamma0) * dt;
-	      y[rest] = yp0 +  (uynew + uyp) /(gamma_new + gamma0) * dt;
-	      z[rest] = zp0 +  (uznew + uzp) /(gamma_new + gamma0) * dt;
+          x[rest] = xp0 +  (uxnew + uxp) /(gamma_new + gamma0) * dt;
+          y[rest] = yp0 +  (uynew + uyp) /(gamma_new + gamma0) * dt;
+          z[rest] = zp0 +  (uznew + uzp) /(gamma_new + gamma0) * dt;
 
-	    } // END  OF SUBCYCLING LOOP
-	  }                             // END OF ALL THE PARTICLES
+        } // END  OF SUBCYCLING LOOP
+      }                             // END OF ALL THE PARTICLES
 
-	  // ********************//
-	  // COMMUNICATION
-	  // *******************//
-	  // timeTasks.start_communicate();
-	  const int avail = communicate(vct);
-	  if (avail < 0)
-	    return (-1);
-	  MPI_Barrier(MPI_COMM_WORLD);
-	  // communicate again if particles are not in the correct domain
-	  while (isMessagingDone(vct) > 0) {
-	    // COMMUNICATION
-	    const int avail = communicate(vct);
-	    if (avail < 0)
-	      return (-1);
-	    MPI_Barrier(MPI_COMM_WORLD);
-	  }
-	  // timeTasks.addto_communicate();
-	  return (0);                   // exit succcesfully (hopefully)
+      // ********************//
+      // COMMUNICATION
+      // *******************//
+      // timeTasks.start_communicate();
+      const int avail = communicate(vct);
+      if (avail < 0)
+        return (-1);
+      MPI_Barrier(MPI_COMM_WORLD);
+      // communicate again if particles are not in the correct domain
+      while (isMessagingDone(vct) > 0) {
+        // COMMUNICATION
+        const int avail = communicate(vct);
+        if (avail < 0)
+          return (-1);
+        MPI_Barrier(MPI_COMM_WORLD);
+      }
+      // timeTasks.addto_communicate();
+      return (0);                   // exit succcesfully (hopefully)
 }
 
 /** relativistic mover with a scheme from the old but glorious Celeste3D */
 int Particles3D::mover_relativistic_celeste(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
-	  if (vct->getCartesian_rank() == 0) {
-	    cout << "*** MOVER species " << ns << " ***"<< " with " << nop << " particles ***"  << NiterMover << " ITERATIONS   ****" << endl;
-	  }
-	  double start_mover_PC = MPI_Wtime();
-	  double weights[2][2][2];
-	  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
-	  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
-	  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
-	  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
-	  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
-	  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+      if (vct->getCartesian_rank() == 0) {
+        cout << "*** MOVER species " << ns << " ***"<< " with " << nop << " particles ***"  << NiterMover << " ITERATIONS   ****" << endl;
+      }
+      double start_mover_PC = MPI_Wtime();
+      double weights[2][2][2];
+      double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+      double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+      double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+      double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+      double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+      double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
 
-	  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
-	  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
-	  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+      double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+      double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+      double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
-	  double Fext = EMf->getFext();
-	  if(Gravity)
-			Fext /= qom;
-	  // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
-	  // don't bother trying to push any particles simultaneously;
-	  // MIC already does vectorization automatically, and trying
-	  // to do it by hand only hurts performance.
-	//#pragma omp parallel for
-	//#pragma simd                    // this just slows things down (why?)
+      double Fext = EMf->getFext();
+      if(Gravity)
+            Fext /= qom;
+      // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+      // don't bother trying to push any particles simultaneously;
+      // MIC already does vectorization automatically, and trying
+      // to do it by hand only hurts performance.
+    //#pragma omp parallel for
+    //#pragma simd                    // this just slows things down (why?)
 
-	  for (long long rest = 0; rest < nop; rest++) {
-	    // copy the particle
-	    double xp = x[rest];
-	    double yp = y[rest];
-	    double zp = z[rest];
-	    double pxp = u[rest];
-	    double pyp = v[rest];
-	    double pzp = w[rest];
-	    // Assuming up, vp, wp to be VELOCITY and
+      for (long long rest = 0; rest < nop; rest++) {
+        // copy the particle
+        double xp = x[rest];
+        double yp = y[rest];
+        double zp = z[rest];
+        double pxp = u[rest];
+        double pyp = v[rest];
+        double pzp = w[rest];
+        // Assuming up, vp, wp to be VELOCITY and
 
-	    double gamma0 = 1.0/sqrt(1.0 - (pxp*pxp - pyp*pyp - pzp*pzp)/c/c );
-	    pxp *= gamma0;
-	    pyp *= gamma0;
-	    pzp *= gamma0;
-	    const double xptilde = x[rest];
-	    const double yptilde = y[rest];
-	    const double zptilde = z[rest];
-	    double uptilde;
-	    double vptilde;
-	    double wptilde;
+        double gamma0 = 1.0/sqrt(1.0 - (pxp*pxp - pyp*pyp - pzp*pzp)/c/c );
+        pxp *= gamma0;
+        pyp *= gamma0;
+        pzp *= gamma0;
+        const double xptilde = x[rest];
+        const double yptilde = y[rest];
+        const double zptilde = z[rest];
+        double uptilde;
+        double vptilde;
+        double wptilde;
 
-	    double Exl = 0.0;
-	    double Eyl = 0.0;
-	    double Ezl = 0.0;
-	    double Bxl = 0.0;
-	    double Byl = 0.0;
-	    double Bzl = 0.0;
-	    int ix;
-	    int iy;
-	    int iz;
+        double Exl = 0.0;
+        double Eyl = 0.0;
+        double Ezl = 0.0;
+        double Bxl = 0.0;
+        double Byl = 0.0;
+        double Bzl = 0.0;
+        int ix;
+        int iy;
+        int iz;
 
-	    // No subcyling in relativisitc case
+        // No subcyling in relativisitc case
 
-	    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
-	    get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+        get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+        get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
 
-	   // const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
-	    //double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
-	    //const int    sub_cycles = int(dt/dt_sub) + 1;
+       // const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+        //double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
+        //const int    sub_cycles = int(dt/dt_sub) + 1;
 
-	    //dt_sub = dt/double(sub_cycles);
-	    double dt_sub = dt;
-	    const int sub_cycles = 1;
+        //dt_sub = dt/double(sub_cycles);
+        double dt_sub = dt;
+        const int sub_cycles = 1;
 
-	    const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
+        const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
 
-	    // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
+        // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
 
-	    for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
+        for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
 
-	      // calculate the average velocity iteratively
-	      int nit = NiterMover;
-	      if (sub_cycles > 2*NiterMover) nit = 1;
+          // calculate the average velocity iteratively
+          int nit = NiterMover;
+          if (sub_cycles > 2*NiterMover) nit = 1;
 
-	      for (int innter = 0; innter < nit; innter++) {
-	        // interpolation G-->P
+          for (int innter = 0; innter < nit; innter++) {
+            // interpolation G-->P
 
-	        get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
-	        get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
-	        get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
+            get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+            get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+            get_El(weights, ix, iy, iz, Exl, Eyl, Ezl, Ex, Ey, Ez);
 
-	        // end interpolation
-	        const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
-	        double denom = 1.0 / (1.0 + omdtsq);
+            // end interpolation
+            const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
+            double denom = 1.0 / (1.0 + omdtsq);
 
-	        //relativistic correction
+            //relativistic correction
 
-			  Bxl /=gamma0;
-			  Byl /=gamma0;
-			  Bzl /=gamma0;
-			  denom /=gamma0;
+              Bxl /=gamma0;
+              Byl /=gamma0;
+              Bzl /=gamma0;
+              denom /=gamma0;
 
-	        // solve the position equation
-	        const double ut = pxp + qomdt2 * Exl;
-	        const double vt = pyp + qomdt2 * Eyl;
-	        const double wt = pzp + qomdt2 * Ezl;
-	        const double udotb = ut * Bxl + vt * Byl + wt * Bzl;
-	        // solve the velocity equation
-	        uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
-	        vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
-	        wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
-	        // update position
-	        xp = xptilde + uptilde * dto2;
-	        yp = yptilde + vptilde * dto2;
-	        zp = zptilde + wptilde * dto2;
-	      }                           // end of iteration
-	      // update the final position and velocity
+            // solve the position equation
+            const double ut = pxp + qomdt2 * Exl;
+            const double vt = pyp + qomdt2 * Eyl;
+            const double wt = pzp + qomdt2 * Ezl;
+            const double udotb = ut * Bxl + vt * Byl + wt * Bzl;
+            // solve the velocity equation
+            uptilde = (ut + qomdt2 * (vt * Bzl - wt * Byl + qomdt2 * udotb * Bxl)) * denom;
+            vptilde = (vt + qomdt2 * (wt * Bxl - ut * Bzl + qomdt2 * udotb * Byl)) * denom;
+            wptilde = (wt + qomdt2 * (ut * Byl - vt * Bxl + qomdt2 * udotb * Bzl)) * denom;
+            // update position
+            xp = xptilde + uptilde * dto2;
+            yp = yptilde + vptilde * dto2;
+            zp = zptilde + wptilde * dto2;
+          }                           // end of iteration
+          // update the final position and velocity
 
 
 
-	      // This needs to be revisited because it assumes c=1
-	      	double u02=pxp*pxp+pyp*pyp+pzp*pzp;
-	      	double v2=uptilde*uptilde+vptilde*vptilde+wptilde*wptilde;
-	      	double vdu=pxp*uptilde+pyp*vptilde+pzp*wptilde;
+          // This needs to be revisited because it assumes c=1
+              double u02=pxp*pxp+pyp*pyp+pzp*pzp;
+              double v2=uptilde*uptilde+vptilde*vptilde+wptilde*wptilde;
+              double vdu=pxp*uptilde+pyp*vptilde+pzp*wptilde;
 
-	      	double cfa=1.0-v2;
-	      	double cfb=-2.0*(-vdu+gamma0*v2);
-	      	double cfc=-1.0-gamma0*gamma0*v2+2.0*gamma0*vdu-u02;
+              double cfa=1.0-v2;
+              double cfb=-2.0*(-vdu+gamma0*v2);
+              double cfc=-1.0-gamma0*gamma0*v2+2.0*gamma0*vdu-u02;
 
-	      	double delta=cfb*cfb-4.0*cfa*cfc;
+              double delta=cfb*cfb-4.0*cfa*cfc;
 
-	      	if(delta<0.0) {
-	      		// this in pronciple should never happen. Yeah, right!
-	      		cout << "Relativity violated: gamma0=" << gamma0 << ",  vavg_sq=" << v2 << endl;
-	      		//u[rest] = (gamma0*2.)*uptilde - u[rest]*gamma0;
-	      		//v[rest] = (gamma0*2.)*vptilde - v[rest]*gamma0;
-	      		//w[rest] = (gamma0*2.)*wptilde - w[rest]*gamma0;
-	      	}
-	      	else{
-	      		double gamma=(-cfb+sqrt(delta))/2.0/cfa;
-	      		double unew = ( (gamma+gamma0)*uptilde - pxp )/gamma;
-	      		v[rest] = ( (gamma+gamma0)*vptilde - pyp )/gamma;
-	      		w[rest] = ( (gamma+gamma0)*wptilde - pzp )/gamma;
-	      		if(abs(unew)>1.0){
-	      				cout << "Relativity violated: u>c=" << u[rest] << endl;
-	      		}
-	      		else
-	      			{
-	      			u[rest] = unew;
-	      			}
-	      	}
+              if(delta<0.0) {
+                  // this in pronciple should never happen. Yeah, right!
+                  cout << "Relativity violated: gamma0=" << gamma0 << ",  vavg_sq=" << v2 << endl;
+                  //u[rest] = (gamma0*2.)*uptilde - u[rest]*gamma0;
+                  //v[rest] = (gamma0*2.)*vptilde - v[rest]*gamma0;
+                  //w[rest] = (gamma0*2.)*wptilde - w[rest]*gamma0;
+              }
+              else{
+                  double gamma=(-cfb+sqrt(delta))/2.0/cfa;
+                  double unew = ( (gamma+gamma0)*uptilde - pxp )/gamma;
+                  v[rest] = ( (gamma+gamma0)*vptilde - pyp )/gamma;
+                  w[rest] = ( (gamma+gamma0)*wptilde - pzp )/gamma;
+                  if(abs(unew)>1.0){
+                          cout << "Relativity violated: u>c=" << u[rest] << endl;
+                  }
+                  else
+                      {
+                      u[rest] = unew;
+                      }
+              }
 
-	      x[rest] = xptilde +  dt * uptilde;
-	      y[rest] = yptilde +  dt * vptilde;
-	      z[rest] = zptilde +  dt * wptilde;
+          x[rest] = xptilde +  dt * uptilde;
+          y[rest] = yptilde +  dt * vptilde;
+          z[rest] = zptilde +  dt * wptilde;
 
-	    } // END  OF SUBCYCLING LOOP
-	  }                             // END OF ALL THE PARTICLES
+        } // END  OF SUBCYCLING LOOP
+      }                             // END OF ALL THE PARTICLES
 
-	  // ********************//
-	  // COMMUNICATION
-	  // *******************//
-	  // timeTasks.start_communicate();
-	  const int avail = communicate(vct);
-	  if (avail < 0)
-	    return (-1);
-	  MPI_Barrier(MPI_COMM_WORLD);
-	  // communicate again if particles are not in the correct domain
-	  while (isMessagingDone(vct) > 0) {
-	    // COMMUNICATION
-	    const int avail = communicate(vct);
-	    if (avail < 0)
-	      return (-1);
-	    MPI_Barrier(MPI_COMM_WORLD);
-	  }
-	  // timeTasks.addto_communicate();
-	  return (0);                   // exit succcesfully (hopefully)
+      // ********************//
+      // COMMUNICATION
+      // *******************//
+      // timeTasks.start_communicate();
+      const int avail = communicate(vct);
+      if (avail < 0)
+        return (-1);
+      MPI_Barrier(MPI_COMM_WORLD);
+      // communicate again if particles are not in the correct domain
+      while (isMessagingDone(vct) > 0) {
+        // COMMUNICATION
+        const int avail = communicate(vct);
+        if (avail < 0)
+          return (-1);
+        MPI_Barrier(MPI_COMM_WORLD);
+      }
+      // timeTasks.addto_communicate();
+      return (0);                   // exit succcesfully (hopefully)
 }
 
 int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is){
@@ -3028,25 +3028,25 @@ int Particles3D::particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EM
         // reflect particles
           //vtestin = u[particles_index];
           //vabsin = u[particles_index] * u[particles_index] + v[particles_index] * v[particles_index] + w[particles_index] * w[particles_index];
-    	      get_weights(grid, x[particles_index], y[particles_index], z[particles_index], ix, iy, iz, weights);
-    	      get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+              get_weights(grid, x[particles_index], y[particles_index], z[particles_index], ix, iy, iz, weights);
+              get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
 
-    	       // Compute the unit vector  b along B and pointing INSIDE the domain.
-     	       // This is achieved by computing the dot product of B with the outgoing normal
-     	       // And then imposing the vector b to point opposite to the outgoing normal
+               // Compute the unit vector  b along B and pointing INSIDE the domain.
+                // This is achieved by computing the dot product of B with the outgoing normal
+                // And then imposing the vector b to point opposite to the outgoing normal
 
-    	       B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
-    	       bdotn = -Bxl /abs(Bxl+1e-10);
-    	       bxin = -Bxl/(B_mag+1e-10)*bdotn;
-    	       byin = -Byl/(B_mag+1e-10)*bdotn;
-    	       bzin = -Bzl/(B_mag+1e-10)*bdotn;
-    	       vdotb = u[particles_index]*bxin + v[particles_index]*byin + w[particles_index]*bzin;
-    	       if(abs(vdotb)>uth){
-    	      u[particles_index] += -bxin * ( vdotb - abs(vdotb));
-    	      v[particles_index] += -byin * ( vdotb - abs(vdotb));
-    	      w[particles_index] += -bzin * ( vdotb - abs(vdotb));
-    	       }
-      	     // vdotb = u[particles_index]*bxin + v[particles_index]*byin + w[particles_index]*bzin;
+               B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+               bdotn = -Bxl /abs(Bxl+1e-10);
+               bxin = -Bxl/(B_mag+1e-10)*bdotn;
+               byin = -Byl/(B_mag+1e-10)*bdotn;
+               bzin = -Bzl/(B_mag+1e-10)*bdotn;
+               vdotb = u[particles_index]*bxin + v[particles_index]*byin + w[particles_index]*bzin;
+               if(abs(vdotb)>uth){
+              u[particles_index] += -bxin * ( vdotb - abs(vdotb));
+              v[particles_index] += -byin * ( vdotb - abs(vdotb));
+              w[particles_index] += -bzin * ( vdotb - abs(vdotb));
+               }
+               // vdotb = u[particles_index]*bxin + v[particles_index]*byin + w[particles_index]*bzin;
              // vtestout = u[particles_index];
              // vabsout = u[particles_index] * u[particles_index] + v[particles_index] * v[particles_index] + w[particles_index] * w[particles_index];
              // if(vtestin < 0.0 )
@@ -3070,21 +3070,21 @@ int Particles3D::particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EM
       if (x[particles_index] < (Lx-3.0*dx) && x[particles_index] > (Lx-4.0*dx)) {
           // reflect particles
 
-      	      get_weights(grid, x[particles_index], y[particles_index], z[particles_index], ix, iy, iz, weights);
-      	      get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+                get_weights(grid, x[particles_index], y[particles_index], z[particles_index], ix, iy, iz, weights);
+                get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
 
 
-      	       B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
-     	       bdotn = Bxl /abs(Bxl+1e-10);
-      	       bxin = -Bxl/(B_mag+1e-10)*bdotn;
-      	       byin = -Byl/(B_mag+1e-10)*bdotn;
-      	       bzin = -Bzl/(B_mag+1e-10)*bdotn;
-      	       vdotb = u[particles_index]*bxin + v[particles_index]*byin + w[particles_index]*bzin;
-      	      u[particles_index] += -bxin * ( vdotb - abs(vdotb));
-      	      v[particles_index] += -byin * ( vdotb - abs(vdotb));
-      	      w[particles_index] += -bzin * ( vdotb - abs(vdotb));
+                 B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+                bdotn = Bxl /abs(Bxl+1e-10);
+                 bxin = -Bxl/(B_mag+1e-10)*bdotn;
+                 byin = -Byl/(B_mag+1e-10)*bdotn;
+                 bzin = -Bzl/(B_mag+1e-10)*bdotn;
+                 vdotb = u[particles_index]*bxin + v[particles_index]*byin + w[particles_index]*bzin;
+                u[particles_index] += -bxin * ( vdotb - abs(vdotb));
+                v[particles_index] += -byin * ( vdotb - abs(vdotb));
+                w[particles_index] += -bzin * ( vdotb - abs(vdotb));
 
-      	      particles_index++;
+                particles_index++;
       } else {
         particles_index++;
       }
@@ -3413,99 +3413,99 @@ double Particles3D::deleteParticlesInsideSphere(double R, double x_center, doubl
 
 /** Delete the particles outer multx*dx, multy*dy, multz*dz celles */
 double Particles3D::deleteParticlesOuterFrame(double multx, double multy, double multz){
-	// calculate accumulated charge on the spacecraft
-	long long np_current = 0, nplast = nop-1;
-	while (np_current < nplast+1) {
-		if (x[np_current] < multx*dx || x[np_current] > (Lx-multx*dx) ||
-		    y[np_current] < multy*dy || y[np_current] > (Ly-multy*dx) ||
-		    z[np_current] < multz*dz || z[np_current] > (Lz-multz*dx)) {
-			Q_removed += q[np_current];
-			del_pack(np_current,&nplast);
-		} else {
-			np_current++;
-		}
-	}
+    // calculate accumulated charge on the spacecraft
+    long long np_current = 0, nplast = nop-1;
+    while (np_current < nplast+1) {
+        if (x[np_current] < multx*dx || x[np_current] > (Lx-multx*dx) ||
+            y[np_current] < multy*dy || y[np_current] > (Ly-multy*dx) ||
+            z[np_current] < multz*dz || z[np_current] > (Lz-multz*dx)) {
+            Q_removed += q[np_current];
+            del_pack(np_current,&nplast);
+        } else {
+            np_current++;
+        }
+    }
 
-	nop = nplast +1;
-	return(Q_removed);
+    nop = nplast +1;
+    return(Q_removed);
 }
 
 /** Reflect particles in the outer shell towards the center */
 double Particles3D::ReturnToCenterOuterFrame(double multx, double multy, double multz){
-	// calculate accumulated charge on the spacecraft
-	long long np_current = 0, nplast = nop-1;
-	double r;
-	double udotr;
-	while (np_current < nplast+1) {
-		if (x[np_current] < multx*dx || x[np_current] > (Lx-multx*dx) ||
-		    y[np_current] < multy*dy || y[np_current] > (Ly-multy*dx) ||
-		    z[np_current] < multz*dz || z[np_current] > (Lz-multz*dx)) {
-			r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
-					(y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
-					(z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
-			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
-					v[np_current] * (y[np_current]-Ly/2.0)+
-					w[np_current] * (z[np_current]-Lz/2.0))/r;
-		//	udotr += abs(udotr);
+    // calculate accumulated charge on the spacecraft
+    long long np_current = 0, nplast = nop-1;
+    double r;
+    double udotr;
+    while (np_current < nplast+1) {
+        if (x[np_current] < multx*dx || x[np_current] > (Lx-multx*dx) ||
+            y[np_current] < multy*dy || y[np_current] > (Ly-multy*dx) ||
+            z[np_current] < multz*dz || z[np_current] > (Lz-multz*dx)) {
+            r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
+                    (y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
+                    (z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
+            udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
+                    v[np_current] * (y[np_current]-Ly/2.0)+
+                    w[np_current] * (z[np_current]-Lz/2.0))/r;
+        //    udotr += abs(udotr);
 if(udotr>0){
-			u[np_current] = u[np_current] -  2.0 *udotr * (x[np_current]-Lx/2.0)/r;
-			v[np_current] = v[np_current] -  2.0* udotr * (y[np_current]-Ly/2.0)/r;
-			w[np_current] = w[np_current] -  2.0 *udotr * (z[np_current]-Lz/2.0)/r; }
-			np_current++;
-		} else {
-			np_current++;
-		}
-	}
-	nop = nplast +1;
-	return(0.0);
+            u[np_current] = u[np_current] -  2.0 *udotr * (x[np_current]-Lx/2.0)/r;
+            v[np_current] = v[np_current] -  2.0* udotr * (y[np_current]-Ly/2.0)/r;
+            w[np_current] = w[np_current] -  2.0 *udotr * (z[np_current]-Lz/2.0)/r; }
+            np_current++;
+        } else {
+            np_current++;
+        }
+    }
+    nop = nplast +1;
+    return(0.0);
 }
 double Particles3D::ReturnToCenterCircle(){
-	// calculate accumulated charge on the spacecraft
-	long long np_current = 0, nplast = nop-1;
-	double r;
-	double udotr;
-	double ukick = 3.0 *uth;
-	while (np_current < nplast+1) {
-		r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
-							(y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
-							(z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
-		if (r> L_outer) {
-/*			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
-					v[np_current] * (y[np_current]-Ly/2.0)+
-					w[np_current] * (z[np_current]-Lz/2.0))/r;
-		//	udotr += abs(udotr);
+    // calculate accumulated charge on the spacecraft
+    long long np_current = 0, nplast = nop-1;
+    double r;
+    double udotr;
+    double ukick = 3.0 *uth;
+    while (np_current < nplast+1) {
+        r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
+                            (y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
+                            (z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
+        if (r> L_outer) {
+/*            udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
+                    v[np_current] * (y[np_current]-Ly/2.0)+
+                    w[np_current] * (z[np_current]-Lz/2.0))/r;
+        //    udotr += abs(udotr);
 if(udotr>0){
-			u[np_current] = u[np_current] -  2.0 *udotr * (x[np_current]-Lx/2.0)/r;
-			v[np_current] = v[np_current] -  2.0* udotr * (y[np_current]-Ly/2.0)/r;
-			w[np_current] = w[np_current] -  2.0 *udotr * (z[np_current]-Lz/2.0)/r; }
-			*/
-			u[np_current] = 0.0*u[np_current] -  ukick * (x[np_current]-Lx/2.0)/r;
-			v[np_current] = 0.0*v[np_current] -  ukick * (y[np_current]-Ly/2.0)/r;
-			w[np_current] = 0.0*w[np_current] -  ukick * (z[np_current]-Lz/2.0)/r;
+            u[np_current] = u[np_current] -  2.0 *udotr * (x[np_current]-Lx/2.0)/r;
+            v[np_current] = v[np_current] -  2.0* udotr * (y[np_current]-Ly/2.0)/r;
+            w[np_current] = w[np_current] -  2.0 *udotr * (z[np_current]-Lz/2.0)/r; }
+            */
+            u[np_current] = 0.0*u[np_current] -  ukick * (x[np_current]-Lx/2.0)/r;
+            v[np_current] = 0.0*v[np_current] -  ukick * (y[np_current]-Ly/2.0)/r;
+            w[np_current] = 0.0*w[np_current] -  ukick * (z[np_current]-Lz/2.0)/r;
 
-			np_current++;
-		} else {
-			np_current++;
-		}
-	}
-	nop = nplast +1;
-	return(0.0);
+            np_current++;
+        } else {
+            np_current++;
+        }
+    }
+    nop = nplast +1;
+    return(0.0);
 }
 double Particles3D::ReturnRegeneratedToCenterOuterFrame(double multx, double multy, double multz){
-	// calculate accumulated charge on the spacecraft
-	long long np_current = 0, nplast = nop-1;
-	  double harvest;
-	  double prob, theta, sign;
-	double r;
-	double udotr;
-	while (np_current < nplast+1) {
-		if (x[np_current] < multx*dx || x[np_current] > (Lx-multx*dx) ||
-		    y[np_current] < multy*dy || y[np_current] > (Ly-multy*dx) ||
-		    z[np_current] < multz*dz || z[np_current] > (Lz-multz*dx)) {
-			r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
-					(y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
-					(z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
-			// regenerate particle speed from intial maxwellian
+    // calculate accumulated charge on the spacecraft
+    long long np_current = 0, nplast = nop-1;
+      double harvest;
+      double prob, theta, sign;
+    double r;
+    double udotr;
+    while (np_current < nplast+1) {
+        if (x[np_current] < multx*dx || x[np_current] > (Lx-multx*dx) ||
+            y[np_current] < multy*dy || y[np_current] > (Ly-multy*dx) ||
+            z[np_current] < multz*dz || z[np_current] > (Lz-multz*dx)) {
+            r = 1e-10+sqrt((x[np_current]-Lx/2.0)*(x[np_current]-Lx/2.0) +
+                    (y[np_current]-Ly/2.0)*(y[np_current]-Ly/2.0) +
+                    (z[np_current]-Lz/2.0)*(z[np_current]-Lz/2.0));
+            // regenerate particle speed from intial maxwellian
             // u
             harvest = rand() / (double) RAND_MAX;
             prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
@@ -3522,175 +3522,175 @@ double Particles3D::ReturnRegeneratedToCenterOuterFrame(double multx, double mul
             w[np_current] = w0 + wth * prob * cos(theta);
 
             // turn it towards the center if it is not going there already
-			udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
-					v[np_current] * (y[np_current]-Ly/2.0)+
-					w[np_current] * (z[np_current]-Lz/2.0))/r;
-		//	udotr += abs(udotr);
+            udotr= (u[np_current] * (x[np_current]-Lx/2.0)+
+                    v[np_current] * (y[np_current]-Ly/2.0)+
+                    w[np_current] * (z[np_current]-Lz/2.0))/r;
+        //    udotr += abs(udotr);
 if(udotr>0){
-			u[np_current] = u[np_current] -  2.0 *udotr * (x[np_current]-Lx/2.0)/r;
-			v[np_current] = v[np_current] -  2.0* udotr * (y[np_current]-Ly/2.0)/r;
-			w[np_current] = w[np_current] -  2.0 *udotr * (z[np_current]-Lz/2.0)/r; }
-			np_current++;
-		} else {
-			np_current++;
-		}
-	}
-	nop = nplast +1;
-	return(0.0);
+            u[np_current] = u[np_current] -  2.0 *udotr * (x[np_current]-Lx/2.0)/r;
+            v[np_current] = v[np_current] -  2.0* udotr * (y[np_current]-Ly/2.0)/r;
+            w[np_current] = w[np_current] -  2.0 *udotr * (z[np_current]-Lz/2.0)/r; }
+            np_current++;
+        } else {
+            np_current++;
+        }
+    }
+    nop = nplast +1;
+    return(0.0);
 }
 
 /** Delete the particles inside the sphere with radius R and center x_center y_center */
 double Particles3D::deleteParticlesOutsideSphere(double R, double x_center, double y_center, double z_center){
-	// calculate accumulated charge on the spacecraft
-	long long np_current = 0, nplast = nop-1;
-	while (np_current < nplast+1){
-		if (sqrt( pow(x[np_current] - x_center,2) + pow(y[np_current] - y_center,2) + pow(z[np_current] - z_center,2) ) > R){
-			// delete the particle and pack the particle array, the value of nplast changes
-			Q_removed += q[np_current];
-			del_pack(np_current,&nplast);
+    // calculate accumulated charge on the spacecraft
+    long long np_current = 0, nplast = nop-1;
+    while (np_current < nplast+1){
+        if (sqrt( pow(x[np_current] - x_center,2) + pow(y[np_current] - y_center,2) + pow(z[np_current] - z_center,2) ) > R){
+            // delete the particle and pack the particle array, the value of nplast changes
+            Q_removed += q[np_current];
+            del_pack(np_current,&nplast);
 
-		} else {
-			// particle is still in the domain, procede with the next particle
-			np_current++;
-		}
-	}
-	nop = nplast +1;
-	return(Q_removed);
+        } else {
+            // particle is still in the domain, procede with the next particle
+            np_current++;
+        }
+    }
+    nop = nplast +1;
+    return(Q_removed);
 }
 
 //** Delete the particles outside the cube with dimension L */
 double Particles3D::deleteParticlesOutsideBox(double L){
-	// calculate accumulated charge on the spacecraft
-	long long np_current = 0, nplast = nop-1;
-	while (np_current < nplast+1){
-		if (x[np_current] > L || x[np_current] < 0 ||
-			y[np_current] > L || y[np_current] < 0 ||
-			z[np_current] > L || z[np_current] < 0){
-			// delete the particle and pack the particle array, the value of nplast changes
-			Q_removed += q[np_current];
-			del_pack(np_current,&nplast);
+    // calculate accumulated charge on the spacecraft
+    long long np_current = 0, nplast = nop-1;
+    while (np_current < nplast+1){
+        if (x[np_current] > L || x[np_current] < 0 ||
+            y[np_current] > L || y[np_current] < 0 ||
+            z[np_current] > L || z[np_current] < 0){
+            // delete the particle and pack the particle array, the value of nplast changes
+            Q_removed += q[np_current];
+            del_pack(np_current,&nplast);
 
-		} else {
-			// particle is still in the domain, procede with the next particle
-			np_current++;
-		}
-	}
-	nop = nplast +1;
-	return(Q_removed);
+        } else {
+            // particle is still in the domain, procede with the next particle
+            np_current++;
+        }
+    }
+    nop = nplast +1;
+    return(Q_removed);
 }
 /* Computes overalp of two intervals */
 double Particles3D::interval_overlap(double xd0, double xd1, double xp0, double xp1, double& xstart_interval)
 {
-	double dx_inject;
-	xstart_interval = max(xp0, xd0);
-	double xend_interval = min(xp1,xd1);
-	if(xstart_interval < xend_interval )
-		dx_inject = xend_interval-xstart_interval;
-	else
-		dx_inject = 0.0;
-	return(dx_inject);
+    double dx_inject;
+    xstart_interval = max(xp0, xd0);
+    double xend_interval = min(xp1,xd1);
+    if(xstart_interval < xend_interval )
+        dx_inject = xend_interval-xstart_interval;
+    else
+        dx_inject = 0.0;
+    return(dx_inject);
 }
 
 /* Inject from a box, checking overal with the local processor */
 int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf, double x_center_inject, double y_center_inject, double z_center_inject, double L_inject)
 {
-	double harvest;
-	double prob, theta, sign;
-	double r;
-	int avail;
-	long long store_nop=nop;
-	long long counter=nop;
+    double harvest;
+    double prob, theta, sign;
+    double r;
+    int avail;
+    long long store_nop=nop;
+    long long counter=nop;
 
-	//Vinj from the input file has hte number of particles to be injected
-	//Ninj is the RHOinject from the input file
-	double Iinj=Vinj;
-	long long npinject=1;
-	if (Iinj > 1)
-		npinject = (int)floor(Iinj);
+    //Vinj from the input file has hte number of particles to be injected
+    //Ninj is the RHOinject from the input file
+    double Iinj=Vinj;
+    long long npinject=1;
+    if (Iinj > 1)
+        npinject = (int)floor(Iinj);
 
-	double xstart_inject;
-	double dx_inject = interval_overlap(x_center_inject-L_inject,x_center_inject+L_inject, xstart, xend, xstart_inject);
-	double ystart_inject;
-	double dy_inject = interval_overlap(y_center_inject-L_inject,y_center_inject+L_inject, ystart, yend, ystart_inject);
-	double zstart_inject;
-	double dz_inject = interval_overlap(z_center_inject-L_inject,z_center_inject+L_inject, zstart, zend, zstart_inject);
+    double xstart_inject;
+    double dx_inject = interval_overlap(x_center_inject-L_inject,x_center_inject+L_inject, xstart, xend, xstart_inject);
+    double ystart_inject;
+    double dy_inject = interval_overlap(y_center_inject-L_inject,y_center_inject+L_inject, ystart, yend, ystart_inject);
+    double zstart_inject;
+    double dz_inject = interval_overlap(z_center_inject-L_inject,z_center_inject+L_inject, zstart, zend, zstart_inject);
 
-//	cout << xstart_inject  << "  " << ystart_inject << "   " << zstart_inject << endl;
-	if (dx_inject * dy_inject * dz_inject > 0.0)
-	{
+//    cout << xstart_inject  << "  " << ystart_inject << "   " << zstart_inject << endl;
+    if (dx_inject * dy_inject * dz_inject > 0.0)
+    {
 
 //cout << dx_inject * dy_inject * dz_inject  << "  " << npinject << endl;
 
-		for (int inject = 0; inject < npinject; inject++)
-		{
-			harvest =   rand()/(double)RAND_MAX ;
-			x[nop] = xstart_inject+(harvest) * dx_inject;
-			harvest =   rand()/(double)RAND_MAX ;
-			y[nop] = ystart_inject+(harvest) * dy_inject;
-			harvest =   rand()/(double)RAND_MAX ;
-			z[nop] = zstart_inject+(harvest) * dz_inject;
-			r = 1e-10+sqrt((x[nop]-Lx/2.0)*(x[nop]-Lx/2.0) +
-					(y[nop]-Ly/2.0)*(y[nop]-Ly/2.0) +
-					(z[nop]-Lz/2.0)*(z[nop]-Lz/2.0));
+        for (int inject = 0; inject < npinject; inject++)
+        {
+            harvest =   rand()/(double)RAND_MAX ;
+            x[nop] = xstart_inject+(harvest) * dx_inject;
+            harvest =   rand()/(double)RAND_MAX ;
+            y[nop] = ystart_inject+(harvest) * dy_inject;
+            harvest =   rand()/(double)RAND_MAX ;
+            z[nop] = zstart_inject+(harvest) * dz_inject;
+            r = 1e-10+sqrt((x[nop]-Lx/2.0)*(x[nop]-Lx/2.0) +
+                    (y[nop]-Ly/2.0)*(y[nop]-Ly/2.0) +
+                    (z[nop]-Lz/2.0)*(z[nop]-Lz/2.0));
 
-			q[nop] =  (qom/fabs(qom)) * rhoINJECT * dx_inject * dy_inject * dz_inject / npinject;
-			// u
-			harvest =   rand()/(double)RAND_MAX;
-			prob  = sqrt(-2.0*log(1.0-.999999*harvest));
-			harvest =   rand()/(double)RAND_MAX;
-			theta = 2.0*M_PI*harvest;
+            q[nop] =  (qom/fabs(qom)) * rhoINJECT * dx_inject * dy_inject * dz_inject / npinject;
+            // u
+            harvest =   rand()/(double)RAND_MAX;
+            prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+            harvest =   rand()/(double)RAND_MAX;
+            theta = 2.0*M_PI*harvest;
 
-			u[nop] = - v0 * (x[nop]-Lx/2.0)/r + uth*prob*cos(theta);
-			v[nop] = - v0 * (y[nop]-Ly/2.0)/r + vth*prob*sin(theta);
-			harvest =   rand()/(double)RAND_MAX;
-			prob  = sqrt(-2.0*log(1.0-.999999*harvest));
-			harvest =   rand()/(double)RAND_MAX;
-			theta = 2.0*M_PI*harvest;
-			w[nop] = - v0 * (z[nop]-Lz/2.0)/r + wth*prob*cos(theta);;
-
-
-			if (TrackParticleID)
-				ParticleID[nop]= nop*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
-
-			//printf("*** DEBUG: Added a particle at (x,y,z) = (%f,%f,%f) with (vx,vy,vz) = (%f,%f,%f)\n", x[nop], y[nop], z[nop], u[nop], v[nop], w[nop]);
-
-			nop++;
-//			cout << nop << endl;
-		}
-
-	}
-		// move particles inside the sim box
-		for (int i=store_nop; i < nop; i++){
-			x[i] += u[i]*dt;
-			y[i] += v[i]*dt;
-			z[i] += w[i]*dt;
-		}
+            u[nop] = - v0 * (x[nop]-Lx/2.0)/r + uth*prob*cos(theta);
+            v[nop] = - v0 * (y[nop]-Ly/2.0)/r + vth*prob*sin(theta);
+            harvest =   rand()/(double)RAND_MAX;
+            prob  = sqrt(-2.0*log(1.0-.999999*harvest));
+            harvest =   rand()/(double)RAND_MAX;
+            theta = 2.0*M_PI*harvest;
+            w[nop] = - v0 * (z[nop]-Lz/2.0)/r + wth*prob*cos(theta);;
 
 
-		// ******************** //
-		// COMMUNICATION
-		// ******************* //
-	    avail = communicate(vct);
-	    if (avail < 0){
-		cout <<"Cannot communicate! Failing!!!!\n";
-		return(-1);
-	    }
-	    MPI_Barrier(MPI_COMM_WORLD);
-//	    cout << "Past barrier...\n";
-	    // communicate again if particles are not in the correct domain
-	    while(isMessagingDone(vct) >0){
-			// COMMUNICATION
-			avail = communicate(vct);
+            if (TrackParticleID)
+                ParticleID[nop]= nop*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
 
-			if (avail < 0)
-		        return(-1);
-			MPI_Barrier(MPI_COMM_WORLD);
-		}
+            //printf("*** DEBUG: Added a particle at (x,y,z) = (%f,%f,%f) with (vx,vy,vz) = (%f,%f,%f)\n", x[nop], y[nop], z[nop], u[nop], v[nop], w[nop]);
+
+            nop++;
+//            cout << nop << endl;
+        }
+
+    }
+        // move particles inside the sim box
+        for (int i=store_nop; i < nop; i++){
+            x[i] += u[i]*dt;
+            y[i] += v[i]*dt;
+            z[i] += w[i]*dt;
+        }
 
 
-//	cout << "Communicated!!\n";
+        // ******************** //
+        // COMMUNICATION
+        // ******************* //
+        avail = communicate(vct);
+        if (avail < 0){
+        cout <<"Cannot communicate! Failing!!!!\n";
+        return(-1);
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+//        cout << "Past barrier...\n";
+        // communicate again if particles are not in the correct domain
+        while(isMessagingDone(vct) >0){
+            // COMMUNICATION
+            avail = communicate(vct);
 
-	return(0); // exit succcesfully (hopefully)
+            if (avail < 0)
+                return(-1);
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+
+
+//    cout << "Communicated!!\n";
+
+    return(0); // exit succcesfully (hopefully)
 
 }
 
@@ -3698,90 +3698,90 @@ int Particles3D::injector_rand_box(Grid* grid,VirtualTopology3D* vct, Field* EMf
 
 int Particles3D::injector_rand_box_mono(Grid* grid,VirtualTopology3D* vct, Field* EMf)
 {
-	double harvest;
-	double prob, theta, sign, fi;
-	int avail;
-	long long store_nop=nop;
-	long long counter=nop;
+    double harvest;
+    double prob, theta, sign, fi;
+    int avail;
+    long long store_nop=nop;
+    long long counter=nop;
 
-	//double Iinj=0.002;
-	double Iinj=Vinj;
-	long long npinject=1;
-	if (Iinj > 1)
-		npinject = (int)floor(Iinj);
+    //double Iinj=0.002;
+    double Iinj=Vinj;
+    long long npinject=1;
+    if (Iinj > 1)
+        npinject = (int)floor(Iinj);
 
-	if (vct->getCartesian_rank() == 0){
-			cout << "*** Injector Rand Box species " << ns << " ***" << NiterMover <<" ITERATIONS : INJECTING " << npinject << " particles, each with a charge of " << (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*(1.0/grid->getInvVOL()) << " C  ****" << endl;
-
-
-		for (long long inject = 0; inject < npinject; inject++)
-		{
-			harvest =   rand()/(double)RAND_MAX ;
-			x[nop] = x_center+(harvest-0.5)*L_square;
-			harvest =   rand()/(double)RAND_MAX ;
-			y[nop] = y_center+(harvest-0.5)*L_square;
-			harvest =   rand()/(double)RAND_MAX ;
-			z[nop] = z_center; //z_center+(harvest-0.5)*L_square;
-			//cout << "x=" <<x[nop] << "y=" << y[nop]<< "z=" << z[nop] <<endl;
-			//this assigns charge the same as does maxwell_box
-			q[nop] =  (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*pow(L_square,3);
-
-			// random numbers for Maxwellian
-			harvest =   rand()/(double)RAND_MAX;
-			fi  = M_PI*harvest;
-			harvest =   rand()/(double)RAND_MAX;
-			theta = 2.0*M_PI*harvest;
-
-			//u
-			u[nop] = u0 + uth*cos(fi)*cos(theta);
-
-			// v
-			v[nop] = v0 + vth*cos(fi)*sin(theta);
-
-			// w
-			w[nop] = w0 + wth*sin(fi);
-
-			if (TrackParticleID)
-				ParticleID[nop]= nop*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
-
-			//printf("*** DEBUG: Added a particle at (x,y,z) = (%f,%f,%f) with (vx,vy,vz) = (%f,%f,%f)\n", x[nop], y[nop], z[nop], u[nop], v[nop], w[nop]);
-
-			nop++;
-		}
+    if (vct->getCartesian_rank() == 0){
+            cout << "*** Injector Rand Box species " << ns << " ***" << NiterMover <<" ITERATIONS : INJECTING " << npinject << " particles, each with a charge of " << (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*(1.0/grid->getInvVOL()) << " C  ****" << endl;
 
 
-		// move particles inside the sim box
-		for (long long i=store_nop; i < nop; i++){
-			x[i] += u[i]*dt;
-			y[i] += v[i]*dt;
-			z[i] += w[i]*dt;
-		}
-	}
+        for (long long inject = 0; inject < npinject; inject++)
+        {
+            harvest =   rand()/(double)RAND_MAX ;
+            x[nop] = x_center+(harvest-0.5)*L_square;
+            harvest =   rand()/(double)RAND_MAX ;
+            y[nop] = y_center+(harvest-0.5)*L_square;
+            harvest =   rand()/(double)RAND_MAX ;
+            z[nop] = z_center; //z_center+(harvest-0.5)*L_square;
+            //cout << "x=" <<x[nop] << "y=" << y[nop]<< "z=" << z[nop] <<endl;
+            //this assigns charge the same as does maxwell_box
+            q[nop] =  (qom/fabs(qom))*(EMf->getRHOcs(1,1,1,ns)/npcel)*pow(L_square,3);
 
-		// ******************** //
-		// COMMUNICATION
-		// ******************* //
-	    avail = communicate(vct);
-	    if (avail < 0){
-		cout <<"Cannot communicate! Failing!!!!\n";
-		return(-1);
-	    }
-	    MPI_Barrier(MPI_COMM_WORLD);
-//	    cout << "Past barrier...\n";
-	    // communicate again if particles are not in the correct domain
-	    while(isMessagingDone(vct) >0){
-			// COMMUNICATION
-			avail = communicate(vct);
+            // random numbers for Maxwellian
+            harvest =   rand()/(double)RAND_MAX;
+            fi  = M_PI*harvest;
+            harvest =   rand()/(double)RAND_MAX;
+            theta = 2.0*M_PI*harvest;
 
-			if (avail < 0)
-		        return(-1);
-			MPI_Barrier(MPI_COMM_WORLD);
-		}
+            //u
+            u[nop] = u0 + uth*cos(fi)*cos(theta);
+
+            // v
+            v[nop] = v0 + vth*cos(fi)*sin(theta);
+
+            // w
+            w[nop] = w0 + wth*sin(fi);
+
+            if (TrackParticleID)
+                ParticleID[nop]= nop*(unsigned long)pow(10.0,BirthRank[1])+BirthRank[0];
+
+            //printf("*** DEBUG: Added a particle at (x,y,z) = (%f,%f,%f) with (vx,vy,vz) = (%f,%f,%f)\n", x[nop], y[nop], z[nop], u[nop], v[nop], w[nop]);
+
+            nop++;
+        }
 
 
-//	cout << "Communicated!!\n";
+        // move particles inside the sim box
+        for (long long i=store_nop; i < nop; i++){
+            x[i] += u[i]*dt;
+            y[i] += v[i]*dt;
+            z[i] += w[i]*dt;
+        }
+    }
 
-	return(0); // exit succcesfully (hopefully)
+        // ******************** //
+        // COMMUNICATION
+        // ******************* //
+        avail = communicate(vct);
+        if (avail < 0){
+        cout <<"Cannot communicate! Failing!!!!\n";
+        return(-1);
+        }
+        MPI_Barrier(MPI_COMM_WORLD);
+//        cout << "Past barrier...\n";
+        // communicate again if particles are not in the correct domain
+        while(isMessagingDone(vct) >0){
+            // COMMUNICATION
+            avail = communicate(vct);
+
+            if (avail < 0)
+                return(-1);
+            MPI_Barrier(MPI_COMM_WORLD);
+        }
+
+
+//    cout << "Communicated!!\n";
+
+    return(0); // exit succcesfully (hopefully)
 
 }
 

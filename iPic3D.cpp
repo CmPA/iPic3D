@@ -17,7 +17,7 @@ int main(int argc, char **argv) {
   /* ------------------------------ */
 
   KCode.Init(argc, argv);
-  KCode.InjectBoundaryParticles();
+//  KCode.InjectBoundaryParticles();
   KCode.GatherMoments();
 
   /* ------------ */
@@ -63,18 +63,16 @@ int main(int argc, char **argv) {
     clocks->stop(4);
 
     if (i == 0 || i%(10)==0) {
-
-        	if (KCode.get_myrank() == 0) {
-        	    std::cout << "################################################" << std::endl
-        	            << "Initialization                : " << clocks->get(0) << " s" << std::endl
-        	            << "Moments Gathering             : " << clocks->get(1) << " s" << std::endl
-        	            << "Field Calculation             : " << clocks->get(2) << " s" << std::endl
-        	            << "Particle Mover                : " << clocks->get(3) << " s" << std::endl
-        	            << "Writing                       : " << clocks->get(4) << " s" << std::endl
-        	            << "**************************************************" << std::endl;
-        	  }
+      if (KCode.get_myrank() == 0) {
+        std::cout << "################################################" << std::endl
+                  << "Initialization                : " << clocks->get(0) << " s" << std::endl
+                  << "Moments Gathering             : " << clocks->get(1) << " s" << std::endl
+                  << "Field Calculation             : " << clocks->get(2) << " s" << std::endl
+                  << "Particle Mover                : " << clocks->get(3) << " s" << std::endl
+                  << "Writing                       : " << clocks->get(4) << " s" << std::endl
+                  << "**************************************************" << std::endl;
+        }
       }
-
   }
 
 int myrank;
@@ -83,15 +81,14 @@ myrank = KCode.get_myrank();
   KCode.Finalize();
 
   if (myrank == 0) {
-          	    std::cout << "################################################" << std::endl
-          	            << "Initialization                : " << clocks->get(0) << " s" << std::endl
-          	            << "Moments Gathering             : " << clocks->get(1) << " s" << std::endl
-          	            << "Field Calculation             : " << clocks->get(2) << " s" << std::endl
-          	            << "Particle Mover                : " << clocks->get(3) << " s" << std::endl
-          	            << "Writing                       : " << clocks->get(4) << " s" << std::endl
-          	            << "----------------------------------------------------------" << std::endl
-          	            << "Total                         : " << clocks->get(5)<< " s" << std::endl;
-          	  }
-
+    std::cout << "################################################" << std::endl
+              << "Initialization                : " << clocks->get(0) << " s" << std::endl
+              << "Moments Gathering             : " << clocks->get(1) << " s" << std::endl
+              << "Field Calculation             : " << clocks->get(2) << " s" << std::endl
+              << "Particle Mover                : " << clocks->get(3) << " s" << std::endl
+              << "Writing                       : " << clocks->get(4) << " s" << std::endl
+              << "----------------------------------------------------------" << std::endl
+              << "Total                         : " << clocks->get(5)<< " s" << std::endl;
+  }
   return 0;
 }

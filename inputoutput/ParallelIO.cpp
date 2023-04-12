@@ -148,9 +148,9 @@ void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *co
   file.WriteFields(EMf->getBx(),    "Bx",  grid->getNXN(), grid->getNYN(), grid->getNZN());
   file.WriteFields(EMf->getBy(),    "By",  grid->getNXN(), grid->getNYN(), grid->getNZN());
   file.WriteFields(EMf->getBz(),    "Bz",  grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBxTot(), "Btx", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getByTot(), "Bty", grid->getNXN(), grid->getNYN(), grid->getNZN());
-  file.WriteFields(EMf->getBzTot(), "Btz", grid->getNXN(), grid->getNYN(), grid->getNZN());
+//  file.WriteFields(EMf->getBxTot(), "Btx", grid->getNXN(), grid->getNYN(), grid->getNZN());
+//  file.WriteFields(EMf->getByTot(), "Bty", grid->getNXN(), grid->getNYN(), grid->getNZN());
+//  file.WriteFields(EMf->getBzTot(), "Btz", grid->getNXN(), grid->getNYN(), grid->getNZN());
   //file.WriteFields(EMf->GetLambda(), "Lambda", grid->getNXN(), grid->getNYN(), grid->getNZN());
 
   for (int is=0; is<nspec; is++) {
@@ -162,9 +162,9 @@ void WriteFieldsH5hut(int nspec, Grid3DCU *grid, EMfields3D *EMf, Collective *co
     file.WriteFields(EMf->getJys(is),   "Jy_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
     file.WriteFields(EMf->getJzs(is),   "Jz_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
 
-    file.WriteFields(EMf->getEFxs(is),   "EFx_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
-    file.WriteFields(EMf->getEFys(is),   "EFy_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
-    file.WriteFields(EMf->getEFzs(is),   "EFz_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+//    file.WriteFields(EMf->getEFxs(is),   "EFx_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+//    file.WriteFields(EMf->getEFys(is),   "EFy_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
+//    file.WriteFields(EMf->getEFzs(is),   "EFz_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
 
     file.WriteFields(EMf->getPxx(is),   "Pxx_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());
     file.WriteFields(EMf->getPxy(is),   "Pxy_" + s_is, grid->getNXN(), grid->getNYN(), grid->getNZN());

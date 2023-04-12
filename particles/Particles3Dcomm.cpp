@@ -233,11 +233,11 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     // the cycle of the last restart is set to 0
     string name_dataset = "/particles/species_" + species_name.str() + "/x/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-	if (dataset_id < 0){
-		 nop = 0 ;
-	}
-	else
-	{
+  if (dataset_id < 0){
+     nop = 0 ;
+  }
+  else
+  {
     datatype = H5Dget_type(dataset_id);
     size = H5Tget_size(datatype);
     dataspace = H5Dget_space(dataset_id); /* dataspace handle */
@@ -304,7 +304,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
           ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
       }
     }
-	}
+  }
     // close the hdf file
     status = H5Fclose(file_id);
   }
@@ -445,7 +445,6 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
         weight[i][j][k] = xi[i] * eta[j] * zeta[k] * invVOL;
 }
 
-
 /** Interpolation Particle --> Grid */
 void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
   const double inv_dx = 1.0 / dx;
@@ -531,11 +530,11 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       Bzl += weight110 * Bz[ix - 1][iy - 1][iz]    ; //+ Fext*Bz_ext[ix-1][iy-1][iz]);
       Bzl += weight111 * Bz[ix - 1][iy - 1][iz - 1]; //+ Fext*Bz_ext[ix-1][iy-1][iz-1]);
       //
-      Exl += weight000 * Ex[ix][iy][iz]	           ; //+ Fext * Ex_ext[ix][iy][iz]);
-      Exl += weight001 * Ex[ix][iy][iz - 1] 	   ; //+ Fext * Ex_ext[ix][iy][iz - 1]);
-      Exl += weight010 * Ex[ix][iy - 1][iz] 	   ; //+ Fext * Ex_ext[ix][iy - 1][iz]);
+      Exl += weight000 * Ex[ix][iy][iz]             ; //+ Fext * Ex_ext[ix][iy][iz]);
+      Exl += weight001 * Ex[ix][iy][iz - 1]      ; //+ Fext * Ex_ext[ix][iy][iz - 1]);
+      Exl += weight010 * Ex[ix][iy - 1][iz]      ; //+ Fext * Ex_ext[ix][iy - 1][iz]);
       Exl += weight011 * Ex[ix][iy - 1][iz - 1]    ; //+ Fext * Ex_ext[ix][iy - 1][iz - 1]);
-      Exl += weight100 * Ex[ix - 1][iy][iz] 	   ; //+ Fext * Ex_ext[ix - 1][iy][iz]);
+      Exl += weight100 * Ex[ix - 1][iy][iz]      ; //+ Fext * Ex_ext[ix - 1][iy][iz]);
       Exl += weight101 * Ex[ix - 1][iy][iz - 1]    ; //+ Fext * Ex_ext[ix - 1][iy][iz - 1]);
       Exl += weight110 * Ex[ix - 1][iy - 1][iz]    ; //+ Fext * Ex_ext[ix - 1][iy - 1][iz]);
       Exl += weight111 * Ex[ix - 1][iy - 1][iz - 1]; //+ Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
@@ -544,7 +543,7 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       Eyl += weight001 * Ey[ix][iy][iz - 1]        ; //+ Fext * Ey_ext[ix][iy][iz - 1]);
       Eyl += weight010 * Ey[ix][iy - 1][iz]        ; //+ Fext * Ey_ext[ix][iy - 1][iz]);
       Eyl += weight011 * Ey[ix][iy - 1][iz - 1]    ; //+ Fext * Ey_ext[ix][iy - 1][iz - 1]);
-      Eyl += weight100 * Ey[ix - 1][iy][iz] 	   ; //+ Fext * Ey_ext[ix - 1][iy][iz]);
+      Eyl += weight100 * Ey[ix - 1][iy][iz]      ; //+ Fext * Ey_ext[ix - 1][iy][iz]);
       Eyl += weight101 * Ey[ix - 1][iy][iz - 1]    ; //+ Fext * Ey_ext[ix - 1][iy][iz - 1]);
       Eyl += weight110 * Ey[ix - 1][iy - 1][iz]    ; //+ Fext * Ey_ext[ix - 1][iy - 1][iz]);
       Eyl += weight111 * Ey[ix - 1][iy - 1][iz - 1]; //+ Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
@@ -553,7 +552,7 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
       Ezl += weight001 * Ez[ix][iy][iz - 1]        ; //+ Fext * Ez_ext[ix][iy][iz - 1]);
       Ezl += weight010 * Ez[ix][iy - 1][iz]        ; //+ Fext * Ez_ext[ix][iy - 1][iz]);
       Ezl += weight011 * Ez[ix][iy - 1][iz - 1]    ; //+ Fext * Ez_ext[ix][iy - 1][iz - 1]);
-      Ezl += weight100 * Ez[ix - 1][iy][iz] 	   ; //+ Fext * Ez_ext[ix - 1][iy][iz]);
+      Ezl += weight100 * Ez[ix - 1][iy][iz]      ; //+ Fext * Ez_ext[ix - 1][iy][iz]);
       Ezl += weight101 * Ez[ix - 1][iy][iz - 1]    ; //+ Fext * Ez_ext[ix - 1][iy][iz - 1]);
       Ezl += weight110 * Ez[ix - 1][iy - 1][iz]    ; //+ Fext * Ez_ext[ix - 1][iy - 1][iz]);
       Ezl += weight111 * Ez[ix - 1][iy - 1][iz - 1]; //+ Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
@@ -739,6 +738,140 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
 
   // communicate contribution from ghost cells 
   EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
+}
+
+/** Interpolation Particle --> Grid SPECIFIC FOR OUTPUT */
+void Particles3Dcomm::interpP2GOutput(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
+  const double inv_dx = 1.0 / dx;
+  const double inv_dy = 1.0 / dy;
+  const double inv_dz = 1.0 / dz;
+  const double nxn = grid->getNXN();
+  const double nyn = grid->getNYN();
+  const double nzn = grid->getNZN();
+  const double ddd = qom*dt/2;  
+
+  //#pragma omp parallel
+  {
+    //Moments speciesMoments(nxn,nyn,nzn,invVOL);
+    //speciesMoments.set_to_zero();
+    //#pragma omp for
+    for (register long long i = 0; i < nop; i++) {
+      const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
+      const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
+      const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
+      double temp[2][2][2];
+      double xi[2], eta[2], zeta[2];
+      xi[0] = x[i] - grid->getXN(ix - 1, iy, iz);
+      eta[0] = y[i] - grid->getYN(ix, iy - 1, iz);
+      zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
+      xi[1] = grid->getXN(ix, iy, iz) - x[i];
+      eta[1] = grid->getYN(ix, iy, iz) - y[i];
+      zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+    
+      // Helper quantities 
+      double upx = u[i];
+      double upy = v[i];
+      double upz = w[i];
+      double gp = sqrt(1. + (upx*upx+upy*upy+upz*upz)/c/c);
+      double vpx = u[i]/gp;
+      double vpy = v[i]/gp;
+      double vpz = w[i]/gp;
+
+      /* PARTICLE --> GRID DEPOSITION */
+      double weight[2][2][2];
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++) {
+            weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+          }
+
+      // Charge density: NOT NEEDED! Already deposited for field update 
+      // EMf->addRho(weight, ix, iy, iz, ns);
+
+      // Current - X
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vpx * weight[ii][jj][kk];
+      EMf->addJx(temp, ix, iy, iz, ns);
+      // Current - Y
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vpy * weight[ii][jj][kk];
+      EMf->addJy(temp, ix, iy, iz, ns);
+      // Current - Z
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = vpz * weight[ii][jj][kk];
+      EMf->addJz(temp, ix, iy, iz, ns);
+
+      // Pressure tensor - XX
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = upx * vpx * weight[ii][jj][kk];
+      EMf->addPxx(temp, ix, iy, iz, ns);
+      // Pressure tensor - XY
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = upx * vpy * weight[ii][jj][kk];
+      EMf->addPxy(temp, ix, iy, iz, ns);
+      // Pressure tensor - XZ
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = upx * vpz * weight[ii][jj][kk];
+      EMf->addPxz(temp, ix, iy, iz, ns);
+      // Pressure tensor - YY
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = upy * vpy * weight[ii][jj][kk];
+      EMf->addPyy(temp, ix, iy, iz, ns);
+      // Hat pressure tensor - YZ
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = upy * vpz * weight[ii][jj][kk];
+      EMf->addPyz(temp, ix, iy, iz, ns);
+      // Pressure tensor - ZZ
+      for (int ii = 0; ii < 2; ii++)
+        for (int jj = 0; jj < 2; jj++)
+          for (int kk = 0; kk < 2; kk++)
+            temp[ii][jj][kk] = upz * vpz * weight[ii][jj][kk];
+      EMf->addPzz(temp, ix, iy, iz, ns);
+    }
+
+      // change this to allow more parallelization after implementing array class
+      //#pragma omp critical
+      //EMf->addToSpeciesMoments(speciesMoments,ns);
+   
+//    // add energy flux density - X
+//    for (int ii = 0; ii < 2; ii++)
+//      for (int jj = 0; jj < 2; jj++)
+//        for (int kk = 0; kk < 2; kk++)
+//          temp[ii][jj][kk] = u[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+//    EMf->addEFx(temp, ix, iy, iz, ns);
+//    // add energy flux density - Y
+//    for (int ii = 0; ii < 2; ii++)
+//      for (int jj = 0; jj < 2; jj++)
+//        for (int kk = 0; kk < 2; kk++)
+//          temp[ii][jj][kk] = v[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+//    EMf->addEFy(temp, ix, iy, iz, ns);
+//    // add energy flux density - Z
+//    for (int ii = 0; ii < 2; ii++)
+//      for (int jj = 0; jj < 2; jj++)
+//        for (int kk = 0; kk < 2; kk++)
+//          temp[ii][jj][kk] = w[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+//    EMf->addEFz(temp, ix, iy, iz, ns);
+    
+  }
+
+  // communicate contribution from ghost cells 
+  EMf->communicateGhostP2GOutput(ns, 0, 0, 0, 0, vct);
 }
 
 /** communicate buffers */
@@ -1287,27 +1420,27 @@ double Particles3Dcomm::getKe() {
 /** return the total charge */
 double Particles3Dcomm::getTotalQ(){
     double localQ = 0.0;
-	double totalQ = 0.0;
-	for (register int i=0; i < nop; i++)
-	       localQ += q[i];
-	//cout << "My q is: " << localQ << endl;
+  double totalQ = 0.0;
+  for (register int i=0; i < nop; i++)
+         localQ += q[i];
+  //cout << "My q is: " << localQ << endl;
     MPI_Allreduce(&localQ, &totalQ, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	return(totalQ);
+  return(totalQ);
 }
 /** return the total charge inside prescribed core region */
 double Particles3Dcomm::getCoreQ(double radius){
     double localQ = 0.0;
-	double totalQ = 0.0;
-	for (register int i=0; i < nop; i++)
-		if (pow(x[i] - x_center, 2) +
-			pow(y[i] - y_center, 2) +
-			pow(z[i] - z_center, 2) <=
-			pow(radius, 2) ) {
-	       localQ += q[i];
-		}
-	//cout << "My q is: " << localQ << endl;
+  double totalQ = 0.0;
+  for (register int i=0; i < nop; i++)
+    if (pow(x[i] - x_center, 2) +
+      pow(y[i] - y_center, 2) +
+      pow(z[i] - z_center, 2) <=
+      pow(radius, 2) ) {
+         localQ += q[i];
+    }
+  //cout << "My q is: " << localQ << endl;
     MPI_Allreduce(&localQ, &totalQ, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-	return(totalQ);
+  return(totalQ);
 }
 
 /** return the total momentum */

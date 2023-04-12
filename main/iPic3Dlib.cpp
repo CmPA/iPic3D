@@ -29,7 +29,7 @@ int c_Solver::Init(int argc, char **argv) {
   first_cycle = col->getLast_cycle() + 1; // get the last cycle from the restart
   qom  = new double[ns];
   for (int i=0; i < ns; i++)
-  	qom[i] = col->getQOM(i);
+      qom[i] = col->getQOM(i);
 
   x_center = col->getx_center();
   y_center = col->gety_center();
@@ -175,7 +175,7 @@ int c_Solver::Init(int argc, char **argv) {
           if (col->getRHOinit(i) > 0.0)
             part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
           else
-       	    part[i].empty(grid, EMf, vct);
+               part[i].empty(grid, EMf, vct);
         }
         else if (col->getCase()=="TwoCoils"){
           if (col->getRHOinit(i) > 0.0)
@@ -262,22 +262,22 @@ int c_Solver::Init(int argc, char **argv) {
   nsaty=3;
   nsatz=3;
   if(vct->getXLEN() == 1){
-	  nsatx=1;
+      nsatx=1;
   }
   if(vct->getYLEN() == 1){
-	  nsaty=1;
+      nsaty=1;
   }
   if(vct->getZLEN() == 1){
-	  nsatz=1;
+      nsatz=1;
   }
   my_file << nsatx*nsaty*nsatz << "\t" <<nsatx << "\t" <<nsaty << "\t" <<nsatz << endl;
   for (int isat=0; isat < nsatx; isat++){
       for (int jsat=0; jsat < nsaty; jsat++){
-    	  for (int ksat=0; ksat < nsatz; ksat++){
-      	    int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
-      	    int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
-      	    int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
-    	    my_file <<  grid->getXC(index1,index2,index3) << "\t" << grid->getYC(index1,index2,index3) << "\t" << grid->getZC(index1,index2,index3) << endl;
+          for (int ksat=0; ksat < nsatz; ksat++){
+              int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+              int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+              int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
+            my_file <<  grid->getXC(index1,index2,index3) << "\t" << grid->getYC(index1,index2,index3) << "\t" << grid->getZC(index1,index2,index3) << endl;
       }}}
   my_file.close();
 */
@@ -449,7 +449,7 @@ void c_Solver::InjectBoundaryParticles(){
   if (col->getCase()=="Dipole") {
     for (int i=0; i < ns; i++){
       if (col->getRHOinject(i)>0.0)
-       	mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
+           mem_avail = part[i].particle_repopulator(grid,vct,EMf,i);
         Qremoved[i] = part[i].deleteParticlesInsideSphere(col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
     }
   }
@@ -573,13 +573,13 @@ void c_Solver::WriteConserved(int cycle) {
       //ofstream my_file2(cq2.c_str(),fstream::app);
       //my_file2 << cycle << "\t" <<setprecision(15);
       //for (int i = 0; i < ns; i++)
-      //	my_file2 << Ke[i] << "\t";
+      //    my_file2 << Ke[i] << "\t";
       //for (int i = 0; i < ns; i++)
-      //	my_file2 << BulkEnergy[i] << "\t";
+      //    my_file2 << BulkEnergy[i] << "\t";
       //for (int i = 0; i < ns; i++)
-      //	my_file2 << Qtot[i] << "\t";
+      //    my_file2 << Qtot[i] << "\t";
       //for (int i = 0; i < ns; i++)
-      //		my_file2 << globalTotParticles[i] << "\t";
+      //        my_file2 << globalTotParticles[i] << "\t";
       //for (int i = 0; i < ns; i++)
       //my_file2 << speciesTemp[i] << "\t";
       //my_file2 << endl;
@@ -617,10 +617,16 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    if (cycle%(col->getFieldOutputCycle())==0) {
+      EMf->setZeroDensitiesOutput();                  // set to zero the densities
+      for (int i = 0; i < ns; i++)
+        part[i].interpP2GOutput(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
+
+      WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    }
     //if (cycle%(col->getParticlesOutputCycle())==0 &&
     //    cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    if (cycle%(col->getParticlesOutputCycle())==0)    WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
   }
   else
@@ -643,62 +649,62 @@ void c_Solver::WriteOutput(int cycle) {
 /*
     bool binary_satellites = false;
     if(binary_satellites){
-	float time_counter = cycle;
-	float trace_counter = 0.0;
-	float outta = 0.0;
+    float time_counter = cycle;
+    float trace_counter = 0.0;
+    float outta = 0.0;
     ofstream my_file(cqsat.c_str(),ofstream::app | ofstream::binary );
-		             for (int isat=0; isat < nsatx; isat++)
-			             for (int jsat=0; jsat < nsaty; jsat++)
-				             for (int ksat=0; ksat < nsatz; ksat++){
-			             	int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
-			             	int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
-			              	int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
-			              		 trace_counter = trace_counter +1.0;
-				            	 my_file.write((char*)&time_counter,sizeof(float));
-				            	 my_file.write((char*)&trace_counter,sizeof(float));
-				            	 //my_file << time_counter << "\t" <<trace_counter << "\t";
+                     for (int isat=0; isat < nsatx; isat++)
+                         for (int jsat=0; jsat < nsaty; jsat++)
+                             for (int ksat=0; ksat < nsatz; ksat++){
+                             int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+                             int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+                              int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
+                                   trace_counter = trace_counter +1.0;
+                                 my_file.write((char*)&time_counter,sizeof(float));
+                                 my_file.write((char*)&trace_counter,sizeof(float));
+                                 //my_file << time_counter << "\t" <<trace_counter << "\t";
 
-				            	 outta = EMf->getBx(index1,index2,index3);
-				            	 my_file.write((char*)&outta,sizeof(float));
-				            	 //my_file << outta << "\t";
-				            	 outta = EMf->getBy(index1,index2,index3);
-				            	 my_file.write((char*)&outta,sizeof(float));
-				            	 //my_file << outta << "\t";
-				            	 outta = EMf->getBz(index1,index2,index3);
-				            	 my_file.write((char*)&outta,sizeof(float));
-				            	 //my_file << outta << "\t";
+                                 outta = EMf->getBx(index1,index2,index3);
+                                 my_file.write((char*)&outta,sizeof(float));
+                                 //my_file << outta << "\t";
+                                 outta = EMf->getBy(index1,index2,index3);
+                                 my_file.write((char*)&outta,sizeof(float));
+                                 //my_file << outta << "\t";
+                                 outta = EMf->getBz(index1,index2,index3);
+                                 my_file.write((char*)&outta,sizeof(float));
+                                 //my_file << outta << "\t";
 
-				            	 outta = EMf->getEx(index1,index2,index3);
-				            	 my_file.write((char*)&outta,sizeof(float));
-				            	 //my_file << outta << "\t";
-				            	 outta = EMf->getEy(index1,index2,index3);
-				            	 my_file.write((char*)&outta,sizeof(float));
-				            	 //my_file << outta << "\t";
-				            	 outta = EMf->getEz(index1,index2,index3);
-				            	 my_file.write((char*)&outta,sizeof(float));
-				            	 //my_file << outta << "\t";
+                                 outta = EMf->getEx(index1,index2,index3);
+                                 my_file.write((char*)&outta,sizeof(float));
+                                 //my_file << outta << "\t";
+                                 outta = EMf->getEy(index1,index2,index3);
+                                 my_file.write((char*)&outta,sizeof(float));
+                                 //my_file << outta << "\t";
+                                 outta = EMf->getEz(index1,index2,index3);
+                                 my_file.write((char*)&outta,sizeof(float));
+                                 //my_file << outta << "\t";
 
-				            	 for (int is=0;is<2; is++){
-				            		 outta = EMf->getRHOns(index1,index2,index3,is);
-				            		 if(ns>3)outta += EMf->getRHOns(index1,index2,index3,is+2);
-				            		 my_file.write((char*)&outta,sizeof(float));
-					            	 //my_file << outta << "\t";
-				            		 outta = EMf->getJxs(index1,index2,index3,is);
-				            		 if(ns>3)outta += EMf->getJxs(index1,index2,index3,is+2);
-				            		 my_file.write((char*)&outta,sizeof(float));
-					            	 //my_file << outta << "\t";
-				            		 outta = EMf->getJys(index1,index2,index3,is);
-				            		 if(ns>3)outta += EMf->getJys(index1,index2,index3,is+2);
-				            		 my_file.write((char*)&outta,sizeof(float));
-					            	 //my_file << outta << "\t";
-				            		 outta = EMf->getJzs(index1,index2,index3,is);
-				            		 if(ns>3)outta += EMf->getJzs(index1,index2,index3,is+2);
-				            		 my_file.write((char*)&outta,sizeof(float));
-				            		 //my_file << outta << "\t"
-				            	 }
-				            	 //my_file  << endl;
-				             }
-			         my_file.close();
+                                 for (int is=0;is<2; is++){
+                                     outta = EMf->getRHOns(index1,index2,index3,is);
+                                     if(ns>3)outta += EMf->getRHOns(index1,index2,index3,is+2);
+                                     my_file.write((char*)&outta,sizeof(float));
+                                     //my_file << outta << "\t";
+                                     outta = EMf->getJxs(index1,index2,index3,is);
+                                     if(ns>3)outta += EMf->getJxs(index1,index2,index3,is+2);
+                                     my_file.write((char*)&outta,sizeof(float));
+                                     //my_file << outta << "\t";
+                                     outta = EMf->getJys(index1,index2,index3,is);
+                                     if(ns>3)outta += EMf->getJys(index1,index2,index3,is+2);
+                                     my_file.write((char*)&outta,sizeof(float));
+                                     //my_file << outta << "\t";
+                                     outta = EMf->getJzs(index1,index2,index3,is);
+                                     if(ns>3)outta += EMf->getJzs(index1,index2,index3,is+2);
+                                     my_file.write((char*)&outta,sizeof(float));
+                                     //my_file << outta << "\t"
+                                 }
+                                 //my_file  << endl;
+                             }
+                     my_file.close();
     }
     else {
     if (ns > 2) {
@@ -706,9 +712,9 @@ void c_Solver::WriteOutput(int cycle) {
       for (int isat = 0; isat < nsatx; isat++)
         for (int jsat = 0; jsat < nsaty; jsat++)
           for (int ksat = 0; ksat < nsatz; ksat++) {
-         	int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
-         	int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
-          	int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
+             int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+             int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+              int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
             my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
             my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
             my_file << EMf->getJxs(index1, index2, index3, 0) + EMf->getJxs(index1, index2, index3, 2) << "\t" << EMf->getJys(index1, index2, index3, 0) + EMf->getJys(index1, index2, index3, 2) << "\t" << EMf->getJzs(index1, index2, index3, 0) + EMf->getJzs(index1, index2, index3, 2) << "\t";
@@ -724,9 +730,9 @@ void c_Solver::WriteOutput(int cycle) {
               for (int isat = 0; isat < nsatx; isat++)
                 for (int jsat = 0; jsat < nsaty; jsat++)
                   for (int ksat = 0; ksat < nsatz; ksat++) {
-                   	int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
-                   	int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
-                    	int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
+                       int index1 = 1+isat*nx0/nsatx+nx0/nsatx/2;
+                       int index2 = 1+jsat*ny0/nsaty+ny0/nsaty/2;
+                        int index3 = 1+ksat*nz0/nsatz+nz0/nsatz/2;
                     my_file << EMf->getBx(index1, index2, index3) << "\t" << EMf->getBy(index1, index2, index3) << "\t" << EMf->getBz(index1, index2, index3) << "\t";
                     my_file << EMf->getEx(index1, index2, index3) << "\t" << EMf->getEy(index1, index2, index3) << "\t" << EMf->getEz(index1, index2, index3) << "\t";
                     my_file << EMf->getJxs(index1, index2, index3, 0)  << "\t" << EMf->getJys(index1, index2, index3, 0)  << "\t" << EMf->getJzs(index1, index2, index3, 0)  << "\t";
