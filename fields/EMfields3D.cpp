@@ -426,14 +426,10 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
-  // apply to smooth to electric field Nvolte times
-  if (SmoothType=="default")       smoothEth(Smooth, Nvolte, vct, col);
-  else if (SmoothType=="binomial") smoothBinomialEth(Smooth, Nvolte, grid, vct, col);
-
-  communicateNodeBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-  communicateNodeBC(nxn, nyn, nzn, Eyth, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-  communicateNodeBC(nxn, nyn, nzn, Ezth, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
-
+  // apply smoothing to electric field Nvolte times
+  applySmoothing(Exth, 1, grid, vct, col, "Ex");
+  applySmoothing(Eyth, 1, grid, vct, col, "Ey");
+  applySmoothing(Ezth, 1, grid, vct, col, "Ez");
 
   // OpenBC
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
@@ -672,11 +668,130 @@ void EMfields3D::MUdot(double ***MUdotX, double ***MUdotY, double ***MUdotZ, dou
 
 }
 
-void EMfields3D::smoothBinomial(double value, int nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct, Collective *col) {
+void EMfields3D::applySmoothing(double ***data, int gridType, Grid * grid, VirtualTopology3D * vct, Collective *col, string field) {
+
+  // Apply smoothing of chosen type
+  if (SmoothType=="default") // Standard ipic smoothing
+    smoothDefault(data, gridType, grid, vct, col, field);
+  else if (SmoothType=="binomial") // Binomial smoothing (slower)
+    smoothBinomial(data, gridType, grid, vct, col, field);
+  else if (SmoothType=="directional") // Directional smoothing ecsim-like
+    smoothDirectional(data, gridType, grid, vct, col, field);
+}
+
+void EMfields3D::smoothDefault(double ***data, int gridType, Grid * grid, VirtualTopology3D * vct, Collective *col, string field) {
+
+  /* GridType: 
+     0 -> Cell-centered field (B)
+     1 -> Node-centered field (E)
+     2 -> Cell-centered source (rho)
+     3 -> Node-centered source (J)
+  */
+
+  int bc[6];
+  if      (field == "Ex") for (int i=0; i<6; i++) bc[i] = col->bcEx[i];
+  else if (field == "Ey") for (int i=0; i<6; i++) bc[i] = col->bcEy[i];
+  else if (field == "Ez") for (int i=0; i<6; i++) bc[i] = col->bcEz[i];
+  else if (field == "Bx") for (int i=0; i<6; i++) bc[i] = col->bcBx[i];
+  else if (field == "By") for (int i=0; i<6; i++) bc[i] = col->bcBy[i];
+  else if (field == "Bz") for (int i=0; i<6; i++) bc[i] = col->bcBz[i];
+  else                    for (int i=0; i<6; i++) bc[i] = 2;
+
+  if (Smooth != 1.0) {
+    double alpha;
+    int nx, ny, nz;
+    if (gridType==0 || gridType==2) {
+      nx = grid->getNXC();
+      ny = grid->getNYC();
+      nz = grid->getNZC();
+    }
+    else  {
+      nx = grid->getNXN();
+      ny = grid->getNYN();
+      nz = grid->getNZN();
+    }
+    double ***temp = newArr3(double, nx, ny, nz);
+
+    for (int icount = 1; icount < Nvolte + 1; icount++) {
+
+      if (icount>1) {
+        if      (gridType==0) communicateCenterBoxStencilBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+        else if (gridType==1) communicateNodeBoxStencilBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+        else if (gridType==2) communicateCenterBoxStencilBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+        else if (gridType==3) communicateNodeBoxStencilBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      }
+
+      if (grid->getNYC()==1 && grid->getNZC()==1) {  // 1D: smoothing only in x 
+        double alpha = (1.0 - Smooth) / 2.0;
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              temp[i][j][k] = Smooth * data[i][j][k] + alpha * (data[i - 1][j][k] + data[i + 1][j][k]);
+
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              data[i][j][k] = temp[i][j][k];
+
+      }
+      else if (grid->getNZC()==1) { // 2D: smoothing only in x and y
+        double alpha = (1.0 - Smooth) / 4.0;
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              temp[i][j][k] = Smooth * data[i][j][k] + alpha * (data[i - 1][j][k] + data[i + 1][j][k] +
+                                                                data[i][j - 1][k] + data[i][j + 1][k]);
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              data[i][j][k] = temp[i][j][k];
+
+      }
+      else { // 3D: smoothing in x and y and z
+        double alpha = (1.0 - Smooth) / 6.0;
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              temp[i][j][k] = Smooth * data[i][j][k] + alpha * (data[i - 1][j][k] + data[i + 1][j][k] +
+                                                                data[i][j - 1][k] + data[i][j + 1][k] +
+                                                                data[i][j][k - 1] + data[i][j][k + 1]);
+        for (int i = 1; i < nx - 1; i++)
+          for (int j = 1; j < ny - 1; j++)
+            for (int k = 1; k < nz - 1; k++)
+              data[i][j][k] = temp[i][j][k];
+      }
+    }
+    delArr3(temp, nx, ny);
+
+    if      (gridType==0) communicateCenterBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+    else if (gridType==1) communicateNodeBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+    else if (gridType==2) communicateCenterBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+    else if (gridType==3) communicateNodeBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+
+  }
+}
+
+void EMfields3D::smoothBinomial(double ***data, int gridType, Grid * grid, VirtualTopology3D * vct, Collective *col, string field) {
+
+  /* GridType: 
+     0 -> Cell-centered field (B)
+     1 -> Node-centered field (E)
+     2 -> Cell-centered source (rho)
+     3 -> Node-centered source (J)
+  */
+
+  int bc[6];
+  if      (field == "Ex") for (int i=0; i<6; i++) bc[i] = col->bcEx[i];
+  else if (field == "Ey") for (int i=0; i<6; i++) bc[i] = col->bcEy[i];
+  else if (field == "Ez") for (int i=0; i<6; i++) bc[i] = col->bcEz[i];
+  else if (field == "Bx") for (int i=0; i<6; i++) bc[i] = col->bcBx[i];
+  else if (field == "By") for (int i=0; i<6; i++) bc[i] = col->bcBy[i];
+  else if (field == "Bz") for (int i=0; i<6; i++) bc[i] = col->bcBz[i];
+  else                    for (int i=0; i<6; i++) bc[i] = 2;
 
   int nx1, ny1, nz1;
   int nx2, ny2, nz2;
-  if (type == 0) { // Center vector
+  if (gridType==0 || gridType==2) { // Center vector
     nx1 = grid->getNXC();
     ny1 = grid->getNYC();
     nz1 = grid->getNZC();
@@ -694,281 +809,113 @@ void EMfields3D::smoothBinomial(double value, int nvolte, double ***vector, int 
   }
   double ***temp = newArr3(double, nx2, ny2, nz2);
 
-  for (int icount = 1; icount < nvolte + 1; icount++) {
+  for (int icount = 1; icount < Nvolte + 1; icount++) {
 
-    if (type==0) {
-      grid->interpC2N(temp, vector);
-      communicateNodeBC_P(nx2, ny2, nz2, temp, 2, 2, 2, 2, 2, 2, vct);
-      grid->interpN2C(vector,temp);
-      communicateCenterBC_P(nx1, ny1, nz1, vector, 2, 2, 2, 2, 2, 2, vct);
+    if (gridType==0 || gridType==2) {
+      grid->interpC2N(temp, data);
+      if (gridType==0) communicateNodeBC(nx2, ny2, nz2, temp, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else             communicateNodeBC_P(nx2, ny2, nz2, temp, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      grid->interpN2C(data,temp);
+      if (gridType==0) communicateCenterBC(nx1, ny1, nz1, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else             communicateCenterBC_P(nx1, ny1, nz1, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
     }
     else {
-      grid->interpN2C(temp, vector);
-      communicateCenterBC_P(nx2, ny2, nz2, temp, 2, 2, 2, 2, 2, 2, vct);
-      grid->interpC2N(vector,temp);
-      communicateNodeBC_P(nx1, ny1, nz1, vector, 2, 2, 2, 2, 2, 2, vct);
+      grid->interpN2C(temp, data);
+      if (gridType==1) communicateCenterBC(nx2, ny2, nz2, temp, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else communicateCenterBC_P(nx2, ny2, nz2, temp, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      grid->interpC2N(data,temp);
+      if (gridType==1) communicateNodeBC(nx1, ny1, nz1, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else             communicateNodeBC_P(nx1, ny1, nz1, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
     }
   }
   delArr3(temp, nx2, ny2);
 }
 
-/* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smooth(double value, int nvolte, double ***vector, int type, Grid * grid, VirtualTopology3D * vct, Collective *col) {
+void EMfields3D::smoothDirectional(double ***data, int gridType, Grid * grid, VirtualTopology3D * vct, Collective *col, string field) {
 
-  for (int icount = 1; icount < nvolte + 1; icount++) {
+  /* GridType: 
+     0 -> Cell-centered field (B)
+     1 -> Node-centered field (E)
+     2 -> Cell-centered source (rho)
+     3 -> Node-centered source (J)
+  */
 
-    if (value != 1.0) {
-      double alpha;
-      int nx, ny, nz;
-      switch (type) {
-        case (0):
-          nx = grid->getNXC();
-          ny = grid->getNYC();
-          nz = grid->getNZC();
-          communicateCenterBoxStencilBC_P(nx, ny, nz, vector, 2, 2, 2, 2, 2, 2, vct);
+  int bc[6];
+  if      (field == "Ex") for (int i=0; i<6; i++) bc[i] = col->bcEx[i];
+  else if (field == "Ey") for (int i=0; i<6; i++) bc[i] = col->bcEy[i];
+  else if (field == "Ez") for (int i=0; i<6; i++) bc[i] = col->bcEz[i];
+  else if (field == "Bx") for (int i=0; i<6; i++) bc[i] = col->bcBx[i];
+  else if (field == "By") for (int i=0; i<6; i++) bc[i] = col->bcBy[i];
+  else if (field == "Bz") for (int i=0; i<6; i++) bc[i] = col->bcBz[i];
+  else                    for (int i=0; i<6; i++) bc[i] = 2;
 
-          break;
-        case (1):
-          nx = grid->getNXN();
-          ny = grid->getNYN();
-          nz = grid->getNZN();
-          communicateNodeBoxStencilBC_P(nx, ny, nz, vector, 2, 2, 2, 2, 2, 2, vct);
-          break;
-      }
-      double ***temp = newArr3(double, nx, ny, nz);
-      if (icount % 2 == 1) {
-        value = 0.;
-      }
-      else {
-        value = 0.5;
-      }
-      if (col->getNzc() == 1) { // 2D case
-        alpha = (1.0 - value) / 4.;
-        for (int i = 1; i < nx - 1; i++)
-          for (int j = 1; j < ny - 1; j++)
-            for (int k = 1; k < nz - 1; k++)
-              temp[i][j][k] = value * vector[i][j][k] + alpha * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k]);
-        for (int i = 1; i < nx - 1; i++)
-          for (int j = 1; j < ny - 1; j++)
-            for (int k = 1; k < nz - 1; k++)
-              vector[i][j][k] = temp[i][j][k];
-      }
-      else { // 3D case
-        alpha = (1.0 - value) / 6;
-        for (int i = 1; i < nx - 1; i++)
-          for (int j = 1; j < ny - 1; j++)
-            for (int k = 1; k < nz - 1; k++)
-              temp[i][j][k] = value * vector[i][j][k] + alpha * (vector[i - 1][j][k] + vector[i + 1][j][k] + vector[i][j - 1][k] + vector[i][j + 1][k] + vector[i][j][k - 1] + vector[i][j][k + 1]);
-        for (int i = 1; i < nx - 1; i++)
-          for (int j = 1; j < ny - 1; j++)
-            for (int k = 1; k < nz - 1; k++)
-              vector[i][j][k] = temp[i][j][k];
-      }
-      delArr3(temp, nx, ny);
+  if (Smooth != 1.0) {
+    double alpha;
+    int nx, ny, nz;
+    if (gridType==0 || gridType==2) {
+      nx = grid->getNXC();
+      ny = grid->getNYC();
+      nz = grid->getNZC();
     }
-  }
-}
-
-/* Interpolation smoothing: Smoothing (vector must already have ghost cells) TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector ; type = 1 --> node based vector ; */
-void EMfields3D::smoothE(double value,  int nvolte, VirtualTopology3D * vct, Collective *col) {
-
-  for (int icount = 1; icount < nvolte + 1; icount++) {
-    if (value != 1.0) {
-      double alpha;
-      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ex, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ey, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ez, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
-
-      double ***temp = newArr3(double, nxn, nyn, nzn);
-      if (icount % 2 == 1) {
-        value = 0.;
-      }
-      else {
-        value = 0.5;
-      }
-      if (col->getNzc() == 1) { // 2D case
-        alpha = (1.0 - value) / 4.;
-        // Exth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Ex[i][j][k] + alpha * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Ex[i][j][k] = temp[i][j][k];
-        // Eyth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Ey[i][j][k] + alpha * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-            Ey[i][j][k] = temp[i][j][k];
-        // Ezth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Ez[i][j][k] = temp[i][j][k];
-      }
-      else { // 3D case
-        alpha = (1.0 - value) / 6;
-        // Exth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Ex[i][j][k] + alpha * (Ex[i - 1][j][k] + Ex[i + 1][j][k] + Ex[i][j - 1][k] + Ex[i][j + 1][k] + Ex[i][j][k - 1] + Ex[i][j][k + 1]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Ex[i][j][k] = temp[i][j][k];
-        // Eyth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Ey[i][j][k] + alpha * (Ey[i - 1][j][k] + Ey[i + 1][j][k] + Ey[i][j - 1][k] + Ey[i][j + 1][k] + Ey[i][j][k - 1] + Ey[i][j][k + 1]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Ey[i][j][k] = temp[i][j][k];
-        // Ezth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Ez[i][j][k] + alpha * (Ez[i - 1][j][k] + Ez[i + 1][j][k] + Ez[i][j - 1][k] + Ez[i][j + 1][k] + Ez[i][j][k - 1] + Ez[i][j][k + 1]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Ez[i][j][k] = temp[i][j][k];
-      }
-
-      delArr3(temp, nxn, nyn);
+    else  {
+      nx = grid->getNXN();
+      ny = grid->getNYN();
+      nz = grid->getNZN();
     }
-  }
-}
+    double ***temp = newArr3(double, nx, ny, nz);
 
-void EMfields3D::smoothEth(double value,  int nvolte, VirtualTopology3D * vct, Collective *col) {
+    for (int icount = 1; icount < Nvolte + 1; icount++) {
 
-  for (int icount = 1; icount < nvolte + 1; icount++) {
-    if (value != 1.0) {
-      double alpha;
-      communicateNodeBoxStencilBC(nxn, nyn, nzn, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-      communicateNodeBoxStencilBC(nxn, nyn, nzn, Eyth, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-      communicateNodeBoxStencilBC(nxn, nyn, nzn, Ezth, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
-
-      double ***temp = newArr3(double, nxn, nyn, nzn);
-      if (icount % 2 == 1) {
-        value = 0.;
-      }
-      else {
-        value = 0.5;
-      }
-      if (col->getNzc() == 1) { // 2D case
-        alpha = (1.0 - value) / 4.;
-        // Exth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Exth[i][j][k] + alpha * (Exth[i - 1][j][k] + Exth[i + 1][j][k] + Exth[i][j - 1][k] + Exth[i][j + 1][k]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Exth[i][j][k] = temp[i][j][k];
-        // Eyth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Eyth[i][j][k] + alpha * (Eyth[i - 1][j][k] + Eyth[i + 1][j][k] + Eyth[i][j - 1][k] + Eyth[i][j + 1][k]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-            Eyth[i][j][k] = temp[i][j][k];
-        // Ezth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Ezth[i][j][k] + alpha * (Ezth[i - 1][j][k] + Ezth[i + 1][j][k] + Ezth[i][j - 1][k] + Ezth[i][j + 1][k]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Ezth[i][j][k] = temp[i][j][k];
-      }
-      else { // 3D case
-        alpha = (1.0 - value) / 6.;
-        // Exth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Exth[i][j][k] + alpha * (Exth[i - 1][j][k] + Exth[i + 1][j][k] + Exth[i][j - 1][k] + Exth[i][j + 1][k] + Exth[i][j][k - 1] + Exth[i][j][k + 1]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Exth[i][j][k] = temp[i][j][k];
-        // Eyth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Eyth[i][j][k] + alpha * (Eyth[i - 1][j][k] + Eyth[i + 1][j][k] + Eyth[i][j - 1][k] + Eyth[i][j + 1][k] + Eyth[i][j][k - 1] + Eyth[i][j][k + 1]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Eyth[i][j][k] = temp[i][j][k];
-        // Ezth
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              temp[i][j][k] = value * Ezth[i][j][k] + alpha * (Ezth[i - 1][j][k] + Ezth[i + 1][j][k] + Ezth[i][j - 1][k] + Ezth[i][j + 1][k] + Ezth[i][j][k - 1] + Ezth[i][j][k + 1]);
-        for (int i = 1; i < nxn - 1; i++)
-          for (int j = 1; j < nyn - 1; j++)
-            for (int k = 1; k < nzn - 1; k++)
-              Ezth[i][j][k] = temp[i][j][k];
+      if (icount>1) {
+        if      (gridType==0) communicateCenterBoxStencilBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+        else if (gridType==1) communicateNodeBoxStencilBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+        else if (gridType==2) communicateCenterBoxStencilBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+        else if (gridType==3) communicateNodeBoxStencilBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
       }
 
-      delArr3(temp, nxn, nyn);
+      double alpha = (1.0 - Smooth) / 2.0;
+      // X direction: data -> tmp
+      for (int i = 1; i < nx - 1; i++)
+        for (int j = 1; j < ny - 1; j++)
+          for (int k = 1; k < nz - 1; k++)
+            temp[i][j][k] = Smooth*data[i][j][k] + alpha*(data[i-1][j][k] + data[i+1][j][k]);
+
+      if      (gridType==0) communicateCenterBoxStencilBC(nx, ny, nz, temp, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else if (gridType==1) communicateNodeBoxStencilBC(nx, ny, nz, temp, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else if (gridType==2) communicateCenterBoxStencilBC_P(nx, ny, nz, temp, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else if (gridType==3) communicateNodeBoxStencilBC_P(nx, ny, nz, temp, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+
+      // Y direction: tmp -> data
+      for (int i = 1; i < nx - 1; i++)
+        for (int j = 1; j < ny - 1; j++)
+          for (int k = 1; k < nz - 1; k++)
+            data[i][j][k] = Smooth*temp[i][j][k] + alpha*(temp[i][j-1][k] + temp[i][j+1][k]);
+
+      if      (gridType==0) communicateCenterBoxStencilBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else if (gridType==1) communicateNodeBoxStencilBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else if (gridType==2) communicateCenterBoxStencilBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+      else if (gridType==3) communicateNodeBoxStencilBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+
+      // Z direction: data -> tmp
+      for (int i = 1; i < nx - 1; i++)
+        for (int j = 1; j < ny - 1; j++)
+          for (int k = 1; k < nz - 1; k++)
+            temp[i][j][k] = Smooth*data[i][j][k] + alpha*(data[i][j][k-1] + data[i][j][k+1]);
+
+      // tmp -> data
+      for (int i = 1; i < nx - 1; i++)
+        for (int j = 1; j < ny - 1; j++)
+          for (int k = 1; k < nz - 1; k++)
+            data[i][j][k] = temp[i][j][k];
     }
+    delArr3(temp, nx, ny);
+
+    if      (gridType==0) communicateCenterBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+    else if (gridType==1) communicateNodeBC(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+    else if (gridType==2) communicateCenterBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+    else if (gridType==3) communicateNodeBC_P(nx, ny, nz, data, bc[0],bc[1],bc[2],bc[3],bc[4],bc[5], vct);
+
   }
-}
-
-void EMfields3D::smoothBinomialEth(double value,  int nvolte, Grid * grid, VirtualTopology3D * vct, Collective *col) {
-
-  int nx1, ny1, nz1;
-  int nx2, ny2, nz2;
-  nx1 = grid->getNXN();
-  ny1 = grid->getNYN();
-  nz1 = grid->getNZN();
-  nx2 = grid->getNXC();
-  ny2 = grid->getNYC();
-  nz2 = grid->getNZC();
-  double ***temp = newArr3(double, nx2, ny2, nz2);
-
-  for (int icount = 1; icount < nvolte + 1; icount++) {
-    // Exth
-    grid->interpN2C(temp, Exth);
-    communicateCenterBC(nx2, ny2, nz2, temp, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-    grid->interpC2N(Exth,temp);
-    communicateCenterBC(nx1, ny1, nz1, Exth, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-    // Eyth
-    grid->interpN2C(temp, Eyth);
-    communicateCenterBC(nx2, ny2, nz2, temp, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-    grid->interpC2N(Eyth,temp);
-    communicateCenterBC(nx1, ny1, nz1, Eyth, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-    // Ezth
-    grid->interpN2C(temp, Ezth);
-    communicateCenterBC(nx2, ny2, nz2, temp, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
-    grid->interpC2N(Ezth,temp);
-    communicateCenterBC(nx1, ny1, nz1, Ezth, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
-  }
-  delArr3(temp, nx2, ny2);
-}
-
-/* SPECIES: Interpolation smoothing TO MAKE SMOOTH value as to be different from 1.0 type = 0 --> center based vector type = 1 --> node based vector */
-void EMfields3D::smooth(double value, int nvolte, double ****vector, int is, int type, Grid * grid, VirtualTopology3D * vct) {
-  cout << "Smoothing for Species not implemented in 3D" << endl;
 }
 
 /*! fix the B boundary when running gem */
@@ -1562,20 +1509,12 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, Col
   // Communicate rhohat
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
   // Smooth rhohat
-  if (SmoothType=="default")       smooth(Smooth, Nvolte, rhoh, 0, grid, vct, col);
-  else if (SmoothType=="binomial") smoothBinomial(Smooth, Nvolte, rhoh, 0, grid, vct, col);
+  applySmoothing(rhoh, 2, grid, vct, col, "rho");
 
   // Smooth Jhat
-  if (SmoothType=="default") {
-    smooth(Smooth, Nvolte, Jxh, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, Jyh, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, Jzh, 1, grid, vct, col);
-  }
-  else if (SmoothType=="binomial") {
-    smoothBinomial(Smooth, Nvolte, Jxh, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, Jyh, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, Jzh, 1, grid, vct, col);
-  }
+  applySmoothing(Jxh, 3, grid, vct, col, "Jx");
+  applySmoothing(Jyh, 3, grid, vct, col, "Jy");
+  applySmoothing(Jzh, 3, grid, vct, col, "Jz");
 
   // Sum mu tensor
   for (int is = 0; is < ns; is++) {
@@ -1600,28 +1539,15 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, Col
   communicateNodeBC_P(nxn, nyn, nzn, muzy, 2, 2, 2, 2, 2, 2, vct);
   communicateNodeBC_P(nxn, nyn, nzn, muzz, 2, 2, 2, 2, 2, 2, vct);
   // Smooth mu tensor
-  if (SmoothType=="default") {
-    smooth(Smooth, Nvolte, muxx, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, muxy, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, muyx, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, muxz, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, muzx, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, muyy, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, muyz, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, muzy, 1, grid, vct, col);
-    smooth(Smooth, Nvolte, muzz, 1, grid, vct, col);
-  }
-  else if (SmoothType=="binomial") {
-    smoothBinomial(Smooth, Nvolte, muxx, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, muxy, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, muyx, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, muxz, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, muzx, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, muyy, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, muyz, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, muzy, 1, grid, vct, col);
-    smoothBinomial(Smooth, Nvolte, muzz, 1, grid, vct, col);
-  }
+  applySmoothing(muxx, 3, grid, vct, col, "muxx");
+  applySmoothing(muxy, 3, grid, vct, col, "muxy");
+  applySmoothing(muyx, 3, grid, vct, col, "muyx");
+  applySmoothing(muxz, 3, grid, vct, col, "muxz");
+  applySmoothing(muzx, 3, grid, vct, col, "muzx");
+  applySmoothing(muyy, 3, grid, vct, col, "muyy");
+  applySmoothing(muyz, 3, grid, vct, col, "muyz");
+  applySmoothing(muzy, 3, grid, vct, col, "muzy");
+  applySmoothing(muzz, 3, grid, vct, col, "muzz");
 }
 
 /*! Image of Poisson Solver */
