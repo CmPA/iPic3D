@@ -16,9 +16,9 @@ int main(int argc, char **argv) {
   /* 0- Initialize the solver class */
   /* ------------------------------ */
 
-  clocks->start(0);
+//  clocks->start(0); // Activating this clock causes SegFault...
   KCode.Init(argc, argv);
-  clocks->stop(0);
+//  clocks->stop(0);
 //  KCode.InjectBoundaryParticles();
 //  KCode.GatherMoments();
   KCode.WriteOutput(KCode.FirstCycle());
