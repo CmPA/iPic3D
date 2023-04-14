@@ -1388,12 +1388,12 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
   communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
-  if ((Case=="ForceFree") || (Case=="ForceFreeHump")) fixBforcefree(grid,vct);
-    else if (Case=="GEM" || Case=="GEMRelativity" || Case=="GEMNoVelShear")       fixBgem(grid, vct);
-    else if (Case=="HarrisSteps")       fixBgem(grid, vct);
-    else if (Case=="GEMnoPert") fixBgem(grid, vct);
-    else if (Case=="FluxRope") fixBrope(grid, vct);
-    else fixBzero(grid, vct); //default case used also for coils
+//  if ((Case=="ForceFree") || (Case=="ForceFreeHump")) fixBforcefree(grid,vct);
+//  else if (Case=="GEM" || Case=="GEMRelativity" || Case=="GEMNoVelShear")       fixBgem(grid, vct);
+//  else if (Case=="HarrisSteps")       fixBgem(grid, vct);
+//  else if (Case=="GEMnoPert") fixBgem(grid, vct);
+//  else if (Case=="FluxRope") fixBrope(grid, vct);
+//  else fixBzero(grid, vct); //default case used also for coils
 
   // OpenBC:
   BoundaryConditionsB(Bxc,Byc,Bzc,nxc,nyc,nzc,grid,vct);
@@ -1408,84 +1408,6 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
 
 }
-
-/*! initialize EM field with transverse electric waves 1D and rotate anticlockwise (theta degrees) */
-void EMfields3D::initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta) {
-  // initialize E and rhos on nodes
-  for (int i = 0; i < nxn; i++)
-    for (int j = 0; j < nyn; j++) {
-      Ex[i][j][0] = 0.0;
-      Ey[i][j][0] = 0.0;
-      Ez[i][j][0] = 0.0;
-      Bxn[i][j][0] = B * cos(theta * M_PI / 180);
-      Byn[i][j][0] = B * sin(theta * M_PI / 180);
-      Bzn[i][j][0] = 0.0;
-      rhons[0][i][j][0] = 0.07957747154595; // electrons: species is now first index
-      rhons[1][i][j][0] = 0.07957747154595; // protons: species is now first index
-    }
-  // initialize B on centers
-  grid->interpN2C(Bxc, Bxn);
-  grid->interpN2C(Byc, Byn);
-  grid->interpN2C(Bzc, Bzn);
-
-
-  for (int is = 0; is < ns; is++)
-    grid->interpN2C(rhocs, is, rhons);
-
-}
-/*!Add a periodic perturbation in rho exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) * */
-void EMfields3D::AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid) {
-
-  double alpha;
-  alpha = deltaBoB * B0 / sqrt(Bx_mod * Bx_mod + By_mod * By_mod + Bz_mod * Bz_mod);
-
-  ne_mod *= alpha;
-  ni_mod *= alpha;
-  // cout<<" ne="<<ne_mod<<" ni="<<ni_mod<<" alpha="<<alpha<<endl;
-  for (int i = 0; i < nxn; i++)
-    for (int j = 0; j < nyn; j++) {
-      rhons[0][i][j][0] += ne_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + ne_phase);
-      rhons[1][i][j][0] += ni_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + ni_phase);
-    }
-
-  for (int is = 0; is < ns; is++)
-    grid->interpN2C(rhocs, is, rhons);
-}
-
-
-/*!Add a periodic perturbation exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) * */
-void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, double B0, Grid * grid) {
-
-  double alpha;
-
-  alpha = deltaBoB * B0 / sqrt(Bx_mod * Bx_mod + By_mod * By_mod + Bz_mod * Bz_mod);
-
-  Ex_mod *= alpha;
-  Ey_mod *= alpha;
-  Ez_mod *= alpha;
-  Bx_mod *= alpha;
-  By_mod *= alpha;
-  Bz_mod *= alpha;
-
-  for (int i = 0; i < nxn; i++)
-    for (int j = 0; j < nyn; j++) {
-      Ex[i][j][0] += Ex_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Ex_phase);
-      Ey[i][j][0] += Ey_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Ey_phase);
-      Ez[i][j][0] += Ez_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Ez_phase);
-      Bxn[i][j][0] += Bx_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Bx_phase);
-      Byn[i][j][0] += By_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + By_phase);
-      Bzn[i][j][0] += Bz_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Bz_phase);
-
-    }
-
-  // initialize B on centers
-  grid->interpN2C(Bxc, Bxn);
-  grid->interpN2C(Byc, Byn);
-  grid->interpN2C(Bzc, Bzn);
-
-
-}
-
 
 /*! Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
 void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct, Collective *col) {
@@ -2103,6 +2025,374 @@ void EMfields3D::sumOverSpeciesJ() {
         }
 }
 
+
+/*************** STANDARD EM FIELD SETUPS ****************/
+void EMfields3D::initKAWTurbulencePert(VirtualTopology3D * vct, Grid * grid, Collective *col, double mime, double TiTe) {
+  // Turbulence setup: Fabio Bacchini, Francesco Pucci
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "-------------------------------------------" << endl;
+      cout << "Initialize KAW Turbulence with Perturbation" << endl;
+      cout << "-------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "-------------------------" << endl;
+    }
+    
+    // Profile parameters
+    double h = 0.2;
+    double r = 10.;
+    // Magnetic field parameters
+    double B0 = B0x;
+    double Bm = 2.*B0x;
+    double alpha = (Bm-B0)*r/(2.*pow(2*h,r)*pow(1.+pow(2*h,-r),2));
+    // Density parameters
+    double betam = 0.5; // This is the ion beta at the centre
+    double rhom = rhoINIT[0]/FourPI;
+    double vthi = sqrt(betam*Bm*Bm/2./FourPI/rhom);
+    double vthe = vthi*sqrt(mime/TiTe);
+    double Ptot = Bm*Bm/2./FourPI + rhom*(vthi*vthi + vthe*vthe/mime);
+    // Perturbation parameters
+    double a = Bm/10.;
+
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          double yN = grid->getYN(i, j, k);
+          Bxn[i][j][k] = B0 + (Bm-B0)/(1.+pow((yN-Ly/2.)/Ly/h,r)) + alpha*pow(yN/Ly*2.-1,2);
+          // initialize the density for species
+          for (int is = 0; is < ns; is++)
+             rhons[is][i][j][k] = (Ptot - Bxn[i][j][k]*Bxn[i][j][k]/2./FourPI)/(vthi*vthi+vthe*vthe/mime);
+          // add the initial KAW perturbation
+          double xN = grid->getXN(i, j, k);
+          Byn[i][j][k] = 0.;
+          Bzn[i][j][k] = a*cos(2.*M_PI/Lx*xN);
+        }
+    // initialize B on centers
+    for (int i = 0; i < nxc; i++)
+      for (int j = 0; j < nyc; j++)
+        for (int k = 0; k < nzc; k++) {
+          // Magnetic field
+          double yC = grid->getYC(i, j, k);
+          Bxc[i][j][k] =  B0 + (Bm-B0)/(1.+pow((yC-Ly/2.)/Ly/h,r)) + alpha*pow(yC/Ly*2.-1,2);
+          // add the initial perturbation
+          double xC = grid->getXC(i, j, k);
+          Byc[i][j][k] = 0.;
+          Bzc[i][j][k] = a*cos(2.*M_PI/Lx*xC);
+        }
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+
+    // Now make E equal to Ohms law
+    grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc); // here you calculate curl(B)
+    communicateNodeBC(nxn, nyn, nzn, tempXN, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, tempYN, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, tempZN, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
+    for (int i = 0; i < nxc; i++)
+      for (int j = 0; j < nyc; j++)
+        for (int k = 0; k < nzc; k++)
+          tempXC[i][j][k] = fabs(rhocs[0][i][j][k]);
+    communicateCenterBC_P(nxc, nyc, nzc, tempXC, 2, 2, 2, 2, 2, 2, vct);
+    grid->gradC2N(tempX, tempY, tempZ, tempXC);
+    communicateNodeBC(nxn, nyn, nzn, tempX, 2, 2, 2, 2, 1, 1, vct);
+    communicateNodeBC(nxn, nyn, nzn, tempY, 2, 2, 2, 2, 2, 2, vct);
+    communicateNodeBC(nxn, nyn, nzn, tempZ, 2, 2, 2, 2, 2, 2, vct);
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+          // drift velocity
+          double xN = grid->getXN(i, j, k);
+          double yN = grid->getYN(i, j, k);
+          double vdz = -a*cos(2.*M_PI/Lx*xN)/sqrt(4.*M_PI*(1.+1./mime)*fabs(rhons[0][i][j][k]));
+          Ex[i][j][k] = tempYN[i][j][k]*Bzn[i][j][k]/4./M_PI/fabs(rhons[0][i][j][k]);
+          Ey[i][j][k] = -vdz*Bxn[i][j][k] + ((tempZN[i][j][k]*Bxn[i][j][k])/4./M_PI - vthe*vthe*tempY[i][j][k])/fabs(rhons[0][i][j][k]);
+          Ez[i][j][k] = -tempYN[i][j][k]*Bxn[i][j][k]/4./M_PI/fabs(rhons[0][i][j][k]);
+        }
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+double LOG_COSH(double x) {
+  double res;
+  if (fabs(x) > 18.5) res = fabs(x) - log(2.0);
+  else res = log(cosh(x));
+
+  return res;
+}
+
+/* Double Harris sheet in relativistic equilibrium --- pair plasmas */
+void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  double thbe = col->getUth(0);
+  const double perturb_amp = 0.0;
+  double rho0  = rhoINIT[0];
+  double sigma = B0x*B0x/(FourPI*rho0*2.0);
+  const double eta = 5.0;
+  double guideField_ratio = B0z/B0x;
+  double rhoCS = eta*rho0;
+  double w0CS = B0x/(2.0*FourPI*rhoCS*delta);
+  double g0CS = 1.0/sqrt(1.0-w0CS*w0CS);
+  double thCS = B0x*B0x/(2.0*FourPI*2.0*rhoCS)*g0CS;
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "-----------------------------------------------" << endl;
+      cout << "Initialize relativistic Harris with pertubation" << endl;
+      cout << "-----------------------------------------------" << endl;
+      cout << "Background total sigma     = " << sigma                            << endl; 
+      cout << "Background total beta      = " << 2.0*rho0*thbe/(B0x*B0x/2.0/FourPI) << endl;
+      cout << "Background temperature     = " << thbe                             << endl; 
+      cout << "Density ratio in CS        = " << eta                              << endl; 
+      cout << "Drifiting temperature      = " << thCS                             << endl; 
+      cout << "Drift gamma                = " << g0CS                             << endl; 
+      cout << "Amplitude Perturbation     = " << perturb_amp                      << endl; 
+      cout << "Guide field/upstream field = " << guideField_ratio                 << endl; 
+      cout << "-----------------------------------------------" << endl;
+    }
+
+    // Initial magnetic field components
+    double x14=Lx/4.0+xStart;
+    double x34=3.0*Lx/4.0+xStart;
+    double y12=Ly/2.0+yStart;
+    double y14=Ly/4.0+yStart;
+    double y34=3.0*Ly/4.0+yStart;
+    // 4 times the perturbation height
+    double ym=Ly;
+    // perturbation wavelength
+    double xm=Lx;
+    double xN, yN, yh, xh, cosyh, cosxh, sinyh, sinxh;
+    double fBx, fBy;
+    for (int i = 0; i < nxn; i++) {
+      for (int j = 0; j < nyn; j++) {
+        for (int k = 0; k < nzn; k++) {
+          double xN = grid->getXN(i, j, k);
+          double yN = grid->getYN(i, j, k);
+          if (yN <= y12) {
+            yh = yN-y14;
+            xh = xN-x14;
+            fBx = -1.0;
+            fBy = 1.0;
+          }
+  	  else {
+            yh = yN-y34;
+            xh = xN-x34;
+            fBx = 1.0;
+            fBy = -1.0;
+  	  }
+          cosyh = cos(2.0*M_PI*yh/ym);
+          cosxh = cos(2.0*M_PI*xh/xm);
+          sinyh = sin(2.0*M_PI*yh/ym);
+          sinxh = sin(2.0*M_PI*xh/xm);
+
+          Bxn[i][j][k] = fBx*B0x*tanh(yh/delta);
+          // Add perturbation
+          Bxn[i][j][k] = Bxn[i][j][k] * (1.0+perturb_amp*cosxh*cosyh*cosyh) 
+                         + fBx*2.0*perturb_amp*cosxh*2.0*M_PI/ym*cosyh*sinyh 
+                           * (B0x*delta*LOG_COSH(y14/delta)-B0x*delta*LOG_COSH(yh/delta));
+
+          Byn[i][j][k] = fBy*2.0*perturb_amp*M_PI/xm*sinxh*cosyh*cosyh
+                         * (B0x*delta*LOG_COSH(y14/delta)-delta*B0x*LOG_COSH(yh/delta));
+
+          Bzn[i][j][k] = B0x*guideField_ratio;
+
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+        }
+      }
+    }
+    // initialize B on centers
+    grid->interpN2C(Bxc,Bxn);
+    grid->interpN2C(Byc,Byn);
+    grid->interpN2C(Bzc,Bzn);
+    // communicate ghost
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+/*************** OLD EM FIELD SETUPS FROM IPIC ****************/
+void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  const double pertX = 0.4;
+  const double deltax = 8. * delta;
+  const double deltay = 4. * delta;
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize GEM Challenge with Pertubation" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+           double xM = grid->getXN(i, j, k) - .25 * Lx;
+           double xMshift = grid->getXN(i, j, k) - .75 * Lx;
+
+           double yB = grid->getYN(i, j, k) - .25 * Ly;
+           double yT = grid->getYN(i, j, k) - .75 * Ly;
+           double yBd = yB / delta;
+           double yTd = yT / delta;
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is]) {
+               double sech_yBd = 1. / cosh(yBd);
+               double sech_yTd = 1. / cosh(yTd);
+              rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
+              rhons[is][i][j][k] += rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
+            }
+            else
+              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          Bxn[i][j][k] = B0x * (-1.0 + tanh(yBd) - tanh(yTd));
+          // add the initial GEM perturbation
+          Bxn[i][j][k] += 0.;
+          Byn[i][j][k] = B0y;
+          // add the initial X perturbation
+           double xMdx = xM / deltax;
+           double xMshiftdx = xMshift / deltax;
+           double yBdy = yB / deltay;
+           double yTdy = yT / deltay;
+           double humpB = exp(-xMdx * xMdx - yBdy * yBdy);
+          Bxn[i][j][k] -= (B0x * pertX) * humpB * cos(2 * M_PI * xM / Lx) * sin(M_PI * yB / Ly);
+          Byn[i][j][k] += (B0x * pertX) * humpB * sin(2 * M_PI * xM / Lx) * cos(M_PI * yB / Ly);
+
+          // add the second initial X perturbation
+           double humpT = exp(-xMshiftdx * xMshiftdx - yTdy * yTdy);
+          Bxn[i][j][k] += (B0x * pertX) * humpT * cos(2 * M_PI * xMshift / Lx) * sin(M_PI * yT / Ly);
+          Byn[i][j][k] -= (B0x * pertX) * humpT * sin(2 * M_PI * xMshift / Lx) * cos(M_PI * yT / Ly);
+
+          // guide field
+          Bzn[i][j][k] = B0z;
+        }
+    // communicate ghost
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    // initialize B on centers
+    // initialize B on centers
+    grid->interpN2C(Bxc,Bxn);
+    grid->interpN2C(Byc,Byn);
+    grid->interpN2C(Bzc,Bzn);
+    // communicate ghost
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+
+/*! initialize EM field with transverse electric waves 1D and rotate anticlockwise (theta degrees) */
+void EMfields3D::initEM_rotate(VirtualTopology3D * vct, Grid * grid, Collective *col, double B, double theta) {
+  // initialize E and rhos on nodes
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++) {
+      Ex[i][j][0] = 0.0;
+      Ey[i][j][0] = 0.0;
+      Ez[i][j][0] = 0.0;
+      Bxn[i][j][0] = B * cos(theta * M_PI / 180);
+      Byn[i][j][0] = B * sin(theta * M_PI / 180);
+      Bzn[i][j][0] = 0.0;
+      rhons[0][i][j][0] = 0.07957747154595; // electrons: species is now first index
+      rhons[1][i][j][0] = 0.07957747154595; // protons: species is now first index
+    }
+  // initialize B on centers
+  grid->interpN2C(Bxc, Bxn);
+  grid->interpN2C(Byc, Byn);
+  grid->interpN2C(Bzc, Bzn);
+
+
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+}
+
+/*!Add a periodic perturbation in rho exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) * */
+void EMfields3D::AddPerturbationRho(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double ne_mod, double ne_phase, double ni_mod, double ni_phase, double B0, Grid * grid) {
+
+  double alpha;
+  alpha = deltaBoB * B0 / sqrt(Bx_mod * Bx_mod + By_mod * By_mod + Bz_mod * Bz_mod);
+
+  ne_mod *= alpha;
+  ni_mod *= alpha;
+  // cout<<" ne="<<ne_mod<<" ni="<<ni_mod<<" alpha="<<alpha<<endl;
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++) {
+      rhons[0][i][j][0] += ne_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + ne_phase);
+      rhons[1][i][j][0] += ni_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + ni_phase);
+    }
+
+  for (int is = 0; is < ns; is++)
+    grid->interpN2C(rhocs, is, rhons);
+}
+
+/*!Add a periodic perturbation exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) * */
+void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, double Ex_mod, double Ex_phase, double Ey_mod, double Ey_phase, double Ez_mod, double Ez_phase, double Bx_mod, double Bx_phase, double By_mod, double By_phase, double Bz_mod, double Bz_phase, double B0, Grid * grid) {
+
+  double alpha;
+
+  alpha = deltaBoB * B0 / sqrt(Bx_mod * Bx_mod + By_mod * By_mod + Bz_mod * Bz_mod);
+
+  Ex_mod *= alpha;
+  Ey_mod *= alpha;
+  Ez_mod *= alpha;
+  Bx_mod *= alpha;
+  By_mod *= alpha;
+  Bz_mod *= alpha;
+
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++) {
+      Ex[i][j][0] += Ex_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Ex_phase);
+      Ey[i][j][0] += Ey_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Ey_phase);
+      Ez[i][j][0] += Ez_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Ez_phase);
+      Bxn[i][j][0] += Bx_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Bx_phase);
+      Byn[i][j][0] += By_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + By_phase);
+      Bzn[i][j][0] += Bz_mod * cos(kx * grid->getXN(i, j, 0) + ky * grid->getYN(i, j, 0) + Bz_phase);
+
+    }
+
+  // initialize B on centers
+  grid->interpN2C(Bxc, Bxn);
+  grid->interpN2C(Byc, Byn);
+  grid->interpN2C(Bzc, Bzn);
+
+}
+
 /*! initialize Magnetic and Electric Field with initial configuration */
 void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
 
@@ -2310,6 +2600,7 @@ void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective *c
   grid->interpC2N(Bzn,Bzc);
 #endif
 }
+
 /*! initiliaze Harris plus background but with less shear a-la Fujimoto */
 void EMfields3D::initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
@@ -2415,6 +2706,7 @@ void EMfields3D::initHarrisNoVelShear(VirtualTopology3D * vct, Grid * grid, Coll
                    }
            }
 }
+
 /*! initiliaze EM for GEM challange */
 void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
@@ -2489,6 +2781,7 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
   else {
     init(vct, grid, col);            // use the fields from restart file
   }
+
   // This needs to be outside the main if because it needs to happen also in the case of restart
   for (int is = 0; is < ns; is++)
     grid->interpN2C(rhocs, is, rhons);
@@ -2507,329 +2800,13 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
                    }
            }
 }
-double floor0( double value )
-  {
+
+double floor0( double value ) {
   if (value < 0.0)
     return ceil( value -0.5f);
   else
     return floor( value +0.5f);
-  }
-/*! initiliaze EM for GEM challange */
-void EMfields3D::initHarris_Steps(VirtualTopology3D * vct, Grid * grid, Collective *col) {
-  // perturbation localized in X
-  double pertX = 0.0;
-  double xpert, ypert, exp_pert;
-  if (restart1 == 0) {
-    // initialize
-    if (vct->getCartesian_rank() == 0) {
-      cout << "------------------------------------------" << endl;
-      cout << "Initialize Harris Step " << endl;
-      cout << "------------------------------------------" << endl;
-      cout << "B0x                              = " << B0x << endl;
-      cout << "B0y                              = " << B0y << endl;
-      cout << "B0z                              = " << B0z << endl;
-      cout << "Delta (current sheet thickness) = " << delta << endl;
-      for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
-        if (DriftSpecies[i])
-          cout << " DRIFTING " << endl;
-        else
-          cout << " BACKGROUND " << endl;
-      }
-      cout << "-------------------------" << endl;
-    }
-    for (int i = 0; i < nxn; i++)
-      for (int j = 0; j < nyn; j++)
-        for (int k = 0; k < nzn; k++) {
-          // initialize the density for species
-          for (int is = 0; is < ns; is++) {
-            if (DriftSpecies[is])
-              rhons[is][i][j][k] = ((rhoINIT[is] / (cosh((grid->getYN(i, j, k) - Ly / 2) / delta) * cosh((grid->getYN(i, j, k) - Ly / 2) / delta)))) / FourPI;
-            else
-              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
-          }
-          // electric field
-          Ex[i][j][k] = 0.0;
-          Ey[i][j][k] = 0.0;
-          Ez[i][j][k] = 0.0;
-          // Magnetic field
-          int Nsteps = (int) coilD;
-          int int_tanh = floor0(Nsteps*tanh((grid->getYN(i, j, k) - Ly / 2) / delta));
-          Bxn[i][j][k] = B0x * int(int_tanh)/((double)Nsteps);
-          // add the initial GEM perturbation
-          // Bxn[i][j][k] += (B0x/10.0)*(M_PI/Ly)*cos(2*M_PI*grid->getXN(i,j,k)/Lx)*sin(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly );
-          Byn[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXN(i,j,k)/Lx)*cos(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly);
-          // add the initial X perturbation
-          xpert = grid->getXN(i, j, k) - Lx / 2;
-          ypert = grid->getYN(i, j, k) - Ly / 2;
-          exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
-          Bxn[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
-          Byn[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
-          // guide field
-          Bzn[i][j][k] = B0z;
-        }
-    // initialize B on centers
-    grid->interpN2C(Bxc,Bxn);
-    grid->interpN2C(Byc,Byn);
-    grid->interpN2C(Bzc,Bzn);
-    for (int is = 0; is < ns; is++)
-      grid->interpN2C(rhocs, is, rhons);
-  }
-  else {
-    init(vct, grid, col);            // use the fields from restart file
-  }
 }
-void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
-  // perturbation localized in X
-  if (restart1 == 0) {
-    // initialize
-    if (vct->getCartesian_rank() == 0) {
-      cout << "------------------------------------------" << endl;
-      cout << "Initialize GEM Challenge with Pertubation" << endl;
-      cout << "------------------------------------------" << endl;
-      cout << "B0x                              = " << B0x << endl;
-      cout << "B0y                              = " << B0y << endl;
-      cout << "B0z                              = " << B0z << endl;
-      cout << "Delta (current sheet thickness) = " << delta << endl;
-      for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
-        if (DriftSpecies[i])
-          cout << " DRIFTING " << endl;
-        else
-          cout << " BACKGROUND " << endl;
-      }
-      cout << "-------------------------" << endl;
-    }
-    for (int i = 0; i < nxn; i++)
-      for (int j = 0; j < nyn; j++)
-        for (int k = 0; k < nzn; k++) {
-          // initialize the density for species
-          for (int is = 0; is < ns; is++) {
-            if (DriftSpecies[is])
-              rhons[is][i][j][k] = ((rhoINIT[is] / (cosh((grid->getYN(i, j, k) - Ly / 2) / delta) * cosh((grid->getYN(i, j, k) - Ly / 2) / delta)))) / FourPI;
-            else
-              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
-          }
-          // electric field
-          Ex[i][j][k] = 0.0;
-          Ey[i][j][k] = 0.0;
-          Ez[i][j][k] = 0.0;
-          // Magnetic field
-          const double yM = grid->getYN(i, j, k) - .5 * Ly;
-          Bxn[i][j][k] = B0x * tanh(yM / delta);
-          // add the initial GEM perturbation
-          const double xM = grid->getXN(i, j, k) - .5 * Lx;
-          Bxn[i][j][k] -= (B0x / 10.0) * (M_PI / Ly) * cos(2 * M_PI * xM / Lx) * sin(M_PI * yM / Ly);
-          Byn[i][j][k] = B0y + (B0x / 10.0) * (2 * M_PI / Lx) * sin(2 * M_PI * xM / Lx) * cos(M_PI * yM / Ly);
-          Bzn[i][j][k] = B0z;
-        }
-    // initialize B on centers
-    for (int i = 0; i < nxc; i++)
-      for (int j = 0; j < nyc; j++)
-        for (int k = 0; k < nzc; k++) {
-          // Magnetic field
-          const double yM = grid->getYC(i, j, k) - .5 * Ly;
-          Bxc[i][j][k] = B0x * tanh(yM / delta);
-          // add the initial GEM perturbation
-          const double xM = grid->getXC(i, j, k) - .5 * Lx;
-          Bxc[i][j][k] -= (B0x / 10.0) * (M_PI / Ly) * cos(2 * M_PI * xM / Lx) * sin(M_PI * yM / Ly);
-          Byc[i][j][k] = B0y + (B0x / 10.0) * (2 * M_PI / Lx) * sin(2 * M_PI * xM / Lx) * cos(M_PI * yM / Ly);
-          Bzc[i][j][k] = B0z;
-        }
-    for (int is = 0; is < ns; is++)
-      grid->interpN2C(rhocs, is, rhons);
-  }
-  else {
-    init(vct, grid, col);            // use the fields from restart file
-  }
-}
-
-void EMfields3D::initKAWTurbulencePert(VirtualTopology3D * vct, Grid * grid, Collective *col, double mime, double TiTe) {
-  // Turbulence setup: Fabio Bacchini, Francesco Pucci
-  if (restart1 == 0) {
-    // initialize
-    if (vct->getCartesian_rank() == 0) {
-      cout << "-------------------------------------------" << endl;
-      cout << "Initialize KAW Turbulence with Perturbation" << endl;
-      cout << "-------------------------------------------" << endl;
-      cout << "B0x                              = " << B0x << endl;
-      cout << "B0y                              = " << B0y << endl;
-      cout << "B0z                              = " << B0z << endl;
-      cout << "-------------------------" << endl;
-    }
-    
-    // Profile parameters
-    double h = 0.2;
-    double r = 10.;
-    // Magnetic field parameters
-    double B0 = B0x;
-    double Bm = 2.*B0x;
-    double alpha = (Bm-B0)*r/(2.*pow(2*h,r)*pow(1.+pow(2*h,-r),2));
-    // Density parameters
-    double betam = 0.5; // This is the ion beta at the centre
-    double rhom = rhoINIT[0]/FourPI;
-    double vthi = sqrt(betam*Bm*Bm/2./FourPI/rhom);
-    double vthe = vthi*sqrt(mime/TiTe);
-    double Ptot = Bm*Bm/2./FourPI + rhom*(vthi*vthi + vthe*vthe/mime);
-    // Perturbation parameters
-    double a = Bm/10.;
-
-    for (int i = 0; i < nxn; i++)
-      for (int j = 0; j < nyn; j++)
-        for (int k = 0; k < nzn; k++) {
-          // electric field
-          Ex[i][j][k] = 0.0;
-          Ey[i][j][k] = 0.0;
-          Ez[i][j][k] = 0.0;
-          // Magnetic field
-          double yN = grid->getYN(i, j, k);
-          Bxn[i][j][k] = B0 + (Bm-B0)/(1.+pow((yN-Ly/2.)/Ly/h,r)) + alpha*pow(yN/Ly*2.-1,2);
-          // initialize the density for species
-          for (int is = 0; is < ns; is++)
-             rhons[is][i][j][k] = (Ptot - Bxn[i][j][k]*Bxn[i][j][k]/2./FourPI)/(vthi*vthi+vthe*vthe/mime);
-          // add the initial KAW perturbation
-          double xN = grid->getXN(i, j, k);
-          Byn[i][j][k] = 0.;
-          Bzn[i][j][k] = a*cos(2.*M_PI/Lx*xN);
-        }
-    // initialize B on centers
-    for (int i = 0; i < nxc; i++)
-      for (int j = 0; j < nyc; j++)
-        for (int k = 0; k < nzc; k++) {
-          // Magnetic field
-          double yC = grid->getYC(i, j, k);
-          Bxc[i][j][k] =  B0 + (Bm-B0)/(1.+pow((yC-Ly/2.)/Ly/h,r)) + alpha*pow(yC/Ly*2.-1,2);
-          // add the initial perturbation
-          double xC = grid->getXC(i, j, k);
-          Byc[i][j][k] = 0.;
-          Bzc[i][j][k] = a*cos(2.*M_PI/Lx*xC);
-        }
-    for (int is = 0; is < ns; is++)
-      grid->interpN2C(rhocs, is, rhons);
-
-    // Now make E equal to Ohms law
-    grid->curlC2N(tempXN,tempYN,tempZN,Bxc,Byc,Bzc); // here you calculate curl(B)
-    communicateNodeBC(nxn, nyn, nzn, tempXN, col->bcEx[0],col->bcEx[1],col->bcEx[2],col->bcEx[3],col->bcEx[4],col->bcEx[5], vct);
-    communicateNodeBC(nxn, nyn, nzn, tempYN, col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
-    communicateNodeBC(nxn, nyn, nzn, tempZN, col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
-    for (int i = 0; i < nxc; i++)
-      for (int j = 0; j < nyc; j++)
-        for (int k = 0; k < nzc; k++)
-          tempXC[i][j][k] = fabs(rhocs[0][i][j][k]);
-    communicateCenterBC_P(nxc, nyc, nzc, tempXC, 2, 2, 2, 2, 2, 2, vct);
-    grid->gradC2N(tempX, tempY, tempZ, tempXC);
-    communicateNodeBC(nxn, nyn, nzn, tempX, 2, 2, 2, 2, 1, 1, vct);
-    communicateNodeBC(nxn, nyn, nzn, tempY, 2, 2, 2, 2, 2, 2, vct);
-    communicateNodeBC(nxn, nyn, nzn, tempZ, 2, 2, 2, 2, 2, 2, vct);
-    for (int i = 0; i < nxn; i++)
-      for (int j = 0; j < nyn; j++)
-        for (int k = 0; k < nzn; k++) {
-          // drift velocity
-          double xN = grid->getXN(i, j, k);
-          double yN = grid->getYN(i, j, k);
-          double vdz = -a*cos(2.*M_PI/Lx*xN)/sqrt(4.*M_PI*(1.+1./mime)*fabs(rhons[0][i][j][k]));
-          Ex[i][j][k] = tempYN[i][j][k]*Bzn[i][j][k]/4./M_PI/fabs(rhons[0][i][j][k]);
-          Ey[i][j][k] = -vdz*Bxn[i][j][k] + ((tempZN[i][j][k]*Bxn[i][j][k])/4./M_PI - vthe*vthe*tempY[i][j][k])/fabs(rhons[0][i][j][k]);
-          Ez[i][j][k] = -tempYN[i][j][k]*Bxn[i][j][k]/4./M_PI/fabs(rhons[0][i][j][k]);
-        }
-  }
-  else {
-    init(vct, grid, col);            // use the fields from restart file
-  }
-}
-
-void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col) {
-  // perturbation localized in X
-  const double pertX = 0.4;
-  const double deltax = 8. * delta;
-  const double deltay = 4. * delta;
-  if (restart1 == 0) {
-    // initialize
-    if (vct->getCartesian_rank() == 0) {
-      cout << "------------------------------------------" << endl;
-      cout << "Initialize GEM Challenge with Pertubation" << endl;
-      cout << "------------------------------------------" << endl;
-      cout << "B0x                              = " << B0x << endl;
-      cout << "B0y                              = " << B0y << endl;
-      cout << "B0z                              = " << B0z << endl;
-      cout << "Delta (current sheet thickness) = " << delta << endl;
-      for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
-        if (DriftSpecies[i])
-          cout << " DRIFTING " << endl;
-        else
-          cout << " BACKGROUND " << endl;
-      }
-      cout << "-------------------------" << endl;
-    }
-    for (int i = 0; i < nxn; i++)
-      for (int j = 0; j < nyn; j++)
-        for (int k = 0; k < nzn; k++) {
-           double xM = grid->getXN(i, j, k) - .25 * Lx;
-           double xMshift = grid->getXN(i, j, k) - .75 * Lx;
-
-           double yB = grid->getYN(i, j, k) - .25 * Ly;
-           double yT = grid->getYN(i, j, k) - .75 * Ly;
-           double yBd = yB / delta;
-           double yTd = yT / delta;
-          // initialize the density for species
-          for (int is = 0; is < ns; is++) {
-            if (DriftSpecies[is]) {
-               double sech_yBd = 1. / cosh(yBd);
-               double sech_yTd = 1. / cosh(yTd);
-              rhons[is][i][j][k] = rhoINIT[is] * sech_yBd * sech_yBd / FourPI;
-              rhons[is][i][j][k] += rhoINIT[is] * sech_yTd * sech_yTd / FourPI;
-            }
-            else
-              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
-          }
-          // electric field
-          Ex[i][j][k] = 0.0;
-          Ey[i][j][k] = 0.0;
-          Ez[i][j][k] = 0.0;
-          // Magnetic field
-          Bxn[i][j][k] = B0x * (-1.0 + tanh(yBd) - tanh(yTd));
-          // add the initial GEM perturbation
-          Bxn[i][j][k] += 0.;
-          Byn[i][j][k] = B0y;
-          // add the initial X perturbation
-           double xMdx = xM / deltax;
-           double xMshiftdx = xMshift / deltax;
-           double yBdy = yB / deltay;
-           double yTdy = yT / deltay;
-           double humpB = exp(-xMdx * xMdx - yBdy * yBdy);
-          Bxn[i][j][k] -= (B0x * pertX) * humpB * cos(2 * M_PI * xM / Lx) * sin(M_PI * yB / Ly);
-          Byn[i][j][k] += (B0x * pertX) * humpB * sin(2 * M_PI * xM / Lx) * cos(M_PI * yB / Ly);
-
-          // add the second initial X perturbation
-           double humpT = exp(-xMshiftdx * xMshiftdx - yTdy * yTdy);
-          Bxn[i][j][k] += (B0x * pertX) * humpT * cos(2 * M_PI * xMshift / Lx) * sin(M_PI * yT / Ly);
-          Byn[i][j][k] -= (B0x * pertX) * humpT * sin(2 * M_PI * xMshift / Lx) * cos(M_PI * yT / Ly);
-
-          // guide field
-          Bzn[i][j][k] = B0z;
-        }
-    // communicate ghost
-    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
-    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
-    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
-    // initialize B on centers
-    // initialize B on centers
-    grid->interpN2C(Bxc,Bxn);
-    grid->interpN2C(Byc,Byn);
-    grid->interpN2C(Bzc,Bzn);
-    // communicate ghost
-    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
-    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
-    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
-    for (int is = 0; is < ns; is++)
-      grid->interpN2C(rhocs, is, rhons);
-  }
-  else {
-    init(vct, grid, col);            // use the fields from restart file
-  }
-}
-
 
 void EMfields3D::initDoublePeriodicHarrisSteps(VirtualTopology3D * vct, Grid * grid, Collective *col) {
   // perturbation localized in X
@@ -2925,6 +2902,137 @@ void EMfields3D::initDoublePeriodicHarrisSteps(VirtualTopology3D * vct, Grid * g
   }
 }
 
+
+/*! initiliaze EM for GEM challange */
+void EMfields3D::initHarris_Steps(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  double pertX = 0.0;
+  double xpert, ypert, exp_pert;
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize Harris Step " << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is])
+              rhons[is][i][j][k] = ((rhoINIT[is] / (cosh((grid->getYN(i, j, k) - Ly / 2) / delta) * cosh((grid->getYN(i, j, k) - Ly / 2) / delta)))) / FourPI;
+            else
+              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          int Nsteps = (int) coilD;
+          int int_tanh = floor0(Nsteps*tanh((grid->getYN(i, j, k) - Ly / 2) / delta));
+          Bxn[i][j][k] = B0x * int(int_tanh)/((double)Nsteps);
+          // add the initial GEM perturbation
+          // Bxn[i][j][k] += (B0x/10.0)*(M_PI/Ly)*cos(2*M_PI*grid->getXN(i,j,k)/Lx)*sin(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly );
+          Byn[i][j][k] = B0y;   // - (B0x/10.0)*(2*M_PI/Lx)*sin(2*M_PI*grid->getXN(i,j,k)/Lx)*cos(M_PI*(grid->getYN(i,j,k)- Ly/2)/Ly);
+          // add the initial X perturbation
+          xpert = grid->getXN(i, j, k) - Lx / 2;
+          ypert = grid->getYN(i, j, k) - Ly / 2;
+          exp_pert = exp(-(xpert / delta) * (xpert / delta) - (ypert / delta) * (ypert / delta));
+          Bxn[i][j][k] += (B0x * pertX) * exp_pert * (-cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * ypert / delta - cos(M_PI * xpert / 10.0 / delta) * sin(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          Byn[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
+          // guide field
+          Bzn[i][j][k] = B0z;
+        }
+    // initialize B on centers
+    grid->interpN2C(Bxc,Bxn);
+    grid->interpN2C(Byc,Byn);
+    grid->interpN2C(Bzc,Bzn);
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  // perturbation localized in X
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "------------------------------------------" << endl;
+      cout << "Initialize GEM Challenge with Pertubation" << endl;
+      cout << "------------------------------------------" << endl;
+      cout << "B0x                              = " << B0x << endl;
+      cout << "B0y                              = " << B0y << endl;
+      cout << "B0z                              = " << B0z << endl;
+      cout << "Delta (current sheet thickness) = " << delta << endl;
+      for (int i = 0; i < ns; i++) {
+        cout << "rho species " << i << " = " << rhoINIT[i];
+        if (DriftSpecies[i])
+          cout << " DRIFTING " << endl;
+        else
+          cout << " BACKGROUND " << endl;
+      }
+      cout << "-------------------------" << endl;
+    }
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is])
+              rhons[is][i][j][k] = ((rhoINIT[is] / (cosh((grid->getYN(i, j, k) - Ly / 2) / delta) * cosh((grid->getYN(i, j, k) - Ly / 2) / delta)))) / FourPI;
+            else
+              rhons[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+          // Magnetic field
+          const double yM = grid->getYN(i, j, k) - .5 * Ly;
+          Bxn[i][j][k] = B0x * tanh(yM / delta);
+          // add the initial GEM perturbation
+          const double xM = grid->getXN(i, j, k) - .5 * Lx;
+          Bxn[i][j][k] -= (B0x / 10.0) * (M_PI / Ly) * cos(2 * M_PI * xM / Lx) * sin(M_PI * yM / Ly);
+          Byn[i][j][k] = B0y + (B0x / 10.0) * (2 * M_PI / Lx) * sin(2 * M_PI * xM / Lx) * cos(M_PI * yM / Ly);
+          Bzn[i][j][k] = B0z;
+        }
+    // initialize B on centers
+    for (int i = 0; i < nxc; i++)
+      for (int j = 0; j < nyc; j++)
+        for (int k = 0; k < nzc; k++) {
+          // Magnetic field
+          const double yM = grid->getYC(i, j, k) - .5 * Ly;
+          Bxc[i][j][k] = B0x * tanh(yM / delta);
+          // add the initial GEM perturbation
+          const double xM = grid->getXC(i, j, k) - .5 * Lx;
+          Bxc[i][j][k] -= (B0x / 10.0) * (M_PI / Ly) * cos(2 * M_PI * xM / Lx) * sin(M_PI * yM / Ly);
+          Byc[i][j][k] = B0y + (B0x / 10.0) * (2 * M_PI / Lx) * sin(2 * M_PI * xM / Lx) * cos(M_PI * yM / Ly);
+          Bzc[i][j][k] = B0z;
+        }
+    for (int is = 0; is < ns; is++)
+      grid->interpN2C(rhocs, is, rhons);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
 
 /*! initialize GEM challenge with no Perturbation with dipole-like tail topology */
 void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * grid, Collective *col) {

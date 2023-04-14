@@ -86,7 +86,14 @@ int c_Solver::Init(int argc, char **argv) {
     /* --------------------------------------------------------- */
     /* If using 'default' IO initialize fields depending on case */
     /* --------------------------------------------------------- */
-    if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
+    if (col->getCase()=="KAWTurbulencePert") {
+      double mime = fabs(col->getQOM(0)/col->getQOM(1));
+      double TiTe = pow(col->getUth(1)/col->getUth(0), 2.0)*mime;
+      EMf->initKAWTurbulencePert(vct, grid, col, mime, TiTe);
+    }
+    else if (col->getCase()=="DoubleHarrisRel_pairs") EMf->initDoubleHarrisRel_pairs(vct,grid,col);
+    // OLD CASES FROM IPIC
+    else if (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
     else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
     else if (col->getCase()=="ForceFreeHump") EMf->initForceFreeWithGaussianHumpPerturbation(vct,grid,col);
     else if ((col->getCase()=="GEM") || (col->getCase()=="GEMRelativity"))  EMf->initGEM(vct, grid,col);
@@ -617,11 +624,13 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0) {
-      EMf->setZeroDensitiesOutput();                  // set to zero the densities
+    if (cycle%(col->getFieldOutputCycle())==0 || (!(col->getSolInit()) && cycle==first_cycle)) {
+      // set to zero the densities
+      EMf->setZeroDensitiesOutput();
+      // interpolate Particles to Grid(Nodes)
       for (int i = 0; i < ns; i++)
-        part[i].interpP2GOutput(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
-
+        part[i].interpP2GOutput(EMf, grid, vct); 
+      // Write fields
       WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
     }
     //if (cycle%(col->getParticlesOutputCycle())==0 &&

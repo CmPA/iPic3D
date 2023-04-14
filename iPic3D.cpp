@@ -16,15 +16,19 @@ int main(int argc, char **argv) {
   /* 0- Initialize the solver class */
   /* ------------------------------ */
 
+  clocks->start(0);
   KCode.Init(argc, argv);
+  clocks->stop(0);
 //  KCode.InjectBoundaryParticles();
-  KCode.GatherMoments();
+//  KCode.GatherMoments();
+  KCode.WriteOutput(KCode.FirstCycle());
+  KCode.WriteConserved(KCode.FirstCycle());
 
   /* ------------ */
   /* 1- Main loop */
   /* ------------ */
 
-  for (int i = KCode.FirstCycle(); i <= KCode.LastCycle(); i++) {
+  for (int i = KCode.FirstCycle()+1; i <= KCode.LastCycle(); i++) {
 
     if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
 
@@ -47,9 +51,9 @@ int main(int argc, char **argv) {
 
     clocks->start(3);
     b_err = KCode.ParticlesMover();
+    clocks->stop(3);
 
     if (!b_err) KCode.CalculateBField();
-    clocks->stop(3);
     if ( b_err) i = KCode.LastCycle() + 1;
 
     /* --------------- */
@@ -62,25 +66,22 @@ int main(int argc, char **argv) {
     KCode.WriteRestart(i);
     clocks->stop(4);
 
-    if (i == 0 || i%(10)==0) {
-      if (KCode.get_myrank() == 0) {
-        std::cout << "################################################" << std::endl
-                  << "Initialization                : " << clocks->get(0) << " s" << std::endl
-                  << "Moments Gathering             : " << clocks->get(1) << " s" << std::endl
-                  << "Field Calculation             : " << clocks->get(2) << " s" << std::endl
-                  << "Particle Mover                : " << clocks->get(3) << " s" << std::endl
-                  << "Writing                       : " << clocks->get(4) << " s" << std::endl
-                  << "**************************************************" << std::endl;
-        }
-      }
+//    if (i == 0 || i%(10)==0) {
+//      if (KCode.get_myrank() == 0) {
+//        std::cout << "################################################" << std::endl
+//                  << "Initialization                : " << clocks->get(0) << " s" << std::endl
+//                  << "Moments Gathering             : " << clocks->get(1) << " s" << std::endl
+//                  << "Field Calculation             : " << clocks->get(2) << " s" << std::endl
+//                  << "Particle Mover                : " << clocks->get(3) << " s" << std::endl
+//                  << "Writing                       : " << clocks->get(4) << " s" << std::endl
+//                  << "**************************************************" << std::endl;
+//        }
+//      }
   }
 
-int myrank;
-myrank = KCode.get_myrank();
-//MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
   KCode.Finalize();
 
-  if (myrank == 0) {
+  if (KCode.get_myrank() == 0) {
     std::cout << "################################################" << std::endl
               << "Initialization                : " << clocks->get(0) << " s" << std::endl
               << "Moments Gathering             : " << clocks->get(1) << " s" << std::endl

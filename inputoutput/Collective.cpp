@@ -370,7 +370,7 @@ void Collective::ReadInput(string inputfile) {
 
   if(!RESTART1) {
 
-    if (!SOLINIT1) last_cycle = -1;
+    if (!SOLINIT1) last_cycle = 0;
     restart_status = 0;
     c = config.read < double >("c", 1.0);
 
