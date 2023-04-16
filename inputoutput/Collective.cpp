@@ -391,9 +391,9 @@ void Collective::ReadInput(string inputfile) {
     nzc = config.read < int >("nzc");
 #endif
 
-    x_center = config.read < double >("x_center");
-    y_center = config.read < double >("y_center");
-    z_center = config.read < double >("z_center");
+    x_center = config.read < double >("x_center",Lx/2.0);
+    y_center = config.read < double >("y_center",Ly/2.0);
+    z_center = config.read < double >("z_center",Lz/2.0);
     L_square = config.read < double >("L_square",0.0);
     L_outer = config.read < double >("L_outer",0.0);
     coilD = config.read<double>( "CoilD",0.0 );

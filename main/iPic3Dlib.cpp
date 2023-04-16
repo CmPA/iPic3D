@@ -93,27 +93,27 @@ int c_Solver::Init(int argc, char **argv) {
     }
     else if (col->getCase()=="DoubleHarrisRel_pairs") EMf->initDoubleHarrisRel_pairs(vct,grid,col);
     // OLD CASES FROM IPIC
-    else if (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
-    else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
-    else if (col->getCase()=="ForceFreeHump") EMf->initForceFreeWithGaussianHumpPerturbation(vct,grid,col);
-    else if ((col->getCase()=="GEM") || (col->getCase()=="GEMRelativity"))  EMf->initGEM(vct, grid,col);
-    else if (col->getCase()=="KAWTurbulencePert") {
-      double mime = fabs(col->getQOM(0)/col->getQOM(1));
-      double TiTe = pow(col->getUth(1)/col->getUth(0), 2.0)*mime;
-      EMf->initKAWTurbulencePert(vct, grid, col, mime, TiTe);
-    }
-    else if (col->getCase()=="HarrisSteps")       EMf->initDoublePeriodicHarrisSteps(vct, grid,col);
-    else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
-    else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
-    else if (col->getCase()=="DoubleHarris")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
-    else if (col->getCase()=="Whistler")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
-    else if (col->getCase()=="WhistlerKappa")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
-    else if (col->getCase()=="Coils")  EMf->initWB8(vct,grid,col);
-    else if (col->getCase()=="CoilsMono")  EMf->initWB8(vct,grid,col);
-    else if (col->getCase()=="TwoCoils")  EMf->initTwoCoils(vct,grid,col);
-    else if (col->getCase()=="FluxRope")  EMf->initFluxRope(vct,grid,col);
-    else if (col->getCase()=="GEMNoVelShear")  EMf->initHarrisNoVelShear(vct, grid,col);
-    else if (col->getCase()=="Relativistic")  EMf->init(vct, grid, col);
+//    else if (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
+//    else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
+//    else if (col->getCase()=="ForceFreeHump") EMf->initForceFreeWithGaussianHumpPerturbation(vct,grid,col);
+//    else if ((col->getCase()=="GEM") || (col->getCase()=="GEMRelativity"))  EMf->initGEM(vct, grid,col);
+//    else if (col->getCase()=="KAWTurbulencePert") {
+//      double mime = fabs(col->getQOM(0)/col->getQOM(1));
+//      double TiTe = pow(col->getUth(1)/col->getUth(0), 2.0)*mime;
+//      EMf->initKAWTurbulencePert(vct, grid, col, mime, TiTe);
+//    }
+//    else if (col->getCase()=="HarrisSteps")       EMf->initDoublePeriodicHarrisSteps(vct, grid,col);
+//    else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
+//    else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+//    else if (col->getCase()=="DoubleHarris")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
+//    else if (col->getCase()=="Whistler")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
+//    else if (col->getCase()=="WhistlerKappa")    EMf->initDoublePeriodicHarrisWithGaussianHumpPerturbation(vct,grid,col);
+//    else if (col->getCase()=="Coils")  EMf->initWB8(vct,grid,col);
+//    else if (col->getCase()=="CoilsMono")  EMf->initWB8(vct,grid,col);
+//    else if (col->getCase()=="TwoCoils")  EMf->initTwoCoils(vct,grid,col);
+//    else if (col->getCase()=="FluxRope")  EMf->initFluxRope(vct,grid,col);
+//    else if (col->getCase()=="GEMNoVelShear")  EMf->initHarrisNoVelShear(vct, grid,col);
+//    else if (col->getCase()=="Relativistic")  EMf->init(vct, grid, col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -157,45 +157,47 @@ int c_Solver::Init(int argc, char **argv) {
       if (myrank==0) cout << col->getCase() << endl;
 
       for (int i = 0; i < ns; i++) {
-        if      (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
-        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
-        else if (col->getCase()=="DoubleHarris")    part[i].maxwellian_reversed(grid, EMf, vct);
-        else if (col->getCase()=="KAWTurbulencePert") {
+        if (col->getCase()=="KAWTurbulencePert") {
           double mime = fabs(col->getQOM(0)/col->getQOM(1));
           double TiTe = pow(col->getUth(1)/col->getUth(0), 2.0)*mime;
           part[i].KAWTurbulencePert(grid, EMf, vct, col->getB0x(), mime, TiTe, col->getPartSymmetric());
         }
-        else if (col->getCase()=="Whistler")    part[i].maxwellian_whistler(grid, EMf, vct);
-        else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
-        else if (col->getCase()=="GEMRelativity")    part[i].relativistic_maxwellian(grid, EMf, vct);
-        else if (col->getCase()=="Relativistic")  part[i].twostream1D(grid, vct, 3);
-        else if (col->getCase()=="GEM" || col->getCase()=="GEMNoVelShear") {
-          if (i<2)
-            part[i].maxwellian(grid, EMf, vct);
-          else
-            if(col->getPartInit()=="Kappa")
-              part[i].kappa(grid, EMf, vct);
-            else
-              part[i].maxwellian(grid, EMf, vct);
-        }
-        else if (col->getCase()=="Coils") {
-          if (col->getRHOinit(i) > 0.0)
-            part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
-          else
-               part[i].empty(grid, EMf, vct);
-        }
-        else if (col->getCase()=="TwoCoils"){
-          if (col->getRHOinit(i) > 0.0)
-            part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
-          else
-            part[i].empty(grid, EMf, vct);
-        }
-        else if (col->getCase()=="CoilsMono"){
-          if (col->getRHOinit(i) > 0.0)
-            part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
-          else
-            part[i].empty(grid, EMf, vct);
-        }
+        else if (col->getCase()=="DoubleHarrisRel_pairs") part[i].DoubleHarrisRel_pairs(grid, EMf, vct, col);
+//	// OLD CASES FROM IPIC
+//        else if (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
+//        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);
+//        else if (col->getCase()=="DoubleHarris")    part[i].maxwellian_reversed(grid, EMf, vct);
+//        else if (col->getCase()=="Whistler")    part[i].maxwellian_whistler(grid, EMf, vct);
+//        else if (col->getCase()=="WhistlerKappa")    part[i].kappa(grid, EMf, vct);
+//        else if (col->getCase()=="GEMRelativity")    part[i].relativistic_maxwellian(grid, EMf, vct);
+//        else if (col->getCase()=="Relativistic")  part[i].twostream1D(grid, vct, 3);
+//        else if (col->getCase()=="GEM" || col->getCase()=="GEMNoVelShear") {
+//          if (i<2)
+//            part[i].maxwellian(grid, EMf, vct);
+//          else
+//            if(col->getPartInit()=="Kappa")
+//              part[i].kappa(grid, EMf, vct);
+//            else
+//              part[i].maxwellian(grid, EMf, vct);
+//        }
+//        else if (col->getCase()=="Coils") {
+//          if (col->getRHOinit(i) > 0.0)
+//            part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+//          else
+//               part[i].empty(grid, EMf, vct);
+//        }
+//        else if (col->getCase()=="TwoCoils"){
+//          if (col->getRHOinit(i) > 0.0)
+//            part[i].maxwell_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+//          else
+//            part[i].empty(grid, EMf, vct);
+//        }
+//        else if (col->getCase()=="CoilsMono"){
+//          if (col->getRHOinit(i) > 0.0)
+//            part[i].monoenergetic_box(grid,EMf,vct,L_square,x_center,y_center,z_center, 1.0); //generates maxwellian in a box
+//          else
+//            part[i].empty(grid, EMf, vct);
+//        }
         else part[i].maxwellian(grid, EMf, vct);
       }
     }

@@ -65,6 +65,297 @@ void Particles3D::empty(Grid* grid,Field* EMf,VirtualTopology3D* vct){
     nop = 0;
 }
 
+/** Maxellian random velocity and uniform spatial distribution */
+void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2 + ns);
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = u0 + uth * prob * cos(theta);
+              // v
+              v[counter] = v0 + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = w0 + wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+              counter++;
+            }
+}
+
+/** For KAW Turbulence: Maxwellian random velocity, uniform spatial distribution BUT variable number os ppc */
+/** Also a perturbation in velocity on top */
+void Particles3D::KAWTurbulencePert(Grid * grid, Field * EMf, VirtualTopology3D * vct, double B0x, double mime, double TiTe, bool symmetric) {
+
+  long long seed = (vct->getCartesian_rank() + 1)*20 + ns;
+  srand(seed);
+  srand48(seed);
+
+  // Profile parameters
+  double h = 0.2;
+  double r = 10.;
+  // Magnetic field parameters
+  double B0 = B0x;
+  double Bm = 2.*B0x;
+  double alpha = (Bm-B0)*r/(2.*pow(2*h,r)*pow(1.+pow(2*h,-r),2));
+  // Density parameters
+  double betam = 0.5;
+  double rhom = rhoINIT/4./M_PI;
+  double vthi = sqrt(betam*Bm*Bm/2./4./M_PI/rhom);
+  double vthe = vthi*sqrt(mime/TiTe);
+  double Ptot = Bm*Bm/2./4./M_PI + rhom*(vthi*vthi + vthe*vthe/mime);
+  // Perturbation parameters
+  double a = Bm/10.;
+
+  double harvest;
+  double prob, theta, sign;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++) {
+    
+        // Density in this cell
+        double rho = fabs(EMf->getRHOcs(i, j, k, ns));
+        // Calculate nppc in this cell: it will be scaled according to rho/rhom
+        double fs=1.;
+        if (symmetric) fs=2.;
+        int npcelhere = (int) (double(npcel) * rho/rhom / fs);
+        int npcelxhere = (int) sqrt(double(npcelhere));
+        int npcelyhere = npcelhere/npcelxhere;
+        int npcelzhere = 1;
+        for (int ii = 0; ii < npcelxhere; ii++)
+          for (int jj = 0; jj < npcelyhere; jj++)
+            for (int kk = 0; kk < npcelzhere; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelxhere) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / npcelyhere) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelzhere) + grid->getZN(i, j, k);
+              
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (rho / (double(npcelhere)*fs)) * (1.0 / invVOL);
+
+              // Drfit velocities for this particle
+              double curlB_z = (Bm-B0)*r*pow(y[counter]-Ly/2.,r-1.)/pow(Ly*h,r)/pow(1.+pow((y[counter]-Ly/2.)/Ly/h,r),2)
+                               - 2.*alpha/(Ly/2.)*(y[counter]/(Ly/2.)-1);
+              double wdrift = curlB_z/4./M_PI/rho*(qom/fabs(qom)) / (1.+1./mime)*fabs(qom)/mime;
+              double curlB_y = a*2.*M_PI/Lx*sin(2.*M_PI/Lx*x[counter]);
+              double vdrift = curlB_y/4./M_PI/rho*(qom/fabs(qom)) / (1.+1./mime)*fabs(qom)/mime;
+              // Add perturbation
+              wdrift -= a*cos(2.*M_PI/Lx*x[counter])/sqrt(4.*M_PI*(1.+1./mime)*rho);
+              
+              // u
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              u[counter] = uth * prob * cos(theta);
+              // v
+              v[counter] = vdrift + vth * prob * sin(theta);
+              // w
+              harvest = rand() / (double) RAND_MAX;
+              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+              harvest = rand() / (double) RAND_MAX;
+              theta = 2.0 * M_PI * harvest;
+              w[counter] = wdrift + wth * prob * cos(theta);
+              
+              counter++;
+
+              // Symmetric case: place another particle here
+              // Same position, opposite thermal velocity
+              if (symmetric) {
+                x[counter] = x[counter-1];
+                y[counter] = y[counter-1];
+                z[counter] = z[counter-1];
+                q[counter] = q[counter-1];
+                
+                u[counter] = -u[counter-1];
+                v[counter] = 2.*vdrift - v[counter-1];
+                w[counter] = 2.*wdrift - w[counter-1];
+               
+                counter++;
+              }
+            }
+      }
+  nop = counter;
+}
+
+double SECHSQR(double x) {
+  double y, res;
+
+  if (fabs(x)>354.0) {
+    res = 1.31e-307;
+  }
+  else {                                                                                    
+    y = 1.0/cosh(x);
+    res = y*y;
+  }
+  return res;
+}          
+
+void MaxwellJuttner(double * upx, double * upy, double * upz, double theta, double gammaDrift, int dirDrift) {
+
+  double eta = 1.45; // Rejection factor
+  double g = sqrt(0.5*M_PI*theta*theta*theta);
+  double h = 2.*theta*theta*theta;
+  double fg = g/(g+h);
+  double fh = h/(g+h);
+
+  double betaDrift = 0.0;
+  double uDrift    = 0.0;
+  if (gammaDrift > 1.0) {
+    uDrift = double(abs(dirDrift)/dirDrift) * sqrt(gammaDrift*gammaDrift - 1.0);
+    betaDrift = uDrift / gammaDrift;
+  }
+  
+  double rs[8];
+  for (int i=0; i<8; i++) rs[i] = rand()/(double)RAND_MAX;
+  bool reject = true;
+  // Generate a random kinetic energy w = sqrt{u^2+1} - 1                                         
+  // in the frame of drift.
+  double w, pq;
+  while (reject) {
+    w = -theta;
+    if (rs[3] < fg) w = w * (log(rs[0]) + log(rs[1])*pow(cos(2.*M_PI*rs[2]),2.0));
+    else            w = w * log(rs[0]*rs[1]*rs[2]);
+    pq = (w+1.0)*sqrt(w*(w+2.0)) / (sqrt(2.0*w) + w*w);
+    if (pq >= rs[4] * eta)       reject = false; // w is the result we want
+    else for (int i=0; i<5; i++) rs[i] = rand()/(double)RAND_MAX; // w is rejected -- regenerate
+  }
+  
+  // find gamma and |u| in frame of drift                                                         
+  double u0 = 1. + w;
+  double uMag = sqrt(w*(w+2.));
+  // find direction
+  double phi = 2.0*M_PI * rs[5];
+  double u1 = (2.0 * rs[6] - 1.0) * uMag;
+  if (rs[7]*u0 < -betaDrift*u1) u1 = -u1;
+  double uPerp = sqrt(uMag*uMag - u1*u1);
+  double u2 = uPerp * cos(phi);
+  double u3 = uPerp * sin(phi);
+
+  // Boost back to simulation frame
+  if (abs(dirDrift)==1) {
+    *upx = gammaDrift * u1 + uDrift * u0;
+    *upy = u2;
+    *upz = u3;
+  }
+  else if (abs(dirDrift)==2) {
+    *upy = gammaDrift * u1 + uDrift * u0;
+    *upx = u2;
+    *upz = u3;
+  }
+  else if (abs(dirDrift)==3) {
+    *upz = gammaDrift * u1 + uDrift * u0;
+    *upx = u2;
+    *upy = u3;
+  }
+  else {
+    *upx = u1;
+    *upy = u2;
+    *upz = u3;
+  }
+}
+
+/* For relativistic double Harris with pairs: */
+/* Maxwellian background, drifting particles in the sheets*/
+void Particles3D::DoubleHarrisRel_pairs(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective * col) {
+
+  long long seed = (vct->getCartesian_rank() + 1)*20 + ns;
+  srand(seed);
+  srand48(seed);
+
+  double sigma = 10.0;
+  const double eta = 5.0;
+  double thb = col->getUth(0);
+  const double perturb_amp = 0.01;
+  double guideField_ratio = 0.0;
+  double rho0  = rhoINIT/(4.0*M_PI);
+  double B0x = sqrt(sigma*4.0*M_PI*rho0*2.0);
+  double rhoCS = eta*rho0;
+  double w0CS = B0x/(2.0*FourPI*rhoCS*delta);
+  double g0CS = 1.0/sqrt(1.0-w0CS*w0CS);
+  double thCS = B0x*B0x/(2.0*FourPI*2.0*rhoCS)*g0CS;
+  double y12=Ly/2.0;
+  double y14=Ly/4.0;
+  double y34=3.0*Ly/4.0;
+
+  double upx, upy, upz;
+  double fs;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++) {
+    
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / double(npcelx)) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / double(npcely)) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / double(npcelz)) + grid->getZN(i, j, k);
+              
+              // Distinguish between background and drifting species
+              if (ns < 2) {
+		// Charge
+		q[counter] = (qom / fabs(qom)) * rho0 / double(npcel) / grid->getInvVOL();
+		
+		// Velocity from (relativistic) nondrifting Maxwellian
+                MaxwellJuttner(&upx, &upy, &upz, thb, 1.0, 0);
+	      }
+              else {
+                if (y[counter]<y12) fs = SECHSQR((y[counter]-y14)/delta);
+		else                fs = SECHSQR((y[counter]-y34)/delta);
+	       
+		// Skip this particle if weight is too small
+	       	if (fabs(fs)<1.e-8) continue;
+
+		// Charge
+		q[counter] = (qom / fabs(qom)) * rhoCS / double(npcel) * fs / grid->getInvVOL();
+
+		// Velocity from (relativistic) drifting Maxwellian
+                if (qom<0.) MaxwellJuttner(&upx, &upy, &upz, thCS, g0CS, -3);
+		else        MaxwellJuttner(&upx, &upy, &upz, thCS, g0CS, 3);
+		// Flip sign of drift velocity component for particles in the second layer
+                if (y[counter] > y12) {
+		  upx = -upx;
+		  upy = -upy;
+		  upz = -upz;
+		}
+	      }
+		              
+              // Store 4-velocity
+              u[counter] = upx;
+              v[counter] = upy;
+              w[counter] = upz;
+              
+              counter++;
+            }
+      }
+  nop = counter;
+}
+
+/**************** OLD INITIALIZATION ROUTINES FROM IPIC *****************/
+
 /** particles are uniformly distributed with zero velocity   */
 void Particles3D::uniform_background(Grid * grid, Field * EMf) {
   long long counter = 0;
@@ -246,51 +537,8 @@ void Particles3D::MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology
               counter++;
             }
       }
-
-
 }
 
-/** Maxellian random velocity and uniform spatial distribution */
-void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
-
-  /* initialize random generator with different seed on different processor */
-  srand(vct->getCartesian_rank() + 2 + ns);
-
-  double harvest;
-  double prob, theta, sign;
-  long long counter = 0;
-  for (int i = 1; i < grid->getNXC() - 1; i++)
-    for (int j = 1; j < grid->getNYC() - 1; j++)
-      for (int k = 1; k < grid->getNZC() - 1; k++)
-        for (int ii = 0; ii < npcelx; ii++)
-          for (int jj = 0; jj < npcely; jj++)
-            for (int kk = 0; kk < npcelz; kk++) {
-              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);  // x[i] = xstart + (xend-xstart)/2.0 + harvest1*((xend-xstart)/4.0)*cos(harvest2*2.0*M_PI);
-              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
-              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
-              // q = charge
-              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
-              // u
-              harvest = rand() / (double) RAND_MAX;
-              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-              harvest = rand() / (double) RAND_MAX;
-              theta = 2.0 * M_PI * harvest;
-              u[counter] = u0 + uth * prob * cos(theta);
-              // v
-              v[counter] = v0 + vth * prob * sin(theta);
-              // w
-              harvest = rand() / (double) RAND_MAX;
-              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-              harvest = rand() / (double) RAND_MAX;
-              theta = 2.0 * M_PI * harvest;
-              w[counter] = w0 + wth * prob * cos(theta);
-              if (TrackParticleID)
-                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
-              counter++;
-            }
-
-
-}
 /** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::maxwellian_reversed(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
@@ -681,101 +929,6 @@ void Particles3D::force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               counter++;
             }
 
-}
-
-/** For KAW Turbulence: Maxwellian random velocity, uniform spatial distribution BUT variable number os ppc */
-/** Also a perturbation in velocity on top */
-void Particles3D::KAWTurbulencePert(Grid * grid, Field * EMf, VirtualTopology3D * vct, double B0x, double mime, double TiTe, bool symmetric) {
-
-  long long seed = (vct->getCartesian_rank() + 1)*20 + ns;
-  srand(seed);
-  srand48(seed);
-
-  // Profile parameters
-  double h = 0.2;
-  double r = 10.;
-  // Magnetic field parameters
-  double B0 = B0x;
-  double Bm = 2.*B0x;
-  double alpha = (Bm-B0)*r/(2.*pow(2*h,r)*pow(1.+pow(2*h,-r),2));
-  // Density parameters
-  double betam = 0.5;
-  double rhom = rhoINIT/4./M_PI;
-  double vthi = sqrt(betam*Bm*Bm/2./4./M_PI/rhom);
-  double vthe = vthi*sqrt(mime/TiTe);
-  double Ptot = Bm*Bm/2./4./M_PI + rhom*(vthi*vthi + vthe*vthe/mime);
-  // Perturbation parameters
-  double a = Bm/10.;
-
-  double harvest;
-  double prob, theta, sign;
-  long long counter = 0;
-  for (int i = 1; i < grid->getNXC() - 1; i++)
-    for (int j = 1; j < grid->getNYC() - 1; j++)
-      for (int k = 1; k < grid->getNZC() - 1; k++) {
-    
-        // Density in this cell
-        double rho = fabs(EMf->getRHOcs(i, j, k, ns));
-        // Calculate nppc in this cell: it will be scaled according to rho/rhom
-        double fs=1.;
-        if (symmetric) fs=2.;
-        int npcelhere = (int) (double(npcel) * rho/rhom / fs);
-        int npcelxhere = (int) sqrt(double(npcelhere));
-        int npcelyhere = npcelhere/npcelxhere;
-        int npcelzhere = 1;
-        for (int ii = 0; ii < npcelxhere; ii++)
-          for (int jj = 0; jj < npcelyhere; jj++)
-            for (int kk = 0; kk < npcelzhere; kk++) {
-              x[counter] = (ii + .5) * (dx / npcelxhere) + grid->getXN(i, j, k);
-              y[counter] = (jj + .5) * (dy / npcelyhere) + grid->getYN(i, j, k);
-              z[counter] = (kk + .5) * (dz / npcelzhere) + grid->getZN(i, j, k);
-              
-              // q = charge
-              q[counter] = (qom / fabs(qom)) * (rho / (double(npcelhere)*fs)) * (1.0 / invVOL);
-
-              // Drfit velocities for this particle
-              double curlB_z = (Bm-B0)*r*pow(y[counter]-Ly/2.,r-1.)/pow(Ly*h,r)/pow(1.+pow((y[counter]-Ly/2.)/Ly/h,r),2)
-                               - 2.*alpha/(Ly/2.)*(y[counter]/(Ly/2.)-1);
-              double wdrift = curlB_z/4./M_PI/rho*(qom/fabs(qom)) / (1.+1./mime)*fabs(qom)/mime;
-              double curlB_y = a*2.*M_PI/Lx*sin(2.*M_PI/Lx*x[counter]);
-              double vdrift = curlB_y/4./M_PI/rho*(qom/fabs(qom)) / (1.+1./mime)*fabs(qom)/mime;
-              // Add perturbation
-              wdrift -= a*cos(2.*M_PI/Lx*x[counter])/sqrt(4.*M_PI*(1.+1./mime)*rho);
-              
-              // u
-              harvest = rand() / (double) RAND_MAX;
-              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-              harvest = rand() / (double) RAND_MAX;
-              theta = 2.0 * M_PI * harvest;
-              u[counter] = uth * prob * cos(theta);
-              // v
-              v[counter] = vdrift + vth * prob * sin(theta);
-              // w
-              harvest = rand() / (double) RAND_MAX;
-              prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-              harvest = rand() / (double) RAND_MAX;
-              theta = 2.0 * M_PI * harvest;
-              w[counter] = wdrift + wth * prob * cos(theta);
-              
-              counter++;
-
-              // Symmetric case: place another particle here
-              // Same position, opposite thermal velocity
-              if (symmetric) {
-                x[counter] = x[counter-1];
-                y[counter] = y[counter-1];
-                z[counter] = z[counter-1];
-                q[counter] = q[counter-1];
-                
-                u[counter] = -u[counter-1];
-                v[counter] = 2.*vdrift - v[counter-1];
-                w[counter] = 2.*wdrift - w[counter-1];
-               
-                counter++;
-              }
-            }
-      }
-  nop = counter;
 }
 
 /** Maxwellian random velocity and uniform spatial distribution */
@@ -1844,31 +1997,50 @@ int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 //    vp = 2.*uybar - vpold;
 //    wp = 2.*uzbar - wpold;
 
-    /////////////////// Boris
-    double epsx = qomdt2*Exl;
-    double epsy = qomdt2*Eyl;
-    double epsz = qomdt2*Ezl;
-    double upx = upold + epsx;
-    double upy = vpold + epsy;
-    double upz = wpold + epsz;
-    gbar = sqrt(1. + (upx*upx+upy*upy+upz*upz)/c/c);
-    double betax = qomdt2*Bxl/c/gbar;
-    double betay = qomdt2*Byl/c/gbar;
-    double betaz = qomdt2*Bzl/c/gbar;
-    double beta2 = betax*betax+betay*betay+betaz*betaz;
-
-    double upcrossb_x = (upy*betaz-upz*betay);
-    double upcrossb_y = (-upx*betaz+upz*betax);
-    double upcrossb_z = (upx*betay-upy*betax);
-    upx = upx + upcrossb_x;
-    upy = upy + upcrossb_y;
-    upz = upz + upcrossb_z;
-    upcrossb_x = (upy*betaz-upz*betay)/(1.+beta2);
-    upcrossb_y = (-upx*betaz+upz*betax)/(1.+beta2);
-    upcrossb_z = (upx*betay-upy*betax)/(1.+beta2);
-    up = upx + upcrossb_x + epsx;
-    vp = upy + upcrossb_y + epsy;
-    wp = upz + upcrossb_z + epsz;
+//    /////////////////// Boris
+//    double epsx = qomdt2*Exl;
+//    double epsy = qomdt2*Eyl;
+//    double epsz = qomdt2*Ezl;
+//    double upx = upold + epsx;
+//    double upy = vpold + epsy;
+//    double upz = wpold + epsz;
+//    gbar = sqrt(1. + (upx*upx+upy*upy+upz*upz)/c/c);
+//    double betax = qomdt2*Bxl/c/gbar;
+//    double betay = qomdt2*Byl/c/gbar;
+//    double betaz = qomdt2*Bzl/c/gbar;
+//    double beta2 = betax*betax+betay*betay+betaz*betaz;
+//
+//    double upcrossb_x = (upy*betaz-upz*betay);
+//    double upcrossb_y = (-upx*betaz+upz*betax);
+//    double upcrossb_z = (upx*betay-upy*betax);
+//    upx = upx + upcrossb_x;
+//    upy = upy + upcrossb_y;
+//    upz = upz + upcrossb_z;
+//    upcrossb_x = (upy*betaz-upz*betay)/(1.+beta2);
+//    upcrossb_y = (-upx*betaz+upz*betax)/(1.+beta2);
+//    upcrossb_z = (upx*betay-upy*betax)/(1.+beta2);
+//    up = upx + upcrossb_x + epsx;
+//    vp = upy + upcrossb_y + epsy;
+//    wp = upz + upcrossb_z + epsz;
+    const double wx = u[rest] + qomdt2 * Exl;
+    const double wy = v[rest] + qomdt2 * Eyl;
+    const double wz = w[rest] + qomdt2 * Ezl;
+    double gamma = sqrt(1.0 + wx *wx + wy *wy + wz *wz);
+    Bxl *=qomdt2 / gamma;
+    Byl *=qomdt2 / gamma;
+    Bzl *=qomdt2 / gamma;
+    const double h2 = Bxl * Bxl + Byl * Byl + Bzl * Bzl;
+    
+    // solve the velocity equation (Relativistic Boris method)
+    double uxnew = -(pow(Byl,2)*wx) - pow(Bzl,2)*wx + Bxl*Byl*wy +
+                     Bzl*wy - Byl*wz + Bxl*Bzl*wz;
+    double uynew = Bxl*Byl*wx - Bzl*wx - pow(Bxl,2)*wy -
+                     pow(Bzl,2)*wy + Bxl*wz + Byl*Bzl*wz;
+    double uznew = Byl*wx + Bxl*Bzl*wx - Bxl*wy + Byl*Bzl*wy -
+                     pow(Bxl,2)*wz - pow(Byl,2)*wz;
+    up = wx + uxnew *2.0/(1+h2) + qomdt2 * Exl;
+    vp = wy + uynew *2.0/(1+h2) + qomdt2 * Eyl;
+    wp = wz + uznew *2.0/(1+h2) + qomdt2 * Ezl;
 
     u[rest] = up;
     v[rest] = vp;

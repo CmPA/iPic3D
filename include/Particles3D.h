@@ -27,6 +27,12 @@ class Particles3D:public Particles3Dcomm {
     ~Particles3D();
     /** Initial condition: empty system */
     void empty(Grid* grid,Field* EMf, VirtualTopology3D* vct);
+    /** Initial condition: uniform in space and maxwellian in velocity */
+    void maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
+    /** KAW turbulence setup */
+    void KAWTurbulencePert(Grid * grid, Field * EMf, VirtualTopology3D * vct, double B0x, double mime, double TiTe, bool symmetric);  
+    /** Double Harris pair-plasma setup */
+    void DoubleHarrisRel_pairs(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective * col);
     /** Initial condition: uniform in space and motionless */
     void uniform_background(Grid * grid, Field * EMf);
     /** Initialize particles with a constant velocity in dim direction. Depending on the value of dim:
@@ -38,8 +44,6 @@ class Particles3D:public Particles3Dcomm {
     void constantVelocity(double vel, int dim, Grid * grid, Field * EMf);
     /** Initial condition: uniform in space and relativistic maxwellian in velocity */
     void relativistic_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
-    /** Initial condition: uniform in space and maxwellian in velocity */
-    void maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: uniform in space and maxwellian with reversal across Y in velocity */
     void maxwellian_reversed(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: non uniform in space with maxwellian in thermal equilibrium outside a domain */
@@ -52,8 +56,6 @@ class Particles3D:public Particles3Dcomm {
     void MaxwellianFromFields(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Force Free initialization (JxB=0) for particles */
     void force_free(Grid * grid, Field * EMf, VirtualTopology3D * vct);
-    /** KAW turbulence setup */
-    void KAWTurbulencePert(Grid * grid, Field * EMf, VirtualTopology3D * vct, double B0x, double mime, double TiTe, bool symmetric);  
     /** Initial condition: uniform in space and maxwellian in velocity */
     void alt_maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct);
     /** Initial condition: localised in a box and monoenergetic in velocity */

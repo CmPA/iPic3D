@@ -2131,12 +2131,13 @@ double LOG_COSH(double x) {
 
 /* Double Harris sheet in relativistic equilibrium --- pair plasmas */
 void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid, Collective *col) {
-  double thbe = col->getUth(0);
-  const double perturb_amp = 0.0;
-  double rho0  = rhoINIT[0];
-  double sigma = B0x*B0x/(FourPI*rho0*2.0);
+double sigma = 10.0;
   const double eta = 5.0;
-  double guideField_ratio = B0z/B0x;
+  double thb = col->getUth(0);
+  const double perturb_amp = 0.01;
+  double guideField_ratio = 0.0;
+  double rho0  = rhoINIT[0]/FourPI;
+  double B0x = sqrt(sigma*4.0*M_PI*rho0*2.0);
   double rhoCS = eta*rho0;
   double w0CS = B0x/(2.0*FourPI*rhoCS*delta);
   double g0CS = 1.0/sqrt(1.0-w0CS*w0CS);
@@ -2148,8 +2149,8 @@ void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid,
       cout << "Initialize relativistic Harris with pertubation" << endl;
       cout << "-----------------------------------------------" << endl;
       cout << "Background total sigma     = " << sigma                            << endl; 
-      cout << "Background total beta      = " << 2.0*rho0*thbe/(B0x*B0x/2.0/FourPI) << endl;
-      cout << "Background temperature     = " << thbe                             << endl; 
+      cout << "Background total beta      = " << 2.0*rho0*thb/(B0x*B0x/2.0/FourPI) << endl;
+      cout << "Background temperature     = " << thb                             << endl; 
       cout << "Density ratio in CS        = " << eta                              << endl; 
       cout << "Drifiting temperature      = " << thCS                             << endl; 
       cout << "Drift gamma                = " << g0CS                             << endl; 
@@ -2159,11 +2160,11 @@ void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid,
     }
 
     // Initial magnetic field components
-    double x14=Lx/4.0+xStart;
-    double x34=3.0*Lx/4.0+xStart;
-    double y12=Ly/2.0+yStart;
-    double y14=Ly/4.0+yStart;
-    double y34=3.0*Ly/4.0+yStart;
+    double x14=Lx/4.0;
+    double x34=3.0*Lx/4.0;
+    double y12=Ly/2.0;
+    double y14=Ly/4.0;
+    double y34=3.0*Ly/4.0;
     // 4 times the perturbation height
     double ym=Ly;
     // perturbation wavelength
