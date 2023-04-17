@@ -288,7 +288,7 @@ void Particles3D::DoubleHarrisRel_pairs(Grid * grid, Field * EMf, VirtualTopolog
   double sigma = 10.0;
   const double eta = 5.0;
   double thb = col->getUth(0);
-  const double perturb_amp = 0.01;
+  const double perturb_amp = 0.0;
   double guideField_ratio = 0.0;
   double rho0  = rhoINIT/(4.0*M_PI);
   double B0x = sqrt(sigma*4.0*M_PI*rho0*2.0);
