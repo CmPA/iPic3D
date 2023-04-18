@@ -105,9 +105,9 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   Lx = col->getLx();
   Ly = col->getLy();
   Lz = col->getLz();
-  x_center     = col->getx_center();
-  y_center   = col->gety_center();
-  z_center     = col->getz_center();
+  x_center = col->getx_center();
+  y_center = col->gety_center();
+  z_center = col->getz_center();
   L_square = col->getL_square();
   L_outer = col->getL_outer();
 
@@ -144,6 +144,13 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   // info from VirtualTopology3D
   cVERBOSE = vct->getcVERBOSE();
 
+  // Custom parameters
+  nparam = col->getNparam();
+  if (nparam>0) {
+    input_param = new double[nparam];
+    for (int ip=0; ip<nparam; ip++) input_param[ip] = col->getInputParam(ip);
+  }
+
   // boundary condition for particles
   bcPfaceXright = col->getBcPfaceXright();
   bcPfaceXleft = col->getBcPfaceXleft();
@@ -155,6 +162,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
   bcPfaceYleft = col->getBcPfaceYleft();
   bcPfaceZright = col->getBcPfaceZright();
   bcPfaceZleft = col->getBcPfaceZleft();
+
   // //////////////////////////////////////////////////////////////
   // ////////////// ALLOCATE ARRAYS /////////////////////////
   // //////////////////////////////////////////////////////////////
@@ -300,7 +308,7 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
       if (dataset_id > 0)
         status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID);
       else {
-        for (register long long counter = 0; counter < nop; counter++)
+        for (long long counter = 0; counter < nop; counter++)
           ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
       }
     }
@@ -473,7 +481,7 @@ void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vc
     //Moments speciesMoments(nxn,nyn,nzn,invVOL);
     //speciesMoments.set_to_zero();
     //#pragma omp for
-    for (register long long i = 0; i < nop; i++) {
+    for (long long i = 0; i < nop; i++) {
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
       const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
       const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
@@ -755,7 +763,7 @@ void Particles3Dcomm::interpP2GOutput(Field * EMf, Grid * grid, VirtualTopology3
     //Moments speciesMoments(nxn,nyn,nzn,invVOL);
     //speciesMoments.set_to_zero();
     //#pragma omp for
-    for (register long long i = 0; i < nop; i++) {
+    for (long long i = 0; i < nop; i++) {
       const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
       const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
       const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
@@ -1409,7 +1417,7 @@ double Particles3Dcomm::getKe() {
   double gg;
 
   // Get energy from all particles
-  for (register long long i = 0; i < nop; i++) {
+  for (long long i = 0; i < nop; i++) {
     gg = sqrt(1. + (u[i]*u[i] + v[i]*v[i] + w[i]*w[i])/c/c);
     localKe += (q[i] / qom) * (gg - 1.) * c*c;
   }
@@ -1421,7 +1429,7 @@ double Particles3Dcomm::getKe() {
 double Particles3Dcomm::getTotalQ(){
     double localQ = 0.0;
   double totalQ = 0.0;
-  for (register int i=0; i < nop; i++)
+  for (int i=0; i < nop; i++)
          localQ += q[i];
   //cout << "My q is: " << localQ << endl;
     MPI_Allreduce(&localQ, &totalQ, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -1431,7 +1439,7 @@ double Particles3Dcomm::getTotalQ(){
 double Particles3Dcomm::getCoreQ(double radius){
     double localQ = 0.0;
   double totalQ = 0.0;
-  for (register int i=0; i < nop; i++)
+  for (int i=0; i < nop; i++)
     if (pow(x[i] - x_center, 2) +
       pow(y[i] - y_center, 2) +
       pow(z[i] - z_center, 2) <=
@@ -1447,7 +1455,7 @@ double Particles3Dcomm::getCoreQ(double radius){
 double Particles3Dcomm::getP() {
   double localP = 0.0;
   double totalP = 0.0;
-  for (register long long i = 0; i < nop; i++)
+  for (long long i = 0; i < nop; i++)
     localP += (q[i] / qom) * sqrt(u[i] * u[i] + v[i] * v[i] + w[i] * w[i]);
   MPI_Allreduce(&localP, &totalP, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   return (totalP);

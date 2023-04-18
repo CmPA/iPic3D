@@ -149,9 +149,9 @@ inline Moments::~Moments() {
 
 inline void Moments::set_to_zero() {
   // #pragma omp parallel for collapse(1)
-  for (register int i = 0; i < nx; i++)
-    for (register int j = 0; j < ny; j++)
-      for (register int k = 0; k < nz; k++) {
+  for (int i = 0; i < nx; i++)
+    for (int j = 0; j < ny; j++)
+      for (int k = 0; k < nz; k++) {
         rho[i][j][k] = 0.0;
         Jx[i][j][k] = 0.0;
         Jy[i][j][k] = 0.0;
@@ -625,6 +625,11 @@ class EMfields3D                // :public Field
     double coilD;
     /** Coil Parameter: magnetic coil spacing   */
     double coilSpacing;
+
+    /** Number of custom parameters */
+    int nparam;
+    /** Custom parameters */
+    double *input_param;
 
     /*! PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes */
     double ***PHI;

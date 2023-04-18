@@ -1,6 +1,4 @@
 Still TODOs:
---- Output of 0th-cycle quantities
-
 --- Diagnostic file (SummaryQuantities) with user-defined diagnostics
 
 --- Activate writing of cell-center quantities (i.e. B) for restart
@@ -10,4 +8,8 @@ Done:
 quantities for normal cycle, non-hat for output cycle ON TOP OF hatted stuff);
 even better to make a dedicated deposit routine only called at output time
 
+--- Output of 0th-cycle quantities
+
 --- Check all factors of c throghout the code
+
+--- Arbitrary custom input parameters in input file

@@ -37,6 +37,12 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   coilD = col->getcoilD();
   coilSpacing = col->getcoilSpacing();
 
+  // Custom parameters
+  nparam = col->getNparam();
+  if (nparam>0) {
+    input_param = new double[nparam];
+    for (int ip=0; ip<nparam; ip++) input_param[ip] = col->getInputParam(ip);
+  }
 
   Fext = 0.0;
 
@@ -1674,9 +1680,9 @@ void EMfields3D::addToSpeciesMoments(const Moments & in, int is) {
   assert_eq(in.get_nx(), nxn);
   assert_eq(in.get_ny(), nyn);
   assert_eq(in.get_nz(), nzn);
-  for (register int i = 0; i < nxn; i++) {
-    for (register int j = 0; j < nyn; j++)
-      for (register int k = 0; k < nzn; k++) {
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
         rhons[is][i][j][k] += in.get_rho(i, j, k);
         Jxs[is][i][j][k] += in.get_Jx(i, j, k);
         Jys[is][i][j][k] += in.get_Jy(i, j, k);
@@ -1910,9 +1916,9 @@ void EMfields3D::addmuzz(double weight[][2][2], int X, int Y, int Z, int is) {
 
 /*! set to 0 all the densities fields */
 void EMfields3D::setZeroDensities() {
-  for (register int i = 0; i < nxn; i++)
-    for (register int j = 0; j < nyn; j++)
-      for (register int k = 0; k < nzn; k++) {
+  for (int i = 0; i < nxn; i++)
+    for (int j = 0; j < nyn; j++)
+      for (int k = 0; k < nzn; k++) {
         Jxh [i][j][k] = 0.0;
         Jyh [i][j][k] = 0.0;
         Jzh [i][j][k] = 0.0;
@@ -1927,16 +1933,16 @@ void EMfields3D::setZeroDensities() {
         muzy[i][j][k] = 0.0;
         muzz[i][j][k] = 0.0;
       }
-  for (register int i = 0; i < nxc; i++)
-    for (register int j = 0; j < nyc; j++)
-      for (register int k = 0; k < nzc; k++) {
+  for (int i = 0; i < nxc; i++)
+    for (int j = 0; j < nyc; j++)
+      for (int k = 0; k < nzc; k++) {
         rhoc[i][j][k] = 0.0;
         rhoh[i][j][k] = 0.0;
       }
-  for (register int kk = 0; kk < ns; kk++)
-    for (register int i = 0; i < nxn; i++)
-      for (register int j = 0; j < nyn; j++)
-        for (register int k = 0; k < nzn; k++) {
+  for (int kk = 0; kk < ns; kk++)
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
           rhons[kk][i][j][k] = 0.0;
           Jxhs  [kk][i][j][k] = 0.0;
           Jyhs  [kk][i][j][k] = 0.0;
@@ -1962,17 +1968,17 @@ void EMfields3D::setZeroDensities() {
         }
 
   // Non-hat quantities at output cycle (TODO)
-//    for (register int i = 0; i < nxn; i++)
-//      for (register int j = 0; j < nyn; j++)
-//        for (register int k = 0; k < nzn; k++) {
+//    for (int i = 0; i < nxn; i++)
+//      for (int j = 0; j < nyn; j++)
+//        for (int k = 0; k < nzn; k++) {
 //          Jx  [i][j][k] = 0.0;
 //          Jy  [i][j][k] = 0.0;
 //          Jz  [i][j][k] = 0.0;
 //        }
-//    for (register int kk = 0; kk < ns; kk++)
-//      for (register int i = 0; i < nxn; i++)
-//        for (register int j = 0; j < nyn; j++)
-//          for (register int k = 0; k < nzn; k++) {
+//    for (int kk = 0; kk < ns; kk++)
+//      for (int i = 0; i < nxn; i++)
+//        for (int j = 0; j < nyn; j++)
+//          for (int k = 0; k < nzn; k++) {
 //            Jxs  [kk][i][j][k] = 0.0;
 //            Jys  [kk][i][j][k] = 0.0;
 //            Jzs  [kk][i][j][k] = 0.0;
@@ -1988,10 +1994,10 @@ void EMfields3D::setZeroDensities() {
 
 /*! set to 0 all the densities fields NEEDED FOR OUTPUT */
 void EMfields3D::setZeroDensitiesOutput() {
-    for (register int kk = 0; kk < ns; kk++)
-      for (register int i = 0; i < nxn; i++)
-        for (register int j = 0; j < nyn; j++)
-          for (register int k = 0; k < nzn; k++) {
+    for (int kk = 0; kk < ns; kk++)
+      for (int i = 0; i < nxn; i++)
+        for (int j = 0; j < nyn; j++)
+          for (int k = 0; k < nzn; k++) {
             Jxs  [kk][i][j][k] = 0.0;
             Jys  [kk][i][j][k] = 0.0;
             Jzs  [kk][i][j][k] = 0.0;
@@ -2007,24 +2013,23 @@ void EMfields3D::setZeroDensitiesOutput() {
 /*!SPECIES: Sum the charge density of different species on NODES */
 void EMfields3D::sumOverSpecies(VirtualTopology3D * vct) {
   for (int is = 0; is < ns; is++)
-    for (register int i = 0; i < nxn; i++)
-      for (register int j = 0; j < nyn; j++)
-        for (register int k = 0; k < nzn; k++)
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++)
           rhon[i][j][k] += rhons[is][i][j][k];
 }
 
 /*!SPECIES: Sum current density for different species */
 void EMfields3D::sumOverSpeciesJ() {
   for (int is = 0; is < ns; is++)
-    for (register int i = 0; i < nxn; i++)
-      for (register int j = 0; j < nyn; j++)
-        for (register int k = 0; k < nzn; k++) {
+    for (int i = 0; i < nxn; i++)
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
           Jx[i][j][k] += Jxs[is][i][j][k];
           Jy[i][j][k] += Jys[is][i][j][k];
           Jz[i][j][k] += Jzs[is][i][j][k];
         }
 }
-
 
 /*************** STANDARD EM FIELD SETUPS ****************/
 void EMfields3D::initKAWTurbulencePert(VirtualTopology3D * vct, Grid * grid, Collective *col, double mime, double TiTe) {
@@ -2131,15 +2136,16 @@ double LOG_COSH(double x) {
 
 /* Double Harris sheet in relativistic equilibrium --- pair plasmas */
 void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid, Collective *col) {
-double sigma = 10.0;
-  const double eta = 5.0;
+  const double sigma = input_param[0]; //10.0;
+  const double eta = input_param[1]; //5.0;
+  const double dCS = input_param[2]; delta;
+  const double perturb_amp = input_param[3]; //0.0;
+  const double guideField_ratio = input_param[4]; //0.0;
   double thb = col->getUth(0);
-  const double perturb_amp = 0.0;
-  double guideField_ratio = 0.0;
   double rho0  = rhoINIT[0]/FourPI;
   double B0x = sqrt(sigma*4.0*M_PI*rho0*2.0);
   double rhoCS = eta*rho0;
-  double w0CS = B0x/(2.0*FourPI*rhoCS*delta);
+  double w0CS = B0x/(2.0*FourPI*rhoCS*dCS);
   double g0CS = 1.0/sqrt(1.0-w0CS*w0CS);
   double thCS = B0x*B0x/(2.0*FourPI*2.0*rhoCS)*g0CS;
   if (restart1 == 0) {
@@ -2193,14 +2199,14 @@ double sigma = 10.0;
           sinyh = sin(2.0*M_PI*yh/ym);
           sinxh = sin(2.0*M_PI*xh/xm);
 
-          Bxn[i][j][k] = fBx*B0x*tanh(yh/delta);
+          Bxn[i][j][k] = fBx*B0x*tanh(yh/dCS);
           // Add perturbation
           Bxn[i][j][k] = Bxn[i][j][k] * (1.0+perturb_amp*cosxh*cosyh*cosyh) 
                          + fBx*2.0*perturb_amp*cosxh*2.0*M_PI/ym*cosyh*sinyh 
-                           * (B0x*delta*LOG_COSH(y14/delta)-B0x*delta*LOG_COSH(yh/delta));
+                           * (B0x*dCS*LOG_COSH(y14/dCS)-B0x*dCS*LOG_COSH(yh/dCS));
 
           Byn[i][j][k] = fBy*2.0*perturb_amp*M_PI/xm*sinxh*cosyh*cosyh
-                         * (B0x*delta*LOG_COSH(y14/delta)-delta*B0x*LOG_COSH(yh/delta));
+                         * (B0x*dCS*LOG_COSH(y14/dCS)-dCS*B0x*LOG_COSH(yh/dCS));
 
           Bzn[i][j][k] = B0x*guideField_ratio;
 

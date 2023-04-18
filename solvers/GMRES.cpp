@@ -46,7 +46,7 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
     cout << endl;
   }
 
-  for (register int itr = 0; itr < max_iter; itr++) {
+  for (int itr = 0; itr < max_iter; itr++) {
 
     // r = b - A*x
     (field->*FunctionImage) (im, xkrylov, grid, vct);
@@ -92,7 +92,7 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
       putColumn(V, w, k + 1, xkrylovlen);
       av = normP(w, xkrylovlen);
 
-      for (register int j = 0; j <= k; j++) {
+      for (int j = 0; j <= k; j++) {
         getColumn(v, V, j, xkrylovlen);
         H[j][k] = dotP(w, v, xkrylovlen);
         addscale(-H[j][k], w, v, xkrylovlen);
@@ -103,7 +103,7 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
 
       if (av + delta * H[k + 1][k] == av) {
 
-        for (register int j = 0; j <= k; j++) {
+        for (int j = 0; j <= k; j++) {
           getColumn(v, V, j, xkrylovlen);
           htmp = dotP(w, v, xkrylovlen);
           H[j][k] = H[j][k] + htmp;
@@ -119,7 +119,7 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
 
       if (0 < k) {
 
-        for (register int j = 0; j < k; j++)
+        for (int j = 0; j < k; j++)
           ApplyPlaneRotation(H[j + 1][k], H[j][k], cs[j], sn[j]);
 
         getColumn(y, H, k, m + 1);
@@ -139,9 +139,9 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
     k--;
     y[k] = s[k] / H[k][k];
 
-    for (register int i = k - 1; i >= 0; i--) {
+    for (int i = k - 1; i >= 0; i--) {
       tmp = 0.0;
-      for (register int l = i + 1; l <= k; l++)
+      for (int l = i + 1; l <= k; l++)
         tmp += H[i][l] * y[l];
       y[i] = (s[i] - tmp) / H[i][i];
 
@@ -150,7 +150,7 @@ void GMRES(FIELD_IMAGE FunctionImage, double *xkrylov, int xkrylovlen, double *b
 
     for (int jj = 0; jj < xkrylovlen; jj++) {
       tmp = 0.0;
-      for (register int l = 0; l < k; l++)
+      for (int l = 0; l < k; l++)
         tmp += y[l] * V[jj][l];
       xkrylov[jj] += tmp;
     }

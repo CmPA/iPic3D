@@ -30,9 +30,9 @@ void Collective::ReadInput(string inputfile) {
     ns = config.read < int >("ns");
     NpMaxNpRatio = config.read < double >("NpMaxNpRatio");
     // GEM Challenge 
-    B0x = config.read <double>("B0x");
-    B0y = config.read <double>("B0y");
-    B0z = config.read <double>("B0z");
+    B0x = config.read <double>("B0x",0.0);
+    B0y = config.read <double>("B0y",0.0);
+    B0z = config.read <double>("B0z",0.0);
 
     // Earth parameters
     B1x = config.read <double>("B1x",0.0);
@@ -52,7 +52,7 @@ void Collective::ReadInput(string inputfile) {
     B0y_ext = config.read <double>("B0y_ext",0.0);
     B0z_ext = config.read <double>("B0z_ext",0.0);
 
-    delta = config.read < double >("delta");
+    delta = config.read < double >("delta",0.0);
 
     Case              = config.read<string>("Case");
     FieldsInit        = config.read<string>("FieldsInit");
@@ -149,8 +149,8 @@ void Collective::ReadInput(string inputfile) {
     z_center = config.read < double >("z_center",0.);
     L_square = config.read < double >("L_square",0.);
     L_outer = config.read < double >("L_outer",0.);
-	coilD = config.read<double>( "CoilD", 0. );
-	coilSpacing = config.read<double>( "CoilSpacing", 0. );
+    coilD = config.read<double>( "CoilD", 0. );
+    coilSpacing = config.read<double>( "CoilSpacing", 0. );
 
     npcelx = new int[ns];
     npcely = new int[ns];
@@ -248,6 +248,19 @@ void Collective::ReadInput(string inputfile) {
 
     verbose = config.read < bool > ("verbose");
 
+    // Custom problem parameters (up to 6)
+    nparam = config.read <int> ("nparam",0);
+    if (nparam>0) {
+      input_param = new double[nparam];
+      array_double input_param0 = config.read < array_double > ("parameters");
+      input_param[0] = input_param0.a;
+      if (nparam>1) input_param[1] = input_param0.b;
+      if (nparam>2) input_param[2] = input_param0.c;
+      if (nparam>3) input_param[3] = input_param0.d;
+      if (nparam>4) input_param[4] = input_param0.e;
+      if (nparam>5) input_param[5] = input_param0.f;
+    }
+
     // MPI topology and periodicity
     XLEN      = config.read < int > ("XLEN",1);
     YLEN      = config.read < int > ("YLEN",1);
@@ -257,21 +270,52 @@ void Collective::ReadInput(string inputfile) {
     PERIODICZ = config.read < bool >("PERIODICZ");
     cylindrical = config.read < bool >("cylindrical",0.0);
 
-    // PHI Electrostatic Potential 
-    bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
-    bcPHIfaceXleft  = config.read < int >("bcPHIfaceXleft");
-    bcPHIfaceYright = config.read < int >("bcPHIfaceYright");
-    bcPHIfaceYleft  = config.read < int >("bcPHIfaceYleft");
-    bcPHIfaceZright = config.read < int >("bcPHIfaceZright");
-    bcPHIfaceZleft  = config.read < int >("bcPHIfaceZleft");
-
-    // EM field boundary condition
-    bcEMfaceXright = config.read < int >("bcEMfaceXright");
-    bcEMfaceXleft  = config.read < int >("bcEMfaceXleft");
-    bcEMfaceYright = config.read < int >("bcEMfaceYright");
-    bcEMfaceYleft  = config.read < int >("bcEMfaceYleft");
-    bcEMfaceZright = config.read < int >("bcEMfaceZright");
-    bcEMfaceZleft  = config.read < int >("bcEMfaceZleft");
+    if (PERIODICX && PERIODICY && PERIODICZ) { // Everything periodic
+      bcPHIfaceXright = 0; 
+      bcPHIfaceXleft  = 0;
+      bcPHIfaceYright = 0;
+      bcPHIfaceYleft  = 0;
+      bcPHIfaceZright = 0;
+      bcPHIfaceZleft  = 0;
+      bcEMfaceXright  = 0;
+      bcEMfaceXleft   = 0;
+      bcEMfaceYright  = 0;
+      bcEMfaceYleft   = 0;
+      bcEMfaceZright  = 0;
+      bcEMfaceZleft   = 0;
+      bcPfaceXright   = 0;
+      bcPfaceXleft    = 0;
+      bcPfaceYright   = 0;
+      bcPfaceYleft    = 0;
+      bcPfaceZright   = 0;
+      bcPfaceZleft    = 0;
+    }
+    else { // Read all nonperiodic BC settings
+      // PHI Electrostatic Potential 
+      bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
+      bcPHIfaceXleft  = config.read < int >("bcPHIfaceXleft");
+      bcPHIfaceYright = config.read < int >("bcPHIfaceYright");
+      bcPHIfaceYleft  = config.read < int >("bcPHIfaceYleft");
+      bcPHIfaceZright = config.read < int >("bcPHIfaceZright");
+      bcPHIfaceZleft  = config.read < int >("bcPHIfaceZleft");
+  
+      // EM field boundary condition
+      bcEMfaceXright = config.read < int >("bcEMfaceXright");
+      bcEMfaceXleft  = config.read < int >("bcEMfaceXleft");
+      bcEMfaceYright = config.read < int >("bcEMfaceYright");
+      bcEMfaceYleft  = config.read < int >("bcEMfaceYleft");
+      bcEMfaceZright = config.read < int >("bcEMfaceZright");
+      bcEMfaceZleft  = config.read < int >("bcEMfaceZleft");
+  
+ 
+      // Particles Boundary condition
+      bcPfaceXright = config.read < int >("bcPfaceXright");
+      bcPfaceXleft  = config.read < int >("bcPfaceXleft");
+      bcPfaceYright = config.read < int >("bcPfaceYright");
+      bcPfaceYleft  = config.read < int >("bcPfaceYleft");
+      bcPfaceZright = config.read < int >("bcPfaceZright");
+      bcPfaceZleft  = config.read < int >("bcPfaceZleft");
+    }
 
     /*  ---------------------------------------------------------- */
     /*  Electric and Magnetic field boundary conditions for BCface */
@@ -303,18 +347,6 @@ void Collective::ReadInput(string inputfile) {
     bcEz[4] = bcEMfaceZright == 0 ? 2 : 1;   bcBz[4] = bcEMfaceZright == 0 ? 1 : 2;
     bcEz[5] = bcEMfaceZleft  == 0 ? 2 : 1;   bcBz[5] = bcEMfaceZleft  == 0 ? 1 : 2;
 
-    // Particles Boundary condition
-    bcPfaceXright = config.read < int >("bcPfaceXright");
-    bcPfaceXleft  = config.read < int >("bcPfaceXleft");
-    bcPfaceYright = config.read < int >("bcPfaceYright");
-    bcPfaceYleft  = config.read < int >("bcPfaceYleft");
-    bcPfaceZright = config.read < int >("bcPfaceZright");
-    bcPfaceZleft  = config.read < int >("bcPfaceZleft");
-
-
-
-
-    
     ReadRestart(RestartDirName);
   }
   else if (SOLINIT1) {
@@ -496,21 +528,64 @@ void Collective::ReadInput(string inputfile) {
 
     verbose = config.read < bool > ("verbose");
 
-    // PHI Electrostatic Potential 
-    bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
-    bcPHIfaceXleft  = config.read < int >("bcPHIfaceXleft");
-    bcPHIfaceYright = config.read < int >("bcPHIfaceYright");
-    bcPHIfaceYleft  = config.read < int >("bcPHIfaceYleft");
-    bcPHIfaceZright = config.read < int >("bcPHIfaceZright");
-    bcPHIfaceZleft  = config.read < int >("bcPHIfaceZleft");
+    // Custom problem parameters (up to 10)
+    nparam = config.read <int> ("nparam",0);
+    if (nparam>0) {
+      input_param = new double[nparam];
+      array_double input_param0 = config.read < array_double > ("parameters");
+      input_param[0] = input_param0.a;
+      if (nparam>1) input_param[1] = input_param0.b;
+      if (nparam>2) input_param[2] = input_param0.c;
+      if (nparam>3) input_param[3] = input_param0.d;
+      if (nparam>4) input_param[4] = input_param0.e;
+      if (nparam>5) input_param[5] = input_param0.f;
+    }
 
-    // EM field boundary condition
-    bcEMfaceXright = config.read < int >("bcEMfaceXright");
-    bcEMfaceXleft  = config.read < int >("bcEMfaceXleft");
-    bcEMfaceYright = config.read < int >("bcEMfaceYright");
-    bcEMfaceYleft  = config.read < int >("bcEMfaceYleft");
-    bcEMfaceZright = config.read < int >("bcEMfaceZright");
-    bcEMfaceZleft  = config.read < int >("bcEMfaceZleft");
+    if (PERIODICX && PERIODICY && PERIODICZ) { // Everything periodic
+      bcPHIfaceXright = 0; 
+      bcPHIfaceXleft  = 0;
+      bcPHIfaceYright = 0;
+      bcPHIfaceYleft  = 0;
+      bcPHIfaceZright = 0;
+      bcPHIfaceZleft  = 0;
+      bcEMfaceXright  = 0;
+      bcEMfaceXleft   = 0;
+      bcEMfaceYright  = 0;
+      bcEMfaceYleft   = 0;
+      bcEMfaceZright  = 0;
+      bcEMfaceZleft   = 0;
+      bcPfaceXright   = 0;
+      bcPfaceXleft    = 0;
+      bcPfaceYright   = 0;
+      bcPfaceYleft    = 0;
+      bcPfaceZright   = 0;
+      bcPfaceZleft    = 0;
+    }
+    else { // Read all nonperiodic BC settings
+      // PHI Electrostatic Potential 
+      bcPHIfaceXright = config.read < int >("bcPHIfaceXright");
+      bcPHIfaceXleft  = config.read < int >("bcPHIfaceXleft");
+      bcPHIfaceYright = config.read < int >("bcPHIfaceYright");
+      bcPHIfaceYleft  = config.read < int >("bcPHIfaceYleft");
+      bcPHIfaceZright = config.read < int >("bcPHIfaceZright");
+      bcPHIfaceZleft  = config.read < int >("bcPHIfaceZleft");
+  
+      // EM field boundary condition
+      bcEMfaceXright = config.read < int >("bcEMfaceXright");
+      bcEMfaceXleft  = config.read < int >("bcEMfaceXleft");
+      bcEMfaceYright = config.read < int >("bcEMfaceYright");
+      bcEMfaceYleft  = config.read < int >("bcEMfaceYleft");
+      bcEMfaceZright = config.read < int >("bcEMfaceZright");
+      bcEMfaceZleft  = config.read < int >("bcEMfaceZleft");
+  
+      // Particles Boundary condition
+      bcPfaceXright = config.read < int >("bcPfaceXright");
+      bcPfaceXleft  = config.read < int >("bcPfaceXleft");
+      bcPfaceYright = config.read < int >("bcPfaceYright");
+      bcPfaceYleft  = config.read < int >("bcPfaceYleft");
+      bcPfaceZright = config.read < int >("bcPfaceZright");
+      bcPfaceZleft  = config.read < int >("bcPfaceZleft");
+    }
 
     /*  ---------------------------------------------------------- */
     /*  Electric and Magnetic field boundary conditions for BCface */
@@ -541,17 +616,6 @@ void Collective::ReadInput(string inputfile) {
     bcEz[3] = bcEMfaceYleft  == 0 ? 1 : 1;   bcBz[3] = bcEMfaceYleft  == 0 ? 2 : 1;
     bcEz[4] = bcEMfaceZright == 0 ? 2 : 1;   bcBz[4] = bcEMfaceZright == 0 ? 1 : 2;
     bcEz[5] = bcEMfaceZleft  == 0 ? 2 : 1;   bcBz[5] = bcEMfaceZleft  == 0 ? 1 : 2;
-
-    // Particles Boundary condition
-    bcPfaceXright = config.read < int >("bcPfaceXright");
-    bcPfaceXleft  = config.read < int >("bcPfaceXleft");
-    bcPfaceYright = config.read < int >("bcPfaceYright");
-    bcPfaceYleft  = config.read < int >("bcPfaceYleft");
-    bcPfaceZright = config.read < int >("bcPfaceZright");
-    bcPfaceZleft  = config.read < int >("bcPfaceZleft");
-
-
-
 
 }
   TrackParticleID = new bool[ns];
@@ -899,6 +963,7 @@ Collective::~Collective() {
   delete[]u0;
   delete[]v0;
   delete[]w0;
+  delete[]input_param;
 
   delete[]TrackParticleID;
 
@@ -1297,6 +1362,14 @@ double Collective::getE0z_ext() {
 /*! get the boolean value for verbose results */
 bool Collective::getVerbose() {
   return (verbose);
+}
+/*! Get number of custom parameters */
+int Collective::getNparam() {
+  return (nparam);
+}
+/*! Get a custom parameter */
+double Collective::getInputParam(int in) {
+  return (input_param[in]);
 }
 /*! get the boolean value for TrackParticleID */
 bool Collective::getTrackParticleID(int nspecies) {

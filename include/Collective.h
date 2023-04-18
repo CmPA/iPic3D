@@ -247,9 +247,13 @@ class Collective
         /*! get the amplitude of the external electric field along z */
         double getE0z_ext();
 
-
     /*! get the boolean value for verbose results */
     bool getVerbose();
+
+    /*! Get number of custom parameters */
+    int getNparam();
+    /*! Return custom parameter */
+    double getInputParam(int in);
 
     /*! get the velocity of injection of the plasma from the wall */
     double getVinj();
@@ -378,6 +382,10 @@ class Collective
     double *v0;
     /*! Drift velocity - Direction Z */
     double *w0;
+    /*! Number of custom parameters */
+    int nparam;
+    /*! Array of custom paramters */
+    double *input_param;
 
     /*! Case type */
     string Case;

@@ -321,14 +321,20 @@ protected:
 
   /** bool for communication verbose */
   bool cVERBOSE;
+
+  /** number of custom parameters */
+  int nparam;
+  /** custom parameters */
+  double *input_param;
+
   /** Boundary condition on particles:
-          <ul>
-          <li>0 = exit</li>
-          <li>1 = perfect mirror</li>
-          <li>2 = riemission</li>
-          <li>3 = periodic condition </li>
-          </ul>
-          */
+    <ul>
+    <li>0 = exit</li>
+    <li>1 = perfect mirror</li>
+    <li>2 = riemission</li>
+    <li>3 = periodic condition </li>
+    </ul>
+  */
   /** Boundary Condition Particles: FaceXright */
   int bcPfaceXright;
   /** Boundary Condition Particles: FaceXleft */
