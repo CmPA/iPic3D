@@ -1,22 +1,22 @@
-# INPUT FILE for relativistic pair-plasma reconnection
+# INPUT FILE for relativistic ion-electron reconnection
 # 2 Species
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
-SaveDirName    = DoubleHarrisRel_pairs     # Output directory (without trailing "/")
-RestartDirName = DoubleHarrisRel_pairs     # Restart directory (for WriteMethod=default)
+SaveDirName    = DoubleHarrisRel_ionel     # Output directory (without trailing "/")
+RestartDirName = DoubleHarrisRel_ionel     # Restart directory (for WriteMethod=default)
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
 
-Case              = DoubleHarrisRel_pairs                         # Case [ GEM | Dipole | ... ]
-FieldsInit        =                               # Initial fields h5 file
-PartInit          = Maxwell                         # Initial particles [ Maxwell | File ]
-WriteMethod       = h5hut                         # Output method [ default | Parallel ]
-PoissonCorrection = no                            # Poisson correction [ yes | no ]
-SimulationName    = DoubleHarrisRel_pairs                      # Simulation name for the output
+Case              = DoubleHarrisRel_ionel                         # Case [ GEM | Dipole | ... ]
+FieldsInit        =                              # Initial fields h5 file
+PartInit          = Maxwell                      # Initial particles [ Maxwell | File ]
+WriteMethod       = h5hut                        # Output method [ default | Parallel ]
+PoissonCorrection = no                           # Poisson correction [ yes | no ]
+SimulationName    = DoubleHarrisRel_ionel                      # Simulation name for the output
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-dt = 2.8               # dt = time step
-ncycles = 125          # cycles
+dt = 0.35               # dt = time step
+ncycles = 2500          # cycles
 th = 0.5               # th =   decentering parameter
 c = 1.0                # c = light speed
 
@@ -30,8 +30,8 @@ Lx =   51.2             # Lx = simulation box length - x direction
 Ly =   102.4             # Ly = simulation box length - y direction
 Lz =   1.0             # Lz = simulation box length - z direction
 
-nxc =  14              # nxc = number of cells - x direction
-nyc =  28               # nyc = number of cells - y direction
+nxc =  102              # nxc = number of cells - x direction
+nyc =  204               # nyc = number of cells - y direction
 nzc =  1               # nzc = number of cells - z direction
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
@@ -46,7 +46,7 @@ ZLEN = 1               # Number of subdomains in the X direction
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 ns = 4                              # Number of particles
-rhoINIT         = 0.5  0.5  0.5  0.5         # Initial density (make sure you are neutral)
+rhoINIT         = 1.0  1.0  1.0  1.0         # Initial density (make sure you are neutral)
 rhoINJECT       = 0    0    0    0         # Injection density (make sure you are neutral)
 TrackParticleID = 0    0    0    0      # TrackParticleID[species] = 1=true, 0=false
                                          
@@ -55,7 +55,7 @@ npcely          = 8  8  8  8         # Particles per cell in Y
 npcelz          = 1    1    1    1       # Particles per cell in Z
 NpMaxNpRatio    = 6.0  6.0  6.0  6.0             # Maximum number of particles allocated
                                         
-qom             = -1.0 1.0  -1.0  1.0    # Charge/mass ratio
+qom             = -1836.0 1.0  -1836.0  1.0    # Charge/mass ratio
 uth             = 0.01 0.01 0.01 0.01    # Thermal velocity in Y 
 vth             = 0.0 0.0 0.0 0.0        # Thermal velocity in X 
 wth             = 0.0 0.0 0.0 0.0        # Thermal velocity in Z (for drifting sp., temperature in the CS)
@@ -71,7 +71,7 @@ PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
 
 # %%%%%%%%%%%% Custom parameters %%%%%%%%%%%%%%
 nparam = 5
-#             sigma    eta  delta  perturb_amp    guideField_ratio
+#             sigmai    eta  delta  perturb_amp    guideField_ratio
 parameters =   10.0    5.0    1.0      0.0          0.0    
 
 # %%%%%%%%%%%% Numerics options %%%%%%%%%%%%%%%
@@ -80,7 +80,7 @@ Vinj                   = 0.0      # Velocity of the injection from the wall
 CGtol                  = 1E-6    # CG solver stopping criterium tolerance
 GMREStol               = 1E-14    # GMRES solver stopping criterium tolerance
 NiterMover             = 3       # mover predictor corrector iteration
-FieldOutputCycle       = 1000        # Output for field. If -1 it doesn't save field data
-ParticlesOutputCycle   = 1000       # Output for particles. If -1 it doesn't save particles data
+FieldOutputCycle       = 100        # Output for field. If -1 it doesn't save field data
+ParticlesOutputCycle   = 100       # Output for particles. If -1 it doesn't save particles data
 RestartOutputCycle     = 4000     # restart cycle
 DiagnosticsOutputCycle = 1        # Diagnostics cycle

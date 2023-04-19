@@ -33,6 +33,8 @@ class Particles3D:public Particles3Dcomm {
     void KAWTurbulencePert(Grid * grid, Field * EMf, VirtualTopology3D * vct, double B0x, double mime, double TiTe, bool symmetric);  
     /** Double Harris pair-plasma setup */
     void DoubleHarrisRel_pairs(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective * col);
+    /** Double Harris ion-electron setup */
+    void DoubleHarrisRel_ionel(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective * col);
     /** Initial condition: uniform in space and motionless */
     void uniform_background(Grid * grid, Field * EMf);
     /** Initialize particles with a constant velocity in dim direction. Depending on the value of dim:

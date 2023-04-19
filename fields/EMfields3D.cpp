@@ -2136,16 +2136,16 @@ double LOG_COSH(double x) {
 
 /* Double Harris sheet in relativistic equilibrium --- pair plasmas */
 void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid, Collective *col) {
-  const double sigma = input_param[0]; //10.0;
-  const double eta = input_param[1]; //5.0;
-  const double dCS = input_param[2]; delta;
-  const double perturb_amp = input_param[3]; //0.0;
-  const double guideField_ratio = input_param[4]; //0.0;
+  const double sigma = input_param[0];
+  const double eta = input_param[1];
+  const double dCS = input_param[2];
+  const double perturb_amp = input_param[3];
+  const double guideField_ratio = input_param[4];
   double thb = col->getUth(0);
   double rho0  = rhoINIT[0]/FourPI;
   double B0x = sqrt(sigma*4.0*M_PI*rho0*2.0);
   double rhoCS = eta*rho0;
-  double w0CS = B0x/(2.0*FourPI*rhoCS*dCS);
+  double w0CS = B0x/(2.0*FourPI*rhoCS*dCS/c);
   double g0CS = 1.0/sqrt(1.0-w0CS*w0CS);
   double thCS = B0x*B0x/(2.0*FourPI*2.0*rhoCS)*g0CS;
   if (restart1 == 0) {
@@ -2162,6 +2162,108 @@ void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid,
       cout << "Drift gamma                = " << g0CS                             << endl; 
       cout << "Amplitude Perturbation     = " << perturb_amp                      << endl; 
       cout << "Guide field/upstream field = " << guideField_ratio                 << endl; 
+      cout << "-----------------------------------------------" << endl;
+    }
+
+    // Initial magnetic field components
+    double x14=Lx/4.0;
+    double x34=3.0*Lx/4.0;
+    double y12=Ly/2.0;
+    double y14=Ly/4.0;
+    double y34=3.0*Ly/4.0;
+    // 4 times the perturbation height
+    double ym=Ly;
+    // perturbation wavelength
+    double xm=Lx;
+    double xN, yN, yh, xh, cosyh, cosxh, sinyh, sinxh;
+    double fBx, fBy;
+    for (int i = 0; i < nxn; i++) {
+      for (int j = 0; j < nyn; j++) {
+        for (int k = 0; k < nzn; k++) {
+          double xN = grid->getXN(i, j, k);
+          double yN = grid->getYN(i, j, k);
+          if (yN <= y12) {
+            yh = yN-y14;
+            xh = xN-x14;
+            fBx = -1.0;
+            fBy = 1.0;
+          }
+  	  else {
+            yh = yN-y34;
+            xh = xN-x34;
+            fBx = 1.0;
+            fBy = -1.0;
+  	  }
+          cosyh = cos(2.0*M_PI*yh/ym);
+          cosxh = cos(2.0*M_PI*xh/xm);
+          sinyh = sin(2.0*M_PI*yh/ym);
+          sinxh = sin(2.0*M_PI*xh/xm);
+
+          Bxn[i][j][k] = fBx*B0x*tanh(yh/dCS);
+          // Add perturbation
+          Bxn[i][j][k] = Bxn[i][j][k] * (1.0+perturb_amp*cosxh*cosyh*cosyh) 
+                         + fBx*2.0*perturb_amp*cosxh*2.0*M_PI/ym*cosyh*sinyh 
+                           * (B0x*dCS*LOG_COSH(y14/dCS)-B0x*dCS*LOG_COSH(yh/dCS));
+
+          Byn[i][j][k] = fBy*2.0*perturb_amp*M_PI/xm*sinxh*cosyh*cosyh
+                         * (B0x*dCS*LOG_COSH(y14/dCS)-dCS*B0x*LOG_COSH(yh/dCS));
+
+          Bzn[i][j][k] = B0x*guideField_ratio;
+
+          // electric field
+          Ex[i][j][k] = 0.0;
+          Ey[i][j][k] = 0.0;
+          Ez[i][j][k] = 0.0;
+        }
+      }
+    }
+    // initialize B on centers
+    grid->interpN2C(Bxc,Bxn);
+    grid->interpN2C(Byc,Byn);
+    grid->interpN2C(Bzc,Bzn);
+    // communicate ghost
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+/* Double Harris sheet in relativistic equilibrium --- ion-electron plasmas */
+void EMfields3D::initDoubleHarrisRel_ionel(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+  const double sigmai = input_param[0];
+  const double eta = input_param[1];
+  const double dCS = input_param[2]; 
+  const double perturb_amp = input_param[3];
+  const double guideField_ratio = input_param[4];
+  double thbi = col->getUth(1);
+  double thbe = thbi*fabs(col->getQOM(0));
+  double rho0  = rhoINIT[0]/FourPI;
+  double B0x = sqrt(sigmai*4.0*M_PI*rho0);
+  double rhoCS = eta*rho0;
+  double w0CS = B0x/(2.0*FourPI*rhoCS*dCS/c);
+  double g0CS = 1.0/sqrt(1.0-w0CS*w0CS);
+  double thCSi = B0x*B0x/(2.0*FourPI*2.0*rhoCS)*g0CS;
+  double thCSe = thCSi*fabs(col->getQOM(0));;
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "-----------------------------------------------" << endl;
+      cout << "Initialize relativistic Harris with pertubation" << endl;
+      cout << "-----------------------------------------------" << endl;
+      cout << "Background ion sigma                = " << sigmai                             << endl;
+      cout << "Background total beta               = " << 2.0*rho0*thbi/(B0x*B0x/2.0/FourPI) << endl;
+      cout << "Density ratio in CS                 = " << eta                                << endl;
+      cout << "Background electron temperature     = " << thbe                               << endl;
+      cout << "Background electron Lorentz factor ~= " << 3.0*thbe                           << endl;
+      cout << "Background ion temperature          = " << thbi                               << endl;
+      cout << "Drifiting electron temperature      = " << thCSe                              << endl;
+      cout << "Drifiting ion temperature           = " << thCSi                              << endl;
+      cout << "Drift gamma                         = " << g0CS                               << endl;
+      cout << "Amplitude Perturbation              = " << perturb_amp                        << endl;
+      cout << "Guide field/upstream field          = " << guideField_ratio                   << endl;
       cout << "-----------------------------------------------" << endl;
     }
 

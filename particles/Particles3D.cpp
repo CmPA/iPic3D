@@ -285,16 +285,16 @@ void Particles3D::DoubleHarrisRel_pairs(Grid * grid, Field * EMf, VirtualTopolog
   srand(seed);
   srand48(seed);
 
-  const double sigma = input_param[0]; //10.0;
-  const double eta = input_param[1]; //5.0;
-  const double dCS = input_param[2]; delta;
-  const double perturb_amp = input_param[3]; //0.0;
-  const double guideField_ratio = input_param[4]; //0.0;
+  const double sigma = input_param[0];
+  const double eta = input_param[1];
+  const double dCS = input_param[2];
+  const double perturb_amp = input_param[3];
+  const double guideField_ratio = input_param[4];
   double thb = col->getUth(0);
   double rho0  = rhoINIT/(4.0*M_PI);
   double B0x = sqrt(sigma*4.0*M_PI*rho0*2.0);
   double rhoCS = eta*rho0;
-  double w0CS = B0x/(2.0*FourPI*rhoCS*dCS);
+  double w0CS = B0x/(2.0*FourPI*rhoCS*dCS/c);
   double g0CS = 1.0/sqrt(1.0-w0CS*w0CS);
   double thCS = B0x*B0x/(2.0*FourPI*2.0*rhoCS)*g0CS;
   double y12=Ly/2.0;
@@ -336,6 +336,87 @@ void Particles3D::DoubleHarrisRel_pairs(Grid * grid, Field * EMf, VirtualTopolog
 		// Velocity from (relativistic) drifting Maxwellian
                 if (qom<0.) MaxwellJuttner(&upx, &upy, &upz, thCS, g0CS, -3);
 		else        MaxwellJuttner(&upx, &upy, &upz, thCS, g0CS, 3);
+		// Flip sign of drift velocity component for particles in the second layer
+                if (y[counter] > y12) {
+		  upx = -upx;
+		  upy = -upy;
+		  upz = -upz;
+		}
+	      }
+		              
+              // Store 4-velocity
+              u[counter] = upx;
+              v[counter] = upy;
+              w[counter] = upz;
+              
+              counter++;
+            }
+      }
+  nop = counter;
+}
+
+/* For relativistic double Harris with ions+electrons: */
+/* Maxwellian background, drifting particles in the sheets*/
+void Particles3D::DoubleHarrisRel_ionel(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective * col) {
+
+  long long seed = (vct->getCartesian_rank() + 1)*20 + ns;
+  srand(seed);
+  srand48(seed);
+
+  const double sigmai = input_param[0];
+  const double eta = input_param[1];
+  const double dCS = input_param[2]; 
+  const double perturb_amp = input_param[3];
+  const double guideField_ratio = input_param[4];
+  double thbi = col->getUth(1);
+  double thbe = thbi*fabs(col->getQOM(0));
+  double rho0  = rhoINIT/FourPI;
+  double B0x = sqrt(sigmai*4.0*M_PI*rho0);
+  double rhoCS = eta*rho0;
+  double w0CS = B0x/(2.0*FourPI*rhoCS*dCS/c);
+  double g0CS = 1.0/sqrt(1.0-w0CS*w0CS);
+  double thCSi = B0x*B0x/(2.0*FourPI*2.0*rhoCS)*g0CS;
+  double thCSe = thCSi*fabs(col->getQOM(0));;
+  double y12=Ly/2.0;
+  double y14=Ly/4.0;
+  double y34=3.0*Ly/4.0;
+
+  double upx, upy, upz;
+  double fs;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++) {
+    
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / double(npcelx)) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / double(npcely)) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / double(npcelz)) + grid->getZN(i, j, k);
+              
+              // Distinguish between background and drifting species
+              if (ns < 2) {
+		// Charge
+		q[counter] = (qom / fabs(qom)) * rho0 / double(npcel) / grid->getInvVOL();
+		
+		// Velocity from (relativistic) nondrifting Maxwellian
+                if (qom<0.) MaxwellJuttner(&upx, &upy, &upz, thbe, 1.0, 0);
+		else        MaxwellJuttner(&upx, &upy, &upz, thbi, 1.0, 0);
+	      }
+              else {
+                if (y[counter]<y12) fs = SECHSQR((y[counter]-y14)/dCS);
+		else                fs = SECHSQR((y[counter]-y34)/dCS);
+	       
+		// Skip this particle if weight is too small
+	       	if (fabs(fs)<1.e-8) continue;
+
+		// Charge
+		q[counter] = (qom / fabs(qom)) * rhoCS / double(npcel) * fs / grid->getInvVOL();
+
+		// Velocity from (relativistic) drifting Maxwellian
+                if (qom<0.) MaxwellJuttner(&upx, &upy, &upz, thCSe, g0CS, -3);
+		else        MaxwellJuttner(&upx, &upy, &upz, thCSi, g0CS, 3);
 		// Flip sign of drift velocity component for particles in the second layer
                 if (y[counter] > y12) {
 		  upx = -upx;

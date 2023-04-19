@@ -3,6 +3,8 @@ Still TODOs:
 
 --- Activate writing of cell-center quantities (i.e. B) for restart
 
+--- Automatic creation of output folder
+
 Done:
 --- Distinguish deposit for normal cycle and deposit for output (hat
 quantities for normal cycle, non-hat for output cycle ON TOP OF hatted stuff);

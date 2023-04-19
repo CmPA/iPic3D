@@ -92,6 +92,7 @@ int c_Solver::Init(int argc, char **argv) {
       EMf->initKAWTurbulencePert(vct, grid, col, mime, TiTe);
     }
     else if (col->getCase()=="DoubleHarrisRel_pairs") EMf->initDoubleHarrisRel_pairs(vct,grid,col);
+    else if (col->getCase()=="DoubleHarrisRel_ionel") EMf->initDoubleHarrisRel_ionel(vct,grid,col);
     // OLD CASES FROM IPIC
 //    else if (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
 //    else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
@@ -163,6 +164,7 @@ int c_Solver::Init(int argc, char **argv) {
           part[i].KAWTurbulencePert(grid, EMf, vct, col->getB0x(), mime, TiTe, col->getPartSymmetric());
         }
         else if (col->getCase()=="DoubleHarrisRel_pairs") part[i].DoubleHarrisRel_pairs(grid, EMf, vct, col);
+        else if (col->getCase()=="DoubleHarrisRel_ionel") part[i].DoubleHarrisRel_ionel(grid, EMf, vct, col);
 //	// OLD CASES FROM IPIC
 //        else if (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
 //        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);

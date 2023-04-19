@@ -224,6 +224,8 @@ class EMfields3D                // :public Field
     void SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col);
     /* Double Harris sheet in relativistic equilibrium --- pair plasmas */
     void initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    /* Double Harris sheet in relativistic equilibrium --- ion-electron plasmas */
+    void initDoubleHarrisRel_ionel(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! Calculate Electric field using the implicit Maxwell solver */
     void startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col);
     void endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct, Collective *col);
