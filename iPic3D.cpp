@@ -42,19 +42,19 @@ int main(int argc, char **argv) {
     KCode.PushParticles();
 
     clocks->start(1);
-    if (!b_err) KCode.GatherMoments();
+    KCode.GatherMoments();
     clocks->stop(1);
 
     clocks->start(2);
     KCode.CalculateField();
+    KCode.CalculateBField();
     clocks->stop(2);
 
     clocks->start(3);
     b_err = KCode.ParticlesMover();
     clocks->stop(3);
 
-    if (!b_err) KCode.CalculateBField();
-    if ( b_err) i = KCode.LastCycle() + 1;
+    if (b_err) i = KCode.LastCycle() + 1;
 
     /* --------------- */
     /* 3- Output files */

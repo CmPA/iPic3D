@@ -432,10 +432,10 @@ void EMfields3D::endEcalc(double* xkrylov, Grid * grid, VirtualTopology3D * vct,
   communicateNodeBC(nxn, nyn, nzn, Ey,   col->bcEy[0],col->bcEy[1],col->bcEy[2],col->bcEy[3],col->bcEy[4],col->bcEy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Ez,   col->bcEz[0],col->bcEz[1],col->bcEz[2],col->bcEz[3],col->bcEz[4],col->bcEz[5], vct);
 
-  // apply smoothing to electric field Nvolte times
-  applySmoothing(Exth, 1, grid, vct, col, "Ex");
-  applySmoothing(Eyth, 1, grid, vct, col, "Ey");
-  applySmoothing(Ezth, 1, grid, vct, col, "Ez");
+//  // apply smoothing to electric field Nvolte times
+//  applySmoothing(Exth, 1, grid, vct, col, "Ex");
+//  applySmoothing(Eyth, 1, grid, vct, col, "Ey");
+//  applySmoothing(Ezth, 1, grid, vct, col, "Ez");
 
   // OpenBC
   BoundaryConditionsE(Exth, Eyth, Ezth, nxn, nyn, nzn, grid, vct);
@@ -1408,10 +1408,14 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   grid->interpC2N(Bxn, Bxc);
   grid->interpC2N(Byn, Byc);
   grid->interpC2N(Bzn, Bzc);
-
   communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
   communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+
+  // apply smoothing to electric field Nvolte times
+  applySmoothing(Exth, 1, grid, vct, col, "Ex");
+  applySmoothing(Eyth, 1, grid, vct, col, "Ey");
+  applySmoothing(Ezth, 1, grid, vct, col, "Ez");
 
 }
 
@@ -2177,11 +2181,11 @@ void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid,
     double xm=Lx;
     double xN, yN, yh, xh, cosyh, cosxh, sinyh, sinxh;
     double fBx, fBy;
-    for (int i = 0; i < nxn; i++) {
-      for (int j = 0; j < nyn; j++) {
-        for (int k = 0; k < nzn; k++) {
-          double xN = grid->getXN(i, j, k);
-          double yN = grid->getYN(i, j, k);
+    for (int i = 1; i < nxc-1; i++) {
+      for (int j = 1; j < nyc-1; j++) {
+        for (int k = 1; k < nzc-1; k++) {
+          double xN = grid->getXC(i, j, k);
+          double yN = grid->getYC(i, j, k);
           if (yN <= y12) {
             yh = yN-y14;
             xh = xN-x14;
@@ -2199,16 +2203,16 @@ void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid,
           sinyh = sin(2.0*M_PI*yh/ym);
           sinxh = sin(2.0*M_PI*xh/xm);
 
-          Bxn[i][j][k] = fBx*B0x*tanh(yh/dCS);
+          Bxc[i][j][k] = fBx*B0x*tanh(yh/dCS);
           // Add perturbation
-          Bxn[i][j][k] = Bxn[i][j][k] * (1.0+perturb_amp*cosxh*cosyh*cosyh) 
+          Bxc[i][j][k] = Bxc[i][j][k] * (1.0+perturb_amp*cosxh*cosyh*cosyh) 
                          + fBx*2.0*perturb_amp*cosxh*2.0*M_PI/ym*cosyh*sinyh 
                            * (B0x*dCS*LOG_COSH(y14/dCS)-B0x*dCS*LOG_COSH(yh/dCS));
 
-          Byn[i][j][k] = fBy*2.0*perturb_amp*M_PI/xm*sinxh*cosyh*cosyh
+          Byc[i][j][k] = fBy*2.0*perturb_amp*M_PI/xm*sinxh*cosyh*cosyh
                          * (B0x*dCS*LOG_COSH(y14/dCS)-dCS*B0x*LOG_COSH(yh/dCS));
 
-          Bzn[i][j][k] = B0x*guideField_ratio;
+          Bzc[i][j][k] = B0x*guideField_ratio;
 
           // electric field
           Ex[i][j][k] = 0.0;
@@ -2217,14 +2221,18 @@ void EMfields3D::initDoubleHarrisRel_pairs(VirtualTopology3D * vct, Grid * grid,
         }
       }
     }
-    // initialize B on centers
-    grid->interpN2C(Bxc,Bxn);
-    grid->interpN2C(Byc,Byn);
-    grid->interpN2C(Bzc,Bzn);
     // communicate ghost
     communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
     communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
     communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    // initialize B on centers
+    grid->interpC2N(Bxn,Bxc);
+    grid->interpC2N(Byn,Byc);
+    grid->interpC2N(Bzn,Bzc);
+    // communicate ghost
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
@@ -5559,14 +5567,24 @@ double *EMfields3D::getBenergy(void) {
   double Bxt = 0.0;
   double Byt = 0.0;
   double Bzt = 0.0;
-  for (int i = 1; i < nxn - 2; i++)
-    for (int j = 1; j < nyn - 2; j++)
-      for (int k = 1; k < nzn - 2; k++) {
-        Bxt = Bxn[i][j][k]+Fext*Bx_ext[i][j][k];
+//  for (int i = 1; i < nxn - 2; i++)
+//    for (int j = 1; j < nyn - 2; j++)
+//      for (int k = 1; k < nzn - 2; k++) {
+//        Bxt = Bxn[i][j][k]+Fext*Bx_ext[i][j][k];
+//        localBenergy[0] += .5*dx*dy*dz*Bxt*Bxt/FourPI;
+//        Byt = Byn[i][j][k]+Fext*By_ext[i][j][k];
+//        localBenergy[1] += .5*dx*dy*dz*Byt*Byt/FourPI;
+//        Bzt = Bzn[i][j][k]+Fext*Bz_ext[i][j][k];
+//        localBenergy[2] += .5*dx*dy*dz*Bzt*Bzt/FourPI;
+//      }
+  for (int i = 1; i < nxc - 1; i++)
+    for (int j = 1; j < nyc - 1; j++)
+      for (int k = 1; k < nzc - 1; k++) {
+        Bxt = Bxn[i][j][k]; //+Fext*Bx_ext[i][j][k];
         localBenergy[0] += .5*dx*dy*dz*Bxt*Bxt/FourPI;
-        Byt = Byn[i][j][k]+Fext*By_ext[i][j][k];
+        Byt = Byn[i][j][k]; //+Fext*By_ext[i][j][k];
         localBenergy[1] += .5*dx*dy*dz*Byt*Byt/FourPI;
-        Bzt = Bzn[i][j][k]+Fext*Bz_ext[i][j][k];
+        Bzt = Bzn[i][j][k]; //+Fext*Bz_ext[i][j][k];
         localBenergy[2] += .5*dx*dy*dz*Bzt*Bzt/FourPI;
       }
 

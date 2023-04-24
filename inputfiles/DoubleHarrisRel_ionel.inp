@@ -15,8 +15,8 @@ PoissonCorrection = no                           # Poisson correction [ yes | no
 SimulationName    = DoubleHarrisRel_ionel                      # Simulation name for the output
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-dt = 0.35               # dt = time step
-ncycles = 2500          # cycles
+dt = 0.035               # dt = time step
+ncycles = 25000          # cycles
 th = 0.5               # th =   decentering parameter
 c = 1.0                # c = light speed
 
