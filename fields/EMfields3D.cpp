@@ -503,17 +503,21 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   scale(temp2Y, delt, nxn, nyn, nzn);
   scale(temp2Z, delt, nxn, nyn, nzn);
 
+  // IF EXPANDING THE CURL:
   // -(c*theta*dt)^2 * 4pi * grad(rhohat)
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
   grid->gradC2N(tempX, tempY, tempZ, rhoh);
   scale(tempX, -delt * delt * FourPI, nxn, nyn, nzn);
   scale(tempY, -delt * delt * FourPI, nxn, nyn, nzn);
   scale(tempZ, -delt * delt * FourPI, nxn, nyn, nzn);
-
   // E^n - (c*theta*dt)^2 * 4pi * grad(rhohat)
   sum(tempX, Ex, nxn, nyn, nzn);
   sum(tempY, Ey, nxn, nyn, nzn);
   sum(tempZ, Ez, nxn, nyn, nzn);
+//  // WITHOUT EXPANDING THE CURL:
+//  eq(tempX, Ex, nxn, nyn, nzn);
+//  eq(tempY, Ey, nxn, nyn, nzn);
+//  eq(tempZ, Ez, nxn, nyn, nzn);
 
   // E^n - (c*theta*dt)^2 * 4pi * grad(rhohat) 
   //     + (theta*dt) * (c*curl(B)-4pi*Jhat)
@@ -563,6 +567,7 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   communicateNodeBC(nxn, nyn, nzn, vectY, 2, 2, 2, 2, 2, 2, vct);
   communicateNodeBC(nxn, nyn, nzn, vectZ, 2, 2, 2, 2, 2, 2, vct);
 
+  // IF EXPANDING THE CURL:
   // -(c*th*dt)^2*lap(E)
   grid->lapN2N(imageX, vectX, vct);
   grid->lapN2N(imageY, vectY, vct);
@@ -573,6 +578,18 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   scale(imageX, delt * delt, nxn, nyn, nzn);
   scale(imageY, delt * delt, nxn, nyn, nzn);
   scale(imageZ, delt * delt, nxn, nyn, nzn);
+//    // WITHOUT EXPANDING THE CURL:
+//    grid->curlN2C(tempXC, tempYC, tempZC, vectX, vectY, vectZ);
+//    communicateCenterBC(nxc, nyc, nzc, tempXC, 2, 2, 2, 2, 2, 2, vct);
+//    communicateCenterBC(nxc, nyc, nzc, tempYC, 2, 2, 2, 2, 2, 2, vct);
+//    communicateCenterBC(nxc, nyc, nzc, tempZC, 2, 2, 2, 2, 2, 2, vct);
+//    grid->curlC2N(imageX, imageY, imageZ, tempXC, tempYC, tempZC);
+//    communicateNodeBC(nxn, nyn, nzn, imageX, 2, 2, 2, 2, 2, 2, vct);
+//    communicateNodeBC(nxn, nyn, nzn, imageY, 2, 2, 2, 2, 2, 2, vct);
+//    communicateNodeBC(nxn, nyn, nzn, imageZ, 2, 2, 2, 2, 2, 2, vct);
+//    scale(imageX, delt * delt, nxn, nyn, nzn);
+//    scale(imageY, delt * delt, nxn, nyn, nzn);
+//    scale(imageZ, delt * delt, nxn, nyn, nzn);
 
   // -(c*th*dt)^2*4pi*(th-1/2)*dt*grad(div(D))
   // where D = mu dot E
@@ -1416,7 +1433,6 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
   applySmoothing(Exth, 1, grid, vct, col, "Ex");
   applySmoothing(Eyth, 1, grid, vct, col, "Ey");
   applySmoothing(Ezth, 1, grid, vct, col, "Ez");
-
 }
 
 /*! Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
@@ -2335,6 +2351,62 @@ void EMfields3D::initDoubleHarrisRel_ionel(VirtualTopology3D * vct, Grid * grid,
     communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
     communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
     communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+  }
+  else {
+    init(vct, grid, col);            // use the fields from restart file
+  }
+}
+
+/* Relativistic quasi-1D ion-electron shock */
+void EMfields3D::initShock1D_ionel(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+
+  double v0  = col->getU0(1);
+  double thb = col->getUth(1);
+
+  if (restart1 == 0) {
+    // initialize
+    if (vct->getCartesian_rank() == 0) {
+      cout << "-----------------------------------------------" << endl;
+      cout << "Initialize quasi-1D double periodic shock      " << endl;
+      cout << "-----------------------------------------------" << endl;
+      cout << "Background ion sigma                = " << B0z*B0z/sqrt(FourPI*rhoINIT[1])    << endl;
+      cout << "Background Ti=Te                    = " << thb*thb                            << endl;
+      cout << "Background bulk velocity            = " << v0                                 << endl;
+      cout << "-----------------------------------------------" << endl;
+    }
+
+    // Initial magnetic field components
+    for (int i = 1; i < nxc-1; i++) 
+      for (int j = 1; j < nyc-1; j++)
+        for (int k = 1; k < nzc-1; k++) {
+          Bxc[i][j][k] = 0.0;
+          Byc[i][j][k] = 0.0;
+          Bzc[i][j][k] = B0z;
+
+        }
+    // communicate ghost
+    communicateCenterBC(nxc, nyc, nzc, Bxc, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Byc, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateCenterBC(nxc, nyc, nzc, Bzc, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+    // initialize B on centers
+    grid->interpC2N(Bxn,Bxc);
+    grid->interpC2N(Byn,Byc);
+    grid->interpC2N(Bzn,Bzc);
+    // communicate ghost
+    communicateNodeBC(nxn, nyn, nzn, Bxn, col->bcBx[0],col->bcBx[1],col->bcBx[2],col->bcBx[3],col->bcBx[4],col->bcBx[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Byn, col->bcBy[0],col->bcBy[1],col->bcBy[2],col->bcBy[3],col->bcBy[4],col->bcBy[5], vct);
+    communicateNodeBC(nxn, nyn, nzn, Bzn, col->bcBz[0],col->bcBz[1],col->bcBz[2],col->bcBz[3],col->bcBz[4],col->bcBz[5], vct);
+
+    // Initial electric field components
+    for (int i = 0; i < nxn; i++) 
+      for (int j = 0; j < nyn; j++)
+        for (int k = 0; k < nzn; k++) {
+          double yN = grid->getYN(i, j, k);
+          Ex[i][j][k] = 0.0;
+          if (yN<Lx/2.0) Ey[i][j][k] = -v0*B0z;
+	  else           Ey[i][j][k] = v0*B0z; 
+          Ez[i][j][k] = 0.0;
+        }
   }
   else {
     init(vct, grid, col);            // use the fields from restart file

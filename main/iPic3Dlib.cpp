@@ -93,6 +93,7 @@ int c_Solver::Init(int argc, char **argv) {
     }
     else if (col->getCase()=="DoubleHarrisRel_pairs") EMf->initDoubleHarrisRel_pairs(vct,grid,col);
     else if (col->getCase()=="DoubleHarrisRel_ionel") EMf->initDoubleHarrisRel_ionel(vct,grid,col);
+    else if (col->getCase()=="Shock1D_ionel") EMf->initShock1D_ionel(vct,grid,col);
     // OLD CASES FROM IPIC
 //    else if (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
 //    else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
@@ -158,13 +159,15 @@ int c_Solver::Init(int argc, char **argv) {
       if (myrank==0) cout << col->getCase() << endl;
 
       for (int i = 0; i < ns; i++) {
-        if (col->getCase()=="KAWTurbulencePert") {
+        if (col->getCase()=="MaxwellJuttner")  part[i].MaxwellJuttner(grid, EMf, vct, col);
+	else if (col->getCase()=="KAWTurbulencePert") {
           double mime = fabs(col->getQOM(0)/col->getQOM(1));
           double TiTe = pow(col->getUth(1)/col->getUth(0), 2.0)*mime;
           part[i].KAWTurbulencePert(grid, EMf, vct, col->getB0x(), mime, TiTe, col->getPartSymmetric());
         }
         else if (col->getCase()=="DoubleHarrisRel_pairs") part[i].DoubleHarrisRel_pairs(grid, EMf, vct, col);
         else if (col->getCase()=="DoubleHarrisRel_ionel") part[i].DoubleHarrisRel_ionel(grid, EMf, vct, col);
+        else if (col->getCase()=="Shock1D_ionel") part[i].Shock1D_ionel(grid, EMf, vct, col);
 //	// OLD CASES FROM IPIC
 //        else if (col->getCase()=="ForceFree") part[i].force_free(grid,EMf,vct);
 //        else if (col->getCase()=="BATSRUS")   part[i].MaxwellianFromFluid(grid,EMf,vct,col,i);

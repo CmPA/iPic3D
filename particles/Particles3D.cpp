@@ -65,6 +65,85 @@ void Particles3D::empty(Grid* grid,Field* EMf,VirtualTopology3D* vct){
     nop = 0;
 }
 
+/** SECH^2 up to arbitrary precision */
+double SECHSQR(double x) {
+  double y, res;
+
+  if (fabs(x)>354.0) {
+    res = 1.31e-307;
+  }
+  else {                                                                                    
+    y = 1.0/cosh(x);
+    res = y*y;
+  }
+  return res;
+}          
+
+/** Function to build a Maxwell-Juttner distribution */
+void GenerateMaxwellJuttner(double * upx, double * upy, double * upz, double theta, double gammaDrift, int dirDrift) {
+
+  double eta = 1.45; // Rejection factor
+  double g = sqrt(0.5*M_PI*theta*theta*theta);
+  double h = 2.*theta*theta*theta;
+  double fg = g/(g+h);
+  double fh = h/(g+h);
+
+  double betaDrift = 0.0;
+  double uDrift    = 0.0;
+  if (gammaDrift > 1.0) {
+    uDrift = double(abs(dirDrift)/dirDrift) * sqrt(gammaDrift*gammaDrift - 1.0);
+    betaDrift = uDrift / gammaDrift;
+  }
+  
+  double rs[8];
+  for (int i=0; i<8; i++) rs[i] = rand()/(double)RAND_MAX;
+  bool reject = true;
+  // Generate a random kinetic energy w = sqrt{u^2+1} - 1                                         
+  // in the frame of drift.
+  double w, pq;
+  while (reject) {
+    w = -theta;
+    if (rs[3] < fg) w = w * (log(rs[0]) + log(rs[1])*pow(cos(2.*M_PI*rs[2]),2.0));
+    else            w = w * log(rs[0]*rs[1]*rs[2]);
+    pq = (w+1.0)*sqrt(w*(w+2.0)) / (sqrt(2.0*w) + w*w);
+    if (pq >= rs[4] * eta)       reject = false; // w is the result we want
+    else for (int i=0; i<5; i++) rs[i] = rand()/(double)RAND_MAX; // w is rejected -- regenerate
+  }
+  
+  // find gamma and |u| in frame of drift                                                         
+  double u0 = 1. + w;
+  double uMag = sqrt(w*(w+2.));
+  // find direction
+  double phi = 2.0*M_PI * rs[5];
+  double u1 = (2.0 * rs[6] - 1.0) * uMag;
+  if (rs[7]*u0 < -betaDrift*u1) u1 = -u1;
+  double uPerp = sqrt(uMag*uMag - u1*u1);
+  double u2 = uPerp * cos(phi);
+  double u3 = uPerp * sin(phi);
+
+  // Boost back to simulation frame
+  if (abs(dirDrift)==1) {
+    *upx = gammaDrift * u1 + uDrift * u0;
+    *upy = u2;
+    *upz = u3;
+  }
+  else if (abs(dirDrift)==2) {
+    *upy = gammaDrift * u1 + uDrift * u0;
+    *upx = u2;
+    *upz = u3;
+  }
+  else if (abs(dirDrift)==3) {
+    *upz = gammaDrift * u1 + uDrift * u0;
+    *upx = u2;
+    *upy = u3;
+  }
+  else {
+    *upx = u1;
+    *upy = u2;
+    *upz = u3;
+  }
+}
+
 /** Maxellian random velocity and uniform spatial distribution */
 void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) {
 
@@ -99,6 +178,59 @@ void Particles3D::maxwellian(Grid * grid, Field * EMf, VirtualTopology3D * vct) 
               harvest = rand() / (double) RAND_MAX;
               theta = 2.0 * M_PI * harvest;
               w[counter] = w0 + wth * prob * cos(theta);
+              if (TrackParticleID)
+                ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+              counter++;
+            }
+}
+
+/** Relativistic Maxellian random velocity and uniform spatial distribution */
+void Particles3D::MaxwellJuttner(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective * col) {
+
+  /* initialize random generator with different seed on different processor */
+  srand(vct->getCartesian_rank() + 2 + ns);
+
+  double upx, upy, upz;
+  double th0 = col->getUth(ns);
+  double g0x = col->getU0(ns);
+  double g0y = col->getV0(ns);
+  double g0z = col->getW0(ns);
+  double g0;
+  int g0dir;
+  if (g0x > 1.0) {
+    g0 = g0x;
+    g0dir = int(fabs(g0)/g0) * 1;
+  }
+  else if (g0y > 1.0) {
+    g0 = g0y;
+    g0dir = int(fabs(g0)/g0) * 2;
+  }
+  else if (g0z > 1.0) {
+    g0 = g0z;
+    g0dir = int(fabs(g0)/g0) * 3;
+  }
+  else {
+    g0 = 1.0;
+    g0dir = 0;
+  }
+
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++)
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / npcelx) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / npcely) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / npcelz) + grid->getZN(i, j, k);
+              // q = charge
+              q[counter] = (qom / fabs(qom)) * (fabs(EMf->getRHOcs(i, j, k, ns)) / npcel) * (1.0 / grid->getInvVOL());
+              // velocity from MJ distribution
+	      GenerateMaxwellJuttner(&upx, &upy, &upz, th0, g0, g0dir);
+              u[counter] = upx;
+              v[counter] = upy;
+              w[counter] = upz;
               if (TrackParticleID)
                 ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
               counter++;
@@ -200,83 +332,6 @@ void Particles3D::KAWTurbulencePert(Grid * grid, Field * EMf, VirtualTopology3D 
   nop = counter;
 }
 
-double SECHSQR(double x) {
-  double y, res;
-
-  if (fabs(x)>354.0) {
-    res = 1.31e-307;
-  }
-  else {                                                                                    
-    y = 1.0/cosh(x);
-    res = y*y;
-  }
-  return res;
-}          
-
-void MaxwellJuttner(double * upx, double * upy, double * upz, double theta, double gammaDrift, int dirDrift) {
-
-  double eta = 1.45; // Rejection factor
-  double g = sqrt(0.5*M_PI*theta*theta*theta);
-  double h = 2.*theta*theta*theta;
-  double fg = g/(g+h);
-  double fh = h/(g+h);
-
-  double betaDrift = 0.0;
-  double uDrift    = 0.0;
-  if (gammaDrift > 1.0) {
-    uDrift = double(abs(dirDrift)/dirDrift) * sqrt(gammaDrift*gammaDrift - 1.0);
-    betaDrift = uDrift / gammaDrift;
-  }
-  
-  double rs[8];
-  for (int i=0; i<8; i++) rs[i] = rand()/(double)RAND_MAX;
-  bool reject = true;
-  // Generate a random kinetic energy w = sqrt{u^2+1} - 1                                         
-  // in the frame of drift.
-  double w, pq;
-  while (reject) {
-    w = -theta;
-    if (rs[3] < fg) w = w * (log(rs[0]) + log(rs[1])*pow(cos(2.*M_PI*rs[2]),2.0));
-    else            w = w * log(rs[0]*rs[1]*rs[2]);
-    pq = (w+1.0)*sqrt(w*(w+2.0)) / (sqrt(2.0*w) + w*w);
-    if (pq >= rs[4] * eta)       reject = false; // w is the result we want
-    else for (int i=0; i<5; i++) rs[i] = rand()/(double)RAND_MAX; // w is rejected -- regenerate
-  }
-  
-  // find gamma and |u| in frame of drift                                                         
-  double u0 = 1. + w;
-  double uMag = sqrt(w*(w+2.));
-  // find direction
-  double phi = 2.0*M_PI * rs[5];
-  double u1 = (2.0 * rs[6] - 1.0) * uMag;
-  if (rs[7]*u0 < -betaDrift*u1) u1 = -u1;
-  double uPerp = sqrt(uMag*uMag - u1*u1);
-  double u2 = uPerp * cos(phi);
-  double u3 = uPerp * sin(phi);
-
-  // Boost back to simulation frame
-  if (abs(dirDrift)==1) {
-    *upx = gammaDrift * u1 + uDrift * u0;
-    *upy = u2;
-    *upz = u3;
-  }
-  else if (abs(dirDrift)==2) {
-    *upy = gammaDrift * u1 + uDrift * u0;
-    *upx = u2;
-    *upz = u3;
-  }
-  else if (abs(dirDrift)==3) {
-    *upz = gammaDrift * u1 + uDrift * u0;
-    *upx = u2;
-    *upy = u3;
-  }
-  else {
-    *upx = u1;
-    *upy = u2;
-    *upz = u3;
-  }
-}
-
 /* For relativistic double Harris with pairs: */
 /* Maxwellian background, drifting particles in the sheets*/
 void Particles3D::DoubleHarrisRel_pairs(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective * col) {
@@ -321,7 +376,7 @@ void Particles3D::DoubleHarrisRel_pairs(Grid * grid, Field * EMf, VirtualTopolog
 		q[counter] = (qom / fabs(qom)) * rho0 / double(npcel) / grid->getInvVOL();
 		
 		// Velocity from (relativistic) nondrifting Maxwellian
-                MaxwellJuttner(&upx, &upy, &upz, thb, 1.0, 0);
+                GenerateMaxwellJuttner(&upx, &upy, &upz, thb, 1.0, 0);
 	      }
               else {
                 if (y[counter]<y12) fs = SECHSQR((y[counter]-y14)/dCS);
@@ -334,8 +389,8 @@ void Particles3D::DoubleHarrisRel_pairs(Grid * grid, Field * EMf, VirtualTopolog
 		q[counter] = (qom / fabs(qom)) * rhoCS / double(npcel) * fs / grid->getInvVOL();
 
 		// Velocity from (relativistic) drifting Maxwellian
-                if (qom<0.) MaxwellJuttner(&upx, &upy, &upz, thCS, g0CS, -3);
-		else        MaxwellJuttner(&upx, &upy, &upz, thCS, g0CS, 3);
+                if (qom<0.) GenerateMaxwellJuttner(&upx, &upy, &upz, thCS, g0CS, -3);
+		else        GenerateMaxwellJuttner(&upx, &upy, &upz, thCS, g0CS, 3);
 		// Flip sign of drift velocity component for particles in the second layer
                 if (y[counter] > y12) {
 		  upx = -upx;
@@ -401,8 +456,8 @@ void Particles3D::DoubleHarrisRel_ionel(Grid * grid, Field * EMf, VirtualTopolog
 		q[counter] = (qom / fabs(qom)) * rho0 / double(npcel) / grid->getInvVOL();
 		
 		// Velocity from (relativistic) nondrifting Maxwellian
-                if (qom<0.) MaxwellJuttner(&upx, &upy, &upz, thbe, 1.0, 0);
-		else        MaxwellJuttner(&upx, &upy, &upz, thbi, 1.0, 0);
+                if (qom<0.) GenerateMaxwellJuttner(&upx, &upy, &upz, thbe, 1.0, 0);
+		else        GenerateMaxwellJuttner(&upx, &upy, &upz, thbi, 1.0, 0);
 	      }
               else {
                 if (y[counter]<y12) fs = SECHSQR((y[counter]-y14)/dCS);
@@ -415,8 +470,8 @@ void Particles3D::DoubleHarrisRel_ionel(Grid * grid, Field * EMf, VirtualTopolog
 		q[counter] = (qom / fabs(qom)) * rhoCS / double(npcel) * fs / grid->getInvVOL();
 
 		// Velocity from (relativistic) drifting Maxwellian
-                if (qom<0.) MaxwellJuttner(&upx, &upy, &upz, thCSe, g0CS, -3);
-		else        MaxwellJuttner(&upx, &upy, &upz, thCSi, g0CS, 3);
+                if (qom<0.) GenerateMaxwellJuttner(&upx, &upy, &upz, thCSe, g0CS, -3);
+		else        GenerateMaxwellJuttner(&upx, &upy, &upz, thCSi, g0CS, 3);
 		// Flip sign of drift velocity component for particles in the second layer
                 if (y[counter] > y12) {
 		  upx = -upx;
@@ -425,6 +480,50 @@ void Particles3D::DoubleHarrisRel_ionel(Grid * grid, Field * EMf, VirtualTopolog
 		}
 	      }
 		              
+              // Store 4-velocity
+              u[counter] = upx;
+              v[counter] = upy;
+              w[counter] = upz;
+              
+              counter++;
+            }
+      }
+  nop = counter;
+}
+
+/* Relativistic quasi-1D ion-electron shock */
+void Particles3D::Shock1D_ionel(Grid * grid, Field * EMf, VirtualTopology3D * vct, Collective * col) {
+
+  long long seed = (vct->getCartesian_rank() + 1)*20 + ns;
+  srand(seed);
+  srand48(seed);
+
+  double thb = col->getUth(ns);
+  double rho0  = rhoINIT/FourPI;
+  double u0 = col->getU0(ns);
+  double g0 = 1.0/sqrt(1.0-u0*u0);
+
+  double upx, upy, upz;
+  double fs;
+  long long counter = 0;
+  for (int i = 1; i < grid->getNXC() - 1; i++)
+    for (int j = 1; j < grid->getNYC() - 1; j++)
+      for (int k = 1; k < grid->getNZC() - 1; k++) {
+    
+        for (int ii = 0; ii < npcelx; ii++)
+          for (int jj = 0; jj < npcely; jj++)
+            for (int kk = 0; kk < npcelz; kk++) {
+              x[counter] = (ii + .5) * (dx / double(npcelx)) + grid->getXN(i, j, k);
+              y[counter] = (jj + .5) * (dy / double(npcely)) + grid->getYN(i, j, k);
+              z[counter] = (kk + .5) * (dz / double(npcelz)) + grid->getZN(i, j, k);
+
+      	      // Charge
+              q[counter] = (qom / fabs(qom)) * rho0 / double(npcel) / grid->getInvVOL();
+              
+              // Velocity from (relativistic) nondrifting Maxwellian
+              if (x[counter]<Lx/2.0) GenerateMaxwellJuttner(&upx, &upy, &upz, thb, g0, 1);
+	      else                   GenerateMaxwellJuttner(&upx, &upy, &upz, thb, g0, -1);
+                            
               // Store 4-velocity
               u[counter] = upx;
               v[counter] = upy;
@@ -2120,9 +2219,9 @@ int Particles3D::mover_PC_rel(Grid * grid, VirtualTopology3D * vct, Field * EMf)
                      pow(Bzl,2)*wy + Bxl*wz + Byl*Bzl*wz;
     double uznew = Byl*wx + Bxl*Bzl*wx - Bxl*wy + Byl*Bzl*wy -
                      pow(Bxl,2)*wz - pow(Byl,2)*wz;
-    up = wx + uxnew *2.0/(1+h2) + qomdt2 * Exl;
-    vp = wy + uynew *2.0/(1+h2) + qomdt2 * Eyl;
-    wp = wz + uznew *2.0/(1+h2) + qomdt2 * Ezl;
+    up = wx + uxnew *2.0/(1.0+h2) + qomdt2 * Exl;
+    vp = wy + uynew *2.0/(1.0+h2) + qomdt2 * Eyl;
+    wp = wz + uznew *2.0/(1.0+h2) + qomdt2 * Ezl;
 
     u[rest] = up;
     v[rest] = vp;

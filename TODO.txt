@@ -5,6 +5,12 @@ Still TODOs:
 
 --- Automatic creation of output folder
 
+--- FIX INITIAL DROP IN ENERGY???????
+
+ALGORITHM TESTS:
+--- Try full IMM
+--- Try including curlcurlE --- TRIED, no difference
+
 Done:
 --- Distinguish deposit for normal cycle and deposit for output (hat
 quantities for normal cycle, non-hat for output cycle ON TOP OF hatted stuff);
