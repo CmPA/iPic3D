@@ -113,128 +113,185 @@ void BCpart(double *x, double *u, double *v, double *w, double Lx, double ut, do
 
 }
 /** set the boundary condition on boundaries for particle in 3D*/
-void BCpart(double *x, double *y, double *z, double *u, double *v, double *w, double Lx, double Ly, double Lz, double ut, double vt, double wt, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, int bcFaceZright, int bcFaceZleft, VirtualTopology3D * vct) {
-  if (*x > Lx && vct->getXright_neighbor() == MPI_PROC_NULL) {
-    switch (bcFaceXright) {
-      case 1:                  // perfect mirror
-        MODULO(x, Lx);
-        *u = -*u;
-        break;
-      case 2:                  // riemmission
-        double harvest, prob, theta;
-        MODULO(x, Lx);
-        // u
-        harvest = rand() / (double) RAND_MAX;
-        prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-        harvest = rand() / (double) RAND_MAX;
-        theta = 2.0 * M_PI * harvest;
-        *u = -fabs(ut * prob * cos(theta));
-        // v
-        *v = vt * prob * sin(theta);
-        // w
-        harvest = rand() / (double) RAND_MAX;
-        prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-        harvest = rand() / (double) RAND_MAX;
-        theta = 2.0 * M_PI * harvest;
-        *w = wt * prob * cos(theta);
-        break;
+void BCpart(double *x, double *y, double *z, double *u, double *v, double *w,
+		double Lx, double Ly, double Lz, double ut, double vt, double wt,
+		int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft,
+		int bcFaceZright, int bcFaceZleft, VirtualTopology3D *vct) {
+	if (*x > Lx && vct->getXright_neighbor() == MPI_PROC_NULL) {
+		switch (bcFaceXright) {
+		case 1:                  // perfect mirror
+			//MODULO(x, Lx);
+			*x = 2 * Lx - *x;
+			*u = -*u;
+			break;
+		case 2:                  // riemmission
+			double harvest, prob, theta;
+			MODULO(x, Lx);
+			// u
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*u = -fabs(ut * prob * cos(theta));
+			// v
+			*v = vt * prob * sin(theta);
+			// w
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*w = wt * prob * cos(theta);
+			break;
+		case 3:      // magnetic mirror [velcoity already mirrored in the mover)
+			MODULO(x, Lx);
+			break;
 
+		}
+	}
+	if (*x < 0 && vct->getXleft_neighbor() == MPI_PROC_NULL) {
+		switch (bcFaceXleft) {
+		case 1:                  // perfect mirror
+			//MODULO(x, Lx);
+			*x = -*x;
+			*u = -*u;
+			break;
+		case 2:                  // riemmission
+			MODULO(x, Lx);
+			double harvest, prob, theta;
+			// u
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*u = fabs(ut * prob * cos(theta));
+			// v
+			*v = vt * prob * sin(theta);
+			// w
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*w = wt * prob * cos(theta);
+			break;
+		case 3:      // magnetic mirror [velcoity already mirrored in the mover)
+			MODULO(x, Lx);
+			break;
 
+		}
+	}
+	if (*y > Ly && vct->getYright_neighbor() == MPI_PROC_NULL) {
+		switch (bcFaceYright) {
+		case 1:                  // perfect mirror
+			//MODULO(y, Ly);
+			*y = 2 * Ly - *y;
+			*v = -*v;
+			break;
+		case 2:                  // riemmission
+			MODULO(y, Ly);
+			double harvest, prob, theta;
+			// u
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*u = ut * prob * cos(theta);
+			// v
+			*v = -fabs(vt * prob * sin(theta));
+			// w
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*w = wt * prob * cos(theta);
+			break;
 
-    }
-  }
-  if (*x < 0 && vct->getXleft_neighbor() == MPI_PROC_NULL) {
-    switch (bcFaceXleft) {
-      case 1:                  // perfect mirror
-        MODULO(x, Lx);
-        *u = -*u;
-        break;
-      case 2:                  // riemmission
-        MODULO(x, Lx);
-        double harvest, prob, theta;
-        // u
-        harvest = rand() / (double) RAND_MAX;
-        prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-        harvest = rand() / (double) RAND_MAX;
-        theta = 2.0 * M_PI * harvest;
-        *u = fabs(ut * prob * cos(theta));
-        // v
-        *v = vt * prob * sin(theta);
-        // w
-        harvest = rand() / (double) RAND_MAX;
-        prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-        harvest = rand() / (double) RAND_MAX;
-        theta = 2.0 * M_PI * harvest;
-        *w = wt * prob * cos(theta);
-        break;
+		}
+	}
+	if (*y < 0 && vct->getYleft_neighbor() == MPI_PROC_NULL) {
+		switch (bcFaceYleft) {
+		case 1:                  // perfect mirror
+			//MODULO(y, Ly);
+			*y = -*y;
+			*v = -*v;
+			break;
+		case 2:                  // riemmission
+			MODULO(y, Ly);
+			double harvest, prob, theta;
+			// u
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*u = ut * prob * cos(theta);
+			// v
+			*v = fabs(vt * prob * sin(theta));
+			// w
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*w = wt * prob * cos(theta);
+			break;
 
-
-
-    }
-  }
-  if (*y > Ly && vct->getYright_neighbor() == MPI_PROC_NULL) {
-    switch (bcFaceYright) {
-      case 1:                  // perfect mirror
-        MODULO(y, Ly);
-        *v = -*v;
-        break;
-      case 2:                  // riemmission
-        MODULO(y, Ly);
-        double harvest, prob, theta;
-        // u
-        harvest = rand() / (double) RAND_MAX;
-        prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-        harvest = rand() / (double) RAND_MAX;
-        theta = 2.0 * M_PI * harvest;
-        *u = ut * prob * cos(theta);
-        // v
-        *v = -fabs(vt * prob * sin(theta));
-        // w
-        harvest = rand() / (double) RAND_MAX;
-        prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-        harvest = rand() / (double) RAND_MAX;
-        theta = 2.0 * M_PI * harvest;
-        *w = wt * prob * cos(theta);
-        break;
-
-
-
-    }
-  }
-  if (*y < 0 && vct->getYleft_neighbor() == MPI_PROC_NULL) {
-    switch (bcFaceYleft) {
-      case 1:                  // perfect mirror
-        MODULO(y, Ly);
-        *v = -*v;
-        break;
-      case 2:                  // riemmission
-        MODULO(y, Ly);
-        double harvest, prob, theta;
-        // u
-        harvest = rand() / (double) RAND_MAX;
-        prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-        harvest = rand() / (double) RAND_MAX;
-        theta = 2.0 * M_PI * harvest;
-        *u = ut * prob * cos(theta);
-        // v
-        *v = fabs(vt * prob * sin(theta));
-        // w
-        harvest = rand() / (double) RAND_MAX;
-        prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
-        harvest = rand() / (double) RAND_MAX;
-        theta = 2.0 * M_PI * harvest;
-        *w = wt * prob * cos(theta);
-        break;
-
-
-
-    }
-  }
-  /* if (*z > Lz && vct->getZright_neighbor()==MPI_PROC_NULL){ switch(bcFaceZright){ case 1: // perfect mirror MODULO(z,Lz); w= -*w; break; case 2: // riemmission MODULO(z,Lz); double harvest, prob,theta; // u harvest = rand()/(double)RAND_MAX; prob = sqrt(-2.0*log(1.0-.999999*harvest)); harvest = rand()/(double)RAND_MAX; theta = 2.0*M_PI*harvest; u = ut*prob*cos(theta); // v v = vt*prob*sin(theta); // w harvest = rand()/(double)RAND_MAX; prob = sqrt(-2.0*log(1.0-.999999*harvest)); harvest = rand()/(double)RAND_MAX; theta = 2.0*M_PI*harvest; w = -fabs(wt*prob*cos(theta)); break; } } if (*z < 0 && vct->getZleft_neighbor()==MPI_PROC_NULL){ switch(bcFaceZleft){ case 1: // perfect mirror MODULO(z,Lz); w= -*w; break; case 2: // riemmission MODULO(z,Lz); double harvest, prob,theta; // u harvest = rand()/(double)RAND_MAX; prob = sqrt(-2.0*log(1.0-.999999*harvest)); harvest = rand()/(double)RAND_MAX; theta = 2.0*M_PI*harvest; u = ut*prob*cos(theta); // v v = vt*prob*sin(theta); // w harvest = 
-   * rand()/(double)RAND_MAX; prob = sqrt(-2.0*log(1.0-.999999*harvest)); harvest = rand()/(double)RAND_MAX; theta = 2.0*M_PI*harvest; w = fabs(wt*prob*cos(theta)); break; } } */
-
-
-
-
+		}
+	}
+	if (*z > Lz && vct->getZright_neighbor() == MPI_PROC_NULL) {
+		switch (bcFaceZright) {
+		case 1:
+			// perfect mirror
+			//MODULO(z,Lz);
+			*z = 2 * Lz - *z;
+			*w = -*w;
+			break;
+		case 2:
+			// riemmission
+			MODULO(z, Lz);
+			double harvest, prob, theta;
+			// u
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*u = ut * prob * cos(theta);
+			// v
+			*v = vt * prob * sin(theta);
+			// w
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*w = -fabs(wt * prob * cos(theta));
+			break;
+		}
+	}
+	if (*z < 0 && vct->getZleft_neighbor() == MPI_PROC_NULL) {
+		switch (bcFaceZleft) {
+		case 1:
+			// perfect mirror
+			//MODULO(z,Lz);
+			*z = -*z;
+			*w = -*w;
+			break;
+		case 2:
+			// riemmission
+			MODULO(z, Lz);
+			double harvest, prob, theta;
+			// u
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*u = ut * prob * cos(theta);
+			// v
+			*v = vt * prob * sin(theta);
+			// w
+			harvest = rand() / (double) RAND_MAX;
+			prob = sqrt(-2.0 * log(1.0 - .999999 * harvest));
+			harvest = rand() / (double) RAND_MAX;
+			theta = 2.0 * M_PI * harvest;
+			*w = fabs(wt * prob * cos(theta));
+			break;
+		}
+	}
 
 }
