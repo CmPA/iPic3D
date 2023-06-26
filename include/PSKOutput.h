@@ -365,6 +365,10 @@ public:
       this->output_adaptor.write("/collective/c", _col->getC());
       this->output_adaptor.write("/collective/Smooth", _col->getSmooth());
 
+      this->output_adaptor.write("/collective/FieldOutputCycle", _col->getFieldOutputCycle());
+      this->output_adaptor.write("/collective/ParticleOutputCycle", _col->getParticlesOutputCycle());
+      this->output_adaptor.write("/collective/RestartOutputCycle", _col->getRestartOutputCycle());
+
       this->output_adaptor.write("/collective/bc/PfaceXright", _col->getBcPfaceXright());
       this->output_adaptor.write("/collective/bc/PfaceXleft", _col->getBcPfaceXleft());
       this->output_adaptor.write("/collective/bc/PfaceYright", _col->getBcPfaceYright());
@@ -395,7 +399,6 @@ public:
         this->output_adaptor.write("/collective/species_" + ii.str() + "/Npcelx", _col->getNpcelx(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/Npcely", _col->getNpcely(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/Npcelz", _col->getNpcelz(i));
-        this->output_adaptor.write("/collective/species_" + ii.str() + "/NpMax", _col->getNpMax(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/qom", _col->getQOM(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/uth", _col->getUth(i));
         this->output_adaptor.write("/collective/species_" + ii.str() + "/vth", _col->getVth(i));

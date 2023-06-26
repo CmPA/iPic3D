@@ -1,4 +1,4 @@
-
+#include <mpi.h>
 #include "EMfields3D.h"
 
 /*! constructor */
@@ -35,6 +35,16 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   L_square = col->getL_square();
 
   Fext = 0.0;
+  fadeFactor = 0.0;
+
+  // apply damyping to outer 1/40 of grid layers
+  layers = round (nyc * 0.025);
+  if (layers < 3) layers = 3;
+  damp = new double[layers];
+  for (int layer = 0; layer < layers; layer++) {
+    damp[layer] = 1.0 - 1.0 / exp2(1+(layer-1)/4.0);
+    if (damp[layer] < 0.0) damp[layer] = 0.0;
+  }
 
   delt = c * th * dt;
   PoissonCorrection = false;
@@ -116,6 +126,15 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   Bx_ext = newArr3(double,nxn,nyn,nzn);
   By_ext = newArr3(double,nxn,nyn,nzn);
   Bz_ext = newArr3(double,nxn,nyn,nzn);
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++) {
+      for (int k = 0; k < nzn; k++) {
+        Bx_ext[i][j][k] = 0.0;
+        By_ext[i][j][k] = 0.0;
+        Bz_ext[i][j][k] = 0.0;
+      }
+    }
+  }
   // Jx_ext = newArr3(double,nxn,nyn,nzn);
   // Jy_ext = newArr3(double,nxn,nyn,nzn);
   // Jz_ext = newArr3(double,nxn,nyn,nzn);
@@ -167,6 +186,13 @@ EMfields3D::EMfields3D(Collective * col, Grid * grid) {
   arr = newArr3(double,nxn,nyn,nzn);
 
   Lambda = newArr3(double, nxn, nyn, nzn);
+  for (int i = 0; i < nxn; i++) {
+    for (int j = 0; j < nyn; j++) {
+      for (int k = 0; k < nzn; k++) {
+        Lambda[i][j][k] = 0.0;
+      }
+    }
+  }
 }
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
@@ -280,6 +306,9 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
+  if (Case=="GEMOriginal") ;
+  if (Case=="GEM-original") swamp_EB_yz(grid, vct);
+  if (Case=="GEM-smallpert") swamp_EB_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:
@@ -325,24 +354,25 @@ void EMfields3D::MaxwellSource(double *bkrylov, Grid * grid, VirtualTopology3D *
   sum(tempY, temp2Y, nxn, nyn, nzn);
   sum(tempZ, temp2Z, nxn, nyn, nzn);
 
-  // Boundary condition in the known term
-  // boundary condition: Xleft
-  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
+  // Boundary conditions (in the known term):
+  // 0 = perfect conductor
+  // Xleft
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)
     perfectConductorLeftS(tempX, tempY, tempZ, 0);
-  // boundary condition: Xright
-  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)  // perfect conductor
+  // Xright
+  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)
     perfectConductorRightS(tempX, tempY, tempZ, 0);
-  // boundary condition: Yleft
-  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)  // perfect conductor
+  // Yleft
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)
     perfectConductorLeftS(tempX, tempY, tempZ, 1);
-  // boundary condition: Yright
-  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)  // perfect conductor
+  // Yright
+  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)
     perfectConductorRightS(tempX, tempY, tempZ, 1);
-  // boundary condition: Zleft
-  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)  // perfect conductor
+  // Zleft
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)
     perfectConductorLeftS(tempX, tempY, tempZ, 2);
-  // boundary condition: Zright
-  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
+  // Zright
+  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)
     perfectConductorRightS(tempX, tempY, tempZ, 2);
 
   // physical space -> Krylov space
@@ -402,23 +432,25 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
   sumscalprod(imageY, delt, vectY, Lambda, nxn, nyn, nzn);
   sumscalprod(imageZ, delt, vectZ, Lambda, nxn, nyn, nzn);
 
-  // boundary condition: Xleft
-  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)  // perfect conductor
+  // boundary conditions:
+  // 0 = perfect conductor
+  // Xleft
+  if (vct->getXleft_neighbor() == MPI_PROC_NULL && bcEMfaceXleft == 0)
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
-  // boundary condition: Xright
-  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)  // perfect conductor
+  // Xright
+  if (vct->getXright_neighbor() == MPI_PROC_NULL && bcEMfaceXright == 0)
     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 0, grid);
-  // boundary condition: Yleft
-  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)  // perfect conductor
+  // Yleft
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL && bcEMfaceYleft == 0)
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid);
-  // boundary condition: Yright
-  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)  // perfect conductor
+  // Yright
+  if (vct->getYright_neighbor() == MPI_PROC_NULL && bcEMfaceYright == 0)
     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 1, grid);
-  // boundary condition: Zleft
-  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)  // perfect conductor
+  // Zleft
+  if (vct->getZleft_neighbor() == MPI_PROC_NULL && bcEMfaceZleft == 0)
     perfectConductorLeft(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid);
-  // boundary condition: Zright
-  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)  // perfect conductor
+  // Zright
+  if (vct->getZright_neighbor() == MPI_PROC_NULL && bcEMfaceZright == 0)
     perfectConductorRight(imageX, imageY, imageZ, vectX, vectY, vectZ, 2, grid);
 
   // OpenBC
@@ -426,7 +458,6 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 
   // move from physical space to krylov space
   phys2solver(im, imageX, imageY, imageZ, nxn, nyn, nzn);
-
 
 }
 
@@ -579,33 +610,119 @@ void EMfields3D::smooth(double value, double ****vector, int is, int type, Grid 
   cout << "Smoothing for Species not implemented in 3D" << endl;
 }
 
-/*! fix the B boundary when running gem */
+/* fix the B boundary when running GEM */
 void EMfields3D::fixBgem(Grid * grid, VirtualTopology3D * vct) {
   if (vct->getYright_neighbor() == MPI_PROC_NULL) {
+    double B0x_tmp_1 = B0x * tanh((grid->getYC(0, nyc - 1, 0) - Ly / 2) / delta);
+    double B0x_tmp_2 = B0x * tanh((grid->getYC(0, nyc - 2, 0) - Ly / 2) / delta);
+    double B0x_tmp_3 = B0x * tanh((grid->getYC(0, nyc - 3, 0) - Ly / 2) / delta);
     for (int i = 0; i < nxc; i++)
       for (int k = 0; k < nzc; k++) {
-        Bxc[i][nyc - 1][k] = B0x * tanh((grid->getYC(i, nyc - 1, k) - Ly / 2) / delta);
-        Bxc[i][nyc - 2][k] = Bxc[i][nyc - 1][k];
-        Bxc[i][nyc - 3][k] = Bxc[i][nyc - 1][k];
+        Bxc[i][nyc - 1][k] = B0x_tmp_1;
+        Bxc[i][nyc - 2][k] = B0x_tmp_2;
+        Bxc[i][nyc - 3][k] = B0x_tmp_3;
         Byc[i][nyc - 1][k] = B0y;
+        Byc[i][nyc - 2][k] = B0y;
+        Byc[i][nyc - 3][k] = B0y;
         Bzc[i][nyc - 1][k] = B0z;
         Bzc[i][nyc - 2][k] = B0z;
         Bzc[i][nyc - 3][k] = B0z;
       }
   }
   if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
+    double B0x_tmp_0 = B0x * tanh((grid->getYC(0, 0, 0) - Ly / 2) / delta);
+    double B0x_tmp_1 = B0x * tanh((grid->getYC(0, 1, 0) - Ly / 2) / delta);
+    double B0x_tmp_2 = B0x * tanh((grid->getYC(0, 2, 0) - Ly / 2) / delta);
     for (int i = 0; i < nxc; i++)
       for (int k = 0; k < nzc; k++) {
-        Bxc[i][0][k] = B0x * tanh((grid->getYC(i, 0, k) - Ly / 2) / delta);
-        Bxc[i][1][k] = Bxc[i][0][k];
-        Bxc[i][2][k] = Bxc[i][0][k];
+        Bxc[i][0][k] = B0x_tmp_0;
+        Bxc[i][1][k] = B0x_tmp_1;
+        Bxc[i][2][k] = B0x_tmp_2;
         Byc[i][0][k] = B0y;
+        Byc[i][1][k] = B0y;
+        Byc[i][2][k] = B0y;
         Bzc[i][0][k] = B0z;
         Bzc[i][1][k] = B0z;
         Bzc[i][2][k] = B0z;
       }
   }
+}
 
+/*! swamp region for E and B, z and y components, fixating to zero at the y-boundaries, GEM challange */
+void EMfields3D::swamp_EB_yz(Grid * grid, VirtualTopology3D * vct) {
+  double factor;
+
+  if (vct->getYright_neighbor() == MPI_PROC_NULL) {
+    for (int i = 0; i < nxc; i++) {
+      for (int l = 0; l < layers; l++) {
+        factor = damp[l];
+        for (int k = 0; k < nzc; k++) {
+          Byc[i][nyc - l - 1][k] *= factor;
+          Bzc[i][nyc - l - 1][k] *= factor;
+          Ey[i][nyc - l - 1][k] *= factor;
+          Ez[i][nyc - l - 1][k] *= factor;
+        }
+      }
+    }
+  }
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
+    for (int i = 0; i < nxc; i++) {
+      for (int l = 0; l < layers; l++) {
+        factor = damp[l];
+        for (int k = 0; k < nzc; k++) {
+          Byc[i][l][k] *= factor;
+          Bzc[i][l][k] *= factor;
+          Ey[i][l][k] *= factor;
+          Ez[i][l][k] *= factor;
+        }
+      }
+    }
+  }
+}
+
+/* swamp region for all E and B components at the boundary for GEM */
+void EMfields3D::swamp_EB_all(Grid * grid, VirtualTopology3D * vct) {
+  double add[layers], restore, damp[layers], factor;
+
+  add[0] = 1.0;
+  damp[0] = 0.0;
+  for (int layer = 1; layer < layers-1; layer++) {
+    add[layer] = 1.0 / exp2(layer/2) + 0.5 * (layer % 2) * exp2((layer-1)/2);
+    damp[layer] = 1.0 - add[layer];
+  }
+
+  if (vct->getYright_neighbor() == MPI_PROC_NULL) {
+    for (int i = 0; i < nxc; i++) {
+      for (int l = 0; l < layers; l++) {
+        restore = add[l];
+        factor = damp[l];
+        for (int k = 0; k < nzc; k++) {
+          Bxc[i][nyc - l - 1][k] = Bxc[i][nyc - l - 1][k] * factor + B0x * restore;
+          Byc[i][nyc - l - 1][k] = Byc[i][nyc - l - 1][k] * factor + B0y * restore;
+          Bzc[i][nyc - l - 1][k] = Bzc[i][nyc - l - 1][k] * factor + B0z * restore;
+          Ex[i][nyc - l - 1][k] = Ex[i][nyc - l - 1][k] * factor;
+          Ey[i][nyc - l - 1][k] = Ey[i][nyc - l - 1][k] * factor;
+          Ez[i][nyc - l - 1][k] = Ez[i][nyc - l - 1][k] * factor;
+        }
+      }
+    }
+  }
+  if (vct->getYleft_neighbor() == MPI_PROC_NULL) {
+    for (int i = 0; i < nxc; i++) {
+      for (int l = 0; l < layers; l++) {
+        restore = add[l];
+        factor = damp[l];
+        for (int k = 0; k < nzc; k++) {
+          Bxc[i][l][k] = Bxc[i][l][k] * factor + B0x * restore;
+          Byc[i][l][k] = Byc[i][l][k] * factor + B0y * restore;
+          Bzc[i][l][k] = Bzc[i][l][k] * factor + B0z * restore;
+          Ex[i][l][k] = Ex[i][l][k] * factor;
+          Ey[i][l][k] = Ey[i][l][k] * factor;
+          Ez[i][l][k] = Ez[i][l][k] * factor;
+        }
+      }
+    }
+  }
 }
 
 /*! fix the B boundary when running forcefree */
@@ -630,9 +747,7 @@ void EMfields3D::fixBforcefree(Grid * grid, VirtualTopology3D * vct) {
         Bzc[i][2][k] = B0z / cosh((grid->getYC(i, 2, k) - Ly / 2) / delta);
       }
   }
-
 }
-
 
 /*! adjust densities on boundaries that are not periodic */
 void EMfields3D::adjustNonPeriodicDensities(int is, VirtualTopology3D * vct) {
@@ -920,6 +1035,9 @@ void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *co
 
   if (Case=="ForceFree") fixBforcefree(grid,vct);
   if (Case=="GEM")       fixBgem(grid, vct);
+  if (Case=="GEMOriginal") ;
+  if (Case=="GEM-original") swamp_EB_yz(grid, vct);
+  if (Case=="GEM-smallpert") swamp_EB_yz(grid, vct);
   if (Case=="GEMnoPert") fixBgem(grid, vct);
 
   // OpenBC:
@@ -1014,7 +1132,7 @@ void EMfields3D::AddPerturbation(double deltaBoB, double kx, double ky, double E
 }
 
 
-/*! Calculate hat rho hat, Jx hat, Jy hat, Jz hat */
+/*! Calculate hat of rho, Jx, Jy, Jz */
 void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
   // smoothing
   smooth(Smooth, rhoc, 0, grid, vct);
@@ -1051,7 +1169,7 @@ void EMfields3D::calculateHatFunctions(Grid * grid, VirtualTopology3D * vct) {
   scale(tempXC, -dt * th, nxc, nyc, nzc);
   sum(tempXC, rhoc, nxc, nyc, nzc);
   eq(rhoh, tempXC, nxc, nyc, nzc);
-  // communicate rhoh
+  // communicate rho hat
   communicateCenterBC_P(nxc, nyc, nzc, rhoh, 2, 2, 2, 2, 2, 2, vct);
 }
 /*! Image of Poisson Solver */
@@ -1566,9 +1684,8 @@ void EMfields3D::initBATSRUS(VirtualTopology3D * vct, Grid * grid, Collective *c
 }
 
 /*! initiliaze EM for GEM challange */
-void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) {
+void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col, double pertX) {
   // perturbation localized in X
-  double pertX = 0.4;
   double xpert, ypert, exp_pert;
   if (restart1 == 0) {
     // initialize
@@ -1581,7 +1698,7 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -1621,6 +1738,13 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
     for (int i = 0; i < nxc; i++)
       for (int j = 0; j < nyc; j++)
         for (int k = 0; k < nzc; k++) {
+          // initialize the density for species
+          for (int is = 0; is < ns; is++) {
+            if (DriftSpecies[is])
+              rhocs[is][i][j][k] = ((rhoINIT[is] / (cosh((grid->getYC(i, j, k) - Ly / 2) / delta) * cosh((grid->getYC(i, j, k) - Ly / 2) / delta)))) / FourPI;
+            else
+              rhocs[is][i][j][k] = rhoINIT[is] / FourPI;
+          }
           // Magnetic field
           Bxc[i][j][k] = B0x * tanh((grid->getYC(i, j, k) - Ly / 2) / delta);
           // add the initial GEM perturbation
@@ -1634,10 +1758,7 @@ void EMfields3D::initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col) 
           Byc[i][j][k] += (B0x * pertX) * exp_pert * (cos(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * 2.0 * xpert / delta + sin(M_PI * xpert / 10.0 / delta) * cos(M_PI * ypert / 10.0 / delta) * M_PI / 10.0);
           // guide field
           Bzc[i][j][k] = B0z;
-
         }
-    for (int is = 0; is < ns; is++)
-      grid->interpN2C(rhocs, is, rhons);
   }
   else {
     init(vct, grid, col);            // use the fields from restart file
@@ -1650,14 +1771,14 @@ void EMfields3D::initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collectiv
     // initialize
     if (vct->getCartesian_rank() == 0) {
       cout << "------------------------------------------" << endl;
-      cout << "Initialize GEM Challenge with Pertubation" << endl;
+      cout << "Initialize Original GEM Challenge with Pertubation" << endl;
       cout << "------------------------------------------" << endl;
       cout << "B0x                              = " << B0x << endl;
       cout << "B0y                              = " << B0y << endl;
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -1725,7 +1846,7 @@ void EMfields3D::initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTop
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -1846,7 +1967,7 @@ void EMfields3D::initGEMDipoleLikeTailNoPert(VirtualTopology3D * vct, Grid * gri
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -1925,7 +2046,7 @@ void EMfields3D::initGEMnoPert(VirtualTopology3D * vct, Grid * grid, Collective 
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -1985,7 +2106,7 @@ void EMfields3D::initRandomField(VirtualTopology3D * vct, Grid * grid, Collectiv
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
         if (DriftSpecies[i])
           cout << " DRIFTING " << endl;
         else
@@ -2069,7 +2190,7 @@ void EMfields3D::initForceFree(VirtualTopology3D * vct, Grid * grid, Collective 
       cout << "B0z                              = " << B0z << endl;
       cout << "Delta (current sheet thickness) = " << delta << endl;
       for (int i = 0; i < ns; i++) {
-        cout << "rho species " << i << " = " << rhoINIT[i];
+        cout << "rho species " << i << " = " << rhoINIT[i] << endl;
       }
       cout << "Smoothing Factor = " << Smooth << endl;
       cout << "-------------------------" << endl;
@@ -2186,6 +2307,29 @@ void EMfields3D::UpdateFext(int cycle){
 
 double EMfields3D::getFext(){
   return (Fext);
+}
+
+/*! Time-dependent fading-in factor that goes smoothly from 0 to 1. */
+void EMfields3D::UpdateFadeFactor(int cycle, int myrank){
+
+  double t_fade_begin = -1.0; // 50.0;
+  double t_fade_end = -1.0; // 500.0;
+
+  if (cycle >= t_fade_end) {
+    fadeFactor = 1.0;
+  } else if (cycle <= t_fade_begin) {
+    fadeFactor = 0.0;
+  } else {
+    // smooth quintic step function
+    double width = 0.5 * (t_fade_end - t_fade_begin);
+    double xi = (cycle - t_fade_begin - width) / width;
+    fadeFactor = 0.5 + xi * (0.9375 + (xi*xi) * (-0.625 + (xi*xi) * 0.1875));
+    if (myrank == 0) cout << " fading in: factor = " << fadeFactor << endl;
+  }
+}
+
+double EMfields3D::getFadeFactor(){
+  return (fadeFactor);
 }
 
 void EMfields3D::SetDipole_3Bext(VirtualTopology3D *vct, Grid *grid, Collective *col){
@@ -2669,7 +2813,7 @@ void EMfields3D::perfectConductorLeft(double ***imageX, double ***imageY, double
       for (int i=1; i <  nxn-1;i++)
         for (int j=1; j <  nyn-1;j++){
           imageX[i][j][1] = vectorX[i][j][1];
-          imageY[i][j][1] = vectorX[i][j][1];
+          imageY[i][j][1] = vectorY[i][j][1];
           imageZ[i][j][1] = vectorZ[i][j][1] - (Ez[i][j][1] - suszx[i][j]*vectorX[i][j][1] - suszy[i][j]*vectorY[i][j][1] - Jzh[i][j][1]*dt*th*FourPI)/suszz[i][j];
         }
       delArr2(suszx,nxn);

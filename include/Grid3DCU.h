@@ -36,11 +36,11 @@ public:
   /** destructor */
   ~Grid3DCU();
   /** allocate grid arrays for this domain */
-  void allocate(Collective * ptC, VirtualTopology3D * ptVCT);
+  void allocate(Collective * ptC, VirtualTopology3D * vct);
   /** deallocate grid arrays for this domain */
   void deallocate();
   /** print grid info */
-  void print(VirtualTopology3D * ptVCT);
+  void print(VirtualTopology3D * vct);
   /** calculate a derivative along a direction on nodes */
   void derivN(double ***derN, double ****scFieldC, int ns, int dir);
   /** calculate gradient on nodes, given a scalar field defined on central points  */

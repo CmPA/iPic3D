@@ -21,7 +21,7 @@ global PfaceXright PfaceXleft PfaceYright PfaceYleft PfaceZright PfaceZleft
 global PHIfaceXright PHIfaceXleft PHIfaceYright PHIfaceYleft PHIfaceZright PHIfaceZleft 
 global EMfaceXright EMfaceXleft EMfaceYright EMfaceYleft EMfaceZright EMfaceZleft
 
-global Np Npcelx Npcely Npcelz NpMax qom
+global Np Npcelx Npcely Npcelz qom
 global uth vth wth u_drift v_drift w_drift
 global XLEN YLEN ZLEN Nprocs periodicX periodicY periodicZ
 

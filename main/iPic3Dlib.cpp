@@ -49,7 +49,7 @@ int c_Solver::Init(int argc, char **argv) {
     col->save();
   }
   // Create the local grid
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   grid = new Grid3DCU(col, vct);  // Create the local grid
   EMf = new EMfields3D(col, grid);  // Create Electromagnetic Fields Object
 
@@ -64,11 +64,14 @@ int c_Solver::Init(int argc, char **argv) {
     /* --------------------------------------------------------- */
     /* If using 'default' IO initialize fields depending on case */
     /* --------------------------------------------------------- */
-    if      (col->getCase()=="GEMnoPert") EMf->initGEMnoPert(vct,grid,col);
-    else if (col->getCase()=="ForceFree") EMf->initForceFree(vct,grid,col);
-    else if (col->getCase()=="GEM")       EMf->initGEM(vct, grid,col);
-    else if (col->getCase()=="BATSRUS")   EMf->initBATSRUS(vct,grid,col);
-    else if (col->getCase()=="Dipole")    EMf->init(vct,grid,col);
+    if      (col->getCase()=="GEMnoPert")       EMf->initGEMnoPert(vct,grid,col);
+    else if (col->getCase()=="ForceFree")       EMf->initForceFree(vct,grid,col);
+    else if (col->getCase()=="GEM")             EMf->initGEM(vct,grid,col);
+    else if (col->getCase()=="GEMOriginal")     EMf->initOriginalGEM(vct,grid,col);
+    else if (col->getCase()=="GEM-original")    EMf->initOriginalGEM(vct,grid,col);
+    else if (col->getCase()=="GEM-smallpert")   EMf->initGEM(vct,grid,col,0.1);
+    else if (col->getCase()=="BATSRUS")         EMf->initBATSRUS(vct,grid,col);
+    else if (col->getCase()=="Dipole")          EMf->init(vct,grid,col);
     else {
       if (myrank==0) {
         cout << " =========================================================== " << endl;
@@ -205,6 +208,7 @@ void c_Solver::GatherMoments(){
 void c_Solver::UpdateCycleInfo(int cycle) {
 
   EMf->UpdateFext(cycle);
+  EMf->UpdateFadeFactor(cycle, myrank);
   if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
   if (cycle == first_cycle) {
     if (col->getCase()=="Dipole") {
@@ -224,7 +228,7 @@ void c_Solver::CalculateField() {
 
   EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
   EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
-  MPI_Barrier(MPI_COMM_WORLD);
+//  MPI_Barrier(MPI_COMM_WORLD); // This is time-consuming and should be debug code, only!
   // timeTasks.end(TimeTasks::MOMENTS);
 
   // MAXWELL'S SOLVER
@@ -373,22 +377,25 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0 &&
-        cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    if (((cycle % (col->getFieldOutputCycle()) == 0) || (cycle == first_cycle)) && (col->getFieldOutputCycle() > 0)) {
+      WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    }
+    if ((cycle % (col->getParticlesOutputCycle()) == 0) && (cycle > 0) && (col->getParticlesOutputCycle() > 0)) {
+      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    }
 
   }
   else
   {
 
     // OUTPUT to large file, called proc**
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+    if (((cycle % (col->getFieldOutputCycle()) == 0) || (cycle == first_cycle)) && (col->getFieldOutputCycle() > 0)) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
       // Pressure tensor is available
       hdf5_agent.close();
     }
-    if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
+    if ((cycle % (col->getParticlesOutputCycle()) == 0) && (cycle > 0) && (col->getParticlesOutputCycle() > 0)) {
       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
       output_mgr.output("position + velocity + q ", cycle, 1);
       hdf5_agent.close();

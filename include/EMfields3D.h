@@ -178,7 +178,7 @@ class EMfields3D                // :public Field
     /*! init beam */
     void initBEAM(VirtualTopology3D * vct, Grid * grid, Collective *col, double x_center, double y_center, double z_center, double radius);
     /*! initialize GEM challenge */
-    void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
+    void initGEM(VirtualTopology3D * vct, Grid * grid, Collective *col, double pertX = 0.4);
     void initOriginalGEM(VirtualTopology3D * vct, Grid * grid, Collective *col);
     void initDoublePeriodicHarrisWithGaussianHumpPerturbation(VirtualTopology3D * vct, Grid * grid, Collective *col);
     /*! initialize GEM challenge with dipole-like tail without perturbation */
@@ -219,9 +219,13 @@ class EMfields3D                // :public Field
     void ConstantChargeOpenBCv2(Grid * grid, VirtualTopology3D * vct);
     /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
     void calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col);
-    /*! fix B on the boundary for gem challange */
+    /*! fix B on the boundary for GEM challange */
     void fixBgem(Grid * grid, VirtualTopology3D * vct);
-    /*! fix B on the boundary for gem challange */
+    /*! swamp region for E and B, z and y components, fixating to zero at the y-boundaries, GEM challange */
+    void swamp_EB_yz(Grid * grid, VirtualTopology3D * vct);
+    /*! swamp region for all E and B components at the boundary for GEM */
+    void swamp_EB_all(Grid * grid, VirtualTopology3D * vct);
+    /*! fix B on the boundary for GEM challange */
     void fixBforcefree(Grid * grid, VirtualTopology3D * vct);
 
     /*! Calculate the three components of Pi(implicit pressure) cross image vector */
@@ -381,6 +385,9 @@ class EMfields3D                // :public Field
     void UpdateFext(int cycle);
     double getFext();
 
+    void UpdateFadeFactor(int cycle, int myrank);
+    double getFadeFactor();
+
     /*! get pressure tensor XX for species */
     double ****getpXXsn();
     /*! get pressure tensor XY for species */
@@ -498,6 +505,9 @@ class EMfields3D                // :public Field
     /** Characteristic length */
     double L_square;
 
+    int layers;
+    double *damp;
+
     /*! PHI: electric potential (indexX, indexY, indexZ), defined on central points between nodes */
     double ***PHI;
     /*! Ex: electric field X-component (indexX, indexY, indexZ), defined on nodes */
@@ -603,6 +613,7 @@ class EMfields3D                // :public Field
     double***  Jz_ext;
 
     double Fext;
+    double fadeFactor;
 
     /*! SPECIES: pressure tensor component-XX, defined on nodes */
     double ****pXXsn;

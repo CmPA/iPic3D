@@ -15,9 +15,9 @@ VCtopology3D::VCtopology3D(Collective *col) {
   PERIODICY = col->getPERIODICY();
   PERIODICZ = col->getPERIODICZ();
   // here you have to set the topology for the Particles
-  PERIODICX_P = col->getPERIODICX();
-  PERIODICY_P = col->getPERIODICY();
-  PERIODICZ_P = col->getPERIODICZ();
+  PERIODICX_P = col->getPERIODICX_P();
+  PERIODICY_P = col->getPERIODICY_P();
+  PERIODICZ_P = col->getPERIODICZ_P();
   // *******************************************
   // *******************************************
   XDIR = 0;
@@ -72,7 +72,7 @@ inline void VCtopology3D::setup_vctopology(MPI_Comm old_comm) {
   // Particles Communicator
   if (CART_COMM_P != MPI_COMM_NULL) {
     MPI_Comm_rank(CART_COMM_P, &cartesian_rank);
-    MPI_Comm_size(CART_COMM, &nproc);
+    MPI_Comm_size(CART_COMM_P, &nproc);
     MPI_Cart_coords(CART_COMM_P, cartesian_rank, 3, coordinates);
 
     MPI_Cart_shift(CART_COMM_P, XDIR, RIGHT, &xleft_neighbor_P, &xright_neighbor_P);

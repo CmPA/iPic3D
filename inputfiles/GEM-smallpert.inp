@@ -1,21 +1,20 @@
-# INPUT FILE for GEM challenge case
-# 2 Species
+# GEM with many particles for 4 species and short simulation time
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
-SaveDirName    = "data"     # Output directory (without trailing "/")
-RestartDirName = "data"     # Restart directory (for WriteMethod=default)
+SaveDirName = /data/pbourdin/GEM/mass-particles_short_swamp-BE-lowpert-128
+RestartDirName = /data/pbourdin/GEM/mass-particles_short_swamp-BE-lowpert-128/restart
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
 
-Case              = GEM                             # Case [ GEM | Dipole | ... ]
+Case              = GEM-smallpert                   # Case [ GEM | Dipole | ... ]
 FieldsInit        = ./data/Initial-Fields_000000.h5 # Initial fields h5 file
 PartInit          = Maxwell                         # Initial particles [ Maxwell | File ]
-WriteMethod       = Parallel                        # Output method [ default | Parallel ]
+WriteMethod       = default                         # Output method [ default | h5hut ]
 PoissonCorrection = yes                             # Poisson correction [ yes | no ]
-SimulationName    = GEM                             # Simulation name for the output
+SimulationName    = mass-particles                  # Simulation name for the output
 
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
-B0x = 0.0097
+B0x = 0.05477
 B0y = 0.00
 B0z = 0.00
 
@@ -24,36 +23,36 @@ B1x = 0.000
 B1y = 0.000
 B1z = 0.000
 
-delta = 0.5
+delta = 0.5477
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-dt = 0.5               # dt = time step
-ncycles = 150          # cycles
-th = 1.0               # th =   decentering parameter
-c = 1.0                # c = light speed
+dt = 0.5               # dt = time step  
+ncycles = 751          # cycles
+th = 1.0               # th = decentering parameter
+c = 1.0                # c = light speed 
 
 #  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
 Smooth = 0.5           # Smoothing value (5-points stencil)
 
 
 # %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
-Lx =   25.6            # Lx = simulation box length - x direction
+Lx =   25.6            # Lx = simulation box length - x direction   
 Ly =   12.8            # Ly = simulation box length - y direction
-Lz =   1.0             # Lz = simulation box length - z direction
+Lz =   1.0             # Lz = simulation box length - z direction   
 
-x_center =   1.        # Lx = simulation box length - x direction in m
+x_center =   1.        # Lx = simulation box length - x direction in m  
 y_center =   1.        # Ly = simulation box length - y direction in m
-z_center =   1.        # Lz = simulation box length - z direction in m
+z_center =   1.        # Lz = simulation box length - z direction in m  
 L_square =   .1
 
-nxc = 512              # nxc = number of cells - x direction
-nyc = 256              # nyc = number of cells - y direction
-nzc =  1               # nzc = number of cells - z direction
+nxc =  512             # nxc = number of cells - x direction        
+nyc =  256             # nyc = number of cells - y direction
+nzc =  1               # nzc = number of cells - z direction        
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
-XLEN = 2               # Number of subdomains in the X direction
-YLEN = 2               # Number of subdomains in the X direction
-ZLEN = 1               # Number of subdomains in the X direction
+XLEN = 64              # Number of subdomains in the X direction
+YLEN = 2               # Number of subdomains in the Y direction
+ZLEN = 1               # Number of subdomains in the Z direction
 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
 #    0 = electrons
@@ -61,22 +60,22 @@ ZLEN = 1               # Number of subdomains in the X direction
 #    2,3,4,5,... = ions
 # %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-ns = 2                               # Number of particles
-rhoINIT         = 1.0  1.0           # Initial density (make sure you are neutral)
-rhoINJECT       = 1.0  1.0           # Injection density (make sure you are neutral)
-TrackParticleID = 0    0             # TrackParticleID[species] = 1=true, 0=false
+ns = 4                               # Number of particles
+rhoINIT         = 1.0  1.0  0.2  0.2 # Initial density (make sure you are neutral)
+rhoINJECT       = 1.0  1.0  0.2  0.2 # Injection density (make sure you are neutral)
+TrackParticleID = 0    0    0    0   # TrackParticleID[species] = 1=true, 0=false 
 
-npcelx          = 12   12            # Particles per cell in X
-npcely          = 12   12            # Particles per cell in Y
-npcelz          = 12   12            # Particles per cell in Z
+npcelx          = 32   32   32   32  # Particles per cell in X
+npcely          = 32   32   32   32  # Particles per cell in Y
+npcelz          = 16   16   16   16  # Particles per cell in Z
 
-qom             = -25.0   1.0        # Charge/mass ratio
-uth             = 0.045   0.0063     # Thermal velocity in X
-vth             = 0.045   0.0063     # Thermal velocity in Y
-wth             = 0.045   0.0063     # Thermal velocity in Z
-u0              = 0.0     0.0        # Drift velocity in X
-v0              = 0.0     0.0        # Drift velocity in Y
-w0              = 0.00325 -0.01624   # Drift velocity in Z
+qom             = -25.0     1.0        -25.0     1.0        # Charge/mass ratio
+uth             = 0.0721688 0.03227488 0.0721688 0.03227488 # Thermal velocity in X
+vth             = 0.0721688 0.03227488 0.0721688 0.03227488 # Thermal velocity in Y
+wth             = 0.0721688 0.03227488 0.0721688 0.03227488 # Thermal velocity in Z
+u0              = 0.0       0.0        0.0       0.0        # Drift velocity in X
+v0              = 0.0       0.0        0.0       0.0        # Drift velocity in Y
+w0              = 0.013888 -0.069444   0.0       0.0        # Drift velocity in Z
 
 # %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
 PERIODICX       = 1                  # In direction X (1=true, 0=false)
@@ -92,8 +91,8 @@ PERIODICZ_P     = 1                  # In direction Z (1=true, 0=false)
 # If the PERIODIC flag is active in the previous section
 # periodic boundary conditions will be imposed
 #
-# PHI Electrostatic Potential
-# 0,1 = Dirichilet boundary condition ;
+# PHI Electrostatic Potential     
+# 0,1 = Dirichilet boundary condition ;     
 # 2   = Neumann boundary condition
     bcPHIfaceXright = 1
     bcPHIfaceXleft  = 1
@@ -101,7 +100,7 @@ PERIODICZ_P     = 1                  # In direction Z (1=true, 0=false)
     bcPHIfaceYleft  = 1
     bcPHIfaceZright = 1
     bcPHIfaceZleft  = 1
-
+    
 #    EM field boundary condition
 #    0 = perfect conductor
 #    1 = magnetic mirror
@@ -111,7 +110,7 @@ PERIODICZ_P     = 1                  # In direction Z (1=true, 0=false)
     bcEMfaceYleft =  0
     bcEMfaceZright = 0
     bcEMfaceZleft =  0
-
+    
 #    Particles Boundary condition
 #    0 = exit
 #    1 = perfect mirror
@@ -129,7 +128,7 @@ Vinj                   = 0.0      # Velocity of the injection from the wall
 CGtol                  = 1E-3     # CG solver stopping criterium tolerance
 GMREStol               = 1E-3     # GMRES solver stopping criterium tolerance
 NiterMover             = 3        # mover predictor corrector iteration
-FieldOutputCycle       = 100      # Output for field
-ParticlesOutputCycle   = 100      # Output for particles if 1 it doesnt save particles data
-RestartOutputCycle     = 4000     # restart cycle
+FieldOutputCycle       = 5        # Output for field
+ParticlesOutputCycle   = 750      # Output for particles, while '1' switches particle data off!
+RestartOutputCycle     = 750      # restart cycle
 DiagnosticsOutputCycle = 1        # Diagnostics cycle

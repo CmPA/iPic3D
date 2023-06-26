@@ -76,6 +76,10 @@ class Collective
     bool getPERIODICY() {return (PERIODICY);};
     bool getPERIODICZ() {return (PERIODICZ);};
 
+    bool getPERIODICX_P() {return (PERIODICX_P);};
+    bool getPERIODICY_P() {return (PERIODICY_P);};
+    bool getPERIODICZ_P() {return (PERIODICZ_P);};
+
     /*! Get the grid spacing - direction X */
     double getDx();
     /*! Get the grid spacing - direction Y */
@@ -105,10 +109,6 @@ class Collective
     /*! get the number of particles per cell - direction Z */
     int getNpcelz(int nspecies);
     /*! get maximum number of particles for different species */
-    long getNpMax(int nspecies);
-    /*! NpMax/Np is the ratio between the maximum number of particles allowed on a processor and the number of particles */
-    double getNpMaxNpRatio();
-    /*! get charge to mass ratio for different species */
     double getQOM(int nspecies);
     /*! get background charge for GEM challenge */
     double getRHOinit(int nspecies);
@@ -288,6 +288,9 @@ class Collective
     bool PERIODICX;    /*! Periodicity in the X direction */
     bool PERIODICY;    /*! Periodicity in the Y direction */
     bool PERIODICZ;    /*! Periodicity in the Z direction */
+    bool PERIODICX_P;  /*! Periodicity for particles in the X direction */
+    bool PERIODICY_P;  /*! Periodicity for particles in the Y direction */
+    bool PERIODICZ_P;  /*! Periodicity for particles in the Z direction */
 
     /*! number of species */
     int ns;
@@ -301,10 +304,6 @@ class Collective
     int *npcelz;
     /*! number of particles array for different species */
     long *np;
-    /*! maximum number of particles array for different species */
-    long *npMax;
-    /*! max number of particles */
-    double NpMaxNpRatio;
     /*! charge to mass ratio array for different species */
     double *qom;
     /*! charge to mass ratio array for different species */

@@ -6,9 +6,6 @@
 SaveDirName = data
 RestartDirName = data
 
-# set the maximum number of particles allocated  
-NpMaxNpRatio = 3.0
-
 #  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
 B0x = 0.001
 B0y = 0.00
