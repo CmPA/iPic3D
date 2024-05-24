@@ -2,8 +2,8 @@
 # 2 Species
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
-SaveDirName    = scaling            # Output directory
-RestartDirName = scaling/restart    # Restart directory (for WriteMethod=default)
+SaveDirName    = data            # Output directory
+RestartDirName = data/restart    # Restart directory (for WriteMethod=default)
 
 #  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
 Case              = default                                 # Case [ GEM | Dipole | ... ]
@@ -51,13 +51,13 @@ L_square =    .1
 CoilD = 25.2	       #magnetic coil diameter -- Proposed WB8 simulation dimensions. 
 CoilSpacing= 40.0      #spacing parameter for magnets 
 
-nxc = 1120              # nxc = number of cells - x direction        
-nyc =  560              # nyc = number of cells - y direction
+nxc = 640              # nxc = number of cells - x direction        
+nyc = 320              # nyc = number of cells - y direction
 nzc =  1                # nzc = number of cells - z direction        
 
 # %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
-XLEN = 112             # Number of subdomains in the X direction
-YLEN = 32               # Number of subdomains in the Y direction
+XLEN = 8             # Number of subdomains in the X direction
+YLEN = 4               # Number of subdomains in the Y direction
 ZLEN = 1                # Number of subdomains in the Z direction
 
 # %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
@@ -71,8 +71,8 @@ rhoINIT         = 0.5  0.5  0.5  0.5    # Initial density (make sure you are neu
 rhoINJECT       = 0.0  0.0  0.0  0.0    # Injection density (make sure you are neutral)
 TrackParticleID = 0    0     0    0     # TrackParticleID[species] = 1=true, 0=false 
 
-npcelx          = 400   400   400   400     # Particles per cell in X
-npcely          = 400   400   400   400     # Particles per cell in Y
+npcelx          = 20   20   20   20     # Particles per cell in X
+npcely          = 20   20   20   20     # Particles per cell in Y
 npcelz          = 1    1     1      1       # Particles per cell in Z
 NpMaxNpRatio    = 5.0                       # Maximum number of particles allocated
 
