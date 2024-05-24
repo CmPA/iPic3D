@@ -13,10 +13,15 @@ project(iPic3D)
 find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
 
+#
 # Find PETSc
 #
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 
+#
+# NSIGHTS
+#
+set (CMAKE_CXX_FLAGS "-acc -gpu=cc70,managed,lineinfo -Minfo=accel")
 
 #
 # Options
