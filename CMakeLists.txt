@@ -3,13 +3,11 @@ cmake_minimum_required(VERSION 2.8.5)
 #
 # Set project name
 #
-
 project(iPic3D)
 
 #
 # Find packages (already managed by CMake)
 #
-
 find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
 
@@ -26,7 +24,6 @@ set (CMAKE_CXX_FLAGS "-acc -gpu=cc70,managed,lineinfo -Minfo=accel")
 #
 # Options
 #
-
 option(IPIC_TESTS "Set up the code tests" OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -45,6 +42,7 @@ include_directories(
     ${MPI_INCLUDE_PATH}
     ${HDF5_INCLUDE_DIRS}
     ${PETSC_INCLUDES}
+    /leonardo/prod/spack/5.2/install/0.21/linux-rhel8-icelake/gcc-8.5.0/nvhpc-23.11-wnrvac5a7nx7cnbtaamktaaqljmgorva/Linux_x86_64/23.11/cuda/12.3/targets/x86_64-linux/include
 )
 
 add_definitions(
@@ -54,7 +52,6 @@ add_definitions(
 #
 # Executable compilation
 #
-
 add_executable(
     iPic3D
     iPic3D.cpp
@@ -71,12 +68,12 @@ target_link_libraries(
     ${HDF5_LIBRARIES}
     ${HDF5_HL_LIBRARIES}
     ${PETSC_LIBRARIES}
+    /leonardo/prod/spack/5.2/install/0.21/linux-rhel8-icelake/gcc-8.5.0/nvhpc-23.11-wnrvac5a7nx7cnbtaamktaaqljmgorva/Linux_x86_64/23.11/cuda/lib64/libnvToolsExt.so
 )
 
 #
 # Code testing
 #
-
 if(IPIC_TESTS)
   enable_testing()
   set(IPIC_TESTS_DIR "${CMAKE_BINARY_DIR}/tests" CACHE STRING "Location of the source files for iPic3D")

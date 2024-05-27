@@ -2,7 +2,7 @@
 #include <iomanip>
 #include "iPic3D.h"
 #include "MyClock.h"
-#include "nvtx.h"
+// #include "nvtx.h"
 
 MyClock *clocks;
 
