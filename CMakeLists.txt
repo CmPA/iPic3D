@@ -16,10 +16,7 @@ find_package(MPI REQUIRED)
 #
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 
-#
-# NSIGHTS
-#
-set (CMAKE_CXX_FLAGS "-acc -gpu=cc70,managed,lineinfo -Minfo=accel")
+
 
 #
 # Options
@@ -27,9 +24,23 @@ set (CMAKE_CXX_FLAGS "-acc -gpu=cc70,managed,lineinfo -Minfo=accel")
 option(IPIC_TESTS "Set up the code tests" OFF)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options
-are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)
+  set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)
 endif()
+
+option(GPU "Compile options for GPU" OFF)
+if(GPU)
+   add_definitions( -DGPU )
+ endif()
+
+option(GPU_PREFETCHING "Prefetch memory in GPU; needs cuda" OFF)
+if(GPU_PREFETCHING)
+   add_definitions( -DGPU_PREFETCHING )
+endif()
+
+#
+# NSIGHTS
+#
+set (CMAKE_CXX_FLAGS "-acc -gpu=cc70,managed,lineinfo -Minfo=accel")
 
 #
 # Include sub-directories
