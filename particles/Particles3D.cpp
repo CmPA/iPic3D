@@ -1164,236 +1164,236 @@ void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, 
       }
 }
 /** mover with a Predictor-Corrector scheme */
-int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
+// int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
 
 
-	int avail;
-	double dto2 = .5*dt, qomdt2 = qom*dto2/c;
-	double omdtsq[P_SAME_TIME], denom[P_SAME_TIME], ut[P_SAME_TIME], vt[P_SAME_TIME], wt[P_SAME_TIME], udotb[P_SAME_TIME];
-	double Exl[P_SAME_TIME], Eyl[P_SAME_TIME], Ezl[P_SAME_TIME], Bxl[P_SAME_TIME], Byl[P_SAME_TIME], Bzl[P_SAME_TIME];
-	double Exlp[P_SAME_TIME], Eylp[P_SAME_TIME], Ezlp[P_SAME_TIME], Bxlp[P_SAME_TIME], Bylp[P_SAME_TIME], Bzlp[P_SAME_TIME];
-	double xptilde[P_SAME_TIME], yptilde[P_SAME_TIME], zptilde[P_SAME_TIME], uptilde[P_SAME_TIME], vptilde[P_SAME_TIME], wptilde[P_SAME_TIME];
-	double xp[P_SAME_TIME], yp[P_SAME_TIME], zp[P_SAME_TIME], up[P_SAME_TIME], vp[P_SAME_TIME], wp[P_SAME_TIME];
-	double ixd[P_SAME_TIME], iyd[P_SAME_TIME], izd[P_SAME_TIME];
-	int ix[P_SAME_TIME], iy[P_SAME_TIME], iz[P_SAME_TIME];
-	double weight[P_SAME_TIME][2][2][2];
-	double xi[2]; double eta[2]; double zeta[2];
-	double inv_dx = 1.0/dx, inv_dy = 1.0/dy, inv_dz = 1.0/dz;
-	double Fext = EMf->getFext();
+// 	int avail;
+// 	double dto2 = .5*dt, qomdt2 = qom*dto2/c;
+// 	double omdtsq[P_SAME_TIME], denom[P_SAME_TIME], ut[P_SAME_TIME], vt[P_SAME_TIME], wt[P_SAME_TIME], udotb[P_SAME_TIME];
+// 	double Exl[P_SAME_TIME], Eyl[P_SAME_TIME], Ezl[P_SAME_TIME], Bxl[P_SAME_TIME], Byl[P_SAME_TIME], Bzl[P_SAME_TIME];
+// 	double Exlp[P_SAME_TIME], Eylp[P_SAME_TIME], Ezlp[P_SAME_TIME], Bxlp[P_SAME_TIME], Bylp[P_SAME_TIME], Bzlp[P_SAME_TIME];
+// 	double xptilde[P_SAME_TIME], yptilde[P_SAME_TIME], zptilde[P_SAME_TIME], uptilde[P_SAME_TIME], vptilde[P_SAME_TIME], wptilde[P_SAME_TIME];
+// 	double xp[P_SAME_TIME], yp[P_SAME_TIME], zp[P_SAME_TIME], up[P_SAME_TIME], vp[P_SAME_TIME], wp[P_SAME_TIME];
+// 	double ixd[P_SAME_TIME], iyd[P_SAME_TIME], izd[P_SAME_TIME];
+// 	int ix[P_SAME_TIME], iy[P_SAME_TIME], iz[P_SAME_TIME];
+// 	double weight[P_SAME_TIME][2][2][2];
+// 	double xi[2]; double eta[2]; double zeta[2];
+// 	double inv_dx = 1.0/dx, inv_dy = 1.0/dy, inv_dz = 1.0/dz;
+// 	double Fext = EMf->getFext();
 
-	if(Gravity)
-		Fext /= qom;
+// 	if(Gravity)
+// 		Fext /= qom;
 
-	if (vct->getCartesian_rank()==0){
-		cout << "*** MOVER species " << ns << " ***" << NiterMover <<" ITERATIONS   ****" << "Fext=" << Fext << endl;
-	}
+// 	if (vct->getCartesian_rank()==0){
+// 		cout << "*** MOVER species " << ns << " ***" << NiterMover <<" ITERATIONS   ****" << "Fext=" << Fext << endl;
+// 	}
 
-	// move each particle with new fields: MOVE P_SAME_TIME PARTICLES AT THE SAME TIME TO ALLOW AUTOVECTORIZATION
-	int i;
-	for (i=0; i <  (nop-(P_SAME_TIME-1)); i+=P_SAME_TIME){
-		  // copy x, y, z
-		  for (int p = 0; p < P_SAME_TIME; p++){
-		      xp[p] = x[i+p];   yp[p] = y[i+p];   zp[p] = z[i+p];
-			  up[p] = u[i+p];   vp[p] = v[i+p];   wp[p] = w[i+p];
-		  }
-		  for (int p = 0; p < P_SAME_TIME; p++){ // VECTORIZED
-		    xptilde[p] = xp[p]; yptilde[p] = yp[p]; zptilde[p] = zp[p];
-		  }
-		// calculate the average velocity iteratively
-		for(int innter=0; innter < NiterMover; innter++){
-			// interpolation G-->P
-			for(int p=0; p < P_SAME_TIME; p++) ixd[p] = floor((xp[p] - xstart)*inv_dx);  // VECTORIZED
-			for(int p=0; p < P_SAME_TIME; p++) iyd[p] = floor((yp[p] - ystart)*inv_dy);  // VECTORIZED
-			for(int p=0; p < P_SAME_TIME; p++) izd[p] = floor((zp[p] - zstart)*inv_dz);  // VECTORIZED
-			for(int p=0; p < P_SAME_TIME; p++){ ix[p] = 2 + int(ixd[p]); iy[p] = 2 + int(iyd[p]); iz[p] = 2 + int(izd[p]);}
-			// check if they are out of the boundary
-			for(int p=0; p < P_SAME_TIME; p++){ if(ix[p] < 1) ix[p] = 1;}
-			for(int p=0; p < P_SAME_TIME; p++){ if(iy[p] < 1) iy[p] = 1;}
-			for(int p=0; p < P_SAME_TIME; p++){ if(iz[p] < 1) iz[p] = 1;}
-			for(int p=0; p < P_SAME_TIME; p++){ if(ix[p] > nxn-1) ix[p] = nxn-1;}
-			for(int p=0; p < P_SAME_TIME; p++){ if(iy[p] > nyn-1) iy[p] = nyn-1;}
-			for(int p=0; p < P_SAME_TIME; p++){ if(iz[p] > nzn-1) iz[p] = nzn-1;}
+// 	// move each particle with new fields: MOVE P_SAME_TIME PARTICLES AT THE SAME TIME TO ALLOW AUTOVECTORIZATION
+// 	int i;
+// 	for (i=0; i <  (nop-(P_SAME_TIME-1)); i+=P_SAME_TIME){
+// 		  // copy x, y, z
+// 		  for (int p = 0; p < P_SAME_TIME; p++){
+// 		      xp[p] = x[i+p];   yp[p] = y[i+p];   zp[p] = z[i+p];
+// 			  up[p] = u[i+p];   vp[p] = v[i+p];   wp[p] = w[i+p];
+// 		  }
+// 		  for (int p = 0; p < P_SAME_TIME; p++){ // VECTORIZED
+// 		    xptilde[p] = xp[p]; yptilde[p] = yp[p]; zptilde[p] = zp[p];
+// 		  }
+// 		// calculate the average velocity iteratively
+// 		for(int innter=0; innter < NiterMover; innter++){
+// 			// interpolation G-->P
+// 			for(int p=0; p < P_SAME_TIME; p++) ixd[p] = floor((xp[p] - xstart)*inv_dx);  // VECTORIZED
+// 			for(int p=0; p < P_SAME_TIME; p++) iyd[p] = floor((yp[p] - ystart)*inv_dy);  // VECTORIZED
+// 			for(int p=0; p < P_SAME_TIME; p++) izd[p] = floor((zp[p] - zstart)*inv_dz);  // VECTORIZED
+// 			for(int p=0; p < P_SAME_TIME; p++){ ix[p] = 2 + int(ixd[p]); iy[p] = 2 + int(iyd[p]); iz[p] = 2 + int(izd[p]);}
+// 			// check if they are out of the boundary
+// 			for(int p=0; p < P_SAME_TIME; p++){ if(ix[p] < 1) ix[p] = 1;}
+// 			for(int p=0; p < P_SAME_TIME; p++){ if(iy[p] < 1) iy[p] = 1;}
+// 			for(int p=0; p < P_SAME_TIME; p++){ if(iz[p] < 1) iz[p] = 1;}
+// 			for(int p=0; p < P_SAME_TIME; p++){ if(ix[p] > nxn-1) ix[p] = nxn-1;}
+// 			for(int p=0; p < P_SAME_TIME; p++){ if(iy[p] > nyn-1) iy[p] = nyn-1;}
+// 			for(int p=0; p < P_SAME_TIME; p++){ if(iz[p] > nzn-1) iz[p] = nzn-1;}
 
-		    // CALCULATE WEIGHTS
-            for(int p=0; p < P_SAME_TIME; p++){
-		       xi[0]   = xp[p] - grid->getXN(ix[p]-1,iy[p],iz[p]); eta[0]  = yp[p] - grid->getYN(ix[p],iy[p]-1,iz[p]); zeta[0] = zp[p] - grid->getZN(ix[p],iy[p],iz[p]-1);
-		       xi[1]   = grid->getXN(ix[p],iy[p],iz[p]) - xp[p];   eta[1]  = grid->getYN(ix[p],iy[p],iz[p]) - yp[p];   zeta[1] = grid->getZN(ix[p],iy[p],iz[p]) - zp[p];
-               for (int ii=0; ii < 2; ii++)
-		         for (int jj=0; jj < 2; jj++)
-			       for(int kk=0; kk < 2; kk++)
-    			      weight[p][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
-			}
-	        // clear the electric and the magnetic field field acting on the particles
-			for (int p = 0; p < P_SAME_TIME; p++){Exl[p]=0.0; Eyl[p] = 0.0; Ezl[p] = 0.0; Bxl[p] = 0.0; Byl[p] = 0.0; Bzl[p] = 0.0;}
-			// calculate fields acting on the particles
-			for (int ii=0; ii < 2; ii++)
-			  for (int jj=0; jj < 2; jj++)
-				for(int kk=0; kk < 2; kk++){
-				   for(int p = 0; p < P_SAME_TIME; p++){
-				     Exlp[p] = EMf->getEx(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Eylp[p] = EMf->getEy(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Ezlp[p] = EMf->getEz(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Bxlp[p] = EMf->getBx(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Bylp[p] = EMf->getBy(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Bzlp[p] = EMf->getBz(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     // Add external fields
-				     Exlp[p] += Fext * EMf->getEx_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Eylp[p] += Fext * EMf->getEy_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Ezlp[p] += Fext * EMf->getEz_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Bxlp[p] += Fext * EMf->getBx_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Bylp[p] += Fext * EMf->getBy_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				     Bzlp[p] += Fext * EMf->getBz_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-				   }
-				   for(int p = 0; p < P_SAME_TIME; p++){ // VECTORIZED
-				      Exlp[p] = weight[p][ii][jj][kk]*Exlp[p];
-					  Eylp[p] = weight[p][ii][jj][kk]*Eylp[p];
-				      Ezlp[p] = weight[p][ii][jj][kk]*Ezlp[p];
-					  Bxlp[p] = weight[p][ii][jj][kk]*Bxlp[p];
-				      Bylp[p] = weight[p][ii][jj][kk]*Bylp[p];
-				      Bzlp[p] = weight[p][ii][jj][kk]*Bzlp[p];
-				   }
-				   // finished with the two particles: add the contributions
-				   for(int p = 0; p < P_SAME_TIME; p++){
-				      Exl[p] += Exlp[p]; Eyl[p] += Eylp[p]; Ezl[p] += Ezlp[p];
-					  Bxl[p] += Bxlp[p]; Byl[p] += Bylp[p]; Bzl[p] += Bzlp[p];
-				   }
+// 		    // CALCULATE WEIGHTS
+//             for(int p=0; p < P_SAME_TIME; p++){
+// 		       xi[0]   = xp[p] - grid->getXN(ix[p]-1,iy[p],iz[p]); eta[0]  = yp[p] - grid->getYN(ix[p],iy[p]-1,iz[p]); zeta[0] = zp[p] - grid->getZN(ix[p],iy[p],iz[p]-1);
+// 		       xi[1]   = grid->getXN(ix[p],iy[p],iz[p]) - xp[p];   eta[1]  = grid->getYN(ix[p],iy[p],iz[p]) - yp[p];   zeta[1] = grid->getZN(ix[p],iy[p],iz[p]) - zp[p];
+//                for (int ii=0; ii < 2; ii++)
+// 		         for (int jj=0; jj < 2; jj++)
+// 			       for(int kk=0; kk < 2; kk++)
+//     			      weight[p][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
+// 			}
+// 	        // clear the electric and the magnetic field field acting on the particles
+// 			for (int p = 0; p < P_SAME_TIME; p++){Exl[p]=0.0; Eyl[p] = 0.0; Ezl[p] = 0.0; Bxl[p] = 0.0; Byl[p] = 0.0; Bzl[p] = 0.0;}
+// 			// calculate fields acting on the particles
+// 			for (int ii=0; ii < 2; ii++)
+// 			  for (int jj=0; jj < 2; jj++)
+// 				for(int kk=0; kk < 2; kk++){
+// 				   for(int p = 0; p < P_SAME_TIME; p++){
+// 				     Exlp[p] = EMf->getEx(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Eylp[p] = EMf->getEy(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Ezlp[p] = EMf->getEz(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Bxlp[p] = EMf->getBx(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Bylp[p] = EMf->getBy(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Bzlp[p] = EMf->getBz(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     // Add external fields
+// 				     Exlp[p] += Fext * EMf->getEx_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Eylp[p] += Fext * EMf->getEy_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Ezlp[p] += Fext * EMf->getEz_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Bxlp[p] += Fext * EMf->getBx_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Bylp[p] += Fext * EMf->getBy_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				     Bzlp[p] += Fext * EMf->getBz_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
+// 				   }
+// 				   for(int p = 0; p < P_SAME_TIME; p++){ // VECTORIZED
+// 				      Exlp[p] = weight[p][ii][jj][kk]*Exlp[p];
+// 					  Eylp[p] = weight[p][ii][jj][kk]*Eylp[p];
+// 				      Ezlp[p] = weight[p][ii][jj][kk]*Ezlp[p];
+// 					  Bxlp[p] = weight[p][ii][jj][kk]*Bxlp[p];
+// 				      Bylp[p] = weight[p][ii][jj][kk]*Bylp[p];
+// 				      Bzlp[p] = weight[p][ii][jj][kk]*Bzlp[p];
+// 				   }
+// 				   // finished with the two particles: add the contributions
+// 				   for(int p = 0; p < P_SAME_TIME; p++){
+// 				      Exl[p] += Exlp[p]; Eyl[p] += Eylp[p]; Ezl[p] += Ezlp[p];
+// 					  Bxl[p] += Bxlp[p]; Byl[p] += Bylp[p]; Bzl[p] += Bzlp[p];
+// 				   }
 
-				}
-			// end interpolation
-			for(int p = 0; p < P_SAME_TIME; p++){ // PARTIALLY VECTORIZED
-			   omdtsq[p] = qomdt2*qomdt2*(Bxl[p]*Bxl[p]+Byl[p]*Byl[p]+Bzl[p]*Bzl[p]);
-			   denom[p] = 1.0/(1.0 + omdtsq[p]);
-			   // solve the position equation
-			   ut[p]= up[p] + qomdt2*Exl[p];
-			   vt[p]= vp[p] + qomdt2*Eyl[p];
-			   wt[p]= wp[p] + qomdt2*Ezl[p];
-			   udotb[p] = ut[p]*Bxl[p] + vt[p]*Byl[p] + wt[p]*Bzl[p];
-			   // solve the velocity equation
-			   uptilde[p] = (ut[p]+qomdt2*(vt[p]*Bzl[p] -wt[p]*Byl[p] + qomdt2*udotb[p]*Bxl[p]))*denom[p];
-			   vptilde[p] = (vt[p]+qomdt2*(wt[p]*Bxl[p] -ut[p]*Bzl[p] + qomdt2*udotb[p]*Byl[p]))*denom[p];
-			   wptilde[p] = (wt[p]+qomdt2*(ut[p]*Byl[p] -vt[p]*Bxl[p] + qomdt2*udotb[p]*Bzl[p]))*denom[p];
-			   // update position
-			   xp[p] = xptilde[p] + uptilde[p]*dto2;
-			   yp[p] = yptilde[p] + vptilde[p]*dto2;
-			   zp[p] = zptilde[p] + wptilde[p]*dto2;
-			}
-	} // end of iteration
-		// update the final position and velocity
-		for(int p=0; p < P_SAME_TIME; p++){ // VECTORIZED
-		    up[p]= 2.0*uptilde[p] - up[p];
-		    vp[p]= 2.0*vptilde[p] - vp[p];
-		    wp[p]= 2.0*wptilde[p] - wp[p];
-			xp[p] = xptilde[p] + uptilde[p]*dt;
-			yp[p] = yptilde[p] + vptilde[p]*dt;
-			zp[p] = zptilde[p] + wptilde[p]*dt;
-		}
-		// copy back the particles in the array
-		for(int p=0; p < P_SAME_TIME; p++){
-		  x[i+p]   = xp[p]; y[i+p]   = yp[p]; z[i+p]   = zp[p];
-		  u[i+p]   = up[p]; v[i+p]   = vp[p]; w[i+p]   = wp[p];
-		}
+// 				}
+// 			// end interpolation
+// 			for(int p = 0; p < P_SAME_TIME; p++){ // PARTIALLY VECTORIZED
+// 			   omdtsq[p] = qomdt2*qomdt2*(Bxl[p]*Bxl[p]+Byl[p]*Byl[p]+Bzl[p]*Bzl[p]);
+// 			   denom[p] = 1.0/(1.0 + omdtsq[p]);
+// 			   // solve the position equation
+// 			   ut[p]= up[p] + qomdt2*Exl[p];
+// 			   vt[p]= vp[p] + qomdt2*Eyl[p];
+// 			   wt[p]= wp[p] + qomdt2*Ezl[p];
+// 			   udotb[p] = ut[p]*Bxl[p] + vt[p]*Byl[p] + wt[p]*Bzl[p];
+// 			   // solve the velocity equation
+// 			   uptilde[p] = (ut[p]+qomdt2*(vt[p]*Bzl[p] -wt[p]*Byl[p] + qomdt2*udotb[p]*Bxl[p]))*denom[p];
+// 			   vptilde[p] = (vt[p]+qomdt2*(wt[p]*Bxl[p] -ut[p]*Bzl[p] + qomdt2*udotb[p]*Byl[p]))*denom[p];
+// 			   wptilde[p] = (wt[p]+qomdt2*(ut[p]*Byl[p] -vt[p]*Bxl[p] + qomdt2*udotb[p]*Bzl[p]))*denom[p];
+// 			   // update position
+// 			   xp[p] = xptilde[p] + uptilde[p]*dto2;
+// 			   yp[p] = yptilde[p] + vptilde[p]*dto2;
+// 			   zp[p] = zptilde[p] + wptilde[p]*dto2;
+// 			}
+// 	} // end of iteration
+// 		// update the final position and velocity
+// 		for(int p=0; p < P_SAME_TIME; p++){ // VECTORIZED
+// 		    up[p]= 2.0*uptilde[p] - up[p];
+// 		    vp[p]= 2.0*vptilde[p] - vp[p];
+// 		    wp[p]= 2.0*wptilde[p] - wp[p];
+// 			xp[p] = xptilde[p] + uptilde[p]*dt;
+// 			yp[p] = yptilde[p] + vptilde[p]*dt;
+// 			zp[p] = zptilde[p] + wptilde[p]*dt;
+// 		}
+// 		// copy back the particles in the array
+// 		for(int p=0; p < P_SAME_TIME; p++){
+// 		  x[i+p]   = xp[p]; y[i+p]   = yp[p]; z[i+p]   = zp[p];
+// 		  u[i+p]   = up[p]; v[i+p]   = vp[p]; w[i+p]   = wp[p];
+// 		}
 
-	}
-	// FINISH WITH PARTICLE LEFT, IF ANY (EVEN NUMBER OF PARTICLES)
-	// move each particle with new fields
-	for (int rest = (i+1); rest <  nop; rest++){
-	    // copy the particle
-		xp[0] = x[rest];   yp[0] = y[rest];   zp[0] = z[rest];   up[0] = u[rest];   vp[0] = v[rest];   wp[0] = w[rest];
-		xptilde[0] = x[rest];
-		yptilde[0] = y[rest];
-		zptilde[0] = z[rest];
-		// calculate the average velocity iteratively
-		for(int innter=0; innter < 1; innter++){
-			// interpolation G-->P
-			ixd[0] = floor((xp[0]-xstart)*inv_dx);
-			iyd[0] = floor((yp[0]-ystart)*inv_dy);
-			izd[0] = floor((zp[0]-zstart)*inv_dz);
-			ix[0] = 2 +  int(ixd[0]);
-			iy[0] = 2 +  int(iyd[0]);
-			iz[0] = 2 +  int(izd[0]);
-			if(ix[0] < 1) ix[0] = 1;
-			if(iy[0] < 1) iy[0] = 1;
-			if(iz[0] < 1) iz[0] = 1;
-			if(ix[0] > nxn-1) ix[0] = nxn-1;
-			if(iy[0] > nyn-1) iy[0] = nyn-1;
-			if(iz[0] > nzn-1) iz[0] = nzn-1;
+// 	}
+// 	// FINISH WITH PARTICLE LEFT, IF ANY (EVEN NUMBER OF PARTICLES)
+// 	// move each particle with new fields
+// 	for (int rest = (i+1); rest <  nop; rest++){
+// 	    // copy the particle
+// 		xp[0] = x[rest];   yp[0] = y[rest];   zp[0] = z[rest];   up[0] = u[rest];   vp[0] = v[rest];   wp[0] = w[rest];
+// 		xptilde[0] = x[rest];
+// 		yptilde[0] = y[rest];
+// 		zptilde[0] = z[rest];
+// 		// calculate the average velocity iteratively
+// 		for(int innter=0; innter < 1; innter++){
+// 			// interpolation G-->P
+// 			ixd[0] = floor((xp[0]-xstart)*inv_dx);
+// 			iyd[0] = floor((yp[0]-ystart)*inv_dy);
+// 			izd[0] = floor((zp[0]-zstart)*inv_dz);
+// 			ix[0] = 2 +  int(ixd[0]);
+// 			iy[0] = 2 +  int(iyd[0]);
+// 			iz[0] = 2 +  int(izd[0]);
+// 			if(ix[0] < 1) ix[0] = 1;
+// 			if(iy[0] < 1) iy[0] = 1;
+// 			if(iz[0] < 1) iz[0] = 1;
+// 			if(ix[0] > nxn-1) ix[0] = nxn-1;
+// 			if(iy[0] > nyn-1) iy[0] = nyn-1;
+// 			if(iz[0] > nzn-1) iz[0] = nzn-1;
 
-			xi[0]   = xp[0] - grid->getXN(ix[0]-1,iy[0],iz[0]); eta[0]  = yp[0] - grid->getYN(ix[0],iy[0]-1,iz[0]); zeta[0] = zp[0] - grid->getZN(ix[0],iy[0],iz[0]-1);
-            xi[1]   = grid->getXN(ix[0],iy[0],iz[0]) - xp[0];   eta[1]  = grid->getYN(ix[0],iy[0],iz[0]) - yp[0];   zeta[1] = grid->getZN(ix[0],iy[0],iz[0]) - zp[0];
-            for (int ii=0; ii < 2; ii++)
-		      for (int jj=0; jj < 2; jj++)
-			     for(int kk=0; kk < 2; kk++)
-				   weight[0][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
+// 			xi[0]   = xp[0] - grid->getXN(ix[0]-1,iy[0],iz[0]); eta[0]  = yp[0] - grid->getYN(ix[0],iy[0]-1,iz[0]); zeta[0] = zp[0] - grid->getZN(ix[0],iy[0],iz[0]-1);
+//             xi[1]   = grid->getXN(ix[0],iy[0],iz[0]) - xp[0];   eta[1]  = grid->getYN(ix[0],iy[0],iz[0]) - yp[0];   zeta[1] = grid->getZN(ix[0],iy[0],iz[0]) - zp[0];
+//             for (int ii=0; ii < 2; ii++)
+// 		      for (int jj=0; jj < 2; jj++)
+// 			     for(int kk=0; kk < 2; kk++)
+// 				   weight[0][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
 
-    		Exl[0]=0.0, Eyl[0] = 0.0, Ezl[0] = 0.0, Bxl[0] = 0.0, Byl[0] = 0.0, Bzl[0] = 0.0;
-            for (int ii=0; ii < 2; ii++)
-				for (int jj=0; jj < 2; jj++)
-					for(int kk=0; kk < 2; kk++){
-						Exlp[0] = weight[0][ii][jj][kk]*EMf->getEx(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-						Eylp[0] = weight[0][ii][jj][kk]*EMf->getEy(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-						Ezlp[0] = weight[0][ii][jj][kk]*EMf->getEz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-						Bxlp[0] = weight[0][ii][jj][kk]*EMf->getBx(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-						Bylp[0] = weight[0][ii][jj][kk]*EMf->getBy(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-						Bzlp[0] = weight[0][ii][jj][kk]*EMf->getBz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+//     		Exl[0]=0.0, Eyl[0] = 0.0, Ezl[0] = 0.0, Bxl[0] = 0.0, Byl[0] = 0.0, Bzl[0] = 0.0;
+//             for (int ii=0; ii < 2; ii++)
+// 				for (int jj=0; jj < 2; jj++)
+// 					for(int kk=0; kk < 2; kk++){
+// 						Exlp[0] = weight[0][ii][jj][kk]*EMf->getEx(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+// 						Eylp[0] = weight[0][ii][jj][kk]*EMf->getEy(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+// 						Ezlp[0] = weight[0][ii][jj][kk]*EMf->getEz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+// 						Bxlp[0] = weight[0][ii][jj][kk]*EMf->getBx(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+// 						Bylp[0] = weight[0][ii][jj][kk]*EMf->getBy(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+// 						Bzlp[0] = weight[0][ii][jj][kk]*EMf->getBz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
 
-						Exlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEx_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-					    Eylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEy_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-						Ezlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-						Bxlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBx_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-						Bylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBy_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-						Bzlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+// 						Exlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEx_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+// 					    Eylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEy_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
+// 						Ezlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+// 						Bxlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBx_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+// 						Bylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBy_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
+// 						Bzlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
 
-						Exl[0] += Exlp[0];
-						Eyl[0] += Eylp[0];
-						Ezl[0] += Ezlp[0];
-						Bxl[0] += Bxlp[0];
-						Byl[0] += Bylp[0];
-						Bzl[0] += Bzlp[0];
-					}
-			// end interpolation
-	    	omdtsq[0] = qomdt2*qomdt2*(Bxl[0]*Bxl[0]+Byl[0]*Byl[0]+Bzl[0]*Bzl[0]);
-			denom[0] = 1.0/(1.0 + omdtsq[0]);
-			// solve the position equation
-			ut[0]= up[0] + qomdt2*Exl[0];
-			vt[0]= vp[0] + qomdt2*Eyl[0];
-			wt[0]= wp[0] + qomdt2*Ezl[0];
-			udotb[0] = ut[0]*Bxl[0] + vt[0]*Byl[0] + wt[0]*Bzl[0];
-			// solve the velocity equation
-			uptilde[0] = (ut[0]+qomdt2*(vt[0]*Bzl[0] -wt[0]*Byl[0] + qomdt2*udotb[0]*Bxl[0]))*denom[0];
-			vptilde[0] = (vt[0]+qomdt2*(wt[0]*Bxl[0] -ut[0]*Bzl[0] + qomdt2*udotb[0]*Byl[0]))*denom[0];
-			wptilde[0] = (wt[0]+qomdt2*(ut[0]*Byl[0] -vt[0]*Bxl[0] + qomdt2*udotb[0]*Bzl[0]))*denom[0];
-			// update position
-			xp[0] = xptilde[0] + uptilde[0]*dto2;
-			yp[0] = yptilde[0] + vptilde[0]*dto2;
-			zp[0] = zptilde[0] + wptilde[0]*dto2;
-		} // end of iteration
-		// update the final position and velocity
-		up[0]= 2.0*uptilde[0] - u[rest];
-		vp[0]= 2.0*vptilde[0] - v[rest];
-		wp[0]= 2.0*wptilde[0] - w[rest];
-		xp[0] = xptilde[0] + uptilde[0]*dt;
-		yp[0] = yptilde[0] + vptilde[0]*dt;
-		zp[0] = zptilde[0] + wptilde[0]*dt;
-		x[rest]   = xp[0]; y[rest]   = yp[0]; z[rest]   = zp[0]; u[rest]   = up[0]; v[rest]   = vp[0]; w[rest]   = wp[0];
-	} // END OF ALL THE PARTICLES
+// 						Exl[0] += Exlp[0];
+// 						Eyl[0] += Eylp[0];
+// 						Ezl[0] += Ezlp[0];
+// 						Bxl[0] += Bxlp[0];
+// 						Byl[0] += Bylp[0];
+// 						Bzl[0] += Bzlp[0];
+// 					}
+// 			// end interpolation
+// 	    	omdtsq[0] = qomdt2*qomdt2*(Bxl[0]*Bxl[0]+Byl[0]*Byl[0]+Bzl[0]*Bzl[0]);
+// 			denom[0] = 1.0/(1.0 + omdtsq[0]);
+// 			// solve the position equation
+// 			ut[0]= up[0] + qomdt2*Exl[0];
+// 			vt[0]= vp[0] + qomdt2*Eyl[0];
+// 			wt[0]= wp[0] + qomdt2*Ezl[0];
+// 			udotb[0] = ut[0]*Bxl[0] + vt[0]*Byl[0] + wt[0]*Bzl[0];
+// 			// solve the velocity equation
+// 			uptilde[0] = (ut[0]+qomdt2*(vt[0]*Bzl[0] -wt[0]*Byl[0] + qomdt2*udotb[0]*Bxl[0]))*denom[0];
+// 			vptilde[0] = (vt[0]+qomdt2*(wt[0]*Bxl[0] -ut[0]*Bzl[0] + qomdt2*udotb[0]*Byl[0]))*denom[0];
+// 			wptilde[0] = (wt[0]+qomdt2*(ut[0]*Byl[0] -vt[0]*Bxl[0] + qomdt2*udotb[0]*Bzl[0]))*denom[0];
+// 			// update position
+// 			xp[0] = xptilde[0] + uptilde[0]*dto2;
+// 			yp[0] = yptilde[0] + vptilde[0]*dto2;
+// 			zp[0] = zptilde[0] + wptilde[0]*dto2;
+// 		} // end of iteration
+// 		// update the final position and velocity
+// 		up[0]= 2.0*uptilde[0] - u[rest];
+// 		vp[0]= 2.0*vptilde[0] - v[rest];
+// 		wp[0]= 2.0*wptilde[0] - w[rest];
+// 		xp[0] = xptilde[0] + uptilde[0]*dt;
+// 		yp[0] = yptilde[0] + vptilde[0]*dt;
+// 		zp[0] = zptilde[0] + wptilde[0]*dt;
+// 		x[rest]   = xp[0]; y[rest]   = yp[0]; z[rest]   = zp[0]; u[rest]   = up[0]; v[rest]   = vp[0]; w[rest]   = wp[0];
+// 	} // END OF ALL THE PARTICLES
 
-	//********************//
-	// COMMUNICATION
-	// *******************//
-    avail = communicate(vct);
-    if (avail < 0)
-		return(-1);
-    MPI_Barrier(MPI_COMM_WORLD);
-    // communicate again if particles are not in the correct domain
-    while(isMessagingDone(vct) >0){
-     // COMMUNICATION
-	 avail = communicate(vct);
-	 if (avail < 0)
-	        return(-1);
-     MPI_Barrier(MPI_COMM_WORLD);
-  }
-  return(0); // exit succcesfully (hopefully)
-}
+// 	//********************//
+// 	// COMMUNICATION
+// 	// *******************//
+//     avail = communicate(vct);
+//     if (avail < 0)
+// 		return(-1);
+//     MPI_Barrier(MPI_COMM_WORLD);
+//     // communicate again if particles are not in the correct domain
+//     while(isMessagingDone(vct) >0){
+//      // COMMUNICATION
+// 	 avail = communicate(vct);
+// 	 if (avail < 0)
+// 	        return(-1);
+//      MPI_Barrier(MPI_COMM_WORLD);
+//   }
+//   return(0); // exit succcesfully (hopefully)
+// }
 
 //? ===================================================================================================================== ?//
 
@@ -1406,7 +1406,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	}
 	
 	//TODO: where is this used?
-	double start_mover_PC = MPI_Wtime();	
+	double start_mover_PC = MPI_Wtime();
 
 	double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
 	double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
@@ -1425,21 +1425,54 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
 	#ifdef GPU
-		Bx_1D = Bx[0][0];
-		By_1D = By[0][0];
-		Bz_1D = Bz[0][0];
+		double* Bx_d = Bx[0][0];
+		double* By_d = By[0][0];
+		double* Bz_d = Bz[0][0];
 
-		Bx_ext_1D = Bx_ext[0][0];
-		By_ext_1D = By_ext[0][0];
-		Bz_ext_1D = Bz_ext[0][0];
+		double* Bx_ext_d = Bx_ext[0][0];
+		double* By_ext_d = By_ext[0][0];
+		double* Bz_ext_d = Bz_ext[0][0];
 
-		Ex_1D = Ex[0][0];
-		Ey_1D = Ey[0][0];
-		Ez_1D = Ez[0][0];
+		double* Ex_d = Ex[0][0];
+		double* Ey_d = Ey[0][0];
+		double* Ez_d = Ez[0][0];
 
-		Ex_ext_1D = Ex_ext[0][0];
-		Ey_ext_1D = Ey_ext[0][0];
-		Ez_ext_1D = Ez_ext[0][0];
+		double* Ex_ext_d = Ex_ext[0][0];
+		double* Ey_ext_d = Ey_ext[0][0];
+		double* Ez_ext_d = Ez_ext[0][0];
+
+		// double *Bx_1D = new double[nxn * nyn * nzn]; 
+  		// double *By_1D = new double[nxn * nyn * nzn];
+  		// double *Bz_1D = new double[nxn * nyn * nzn];
+  		// double *Bx_ext_1D = new double[nxn * nyn * nzn];
+  		// double *By_ext_1D = new double[nxn * nyn * nzn];
+  		// double *Bz_ext_1D = new double[nxn * nyn * nzn];
+
+		// #ifdef GPU_PREFETCHING
+			// cudaMemPrefetchAsync(u, sizeof(double)*nop, 0, 0);
+			// cudaMemPrefetchAsync(v, sizeof(double)*nop, 0, 0);
+			// cudaMemPrefetchAsync(w, sizeof(double)*nop, 0, 0);
+			
+			// cudaMemPrefetchAsync(x, sizeof(double)*nop, 0, 0);
+			// cudaMemPrefetchAsync(y, sizeof(double)*nop, 0, 0);
+			// cudaMemPrefetchAsync(z, sizeof(double)*nop, 0, 0);
+			
+			// cudaMemPrefetchAsync(Ex_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ey_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ez_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+
+			// cudaMemPrefetchAsync(Ex_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ey_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ez_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+
+			// cudaMemPrefetchAsync(Bx_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(By_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Bz_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+
+			// cudaMemPrefetchAsync(Bx_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(By_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Bz_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+		// #endif
 	#endif
 
 	//? External forces
@@ -1460,7 +1493,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	// to do it by hand only hurts performance.
 	
 	//? Iterate over each particle
-	#pragma acc parallel loop copy(u[0:nop], v[0:nop], w[0:nop], Ex_1D[0:nxn*nyn*nzn], Ey_1D[0:nxn*nyn*nzn], Ez_1D[0:nxn*nyn*nzn], Ex_ext_1D[0:nxn*nyn*nzn], Ey_ext_1D[0:nxn*nyn*nzn], Ez_ext_1D[0:nxn*nyn*nzn], Bx_1D[0:nxn*nyn*nzn], By_1D[0:nxn*nyn*nzn], Bz_1D[0:nxn*nyn*nzn], Bx_ext_1D[0:nxn*nyn*nzn], By_ext_1D[0:nxn*nyn*nzn], Bz_ext_1D[0:nxn*nyn*nzn])
+	#pragma acc parallel loop //copy(u[0:nop], v[0:nop], w[0:nop], Ex_1d[0:nxn*nyn*nzn], Ey_1d[0:nxn*nyn*nzn], Ez_1d[0:nxn*nyn*nzn], Ex_ext_1d[0:nxn*nyn*nzn], Ey_ext_1d[0:nxn*nyn*nzn], Ez_ext_1d[0:nxn*nyn*nzn], Bx_1d[0:nxn*nyn*nzn], By_1d[0:nxn*nyn*nzn], Bz_1d[0:nxn*nyn*nzn],Bx_ext_1d[0:nxn*nyn*nzn], By_ext_1d[0:nxn*nyn*nzn], Bz_ext_1d[0:nxn*nyn*nzn])
 	for (long long rest = 0; rest < nop; rest++) 
 	{
 		//? Copy the position of the particle
@@ -1482,7 +1515,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		double wptilde;
 
 		//? Calculate the average velocity iteratively
-		for (int innter = 0; innter < NiterMover; innter++) 
+		for (int innter = 0; innter < NiterMover; innter++)
 		{
 			//* interpolation G-->P
 			const double ixd = floor((xp - xstart) * inv_dx);
@@ -1491,7 +1524,12 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 			int ix = 2 + int (ixd);
 			int iy = 2 + int (iyd);
 			int iz = 2 + int (izd);
+
+			//* Initialise E and B for each niter
+			double Exl = 0.0; double Eyl = 0.0; double Ezl = 0.0;
+			double Bxl = 0.0; double Byl = 0.0; double Bzl = 0.0;
 			
+			//* Boundary conditions?
 			if (ix < 1)
 				ix = 1;
 			if (iy < 1)
@@ -1505,87 +1543,163 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 			if (iz > nzn - 1)
 				iz = nzn - 1;
 
-			double xi  [2];
-			double eta [2];
-			double zeta[2];
+			#ifdef GPU
 
-			xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
-			eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
-			zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
-			xi  [1] = grid->getXN(ix,iy,iz) - xp;
-			eta [1] = grid->getYN(ix,iy,iz) - yp;
-			zeta[1] = grid->getZN(ix,iy,iz) - zp;
+			  	double xi_0   = xp - grid->getXN(ix-1, iy  , iz  );
+				double eta_0  = yp - grid->getYN(ix  , iy-1, iz  );
+				double zeta_0 = zp - grid->getZN(ix  , iy  , iz-1);
+				double xi_1   = grid->getXN(ix,iy,iz) - xp;
+				double eta_1  = grid->getYN(ix,iy,iz) - yp;
+				double zeta_1 = grid->getZN(ix,iy,iz) - zp;
 
-			double Exl = 0.0;
-			double Eyl = 0.0;
-			double Ezl = 0.0;
-			double Bxl = 0.0;
-			double Byl = 0.0;
-			double Bzl = 0.0;
+				double weight000 = xi_0 * eta_0 * zeta_0 * invVOL;
+				double weight001 = xi_0 * eta_0 * zeta_1 * invVOL;
+				double weight010 = xi_0 * eta_1 * zeta_0 * invVOL;
+				double weight011 = xi_0 * eta_1 * zeta_1 * invVOL;
+				double weight100 = xi_1 * eta_0 * zeta_0 * invVOL;  
+				double weight101 = xi_1 * eta_0 * zeta_1 * invVOL;
+				double weight110 = xi_1 * eta_1 * zeta_0 * invVOL;   
+				double weight111 = xi_1 * eta_1 * zeta_1 * invVOL;
 
-			const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
-			const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
-			const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
-			const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
-			const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
-			const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
-			const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
-			const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
-			//
-			Bxl += weight000 * (Bx[ix][iy][iz]             + Fext*Bx_ext[ix][iy][iz]);
-			Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Fext*Bx_ext[ix][iy][iz-1]);
-			Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Fext*Bx_ext[ix][iy-1][iz]);
-			Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Fext*Bx_ext[ix][iy-1][iz-1]);
-			Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Fext*Bx_ext[ix-1][iy][iz]);
-			Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Fext*Bx_ext[ix-1][iy][iz-1]);
-			Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Fext*Bx_ext[ix-1][iy-1][iz]);
-			Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Fext*Bx_ext[ix-1][iy-1][iz-1]);
-			//
-			Byl += weight000 * (By[ix][iy][iz]             + Fext*By_ext[ix][iy][iz]);
-			Byl += weight001 * (By[ix][iy][iz - 1]         + Fext*By_ext[ix][iy][iz-1]);
-			Byl += weight010 * (By[ix][iy - 1][iz]         + Fext*By_ext[ix][iy-1][iz]);
-			Byl += weight011 * (By[ix][iy - 1][iz - 1]     + Fext*By_ext[ix][iy-1][iz-1]);
-			Byl += weight100 * (By[ix - 1][iy][iz]         + Fext*By_ext[ix-1][iy][iz]);
-			Byl += weight101 * (By[ix - 1][iy][iz - 1]     + Fext*By_ext[ix-1][iy][iz-1]);
-			Byl += weight110 * (By[ix - 1][iy - 1][iz]     + Fext*By_ext[ix-1][iy-1][iz]);
-			Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + Fext*By_ext[ix-1][iy-1][iz-1]);
-			//
-			Bzl += weight000 * (Bz[ix][iy][iz]             + Fext*Bz_ext[ix][iy][iz]);
-			Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Fext*Bz_ext[ix][iy][iz-1]);
-			Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Fext*Bz_ext[ix][iy-1][iz]);
-			Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Fext*Bz_ext[ix][iy-1][iz-1]);
-			Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Fext*Bz_ext[ix-1][iy][iz]);
-			Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Fext*Bz_ext[ix-1][iy][iz-1]);
-			Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
-			Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
-			//
-			Exl += weight000 * (Ex[ix][iy][iz] 			   + Fext * Ex_ext[ix][iy][iz]);
-			Exl += weight001 * (Ex[ix][iy][iz - 1] 		   + Fext * Ex_ext[ix][iy][iz - 1]);
-			Exl += weight010 * (Ex[ix][iy - 1][iz] 		   + Fext * Ex_ext[ix][iy - 1][iz]);
-			Exl += weight011 * (Ex[ix][iy - 1][iz - 1] 	   + Fext * Ex_ext[ix][iy - 1][iz - 1]);
-			Exl += weight100 * (Ex[ix - 1][iy][iz] 		   + Fext * Ex_ext[ix - 1][iy][iz]);
-			Exl += weight101 * (Ex[ix - 1][iy][iz - 1] 	   + Fext * Ex_ext[ix - 1][iy][iz - 1]);
-			Exl += weight110 * (Ex[ix - 1][iy - 1][iz] 	   + Fext * Ex_ext[ix - 1][iy - 1][iz]);
-			Exl += weight111 * (Ex[ix - 1][iy - 1][iz - 1] + Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
-			//
-			Eyl += weight000 * (Ey[ix][iy][iz] 			   + Fext * Ey_ext[ix][iy][iz]);
-			Eyl += weight001 * (Ey[ix][iy][iz - 1] 		   + Fext * Ey_ext[ix][iy][iz - 1]);
-			Eyl += weight010 * (Ey[ix][iy - 1][iz] 		   + Fext * Ey_ext[ix][iy - 1][iz]);
-			Eyl += weight011 * (Ey[ix][iy - 1][iz - 1] 	   + Fext * Ey_ext[ix][iy - 1][iz - 1]);
-			Eyl += weight100 * (Ey[ix - 1][iy][iz] 		   + Fext * Ey_ext[ix - 1][iy][iz]);
-			Eyl += weight101 * (Ey[ix - 1][iy][iz - 1] 	   + Fext * Ey_ext[ix - 1][iy][iz - 1]);
-			Eyl += weight110 * (Ey[ix - 1][iy - 1][iz] 	   + Fext * Ey_ext[ix - 1][iy - 1][iz]);
-			Eyl += weight111 * (Ey[ix - 1][iy - 1][iz - 1] + Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
+				int INDEX000 = (ix -0) * nzn * nyn + (iy - 0) * nzn + (iz - 0);
+				int INDEX001 = (ix -0) * nzn * nyn + (iy - 0) * nzn + (iz - 1);
+				int INDEX010 = (ix -0) * nzn * nyn + (iy - 1) * nzn + (iz - 0);
+				int INDEX011 = (ix -0) * nzn * nyn + (iy - 1) * nzn + (iz - 1);
+				int INDEX100 = (ix -1) * nzn * nyn + (iy - 0) * nzn + (iz - 0);
+				int INDEX101 = (ix -1) * nzn * nyn + (iy - 0) * nzn + (iz - 1);
+				int INDEX110 = (ix -1) * nzn * nyn + (iy - 1) * nzn + (iz - 0);
+				int INDEX111 = (ix -1) * nzn * nyn + (iy - 1) * nzn + (iz - 1);
 
-			Ezl += weight000 * (Ez[ix][iy][iz] 			   + Fext * Ez_ext[ix][iy][iz]);
-			Ezl += weight001 * (Ez[ix][iy][iz - 1] 		   + Fext * Ez_ext[ix][iy][iz - 1]);
-			Ezl += weight010 * (Ez[ix][iy - 1][iz] 		   + Fext * Ez_ext[ix][iy - 1][iz]);
-			Ezl += weight011 * (Ez[ix][iy - 1][iz - 1] 	   + Fext * Ez_ext[ix][iy - 1][iz - 1]);
-			Ezl += weight100 * (Ez[ix - 1][iy][iz] 		   + Fext * Ez_ext[ix - 1][iy][iz]);
-			Ezl += weight101 * (Ez[ix - 1][iy][iz - 1] 	   + Fext * Ez_ext[ix - 1][iy][iz - 1]);
-			Ezl += weight110 * (Ez[ix - 1][iy - 1][iz] 	   + Fext * Ez_ext[ix - 1][iy - 1][iz]);
-			Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
-			// end interpolation
+				Bxl += weight000 * (Bx_d[INDEX000] + Fext*Bx_ext_d[INDEX000]);
+				Bxl += weight001 * (Bx_d[INDEX001] + Fext*Bx_ext_d[INDEX001]);
+				Bxl += weight010 * (Bx_d[INDEX010] + Fext*Bx_ext_d[INDEX010]);
+				Bxl += weight011 * (Bx_d[INDEX011] + Fext*Bx_ext_d[INDEX011]);
+				Bxl += weight100 * (Bx_d[INDEX100] + Fext*Bx_ext_d[INDEX100]);
+				Bxl += weight101 * (Bx_d[INDEX101] + Fext*Bx_ext_d[INDEX101]);
+				Bxl += weight110 * (Bx_d[INDEX110] + Fext*Bx_ext_d[INDEX110]);
+				Bxl += weight111 * (Bx_d[INDEX111] + Fext*Bx_ext_d[INDEX111]);
+
+				Byl += weight000 * (By_d[INDEX000] + Fext*By_ext_d[INDEX000]);
+				Byl += weight001 * (By_d[INDEX001] + Fext*By_ext_d[INDEX001]);
+				Byl += weight010 * (By_d[INDEX010] + Fext*By_ext_d[INDEX010]);
+				Byl += weight011 * (By_d[INDEX011] + Fext*By_ext_d[INDEX011]);
+				Byl += weight100 * (By_d[INDEX100] + Fext*By_ext_d[INDEX100]);
+				Byl += weight101 * (By_d[INDEX101] + Fext*By_ext_d[INDEX101]);
+				Byl += weight110 * (By_d[INDEX110] + Fext*By_ext_d[INDEX110]);
+				Byl += weight111 * (By_d[INDEX111] + Fext*By_ext_d[INDEX111]);
+
+				Bzl += weight000 * (Bz_d[INDEX000] + Fext*Bz_ext_d[INDEX000]);
+				Bzl += weight001 * (Bz_d[INDEX001] + Fext*Bz_ext_d[INDEX001]);
+				Bzl += weight010 * (Bz_d[INDEX010] + Fext*Bz_ext_d[INDEX010]);
+				Bzl += weight011 * (Bz_d[INDEX011] + Fext*Bz_ext_d[INDEX011]);
+				Bzl += weight100 * (Bz_d[INDEX100] + Fext*Bz_ext_d[INDEX100]);
+				Bzl += weight101 * (Bz_d[INDEX101] + Fext*Bz_ext_d[INDEX101]);
+				Bzl += weight110 * (Bz_d[INDEX110] + Fext*Bz_ext_d[INDEX110]);
+				Bzl += weight111 * (Bz_d[INDEX111] + Fext*Bz_ext_d[INDEX111]);
+
+				Exl += weight000 * (Ex_d[INDEX000] + Fext*Ex_ext_d[INDEX000]);
+				Exl += weight001 * (Ex_d[INDEX001] + Fext*Ex_ext_d[INDEX001]);
+				Exl += weight010 * (Ex_d[INDEX010] + Fext*Ex_ext_d[INDEX010]);
+				Exl += weight011 * (Ex_d[INDEX011] + Fext*Ex_ext_d[INDEX011]);
+				Exl += weight100 * (Ex_d[INDEX100] + Fext*Ex_ext_d[INDEX100]);
+				Exl += weight101 * (Ex_d[INDEX101] + Fext*Ex_ext_d[INDEX101]);
+				Exl += weight110 * (Ex_d[INDEX110] + Fext*Ex_ext_d[INDEX110]);
+				Exl += weight111 * (Ex_d[INDEX111] + Fext*Ex_ext_d[INDEX111]);
+
+				Eyl += weight000 * (Ey_d[INDEX000] + Fext*Ey_ext_d[INDEX000]);
+				Eyl += weight001 * (Ey_d[INDEX001] + Fext*Ey_ext_d[INDEX001]);
+				Eyl += weight010 * (Ey_d[INDEX010] + Fext*Ey_ext_d[INDEX010]);
+				Eyl += weight011 * (Ey_d[INDEX011] + Fext*Ey_ext_d[INDEX011]);
+				Eyl += weight100 * (Ey_d[INDEX100] + Fext*Ey_ext_d[INDEX100]);
+				Eyl += weight101 * (Ey_d[INDEX101] + Fext*Ey_ext_d[INDEX101]);
+				Eyl += weight110 * (Ey_d[INDEX110] + Fext*Ey_ext_d[INDEX110]);
+				Eyl += weight111 * (Ey_d[INDEX111] + Fext*Ey_ext_d[INDEX111]);
+
+				Ezl += weight000 * (Ez_d[INDEX000] + Fext*Ez_ext_d[INDEX000]);
+				Ezl += weight001 * (Ez_d[INDEX001] + Fext*Ez_ext_d[INDEX001]);
+				Ezl += weight010 * (Ez_d[INDEX010] + Fext*Ez_ext_d[INDEX010]);
+				Ezl += weight011 * (Ez_d[INDEX011] + Fext*Ez_ext_d[INDEX011]);
+				Ezl += weight100 * (Ez_d[INDEX100] + Fext*Ez_ext_d[INDEX100]);
+				Ezl += weight101 * (Ez_d[INDEX101] + Fext*Ez_ext_d[INDEX101]);
+				Ezl += weight110 * (Ez_d[INDEX110] + Fext*Ez_ext_d[INDEX110]);
+				Ezl += weight111 * (Ez_d[INDEX111] + Fext*Ez_ext_d[INDEX111]);
+    
+			#else
+        		std::cout << "Not using GPU" << std::endl;
+
+				double xi[2]; double eta[2]; double zeta[2];
+				xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
+				eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
+				zeta[0] = zp - grid->getZN(ix  ,iy  ,iz-1);
+				xi  [1] = grid->getXN(ix,iy,iz) - xp;
+				eta [1] = grid->getYN(ix,iy,iz) - yp;
+				zeta[1] = grid->getZN(ix,iy,iz) - zp;
+
+				const double weight000 = xi[0] * eta[0] * zeta[0] * invVOL;
+				const double weight001 = xi[0] * eta[0] * zeta[1] * invVOL;
+				const double weight010 = xi[0] * eta[1] * zeta[0] * invVOL;
+				const double weight011 = xi[0] * eta[1] * zeta[1] * invVOL;
+				const double weight100 = xi[1] * eta[0] * zeta[0] * invVOL;
+				const double weight101 = xi[1] * eta[0] * zeta[1] * invVOL;
+				const double weight110 = xi[1] * eta[1] * zeta[0] * invVOL;
+				const double weight111 = xi[1] * eta[1] * zeta[1] * invVOL;
+				//
+				Bxl += weight000 * (Bx[ix][iy][iz]             + Fext*Bx_ext[ix][iy][iz]);
+				Bxl += weight001 * (Bx[ix][iy][iz - 1]         + Fext*Bx_ext[ix][iy][iz-1]);
+				Bxl += weight010 * (Bx[ix][iy - 1][iz]         + Fext*Bx_ext[ix][iy-1][iz]);
+				Bxl += weight011 * (Bx[ix][iy - 1][iz - 1]     + Fext*Bx_ext[ix][iy-1][iz-1]);
+				Bxl += weight100 * (Bx[ix - 1][iy][iz]         + Fext*Bx_ext[ix-1][iy][iz]);
+				Bxl += weight101 * (Bx[ix - 1][iy][iz - 1]     + Fext*Bx_ext[ix-1][iy][iz-1]);
+				Bxl += weight110 * (Bx[ix - 1][iy - 1][iz]     + Fext*Bx_ext[ix-1][iy-1][iz]);
+				Bxl += weight111 * (Bx[ix - 1][iy - 1][iz - 1] + Fext*Bx_ext[ix-1][iy-1][iz-1]);
+				//
+				Byl += weight000 * (By[ix][iy][iz]             + Fext*By_ext[ix][iy][iz]);
+				Byl += weight001 * (By[ix][iy][iz - 1]         + Fext*By_ext[ix][iy][iz-1]);
+				Byl += weight010 * (By[ix][iy - 1][iz]         + Fext*By_ext[ix][iy-1][iz]);
+				Byl += weight011 * (By[ix][iy - 1][iz - 1]     + Fext*By_ext[ix][iy-1][iz-1]);
+				Byl += weight100 * (By[ix - 1][iy][iz]         + Fext*By_ext[ix-1][iy][iz]);
+				Byl += weight101 * (By[ix - 1][iy][iz - 1]     + Fext*By_ext[ix-1][iy][iz-1]);
+				Byl += weight110 * (By[ix - 1][iy - 1][iz]     + Fext*By_ext[ix-1][iy-1][iz]);
+				Byl += weight111 * (By[ix - 1][iy - 1][iz - 1] + Fext*By_ext[ix-1][iy-1][iz-1]);
+				//
+				Bzl += weight000 * (Bz[ix][iy][iz]             + Fext*Bz_ext[ix][iy][iz]);
+				Bzl += weight001 * (Bz[ix][iy][iz - 1]         + Fext*Bz_ext[ix][iy][iz-1]);
+				Bzl += weight010 * (Bz[ix][iy - 1][iz]         + Fext*Bz_ext[ix][iy-1][iz]);
+				Bzl += weight011 * (Bz[ix][iy - 1][iz - 1]     + Fext*Bz_ext[ix][iy-1][iz-1]);
+				Bzl += weight100 * (Bz[ix - 1][iy][iz]         + Fext*Bz_ext[ix-1][iy][iz]);
+				Bzl += weight101 * (Bz[ix - 1][iy][iz - 1]     + Fext*Bz_ext[ix-1][iy][iz-1]);
+				Bzl += weight110 * (Bz[ix - 1][iy - 1][iz]     + Fext*Bz_ext[ix-1][iy-1][iz]);
+				Bzl += weight111 * (Bz[ix - 1][iy - 1][iz - 1] + Fext*Bz_ext[ix-1][iy-1][iz-1]);
+				//
+				Exl += weight000 * (Ex[ix][iy][iz] 			   + Fext * Ex_ext[ix][iy][iz]);
+				Exl += weight001 * (Ex[ix][iy][iz - 1] 		   + Fext * Ex_ext[ix][iy][iz - 1]);
+				Exl += weight010 * (Ex[ix][iy - 1][iz] 		   + Fext * Ex_ext[ix][iy - 1][iz]);
+				Exl += weight011 * (Ex[ix][iy - 1][iz - 1] 	   + Fext * Ex_ext[ix][iy - 1][iz - 1]);
+				Exl += weight100 * (Ex[ix - 1][iy][iz] 		   + Fext * Ex_ext[ix - 1][iy][iz]);
+				Exl += weight101 * (Ex[ix - 1][iy][iz - 1] 	   + Fext * Ex_ext[ix - 1][iy][iz - 1]);
+				Exl += weight110 * (Ex[ix - 1][iy - 1][iz] 	   + Fext * Ex_ext[ix - 1][iy - 1][iz]);
+				Exl += weight111 * (Ex[ix - 1][iy - 1][iz - 1] + Fext * Ex_ext[ix - 1][iy - 1][iz - 1]);
+				//
+				Eyl += weight000 * (Ey[ix][iy][iz] 			   + Fext * Ey_ext[ix][iy][iz]);
+				Eyl += weight001 * (Ey[ix][iy][iz - 1] 		   + Fext * Ey_ext[ix][iy][iz - 1]);
+				Eyl += weight010 * (Ey[ix][iy - 1][iz] 		   + Fext * Ey_ext[ix][iy - 1][iz]);
+				Eyl += weight011 * (Ey[ix][iy - 1][iz - 1] 	   + Fext * Ey_ext[ix][iy - 1][iz - 1]);
+				Eyl += weight100 * (Ey[ix - 1][iy][iz] 		   + Fext * Ey_ext[ix - 1][iy][iz]);
+				Eyl += weight101 * (Ey[ix - 1][iy][iz - 1] 	   + Fext * Ey_ext[ix - 1][iy][iz - 1]);
+				Eyl += weight110 * (Ey[ix - 1][iy - 1][iz] 	   + Fext * Ey_ext[ix - 1][iy - 1][iz]);
+				Eyl += weight111 * (Ey[ix - 1][iy - 1][iz - 1] + Fext * Ey_ext[ix - 1][iy - 1][iz - 1]);
+
+				Ezl += weight000 * (Ez[ix][iy][iz] 			   + Fext * Ez_ext[ix][iy][iz]);
+				Ezl += weight001 * (Ez[ix][iy][iz - 1] 		   + Fext * Ez_ext[ix][iy][iz - 1]);
+				Ezl += weight010 * (Ez[ix][iy - 1][iz] 		   + Fext * Ez_ext[ix][iy - 1][iz]);
+				Ezl += weight011 * (Ez[ix][iy - 1][iz - 1] 	   + Fext * Ez_ext[ix][iy - 1][iz - 1]);
+				Ezl += weight100 * (Ez[ix - 1][iy][iz] 		   + Fext * Ez_ext[ix - 1][iy][iz]);
+				Ezl += weight101 * (Ez[ix - 1][iy][iz - 1] 	   + Fext * Ez_ext[ix - 1][iy][iz - 1]);
+				Ezl += weight110 * (Ez[ix - 1][iy - 1][iz] 	   + Fext * Ez_ext[ix - 1][iy - 1][iz]);
+				Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
+				
+			//? end interpolation
+			#endif
 
 			const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
 			const double denom = 1.0 / (1.0 + omdtsq);
@@ -1607,7 +1721,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 			zp = zptilde + wptilde * dto2;
 		
 		//* end of iteration
-		}                           
+		}
 		
 		//? update the final position and velocity
 		up = 2.0 * uptilde - u[rest];
@@ -1636,7 +1750,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	const int avail = communicate(vct);
 	if (avail < 0)
 		return (-1);
-	// cout << "MPI barrier 1" << endl;
+
 	MPI_Barrier(MPI_COMM_WORLD);
 
 	//* Compute how many particles are not in the right domain *//
@@ -1647,84 +1761,88 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		const int avail = communicate(vct);
 		if (avail < 0)
 			return (-1);
-		// cout << "MPI barrier 2" << endl;
+
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 	// timeTasks.addto_communicate();
 	
 	//? exit succcesfully (hopefully)
-	return (0);                   
+	return (0);           
 
 }
 
 //? ===================================================================================================================== ?//
 
 //!! Particle mover with a Predictor-Corrector scheme with subcycling !//
-int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
-  if (vct->getCartesian_rank() == 0) {
-    cout << "*** MOVER species " << ns << " ***"<< " with " << nop << " particles ***"  << NiterMover << " ITERATIONS   ****" << endl;
-  }
-  double start_mover_PC = MPI_Wtime();
-  double weights[2][2][2];
-  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
-  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
-  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
-  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
-  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
-  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf) 
+{
+	if (vct->getCartesian_rank() == 0) 
+	{
+		cout << "*** MOVER species " << ns << " ***"<< " with " << nop << " particles ***"  << NiterMover << " ITERATIONS   ****" << endl;
+	}
 
-  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
-  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
-  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+	double start_mover_PC = MPI_Wtime();
+	double weights[2][2][2];
+	double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+	double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+	double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+	double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+	double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+	double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
 
-  double Fext = EMf->getFext();
-  if(Gravity)
+	double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+	double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+	double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+
+	double Fext = EMf->getFext();
+	if(Gravity)
 		Fext /= qom;
 
-  // const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
-  // don't bother trying to push any particles simultaneously;
-  // MIC already does vectorization automatically, and trying
-  // to do it by hand only hurts performance.
+	// const double dto2 = .5 * dt, qomdt2 = qom * dto2 / c;
+	// don't bother trying to push any particles simultaneously;
+	// MIC already does vectorization automatically, and trying
+	// to do it by hand only hurts performance.
 
-  for (long long rest = 0; rest < nop; rest++) {
-    // copy the particle
-    double xp = x[rest];
-    double yp = y[rest];
-    double zp = z[rest];
-    double up = u[rest];
-    double vp = v[rest];
-    double wp = w[rest];
-    const double xptilde = x[rest];
-    const double yptilde = y[rest];
-    const double zptilde = z[rest];
-    double uptilde;
-    double vptilde;
-    double wptilde;
+	for (long long rest = 0; rest < nop; rest++) 
+	{
+		// copy the particle
+		double xp = x[rest];
+		double yp = y[rest];
+		double zp = z[rest];
+		double up = u[rest];
+		double vp = v[rest];
+		double wp = w[rest];
+		const double xptilde = x[rest];
+		const double yptilde = y[rest];
+		const double zptilde = z[rest];
+		double uptilde;
+		double vptilde;
+		double wptilde;
 
-    double Exl = 0.0;
-    double Eyl = 0.0;
-    double Ezl = 0.0;
-    double Bxl = 0.0;
-    double Byl = 0.0;
-    double Bzl = 0.0;
-    int ix;
-    int iy;
-    int iz;
+		double Exl = 0.0;
+		double Eyl = 0.0;
+		double Ezl = 0.0;
+		double Bxl = 0.0;
+		double Byl = 0.0;
+		double Bzl = 0.0;
+		int ix;
+		int iy;
+		int iz;
 
-    // BEGIN OF SUBCYCLING LOOP
+		// BEGIN OF SUBCYCLING LOOP
 
-    get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
-    get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
+		get_weights(grid, xp, yp, zp, ix, iy, iz, weights);
+		get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
 
-    const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
-    double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
-    const int    sub_cycles = int(dt/dt_sub) + 1;
+		const double B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+		double       dt_sub     = M_PI*c/(4*abs(qom)*B_mag);
+		const int    sub_cycles = int(dt/dt_sub) + 1;
 
-    dt_sub = dt/double(sub_cycles);
-    
-    const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
-    
-    // if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
+		dt_sub = dt/double(sub_cycles);
+
+		const double dto2 = .5 * dt_sub, qomdt2 = qom * dto2 / c;
+
+		// if (sub_cycles>1) cout << " >> sub_cycles = " << sub_cycles << endl;
 
     for (int cyc_cnt = 0; cyc_cnt < sub_cycles; cyc_cnt++) {
 
@@ -1791,6 +1909,8 @@ int Particles3D::mover_PC_sub(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   // timeTasks.addto_communicate();
   return (0);                   // exit succcesfully (hopefully) 
 }
+
+//? ===================================================================================================================== ?//
 
 /** mover with a Predictor-Corrector scheme for 2D cylindrical symmetric systems */
 int Particles3D::mover_PC_sub_cyl(Grid * grid, VirtualTopology3D * vct, Field * EMf) {
@@ -3557,3 +3677,4 @@ int Particles3D::injector_rand_box_mono(Grid* grid,VirtualTopology3D* vct, Field
 	return(0); // exit succcesfully (hopefully)
 
 }
+
