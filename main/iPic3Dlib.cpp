@@ -300,129 +300,135 @@ int c_Solver::Init(int argc, char **argv) {
   return 0;
 }
 
-void c_Solver::GatherMoments(){
-  // timeTasks.resetCycle();
-  // interpolation
-  // timeTasks.start(TimeTasks::MOMENTS);
+//! ======================================================================== !//
 
-  EMf->updateInfoFields(grid,vct,col);
-  EMf->setZeroDensities();                  // set to zero the densities
+//! Gather Moments !//
+void c_Solver::GatherMoments()
+{
+	//? Get data from fields
+	EMf->updateInfoFields(grid,vct,col);
 
-  for (int i = 0; i < ns; i++)
-    part[i].interpP2G(EMf, grid, vct);      // interpolate Particles to Grid(Nodes)
+	//? Set densities to zero
+	EMf->setZeroDensities();                  
 
-  EMf->sumOverSpecies(vct);                 // sum all over the species
-  //
-  // Fill with constant charge the planet
-  if (col->getCase()=="Dipole") {
-    EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
-  }
+	//? Interpolate Particles to Grid(Nodes)
+	for (int i = 0; i < ns; i++)
+	{
+		part[i].interpP2G(EMf, grid, vct);      
+	}
 
-  // EMf->ConstantChargeOpenBC(grid, vct);     // Set a constant charge in the OpenBC boundaries
+	//? Sum all over the species
+	EMf->sumOverSpecies(vct);                 
+	
+	//? Fill with constant charge the planet
+	if (col->getCase()=="Dipole") 
+	{
+		EMf->ConstantChargePlanet(grid, vct, col->getL_square(),col->getx_center(),col->gety_center(),col->getz_center());
+	}
 
+	//? Set a constant charge in the OpenBC boundaries
+	// EMf->ConstantChargeOpenBC(grid, vct);
 }
 
-void c_Solver::UpdateCycleInfo(int cycle) {
+//! ======================================================================== !//
 
-  if (col->getCase()=="Dipole") EMf->UpdateFext(cycle);
-  if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
-  if (cycle == first_cycle) {
-    if (col->getCase()=="Dipole") {
-      EMf->SetDipole_2Bext(vct,grid,col);
-      EMf->SetLambda(grid);
-    }
-  }
+void c_Solver::UpdateCycleInfo(int cycle) 
+{
+	if (col->getCase()=="Dipole") EMf->UpdateFext(cycle);
 
+	if (myrank == 0) cout << " Fext = " << EMf->getFext() << endl;
 
+	if (cycle == first_cycle) 
+	{
+		if (col->getCase()=="Dipole") 
+		{
+			EMf->SetDipole_2Bext(vct,grid,col);
+			EMf->SetLambda(grid);
+		}
+	}
 }
 
-void c_Solver::CalculateField() {
+//! ======================================================================== !//
 
-  // timeTasks.resetCycle();
-  // interpolation
-  // timeTasks.start(TimeTasks::MOMENTS);
+//! Compute E and B fields !//
+void c_Solver::CalculateField() 
+{
+	//? Calculate densities on cell centers from nodes
+	EMf->interpDensitiesN2C(vct, grid);
 
-  EMf->interpDensitiesN2C(vct, grid);       // calculate densities on centers from nodes
-  EMf->calculateHatFunctions(grid, vct);    // calculate the hat quantities for the implicit method
-  MPI_Barrier(MPI_COMM_WORLD);
-  // timeTasks.end(TimeTasks::MOMENTS);
+	//? Calculate the hatted quantities for the implicit method    
+	EMf->calculateHatFunctions(grid, vct);    
+	
+	MPI_Barrier(MPI_COMM_WORLD);
 
-  // MAXWELL'S SOLVER
-  // timeTasks.start(TimeTasks::FIELDS);
-  #ifdef __PETSC_SOLVER__
-    petscSolver->solveE();
-  #else
-    EMf->calculateE(grid, vct, col);               // calculate the E field
-  #endif
-  // timeTasks.end(TimeTasks::FIELDS);
-
+	//? MAXWELL'S SOLVER
+	#ifdef __PETSC_SOLVER__
+		petscSolver->solveE();
+	#else
+		EMf->calculateE(grid, vct, col); 
+	#endif
 }
 
-void c_Solver::CalculateBField() {
-  /* --------------------- */
-  /* Calculate the B field */
-  /* --------------------- */
-
-  // timeTasks.start(TimeTasks::BFIELD);
-  EMf->calculateB(grid, vct, col);   // calculate the B field
-  // timeTasks.end(TimeTasks::BFIELD);
-
-  // print out total time for all tasks
-  // timeTasks.print_cycle_times();
+void c_Solver::CalculateBField() 
+{
+	EMf->calculateB(grid, vct, col); 
 }
 
-bool c_Solver::ParticlesMover() {
+//! ======================================================================== !//
 
-  /*  -------------- */
-  /*  Particle mover */
-  /*  -------------- */
+//! Move the particles !//
+bool c_Solver::ParticlesMover() 
+{
+	//? Loop over each species
+	for (int i = 0; i < ns; i++)  
+	{
+		if(cylindrical)
+		{
+			mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
+		}
+		else
+		{
+			if(col->getCase()=="GEMRelativity" || col->getCase()=="Relativistic")
+				mem_avail = part[i].mover_relativistic(grid, vct, EMf);
+			else
+				//? Predictor-Corrector scheme
+				mem_avail = part[i].mover_PC(grid, vct, EMf); 
+		}
+	}
 
-  // timeTasks.start(TimeTasks::PARTICLES);
-  for (int i = 0; i < ns; i++)  // move each species
-  {
-	  if(cylindrical){
-		  mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
-	  }
-	  else{
-		  //mem_avail = part[i].mover_PC_sub(grid, vct, EMf); // use the Predictor Corrector scheme
+	//* Not enough memory space allocated for particles: stop the simulation
+	if (mem_avail < 0) 
+	{
+		if (myrank == 0) 
+		{
+			cout << "*************************************************************" << endl;
+			cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
+			cout << "*************************************************************" << endl;
+		}
+		
+		return (true);              // exit from the time loop
+	}
 
-		  if(col->getCase()=="GEMRelativity" || col->getCase()=="Relativistic")
-			  mem_avail = part[i].mover_relativistic(grid, vct, EMf);
-		  else
-        // cout << "Predictor--Corrector scheme" << endl; 
-			  mem_avail = part[i].mover_PC(grid, vct, EMf); // use the Predictor Corrector scheme
+	//? Repopulate the buffer zone at the edge
+	InjectBoundaryParticles();
 
-	  }
-  }
-  // timeTasks.end(TimeTasks::PARTICLES);
+	//* Not enough memory space allocated for particles: stop the simulation
+	if (mem_avail < 0) 
+	{
+		if (myrank == 0) 
+		{
+			cout << "*************************************************************" << endl;
+			cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
+			cout << "*************************************************************" << endl;
+		}
+		
+		return (true);              // exit from the time loop
+	}
 
-  if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
-    if (myrank == 0) {
-      cout << "*************************************************************" << endl;
-      cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
-      cout << "*************************************************************" << endl;
-    }
-    return (true);              // exit from the time loop
-  }
-
-  /* -------------------------------------- */
-  /* Repopulate the buffer zone at the edge */
-  /* -------------------------------------- */
-
-  InjectBoundaryParticles();
-
-  if (mem_avail < 0) {          // not enough memory space allocated for particles: stop the simulation
-    if (myrank == 0) {
-      cout << "*************************************************************" << endl;
-      cout << "Simulation stopped. Not enough memory allocated for particles" << endl;
-      cout << "*************************************************************" << endl;
-    }
-    return (true);              // exit from the time loop
-  }
-
-  return (false);
-
+  	return (false);
 }
+
+//! ======================================================================== !//
 
 void c_Solver::InjectBoundaryParticles(){
 
@@ -494,7 +500,7 @@ void c_Solver::WriteRestart(int cycle) {
   if (cycle % restart_cycle == 0 && cycle != first_cycle) {
     if (col->getWriteMethod() != "h5hut") {
       // without ,0 add to restart file
-      writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0);
+    //   writeRESTART(RestartDirName, myrank, cycle, ns, mpi, vct, col, grid, EMf, part, 0);
     }
   }
 
@@ -704,7 +710,7 @@ void c_Solver::WriteOutput(int cycle) {
 void c_Solver::Finalize() {
   if (mem_avail == 0) {          // write the restart only if the simulation finished succesfully
     if (col->getWriteMethod() != "h5hut") {
-      writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
+    //   writeRESTART(RestartDirName, myrank, (col->getNcycles() + first_cycle) - 1, ns, mpi, vct, col, grid, EMf, part, 0);
     }
   }
 
