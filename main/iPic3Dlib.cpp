@@ -308,7 +308,7 @@ void c_Solver::GatherMoments()
 	//? Get data from fields
 	EMf->updateInfoFields(grid,vct,col);
 
-	//? Set densities to zero
+	//? Set densities to zero (charge density (1), current (3), energy flux density (3), pressure tensor (6))
 	EMf->setZeroDensities();                  
 
 	//? Interpolate Particles to Grid(Nodes)
@@ -317,7 +317,7 @@ void c_Solver::GatherMoments()
 		part[i].interpP2G(EMf, grid, vct);      
 	}
 
-	//? Sum all over the species
+	//? Sum all over the species: Charge density of all species on NODES
 	EMf->sumOverSpecies(vct);                 
 	
 	//? Fill with constant charge the planet
