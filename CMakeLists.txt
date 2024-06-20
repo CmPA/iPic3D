@@ -37,10 +37,15 @@ if(GPU_PREFETCHING)
    add_definitions( -DGPU_PREFETCHING )
 endif()
 
+option(NSIGHT_PROFILING "Compile options for GPU" OFF)
+if (NSIGHT_PROFILING)
+   add_definitions( -DNSIGHT_PROFILING )
+endif()
+
 #
 # NSIGHTS
 #
-set (CMAKE_CXX_FLAGS "-acc -gpu=cc70,managed,lineinfo -Minfo=accel")
+set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc70,managed,lineinfo -Minfo=accel")
 
 #
 # Include sub-directories

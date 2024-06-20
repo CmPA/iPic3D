@@ -1441,31 +1441,31 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		double* Ey_ext_d = Ey_ext[0][0];
 		double* Ez_ext_d = Ez_ext[0][0];
 
-		// #ifdef GPU_PREFETCHING
-			// cudaMemPrefetchAsync(u, sizeof(double)*nop, 0, 0);
-			// cudaMemPrefetchAsync(v, sizeof(double)*nop, 0, 0);
-			// cudaMemPrefetchAsync(w, sizeof(double)*nop, 0, 0);
+		#ifdef GPU_PREFETCHING
+			cudaMemPrefetchAsync(u, sizeof(double)*nop, 0, 0);
+			cudaMemPrefetchAsync(v, sizeof(double)*nop, 0, 0);
+			cudaMemPrefetchAsync(w, sizeof(double)*nop, 0, 0);
 			
-			// cudaMemPrefetchAsync(x, sizeof(double)*nop, 0, 0);
-			// cudaMemPrefetchAsync(y, sizeof(double)*nop, 0, 0);
-			// cudaMemPrefetchAsync(z, sizeof(double)*nop, 0, 0);
+			cudaMemPrefetchAsync(x, sizeof(double)*nop, 0, 0);
+			cudaMemPrefetchAsync(y, sizeof(double)*nop, 0, 0);
+			cudaMemPrefetchAsync(z, sizeof(double)*nop, 0, 0);
 			
-			// cudaMemPrefetchAsync(Ex_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Ey_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Ez_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Ex_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Ey_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Ez_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
-			// cudaMemPrefetchAsync(Ex_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Ey_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Ez_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Ex_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Ey_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Ez_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
-			// cudaMemPrefetchAsync(Bx_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(By_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Bz_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Bx_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(By_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Bz_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
-			// cudaMemPrefetchAsync(Bx_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(By_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Bz_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-		// #endif
+			cudaMemPrefetchAsync(Bx_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(By_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Bz_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+		#endif
 
 	#endif
 
@@ -1479,7 +1479,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
 
 	#ifdef NSIGHT_PROFILING
-    	nvtxRangePushA("updatePositionLoop");
+    	nvtxRangePush("updatePositionLoop");
   	#endif 
 
 	// don't bother trying to push any particles simultaneously;
