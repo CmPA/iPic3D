@@ -2,7 +2,7 @@
 #include <iomanip>
 #include "iPic3D.h"
 #include "MyClock.h"
-// #include "nvtx.h"
+#include "nvtx.h"
 
 MyClock *clocks;
 
@@ -70,7 +70,11 @@ int main(int argc, char **argv)
 		clocks->start(1);
 		if (!b_err) KCode.GatherMoments();
 		clocks->stop(1);
-		if ( b_err) i = KCode.LastCycle() + 1;
+		#ifdef NSIGHT_PROFILING
+			mynvtxstop_();
+		#endif
+		
+		if (b_err) i = KCode.LastCycle() + 1;
 
 		//* ------------------------------------------------------ *//
 
@@ -82,8 +86,8 @@ int main(int argc, char **argv)
 			mynvtxstart_("Write_data");
 		#endif 
 		clocks->start(4);
-		KCode.WriteOutput(i);
-		KCode.WriteConserved(i);
+		// KCode.WriteOutput(i);
+		// KCode.WriteConserved(i);
 		// KCode.WriteRestart(i);
 		clocks->stop(4);
 		#ifdef NSIGHT_PROFILING    
