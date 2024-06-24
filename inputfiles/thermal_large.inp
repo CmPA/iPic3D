@@ -1,0 +1,174 @@
+# INPUT FILE for thermal plasma case
+# 2 Species
+
+#  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
+SaveDirName    = data            # Output directory
+RestartDirName = data/restart    # Restart directory (for WriteMethod=default)
+
+#  %%%%%%%%%%%%%%%%%%% Input/Output flags %%%%%%%%%%%%%%%%%%
+Case              = default                                 # Case [ GEM | Dipole | ... ]
+FieldsInit        = ./data-Fields_000003.h5                 # Initial fields h5 file
+PartInit          = Maxwell                                 # Initial particles [ maxwell | mono | File ]
+PartInj           = mono                                    # Particle injector [ maxwell | mono ]
+WriteMethod       = default                                 # Output method [ default | Parallel ]
+PoissonCorrection = no                                      # Poisson correction [ yes | no ]
+SimulationName    = gpu_porting                             # Simulation name for the output
+Cylindrical       = 0                                       # Cylindrical coordinates (true = 1, false = 0)
+Lagrangian        = 0                                       # Lagrangian frame of reference
+ZeroCurrent       = 0                                       # 1 -> assure that the inital current is zero
+
+#  %%%%%%%%%%%%%%%%%%% Magnetic Reconnection %%%%%%%%%%%%%%%%%%
+B0x = 0.00
+B0y = 0.00
+B0z = 0.00
+
+# External magnetic field parameters:
+B1x = 0.000
+B1y = 0.000
+B1z = 0.000
+
+delta = 0.5
+
+#  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
+dt = 0.02              # dt = time step  
+ncycles = 10           # cycles
+th = 0.5               # th = decentering parameter
+c = 1.0                # c = light speed 
+
+#  %%%%%%%%%%%%%%%%%%% SMOOTH %%%%%%%%%%%%%%%%%%
+Smooth = 1.0           # Smoothing value (5-points stencil)
+
+# %%%%%%%%%%%%%%%%%% BOX SIZE %%%%%%%%%%%%%%%
+Lx = 40.96            # Lx = simulation box length - x direction   
+Ly = 20.48            # Ly = simulation box length - y direction
+Lz =   1.0            # Lz = simulation box length - z direction   
+
+x_center =   1.        # Lx = simulation box length - x direction in m  
+y_center =   1.        # Ly = simulation box length - y direction in m
+z_center =   1.        # Lz = simulation box length - z direction in m  
+L_square =    .1
+
+CoilD = 25.2	       #magnetic coil diameter -- Proposed WB8 simulation dimensions. 
+CoilSpacing= 40.0      #spacing parameter for magnets 
+
+nxc = 640              # nxc = number of cells - x direction        
+nyc = 320              # nyc = number of cells - y direction
+nzc =  1                # nzc = number of cells - z direction        
+
+# %%%%%%%%%%%%%%%%%% MPI TOPOLOGY %%%%%%%%%%%%%%%
+XLEN = 8             # Number of subdomains in the X direction
+YLEN = 4               # Number of subdomains in the Y direction
+ZLEN = 1                # Number of subdomains in the Z direction
+
+# %%%%%%%%%%%%%% PARTICLES %%%%%%%%%%%%%%%%%
+#    0 = electrons
+#    1 = protons
+#    2,3,4,5,... = ions
+# %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ns = 4                                  # Number of particles
+rhoINIT         = 0.5  0.5  0.5  0.5    # Initial density (make sure you are neutral)
+rhoINJECT       = 0.0  0.0  0.0  0.0    # Injection density (make sure you are neutral)
+TrackParticleID = 0    0     0    0     # TrackParticleID[species] = 1=true, 0=false 
+
+npcelx          = 60   60   60   60     # Particles per cell in X
+npcely          = 60   60   60   60     # Particles per cell in Y
+npcelz          = 1    1     1      1       # Particles per cell in Z
+NpMaxNpRatio    = 5.0                       # Maximum number of particles allocated
+
+qom             = -100.0     1.0     -100     1.0       # Charge/mass ratio
+uth             =  0.1       0.01     0.1     0.01      # Thermal velocity in X
+vth             =  0.1       0.01     0.1     0.01      # Thermal velocity in Y
+wth             =  0.1       0.01     0.1     0.01      # Thermal velocity in Z
+u0              =  0.0       0.0      0.0     0.0       # Drift velocity in X
+v0              =  0.0       0.0      0.0     0.0       # Drift velocity in Y
+w0              =  0.0       0.0      0.0     0.0       # Drift velocity in Z
+
+# %%%%%%%%%%%%%% TEST PARTICLES %%%%%%%%%%%%%%%%%
+#  They are saved every time step
+#    TP_ns = number of species
+#    0 = electrons
+#    1 = protons
+#    2,3,4,5,... = ions
+#    if TP_ns = 0 all the values related with test particles (TP) are not needed
+#
+#
+TP_ns = 0
+#TestIDfile = no # OPTIONAL (default no). File with the IDs of the particles to create.
+                 # If a file is provided, only the number of particles per cell (for memory allocation)
+                 # are used
+
+TP_x_center =   37.5  37.5     # OPTIONAL (default x_center) center of the injector - x direction   
+TP_y_center =   37.5  37.5     # OPTIONAL (default y_center) center of the injector - y direction 
+TP_z_center =   0.05  0.05     # OPTIONAL (default z_center) center of the injector - z direction   
+TP_L_square =   14.4  14.4     # OPTIONAL (default L_square) diameter of the injector
+
+TP_rhoINIT         =    0.2     0.2       # Initial density (make sure you are neutral)
+
+TP_npcelx          =    1      1          # Particles per cell in X
+TP_npcely          =    1      1          # Particles per cell in Y
+TP_npcelz          =    1      1          # Particles per cell in Z
+
+TP_qom             =  -1.0     1.0       # qom = charge to mass ratio for different species 			
+TP_uth             =   0.01    0.01      # uth = thermal velocity for different species - Direction X 
+TP_vth             =   0.01    0.01      # vth = thermal velocity for different species - Direction Y 
+TP_wth             =   0.01    0.01      # wth = thermal velocity for different species - Direction Z
+  
+TP_u0              =   0.04    0.0         # u0 = drift velocity   - Direction X  
+TP_v0              =   0.0     0.0         # v0 = drift velocity   - Direction Y 
+TP_w0              =   0.0     0.0         # w0 = drift velocity   - Direction Z    
+
+TestParticlesOutputCycle = 1   # Output for test particles 
+
+
+
+# %%%%%%%%%%%% Periodicity in each direction %%%%%%%%%%%%%%%
+PERIODICX       = 1                  # In direction X (1=true, 0=false)
+PERIODICY       = 1                  # In direction Y (1=true, 0=false)
+PERIODICZ       = 1                  # In direction Z (1=true, 0=false)
+
+# %%%%%%%%%%%% boundary conditions %%%%%%%%%%%%%%%
+# If the PERIODIC flag is active in the previous section
+# periodic boundary conditions will be imposed
+#
+# PHI Electrostatic Potential     
+# 0,1 = Dirichilet boundary condition ;     
+# 2   = Neumann boundary condition
+    bcPHIfaceXright = 1
+    bcPHIfaceXleft  = 1
+    bcPHIfaceYright = 1
+    bcPHIfaceYleft  = 1
+    bcPHIfaceZright = 1
+    bcPHIfaceZleft  = 1
+    
+#    EM field boundary condition
+#    0 = perfect conductor
+#    1 = magnetic mirror
+    bcEMfaceXright = 0
+    bcEMfaceXleft =  0
+    bcEMfaceYright = 0
+    bcEMfaceYleft =  0
+    bcEMfaceZright = 0
+    bcEMfaceZleft =  0
+    
+#    Particles Boundary condition
+#    0 = exit
+#    1 = perfect mirror
+#    2 = riemission
+    bcPfaceXright = 1
+    bcPfaceXleft =  1
+    bcPfaceYright = 1
+    bcPfaceYleft =  1
+    bcPfaceZright = 1
+    bcPfaceZleft =  1
+
+# %%%%%%%%%%%% Numerics options %%%%%%%%%%%%%%%
+verbose                = 1        # Print to video results
+Vinj                   = 0.0      # Velocity of the injection from the wall
+CGtol                  = 1E-3     # CG solver stopping criterium tolerance
+GMREStol               = 1E-8     # GMRES solver stopping criterium tolerance
+NiterMover             = 3        # mover predictor corrector iteration
+FieldOutputCycle       = 50        # Output for field
+ParticlesOutputCycle   = 1        # Output for particles (set to 1 to NOT save particles data)
+RestartOutputCycle     = 150000   # restart cycle
+DiagnosticsOutputCycle = 1        # Diagnostics cycle
