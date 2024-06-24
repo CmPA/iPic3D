@@ -2,7 +2,10 @@
 #include <iomanip>
 #include "iPic3D.h"
 #include "MyClock.h"
-#include "nvtx.h"
+
+#ifdef NSIGHT_PROFILING
+	#include "nvtx.h"
+#endif
 
 MyClock *clocks;
 

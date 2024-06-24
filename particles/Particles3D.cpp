@@ -26,8 +26,9 @@ developers: Stefano Markidis, Giovanni Lapenta
 #include "hdf5.h"
 #include <complex>
 
-#include <nvtx3/nvToolsExt.h>
-
+#ifdef NSIGHT_PROFILING
+	#include <nvtx3/nvToolsExt.h>
+#endif
 
 using std::cout;
 using std::cerr;

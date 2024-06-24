@@ -4,7 +4,10 @@
 #define NVTX_H
 
 #include <string.h>
-#include <nvtx3/nvToolsExt.h>
+
+#ifdef NSIGHT_PROFILING
+    #include <nvtx3/nvToolsExt.h>
+#endif
 
 void mynvtxstart_(const char *name);
 
