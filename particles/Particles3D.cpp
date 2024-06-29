@@ -22,6 +22,9 @@ developers: Stefano Markidis, Giovanni Lapenta
 
 #include "Particles3D.h"
 
+// #include <cublas_v2.h>
+// #include <cuda_runtime.h>
+// #include <cuda.h>
 
 #include "hdf5.h"
 #include <complex>
@@ -1426,7 +1429,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
 	#ifdef GPU
-
+			
 		double* Ex_d = Ex[0][0];
 		double* Ey_d = Ey[0][0];
 		double* Ez_d = Ez[0][0];
@@ -1444,6 +1447,11 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		double* Bz_ext_d = Bz_ext[0][0];
 
 		#ifdef GPU_PREFETCHING
+
+			if(vct->getCartesian_rank() == 0) 
+			{
+				std::cout << "Prefetching data for Particle Mover" << std::endl;
+			}
 
 			cudaMemPrefetchAsync(u, sizeof(double)*nop, 0, 0);
 			cudaMemPrefetchAsync(v, sizeof(double)*nop, 0, 0);
@@ -1543,6 +1551,11 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
 			#ifdef GPU
 
+				if((vct->getCartesian_rank() == 0) && (rest == 1) && (innter == 0))
+				{
+					std::cout << "Particle mover is running on GPUs" << std::endl;
+				}
+
 			  	double xi_0   = xp - grid->getXN(ix-1, iy  , iz  );
 				double eta_0  = yp - grid->getYN(ix  , iy-1, iz  );
 				double zeta_0 = zp - grid->getZN(ix  , iy  , iz-1);
@@ -1623,6 +1636,11 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 				Ezl += weight111 * (Ez_d[INDEX111] + Fext*Ez_ext_d[INDEX111]);
     
 			#else
+
+				if((vct->getCartesian_rank() == 0) && (rest == 1) && (innter == 0))
+				{
+					std::cout << "Particle mover is NOT running on GPUs" << std::endl;
+				}
 
 				double xi[2]; double eta[2]; double zeta[2];
 				xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
