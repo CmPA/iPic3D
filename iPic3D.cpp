@@ -59,11 +59,12 @@ int main(int argc, char **argv)
 		#endif
 		clocks->start(3);
 		b_err = KCode.ParticlesMover();
-		if (!b_err) KCode.CalculateBField();
 		clocks->stop(3);
 		#ifdef NSIGHT_PROFILING
 			mynvtxstop_();
 		#endif
+
+		if (!b_err) KCode.CalculateBField();
 
 		//* ------------------------------------------------------ *//
 
