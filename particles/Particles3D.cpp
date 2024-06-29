@@ -1426,23 +1426,25 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
 	#ifdef GPU
-		double* Bx_d = Bx[0][0];
-		double* By_d = By[0][0];
-		double* Bz_d = Bz[0][0];
-
-		double* Bx_ext_d = Bx_ext[0][0];
-		double* By_ext_d = By_ext[0][0];
-		double* Bz_ext_d = Bz_ext[0][0];
 
 		double* Ex_d = Ex[0][0];
 		double* Ey_d = Ey[0][0];
 		double* Ez_d = Ez[0][0];
 
+		double* Bx_d = Bx[0][0];
+		double* By_d = By[0][0];
+		double* Bz_d = Bz[0][0];
+
 		double* Ex_ext_d = Ex_ext[0][0];
 		double* Ey_ext_d = Ey_ext[0][0];
 		double* Ez_ext_d = Ez_ext[0][0];
 
+		double* Bx_ext_d = Bx_ext[0][0];
+		double* By_ext_d = By_ext[0][0];
+		double* Bz_ext_d = Bz_ext[0][0];
+
 		#ifdef GPU_PREFETCHING
+
 			cudaMemPrefetchAsync(u, sizeof(double)*nop, 0, 0);
 			cudaMemPrefetchAsync(v, sizeof(double)*nop, 0, 0);
 			cudaMemPrefetchAsync(w, sizeof(double)*nop, 0, 0);
@@ -1455,17 +1457,18 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 			cudaMemPrefetchAsync(Ey_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 			cudaMemPrefetchAsync(Ez_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
-			cudaMemPrefetchAsync(Ex_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(Ey_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(Ez_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-
 			cudaMemPrefetchAsync(Bx_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 			cudaMemPrefetchAsync(By_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 			cudaMemPrefetchAsync(Bz_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
+			cudaMemPrefetchAsync(Ex_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Ey_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			cudaMemPrefetchAsync(Ez_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+
 			cudaMemPrefetchAsync(Bx_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 			cudaMemPrefetchAsync(By_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 			cudaMemPrefetchAsync(Bz_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+
 		#endif
 
 	#endif
@@ -1488,7 +1491,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	// to do it by hand only hurts performance.
 	
 	//? Iterate over each particle
-	#pragma acc parallel loop copy(u[0:nop], v[0:nop], w[0:nop], Ex_d[0:nxn*nyn*nzn], Ey_d[0:nxn*nyn*nzn], Ez_d[0:nxn*nyn*nzn], Ex_ext_d[0:nxn*nyn*nzn], Ey_ext_d[0:nxn*nyn*nzn], Ez_ext_d[0:nxn*nyn*nzn], Bx_d[0:nxn*nyn*nzn], By_d[0:nxn*nyn*nzn], Bz_d[0:nxn*nyn*nzn],Bx_ext_d[0:nxn*nyn*nzn], By_ext_d[0:nxn*nyn*nzn], Bz_ext_d[0:nxn*nyn*nzn])
+	#pragma acc parallel loop copy(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop], Ex_d[0:nxn*nyn*nzn], Ey_d[0:nxn*nyn*nzn], Ez_d[0:nxn*nyn*nzn], Ex_ext_d[0:nxn*nyn*nzn], Ey_ext_d[0:nxn*nyn*nzn], Ez_ext_d[0:nxn*nyn*nzn], Bx_d[0:nxn*nyn*nzn], By_d[0:nxn*nyn*nzn], Bz_d[0:nxn*nyn*nzn],Bx_ext_d[0:nxn*nyn*nzn], By_ext_d[0:nxn*nyn*nzn], Bz_ext_d[0:nxn*nyn*nzn])
 	for (long long rest = 0; rest < nop; rest++) 
 	{
 		//? Copy the position of the particle
