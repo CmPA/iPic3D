@@ -12,11 +12,14 @@ find_package(HDF5 COMPONENTS HL C REQUIRED)
 find_package(MPI REQUIRED)
 
 #
-# Find PETSc
+# PETSc
 #
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 
-
+#
+# CUDA
+#
+set (CMAKE_CXX_FLAGS "-cuda")
 
 #
 # Options
@@ -27,33 +30,26 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release CACHE STRING "Chose the type of build, options are: None, Debug, Release, RelWithDebInfo, MinSizeRel" FORCE)
 endif()
 
-option(GPU "Compile options for GPU" OFF)
+option(GPU "GPU offloading" OFF)
 if(GPU)
 	add_definitions( -DGPU )
- endif()
+endif()
 
-option(GPU_PREFETCHING "Prefetch memory in GPU; needs cuda" OFF)
+option(GPU_PREFETCHING "Prefetch memory on GPU; needs CUDA" OFF)
 if(GPU_PREFETCHING)
 	add_definitions( -DGPU_PREFETCHING )
 endif()
 
-option(NSIGHT_PROFILING "Compile options for GPU" OFF)
+option(NSIGHT_PROFILING "Nsight Profing" OFF)
 if (NSIGHT_PROFILING)
 	set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc70,managed,lineinfo -Minfo=accel")
 	add_definitions( -DNSIGHT_PROFILING )
 endif()
 
 #
-# NSIGHTS
-#
-# set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc70,managed,lineinfo -Minfo=accel")
-
-#
 # Include sub-directories
 #
-
 add_subdirectory(main)
-
 include_directories(
     include
     ${MPI_INCLUDE_PATH}
@@ -77,7 +73,6 @@ add_executable(
 #
 # Libraries linked
 #
-
 target_link_libraries(
     iPic3D
     iPic3Dlib
