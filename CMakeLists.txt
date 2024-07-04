@@ -17,9 +17,10 @@ find_package(MPI REQUIRED)
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 
 #
-# CUDA
+# GPU
 #
-set (CMAKE_CXX_FLAGS "-cuda")
+set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc80,lineinfo -Minfo=accel")
+# set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc80,managed,lineinfo -Minfo=accel")
 
 #
 # Options
@@ -42,7 +43,6 @@ endif()
 
 option(NSIGHT_PROFILING "Nsight Profing" OFF)
 if (NSIGHT_PROFILING)
-	set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc70,managed,lineinfo -Minfo=accel")
 	add_definitions( -DNSIGHT_PROFILING )
 endif()
 
