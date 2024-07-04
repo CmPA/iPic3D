@@ -22,9 +22,10 @@ developers: Stefano Markidis, Giovanni Lapenta
 
 #include "Particles3D.h"
 
-// #include <cublas_v2.h>
-// #include <cuda_runtime.h>
-// #include <cuda.h>
+#include "../cuda_error_check.hpp"
+#include <openacc.h>
+#include <cuda_runtime.h>
+#include <cuda.h>
 
 #include "hdf5.h"
 #include <complex>
@@ -42,6 +43,17 @@ using std::endl;
 #define MIN_VAL   1E-16
 // particles processed together
 #define P_SAME_TIME 2
+
+#define CHECK_CUDA_ERROR(call)                                                \
+    do {                                                                      \
+        cudaError_t err = call;                                               \
+        if (err != cudaSuccess) {                                             \
+            std::cerr << "CUDA error in file " << __FILE__                    \
+                      << " at line " << __LINE__ << ": "                      \
+                      << cudaGetErrorString(err) << std::endl;                \
+            exit(EXIT_FAILURE);                                               \
+        }                                                                     \
+    } while (0)
 
 /**
  * 
@@ -944,131 +956,6 @@ int Particles3D::monoenergetic_box(Grid* grid,Field* EMf,VirtualTopology3D* vct,
 	return nop;
 }
 
-
-/*
-int Particles3D::getGlobalFlux(int i){
-    int glob = 0;
-
-    //we should check that i is not greater than nFluxLoops
-    if (i > 1)
-        return -1;
-
-    MPI_Allreduce(&fluxCounter[i], &glob, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    return(glob);
-}
-
-double Particles3D::getGlobalFluxEnergy(int i){
-    double glob = 0;
-
-    //we should check that i is not greater than nFluxLoops
-    if (i > 1)
-        return -1;
-
-    MPI_Allreduce(&fluxEnergy[i], &glob, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
-    return(glob);
-}
-
-
-double getGlobalFluxEnergy(int i);
-int getGlobalFlux(int i);
- double fluxCounter[1];
- double fluxEnergy[1];
-void Particles3D::recordFlux(double oldX, double oldY, double oldZ, double newX, double newY, double newZ, int ptcl)
-{
-	double interpX, interpY, interpZ, centerX, centerY, centerZ;
-	centerX = Lx/2.0;
-	centerY = Ly/2.0;
-	centerZ = Lz/2.0;
-
-	int nFluxLoops = 1;
-	int fluxPlane[1] = {1};
-	double fluxCenterX[1], fluxCenterY[1], fluxCenterZ[1];
-	fluxCenterY[0] = fluxCenterZ[0] = centerY;
-	fluxCenterX[0] = centerX+30;
-	double fluxRadius[1] = {12};
-
-	for (int i = 0; i < nFluxLoops; i++)
-	{
-
-			switch(fluxPlane[i]){
-				case 1:				//the case where the fluxLoop is normal to the x-plane
-
-					//interpolate the coordinates up to the position of the flux-loop
-					interpY = oldY + (newY-oldY)*(fluxCenterX[i]-oldX)/(newX-oldX);
-					interpZ = oldZ + (newZ-oldZ)*(fluxCenterX[i]-oldX)/(newX-oldX);
-
-					//check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
-					if (oldX-centerX < fluxCenterX[i]-centerX && newX-centerX > fluxCenterX[i]-centerX &&
-						pow(interpY-fluxCenterY[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]++;
-						fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
-
-					//check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
-					else if (oldX-centerX > fluxCenterX[i]-centerX && newX-centerX < fluxCenterX[i]-centerX &&
-						pow(interpY-fluxCenterY[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]--;
-						fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
-				break;
-
-				case 2:				//the case where the fluxLoop is normal to the y-plane
-
-					//interpolate the coordinates up to the position of the flux-loop
-					interpX = oldX + (newX-oldX)*(fluxCenterY[i]-oldY)/(newY-oldY);
-					interpZ = oldZ + (newZ-oldZ)*(fluxCenterY[i]-oldY)/(newY-oldY);
-
-					//check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
-					if (oldY-centerY < fluxCenterY[i]-centerY && newY-centerY > fluxCenterY[i]-centerY &&
-						pow(interpX-fluxCenterX[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]++;
-						fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
-
-					//check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
-					else if (oldY-centerY > fluxCenterY[i]-centerY && newY-centerY < fluxCenterY[i]-centerY &&
-						pow(interpX-fluxCenterX[i], 2.0) + pow(interpZ-fluxCenterZ[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]--;
-						fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
-				break;
-
-				case 3:				//the case where the fluxLoop is normal to the z-plane
-
-					//interpolate the coordinates up to the position of the flux-loop
-					interpX = oldX + (newX-oldX)*(fluxCenterY[i]-oldY)/(newY-oldY);
-					interpY = oldZ + (newZ-oldZ)*(fluxCenterY[i]-oldY)/(newY-oldY);
-
-					//check if the particle has gone from the center of the machine, though the loop, to the outside of the machine
-					if (oldZ-centerZ < fluxCenterZ[i]-centerZ && newZ-centerZ > fluxCenterZ[i]-centerZ &&
-						pow(interpX-fluxCenterX[i], 2.0) + pow(interpY-fluxCenterY[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]++;
-						fluxEnergy[i] += 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
-
-					//check if the particle has gone from outside the center of the machine, though the loop, to the inside of the machine
-					else if (oldZ-centerZ > fluxCenterZ[i]-centerZ && newZ-centerZ < fluxCenterZ[i]-centerZ &&
-						pow(interpX-fluxCenterX[i], 2.0) + pow(interpY-fluxCenterY[i], 2.0) < pow(fluxRadius[i], 2.0) )
-					{
-						fluxCounter[i]--;
-						fluxEnergy[i] -= 0.5*getQ(ptcl)*(pow(getU(ptcl), 2.0)+pow(getV(ptcl), 2.0)+pow(getW(ptcl), 2.0))/qom;
-					}
-				break;
-
-				default:
-				break;
-		}
-	}
-
-}
-
-*/
-
 /**Add a periodic perturbation in J exp i(kx - \omega t); deltaBoB is the ratio (Delta B / B0) **/
 void Particles3D::AddPerturbationJ(double deltaBoB, double kx, double ky, double Bx_mod, double By_mod, double Bz_mod, double jx_mod, double jx_phase, double jy_mod, double jy_phase, double jz_mod, double jz_phase, double B0, Grid * grid) {
 
@@ -1167,237 +1054,6 @@ void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, 
         l = l + 1;
       }
 }
-/** mover with a Predictor-Corrector scheme */
-// int Particles3D::mover_PC_old(Grid* grid,VirtualTopology3D* vct, Field* EMf){
-
-
-// 	int avail;
-// 	double dto2 = .5*dt, qomdt2 = qom*dto2/c;
-// 	double omdtsq[P_SAME_TIME], denom[P_SAME_TIME], ut[P_SAME_TIME], vt[P_SAME_TIME], wt[P_SAME_TIME], udotb[P_SAME_TIME];
-// 	double Exl[P_SAME_TIME], Eyl[P_SAME_TIME], Ezl[P_SAME_TIME], Bxl[P_SAME_TIME], Byl[P_SAME_TIME], Bzl[P_SAME_TIME];
-// 	double Exlp[P_SAME_TIME], Eylp[P_SAME_TIME], Ezlp[P_SAME_TIME], Bxlp[P_SAME_TIME], Bylp[P_SAME_TIME], Bzlp[P_SAME_TIME];
-// 	double xptilde[P_SAME_TIME], yptilde[P_SAME_TIME], zptilde[P_SAME_TIME], uptilde[P_SAME_TIME], vptilde[P_SAME_TIME], wptilde[P_SAME_TIME];
-// 	double xp[P_SAME_TIME], yp[P_SAME_TIME], zp[P_SAME_TIME], up[P_SAME_TIME], vp[P_SAME_TIME], wp[P_SAME_TIME];
-// 	double ixd[P_SAME_TIME], iyd[P_SAME_TIME], izd[P_SAME_TIME];
-// 	int ix[P_SAME_TIME], iy[P_SAME_TIME], iz[P_SAME_TIME];
-// 	double weight[P_SAME_TIME][2][2][2];
-// 	double xi[2]; double eta[2]; double zeta[2];
-// 	double inv_dx = 1.0/dx, inv_dy = 1.0/dy, inv_dz = 1.0/dz;
-// 	double Fext = EMf->getFext();
-
-// 	if(Gravity)
-// 		Fext /= qom;
-
-// 	if (vct->getCartesian_rank()==0){
-// 		cout << "*** MOVER species " << ns << " ***" << NiterMover <<" ITERATIONS   ****" << "Fext=" << Fext << endl;
-// 	}
-
-// 	// move each particle with new fields: MOVE P_SAME_TIME PARTICLES AT THE SAME TIME TO ALLOW AUTOVECTORIZATION
-// 	int i;
-// 	for (i=0; i <  (nop-(P_SAME_TIME-1)); i+=P_SAME_TIME){
-// 		  // copy x, y, z
-// 		  for (int p = 0; p < P_SAME_TIME; p++){
-// 		      xp[p] = x[i+p];   yp[p] = y[i+p];   zp[p] = z[i+p];
-// 			  up[p] = u[i+p];   vp[p] = v[i+p];   wp[p] = w[i+p];
-// 		  }
-// 		  for (int p = 0; p < P_SAME_TIME; p++){ // VECTORIZED
-// 		    xptilde[p] = xp[p]; yptilde[p] = yp[p]; zptilde[p] = zp[p];
-// 		  }
-// 		// calculate the average velocity iteratively
-// 		for(int innter=0; innter < NiterMover; innter++){
-// 			// interpolation G-->P
-// 			for(int p=0; p < P_SAME_TIME; p++) ixd[p] = floor((xp[p] - xstart)*inv_dx);  // VECTORIZED
-// 			for(int p=0; p < P_SAME_TIME; p++) iyd[p] = floor((yp[p] - ystart)*inv_dy);  // VECTORIZED
-// 			for(int p=0; p < P_SAME_TIME; p++) izd[p] = floor((zp[p] - zstart)*inv_dz);  // VECTORIZED
-// 			for(int p=0; p < P_SAME_TIME; p++){ ix[p] = 2 + int(ixd[p]); iy[p] = 2 + int(iyd[p]); iz[p] = 2 + int(izd[p]);}
-// 			// check if they are out of the boundary
-// 			for(int p=0; p < P_SAME_TIME; p++){ if(ix[p] < 1) ix[p] = 1;}
-// 			for(int p=0; p < P_SAME_TIME; p++){ if(iy[p] < 1) iy[p] = 1;}
-// 			for(int p=0; p < P_SAME_TIME; p++){ if(iz[p] < 1) iz[p] = 1;}
-// 			for(int p=0; p < P_SAME_TIME; p++){ if(ix[p] > nxn-1) ix[p] = nxn-1;}
-// 			for(int p=0; p < P_SAME_TIME; p++){ if(iy[p] > nyn-1) iy[p] = nyn-1;}
-// 			for(int p=0; p < P_SAME_TIME; p++){ if(iz[p] > nzn-1) iz[p] = nzn-1;}
-
-// 		    // CALCULATE WEIGHTS
-//             for(int p=0; p < P_SAME_TIME; p++){
-// 		       xi[0]   = xp[p] - grid->getXN(ix[p]-1,iy[p],iz[p]); eta[0]  = yp[p] - grid->getYN(ix[p],iy[p]-1,iz[p]); zeta[0] = zp[p] - grid->getZN(ix[p],iy[p],iz[p]-1);
-// 		       xi[1]   = grid->getXN(ix[p],iy[p],iz[p]) - xp[p];   eta[1]  = grid->getYN(ix[p],iy[p],iz[p]) - yp[p];   zeta[1] = grid->getZN(ix[p],iy[p],iz[p]) - zp[p];
-//                for (int ii=0; ii < 2; ii++)
-// 		         for (int jj=0; jj < 2; jj++)
-// 			       for(int kk=0; kk < 2; kk++)
-//     			      weight[p][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
-// 			}
-// 	        // clear the electric and the magnetic field field acting on the particles
-// 			for (int p = 0; p < P_SAME_TIME; p++){Exl[p]=0.0; Eyl[p] = 0.0; Ezl[p] = 0.0; Bxl[p] = 0.0; Byl[p] = 0.0; Bzl[p] = 0.0;}
-// 			// calculate fields acting on the particles
-// 			for (int ii=0; ii < 2; ii++)
-// 			  for (int jj=0; jj < 2; jj++)
-// 				for(int kk=0; kk < 2; kk++){
-// 				   for(int p = 0; p < P_SAME_TIME; p++){
-// 				     Exlp[p] = EMf->getEx(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Eylp[p] = EMf->getEy(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Ezlp[p] = EMf->getEz(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Bxlp[p] = EMf->getBx(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Bylp[p] = EMf->getBy(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Bzlp[p] = EMf->getBz(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     // Add external fields
-// 				     Exlp[p] += Fext * EMf->getEx_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Eylp[p] += Fext * EMf->getEy_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Ezlp[p] += Fext * EMf->getEz_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Bxlp[p] += Fext * EMf->getBx_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Bylp[p] += Fext * EMf->getBy_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				     Bzlp[p] += Fext * EMf->getBz_ext(ix[p] - ii,iy[p] -jj,iz[p] - kk);
-// 				   }
-// 				   for(int p = 0; p < P_SAME_TIME; p++){ // VECTORIZED
-// 				      Exlp[p] = weight[p][ii][jj][kk]*Exlp[p];
-// 					  Eylp[p] = weight[p][ii][jj][kk]*Eylp[p];
-// 				      Ezlp[p] = weight[p][ii][jj][kk]*Ezlp[p];
-// 					  Bxlp[p] = weight[p][ii][jj][kk]*Bxlp[p];
-// 				      Bylp[p] = weight[p][ii][jj][kk]*Bylp[p];
-// 				      Bzlp[p] = weight[p][ii][jj][kk]*Bzlp[p];
-// 				   }
-// 				   // finished with the two particles: add the contributions
-// 				   for(int p = 0; p < P_SAME_TIME; p++){
-// 				      Exl[p] += Exlp[p]; Eyl[p] += Eylp[p]; Ezl[p] += Ezlp[p];
-// 					  Bxl[p] += Bxlp[p]; Byl[p] += Bylp[p]; Bzl[p] += Bzlp[p];
-// 				   }
-
-// 				}
-// 			// end interpolation
-// 			for(int p = 0; p < P_SAME_TIME; p++){ // PARTIALLY VECTORIZED
-// 			   omdtsq[p] = qomdt2*qomdt2*(Bxl[p]*Bxl[p]+Byl[p]*Byl[p]+Bzl[p]*Bzl[p]);
-// 			   denom[p] = 1.0/(1.0 + omdtsq[p]);
-// 			   // solve the position equation
-// 			   ut[p]= up[p] + qomdt2*Exl[p];
-// 			   vt[p]= vp[p] + qomdt2*Eyl[p];
-// 			   wt[p]= wp[p] + qomdt2*Ezl[p];
-// 			   udotb[p] = ut[p]*Bxl[p] + vt[p]*Byl[p] + wt[p]*Bzl[p];
-// 			   // solve the velocity equation
-// 			   uptilde[p] = (ut[p]+qomdt2*(vt[p]*Bzl[p] -wt[p]*Byl[p] + qomdt2*udotb[p]*Bxl[p]))*denom[p];
-// 			   vptilde[p] = (vt[p]+qomdt2*(wt[p]*Bxl[p] -ut[p]*Bzl[p] + qomdt2*udotb[p]*Byl[p]))*denom[p];
-// 			   wptilde[p] = (wt[p]+qomdt2*(ut[p]*Byl[p] -vt[p]*Bxl[p] + qomdt2*udotb[p]*Bzl[p]))*denom[p];
-// 			   // update position
-// 			   xp[p] = xptilde[p] + uptilde[p]*dto2;
-// 			   yp[p] = yptilde[p] + vptilde[p]*dto2;
-// 			   zp[p] = zptilde[p] + wptilde[p]*dto2;
-// 			}
-// 	} // end of iteration
-// 		// update the final position and velocity
-// 		for(int p=0; p < P_SAME_TIME; p++){ // VECTORIZED
-// 		    up[p]= 2.0*uptilde[p] - up[p];
-// 		    vp[p]= 2.0*vptilde[p] - vp[p];
-// 		    wp[p]= 2.0*wptilde[p] - wp[p];
-// 			xp[p] = xptilde[p] + uptilde[p]*dt;
-// 			yp[p] = yptilde[p] + vptilde[p]*dt;
-// 			zp[p] = zptilde[p] + wptilde[p]*dt;
-// 		}
-// 		// copy back the particles in the array
-// 		for(int p=0; p < P_SAME_TIME; p++){
-// 		  x[i+p]   = xp[p]; y[i+p]   = yp[p]; z[i+p]   = zp[p];
-// 		  u[i+p]   = up[p]; v[i+p]   = vp[p]; w[i+p]   = wp[p];
-// 		}
-
-// 	}
-// 	// FINISH WITH PARTICLE LEFT, IF ANY (EVEN NUMBER OF PARTICLES)
-// 	// move each particle with new fields
-// 	for (int rest = (i+1); rest <  nop; rest++){
-// 	    // copy the particle
-// 		xp[0] = x[rest];   yp[0] = y[rest];   zp[0] = z[rest];   up[0] = u[rest];   vp[0] = v[rest];   wp[0] = w[rest];
-// 		xptilde[0] = x[rest];
-// 		yptilde[0] = y[rest];
-// 		zptilde[0] = z[rest];
-// 		// calculate the average velocity iteratively
-// 		for(int innter=0; innter < 1; innter++){
-// 			// interpolation G-->P
-// 			ixd[0] = floor((xp[0]-xstart)*inv_dx);
-// 			iyd[0] = floor((yp[0]-ystart)*inv_dy);
-// 			izd[0] = floor((zp[0]-zstart)*inv_dz);
-// 			ix[0] = 2 +  int(ixd[0]);
-// 			iy[0] = 2 +  int(iyd[0]);
-// 			iz[0] = 2 +  int(izd[0]);
-// 			if(ix[0] < 1) ix[0] = 1;
-// 			if(iy[0] < 1) iy[0] = 1;
-// 			if(iz[0] < 1) iz[0] = 1;
-// 			if(ix[0] > nxn-1) ix[0] = nxn-1;
-// 			if(iy[0] > nyn-1) iy[0] = nyn-1;
-// 			if(iz[0] > nzn-1) iz[0] = nzn-1;
-
-// 			xi[0]   = xp[0] - grid->getXN(ix[0]-1,iy[0],iz[0]); eta[0]  = yp[0] - grid->getYN(ix[0],iy[0]-1,iz[0]); zeta[0] = zp[0] - grid->getZN(ix[0],iy[0],iz[0]-1);
-//             xi[1]   = grid->getXN(ix[0],iy[0],iz[0]) - xp[0];   eta[1]  = grid->getYN(ix[0],iy[0],iz[0]) - yp[0];   zeta[1] = grid->getZN(ix[0],iy[0],iz[0]) - zp[0];
-//             for (int ii=0; ii < 2; ii++)
-// 		      for (int jj=0; jj < 2; jj++)
-// 			     for(int kk=0; kk < 2; kk++)
-// 				   weight[0][ii][jj][kk] = xi[ii]*eta[jj]*zeta[kk]*invVOL;
-
-//     		Exl[0]=0.0, Eyl[0] = 0.0, Ezl[0] = 0.0, Bxl[0] = 0.0, Byl[0] = 0.0, Bzl[0] = 0.0;
-//             for (int ii=0; ii < 2; ii++)
-// 				for (int jj=0; jj < 2; jj++)
-// 					for(int kk=0; kk < 2; kk++){
-// 						Exlp[0] = weight[0][ii][jj][kk]*EMf->getEx(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-// 						Eylp[0] = weight[0][ii][jj][kk]*EMf->getEy(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-// 						Ezlp[0] = weight[0][ii][jj][kk]*EMf->getEz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-// 						Bxlp[0] = weight[0][ii][jj][kk]*EMf->getBx(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-// 						Bylp[0] = weight[0][ii][jj][kk]*EMf->getBy(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-// 						Bzlp[0] = weight[0][ii][jj][kk]*EMf->getBz(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-
-// 						Exlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEx_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-// 					    Eylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEy_ext(ix[0] - ii,iy[0] -jj,iz[0]- kk );
-// 						Ezlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getEz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-// 						Bxlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBx_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-// 						Bylp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBy_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-// 						Bzlp[0] += Fext * weight[0][ii][jj][kk]*EMf->getBz_ext(ix[0] - ii,iy[0] -jj,iz[0] -kk );
-
-// 						Exl[0] += Exlp[0];
-// 						Eyl[0] += Eylp[0];
-// 						Ezl[0] += Ezlp[0];
-// 						Bxl[0] += Bxlp[0];
-// 						Byl[0] += Bylp[0];
-// 						Bzl[0] += Bzlp[0];
-// 					}
-// 			// end interpolation
-// 	    	omdtsq[0] = qomdt2*qomdt2*(Bxl[0]*Bxl[0]+Byl[0]*Byl[0]+Bzl[0]*Bzl[0]);
-// 			denom[0] = 1.0/(1.0 + omdtsq[0]);
-// 			// solve the position equation
-// 			ut[0]= up[0] + qomdt2*Exl[0];
-// 			vt[0]= vp[0] + qomdt2*Eyl[0];
-// 			wt[0]= wp[0] + qomdt2*Ezl[0];
-// 			udotb[0] = ut[0]*Bxl[0] + vt[0]*Byl[0] + wt[0]*Bzl[0];
-// 			// solve the velocity equation
-// 			uptilde[0] = (ut[0]+qomdt2*(vt[0]*Bzl[0] -wt[0]*Byl[0] + qomdt2*udotb[0]*Bxl[0]))*denom[0];
-// 			vptilde[0] = (vt[0]+qomdt2*(wt[0]*Bxl[0] -ut[0]*Bzl[0] + qomdt2*udotb[0]*Byl[0]))*denom[0];
-// 			wptilde[0] = (wt[0]+qomdt2*(ut[0]*Byl[0] -vt[0]*Bxl[0] + qomdt2*udotb[0]*Bzl[0]))*denom[0];
-// 			// update position
-// 			xp[0] = xptilde[0] + uptilde[0]*dto2;
-// 			yp[0] = yptilde[0] + vptilde[0]*dto2;
-// 			zp[0] = zptilde[0] + wptilde[0]*dto2;
-// 		} // end of iteration
-// 		// update the final position and velocity
-// 		up[0]= 2.0*uptilde[0] - u[rest];
-// 		vp[0]= 2.0*vptilde[0] - v[rest];
-// 		wp[0]= 2.0*wptilde[0] - w[rest];
-// 		xp[0] = xptilde[0] + uptilde[0]*dt;
-// 		yp[0] = yptilde[0] + vptilde[0]*dt;
-// 		zp[0] = zptilde[0] + wptilde[0]*dt;
-// 		x[rest]   = xp[0]; y[rest]   = yp[0]; z[rest]   = zp[0]; u[rest]   = up[0]; v[rest]   = vp[0]; w[rest]   = wp[0];
-// 	} // END OF ALL THE PARTICLES
-
-// 	//********************//
-// 	// COMMUNICATION
-// 	// *******************//
-//     avail = communicate(vct);
-//     if (avail < 0)
-// 		return(-1);
-//     MPI_Barrier(MPI_COMM_WORLD);
-//     // communicate again if particles are not in the correct domain
-//     while(isMessagingDone(vct) >0){
-//      // COMMUNICATION
-// 	 avail = communicate(vct);
-// 	 if (avail < 0)
-// 	        return(-1);
-//      MPI_Barrier(MPI_COMM_WORLD);
-//   }
-//   return(0); // exit succcesfully (hopefully)
-// }
 
 //? ===================================================================================================================== ?//
 
@@ -1408,9 +1064,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	{
 		cout << "*** MOVER species " << ns << " ***" << " with " << nop << " particles; **** " << NiterMover << " ITERATIONS   ****" << endl;
 	}
-	
-	//TODO: where is this used?
-	double start_mover_PC = MPI_Wtime();
 
 	double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
 	double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
@@ -1446,36 +1099,47 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		double* By_ext_d = By_ext[0][0];
 		double* Bz_ext_d = Bz_ext[0][0];
 
+		// double* u_d; cudaMallocManaged(&u_d, sizeof(double)*N);
+		// double* v_d; cudaMallocManaged(&v_d, sizeof(double)*N);
+		// double* w_d; cudaMallocManaged(&w_d, sizeof(double)*N);
+
+		// cudaMemcpy(u_d, &u[0], sizeof(double)*N, cudaMemcpyHostToDevice);
+		// cudaMemcpy(v_d, &v[0], sizeof(double)*N, cudaMemcpyHostToDevice);
+		// cudaMemcpy(w_d, &w[0], sizeof(double)*N, cudaMemcpyHostToDevice);
+
+		// double* x_d; cudaMallocManaged(&x_d, sizeof(double)*N);
+		// double* y_d; cudaMallocManaged(&y_d, sizeof(double)*N);
+		// double* z_d; cudaMallocManaged(&z_d, sizeof(double)*N);
+
+		// cudaMemcpy(x_d, &x[0], sizeof(double)*N, cudaMemcpyHostToDevice);
+		// cudaMemcpy(y_d, &y[0], sizeof(double)*N, cudaMemcpyHostToDevice);
+		// cudaMemcpy(z_d, &z[0], sizeof(double)*N, cudaMemcpyHostToDevice);
+
 		#ifdef GPU_PREFETCHING
 
-			if(vct->getCartesian_rank() == 0) 
-			{
-				std::cout << "Prefetching data for Particle Mover" << std::endl;
-			}
-
-			cudaMemPrefetchAsync(u, sizeof(double)*nop, 0, 0);
-			cudaMemPrefetchAsync(v, sizeof(double)*nop, 0, 0);
-			cudaMemPrefetchAsync(w, sizeof(double)*nop, 0, 0);
+			// gpuErrchk(cudaMemPrefetchAsync(u, sizeof(double)*nop, 0, 0));
+			// cudaMemPrefetchAsync(v, sizeof(double)*nop, 0, 0);
+			// cudaMemPrefetchAsync(w, sizeof(double)*nop, 0, 0);
 			
-			cudaMemPrefetchAsync(x, sizeof(double)*nop, 0, 0);
-			cudaMemPrefetchAsync(y, sizeof(double)*nop, 0, 0);
-			cudaMemPrefetchAsync(z, sizeof(double)*nop, 0, 0);
+			// cudaMemPrefetchAsync(x, sizeof(double)*nop, 0, 0);
+			// cudaMemPrefetchAsync(y, sizeof(double)*nop, 0, 0);
+			// cudaMemPrefetchAsync(z, sizeof(double)*nop, 0, 0);
 			
-			cudaMemPrefetchAsync(Ex_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(Ey_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(Ez_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ex_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ey_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ez_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
-			cudaMemPrefetchAsync(Bx_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(By_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(Bz_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Bx_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(By_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Bz_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
-			cudaMemPrefetchAsync(Ex_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(Ey_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(Ez_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ex_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ey_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Ez_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
-			cudaMemPrefetchAsync(Bx_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(By_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			cudaMemPrefetchAsync(Bz_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Bx_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(By_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
+			// cudaMemPrefetchAsync(Bz_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
 		#endif
 
@@ -1499,7 +1163,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	// to do it by hand only hurts performance.
 	
 	//? Iterate over each particle
-	#pragma acc parallel loop copy(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop], Ex_d[0:nxn*nyn*nzn], Ey_d[0:nxn*nyn*nzn], Ez_d[0:nxn*nyn*nzn], Ex_ext_d[0:nxn*nyn*nzn], Ey_ext_d[0:nxn*nyn*nzn], Ez_ext_d[0:nxn*nyn*nzn], Bx_d[0:nxn*nyn*nzn], By_d[0:nxn*nyn*nzn], Bz_d[0:nxn*nyn*nzn],Bx_ext_d[0:nxn*nyn*nzn], By_ext_d[0:nxn*nyn*nzn], Bz_ext_d[0:nxn*nyn*nzn])
+	#pragma acc parallel loop copyin(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop], Ex_d[0:nxn*nyn*nzn], Ey_d[0:nxn*nyn*nzn], Ez_d[0:nxn*nyn*nzn], Ex_ext_d[0:nxn*nyn*nzn], Ey_ext_d[0:nxn*nyn*nzn], Ez_ext_d[0:nxn*nyn*nzn], Bx_d[0:nxn*nyn*nzn], By_d[0:nxn*nyn*nzn], Bz_d[0:nxn*nyn*nzn],Bx_ext_d[0:nxn*nyn*nzn], By_ext_d[0:nxn*nyn*nzn], Bz_ext_d[0:nxn*nyn*nzn]) copyout(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop])
 	for (long long rest = 0; rest < nop; rest++) 
 	{
 		//? Copy the position of the particle
@@ -1550,11 +1214,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 				iz = nzn - 1;
 
 			#ifdef GPU
-
-				if((vct->getCartesian_rank() == 0) && (rest == 1) && (innter == 0))
-				{
-					std::cout << "Particle mover is running on GPUs" << std::endl;
-				}
 
 			  	double xi_0   = xp - grid->getXN(ix-1, iy  , iz  );
 				double eta_0  = yp - grid->getYN(ix  , iy-1, iz  );
@@ -1633,7 +1292,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 				Ezl += weight100 * (Ez_d[INDEX100] + Fext*Ez_ext_d[INDEX100]);
 				Ezl += weight101 * (Ez_d[INDEX101] + Fext*Ez_ext_d[INDEX101]);
 				Ezl += weight110 * (Ez_d[INDEX110] + Fext*Ez_ext_d[INDEX110]);
-				Ezl += weight111 * (Ez_d[INDEX111] + Fext*Ez_ext_d[INDEX111]);
+				Ezl += weight111 * (Ez_d[INDEX111] + Fext*Ez_ext_d[INDEX111]);				
     
 			#else
 
@@ -1713,8 +1372,11 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 				Ezl += weight110 * (Ez[ix - 1][iy - 1][iz] 	   + Fext * Ez_ext[ix - 1][iy - 1][iz]);
 				Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
 				
-			//? end interpolation
+			//? End of computation of average velocity
 			#endif
+
+			//! Synchronise all threads (else you run into incorrect memory accesses)
+			#pragma acc wait
 
 			const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
 			const double denom = 1.0 / (1.0 + omdtsq);
@@ -1751,8 +1413,12 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		u[rest] = up;
 		v[rest] = vp;
 		w[rest] = wp;
+
+
+		// gpuErrchk(cudaPeekAtLastError());
+		// gpuErrchk(cudaDeviceSynchronize());
 	
-	//* END OF ALL THE PARTICLES
+	//* END OF ALL THE PARTICLES (end of #pragma acc parallel loop)
 	}
 
 	#ifdef NSIGHT_PROFILING
@@ -3693,3 +3359,4 @@ int Particles3D::injector_rand_box_mono(Grid* grid,VirtualTopology3D* vct, Field
 
 }
 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
