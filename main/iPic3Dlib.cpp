@@ -384,7 +384,7 @@ bool c_Solver::ParticlesMover()
 	{
 		if(cylindrical)
 		{
-			// mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
+			mem_avail = part[i].mover_PC_sub_cyl(grid, vct, EMf); // use the Predictor Corrector scheme
 		}
 		else
 		{
