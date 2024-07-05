@@ -29,140 +29,182 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-/*! Electromagnetic fields and sources defined for each local grid, and for an implicit maxwell's solver @date May 2008 @par Copyright: (C) 2008 KUL @author Stefano Markidis, Giovanni Lapenta. @version 3.0 */
+//! ======================================================================== !//
 
-// class to accumulate node-centered species moments
-// 
-class Moments {
-  private:
-    double invVOL;
-    double ***rho;
+//! Electromagnetic fields and sources defined for each local grid, and for an implicit Maxwell's solver @date May 2008 @par Copyright: (C) 2008 KUL @author Stefano Markidis, Giovanni Lapenta. @version 3.0 !//
 
-    /** current density, defined on nodes */
-    double ***Jx;
-    double ***Jy;
-    double ***Jz;
+//? Class to accumulate node-centered species moments
 
-    /** pressure tensor components, defined on nodes */
-    double ***pXX;
-    double ***pXY;
-    double ***pXZ;
-    double ***pYY;
-    double ***pYZ;
-    double ***pZZ;
-    int nx;
-    int ny;
-    int nz;
-  public:
-    int get_nx() const {
-      return nx;
-    }
-    int get_ny() const {
-      return ny;
-    }
-    int get_nz() const {
-      return nz;
-    }
-    double get_invVOL() const {
-      return invVOL;
-    }
-    double get_rho(int i, int j, int k) const {
-      return rho[i][j][k];
-    }
-    double get_Jx(int i, int j, int k) const {
-      return Jx[i][j][k];
-    }
-    double get_Jy(int i, int j, int k) const {
-      return Jy[i][j][k];
-    }
-    double get_Jz(int i, int j, int k) const {
-      return Jz[i][j][k];
-    }
-    double get_pXX(int i, int j, int k) const {
-      return pXX[i][j][k];
-    }
-    double get_pXY(int i, int j, int k) const {
-      return pXY[i][j][k];
-    }
-    double get_pXZ(int i, int j, int k) const {
-      return pXZ[i][j][k];
-    }
-    double get_pYY(int i, int j, int k) const {
-      return pYY[i][j][k];
-    }
-    double get_pYZ(int i, int j, int k) const {
-      return pYZ[i][j][k];
-    }
-    double get_pZZ(int i, int j, int k) const {
-      return pZZ[i][j][k];
-    }
-  public:
-    Moments() {
-    };
-    Moments(int nx_, int ny_, int nz_, double invVOL_);
-    ~Moments();
-    void set_to_zero();
-    void addRho(double weight[][2][2], int X, int Y, int Z);
-    void addJx(double weight[][2][2], int X, int Y, int Z);
-    void addJy(double weight[][2][2], int X, int Y, int Z);
-    void addJz(double weight[][2][2], int X, int Y, int Z);
+class Moments 
+{
+	private:
+		double invVOL;
+		double ***rho;
 
-    void addPxx(double weight[][2][2], int X, int Y, int Z);
-    void addPxy(double weight[][2][2], int X, int Y, int Z);
-    void addPxz(double weight[][2][2], int X, int Y, int Z);
-    void addPyy(double weight[][2][2], int X, int Y, int Z);
-    void addPyz(double weight[][2][2], int X, int Y, int Z);
-    void addPzz(double weight[][2][2], int X, int Y, int Z);
-};
+		//* Current Density (computed on nodes) *//
+		double ***Jx;
+		double ***Jy;
+		double ***Jz;
 
-// construct empty instance (not zeroed)
-inline Moments::Moments(int nx_, int ny_, int nz_, double invVOL_) {
-  nx = nx_;
-  ny = ny_;
-  nz = nz_;
-  invVOL = invVOL_;
-  rho = newArr3(double, nx, ny, nz);
-  Jx = newArr3(double, nx, ny, nz);
-  Jy = newArr3(double, nx, ny, nz);
-  Jz = newArr3(double, nx, ny, nz);
-  pXX = newArr3(double, nx, ny, nz);
-  pXY = newArr3(double, nx, ny, nz);
-  pXZ = newArr3(double, nx, ny, nz);
-  pYY = newArr3(double, nx, ny, nz);
-  pYZ = newArr3(double, nx, ny, nz);
-  pZZ = newArr3(double, nx, ny, nz);
+		//* Pressure Tensor (computed on nodes) *//
+		double ***pXX;
+		double ***pXY;
+		double ***pXZ;
+		double ***pYY;
+		double ***pYZ;
+		double ***pZZ;
+
+		//* Grid Points *//
+		int nx;
+		int ny;
+		int nz;
+
+	public:
+		int get_nx() const 
+		{
+			return nx;
+		}
+		int get_ny() const 
+		{
+			return ny;
+		}
+		int get_nz() const 
+		{
+			return nz;
+		}
+		double get_invVOL() const 
+		{
+			return invVOL;
+		}
+		double get_rho(int i, int j, int k) const 
+		{
+			return rho[i][j][k];
+		}
+		double get_Jx(int i, int j, int k) const 
+		{
+			return Jx[i][j][k];
+		}
+		double get_Jy(int i, int j, int k) const 
+		{
+			return Jy[i][j][k];
+		}
+		double get_Jz(int i, int j, int k) const 
+		{
+			return Jz[i][j][k];
+		}
+		double get_pXX(int i, int j, int k) const 
+		{
+			return pXX[i][j][k];
+		}
+		double get_pXY(int i, int j, int k) const 
+		{
+			return pXY[i][j][k];
+		}
+		double get_pXZ(int i, int j, int k) const 
+		{
+			return pXZ[i][j][k];
+		}
+		double get_pYY(int i, int j, int k) const 
+		{
+			return pYY[i][j][k];
+		}
+		double get_pYZ(int i, int j, int k) const 
+		{
+			return pYZ[i][j][k];
+		}
+		double get_pZZ(int i, int j, int k) const 
+		{
+			return pZZ[i][j][k];
+		}
+
+	public:
+		Moments() {};
+		Moments(int nx_, int ny_, int nz_, double invVOL_);
+		~Moments();
+
+		void set_to_zero();
+
+		void addRho(double weight[][2][2], int X, int Y, int Z);
+
+		void addJx(double weight[][2][2], int X, int Y, int Z);
+		void addJy(double weight[][2][2], int X, int Y, int Z);
+		void addJz(double weight[][2][2], int X, int Y, int Z);
+
+		void addPxx(double weight[][2][2], int X, int Y, int Z);
+		void addPxy(double weight[][2][2], int X, int Y, int Z);
+		void addPxz(double weight[][2][2], int X, int Y, int Z);
+		void addPyy(double weight[][2][2], int X, int Y, int Z);
+		void addPyz(double weight[][2][2], int X, int Y, int Z);
+		void addPzz(double weight[][2][2], int X, int Y, int Z);
+
+	
+};	//! End of class Moments
+
+//? construct empty instance (not zeroed)
+inline Moments::Moments(int nx_, int ny_, int nz_, double invVOL_) 
+{
+	nx = nx_;
+	ny = ny_;
+	nz = nz_;
+	invVOL = invVOL_;
+
+	rho = newArr3(double, nx, ny, nz);
+
+	Jx = newArr3(double, nx, ny, nz);
+	Jy = newArr3(double, nx, ny, nz);
+	Jz = newArr3(double, nx, ny, nz);
+
+	pXX = newArr3(double, nx, ny, nz);
+	pXY = newArr3(double, nx, ny, nz);
+	pXZ = newArr3(double, nx, ny, nz);
+	pYY = newArr3(double, nx, ny, nz);
+	pYZ = newArr3(double, nx, ny, nz);
+	pZZ = newArr3(double, nx, ny, nz);
 }
 
-inline Moments::~Moments() {
-  // nodes and species
-  delArr3(rho, nx, ny);
-  delArr3(Jx, nx, ny);
-  delArr3(Jy, nx, ny);
-  delArr3(Jz, nx, ny);
-  delArr3(pXX, nx, ny);
-  delArr3(pXY, nx, ny);
-  delArr3(pXZ, nx, ny);
-  delArr3(pYY, nx, ny);
-  delArr3(pYZ, nx, ny);
-  delArr3(pZZ, nx, ny);
+inline Moments::~Moments() 
+{
+	delArr3(rho, nx, ny);
+
+	delArr3(Jx, nx, ny);
+	delArr3(Jy, nx, ny);
+	delArr3(Jz, nx, ny);
+
+	delArr3(pXX, nx, ny);
+	delArr3(pXY, nx, ny);
+	delArr3(pXZ, nx, ny);
+	delArr3(pYY, nx, ny);
+	delArr3(pYZ, nx, ny);
+	delArr3(pZZ, nx, ny);
 }
 
-inline void Moments::set_to_zero() {
-  for (int i = 0; i < nx; i++)
-    for (int j = 0; j < ny; j++)
-      for (int k = 0; k < nz; k++) {
-        rho[i][j][k] = 0.0;
-        Jx[i][j][k] = 0.0;
-        Jy[i][j][k] = 0.0;
-        Jz[i][j][k] = 0.0;
-        pXX[i][j][k] = 0.0;
-        pXY[i][j][k] = 0.0;
-        pXZ[i][j][k] = 0.0;
-        pYY[i][j][k] = 0.0;
-        pYZ[i][j][k] = 0.0;
-        pZZ[i][j][k] = 0.0;
-      }
+//TODO: add pragma (collapse, parallel loop)
+inline void Moments::set_to_zero() 
+{
+	for (int i = 0; i < nx; i++)
+	{
+		for (int j = 0; j < ny; j++)
+		{
+			for (int k = 0; k < nz; k++) 
+			{
+				rho[i][j][k] = 0.0;
+
+				Jx[i][j][k] = 0.0;
+				Jy[i][j][k] = 0.0;
+				Jz[i][j][k] = 0.0;
+
+				pXX[i][j][k] = 0.0;
+				pXY[i][j][k] = 0.0;
+				pXZ[i][j][k] = 0.0;
+				pYY[i][j][k] = 0.0;
+				pYZ[i][j][k] = 0.0;
+				pZZ[i][j][k] = 0.0;
+			}
+		}
+	}
 }
+
+//! ======================================================================== !//
 
 class EMfields3D                // :public Field
 {
@@ -407,18 +449,18 @@ class EMfields3D                // :public Field
     double ***getEz_ext();
 
     /** get Magnetic Field component X defined on node(indexX,indexY,indexZ) */
-        double &getBx_ext(int indexX, int indexY, int indexZ) const;
-        /** get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
-        double &getBy_ext(int indexX, int indexY, int indexZ) const;
-        /** get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
-        double &getBz_ext(int indexX, int indexY, int indexZ) const;
+	double &getBx_ext(int indexX, int indexY, int indexZ) const;
+	/** get Magnetic Field component Y defined on node(indexX,indexY,indexZ) */
+	double &getBy_ext(int indexX, int indexY, int indexZ) const;
+	/** get Magnetic Field component Z defined on node(indexX,indexY,indexZ) */
+	double &getBz_ext(int indexX, int indexY, int indexZ) const;
 
-        /** get Magnetic Field component X */
-        double ***getBx_ext();
-        /** get Magnetic Field component Y */
-        double ***getBy_ext();
-        /** get Magnetic Field component Z */
-        double ***getBz_ext();
+	/** get Magnetic Field component X */
+	double ***getBx_ext();
+	/** get Magnetic Field component Y */
+	double ***getBy_ext();
+	/** get Magnetic Field component Z */
+	double ***getBz_ext();
 
     double ***&getBxTot();
     double ***&getByTot();
@@ -780,7 +822,7 @@ class EMfields3D                // :public Field
     void BoundaryConditionsE(double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz,Grid *grid, VirtualTopology3D *vct);
     void BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid);
 
-};
+};	//! End of class EMfields3D
 
 typedef EMfields3D Field;
 
