@@ -30,7 +30,7 @@ B1z = 0.000
 delta = 0.5
 
 #  %%%%%%%%%%%%%%%%%%% TIME %%%%%%%%%%%%%%%%%%
-dt = 0.02              # dt = time step  
+dt = 0.01              # dt = time step  
 ncycles = 10           # cycles
 th = 0.5               # th = decentering parameter
 c = 1.0                # c = light speed 
@@ -71,8 +71,8 @@ rhoINIT         = 0.5  0.5  0.5  0.5    # Initial density (make sure you are neu
 rhoINJECT       = 0.0  0.0  0.0  0.0    # Injection density (make sure you are neutral)
 TrackParticleID = 0    0     0    0     # TrackParticleID[species] = 1=true, 0=false 
 
-npcelx          = 60   60   60   60     # Particles per cell in X
-npcely          = 60   60   60   60     # Particles per cell in Y
+npcelx          = 90    90    90    90      # Particles per cell in X
+npcely          = 90    90    90    90      # Particles per cell in Y
 npcelz          = 1    1     1      1       # Particles per cell in Z
 NpMaxNpRatio    = 5.0                       # Maximum number of particles allocated
 

@@ -71,8 +71,8 @@ rhoINIT         = 0.5  0.5  0.5  0.5    # Initial density (make sure you are neu
 rhoINJECT       = 0.0  0.0  0.0  0.0    # Injection density (make sure you are neutral)
 TrackParticleID = 0    0     0    0     # TrackParticleID[species] = 1=true, 0=false 
 
-npcelx          = 20   20   20   20     # Particles per cell in X
-npcely          = 20   20   20   20     # Particles per cell in Y
+npcelx          = 40   40   40   40     # Particles per cell in X
+npcely          = 40   40   40   40     # Particles per cell in Y
 npcelz          = 1    1     1      1       # Particles per cell in Z
 NpMaxNpRatio    = 5.0                       # Maximum number of particles allocated
 

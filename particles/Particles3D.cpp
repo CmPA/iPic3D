@@ -1062,7 +1062,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 {
 	if (vct->getCartesian_rank() == 0) 
 	{
-		cout << "*** MOVER species " << ns << " ***" << " with " << nop << " particles; **** " << NiterMover << " ITERATIONS   ****" << endl;
+		cout << "*** MOVER species " << ns << " ***" << " with " << nop << " particles **** " << endl;
 	}
 
 	double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
