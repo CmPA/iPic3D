@@ -124,12 +124,15 @@ int c_Solver::Init(int argc, char **argv) {
     }
   }
 
-  #ifdef __PETSC_SOLVER__
-    //! PETSc solver:
-    if (myrank==0)
-    	cout << endl << "Field solver is using PETSc" << endl;
-    petscSolver = new PetscSolver(EMf, grid, vct, col);
-  #endif
+    #ifdef __PETSC_SOLVER__
+        
+        //! PETSc solver:
+        if (myrank==0)
+            cout << endl << "Field solver is using PETSc" << endl;
+        
+        petscSolver = new PetscSolver(EMf, grid, vct, col);
+
+    #endif
 
   // OpenBC
   EMf->updateInfoFields(grid,vct,col);
@@ -305,19 +308,19 @@ int c_Solver::Init(int argc, char **argv) {
 //! Gather Moments !//
 void c_Solver::GatherMoments()
 {
-	//? Get data from fields
+	//? Get data from fields (function defined in EMfields3D.cpp)
 	EMf->updateInfoFields(grid,vct,col);
 
-	//? Set densities to zero (charge density (1), current (3), energy flux density (3), pressure tensor (6))
-	EMf->setZeroDensities();                  
+	//? Set densities (charge density (1), current (3), energy flux density (3), pressure tensor (6)) to 0 (function defined in EMfields3D.cpp)
+    EMf->setZeroDensities();                  
 
-	//? Interpolate Particles to Grid(Nodes)
+	//? Interpolate Particles to Grid(Nodes) for each species (function defined in Particles3Dcomm.cpp)
 	for (int i = 0; i < ns; i++)
 	{
 		part[i].interpP2G(EMf, grid, vct);      
 	}
 
-	//? Sum all over the species: Charge density of all species on NODES
+	//? Sum all over the species: Charge density of all species on NODES (function defined in EMfields3D.cpp)
 	EMf->sumOverSpecies(vct);                 
 	
 	//? Fill with constant charge the planet

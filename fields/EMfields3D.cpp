@@ -1,286 +1,290 @@
 
 #include "EMfields3D.h"
 
-/*! constructor */
-EMfields3D::EMfields3D(Collective * col, Grid * grid) {
-  nxc = grid->getNXC();
-  nxn = grid->getNXN();
-  nyc = grid->getNYC();
-  nyn = grid->getNYN();
-  nzc = grid->getNZC();
-  nzn = grid->getNZN();
-  dx = grid->getDX();
-  dy = grid->getDY();
-  dz = grid->getDZ();
-  invVOL = grid->getInvVOL();
-  xStart = grid->getXstart();
-  xEnd = grid->getXend();
-  yStart = grid->getYstart();
-  yEnd = grid->getYend();
-  zStart = grid->getZstart();
-  zEnd = grid->getZend();
-  Lx = col->getLx();
-  Ly = col->getLy();
-  Lz = col->getLz();
-  ns = col->getNs();
-  c = col->getC();
-  dt = col->getDt();
-  th = col->getTh();
-  ue0 = col->getU0(0);
-  ve0 = col->getV0(0);
-  we0 = col->getW0(0);
-  x_center = col->getx_center();
-  y_center = col->gety_center();
-  z_center = col->getz_center();
-  L_square = col->getL_square();
-  L_outer = col->getL_outer();
-  coilD = col->getcoilD();
-  coilSpacing = col->getcoilSpacing();
+//? ===================================================================================================================== ?//
+
+//*! Constructor *//
+
+EMfields3D::EMfields3D(Collective * col, Grid * grid) 
+{
+	nxc = grid->getNXC();
+	nxn = grid->getNXN();
+	nyc = grid->getNYC();
+	nyn = grid->getNYN();
+	nzc = grid->getNZC();
+	nzn = grid->getNZN();
+	dx = grid->getDX();
+	dy = grid->getDY();
+	dz = grid->getDZ();
+	invVOL = grid->getInvVOL();
+	xStart = grid->getXstart();
+	xEnd = grid->getXend();
+	yStart = grid->getYstart();
+	yEnd = grid->getYend();
+	zStart = grid->getZstart();
+	zEnd = grid->getZend();
+	Lx = col->getLx();
+	Ly = col->getLy();
+	Lz = col->getLz();
+	ns = col->getNs();
+	c = col->getC();
+	dt = col->getDt();
+	th = col->getTh();
+	ue0 = col->getU0(0);
+	ve0 = col->getV0(0);
+	we0 = col->getW0(0);
+	x_center = col->getx_center();
+	y_center = col->gety_center();
+	z_center = col->getz_center();
+	L_square = col->getL_square();
+	L_outer = col->getL_outer();
+	coilD = col->getcoilD();
+	coilSpacing = col->getcoilSpacing();
 
 
-  Fext = 0.0;
+	Fext = 0.0;
 
-  delt = c * th * dt;
-  PoissonCorrection = false;
-  if (col->getPoissonCorrection()=="yes") PoissonCorrection = true;
-  LambdaDamping = false;
-  if (col->getLambdaDamping()=="yes") LambdaDamping = true;
-  CGtol = col->getCGtol();
-  GMREStol = col->getGMREStol();
-  qom = new double[ns];
-  for (int i = 0; i < ns; i++)
-    qom[i] = col->getQOM(i);
-  // boundary conditions: PHI and EM fields
-  bcPHIfaceXright = col->getBcPHIfaceXright();
-  bcPHIfaceXleft = col->getBcPHIfaceXleft();
-  bcPHIfaceYright = col->getBcPHIfaceYright();
-  bcPHIfaceYleft = col->getBcPHIfaceYleft();
-  bcPHIfaceZright = col->getBcPHIfaceZright();
-  bcPHIfaceZleft = col->getBcPHIfaceZleft();
+	delt = c * th * dt;
+	PoissonCorrection = false;
+	if (col->getPoissonCorrection()=="yes") PoissonCorrection = true;
+	LambdaDamping = false;
+	if (col->getLambdaDamping()=="yes") LambdaDamping = true;
+	CGtol = col->getCGtol();
+	GMREStol = col->getGMREStol();
+	qom = new double[ns];
+	for (int i = 0; i < ns; i++)
+	qom[i] = col->getQOM(i);
+	// boundary conditions: PHI and EM fields
+	bcPHIfaceXright = col->getBcPHIfaceXright();
+	bcPHIfaceXleft = col->getBcPHIfaceXleft();
+	bcPHIfaceYright = col->getBcPHIfaceYright();
+	bcPHIfaceYleft = col->getBcPHIfaceYleft();
+	bcPHIfaceZright = col->getBcPHIfaceZright();
+	bcPHIfaceZleft = col->getBcPHIfaceZleft();
 
-  bcEMfaceXright = col->getBcEMfaceXright();
-  bcEMfaceXleft = col->getBcEMfaceXleft();
-  bcEMfaceYright = col->getBcEMfaceYright();
-  bcEMfaceYleft = col->getBcEMfaceYleft();
-  bcEMfaceZright = col->getBcEMfaceZright();
-  bcEMfaceZleft = col->getBcEMfaceZleft();
-  // GEM challenge parameters
-  B0x = col->getB0x();
-  B0y = col->getB0y();
-  B0z = col->getB0z();
-  delta = col->getDelta();
-  // Earth Simulation
-  B1x = col->getB1x();
-  B1y = col->getB1y();
-  B1z = col->getB1z();
-  // External magnetic field
-  B0x_ext = col->getB0x_ext();
-  B0y_ext = col->getB0y_ext();
-  B0z_ext = col->getB0z_ext();
+	bcEMfaceXright = col->getBcEMfaceXright();
+	bcEMfaceXleft = col->getBcEMfaceXleft();
+	bcEMfaceYright = col->getBcEMfaceYright();
+	bcEMfaceYleft = col->getBcEMfaceYleft();
+	bcEMfaceZright = col->getBcEMfaceZright();
+	bcEMfaceZleft = col->getBcEMfaceZleft();
+	// GEM challenge parameters
+	B0x = col->getB0x();
+	B0y = col->getB0y();
+	B0z = col->getB0z();
+	delta = col->getDelta();
+	// Earth Simulation
+	B1x = col->getB1x();
+	B1y = col->getB1y();
+	B1z = col->getB1z();
+	// External magnetic field
+	B0x_ext = col->getB0x_ext();
+	B0y_ext = col->getB0y_ext();
+	B0z_ext = col->getB0z_ext();
 
-  // Initial electric field
-  E0x = col->getE0x();
-  E0y = col->getE0y();
-  E0z = col->getE0z();
-  // External electric field
-  E0x_ext = col->getE0x_ext();
-  E0y_ext = col->getE0y_ext();
-  E0z_ext = col->getE0z_ext();
+	// Initial electric field
+	E0x = col->getE0x();
+	E0y = col->getE0y();
+	E0z = col->getE0z();
+	// External electric field
+	E0x_ext = col->getE0x_ext();
+	E0y_ext = col->getE0y_ext();
+	E0z_ext = col->getE0z_ext();
 
-  Smooth = col->getSmooth();
-  Nvolte = col->getNvolte();
+	Smooth = col->getSmooth();
+	Nvolte = col->getNvolte();
 
-  // get the density background for the gem Challange
-  rhoINIT   = new double[ns];
-  rhoINJECT = new double[ns];
-  DriftSpecies = new bool[ns];
-  for (int i = 0; i < ns; i++) {
-    rhoINIT  [i] = col->getRHOinit(i);
-    rhoINJECT[i] = col->getRHOinject(i);
-    if ((fabs(col->getW0(i)) != 0) || (fabs(col->getU0(i)) != 0)) // GEM and LHDI
-      DriftSpecies[i] = true;
-    else
-      DriftSpecies[i] = false;
-  }
-  /*! parameters for GEM challenge */
-  FourPI = 16 * atan(1.0);
-  /*! Restart */
-  restart1 = col->getRestart_status();
-  RestartDirName = col->getRestartDirName();
-  Case = col->getCase();
+	// get the density background for the gem Challange
+	rhoINIT   = new double[ns];
+	rhoINJECT = new double[ns];
+	DriftSpecies = new bool[ns];
 
-  // OpenBC
-  injFieldsLeft   = new injInfoFields(nxn, nyn, nzn);
-  injFieldsRight  = new injInfoFields(nxn, nyn, nzn);
-  injFieldsTop    = new injInfoFields(nxn, nyn, nzn);
-  injFieldsBottom = new injInfoFields(nxn, nyn, nzn);
-  injFieldsFront  = new injInfoFields(nxn, nyn, nzn);
-  injFieldsRear   = new injInfoFields(nxn, nyn, nzn);
+	for (int i = 0; i < ns; i++) 
+	{
+		rhoINIT  [i] = col->getRHOinit(i);
+		rhoINJECT[i] = col->getRHOinject(i);
 
-  // arrays allocation: nodes
-  Ex = newArr3(double, nxn, nyn, nzn);
-  Ey = newArr3(double, nxn, nyn, nzn);
-  Ez = newArr3(double, nxn, nyn, nzn);
-  Exth = newArr3(double, nxn, nyn, nzn);
-  Eyth = newArr3(double, nxn, nyn, nzn);
-  Ezth = newArr3(double, nxn, nyn, nzn);
-  Bxn = newArr3(double, nxn, nyn, nzn);
-  Byn = newArr3(double, nxn, nyn, nzn);
-  Bzn = newArr3(double, nxn, nyn, nzn);
-  rhon = newArr3(double, nxn, nyn, nzn);
-  Jx = newArr3(double, nxn, nyn, nzn);
-  Jy = newArr3(double, nxn, nyn, nzn);
-  Jz = newArr3(double, nxn, nyn, nzn);
-  Jxh = newArr3(double, nxn, nyn, nzn);
-  Jyh = newArr3(double, nxn, nyn, nzn);
-  Jzh = newArr3(double, nxn, nyn, nzn);
-  // External imposed fields
-  Bx_ext = newArr3(double,nxn,nyn,nzn);
-  By_ext = newArr3(double,nxn,nyn,nzn);
-  Bz_ext = newArr3(double,nxn,nyn,nzn);
-  Ex_ext = newArr3(double,nxn,nyn,nzn);
-  Ey_ext = newArr3(double,nxn,nyn,nzn);
-  Ez_ext = newArr3(double,nxn,nyn,nzn);
-  Jx_ext = newArr3(double,nxn,nyn,nzn);
-  Jy_ext = newArr3(double,nxn,nyn,nzn);
-  Jz_ext = newArr3(double,nxn,nyn,nzn);
-  // involving species
-  rhons = newArr4(double, ns, nxn, nyn, nzn);
-  rhocs = newArr4(double, ns, nxc, nyc, nzc);
-  Jxs = newArr4(double, ns, nxn, nyn, nzn);
-  Jys = newArr4(double, ns, nxn, nyn, nzn);
-  Jzs = newArr4(double, ns, nxn, nyn, nzn);
-  EFxs = newArr4(double, ns, nxn, nyn, nzn);
-  EFys = newArr4(double, ns, nxn, nyn, nzn);
-  EFzs = newArr4(double, ns, nxn, nyn, nzn);
-  pXXsn = newArr4(double, ns, nxn, nyn, nzn);
-  pXYsn = newArr4(double, ns, nxn, nyn, nzn);
-  pXZsn = newArr4(double, ns, nxn, nyn, nzn);
-  pYYsn = newArr4(double, ns, nxn, nyn, nzn);
-  pYZsn = newArr4(double, ns, nxn, nyn, nzn);
-  pZZsn = newArr4(double, ns, nxn, nyn, nzn);
-  // arrays allocation: central points 
-  PHI = newArr3(double, nxc, nyc, nzc);
-  Bxc = newArr3(double, nxc, nyc, nzc);
-  Byc = newArr3(double, nxc, nyc, nzc);
-  Bzc = newArr3(double, nxc, nyc, nzc);
-  rhoc = newArr3(double, nxc, nyc, nzc);
-  rhoh = newArr3(double, nxc, nyc, nzc);
+		if ((fabs(col->getW0(i)) != 0) || (fabs(col->getU0(i)) != 0)) // GEM and LHDI
+		DriftSpecies[i] = true;
+		else
+		DriftSpecies[i] = false;
+	}
 
-  // temporary arrays
-  tempXC = newArr3(double, nxc, nyc, nzc);
-  tempYC = newArr3(double, nxc, nyc, nzc);
-  tempZC = newArr3(double, nxc, nyc, nzc);
+	/*! parameters for GEM challenge */
+	FourPI = 16 * atan(1.0);
+	/*! Restart */
+	restart1 = col->getRestart_status();
+	RestartDirName = col->getRestartDirName();
+	Case = col->getCase();
 
-  tempXN = newArr3(double, nxn, nyn, nzn);
-  tempYN = newArr3(double, nxn, nyn, nzn);
-  tempZN = newArr3(double, nxn, nyn, nzn);
-  tempC = newArr3(double, nxc, nyc, nzc);
-  tempX = newArr3(double, nxn, nyn, nzn);
-  tempY = newArr3(double, nxn, nyn, nzn);
-  tempZ = newArr3(double, nxn, nyn, nzn);
-  temp2X = newArr3(double, nxn, nyn, nzn);
-  temp2Y = newArr3(double, nxn, nyn, nzn);
-  temp2Z = newArr3(double, nxn, nyn, nzn);
-  imageX = newArr3(double, nxn, nyn, nzn);
-  imageY = newArr3(double, nxn, nyn, nzn);
-  imageZ = newArr3(double, nxn, nyn, nzn);
-  Dx = newArr3(double, nxn, nyn, nzn);
-  Dy = newArr3(double, nxn, nyn, nzn);
-  Dz = newArr3(double, nxn, nyn, nzn);
-  vectX = newArr3(double, nxn, nyn, nzn);
-  vectY = newArr3(double, nxn, nyn, nzn);
-  vectZ = newArr3(double, nxn, nyn, nzn);
-  divC = newArr3(double, nxc, nyc, nzc);
-  arr = newArr3(double,nxn,nyn,nzn);
+	// OpenBC
+	injFieldsLeft   = new injInfoFields(nxn, nyn, nzn);
+	injFieldsRight  = new injInfoFields(nxn, nyn, nzn);
+	injFieldsTop    = new injInfoFields(nxn, nyn, nzn);
+	injFieldsBottom = new injInfoFields(nxn, nyn, nzn);
+	injFieldsFront  = new injInfoFields(nxn, nyn, nzn);
+	injFieldsRear   = new injInfoFields(nxn, nyn, nzn);
 
-  Lambda = newArr3(double, nxn, nyn, nzn);
-  // Set to zero all the memory allocated
-  setAllzero();
+	// arrays allocation: nodes
+	Ex = newArr3(double, nxn, nyn, nzn);
+	Ey = newArr3(double, nxn, nyn, nzn);
+	Ez = newArr3(double, nxn, nyn, nzn);
+	Exth = newArr3(double, nxn, nyn, nzn);
+	Eyth = newArr3(double, nxn, nyn, nzn);
+	Ezth = newArr3(double, nxn, nyn, nzn);
+	Bxn = newArr3(double, nxn, nyn, nzn);
+	Byn = newArr3(double, nxn, nyn, nzn);
+	Bzn = newArr3(double, nxn, nyn, nzn);
+	rhon = newArr3(double, nxn, nyn, nzn);
+	Jx = newArr3(double, nxn, nyn, nzn);
+	Jy = newArr3(double, nxn, nyn, nzn);
+	Jz = newArr3(double, nxn, nyn, nzn);
+	Jxh = newArr3(double, nxn, nyn, nzn);
+	Jyh = newArr3(double, nxn, nyn, nzn);
+	Jzh = newArr3(double, nxn, nyn, nzn);
+	// External imposed fields
+	Bx_ext = newArr3(double,nxn,nyn,nzn);
+	By_ext = newArr3(double,nxn,nyn,nzn);
+	Bz_ext = newArr3(double,nxn,nyn,nzn);
+	Ex_ext = newArr3(double,nxn,nyn,nzn);
+	Ey_ext = newArr3(double,nxn,nyn,nzn);
+	Ez_ext = newArr3(double,nxn,nyn,nzn);
+	Jx_ext = newArr3(double,nxn,nyn,nzn);
+	Jy_ext = newArr3(double,nxn,nyn,nzn);
+	Jz_ext = newArr3(double,nxn,nyn,nzn);
+	// involving species
+	rhons = newArr4(double, ns, nxn, nyn, nzn);
+	rhocs = newArr4(double, ns, nxc, nyc, nzc);
+	Jxs = newArr4(double, ns, nxn, nyn, nzn);
+	Jys = newArr4(double, ns, nxn, nyn, nzn);
+	Jzs = newArr4(double, ns, nxn, nyn, nzn);
+	EFxs = newArr4(double, ns, nxn, nyn, nzn);
+	EFys = newArr4(double, ns, nxn, nyn, nzn);
+	EFzs = newArr4(double, ns, nxn, nyn, nzn);
+	pXXsn = newArr4(double, ns, nxn, nyn, nzn);
+	pXYsn = newArr4(double, ns, nxn, nyn, nzn);
+	pXZsn = newArr4(double, ns, nxn, nyn, nzn);
+	pYYsn = newArr4(double, ns, nxn, nyn, nzn);
+	pYZsn = newArr4(double, ns, nxn, nyn, nzn);
+	pZZsn = newArr4(double, ns, nxn, nyn, nzn);
+	// arrays allocation: central points 
+	PHI = newArr3(double, nxc, nyc, nzc);
+	Bxc = newArr3(double, nxc, nyc, nzc);
+	Byc = newArr3(double, nxc, nyc, nzc);
+	Bzc = newArr3(double, nxc, nyc, nzc);
+	rhoc = newArr3(double, nxc, nyc, nzc);
+	rhoh = newArr3(double, nxc, nyc, nzc);
+
+	// temporary arrays
+	tempXC = newArr3(double, nxc, nyc, nzc);
+	tempYC = newArr3(double, nxc, nyc, nzc);
+	tempZC = newArr3(double, nxc, nyc, nzc);
+
+	tempXN = newArr3(double, nxn, nyn, nzn);
+	tempYN = newArr3(double, nxn, nyn, nzn);
+	tempZN = newArr3(double, nxn, nyn, nzn);
+	tempC = newArr3(double, nxc, nyc, nzc);
+	tempX = newArr3(double, nxn, nyn, nzn);
+	tempY = newArr3(double, nxn, nyn, nzn);
+	tempZ = newArr3(double, nxn, nyn, nzn);
+	temp2X = newArr3(double, nxn, nyn, nzn);
+	temp2Y = newArr3(double, nxn, nyn, nzn);
+	temp2Z = newArr3(double, nxn, nyn, nzn);
+	imageX = newArr3(double, nxn, nyn, nzn);
+	imageY = newArr3(double, nxn, nyn, nzn);
+	imageZ = newArr3(double, nxn, nyn, nzn);
+	Dx = newArr3(double, nxn, nyn, nzn);
+	Dy = newArr3(double, nxn, nyn, nzn);
+	Dz = newArr3(double, nxn, nyn, nzn);
+	vectX = newArr3(double, nxn, nyn, nzn);
+	vectY = newArr3(double, nxn, nyn, nzn);
+	vectZ = newArr3(double, nxn, nyn, nzn);
+	divC = newArr3(double, nxc, nyc, nzc);
+	arr = newArr3(double,nxn,nyn,nzn);
+
+	Lambda = newArr3(double, nxn, nyn, nzn);
+	// Set to zero all the memory allocated
+	setAllzero();
 }
+
+//? ===================================================================================================================== ?//
+
 void EMfields3D::setAllzero()
 {
-   eqValue(0.0, Ex, nxn, nyn, nzn);
-   eqValue(0.0, Ey, nxn, nyn, nzn);
-   eqValue(0.0, Ez, nxn, nyn, nzn);
-   eqValue(0.0, Exth, nxn, nyn, nzn);
-   eqValue(0.0, Eyth, nxn, nyn, nzn);
-   eqValue(0.0, Ezth, nxn, nyn, nzn);
-   eqValue(0.0, Bxn, nxn, nyn, nzn);
-   eqValue(0.0, Byn, nxn, nyn, nzn);
-   eqValue(0.0, Bzn, nxn, nyn, nzn);
-   eqValue(0.0, rhon, nxn, nyn, nzn);
+	eqValue(0.0, Ex, nxn, nyn, nzn);
+	eqValue(0.0, Ey, nxn, nyn, nzn);
+	eqValue(0.0, Ez, nxn, nyn, nzn);
+	eqValue(0.0, Exth, nxn, nyn, nzn);
+	eqValue(0.0, Eyth, nxn, nyn, nzn);
+	eqValue(0.0, Ezth, nxn, nyn, nzn);
+	eqValue(0.0, Bxn, nxn, nyn, nzn);
+	eqValue(0.0, Byn, nxn, nyn, nzn);
+	eqValue(0.0, Bzn, nxn, nyn, nzn);
+	eqValue(0.0, rhon, nxn, nyn, nzn);
 
-   eqValue(0.0, Jxh, nxn, nyn, nzn);
-   eqValue(0.0, Jyh, nxn, nyn, nzn);
-   eqValue(0.0, Jzh, nxn, nyn, nzn);
+	eqValue(0.0, Jxh, nxn, nyn, nzn);
+	eqValue(0.0, Jyh, nxn, nyn, nzn);
+	eqValue(0.0, Jzh, nxn, nyn, nzn);
 
+	eqValue(0.0, Jxs, ns, nxn, nyn, nzn);
+	eqValue(0.0, Jys, ns, nxn, nyn, nzn);
+	eqValue(0.0, Jzs, ns, nxn, nyn, nzn);
+	eqValue(0.0, EFxs, ns, nxn, nyn, nzn);
+	eqValue(0.0, EFys, ns, nxn, nyn, nzn);
+	eqValue(0.0, EFzs, ns, nxn, nyn, nzn);
 
+	eqValue(0.0, pXXsn, ns, nxn, nyn, nzn);
+	eqValue(0.0, pXYsn, ns, nxn, nyn, nzn);
+	eqValue(0.0, pXZsn, ns, nxn, nyn, nzn);
+	eqValue(0.0, pYYsn, ns, nxn, nyn, nzn);
+	eqValue(0.0, pYZsn, ns, nxn, nyn, nzn);
+	eqValue(0.0, pZZsn, ns, nxn, nyn, nzn);
 
-   eqValue(0.0, Jxs, ns, nxn, nyn, nzn);
-   eqValue(0.0, Jys, ns, nxn, nyn, nzn);
-   eqValue(0.0, Jzs, ns, nxn, nyn, nzn);
-   eqValue(0.0, EFxs, ns, nxn, nyn, nzn);
-   eqValue(0.0, EFys, ns, nxn, nyn, nzn);
-   eqValue(0.0, EFzs, ns, nxn, nyn, nzn);
+	eqValue(0.0, Bx_ext, nxn, nyn, nzn);
+	eqValue(0.0, By_ext, nxn, nyn, nzn);
+	eqValue(0.0, Bz_ext, nxn, nyn, nzn);
+	eqValue(0.0, Ex_ext, nxn, nyn, nzn);
+	eqValue(0.0, Ey_ext, nxn, nyn, nzn);
+	eqValue(0.0, Ez_ext, nxn, nyn, nzn);
 
+	eqValue(0.0, rhons, ns, nxn, nyn, nzn);
+	eqValue(0.0, rhocs, ns, nxc, nyc, nzc);
 
-   eqValue(0.0, pXXsn, ns, nxn, nyn, nzn);
-   eqValue(0.0, pXYsn, ns, nxn, nyn, nzn);
-   eqValue(0.0, pXZsn, ns, nxn, nyn, nzn);
-   eqValue(0.0, pYYsn, ns, nxn, nyn, nzn);
-   eqValue(0.0, pYZsn, ns, nxn, nyn, nzn);
-   eqValue(0.0, pZZsn, ns, nxn, nyn, nzn);
+	eqValue(0.0, Bxc, nxc, nyc, nzc);
+	eqValue(0.0, Byc, nxc, nyc, nzc);
+	eqValue(0.0, Bzc, nxc, nyc, nzc);
+	eqValue(0.0, rhoc, nxc, nyc, nzc);
 
+	eqValue(0.0, tempXC, nxc, nyc, nzc);
+	eqValue(0.0, tempYC, nxc, nyc, nzc);
+	eqValue(0.0, tempZC, nxc, nyc, nzc);
+	eqValue(0.0, tempXN, nxn, nyn, nzn);
+	eqValue(0.0, tempYN, nxn, nyn, nzn);
+	eqValue(0.0, tempZN, nxn, nyn, nzn);
+	eqValue(0.0, tempC, nxc, nyc, nzc);
+	eqValue(0.0, tempX, nxn, nyn, nzn);
+	eqValue(0.0, tempY, nxn, nyn, nzn);
+	eqValue(0.0, tempZ, nxn, nyn, nzn);
+	eqValue(0.0, temp2X, nxn, nyn, nzn);
+	eqValue(0.0, temp2Y, nxn, nyn, nzn);
+	eqValue(0.0, temp2Z, nxn, nyn, nzn);
 
+	eqValue(0.0, imageX, nxn, nyn, nzn);
+	eqValue(0.0, imageY, nxn, nyn, nzn);
+	eqValue(0.0, imageZ, nxn, nyn, nzn);
+	eqValue(0.0, vectX, nxn, nyn, nzn);
+	eqValue(0.0, vectY, nxn, nyn, nzn);
+	eqValue(0.0, vectZ, nxn, nyn, nzn);
+	eqValue(0.0, arr, nxn, nyn, nzn);
 
-   eqValue(0.0, Bx_ext, nxn, nyn, nzn);
-   eqValue(0.0, By_ext, nxn, nyn, nzn);
-   eqValue(0.0, Bz_ext, nxn, nyn, nzn);
-   eqValue(0.0, Ex_ext, nxn, nyn, nzn);
-   eqValue(0.0, Ey_ext, nxn, nyn, nzn);
-   eqValue(0.0, Ez_ext, nxn, nyn, nzn);
+	eqValue(0.0, Jx_ext, nxn, nyn, nzn);
+	eqValue(0.0, Jy_ext, nxn, nyn, nzn);
+	eqValue(0.0, Jz_ext, nxn, nyn, nzn);
 
-   eqValue(0.0,rhons, ns, nxn, nyn, nzn);
-   eqValue(0.0,rhocs, ns, nxc, nyc, nzc);
-
-
-   eqValue(0.0, Bxc, nxc, nyc, nzc);
-   eqValue(0.0, Byc, nxc, nyc, nzc);
-   eqValue(0.0, Bzc, nxc, nyc, nzc);
-   eqValue(0.0, rhoc, nxc, nyc, nzc);
-
-   eqValue(0.0, tempXC, nxc, nyc, nzc);
-   eqValue(0.0, tempYC, nxc, nyc, nzc);
-   eqValue(0.0, tempZC, nxc, nyc, nzc);
-   eqValue(0.0, tempXN, nxn, nyn, nzn);
-   eqValue(0.0, tempYN, nxn, nyn, nzn);
-   eqValue(0.0, tempZN, nxn, nyn, nzn);
-   eqValue(0.0, tempC, nxc, nyc, nzc);
-   eqValue(0.0, tempX, nxn, nyn, nzn);
-   eqValue(0.0, tempY, nxn, nyn, nzn);
-   eqValue(0.0, tempZ, nxn, nyn, nzn);
-   eqValue(0.0, temp2X, nxn, nyn, nzn);
-   eqValue(0.0, temp2Y, nxn, nyn, nzn);
-   eqValue(0.0, temp2Z, nxn, nyn, nzn);
-
-   eqValue(0.0, imageX, nxn, nyn, nzn);
-   eqValue(0.0, imageY, nxn, nyn, nzn);
-   eqValue(0.0, imageZ, nxn, nyn, nzn);
-   eqValue(0.0, vectX, nxn, nyn, nzn);
-   eqValue(0.0, vectY, nxn, nyn, nzn);
-   eqValue(0.0, vectZ, nxn, nyn, nzn);
-   eqValue(0.0, arr, nxn, nyn, nzn);
-
-   eqValue(0.0, Jx_ext, nxn, nyn, nzn);
-   eqValue(0.0, Jy_ext, nxn, nyn, nzn);
-   eqValue(0.0, Jz_ext, nxn, nyn, nzn);
-
-
-   eqValue(0.0, Lambda, nxn, nyn, nzn);
-
+	eqValue(0.0, Lambda, nxn, nyn, nzn);
 }
 
+//? ===================================================================================================================== ?//
 
 /*! Calculate Electric field with the implicit solver: the Maxwell solver method is called here */
 void EMfields3D::startEcalc(Grid * grid, VirtualTopology3D * vct, Collective *col) {
@@ -586,6 +590,8 @@ void EMfields3D::MaxwellImage(double *im, double *vector, Grid * grid, VirtualTo
 
 
 }
+
+//? ===================================================================================================================== ?//
 
 /*! Calculate PI dot (vectX, vectY, vectZ) */
 void EMfields3D::PIdot(double ***PIdotX, double ***PIdotY, double ***PIdotZ, double ***vectX, double ***vectY, double ***vectZ, int ns, Grid * grid) {
@@ -1213,6 +1219,8 @@ void EMfields3D::ConstantChargePlanet(Grid * grid, VirtualTopology3D * vct, doub
 
 }
 
+//? ===================================================================================================================== ?//
+
 /*! Calculate Magnetic field with the implicit solver: calculate B defined on nodes With E(n+ theta) computed, the magnetic field is evaluated from Faraday's law */
 void EMfields3D::calculateB(Grid * grid, VirtualTopology3D * vct, Collective *col) {
   if (vct->getCartesian_rank() == 0)
@@ -1429,6 +1437,7 @@ void EMfields3D::communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, 
 
 }
 
+//? ===================================================================================================================== ?//
 
 /** add an amount of charge density to charge density field at node X,Y */
 void Moments::addRho(double weight[][2][2], int X, int Y, int Z) {
@@ -1521,25 +1530,33 @@ void Moments::addPzz(double weight[][2][2], int X, int Y, int Z) {
       }
 }
 
-void EMfields3D::addToSpeciesMoments(const Moments & in, int is) {
-  assert_eq(in.get_nx(), nxn);
-  assert_eq(in.get_ny(), nyn);
-  assert_eq(in.get_nz(), nzn);
-  for (int i = 0; i < nxn; i++) {
-    for (int j = 0; j < nyn; j++)
-      for (int k = 0; k < nzn; k++) {
-        rhons[is][i][j][k] += in.get_rho(i, j, k);
-        Jxs[is][i][j][k] += in.get_Jx(i, j, k);
-        Jys[is][i][j][k] += in.get_Jy(i, j, k);
-        Jzs[is][i][j][k] += in.get_Jz(i, j, k);
-        pXXsn[is][i][j][k] += in.get_pXX(i, j, k);
-        pXYsn[is][i][j][k] += in.get_pXY(i, j, k);
-        pXZsn[is][i][j][k] += in.get_pXZ(i, j, k);
-        pYYsn[is][i][j][k] += in.get_pYY(i, j, k);
-        pYZsn[is][i][j][k] += in.get_pYZ(i, j, k);
-        pZZsn[is][i][j][k] += in.get_pZZ(i, j, k);
-      }
-  }
+//? ============================================================================== ?//
+
+void EMfields3D::addToSpeciesMoments(const Moments & in, int is) 
+{
+	assert_eq(in.get_nx(), nxn);
+	assert_eq(in.get_ny(), nyn);
+	assert_eq(in.get_nz(), nzn);
+
+	for (int i = 0; i < nxn; i++)
+	{
+		for (int j = 0; j < nyn; j++)
+		{
+			for (int k = 0; k < nzn; k++) 
+			{
+				rhons[is][i][j][k] += in.get_rho(i, j, k);
+				Jxs[is][i][j][k] += in.get_Jx(i, j, k);
+				Jys[is][i][j][k] += in.get_Jy(i, j, k);
+				Jzs[is][i][j][k] += in.get_Jz(i, j, k);
+				pXXsn[is][i][j][k] += in.get_pXX(i, j, k);
+				pXYsn[is][i][j][k] += in.get_pXY(i, j, k);
+				pXZsn[is][i][j][k] += in.get_pXZ(i, j, k);
+				pYYsn[is][i][j][k] += in.get_pYY(i, j, k);
+				pYZsn[is][i][j][k] += in.get_pYZ(i, j, k);
+				pZZsn[is][i][j][k] += in.get_pZZ(i, j, k);
+			}
+		}
+	}
 }
 
 /*! add an amount of charge density to charge density field at node X,Y */
@@ -1634,69 +1651,110 @@ void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is) {
         pZZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
+//? ============================================================================== ?//
 
+//? The functions setZeroDensities() and sumOverSpecies(VirtualTopology3D * vct)
+//? are called in GatherMoments() in iPic3Dlib.cpp.
 
-/*! set to 0 all the densities fields */
-void EMfields3D::setZeroDensities() {
-  for (int i = 0; i < nxn; i++)
-    for (int j = 0; j < nyn; j++)
-      for (int k = 0; k < nzn; k++) {
-        Jx  [i][j][k] = 0.0;
-        Jxh [i][j][k] = 0.0;
-        Jy  [i][j][k] = 0.0;
-        Jyh [i][j][k] = 0.0;
-        Jz  [i][j][k] = 0.0;
-        Jzh [i][j][k] = 0.0;
-        rhon[i][j][k] = 0.0;
-      }
-  for (int i = 0; i < nxc; i++)
-    for (int j = 0; j < nyc; j++)
-      for (int k = 0; k < nzc; k++) {
-        rhoc[i][j][k] = 0.0;
-        rhoh[i][j][k] = 0.0;
-      }
-  for (int kk = 0; kk < ns; kk++)
-    for (int i = 0; i < nxn; i++)
-      for (int j = 0; j < nyn; j++)
-        for (int k = 0; k < nzn; k++) {
-          rhons[kk][i][j][k] = 0.0;
-          Jxs  [kk][i][j][k] = 0.0;
-          Jys  [kk][i][j][k] = 0.0;
-          Jzs  [kk][i][j][k] = 0.0;
-          EFxs  [kk][i][j][k] = 0.0;
-          EFys  [kk][i][j][k] = 0.0;
-          EFzs  [kk][i][j][k] = 0.0;
-          pXXsn[kk][i][j][k] = 0.0;
-          pXYsn[kk][i][j][k] = 0.0;
-          pXZsn[kk][i][j][k] = 0.0;
-          pYYsn[kk][i][j][k] = 0.0;
-          pYZsn[kk][i][j][k] = 0.0;
-          pZZsn[kk][i][j][k] = 0.0;
-        }
+//*! Set values of all densities to 0 *//
+void EMfields3D::setZeroDensities()
+{   
+	for (int i = 0; i < nxn; i++)
+	{
+		for (int j = 0; j < nyn; j++)
+		{
+			for (int k = 0; k < nzn; k++) 
+			{
+				Jx  [i][j][k] = 0.0;
+				Jxh [i][j][k] = 0.0;
+				Jy  [i][j][k] = 0.0;
+				Jyh [i][j][k] = 0.0;
+				Jz  [i][j][k] = 0.0;
+				Jzh [i][j][k] = 0.0;
+				rhon[i][j][k] = 0.0;
+			}
+		}
+	}
+
+	for (int i = 0; i < nxc; i++)
+	{
+		for (int j = 0; j < nyc; j++)
+		{
+			for (int k = 0; k < nzc; k++) 
+			{
+				rhoc[i][j][k] = 0.0;
+				rhoh[i][j][k] = 0.0;
+			}
+		}
+	}
+
+	for (int kk = 0; kk < ns; kk++)
+	{
+		for (int i = 0; i < nxn; i++)
+		{
+			for (int j = 0; j < nyn; j++)
+			{
+				for (int k = 0; k < nzn; k++) 
+				{
+					rhons[kk][i][j][k] = 0.0;
+					Jxs  [kk][i][j][k] = 0.0;
+					Jys  [kk][i][j][k] = 0.0;
+					Jzs  [kk][i][j][k] = 0.0;
+					EFxs [kk][i][j][k] = 0.0;
+					EFys [kk][i][j][k] = 0.0;
+					EFzs [kk][i][j][k] = 0.0;
+					pXXsn[kk][i][j][k] = 0.0;
+					pXYsn[kk][i][j][k] = 0.0;
+					pXZsn[kk][i][j][k] = 0.0;
+					pYYsn[kk][i][j][k] = 0.0;
+					pYZsn[kk][i][j][k] = 0.0;
+					pZZsn[kk][i][j][k] = 0.0;
+				}
+			}
+		}
+	}
 
 }
-/*!SPECIES: Sum the charge density of different species on NODES */
-void EMfields3D::sumOverSpecies(VirtualTopology3D * vct) {
-  for (int is = 0; is < ns; is++)
-    for (int i = 0; i < nxn; i++)
-      for (int j = 0; j < nyn; j++)
-        for (int k = 0; k < nzn; k++)
-          rhon[i][j][k] += rhons[is][i][j][k];
+
+//*! SPECIES: Sum of charge density of different species on NODES *//
+void EMfields3D::sumOverSpecies(VirtualTopology3D * vct)
+{
+	for (int is = 0; is < ns; is++)
+	{
+		for (int i = 0; i < nxn; i++)
+		{
+			for (int j = 0; j < nyn; j++)
+			{
+				for (int k = 0; k < nzn; k++)
+				{
+					rhon[i][j][k] += rhons[is][i][j][k];
+				}
+			}
+		}
+	}
 }
 
-/*!SPECIES: Sum current density for different species */
-void EMfields3D::sumOverSpeciesJ() {
-  for (int is = 0; is < ns; is++)
-    for (int i = 0; i < nxn; i++)
-      for (int j = 0; j < nyn; j++)
-        for (int k = 0; k < nzn; k++) {
-          Jx[i][j][k] += Jxs[is][i][j][k];
-          Jy[i][j][k] += Jys[is][i][j][k];
-          Jz[i][j][k] += Jzs[is][i][j][k];
-        }
+//? ============================================================================== ?//
+
+//*! SPECIES: Sum of current density for different species *//
+void EMfields3D::sumOverSpeciesJ() 
+{
+	for (int is = 0; is < ns; is++)
+	{
+		for (int i = 0; i < nxn; i++)
+		{
+			for (int j = 0; j < nyn; j++)
+			{
+				for (int k = 0; k < nzn; k++)
+				{
+					Jx[i][j][k] += Jxs[is][i][j][k];
+					Jy[i][j][k] += Jys[is][i][j][k];
+					Jz[i][j][k] += Jzs[is][i][j][k];
+				}
+			}
+		}
+	}
 }
-
-
 
 /*! initialize Magnetic and Electric Field with initial configuration */
 void EMfields3D::init(VirtualTopology3D * vct, Grid * grid, Collective *col) {
@@ -4085,13 +4143,17 @@ injInfoFields* EMfields3D::get_InfoFieldsRight() {return injFieldsRight;}
 injInfoFields* EMfields3D::get_InfoFieldsFront() {return injFieldsFront;}
 injInfoFields* EMfields3D::get_InfoFieldsRear() {return injFieldsRear;}
 
-// Open Boundary conditions implementation
+//? ============================================================================== ?//
 
-void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col){
+//? The functions updateInfoFields() is called in GatherMoments() in iPic3Dlib.cpp.
 
-  /* -- NOTE: Hardcoded option -- */
+//! Open Boundary conditions implementation
+void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *col)
+{
+
+  //* -- NOTE: Hardcoded option -- *//
   bool XRightOutflow = false;
-  /* -- END NOTE --*/
+  //* -- END NOTE --*//
 
   double u_0, v_0, w_0;
   u_0=col->getU0(0);
@@ -4246,6 +4308,8 @@ void EMfields3D::updateInfoFields(Grid *grid,VirtualTopology3D *vct,Collective *
   }
 
 }
+
+//? ============================================================================== ?//
 
 void EMfields3D::BoundaryConditionsEImage(double ***imageX, double ***imageY, double ***imageZ,double ***vectorX, double ***vectorY, double ***vectorZ,int nx, int ny, int nz, VirtualTopology3D *vct,Grid *grid){
 
