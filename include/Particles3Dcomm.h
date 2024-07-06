@@ -177,179 +177,187 @@ public:
   void Add_vDist3D();
   void Write_vDist3D(string SaveDirName);
 
-protected:
-  /** number of species */
-  int ns;
-  /** maximum number of particles of this species on this domain. used for memory allocation */
-  long long npmax;
-  /** number of particles of this species on this domain */
-  long long nop;
-  /** total number of particles */
-  long long np_tot;
-  /** number of particles per cell */
-  int npcel;
-  /** number of particles per cell - X direction */
-  int npcelx;
-  /** number of particles per cell - Y direction */
-  int npcely;
-  /** number of particles per cell - Z direction */
-  int npcelz;
-  /** charge to mass ratio */
-  double qom;
-  /** recon thick */
-  double delta;
-  /** thermal velocity  - Direction X*/
-  double uth;
-  /** thermal velocity  - Direction Y*/
-  double vth;
-  /** thermal velocity  - Direction Z*/
-  double wth;
-  /** u0 Drift velocity - Direction X */
-  double u0;
-  /** v0 Drift velocity - Direction Y */
-  double v0;
-  /** w0 Drift velocity - Direction Z */
-  double w0;
-  /** Positions arra - X component */
-  double *x;
-  /** Positions array - Y component */
-  double *y;
-  /** Positions array - Z component */
-  double *z;
-  /** Velocities array - X component */
-  double *u;
-  /** Velocities array - Y component */
-  double *v;
-  /** Velocities array - Z component */
-  double *w;
-  /** TrackParticleID */
-  bool TrackParticleID;
-  /** ParticleID */
-  unsigned long *ParticleID;
-  /** rank of processor in which particle is created (for ID) */
-  int BirthRank[2];
-  /** number of variables to be stored in buffer for communication for each particle  */
-  int nVar;
-  /** Charge array */
-  double *q;
+    protected:
+    /** number of species */
+    int ns;
+    /** maximum number of particles of this species on this domain. used for memory allocation */
+    long long npmax;
+    /** number of particles of this species on this domain */
+    long long nop;
+    /** total number of particles */
+    long long np_tot;
+    /** number of particles per cell */
+    int npcel;
+    /** number of particles per cell - X direction */
+    int npcelx;
+    /** number of particles per cell - Y direction */
+    int npcely;
+    /** number of particles per cell - Z direction */
+    int npcelz;
+    /** charge to mass ratio */
+    double qom;
+    /** recon thick */
+    double delta;
+    /** thermal velocity  - Direction X*/
+    double uth;
+    /** thermal velocity  - Direction Y*/
+    double vth;
+    /** thermal velocity  - Direction Z*/
+    double wth;
+    /** u0 Drift velocity - Direction X */
+    double u0;
+    /** v0 Drift velocity - Direction Y */
+    double v0;
+    /** w0 Drift velocity - Direction Z */
+    double w0;
+    /** Positions array - X component */
+    double *x;
+    /** Positions array - Y component */
+    double *y;
+    /** Positions array - Z component */
+    double *z;
+    /** Velocities array - X component */
+    double *u;
+    /** Velocities array - Y component */
+    double *v;
+    /** Velocities array - Z component */
+    double *w;
+    /** E arrays for GPU - X,Y,Z components */
+    double* Ex_d; double* Ey_d; double* Ez_d;
+    /** B arrays for GPU - X,Y,Z components */
+    double* Bx_d; double* By_d; double* Bz_d;
+    /** E_ext arrays for GPU - X,Y,Z components */
+    double* Ex_ext_d; double* Ey_ext_d; double* Ez_ext_d;
+    /** B_ext arrays for GPU - X,Y,Z components */
+    double* Bx_ext_d; double* By_ext_d; double* Bz_ext_d;
+    /** TrackParticleID */
+    bool TrackParticleID;
+    /** ParticleID */
+    unsigned long *ParticleID;
+    /** rank of processor in which particle is created (for ID) */
+    int BirthRank[2];
+    /** number of variables to be stored in buffer for communication for each particle  */
+    int nVar;
+    /** Charge array */
+    double *q;
 
-  /** Initial charge density */
-  double rhoINIT;
-  /** Injection charge density */
-  double rhoINJECT;
+    /** Initial charge density */
+    double rhoINIT;
+    /** Injection charge density */
+    double rhoINJECT;
 
-  /** Simulation domain lengths */
-  double xstart, xend, ystart, yend, zstart, zend, invVOL;
-  /** time step */
-  double dt;
-  /** Lx = simulation box length - x direction   */
-  double Lx;
-  /** Ly = simulation box length - y direction   */
-  double Ly;
-  /** Lz = simulation box length - z direction   */
-  double Lz;
-  /** center of object immersed - x direction */
-  double x_center;
-  /** center of object immersed - y direction */
-  double y_center;
-  /** center of object immersed - z direction */
-  double z_center;
-  /** size of immersed box - cube */
-  double L_square;
-  /** size of immersed box - outer dimension */
-  double L_outer;
-  /** grid spacings */
-  double dx, dy, dz;
-  /** number of grid 
-          nodes */
-  int nxn, nyn, nzn;
-  /** buffers for communication */
-  /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
-  int buffer_size;
-  /** smaller buffer size */
-  int buffer_size_small;
-  /** buffer with particles going to the right processor - Direction X */
-  double *b_X_RIGHT;
-  /** pointer to the buffer for resizing */
-  double *b_X_RIGHT_ptr;
-  /** buffer with particles going to the left processor - Direction X */
-  double *b_X_LEFT;
-  /** pointer to the buffer for resizing */
-  double *b_X_LEFT_ptr;
-  /** buffer with particles going to the right processor - Direction Y */
-  double *b_Y_RIGHT;
-  /** pointer to the buffer for resizing */
-  double *b_Y_RIGHT_ptr;
-  /** buffer with particles going to the left processor - Direction Y */
-  double *b_Y_LEFT;
-  /** pointer to the buffer for resizing */
-  double *b_Y_LEFT_ptr;
-  /** buffer with particles going to the right processor - Direction Z */
-  double *b_Z_RIGHT;
-  /** pointer to the buffer for resizing */
-  double *b_Z_RIGHT_ptr;
-  /** buffer with particles going to the left processor - Direction Z */
-  double *b_Z_LEFT;
-  /** pointer to the buffer for resizing */
-  double *b_Z_LEFT_ptr;
+    /** Simulation domain lengths */
+    double xstart, xend, ystart, yend, zstart, zend, invVOL;
+    /** time step */
+    double dt;
+    /** Lx = simulation box length - x direction   */
+    double Lx;
+    /** Ly = simulation box length - y direction   */
+    double Ly;
+    /** Lz = simulation box length - z direction   */
+    double Lz;
+    /** center of object immersed - x direction */
+    double x_center;
+    /** center of object immersed - y direction */
+    double y_center;
+    /** center of object immersed - z direction */
+    double z_center;
+    /** size of immersed box - cube */
+    double L_square;
+    /** size of immersed box - outer dimension */
+    double L_outer;
+    /** grid spacings */
+    double dx, dy, dz;
+    /** number of grid 
+     nodes */
+    int nxn, nyn, nzn;
+    /** buffers for communication */
+    /** size of sending buffers for exiting particles, DEFINED IN METHOD "COMMUNICATE" */
+    int buffer_size;
+    /** smaller buffer size */
+    int buffer_size_small;
+    /** buffer with particles going to the right processor - Direction X */
+    double *b_X_RIGHT;
+    /** pointer to the buffer for resizing */
+    double *b_X_RIGHT_ptr;
+    /** buffer with particles going to the left processor - Direction X */
+    double *b_X_LEFT;
+    /** pointer to the buffer for resizing */
+    double *b_X_LEFT_ptr;
+    /** buffer with particles going to the right processor - Direction Y */
+    double *b_Y_RIGHT;
+    /** pointer to the buffer for resizing */
+    double *b_Y_RIGHT_ptr;
+    /** buffer with particles going to the left processor - Direction Y */
+    double *b_Y_LEFT;
+    /** pointer to the buffer for resizing */
+    double *b_Y_LEFT_ptr;
+    /** buffer with particles going to the right processor - Direction Z */
+    double *b_Z_RIGHT;
+    /** pointer to the buffer for resizing */
+    double *b_Z_RIGHT_ptr;
+    /** buffer with particles going to the left processor - Direction Z */
+    double *b_Z_LEFT;
+    /** pointer to the buffer for resizing */
+    double *b_Z_LEFT_ptr;
 
-  /** number of particles exiting per cycle*/
-  int npExitXright;
-  /** number of particles exiting to X-LEFT per cycle*/
-  int npExitXleft;
-  /** number of particles exiting to Y-RIGHT per cycle*/
-  int npExitYright;
-  /** number of particles exiting to Y-LEFT per cycle*/
-  int npExitYleft;
-  /** number of particles exiting to Z-RIGHT per cycle*/
-  int npExitZright;
-  /** number of particles exiting to Z-LEFT per cycle*/
-  int npExitZleft;
-  /** total number of particles exiting per cycle */
-  int npExit;
-  /** number of particles not in the right domain   */
-  int rightDomain;
+    /** number of particles exiting per cycle*/
+    int npExitXright;
+    /** number of particles exiting to X-LEFT per cycle*/
+    int npExitXleft;
+    /** number of particles exiting to Y-RIGHT per cycle*/
+    int npExitYright;
+    /** number of particles exiting to Y-LEFT per cycle*/
+    int npExitYleft;
+    /** number of particles exiting to Z-RIGHT per cycle*/
+    int npExitZright;
+    /** number of particles exiting to Z-LEFT per cycle*/
+    int npExitZleft;
+    /** total number of particles exiting per cycle */
+    int npExit;
+    /** number of particles not in the right domain   */
+    int rightDomain;
 
-  /** Gravity as External Force */
-  bool Gravity;
+    /** Gravity as External Force */
+    bool Gravity;
 
-  /** bool for communication verbose */
-  bool cVERBOSE;
-  /** Boundary condition on particles:
-          <ul>
-          <li>0 = exit</li>
-          <li>1 = perfect mirror</li>
-          <li>2 = riemission</li>
-          <li>3 = periodic condition </li>
-          </ul>
-          */
-  /** Boundary Condition Particles: FaceXright */
-  int bcPfaceXright;
-  /** Boundary Condition Particles: FaceXleft */
-  int bcPfaceXleft;
-  /** Boundary Condition Particles: FaceYright */
-  int bcPfaceYright;
-  /** Boundary Condition Particles: FaceYleft */
-  int bcPfaceYleft;
-  /** Boundary Condition Particles: FaceYright */
-  int bcPfaceZright;
-  /** Boundary Condition Particles: FaceYleft */
-  int bcPfaceZleft;
-  /** speed of light in vacuum */
-  double c;
-  /** restart variable for loading particles from restart file */
-  int restart;
-  /** Number of iteration of the mover*/
-  int NiterMover;
-  /** velocity of the injection of the particles */
-  double Vinj;
-  /** removed charge from species */
-  double Q_removed;
-  /** density of the injection of the particles */
-  double Ninj;
+    /** bool for communication verbose */
+    bool cVERBOSE;
+    /** Boundary condition on particles:
+     <ul>
+    <li>0 = exit</li>
+    <li>1 = perfect mirror</li>
+    <li>2 = riemission</li>
+    <li>3 = periodic condition </li>
+    </ul>
+    */
+    /** Boundary Condition Particles: FaceXright */
+    int bcPfaceXright;
+    /** Boundary Condition Particles: FaceXleft */
+    int bcPfaceXleft;
+    /** Boundary Condition Particles: FaceYright */
+    int bcPfaceYright;
+    /** Boundary Condition Particles: FaceYleft */
+    int bcPfaceYleft;
+    /** Boundary Condition Particles: FaceYright */
+    int bcPfaceZright;
+    /** Boundary Condition Particles: FaceYleft */
+    int bcPfaceZleft;
+    /** speed of light in vacuum */
+    double c;
+    /** restart variable for loading particles from restart file */
+    int restart;
+    /** Number of iteration of the mover*/
+    int NiterMover;
+    /** velocity of the injection of the particles */
+    double Vinj;
+    /** removed charge from species */
+    double Q_removed;
+    /** density of the injection of the particles */
+    double Ninj;
 
-  int nvDistLoc;
-  c_vDist* vDist;
+    int nvDistLoc;
+    c_vDist* vDist;
 
 };
 

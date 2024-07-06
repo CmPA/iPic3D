@@ -1,6 +1,7 @@
 
 #include "iPic3D.h"
 #include "MyClock.h"
+#include "../LeXInt_timer.hpp"
 
 using namespace iPic3D;
 
@@ -207,34 +208,37 @@ int c_Solver::Init(int argc, char **argv) {
   }
 
   num_proc << myrank;
-  if (col->getWriteMethod() == "default") {
-    // Initialize the output (simulation results and restart file)
-    // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
-    // myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent; // Create an Output Agent for HDF5 output
-    hdf5_agent.set_simulation_pointers(EMf, grid, vct, mpi, col);
-    for (int i = 0; i < ns; ++i)
-      hdf5_agent.set_simulation_pointers_part(&part[i]);
-    output_mgr.push_back(&hdf5_agent);  // Add the HDF5 output agent to the Output Manager's list
-    if (myrank == 0 & restart < 2) {
-      hdf5_agent.open(SaveDirName + "/settings.hdf");
-      output_mgr.output("collective + total_topology + proc_topology", 0);
-      hdf5_agent.close();
-      hdf5_agent.open(RestartDirName + "/settings.hdf");
-      output_mgr.output("collective + total_topology + proc_topology", 0);
-      hdf5_agent.close();
-    }
-    // Restart
-    if (restart == 0) {           // new simulation from input file
-      hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("proc_topology ", 0);
-      hdf5_agent.close();
-    }
-    else {                        // restart append the results to the previous simulation 
-      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("proc_topology ", 0);
-      hdf5_agent.close();
-    }
-  }
+
+  //! Uncomment to create files
+
+//   if (col->getWriteMethod() == "default") {
+//     // Initialize the output (simulation results and restart file)
+//     // PSK::OutputManager < PSK::OutputAdaptor > output_mgr; // Create an Output Manager
+//     // myOutputAgent < PSK::HDF5OutputAdaptor > hdf5_agent; // Create an Output Agent for HDF5 output
+//     hdf5_agent.set_simulation_pointers(EMf, grid, vct, mpi, col);
+//     for (int i = 0; i < ns; ++i)
+//       hdf5_agent.set_simulation_pointers_part(&part[i]);
+//     output_mgr.push_back(&hdf5_agent);  // Add the HDF5 output agent to the Output Manager's list
+//     if (myrank == 0 & restart < 2) {
+//       hdf5_agent.open(SaveDirName + "/settings.hdf");
+//       output_mgr.output("collective + total_topology + proc_topology", 0);
+//       hdf5_agent.close();
+//       hdf5_agent.open(RestartDirName + "/settings.hdf");
+//       output_mgr.output("collective + total_topology + proc_topology", 0);
+//       hdf5_agent.close();
+//     }
+//     // Restart
+//     if (restart == 0) {           // new simulation from input file
+//       hdf5_agent.open(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+//       output_mgr.output("proc_topology ", 0);
+//       hdf5_agent.close();
+//     }
+//     else {                        // restart append the results to the previous simulation 
+//       hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+//       output_mgr.output("proc_topology ", 0);
+//       hdf5_agent.close();
+//     }
+//   }
 
   Eenergy, Benergy, TOTenergy = 0.0, TOTmomentum = 0.0;
   Ke = new double[ns];
@@ -308,20 +312,58 @@ int c_Solver::Init(int argc, char **argv) {
 //! Gather Moments !//
 void c_Solver::GatherMoments()
 {
-	//? Get data from fields (function defined in EMfields3D.cpp)
-	EMf->updateInfoFields(grid,vct,col);
+    LeXInt::timer time_1, time_2, time_3, time_4;
 
-	//? Set densities (charge density (1), current (3), energy flux density (3), pressure tensor (6)) to 0 (function defined in EMfields3D.cpp)
-    EMf->setZeroDensities();                  
+    if (myrank == 0) 
+        time_1.start();
+	
+    //? Get data from fields (function defined in EMfields3D.cpp)
+	EMf->updateInfoFields(grid,vct,col);
+    
+    if (myrank == 0)
+    {
+        time_1.stop();
+        cout << "MG time 1 (s): " << time_1.total() << endl;
+    }
+
+    if (myrank == 0)
+        time_2.start();
+	
+    //? Set densities (charge density (1), current (3), energy flux density (3), pressure tensor (6)) to 0 (function defined in EMfields3D.cpp)
+    EMf->setZeroDensities();
+    
+    if (myrank == 0)
+    {
+        time_2.stop();
+        cout << "MG time 2 (s): " << time_2.total() << endl;               
+    }
+
+    if (myrank == 0)
+        time_3.start();
 
 	//? Interpolate Particles to Grid(Nodes) for each species (function defined in Particles3Dcomm.cpp)
 	for (int i = 0; i < ns; i++)
 	{
 		part[i].interpP2G(EMf, grid, vct);      
 	}
+    
+    if (myrank == 0)
+    {
+        time_3.stop();
+        cout << "MG time 3 (s): " << time_3.total() << endl;
+    }
+
+    if (myrank == 0)
+        time_4.start();
 
 	//? Sum all over the species: Charge density of all species on NODES (function defined in EMfields3D.cpp)
-	EMf->sumOverSpecies(vct);                 
+	EMf->sumOverSpecies(vct);
+    
+    if (myrank == 0)
+    {
+        time_4.stop();
+        cout << "MG time 4 (s): " << time_4.total() << endl;
+    }         
 	
 	//? Fill with constant charge the planet
 	if (col->getCase()=="Dipole") 
@@ -382,6 +424,11 @@ void c_Solver::CalculateBField()
 //! Move the particles !//
 bool c_Solver::ParticlesMover() 
 {
+    LeXInt::timer time_1;
+
+    if (myrank == 0) 
+        time_1.start();
+
 	//? Loop over each species
 	for (int i = 0; i < ns; i++)  
 	{
@@ -398,6 +445,12 @@ bool c_Solver::ParticlesMover()
 				mem_avail = part[i].mover_PC(grid, vct, EMf); 
 		}
 	}
+
+    if (myrank == 0)
+    {
+        time_1.stop();
+        cout << "PM time (s): " << time_1.total() << endl;
+    }
 
 	//* Not enough memory space allocated for particles: stop the simulation
 	if (mem_avail < 0) 
@@ -577,6 +630,7 @@ void c_Solver::WriteConserved(int cycle) {
   //}
 }
 
+//! Write data to files
 void c_Solver::WriteOutput(int cycle) {
 
   if (col->getWriteMethod() == "h5hut") {
@@ -585,27 +639,27 @@ void c_Solver::WriteOutput(int cycle) {
     /* Parallel HDF5 output using the H5hut library */
     /* -------------------------------------------- */
 
-    if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
-    //if (cycle%(col->getParticlesOutputCycle())==0 &&
-    //    cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
-    if (cycle%(col->getParticlesOutputCycle())==0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    // if (cycle%(col->getFieldOutputCycle())==0)        WriteFieldsH5hut(ns, grid, EMf,  col, vct, cycle);
+    // //if (cycle%(col->getParticlesOutputCycle())==0 &&
+    // //    cycle!=col->getLast_cycle() && cycle!=0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
+    // if (cycle%(col->getParticlesOutputCycle())==0)      WritePartclH5hut(ns, grid, part, col, vct, cycle);
 
   }
   else
   {
 
     // OUTPUT to large file, called proc**
-    if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
-      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
-      // Pressure tensor is available
-      hdf5_agent.close();
-    }
-    if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
-      hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
-      output_mgr.output("position + velocity + q + ID", cycle, 1);
-      hdf5_agent.close();
-    }
+    // if (cycle % (col->getFieldOutputCycle()) == 0 || cycle == first_cycle) {
+    //   hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+    //   output_mgr.output("Eall + Ball + rhos + Jsall + pressure", cycle);
+    //   // Pressure tensor is available
+    //   hdf5_agent.close();
+    // }
+    // if (cycle % (col->getParticlesOutputCycle()) == 0 && col->getParticlesOutputCycle() != 1) {
+    //   hdf5_agent.open_append(SaveDirName + "/proc" + num_proc.str() + ".hdf");
+    //   output_mgr.output("position + velocity + q + ID", cycle, 1);
+    //   hdf5_agent.close();
+    // }
   }
     // write the virtual satellite traces
 /*

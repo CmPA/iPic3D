@@ -22,13 +22,13 @@ developers: Stefano Markidis, Giovanni Lapenta
 
 #include "Particles3D.h"
 
+#include "hdf5.h"
+#include <complex>
+
 #include "../cuda_error_check.hpp"
 #include <openacc.h>
 #include <cuda_runtime.h>
 #include <cuda.h>
-
-#include "hdf5.h"
-#include <complex>
 
 #ifdef NSIGHT_PROFILING
 	#include <nvtx3/nvToolsExt.h>
@@ -1083,21 +1083,18 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
 	#ifdef GPU
 			
-		double* Ex_d = Ex[0][0];
-		double* Ey_d = Ey[0][0];
-		double* Ez_d = Ez[0][0];
-
-		double* Bx_d = Bx[0][0];
-		double* By_d = By[0][0];
-		double* Bz_d = Bz[0][0];
-
-		double* Ex_ext_d = Ex_ext[0][0];
-		double* Ey_ext_d = Ey_ext[0][0];
-		double* Ez_ext_d = Ez_ext[0][0];
-
-		double* Bx_ext_d = Bx_ext[0][0];
-		double* By_ext_d = By_ext[0][0];
-		double* Bz_ext_d = Bz_ext[0][0];
+		Ex_d = Ex[0][0];
+		Ey_d = Ey[0][0];
+		Ez_d = Ez[0][0];
+		Bx_d = Bx[0][0];
+		By_d = By[0][0];
+		Bz_d = Bz[0][0];
+		Ex_ext_d = Ex_ext[0][0];
+		Ey_ext_d = Ey_ext[0][0];
+		Ez_ext_d = Ez_ext[0][0];
+		Bx_ext_d = Bx_ext[0][0];
+		By_ext_d = By_ext[0][0];
+		Bz_ext_d = Bz_ext[0][0];
 
 		// double* u_d; cudaMallocManaged(&u_d, sizeof(double)*N);
 		// double* v_d; cudaMallocManaged(&v_d, sizeof(double)*N);
@@ -1142,7 +1139,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 			// cudaMemPrefetchAsync(Bz_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
 		#endif
-
 	#endif
 
 	//? External forces

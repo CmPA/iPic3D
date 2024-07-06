@@ -28,6 +28,15 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include <vector>
 #include <complex>
 
+#include "../cuda_error_check.hpp"
+#include <openacc.h>
+#include <cuda_runtime.h>
+#include <cuda.h>
+
+#ifdef NSIGHT_PROFILING
+	#include <nvtx3/nvToolsExt.h>
+#endif
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -44,169 +53,218 @@ using std::endl;
  *
  */
 
-/** constructor */
-Particles3Dcomm::Particles3Dcomm() {
-  // see allocate(int species, Collective* col, VirtualTopology3D* vct, Grid* grid)
-
+//** constructor *//
+Particles3Dcomm::Particles3Dcomm() 
+{  
+    //! see allocate(int species, Collective* col, VirtualTopology3D* vct, Grid* grid)
 }
-/** deallocate particles */
-Particles3Dcomm::~Particles3Dcomm() {
-  delete[]x;
-  delete[]y;
-  delete[]z;
-  delete[]u;
-  delete[]v;
-  delete[]w;
-  delete[]q;
-  // deallocate buffers
-  delete[]b_X_RIGHT;
-  delete[]b_X_LEFT;
-  delete[]b_Y_RIGHT;
-  delete[]b_Y_LEFT;
-  delete[]b_Z_RIGHT;
-  delete[]b_Z_LEFT;
+
+//** deallocate particles *//
+Particles3Dcomm::~Particles3Dcomm() 
+{
+    delete[]x;
+    delete[]y;
+    delete[]z;
+    delete[]u;
+    delete[]v;
+    delete[]w;
+    delete[]q;
+
+    //* deallocate buffers
+    delete[]b_X_RIGHT;
+    delete[]b_X_LEFT;
+    delete[]b_Y_RIGHT;
+    delete[]b_Y_LEFT;
+    delete[]b_Z_RIGHT;
+    delete[]b_Z_LEFT;
+
+    #ifdef GPU
+        delete[]Ex_d;
+        delete[]Ey_d;
+        delete[]Ez_d;
+        delete[]Bx_d;
+        delete[]By_d;
+        delete[]Bz_d;
+        delete[]Ex_ext_d;
+        delete[]Ey_ext_d;
+        delete[]Ez_ext_d;
+        delete[]Bx_ext_d;
+        delete[]By_ext_d;
+        delete[]Bz_ext_d;
+    #endif
 }
-/** constructors fo a single species*/
-void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) {
-  // info from collectiveIO
-  ns = species;
-  npcel = col->getNpcel(species);
-  npcelx = col->getNpcelx(species);
-  npcely = col->getNpcely(species);
-  npcelz = col->getNpcelz(species);
 
-  // This if is necessary to restart with H5hut-io
-  if (initnpmax==0){
-    long ncproc = int(col->getNxc()/col->getXLEN()) *
-                  int(col->getNyc()/col->getYLEN()) *
-                  int(col->getNzc()/col->getZLEN());
-    nop   = ncproc * npcel;
-    npmax = nop * col->getNpMaxNpRatio();
-  }
-  else {
-    npmax = initnpmax*col->getNpMaxNpRatio();
-    nop   = initnpmax;
-  }
+//** constructors for a single species *//
+void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * col, VirtualTopology3D * vct, Grid * grid) 
+{
+    //? info from collectiveIO
+    ns = species;
+    npcel  = col->getNpcel(species);
+    npcelx = col->getNpcelx(species);
+    npcely = col->getNpcely(species);
+    npcelz = col->getNpcelz(species);
 
-  rhoINIT   = col->getRHOinit(species);
-  rhoINJECT = col->getRHOinject(species);
-
-  qom = col->getQOM(species);
-  uth = col->getUth(species);
-  vth = col->getVth(species);
-  wth = col->getWth(species);
-  u0 = col->getU0(species);
-  v0 = col->getV0(species);
-  w0 = col->getW0(species);
-  dt = col->getDt();
-  Lx = col->getLx();
-  Ly = col->getLy();
-  Lz = col->getLz();
-  x_center     = col->getx_center();
-  y_center   = col->gety_center();
-  z_center     = col->getz_center();
-  L_square = col->getL_square();
-  L_outer = col->getL_outer();
-
-  dx = grid->getDX();
-  dy = grid->getDY();
-  dz = grid->getDZ();
-  delta = col->getDelta();
-  TrackParticleID = col->getTrackParticleID(species);
-  c = col->getC();
-  // info for mover
-  NiterMover = col->getNiterMover();
-  // velocity of the injection from the wall
-  Vinj = col->getVinj();
-  Ninj = col->getRHOinject(species);
-  // info from Grid
-  xstart = grid->getXstart();
-  xend = grid->getXend();
-  ystart = grid->getYstart();
-  yend = grid->getYend();
-  zstart = grid->getZstart();
-  zend = grid->getZend();
-
-  dx = grid->getDX();
-  dy = grid->getDY();
-  dz = grid->getDZ();
-
-  nxn = grid->getNXN();
-  nyn = grid->getNYN();
-  nzn = grid->getNZN();
-  invVOL = grid->getInvVOL();
-
-  Gravity = col->getGravity();
-
-  // info from VirtualTopology3D
-  cVERBOSE = vct->getcVERBOSE();
-
-  // boundary condition for particles
-  bcPfaceXright = col->getBcPfaceXright();
-  bcPfaceXleft = col->getBcPfaceXleft();
-  bcPfaceYright = col->getBcPfaceYright();
-  bcPfaceYleft = col->getBcPfaceYleft();
-  bcPfaceXright = col->getBcPfaceXright();
-  bcPfaceXleft = col->getBcPfaceXleft();
-  bcPfaceYright = col->getBcPfaceYright();
-  bcPfaceYleft = col->getBcPfaceYleft();
-  bcPfaceZright = col->getBcPfaceZright();
-  bcPfaceZleft = col->getBcPfaceZleft();
-  // //////////////////////////////////////////////////////////////
-  // ////////////// ALLOCATE ARRAYS /////////////////////////
-  // //////////////////////////////////////////////////////////////
-  // positions
-  x = new double[npmax];
-  y = new double[npmax];
-  z = new double[npmax];
-  // velocities
-  u = new double[npmax];
-  v = new double[npmax];
-  w = new double[npmax];
-  // charge
-  q = new double[npmax];
-  // ID
-  if (TrackParticleID) {
-    ParticleID = new unsigned long[npmax];
-    BirthRank[0] = vct->getCartesian_rank();
-    if (vct->getNprocs() > 1)
-      BirthRank[1] = (int) ceil(log10((double) (vct->getNprocs())));  // Number of digits needed for # of process in ID
-    else
-      BirthRank[1] = 1;
-    if (BirthRank[1] + (int) ceil(log10((double) (npmax))) > 10 && BirthRank[0] == 0) {
-      cerr << "Error: can't Track particles in Particles3Dcomm::allocate" << endl;
-      cerr << "Unsigned long 'ParticleID' cannot store all the particles" << endl;
-      return;
+    //? This if is necessary to restart with H5hut-io
+    if (initnpmax==0)
+    {
+        long ncproc = int(col->getNxc()/col->getXLEN()) *
+                      int(col->getNyc()/col->getYLEN()) *
+                      int(col->getNzc()/col->getZLEN());
+        nop   = ncproc * npcel;
+        npmax = nop * col->getNpMaxNpRatio();
     }
-  }
-  // BUFFERS
-  // the buffer size should be decided depending on number of particles
-  // the buffer size should be decided depending on number of particles
-  if (TrackParticleID)
-    nVar = 8;
-  else
-    nVar = 7;
-  buffer_size = (int) (.05 * nop * nVar + 1); // max: 5% of the particles in the processors is going out
-  buffer_size_small = (int) (.01 * nop * nVar + 1); // max 1% not resizable 
+    else 
+    {
+        npmax = initnpmax*col->getNpMaxNpRatio();
+        nop   = initnpmax;
+    }
 
-  b_X_RIGHT = new double[buffer_size];
-  b_X_RIGHT_ptr = b_X_RIGHT;    // alias to make the resize
-  b_X_LEFT = new double[buffer_size];
-  b_X_LEFT_ptr = b_X_LEFT;      // alias to make the resize
-  b_Y_RIGHT = new double[buffer_size];
-  b_Y_RIGHT_ptr = b_Y_RIGHT;    // alias to make the resize
-  b_Y_LEFT = new double[buffer_size];
-  b_Y_LEFT_ptr = b_Y_LEFT;      // alias to make the resize
-  b_Z_RIGHT = new double[buffer_size];
-  b_Z_RIGHT_ptr = b_Z_RIGHT;    // alias to make the resize
-  b_Z_LEFT = new double[buffer_size];
-  b_Z_LEFT_ptr = b_Z_LEFT;      // alias to make the resize
+    rhoINIT   = col->getRHOinit(species);
+    rhoINJECT = col->getRHOinject(species);
 
-  // if RESTART is true initialize the particle in allocate method
-  restart = col->getRestart_status();
-  if (restart != 0) {
+    qom = col->getQOM(species);
+    uth = col->getUth(species);
+    vth = col->getVth(species);
+    wth = col->getWth(species);
+    u0  = col->getU0(species);
+    v0  = col->getV0(species);
+    w0  = col->getW0(species);
+    
+    dt  = col->getDt();
+    Lx  = col->getLx();
+    Ly  = col->getLy();
+    Lz  = col->getLz();
+    
+    x_center = col->getx_center();
+    y_center = col->gety_center();
+    z_center = col->getz_center();
+    L_square = col->getL_square();
+    L_outer  = col->getL_outer();
+
+    dx = grid->getDX();
+    dy = grid->getDY();
+    dz = grid->getDZ();
+    
+    delta = col->getDelta();
+    TrackParticleID = col->getTrackParticleID(species);
+    c = col->getC();
+    // info for mover
+    NiterMover = col->getNiterMover();
+    // velocity of the injection from the wall
+    Vinj = col->getVinj();
+    Ninj = col->getRHOinject(species);
+    
+    //? info from Grid
+    xstart = grid->getXstart();
+    xend   = grid->getXend();
+    ystart = grid->getYstart();
+    yend   = grid->getYend();
+    zstart = grid->getZstart();
+    zend   = grid->getZend();
+
+    dx = grid->getDX();
+    dy = grid->getDY();
+    dz = grid->getDZ();
+
+    nxn = grid->getNXN();
+    nyn = grid->getNYN();
+    nzn = grid->getNZN();
+    invVOL = grid->getInvVOL();
+
+    Gravity = col->getGravity();
+
+    //? info from VirtualTopology3D
+    cVERBOSE = vct->getcVERBOSE();
+
+    //? boundary condition for particles
+    bcPfaceXright = col->getBcPfaceXright();
+    bcPfaceXleft  = col->getBcPfaceXleft();
+    bcPfaceYright = col->getBcPfaceYright();
+    bcPfaceYleft  = col->getBcPfaceYleft();
+    bcPfaceXright = col->getBcPfaceXright();
+    bcPfaceXleft  = col->getBcPfaceXleft();
+    bcPfaceYright = col->getBcPfaceYright();
+    bcPfaceYleft  = col->getBcPfaceYleft();
+    bcPfaceZright = col->getBcPfaceZright();
+    bcPfaceZleft  = col->getBcPfaceZleft();
+
+    //? /////////////////////////////////////////////////////////////
+    //? ////////////////////// ALLOCATE ARRAYS //////////////////////
+    //? /////////////////////////////////////////////////////////////
+
+    //? positions
+    x = new double[npmax];
+    y = new double[npmax];
+    z = new double[npmax];
+
+    //? velocities
+    u = new double[npmax];
+    v = new double[npmax];
+    w = new double[npmax];
+
+    //? charge
+    q = new double[npmax];
+
+    #ifdef GPU
+        Ex_d = new double[nxn * nyn * nzn];
+        Ey_d = new double[nxn * nyn * nzn];
+        Ez_d = new double[nxn * nyn * nzn];
+        Bx_d = new double[nxn * nyn * nzn];
+        By_d = new double[nxn * nyn * nzn];
+        Bz_d = new double[nxn * nyn * nzn];
+        Ex_ext_d = new double[nxn * nyn * nzn];
+        Ey_ext_d = new double[nxn * nyn * nzn];
+        Ez_ext_d = new double[nxn * nyn * nzn];
+        Bx_ext_d = new double[nxn * nyn * nzn];
+        By_ext_d = new double[nxn * nyn * nzn];
+        Bz_ext_d = new double[nxn * nyn * nzn];
+    #endif
+
+    //? ID
+    if (TrackParticleID) 
+    {
+        ParticleID = new unsigned long[npmax];
+        BirthRank[0] = vct->getCartesian_rank();
+        if (vct->getNprocs() > 1)
+            BirthRank[1] = (int) ceil(log10((double) (vct->getNprocs())));  // Number of digits needed for # of process in ID
+        else
+            BirthRank[1] = 1;
+        if (BirthRank[1] + (int) ceil(log10((double) (npmax))) > 10 && BirthRank[0] == 0) 
+        {
+            cerr << "Error: can't Track particles in Particles3Dcomm::allocate" << endl;
+            cerr << "Unsigned long 'ParticleID' cannot store all the particles" << endl;
+            return;
+        }
+    }
+
+    //! BUFFERS - the buffer size should be decided depending on number of particles
+    if (TrackParticleID)
+        nVar = 8;
+    else
+        nVar = 7;
+    buffer_size = (int) (.05 * nop * nVar + 1); // max: 5% of the particles in the processors is going out
+    buffer_size_small = (int) (.01 * nop * nVar + 1); // max 1% not resizable 
+
+    b_X_RIGHT = new double[buffer_size];
+    b_X_RIGHT_ptr = b_X_RIGHT;    // alias to make the resize
+    b_X_LEFT = new double[buffer_size];
+    b_X_LEFT_ptr = b_X_LEFT;      // alias to make the resize
+    b_Y_RIGHT = new double[buffer_size];
+    b_Y_RIGHT_ptr = b_Y_RIGHT;    // alias to make the resize
+    b_Y_LEFT = new double[buffer_size];
+    b_Y_LEFT_ptr = b_Y_LEFT;      // alias to make the resize
+    b_Z_RIGHT = new double[buffer_size];
+    b_Z_RIGHT_ptr = b_Z_RIGHT;    // alias to make the resize
+    b_Z_LEFT = new double[buffer_size];
+    b_Z_LEFT_ptr = b_Z_LEFT;      // alias to make the resize
+
+    //* ============================================= *//
+
+    //! if RESTART is true initialize the particle in allocate method
+    restart = col->getRestart_status();
+    if (restart != 0) {
     if (vct->getCartesian_rank() == 0 && ns == 0)
-      cout << "LOADING PARTICLES FROM RESTART FILE in " + col->getRestartDirName() + "/restart.hdf" << endl;
+        cout << "LOADING PARTICLES FROM RESTART FILE in " + col->getRestartDirName() + "/restart.hdf" << endl;
     stringstream ss;
     ss << vct->getCartesian_rank();
     string name_file = col->getRestartDirName() + "/restart" + ss.str() + ".hdf";
@@ -218,11 +276,13 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     hsize_t dims_out[1];        /* dataset dimensions */
     int status_n;
 
-    // open the hdf file
+    //* ============================================= *//
+
+    //! open the hdf file
     file_id = H5Fopen(name_file.c_str(), H5F_ACC_RDWR, H5P_DEFAULT);
     if (file_id < 0) {
-      cout << "couldn't open file: " << name_file << endl;
-      cout << "RESTART NOT POSSIBLE" << endl;
+        cout << "couldn't open file: " << name_file << endl;
+        cout << "RESTART NOT POSSIBLE" << endl;
     }
 
     stringstream species_name;
@@ -230,11 +290,11 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     // the cycle of the last restart is set to 0
     string name_dataset = "/particles/species_" + species_name.str() + "/x/cycle_0";
     dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
-	if (dataset_id < 0){
-		 nop = 0 ;
-	}
-	else
-	{
+    if (dataset_id < 0){
+            nop = 0 ;
+    }
+    else
+    {
     datatype = H5Dget_type(dataset_id);
     size = H5Tget_size(datatype);
     dataspace = H5Dget_space(dataset_id); /* dataspace handle */
@@ -282,43 +342,33 @@ void Particles3Dcomm::allocate(int species, long long initnpmax, Collective * co
     status = H5Dclose(dataset_id);
     // ID 
     if (TrackParticleID) {
-      // herr_t (*old_func)(void*); // HDF 1.6
-      H5E_auto2_t old_func;      // HDF 1.8.8
-      void *old_client_data;
-      H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8.8
-      /* Turn off error handling */
-      // H5Eset_auto(NULL, NULL); // HDF 1.6
-      H5Eset_auto2(H5E_DEFAULT, 0, 0); // HDF 1.8
-      name_dataset = "/particles/species_" + species_name.str() + "/ID/cycle_0";
-      dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
+        // herr_t (*old_func)(void*); // HDF 1.6
+        H5E_auto2_t old_func;      // HDF 1.8.8
+        void *old_client_data;
+        H5Eget_auto2(H5E_DEFAULT, &old_func, &old_client_data);  // HDF 1.8.8
+        /* Turn off error handling */
+        // H5Eset_auto(NULL, NULL); // HDF 1.6
+        H5Eset_auto2(H5E_DEFAULT, 0, 0); // HDF 1.8
+        name_dataset = "/particles/species_" + species_name.str() + "/ID/cycle_0";
+        dataset_id = H5Dopen2(file_id, name_dataset.c_str(), H5P_DEFAULT); // HDF 1.8.8
 
-      // H5Eset_auto(old_func, old_client_data); // HDF 1.6
-      H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data);
-      if (dataset_id > 0)
+        // H5Eset_auto(old_func, old_client_data); // HDF 1.6
+        H5Eset_auto2(H5E_DEFAULT, old_func, old_client_data);
+        if (dataset_id > 0)
         status = H5Dread(dataset_id, H5T_NATIVE_ULONG, H5S_ALL, H5S_ALL, H5P_DEFAULT, ParticleID);
-      else {
+        else {
         for (long long counter = 0; counter < nop; counter++)
-          ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
-      }
+            ParticleID[counter] = counter * (unsigned long) pow(10.0, BirthRank[1]) + BirthRank[0];
+        }
     }
-	}
+    }
     // close the hdf file
     status = H5Fclose(file_id);
-  }
-
-  // //FOR TEST:
-  // nvDistLoc = 3;
-  // vDist     = new c_vDist[nvDistLoc];
-
-  // double vR    = 2 * sqrt(dx*dx + dy*dy + dz*dz);
-  // double vFact = 2.0;
-
-  // vDist[0].init(species, 3.0 , 11.00, 0.02625, 256, 256, 256, vR, vFact, col, grid);
-  // vDist[1].init(species, 6.36, 11.00, 0.02625, 256, 256, 256, vR, vFact, col, grid);
-  // vDist[2].init(species, 10.0, 15.0 , 0.02625, 256, 256, 256, vR, vFact, col, grid);
-  // //END FOR TEST
+    }
 
 }
+
+//? ============================================================================== ?//
 
 /** Initialie arrays for velocity distributions in 3D */
 void c_vDist::init(int ispec, double vX, double vY, double vZ, int bi, int bj, int bk, double vR, double vFact, Collective * col, Grid * grid){
@@ -446,132 +496,265 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
 
 //! Interpolation Particle --> Grid !//
 
-void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) 
-{
-    const double inv_dx = 1.0 / dx;
-    const double inv_dy = 1.0 / dy;
-    const double inv_dz = 1.0 / dz;
-    const double nxn = grid->getNXN();
-    const double nyn = grid->getNYN();
-    const double nzn = grid->getNZN();
-
-    //Moments speciesMoments(nxn,nyn,nzn,invVOL);
-    //speciesMoments.set_to_zero();
-    for (long long i = 0; i < nop; i++)
+#ifdef GPU
+    void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) 
     {
-        const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
-        const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
-        const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
-        
-        double weight[2][2][2];
-        double temp[2][2][2];
-        double xi[2], eta[2], zeta[2];
-        
-        xi[0]   = x[i] - grid->getXN(ix - 1, iy, iz);
-        eta[0]  = y[i] - grid->getYN(ix, iy - 1, iz);
-        zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
-        xi[1]   = grid->getXN(ix, iy, iz) - x[i];
-        eta[1]  = grid->getYN(ix, iy, iz) - y[i];
-        zeta[1] = grid->getZN(ix, iy, iz) - z[i];
-        
-        //? add charge density
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
-        EMf->addRho(weight, ix, iy, iz, ns);
-        
-        //? add current density - X
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
-        EMf->addJx(temp, ix, iy, iz, ns);
-        
-        //? add current density - Y
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
-        EMf->addJy(temp, ix, iy, iz, ns);
-        
-        //? add current density - Z
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
-        EMf->addJz(temp, ix, iy, iz, ns);
-        
-        //? add energy flux density - X
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = u[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
-        EMf->addEFx(temp, ix, iy, iz, ns);
-        
-        //? add energy flux density - Y
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = v[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
-        EMf->addEFy(temp, ix, iy, iz, ns);
-        
-        //? add energy flux density - Z
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = w[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
-        EMf->addEFz(temp, ix, iy, iz, ns);
-        
-        //? Pxx - add pressure tensor
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
-        EMf->addPxx(temp, ix, iy, iz, ns);
-        
-        //? Pxy - add pressure tensor
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
-        EMf->addPxy(temp, ix, iy, iz, ns);
-        
-        //? Pxz - add pressure tensor
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
-        EMf->addPxz(temp, ix, iy, iz, ns);
-        
-        //? Pyy - add pressure tensor
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
-        EMf->addPyy(temp, ix, iy, iz, ns);
-        
-        //? Pyz - add pressure tensor
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
-        EMf->addPyz(temp, ix, iy, iz, ns);
-        
-        //? Pzz - add pressure tensor
-        for (int ii = 0; ii < 2; ii++)
-            for (int jj = 0; jj < 2; jj++)
-                for (int kk = 0; kk < 2; kk++)
-                    temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
-        EMf->addPzz(temp, ix, iy, iz, ns);
+        const double inv_dx = 1.0 / dx;
+        const double inv_dy = 1.0 / dy;
+        const double inv_dz = 1.0 / dz;
+        const double nxn = grid->getNXN();
+        const double nyn = grid->getNYN();
+        const double nzn = grid->getNZN();
+
+        // Moments speciesMoments(nxn,nyn,nzn,invVOL);
+        // speciesMoments.set_to_zero();
+
+        //? Iterate over each particle
+        for (long long i = 0; i < nop; i++)
+        {
+            const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
+            const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
+            const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
+            
+            double weight[2][2][2];
+            double temp[2][2][2];
+            double xi[2], eta[2], zeta[2];
+            
+            xi[0]   = x[i] - grid->getXN(ix - 1, iy, iz);
+            eta[0]  = y[i] - grid->getYN(ix, iy - 1, iz);
+            zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
+            xi[1]   = grid->getXN(ix, iy, iz) - x[i];
+            eta[1]  = grid->getYN(ix, iy, iz) - y[i];
+            zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+            
+            //? add charge density
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+            EMf->addRho(weight, ix, iy, iz, ns);
+            
+            //? add current density - X
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
+            EMf->addJx(temp, ix, iy, iz, ns);
+            
+            //? add current density - Y
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
+            EMf->addJy(temp, ix, iy, iz, ns);
+            
+            //? add current density - Z
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
+            EMf->addJz(temp, ix, iy, iz, ns);
+            
+            //? add energy flux density - X
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+            EMf->addEFx(temp, ix, iy, iz, ns);
+            
+            //? add energy flux density - Y
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = v[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+            EMf->addEFy(temp, ix, iy, iz, ns);
+            
+            //? add energy flux density - Z
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = w[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+            EMf->addEFz(temp, ix, iy, iz, ns);
+            
+            //? Pxx - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
+            EMf->addPxx(temp, ix, iy, iz, ns);
+            
+            //? Pxy - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
+            EMf->addPxy(temp, ix, iy, iz, ns);
+            
+            //? Pxz - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
+            EMf->addPxz(temp, ix, iy, iz, ns);
+            
+            //? Pyy - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
+            EMf->addPyy(temp, ix, iy, iz, ns);
+            
+            //? Pyz - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
+            EMf->addPyz(temp, ix, iy, iz, ns);
+            
+            //? Pzz - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
+            EMf->addPzz(temp, ix, iy, iz, ns);
+        }
+
+        // change this to allow more parallelization after implementing array class
+        //EMf->addToSpeciesMoments(speciesMoments,ns);
+
+        //? communicate contribution from ghost cells 
+        EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
     }
 
-    // change this to allow more parallelization after implementing array class
-    //EMf->addToSpeciesMoments(speciesMoments,ns);
+#else
+    void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) 
+    {
+        const double inv_dx = 1.0 / dx;
+        const double inv_dy = 1.0 / dy;
+        const double inv_dz = 1.0 / dz;
+        const double nxn = grid->getNXN();
+        const double nyn = grid->getNYN();
+        const double nzn = grid->getNZN();
 
-    //? communicate contribution from ghost cells 
-    EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
-}
+        // Moments speciesMoments(nxn,nyn,nzn,invVOL);
+        // speciesMoments.set_to_zero();
+
+        //? Iterate over each particle
+        for (long long i = 0; i < nop; i++)
+        {
+            const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
+            const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
+            const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
+            
+            double weight[2][2][2]; double temp[2][2][2];
+            double xi[2]; double eta[2]; double zeta[2];
+            xi  [0] = x[i] - grid->getXN(ix - 1, iy, iz);
+            eta [0] = y[i] - grid->getYN(ix, iy - 1, iz);
+            zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
+            xi  [1] = grid->getXN(ix, iy, iz) - x[i];
+            eta [1] = grid->getYN(ix, iy, iz) - y[i];
+            zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+            
+            //? add charge density
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+            EMf->addRho(weight, ix, iy, iz, ns);
+            
+            //? add current density - X
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
+            EMf->addJx(temp, ix, iy, iz, ns);
+            
+            //? add current density - Y
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
+            EMf->addJy(temp, ix, iy, iz, ns);
+            
+            //? add current density - Z
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
+            EMf->addJz(temp, ix, iy, iz, ns);
+            
+            //? add energy flux density - X
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+            EMf->addEFx(temp, ix, iy, iz, ns);
+            
+            //? add energy flux density - Y
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = v[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+            EMf->addEFy(temp, ix, iy, iz, ns);
+            
+            //? add energy flux density - Z
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = w[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
+            EMf->addEFz(temp, ix, iy, iz, ns);
+            
+            //? Pxx - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
+            EMf->addPxx(temp, ix, iy, iz, ns);
+            
+            //? Pxy - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
+            EMf->addPxy(temp, ix, iy, iz, ns);
+            
+            //? Pxz - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
+            EMf->addPxz(temp, ix, iy, iz, ns);
+            
+            //? Pyy - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
+            EMf->addPyy(temp, ix, iy, iz, ns);
+            
+            //? Pyz - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
+            EMf->addPyz(temp, ix, iy, iz, ns);
+            
+            //? Pzz - add pressure tensor
+            for (int ii = 0; ii < 2; ii++)
+                for (int jj = 0; jj < 2; jj++)
+                    for (int kk = 0; kk < 2; kk++)
+                        temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
+            EMf->addPzz(temp, ix, iy, iz, ns);
+        }
+
+        // change this to allow more parallelization after implementing array class
+        //EMf->addToSpeciesMoments(speciesMoments,ns);
+
+        //? communicate contribution from ghost cells 
+        EMf->communicateGhostP2G(ns, 0, 0, 0, 0, vct);
+    }
+
+#endif
 
 //? ============================================================================== ?//
 
