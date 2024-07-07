@@ -312,34 +312,16 @@ int c_Solver::Init(int argc, char **argv) {
 //! Gather Moments !//
 void c_Solver::GatherMoments()
 {
-    LeXInt::timer time_1, time_2, time_3, time_4;
-
-    if (myrank == 0) 
-        time_1.start();
+    LeXInt::timer time_1;
 	
     //? Get data from fields (function defined in EMfields3D.cpp)
 	EMf->updateInfoFields(grid,vct,col);
-    
-    if (myrank == 0)
-    {
-        time_1.stop();
-        cout << "MG time 1 (s): " << time_1.total() << endl;
-    }
-
-    if (myrank == 0)
-        time_2.start();
 	
     //? Set densities (charge density (1), current (3), energy flux density (3), pressure tensor (6)) to 0 (function defined in EMfields3D.cpp)
     EMf->setZeroDensities();
-    
-    if (myrank == 0)
-    {
-        time_2.stop();
-        cout << "MG time 2 (s): " << time_2.total() << endl;               
-    }
 
     if (myrank == 0)
-        time_3.start();
+        time_1.start();
 
 	//? Interpolate Particles to Grid(Nodes) for each species (function defined in Particles3Dcomm.cpp)
 	for (int i = 0; i < ns; i++)
@@ -349,21 +331,12 @@ void c_Solver::GatherMoments()
     
     if (myrank == 0)
     {
-        time_3.stop();
-        cout << "MG time 3 (s): " << time_3.total() << endl;
+        time_1.stop();
+        cout << "MG interpP2G time (s): " << time_1.total() << endl;
     }
 
-    if (myrank == 0)
-        time_4.start();
-
 	//? Sum all over the species: Charge density of all species on NODES (function defined in EMfields3D.cpp)
-	EMf->sumOverSpecies(vct);
-    
-    if (myrank == 0)
-    {
-        time_4.stop();
-        cout << "MG time 4 (s): " << time_4.total() << endl;
-    }         
+	EMf->sumOverSpecies(vct);    
 	
 	//? Fill with constant charge the planet
 	if (col->getCase()=="Dipole") 
