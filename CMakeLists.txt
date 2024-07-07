@@ -17,12 +17,6 @@ find_package(MPI REQUIRED)
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake-modules")
 
 #
-# GPU
-#
-set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc80,lineinfo -Minfo=accel")
-# set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc80,managed,lineinfo -Minfo=accel")
-
-#
 # Options
 #
 option(IPIC_TESTS "Set up the code tests" OFF)
@@ -34,6 +28,8 @@ endif()
 option(GPU "GPU offloading" OFF)
 if(GPU)
 	add_definitions( -DGPU )
+    set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc80,lineinfo -Minfo=accel")
+    # set (CMAKE_CXX_FLAGS "-cuda -acc -gpu=cc80,managed,lineinfo -Minfo=accel")
 endif()
 
 option(GPU_PREFETCHING "Prefetch memory on GPU; needs CUDA" OFF)
