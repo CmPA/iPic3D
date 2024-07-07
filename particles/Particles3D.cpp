@@ -1061,9 +1061,7 @@ void Particles3D::get_Bl(const double weights[2][2][2], int ix, int iy, int iz, 
 int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf) 
 {
 	if (vct->getCartesian_rank() == 0) 
-	{
 		cout << "*** MOVER species " << ns << " ***" << " with " << nop << " particles **** " << endl;
-	}
 
 	double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
 	double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
@@ -1211,9 +1209,9 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
 			#ifdef GPU
 
-			  	double xi_0   = xp - grid->getXN(ix-1, iy  , iz  );
-				double eta_0  = yp - grid->getYN(ix  , iy-1, iz  );
-				double zeta_0 = zp - grid->getZN(ix  , iy  , iz-1);
+			  	double xi_0   = xp - grid->getXN(ix - 1, iy, iz);
+				double eta_0  = yp - grid->getYN(ix, iy - 1, iz);
+				double zeta_0 = zp - grid->getZN(ix, iy, iz - 1);
 				double xi_1   = grid->getXN(ix,iy,iz) - xp;
 				double eta_1  = grid->getYN(ix,iy,iz) - yp;
 				double zeta_1 = grid->getZN(ix,iy,iz) - zp;
