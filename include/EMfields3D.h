@@ -327,47 +327,85 @@ class EMfields3D                // :public Field
     void communicateGhostP2G(int ns, int bcFaceXright, int bcFaceXleft, int bcFaceYright, int bcFaceYleft, VirtualTopology3D * vct);
     /*! add accumulated moments to the moments for a given species */
     void addToSpeciesMoments(const Moments & in, int is);
+    
     /*! add an amount of charge density to charge density field at node X,Y,Z */
     #pragma acc routine seq
     void addRho(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addRho_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+    
     /*! add an amount of current density - direction X to current density field at node X,Y,Z */
     #pragma acc routine seq
     void addJx(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addJx_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
     /*! add an amount of current density - direction Y to current density field at node X,Y,Z */
     #pragma acc routine seq
     void addJy(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addJy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
     /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
     #pragma acc routine seq
     void addJz(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addJz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
 
     /*! add an amount of EF - direction X  at node X,Y,Z */
     #pragma acc routine seq
     void addEFx(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addEFx_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
     /*! add an amount of EF - direction Y at node X,Y,Z */
     #pragma acc routine seq
     void addEFy(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addEFy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
     /*! add an amount of EF - direction Z at node X,Y,Z */
     #pragma acc routine seq
     void addEFz(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addEFz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
 
     /*! add an amount of pressure density - direction XX to current density field at node X,Y,Z */
     #pragma acc routine seq
     void addPxx(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addPxx_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
     /*! add an amount of pressure density - direction XY to current density field at node X,Y,Z */
     #pragma acc routine seq
     void addPxy(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addPxy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
     /*! add an amount of pressure density - direction XZ to current density field at node X,Y,Z */
     #pragma acc routine seq
     void addPxz(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addPxz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
     /*! add an amount of pressure density - direction YY to current density field at node X,Y,Z */
     #pragma acc routine seq
     void addPyy(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addPyy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
     /*! add an amount of pressure density - direction YZ to current density field at node X,Y,Z */
     #pragma acc routine seq
     void addPyz(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addPyz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
     /*! add an amount of pressure density - direction ZZ to current density field at node X,Y,Z */
     #pragma acc routine seq
     void addPzz(double weight[][2][2], int X, int Y, int Z, int is);
+    #pragma acc routine seq
+    void addPzz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is);
+
 
     /*! adjust densities on boundaries that are not periodic */
     void adjustNonPeriodicDensities(int is, VirtualTopology3D * vct);

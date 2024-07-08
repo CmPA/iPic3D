@@ -1571,6 +1571,27 @@ void EMfields3D::addRho(double weight[][2][2], int X, int Y, int Z, int is)
                 #pragma acc atomic
                 rhons[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
+
+void EMfields3D::addRho_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    rhons[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    rhons[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    rhons[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    rhons[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    rhons[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    rhons[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    rhons[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    rhons[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
+
 /*! add an amount of charge density to current density - direction X to current density field on the node */
 void EMfields3D::addJx(double weight[][2][2], int X, int Y, int Z, int is) 
 {
@@ -1582,25 +1603,25 @@ void EMfields3D::addJx(double weight[][2][2], int X, int Y, int Z, int is)
                 Jxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addJx_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     Jxs[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     Jxs[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     Jxs[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     Jxs[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     Jxs[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     Jxs[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     Jxs[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     Jxs[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addJx_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    Jxs[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    Jxs[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    Jxs[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    Jxs[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    Jxs[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    Jxs[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    Jxs[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    Jxs[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of current density - direction Y to current density field on the node */
 void EMfields3D::addJy(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1613,25 +1634,25 @@ void EMfields3D::addJy(double weight[][2][2], int X, int Y, int Z, int is)
                 Jys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addJy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     Jys[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     Jys[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     Jys[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     Jys[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     Jys[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     Jys[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     Jys[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     Jys[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addJy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    Jys[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    Jys[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    Jys[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    Jys[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    Jys[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    Jys[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    Jys[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    Jys[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of current density - direction Z to current density field on the node */
 void EMfields3D::addJz(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1644,25 +1665,25 @@ void EMfields3D::addJz(double weight[][2][2], int X, int Y, int Z, int is)
                 Jzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addJz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     Jzs[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     Jzs[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     Jzs[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     Jzs[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     Jzs[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     Jzs[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     Jzs[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     Jzs[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addJz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    Jzs[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    Jzs[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    Jzs[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    Jzs[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    Jzs[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    Jzs[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    Jzs[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    Jzs[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of charge energy to EF density - direction X to EF density field on the node */
 void EMfields3D::addEFx(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1675,25 +1696,25 @@ void EMfields3D::addEFx(double weight[][2][2], int X, int Y, int Z, int is)
                 EFxs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addEFx_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     EFxs[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     EFxs[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     EFxs[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     EFxs[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     EFxs[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     EFxs[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     EFxs[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     EFxs[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addEFx_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    EFxs[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    EFxs[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    EFxs[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    EFxs[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    EFxs[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    EFxs[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    EFxs[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    EFxs[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of  energy flyx to EF  - direction Y to EF density field on the node */
 void EMfields3D::addEFy(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1706,25 +1727,25 @@ void EMfields3D::addEFy(double weight[][2][2], int X, int Y, int Z, int is)
                 EFys[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addEFy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     EFys[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     EFys[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     EFys[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     EFys[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     EFys[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     EFys[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     EFys[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     EFys[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addEFy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    EFys[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    EFys[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    EFys[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    EFys[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    EFys[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    EFys[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    EFys[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    EFys[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of energy flux to EF  - direction Z to EF density field on the node */
 void EMfields3D::addEFz(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1737,25 +1758,25 @@ void EMfields3D::addEFz(double weight[][2][2], int X, int Y, int Z, int is)
                 EFzs[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addEFz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     EFzs[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     EFzs[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     EFzs[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     EFzs[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     EFzs[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     EFzs[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     EFzs[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     EFzs[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addEFz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    EFzs[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    EFzs[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    EFzs[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    EFzs[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    EFzs[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    EFzs[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    EFzs[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    EFzs[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of pressure density - direction XX to current density field on the node */
 void EMfields3D::addPxx(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1768,25 +1789,25 @@ void EMfields3D::addPxx(double weight[][2][2], int X, int Y, int Z, int is)
                 pXXsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addPxx_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     pXXsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     pXXsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     pXXsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     pXXsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     pXXsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     pXXsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     pXXsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     pXXsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addPxx_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    pXXsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    pXXsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    pXXsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    pXXsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    pXXsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    pXXsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    pXXsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    pXXsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of pressure density - direction XY to current density field on the node */
 void EMfields3D::addPxy(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1799,25 +1820,25 @@ void EMfields3D::addPxy(double weight[][2][2], int X, int Y, int Z, int is)
                 pXYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addPxy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     pXYsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     pXYsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     pXYsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     pXYsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     pXYsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     pXYsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     pXYsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     pXYsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addPxy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    pXYsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    pXYsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    pXYsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    pXYsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    pXYsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    pXYsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    pXYsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    pXYsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of pressure density - direction XZ to current density field on the node */
 void EMfields3D::addPxz(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1830,25 +1851,25 @@ void EMfields3D::addPxz(double weight[][2][2], int X, int Y, int Z, int is)
                 pXZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addPxz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     pXZsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     pXZsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     pXZsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     pXZsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     pXZsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     pXZsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     pXZsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     pXZsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addPxz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    pXZsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    pXZsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    pXZsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    pXZsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    pXZsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    pXZsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    pXZsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    pXZsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of pressure density - direction YY to current density field on the node */
 void EMfields3D::addPyy(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1861,25 +1882,25 @@ void EMfields3D::addPyy(double weight[][2][2], int X, int Y, int Z, int is)
                 pYYsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addPyy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     pYYsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     pYYsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     pYYsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     pYYsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     pYYsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     pYYsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     pYYsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     pYYsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addPyy_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    pYYsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    pYYsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    pYYsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    pYYsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    pYYsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    pYYsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    pYYsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    pYYsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of pressure density - direction YZ to current density field on the node */
 void EMfields3D::addPyz(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1892,25 +1913,25 @@ void EMfields3D::addPyz(double weight[][2][2], int X, int Y, int Z, int is)
                 pYZsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addPyz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     pYZsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     pYZsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     pYZsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     pYZsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     pYZsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     pYZsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     pYZsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     pYZsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addPyz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    pYZsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    pYZsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    pYZsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    pYZsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    pYZsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    pYZsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    pYZsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    pYZsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 /*! add an amount of pressure density - direction ZZ to current density field on the node */
 void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is)
@@ -1923,25 +1944,25 @@ void EMfields3D::addPzz(double weight[][2][2], int X, int Y, int Z, int is)
                 pXXsn[is][X - i][Y - j][Z - k] += weight[i][j][k] * invVOL;
 }
 
-// void EMfields3D::addPzz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
-// {
-//     #pragma acc atomic update
-//     pZZsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
-//     #pragma acc atomic update
-//     pZZsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
-//     #pragma acc atomic update
-//     pZZsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
-//     #pragma acc atomic update
-//     pZZsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
-//     #pragma acc atomic update
-//     pZZsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
-//     #pragma acc atomic update
-//     pZZsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
-//     #pragma acc atomic update
-//     pZZsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
-//     #pragma acc atomic update
-//     pZZsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
-// }
+void EMfields3D::addPzz_d(double weight_000, double weight_001, double weight_010, double weight_011, double weight_100, double weight_101, double weight_110, double weight_111, int X, int Y, int Z, int is)
+{
+    #pragma acc atomic update
+    pZZsn[is][X - 0][Y - 0][Z - 0] += weight_000 * invVOL;
+    #pragma acc atomic update
+    pZZsn[is][X - 0][Y - 0][Z - 1] += weight_001 * invVOL;
+    #pragma acc atomic update
+    pZZsn[is][X - 0][Y - 1][Z - 0] += weight_010 * invVOL;
+    #pragma acc atomic update
+    pZZsn[is][X - 0][Y - 1][Z - 1] += weight_011 * invVOL;
+    #pragma acc atomic update
+    pZZsn[is][X - 1][Y - 0][Z - 0] += weight_100 * invVOL;
+    #pragma acc atomic update
+    pZZsn[is][X - 1][Y - 0][Z - 1] += weight_101 * invVOL;
+    #pragma acc atomic update
+    pZZsn[is][X - 1][Y - 1][Z - 0] += weight_110 * invVOL;
+    #pragma acc atomic update
+    pZZsn[is][X - 1][Y - 1][Z - 1] += weight_111 * invVOL;
+}
 
 //? ============================================================================== ?//
 
