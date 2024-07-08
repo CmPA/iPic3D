@@ -28,7 +28,6 @@ developers: Stefano Markidis, Giovanni Lapenta.
 #include <vector>
 #include <complex>
 
-#include "../LeXInt_timer.hpp"
 #include "../cuda_error_check.hpp"
 #include <openacc.h>
 #include <cuda_runtime.h>
@@ -511,14 +510,17 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
         // speciesMoments.set_to_zero();
 
         //? Iterate over each particle
-        // #pragma acc data present(EMf)
         #pragma acc parallel loop
         for (long long i = 0; i < nop; i++)
         {
+            #pragma acc wait
+
             const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
             const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
             const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
             
+            //! ================= WAY 1 ================= !//
+
             double weight[2][2][2];
             double temp[2][2][2];
 
@@ -529,22 +531,6 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
             xi  [1] = grid->getXN(ix, iy, iz) - x[i];
             eta [1] = grid->getYN(ix, iy, iz) - y[i];
             zeta[1] = grid->getZN(ix, iy, iz) - z[i];
-            
-            // double xi_0   = x[i] - grid->getXN(ix - 1, iy, iz);
-            // double eta_0  = y[i] - grid->getYN(ix, iy - 1, iz);
-            // double zeta_0 = z[i] - grid->getZN(ix, iy, iz - 1);
-            // double xi_1   = grid->getXN(ix,iy,iz) - x[i];
-            // double eta_1  = grid->getYN(ix,iy,iz) - y[i];
-            // double zeta_1 = grid->getZN(ix,iy,iz) - z[i];
-
-            // double weight000 = xi_0 * eta_0 * zeta_0 * invVOL;
-            // double weight001 = xi_0 * eta_0 * zeta_1 * invVOL;
-            // double weight010 = xi_0 * eta_1 * zeta_0 * invVOL;
-            // double weight011 = xi_0 * eta_1 * zeta_1 * invVOL;
-            // double weight100 = xi_1 * eta_0 * zeta_0 * invVOL;
-            // double weight101 = xi_1 * eta_0 * zeta_1 * invVOL;
-            // double weight110 = xi_1 * eta_1 * zeta_0 * invVOL;
-            // double weight111 = xi_1 * eta_1 * zeta_1 * invVOL;
 
             //? add charge density
             #pragma acc loop collapse(3)
@@ -553,9 +539,6 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
                     for (int kk = 0; kk < 2; kk++)
                         weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
             EMf->addRho(weight, ix, iy, iz, ns);
-
-            //! Variable "weight" is being used in the subsequest functions - needs synchronisation
-            #pragma acc wait    
             
             //? add current density - X
             #pragma acc loop collapse(3)
@@ -652,6 +635,41 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
                     for (int kk = 0; kk < 2; kk++)
                         temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
             EMf->addPzz(temp, ix, iy, iz, ns);
+
+            //! ================= WAY 2 ================= !//
+
+            // double xi_0   = x[i] - grid->getXN(ix - 1, iy, iz);
+            // double eta_0  = y[i] - grid->getYN(ix, iy - 1, iz);
+            // double zeta_0 = z[i] - grid->getZN(ix, iy, iz - 1);
+            // double xi_1   = grid->getXN(ix,iy,iz) - x[i];
+            // double eta_1  = grid->getYN(ix,iy,iz) - y[i];
+            // double zeta_1 = grid->getZN(ix,iy,iz) - z[i];
+
+            // double weight000 = xi_0 * eta_0 * zeta_0 * invVOL;
+            // double weight001 = xi_0 * eta_0 * zeta_1 * invVOL;
+            // double weight010 = xi_0 * eta_1 * zeta_0 * invVOL;
+            // double weight011 = xi_0 * eta_1 * zeta_1 * invVOL;
+            // double weight100 = xi_1 * eta_0 * zeta_0 * invVOL;
+            // double weight101 = xi_1 * eta_0 * zeta_1 * invVOL;
+            // double weight110 = xi_1 * eta_1 * zeta_0 * invVOL;
+            // double weight111 = xi_1 * eta_1 * zeta_1 * invVOL;
+
+            // EMf->addRho_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+
+            // EMf->addJx_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // EMf->addJy_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // EMf->addJz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+
+            // EMf->addEFx_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // EMf->addEFy_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // EMf->addEFz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+
+            // EMf->addPxx_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // EMf->addPxy_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // EMf->addPxz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // EMf->addPyy_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // EMf->addPyz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // EMf->addPzz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
         }
 
         // change this to allow more parallelization after implementing array class
@@ -664,8 +682,6 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
 #else
     void Particles3Dcomm::interpP2G(Field * EMf, Grid * grid, VirtualTopology3D * vct) 
     {
-        LeXInt::timer time_1;
-
         const double inv_dx = 1.0 / dx;
         const double inv_dy = 1.0 / dy;
         const double inv_dz = 1.0 / dz;
@@ -675,9 +691,6 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
 
         // Moments speciesMoments(nxn,nyn,nzn,invVOL);
         // speciesMoments.set_to_zero();
-
-        if (vct->getCartesian_rank() == 0)
-            time_1.start();
 
         //? Iterate over each particle
         for (long long i = 0; i < nop; i++)
@@ -785,12 +798,6 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
                     for (int kk = 0; kk < 2; kk++)
                         temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
             EMf->addPzz(temp, ix, iy, iz, ns);
-        }
-
-        if (vct->getCartesian_rank() == 0)
-        {
-            time_1.stop();
-            cout << "   MG interpP2G particles loop (s): " << time_1.average() << endl;
         }
 
         // change this to allow more parallelization after implementing array class
