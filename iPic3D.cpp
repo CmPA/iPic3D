@@ -30,8 +30,8 @@ int main(int argc, char **argv)
 	//! ------------ !//
   	for (int i = KCode.FirstCycle(); i <= KCode.LastCycle(); i++)
 	{
-
-		if (KCode.get_myrank() == 0) cout << " ======= Cycle " << i << " ======= " << endl;
+		if (KCode.get_myrank() == 0) 
+            cout << endl << "============== Time Step " << i << " ============== " << endl;
 
 		//! ----------------------------------------------------- !//
 		//! 2- Calculate fields and move particles                !//
