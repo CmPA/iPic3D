@@ -1160,6 +1160,11 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	#pragma acc parallel loop copyin(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop], Ex_d[0:nxn*nyn*nzn], Ey_d[0:nxn*nyn*nzn], Ez_d[0:nxn*nyn*nzn], Ex_ext_d[0:nxn*nyn*nzn], Ey_ext_d[0:nxn*nyn*nzn], Ez_ext_d[0:nxn*nyn*nzn], Bx_d[0:nxn*nyn*nzn], By_d[0:nxn*nyn*nzn], Bz_d[0:nxn*nyn*nzn],Bx_ext_d[0:nxn*nyn*nzn], By_ext_d[0:nxn*nyn*nzn], Bz_ext_d[0:nxn*nyn*nzn]) copyout(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop])
 	for (long long rest = 0; rest < nop; rest++) 
 	{
+        #ifdef GPU
+            //! Synchronise all threads (else you run into incorrect memory accesses)
+            #pragma acc wait
+        #endif
+
 		//? Copy the position of the particle
 		double xp = x[rest];
 		double yp = y[rest];
@@ -1290,11 +1295,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
     
 			#else
 
-				if((vct->getCartesian_rank() == 0) && (rest == 1) && (innter == 0))
-				{
-					std::cout << "Particle mover is NOT running on GPUs" << std::endl;
-				}
-
 				double xi[2]; double eta[2]; double zeta[2];
 				xi  [0] = xp - grid->getXN(ix-1,iy  ,iz  );
 				eta [0] = yp - grid->getYN(ix  ,iy-1,iz  );
@@ -1367,10 +1367,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 				Ezl += weight111 * (Ez[ix - 1][iy - 1][iz - 1] + Fext * Ez_ext[ix - 1][iy - 1][iz - 1]);
 				
 			//? End of computation of average velocity
-			#endif
-
-			//! Synchronise all threads (else you run into incorrect memory accesses)
-			#pragma acc wait
+            #endif
 
 			const double omdtsq = qomdt2 * qomdt2 * (Bxl * Bxl + Byl * Byl + Bzl * Bzl);
 			const double denom = 1.0 / (1.0 + omdtsq);
@@ -1407,7 +1404,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		u[rest] = up;
 		v[rest] = vp;
 		w[rest] = wp;
-
 
 		// gpuErrchk(cudaPeekAtLastError());
 		// gpuErrchk(cudaDeviceSynchronize());
