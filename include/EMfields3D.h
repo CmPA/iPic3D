@@ -25,6 +25,12 @@
 #include "asserts.h"
 #include "BCStructure.h"
 
+#include "../LeXInt_timer.hpp"
+// #include "../cuda_error_check.hpp"
+#include <openacc.h>
+#include <cuda_runtime.h>
+#include <cuda.h>
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -322,32 +328,45 @@ class EMfields3D                // :public Field
     /*! add accumulated moments to the moments for a given species */
     void addToSpeciesMoments(const Moments & in, int is);
     /*! add an amount of charge density to charge density field at node X,Y,Z */
+    #pragma acc routine seq
     void addRho(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction X to current density field at node X,Y,Z */
+    #pragma acc routine seq
     void addJx(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction Y to current density field at node X,Y,Z */
+    #pragma acc routine seq
     void addJy(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of current density - direction Z to current density field at node X,Y,Z */
+    #pragma acc routine seq
     void addJz(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! add an amount of EF - direction X  at node X,Y,Z */
+    #pragma acc routine seq
     void addEFx(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of EF - direction Y at node X,Y,Z */
+    #pragma acc routine seq
     void addEFy(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of EF - direction Z at node X,Y,Z */
+    #pragma acc routine seq
     void addEFz(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! add an amount of pressure density - direction XX to current density field at node X,Y,Z */
+    #pragma acc routine seq
     void addPxx(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction XY to current density field at node X,Y,Z */
+    #pragma acc routine seq
     void addPxy(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction XZ to current density field at node X,Y,Z */
+    #pragma acc routine seq
     void addPxz(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction YY to current density field at node X,Y,Z */
+    #pragma acc routine seq
     void addPyy(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction YZ to current density field at node X,Y,Z */
+    #pragma acc routine seq
     void addPyz(double weight[][2][2], int X, int Y, int Z, int is);
     /*! add an amount of pressure density - direction ZZ to current density field at node X,Y,Z */
+    #pragma acc routine seq
     void addPzz(double weight[][2][2], int X, int Y, int Z, int is);
 
     /*! adjust densities on boundaries that are not periodic */
