@@ -509,6 +509,10 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
         // Moments speciesMoments(nxn,nyn,nzn,invVOL);
         // speciesMoments.set_to_zero();
 
+        #ifdef NSIGHT_PROFILING
+    	    nvtxRangePush("Compute_moments_particle_loop");
+  	    #endif 
+
         //? Iterate over each particle
         #pragma acc parallel loop
         for (long long i = 0; i < nop; i++)
@@ -687,6 +691,10 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
             //             temp[ii][jj][kk] = w2 * weight[ii][jj][kk];
             // EMf->addPzz(temp, ix, iy, iz, ns);
         }
+
+        #ifdef NSIGHT_PROFILING
+		    nvtxRangePop();
+	    #endif 
 
         // change this to allow more parallelization after implementing array class
         //EMf->addToSpeciesMoments(speciesMoments,ns);
