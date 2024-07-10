@@ -518,158 +518,174 @@ void Particles3Dcomm::calculateWeights(double weight[][2][2], double xp, double 
             const int ix = 2 + int (floor((x[i] - xstart) * inv_dx));
             const int iy = 2 + int (floor((y[i] - ystart) * inv_dy));
             const int iz = 2 + int (floor((z[i] - zstart) * inv_dz));
-            
+
+            double EF_u = u[i] * 0.5/qom * (u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
+            double EF_v = v[i] * 0.5/qom * (u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
+            double EF_w = w[i] * 0.5/qom * (u[i]*u[i] + v[i]*v[i] + w[i]*w[i]);
+            double u2 = u[i]*u[i];
+            double v2 = v[i]*v[i];
+            double w2 = w[i]*w[i];
+            double uv = u[i]*v[i];
+            double vw = v[i]*w[i];
+            double wu = w[i]*u[i];
+
             //! ================= WAY 1 ================= !//
 
-            double weight[2][2][2];
-            double temp[2][2][2];
+            //! This is a better way to compute the moments over collapsing 3 nested loops (WAY 2)
 
-            double xi[2]; double eta[2]; double zeta[2];
-            xi  [0] = x[i] - grid->getXN(ix - 1, iy, iz);
-            eta [0] = y[i] - grid->getYN(ix, iy - 1, iz);
-            zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
-            xi  [1] = grid->getXN(ix, iy, iz) - x[i];
-            eta [1] = grid->getYN(ix, iy, iz) - y[i];
-            zeta[1] = grid->getZN(ix, iy, iz) - z[i];
+            double xi_0   = x[i] - grid->getXN(ix - 1, iy, iz);
+            double eta_0  = y[i] - grid->getYN(ix, iy - 1, iz);
+            double zeta_0 = z[i] - grid->getZN(ix, iy, iz - 1);
+            double xi_1   = grid->getXN(ix,iy,iz) - x[i];
+            double eta_1  = grid->getYN(ix,iy,iz) - y[i];
+            double zeta_1 = grid->getZN(ix,iy,iz) - z[i];
 
-            //? add charge density
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
-            EMf->addRho(weight, ix, iy, iz, ns);
-            
-            //? add current density - X
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
-            EMf->addJx(temp, ix, iy, iz, ns);
-            
-            //? add current density - Y
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
-            EMf->addJy(temp, ix, iy, iz, ns);
-            
-            //? add current density - Z
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
-            EMf->addJz(temp, ix, iy, iz, ns);
-            
-            //? add energy flux density - X
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = u[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
-            EMf->addEFx(temp, ix, iy, iz, ns);
-            
-            //? add energy flux density - Y
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = v[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
-            EMf->addEFy(temp, ix, iy, iz, ns);
-            
-            //? add energy flux density - Z
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = w[i] * 0.5 / qom *(u[i]*u[i] +v[i]*v[i]+w[i]*w[i]) * weight[ii][jj][kk];
-            EMf->addEFz(temp, ix, iy, iz, ns);
-            
-            //? Pxx - add pressure tensor
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = u[i] * u[i] * weight[ii][jj][kk];
-            EMf->addPxx(temp, ix, iy, iz, ns);
-            
-            //? Pxy - add pressure tensor
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = u[i] * v[i] * weight[ii][jj][kk];
-            EMf->addPxy(temp, ix, iy, iz, ns);
-            
-            //? Pxz - add pressure tensor
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = u[i] * w[i] * weight[ii][jj][kk];
-            EMf->addPxz(temp, ix, iy, iz, ns);
-            
-            //? Pyy - add pressure tensor
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = v[i] * v[i] * weight[ii][jj][kk];
-            EMf->addPyy(temp, ix, iy, iz, ns);
-            
-            //? Pyz - add pressure tensor
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = v[i] * w[i] * weight[ii][jj][kk];
-            EMf->addPyz(temp, ix, iy, iz, ns);
-            
-            //? Pzz - add pressure tensor
-            #pragma acc loop collapse(3)
-            for (int ii = 0; ii < 2; ii++)
-                for (int jj = 0; jj < 2; jj++)
-                    for (int kk = 0; kk < 2; kk++)
-                        temp[ii][jj][kk] = w[i] * w[i] * weight[ii][jj][kk];
-            EMf->addPzz(temp, ix, iy, iz, ns);
+            double weight000 = xi_0 * eta_0 * zeta_0 * invVOL * q[i];
+            double weight001 = xi_0 * eta_0 * zeta_1 * invVOL * q[i];
+            double weight010 = xi_0 * eta_1 * zeta_0 * invVOL * q[i];
+            double weight011 = xi_0 * eta_1 * zeta_1 * invVOL * q[i];
+            double weight100 = xi_1 * eta_0 * zeta_0 * invVOL * q[i];
+            double weight101 = xi_1 * eta_0 * zeta_1 * invVOL * q[i];
+            double weight110 = xi_1 * eta_1 * zeta_0 * invVOL * q[i];
+            double weight111 = xi_1 * eta_1 * zeta_1 * invVOL * q[i];
 
+            //? Add charge density
+            EMf->addRho_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+
+            //? Add current densities
+            EMf->addJx_d(u[i]*weight000, u[i]*weight001, u[i]*weight010, u[i]*weight011, u[i]*weight100, u[i]*weight101, u[i]*weight110, u[i]*weight111, ix, iy, iz, ns);
+            EMf->addJy_d(v[i]*weight000, v[i]*weight001, v[i]*weight010, v[i]*weight011, v[i]*weight100, v[i]*weight101, v[i]*weight110, v[i]*weight111, ix, iy, iz, ns);
+            EMf->addJz_d(w[i]*weight000, w[i]*weight001, w[i]*weight010, w[i]*weight011, w[i]*weight100, w[i]*weight101, w[i]*weight110, w[i]*weight111, ix, iy, iz, ns);
+
+            //? Add energy flux densities
+            EMf->addEFx_d(EF_u*weight000, EF_u*weight001, EF_u*weight010, EF_u*weight011, EF_u*weight100, EF_u*weight101, EF_u*weight110, EF_u*weight111, ix, iy, iz, ns);
+            EMf->addEFy_d(EF_v*weight000, EF_v*weight001, EF_v*weight010, EF_v*weight011, EF_v*weight100, EF_v*weight101, EF_v*weight110, EF_v*weight111, ix, iy, iz, ns);
+            EMf->addEFz_d(EF_w*weight000, EF_w*weight001, EF_w*weight010, EF_w*weight011, EF_w*weight100, EF_w*weight101, EF_w*weight110, EF_w*weight111, ix, iy, iz, ns);
+
+            //? Add components of pressure tensor
+            EMf->addPxx_d(u2*weight000, u2*weight001, u2*weight010, u2*weight011, u2*weight100, u2*weight101, u2*weight110, u2*weight111, ix, iy, iz, ns);
+            EMf->addPxy_d(uv*weight000, uv*weight001, uv*weight010, uv*weight011, uv*weight100, uv*weight101, uv*weight110, uv*weight111, ix, iy, iz, ns);
+            EMf->addPxz_d(wu*weight000, wu*weight001, wu*weight010, wu*weight011, wu*weight100, wu*weight101, wu*weight110, wu*weight111, ix, iy, iz, ns);
+            EMf->addPyy_d(v2*weight000, v2*weight001, v2*weight010, v2*weight011, v2*weight100, v2*weight101, v2*weight110, v2*weight111, ix, iy, iz, ns);
+            EMf->addPyz_d(vw*weight000, vw*weight001, vw*weight010, vw*weight011, vw*weight100, vw*weight101, vw*weight110, vw*weight111, ix, iy, iz, ns);
+            EMf->addPzz_d(v2*weight000, v2*weight001, v2*weight010, v2*weight011, v2*weight100, v2*weight101, v2*weight110, v2*weight111, ix, iy, iz, ns);
+            
             //! ================= WAY 2 ================= !//
 
-            // double xi_0   = x[i] - grid->getXN(ix - 1, iy, iz);
-            // double eta_0  = y[i] - grid->getYN(ix, iy - 1, iz);
-            // double zeta_0 = z[i] - grid->getZN(ix, iy, iz - 1);
-            // double xi_1   = grid->getXN(ix,iy,iz) - x[i];
-            // double eta_1  = grid->getYN(ix,iy,iz) - y[i];
-            // double zeta_1 = grid->getZN(ix,iy,iz) - z[i];
+            // double weight[2][2][2];
+            // double temp[2][2][2];
 
-            // double weight000 = xi_0 * eta_0 * zeta_0 * invVOL;
-            // double weight001 = xi_0 * eta_0 * zeta_1 * invVOL;
-            // double weight010 = xi_0 * eta_1 * zeta_0 * invVOL;
-            // double weight011 = xi_0 * eta_1 * zeta_1 * invVOL;
-            // double weight100 = xi_1 * eta_0 * zeta_0 * invVOL;
-            // double weight101 = xi_1 * eta_0 * zeta_1 * invVOL;
-            // double weight110 = xi_1 * eta_1 * zeta_0 * invVOL;
-            // double weight111 = xi_1 * eta_1 * zeta_1 * invVOL;
+            // double xi[2]; double eta[2]; double zeta[2];
+            // xi  [0] = x[i] - grid->getXN(ix - 1, iy, iz);
+            // eta [0] = y[i] - grid->getYN(ix, iy - 1, iz);
+            // zeta[0] = z[i] - grid->getZN(ix, iy, iz - 1);
+            // xi  [1] = grid->getXN(ix, iy, iz) - x[i];
+            // eta [1] = grid->getYN(ix, iy, iz) - y[i];
+            // zeta[1] = grid->getZN(ix, iy, iz) - z[i];
 
-            // EMf->addRho_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-
-            // EMf->addJx_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-            // EMf->addJy_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-            // EMf->addJz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-
-            // EMf->addEFx_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-            // EMf->addEFy_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-            // EMf->addEFz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-
-            // EMf->addPxx_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-            // EMf->addPxy_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-            // EMf->addPxz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-            // EMf->addPyy_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-            // EMf->addPyz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
-            // EMf->addPzz_d(weight000, weight001, weight010, weight011, weight100, weight101, weight110, weight111, ix, iy, iz, ns);
+            // //? add charge density
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             weight[ii][jj][kk] = q[i] * xi[ii] * eta[jj] * zeta[kk] * invVOL;
+            // EMf->addRho(weight, ix, iy, iz, ns);
+            
+            // //? add current density - X
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = u[i] * weight[ii][jj][kk];
+            // EMf->addJx(temp, ix, iy, iz, ns);
+            
+            // //? add current density - Y
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = v[i] * weight[ii][jj][kk];
+            // EMf->addJy(temp, ix, iy, iz, ns);
+            
+            // //? add current density - Z
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = w[i] * weight[ii][jj][kk];
+            // EMf->addJz(temp, ix, iy, iz, ns);
+            
+            // //? add energy flux density - X
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = EF_u * weight[ii][jj][kk];
+            // EMf->addEFx(temp, ix, iy, iz, ns);
+            
+            // //? add energy flux density - Y
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = EF_v * weight[ii][jj][kk];
+            // EMf->addEFy(temp, ix, iy, iz, ns);
+            
+            // //? add energy flux density - Z
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = EF_w * weight[ii][jj][kk];
+            // EMf->addEFz(temp, ix, iy, iz, ns);
+            
+            // //? Pxx - add pressure tensor
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = u2 * weight[ii][jj][kk];
+            // EMf->addPxx(temp, ix, iy, iz, ns);
+            
+            // //? Pxy - add pressure tensor
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = uv * weight[ii][jj][kk];
+            // EMf->addPxy(temp, ix, iy, iz, ns);
+            
+            // //? Pxz - add pressure tensor
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = wu * weight[ii][jj][kk];
+            // EMf->addPxz(temp, ix, iy, iz, ns);
+            
+            // //? Pyy - add pressure tensor
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = v2 * weight[ii][jj][kk];
+            // EMf->addPyy(temp, ix, iy, iz, ns);
+            
+            // //? Pyz - add pressure tensor
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = vw * weight[ii][jj][kk];
+            // EMf->addPyz(temp, ix, iy, iz, ns);
+            
+            // //? Pzz - add pressure tensor
+            // #pragma acc loop collapse(3)
+            // for (int ii = 0; ii < 2; ii++)
+            //     for (int jj = 0; jj < 2; jj++)
+            //         for (int kk = 0; kk < 2; kk++)
+            //             temp[ii][jj][kk] = w2 * weight[ii][jj][kk];
+            // EMf->addPzz(temp, ix, iy, iz, ns);
         }
 
         // change this to allow more parallelization after implementing array class
