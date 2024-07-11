@@ -1149,7 +1149,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	const double inv_dx = 1.0 / dx, inv_dy = 1.0 / dy, inv_dz = 1.0 / dz;
 
 	#ifdef NSIGHT_PROFILING
-    	nvtxRangePush("updatePositionLoop");
+    	nvtxRangePush("Move_particles_loop");
   	#endif 
 
 	// don't bother trying to push any particles simultaneously;
@@ -1157,27 +1157,24 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	// to do it by hand only hurts performance.
 	
 	//? Iterate over each particle
-	#pragma acc parallel loop copyin(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop], Ex_d[0:nxn*nyn*nzn], Ey_d[0:nxn*nyn*nzn], Ez_d[0:nxn*nyn*nzn], Ex_ext_d[0:nxn*nyn*nzn], Ey_ext_d[0:nxn*nyn*nzn], Ez_ext_d[0:nxn*nyn*nzn], Bx_d[0:nxn*nyn*nzn], By_d[0:nxn*nyn*nzn], Bz_d[0:nxn*nyn*nzn],Bx_ext_d[0:nxn*nyn*nzn], By_ext_d[0:nxn*nyn*nzn], Bz_ext_d[0:nxn*nyn*nzn]) copyout(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop])
-	for (long long rest = 0; rest < nop; rest++) 
+	#pragma acc parallel loop async //copyin(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop], Ex_d[0:nxn*nyn*nzn], Ey_d[0:nxn*nyn*nzn], Ez_d[0:nxn*nyn*nzn], Ex_ext_d[0:nxn*nyn*nzn], Ey_ext_d[0:nxn*nyn*nzn], Ez_ext_d[0:nxn*nyn*nzn], Bx_d[0:nxn*nyn*nzn], By_d[0:nxn*nyn*nzn], Bz_d[0:nxn*nyn*nzn],Bx_ext_d[0:nxn*nyn*nzn], By_ext_d[0:nxn*nyn*nzn], Bz_ext_d[0:nxn*nyn*nzn]) copyout(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop])
+    for (long long rest = 0; rest < nop; rest++) 
 	{
-        #ifdef GPU
-            //! Synchronise all threads (else you run into incorrect memory accesses)
-            #pragma acc wait
-        #endif
+        //* NOTE: #pragma acc kernels loop independent does not improve
 
 		//? Copy the position of the particle
 		double xp = x[rest];
 		double yp = y[rest];
 		double zp = z[rest];
 
+        const double xptilde = x[rest];
+		const double yptilde = y[rest];
+		const double zptilde = z[rest];
+
 		//? Copy the velocity of the particle
 		double up = u[rest];
 		double vp = v[rest];
 		double wp = w[rest];
-
-		const double xptilde = x[rest];
-		const double yptilde = y[rest];
-		const double zptilde = z[rest];
 		
 		double uptilde;
 		double vptilde;
@@ -1239,59 +1236,109 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 				int INDEX110 = (ix -1) * nzn * nyn + (iy - 1) * nzn + (iz - 0);
 				int INDEX111 = (ix -1) * nzn * nyn + (iy - 1) * nzn + (iz - 1);
 
+                // TODO: check if you need pragma acc atomic update
+
+                // #pragma acc atomic update
 				Bxl += weight000 * (Bx_d[INDEX000] + Fext*Bx_ext_d[INDEX000]);
-				Bxl += weight001 * (Bx_d[INDEX001] + Fext*Bx_ext_d[INDEX001]);
-				Bxl += weight010 * (Bx_d[INDEX010] + Fext*Bx_ext_d[INDEX010]);
-				Bxl += weight011 * (Bx_d[INDEX011] + Fext*Bx_ext_d[INDEX011]);
-				Bxl += weight100 * (Bx_d[INDEX100] + Fext*Bx_ext_d[INDEX100]);
-				Bxl += weight101 * (Bx_d[INDEX101] + Fext*Bx_ext_d[INDEX101]);
-				Bxl += weight110 * (Bx_d[INDEX110] + Fext*Bx_ext_d[INDEX110]);
-				Bxl += weight111 * (Bx_d[INDEX111] + Fext*Bx_ext_d[INDEX111]);
+				// #pragma acc atomic update
+                Bxl += weight001 * (Bx_d[INDEX001] + Fext*Bx_ext_d[INDEX001]);
+				// #pragma acc atomic update
+                Bxl += weight010 * (Bx_d[INDEX010] + Fext*Bx_ext_d[INDEX010]);
+				// #pragma acc atomic update
+                Bxl += weight011 * (Bx_d[INDEX011] + Fext*Bx_ext_d[INDEX011]);
+				// #pragma acc atomic update
+                Bxl += weight100 * (Bx_d[INDEX100] + Fext*Bx_ext_d[INDEX100]);
+				// #pragma acc atomic update
+                Bxl += weight101 * (Bx_d[INDEX101] + Fext*Bx_ext_d[INDEX101]);
+				// #pragma acc atomic update
+                Bxl += weight110 * (Bx_d[INDEX110] + Fext*Bx_ext_d[INDEX110]);
+				// #pragma acc atomic update
+                Bxl += weight111 * (Bx_d[INDEX111] + Fext*Bx_ext_d[INDEX111]);
 
+                // #pragma acc atomic update
 				Byl += weight000 * (By_d[INDEX000] + Fext*By_ext_d[INDEX000]);
-				Byl += weight001 * (By_d[INDEX001] + Fext*By_ext_d[INDEX001]);
-				Byl += weight010 * (By_d[INDEX010] + Fext*By_ext_d[INDEX010]);
-				Byl += weight011 * (By_d[INDEX011] + Fext*By_ext_d[INDEX011]);
-				Byl += weight100 * (By_d[INDEX100] + Fext*By_ext_d[INDEX100]);
-				Byl += weight101 * (By_d[INDEX101] + Fext*By_ext_d[INDEX101]);
-				Byl += weight110 * (By_d[INDEX110] + Fext*By_ext_d[INDEX110]);
-				Byl += weight111 * (By_d[INDEX111] + Fext*By_ext_d[INDEX111]);
+				// #pragma acc atomic update
+                Byl += weight001 * (By_d[INDEX001] + Fext*By_ext_d[INDEX001]);
+				// #pragma acc atomic update
+                Byl += weight010 * (By_d[INDEX010] + Fext*By_ext_d[INDEX010]);
+				// #pragma acc atomic update
+                Byl += weight011 * (By_d[INDEX011] + Fext*By_ext_d[INDEX011]);
+				// #pragma acc atomic update
+                Byl += weight100 * (By_d[INDEX100] + Fext*By_ext_d[INDEX100]);
+				// #pragma acc atomic update
+                Byl += weight101 * (By_d[INDEX101] + Fext*By_ext_d[INDEX101]);
+				// #pragma acc atomic update
+                Byl += weight110 * (By_d[INDEX110] + Fext*By_ext_d[INDEX110]);
+				// #pragma acc atomic update
+                Byl += weight111 * (By_d[INDEX111] + Fext*By_ext_d[INDEX111]);
 
+                // #pragma acc atomic update
 				Bzl += weight000 * (Bz_d[INDEX000] + Fext*Bz_ext_d[INDEX000]);
-				Bzl += weight001 * (Bz_d[INDEX001] + Fext*Bz_ext_d[INDEX001]);
-				Bzl += weight010 * (Bz_d[INDEX010] + Fext*Bz_ext_d[INDEX010]);
-				Bzl += weight011 * (Bz_d[INDEX011] + Fext*Bz_ext_d[INDEX011]);
-				Bzl += weight100 * (Bz_d[INDEX100] + Fext*Bz_ext_d[INDEX100]);
-				Bzl += weight101 * (Bz_d[INDEX101] + Fext*Bz_ext_d[INDEX101]);
-				Bzl += weight110 * (Bz_d[INDEX110] + Fext*Bz_ext_d[INDEX110]);
-				Bzl += weight111 * (Bz_d[INDEX111] + Fext*Bz_ext_d[INDEX111]);
+				// #pragma acc atomic update
+                Bzl += weight001 * (Bz_d[INDEX001] + Fext*Bz_ext_d[INDEX001]);
+				// #pragma acc atomic update
+                Bzl += weight010 * (Bz_d[INDEX010] + Fext*Bz_ext_d[INDEX010]);
+				// #pragma acc atomic update
+                Bzl += weight011 * (Bz_d[INDEX011] + Fext*Bz_ext_d[INDEX011]);
+				// #pragma acc atomic update
+                Bzl += weight100 * (Bz_d[INDEX100] + Fext*Bz_ext_d[INDEX100]);
+				// #pragma acc atomic update
+                Bzl += weight101 * (Bz_d[INDEX101] + Fext*Bz_ext_d[INDEX101]);
+				// #pragma acc atomic update
+                Bzl += weight110 * (Bz_d[INDEX110] + Fext*Bz_ext_d[INDEX110]);
+				// #pragma acc atomic update
+                Bzl += weight111 * (Bz_d[INDEX111] + Fext*Bz_ext_d[INDEX111]);
 
+                // #pragma acc atomic update
 				Exl += weight000 * (Ex_d[INDEX000] + Fext*Ex_ext_d[INDEX000]);
-				Exl += weight001 * (Ex_d[INDEX001] + Fext*Ex_ext_d[INDEX001]);
-				Exl += weight010 * (Ex_d[INDEX010] + Fext*Ex_ext_d[INDEX010]);
-				Exl += weight011 * (Ex_d[INDEX011] + Fext*Ex_ext_d[INDEX011]);
-				Exl += weight100 * (Ex_d[INDEX100] + Fext*Ex_ext_d[INDEX100]);
-				Exl += weight101 * (Ex_d[INDEX101] + Fext*Ex_ext_d[INDEX101]);
-				Exl += weight110 * (Ex_d[INDEX110] + Fext*Ex_ext_d[INDEX110]);
-				Exl += weight111 * (Ex_d[INDEX111] + Fext*Ex_ext_d[INDEX111]);
+				// #pragma acc atomic update
+                Exl += weight001 * (Ex_d[INDEX001] + Fext*Ex_ext_d[INDEX001]);
+				// #pragma acc atomic update
+                Exl += weight010 * (Ex_d[INDEX010] + Fext*Ex_ext_d[INDEX010]);
+				// #pragma acc atomic update
+                Exl += weight011 * (Ex_d[INDEX011] + Fext*Ex_ext_d[INDEX011]);
+				// #pragma acc atomic update
+                Exl += weight100 * (Ex_d[INDEX100] + Fext*Ex_ext_d[INDEX100]);
+				// #pragma acc atomic update
+                Exl += weight101 * (Ex_d[INDEX101] + Fext*Ex_ext_d[INDEX101]);
+				// #pragma acc atomic update
+                Exl += weight110 * (Ex_d[INDEX110] + Fext*Ex_ext_d[INDEX110]);
+				// #pragma acc atomic update
+                Exl += weight111 * (Ex_d[INDEX111] + Fext*Ex_ext_d[INDEX111]);
 
+                // #pragma acc atomic update
 				Eyl += weight000 * (Ey_d[INDEX000] + Fext*Ey_ext_d[INDEX000]);
-				Eyl += weight001 * (Ey_d[INDEX001] + Fext*Ey_ext_d[INDEX001]);
-				Eyl += weight010 * (Ey_d[INDEX010] + Fext*Ey_ext_d[INDEX010]);
-				Eyl += weight011 * (Ey_d[INDEX011] + Fext*Ey_ext_d[INDEX011]);
-				Eyl += weight100 * (Ey_d[INDEX100] + Fext*Ey_ext_d[INDEX100]);
-				Eyl += weight101 * (Ey_d[INDEX101] + Fext*Ey_ext_d[INDEX101]);
-				Eyl += weight110 * (Ey_d[INDEX110] + Fext*Ey_ext_d[INDEX110]);
-				Eyl += weight111 * (Ey_d[INDEX111] + Fext*Ey_ext_d[INDEX111]);
+				// #pragma acc atomic update
+                Eyl += weight001 * (Ey_d[INDEX001] + Fext*Ey_ext_d[INDEX001]);
+				// #pragma acc atomic update
+                Eyl += weight010 * (Ey_d[INDEX010] + Fext*Ey_ext_d[INDEX010]);
+				// #pragma acc atomic update
+                Eyl += weight011 * (Ey_d[INDEX011] + Fext*Ey_ext_d[INDEX011]);
+				// #pragma acc atomic update
+                Eyl += weight100 * (Ey_d[INDEX100] + Fext*Ey_ext_d[INDEX100]);
+				// #pragma acc atomic update
+                Eyl += weight101 * (Ey_d[INDEX101] + Fext*Ey_ext_d[INDEX101]);
+				// #pragma acc atomic update
+                Eyl += weight110 * (Ey_d[INDEX110] + Fext*Ey_ext_d[INDEX110]);
+				// #pragma acc atomic update
+                Eyl += weight111 * (Ey_d[INDEX111] + Fext*Ey_ext_d[INDEX111]);
 
-				Ezl += weight000 * (Ez_d[INDEX000] + Fext*Ez_ext_d[INDEX000]);
-				Ezl += weight001 * (Ez_d[INDEX001] + Fext*Ez_ext_d[INDEX001]);
-				Ezl += weight010 * (Ez_d[INDEX010] + Fext*Ez_ext_d[INDEX010]);
-				Ezl += weight011 * (Ez_d[INDEX011] + Fext*Ez_ext_d[INDEX011]);
-				Ezl += weight100 * (Ez_d[INDEX100] + Fext*Ez_ext_d[INDEX100]);
-				Ezl += weight101 * (Ez_d[INDEX101] + Fext*Ez_ext_d[INDEX101]);
-				Ezl += weight110 * (Ez_d[INDEX110] + Fext*Ez_ext_d[INDEX110]);
-				Ezl += weight111 * (Ez_d[INDEX111] + Fext*Ez_ext_d[INDEX111]);				
+				// #pragma acc atomic update
+                Ezl += weight000 * (Ez_d[INDEX000] + Fext*Ez_ext_d[INDEX000]);
+				// #pragma acc atomic update
+                Ezl += weight001 * (Ez_d[INDEX001] + Fext*Ez_ext_d[INDEX001]);
+				// #pragma acc atomic update
+                Ezl += weight010 * (Ez_d[INDEX010] + Fext*Ez_ext_d[INDEX010]);
+				// #pragma acc atomic update
+                Ezl += weight011 * (Ez_d[INDEX011] + Fext*Ez_ext_d[INDEX011]);
+				// #pragma acc atomic update
+                Ezl += weight100 * (Ez_d[INDEX100] + Fext*Ez_ext_d[INDEX100]);
+				// #pragma acc atomic update
+                Ezl += weight101 * (Ez_d[INDEX101] + Fext*Ez_ext_d[INDEX101]);
+				// #pragma acc atomic update
+                Ezl += weight110 * (Ez_d[INDEX110] + Fext*Ez_ext_d[INDEX110]);
+				// #pragma acc atomic update
+                Ezl += weight111 * (Ez_d[INDEX111] + Fext*Ez_ext_d[INDEX111]);				
     
 			#else
 
@@ -1398,15 +1445,19 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		xp = xptilde + uptilde * dt;
 		yp = yptilde + vptilde * dt;
 		zp = zptilde + wptilde * dt;
+
+        #ifdef GPU
+            #pragma acc wait
+        #endif
+
+        //TODO: Any alternatives to #pragma acc wait?
+
 		x[rest] = xp;
 		y[rest] = yp;
 		z[rest] = zp;
 		u[rest] = up;
 		v[rest] = vp;
 		w[rest] = wp;
-
-		// gpuErrchk(cudaPeekAtLastError());
-		// gpuErrchk(cudaDeviceSynchronize());
 	
 	//* END OF ALL THE PARTICLES (end of #pragma acc parallel loop)
 	}
@@ -1416,6 +1467,10 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 	#endif 
 
 	//! ================= COMMUNICATION ================= !//
+
+    #ifdef NSIGHT_PROFILING
+    	nvtxRangePush("Communicate_particles");
+  	#endif 
 
 	// timeTasks.start_communicate();
 	const int avail = communicate(vct);
@@ -1436,10 +1491,13 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
 	// timeTasks.addto_communicate();
-	
-	//? exit succcesfully (hopefully)
-	return (0);           
 
+    #ifdef NSIGHT_PROFILING
+		nvtxRangePop();
+	#endif 
+	
+	//? Exit succcesfully (hopefully)
+	return (0);
 }
 
 //? ===================================================================================================================== ?//
