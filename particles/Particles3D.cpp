@@ -1112,6 +1112,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
 		#ifdef GPU_PREFETCHING
 
+            //! Prefetching needs the data to be on the device!!??
 			// gpuErrchk(cudaMemPrefetchAsync(u, sizeof(double)*nop, 0, 0));
 			// cudaMemPrefetchAsync(v, sizeof(double)*nop, 0, 0);
 			// cudaMemPrefetchAsync(w, sizeof(double)*nop, 0, 0);
@@ -1119,22 +1120,6 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 			// cudaMemPrefetchAsync(x, sizeof(double)*nop, 0, 0);
 			// cudaMemPrefetchAsync(y, sizeof(double)*nop, 0, 0);
 			// cudaMemPrefetchAsync(z, sizeof(double)*nop, 0, 0);
-			
-			// cudaMemPrefetchAsync(Ex_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Ey_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Ez_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-
-			// cudaMemPrefetchAsync(Bx_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(By_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Bz_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-
-			// cudaMemPrefetchAsync(Ex_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Ey_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Ez_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-
-			// cudaMemPrefetchAsync(Bx_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(By_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
-			// cudaMemPrefetchAsync(Bz_ext_d, sizeof(double)*(nxn*nyn*nzn), 0, 0);
 
 		#endif
 	#endif
@@ -1150,14 +1135,10 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 
 	#ifdef NSIGHT_PROFILING
     	nvtxRangePush("Move_particles_loop");
-  	#endif 
-
-	// don't bother trying to push any particles simultaneously;
-	// MIC already does vectorization automatically, and trying
-	// to do it by hand only hurts performance.
+  	#endif
 	
 	//? Iterate over each particle
-	#pragma acc parallel loop async //copyin(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop], Ex_d[0:nxn*nyn*nzn], Ey_d[0:nxn*nyn*nzn], Ez_d[0:nxn*nyn*nzn], Ex_ext_d[0:nxn*nyn*nzn], Ey_ext_d[0:nxn*nyn*nzn], Ez_ext_d[0:nxn*nyn*nzn], Bx_d[0:nxn*nyn*nzn], By_d[0:nxn*nyn*nzn], Bz_d[0:nxn*nyn*nzn],Bx_ext_d[0:nxn*nyn*nzn], By_ext_d[0:nxn*nyn*nzn], Bz_ext_d[0:nxn*nyn*nzn]) copyout(x[0:nop], y[0:nop], z[0:nop], u[0:nop], v[0:nop], w[0:nop])
+	#pragma acc parallel loop private(xp, yp, zp, up, vp, wp, xptilde, yptilde, zptilde, uptilde, vptilde, wptilde)
     for (long long rest = 0; rest < nop; rest++) 
 	{
         //* NOTE: #pragma acc kernels loop independent does not improve
@@ -1236,108 +1217,106 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 				int INDEX110 = (ix -1) * nzn * nyn + (iy - 1) * nzn + (iz - 0);
 				int INDEX111 = (ix -1) * nzn * nyn + (iy - 1) * nzn + (iz - 1);
 
-                // TODO: check if you need pragma acc atomic update
-
-                // #pragma acc atomic update
+                #pragma acc atomic update
 				Bxl += weight000 * (Bx_d[INDEX000] + Fext*Bx_ext_d[INDEX000]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bxl += weight001 * (Bx_d[INDEX001] + Fext*Bx_ext_d[INDEX001]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bxl += weight010 * (Bx_d[INDEX010] + Fext*Bx_ext_d[INDEX010]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bxl += weight011 * (Bx_d[INDEX011] + Fext*Bx_ext_d[INDEX011]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bxl += weight100 * (Bx_d[INDEX100] + Fext*Bx_ext_d[INDEX100]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bxl += weight101 * (Bx_d[INDEX101] + Fext*Bx_ext_d[INDEX101]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bxl += weight110 * (Bx_d[INDEX110] + Fext*Bx_ext_d[INDEX110]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bxl += weight111 * (Bx_d[INDEX111] + Fext*Bx_ext_d[INDEX111]);
 
-                // #pragma acc atomic update
+                #pragma acc atomic update
 				Byl += weight000 * (By_d[INDEX000] + Fext*By_ext_d[INDEX000]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Byl += weight001 * (By_d[INDEX001] + Fext*By_ext_d[INDEX001]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Byl += weight010 * (By_d[INDEX010] + Fext*By_ext_d[INDEX010]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Byl += weight011 * (By_d[INDEX011] + Fext*By_ext_d[INDEX011]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Byl += weight100 * (By_d[INDEX100] + Fext*By_ext_d[INDEX100]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Byl += weight101 * (By_d[INDEX101] + Fext*By_ext_d[INDEX101]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Byl += weight110 * (By_d[INDEX110] + Fext*By_ext_d[INDEX110]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Byl += weight111 * (By_d[INDEX111] + Fext*By_ext_d[INDEX111]);
 
-                // #pragma acc atomic update
+                #pragma acc atomic update
 				Bzl += weight000 * (Bz_d[INDEX000] + Fext*Bz_ext_d[INDEX000]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bzl += weight001 * (Bz_d[INDEX001] + Fext*Bz_ext_d[INDEX001]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bzl += weight010 * (Bz_d[INDEX010] + Fext*Bz_ext_d[INDEX010]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bzl += weight011 * (Bz_d[INDEX011] + Fext*Bz_ext_d[INDEX011]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bzl += weight100 * (Bz_d[INDEX100] + Fext*Bz_ext_d[INDEX100]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bzl += weight101 * (Bz_d[INDEX101] + Fext*Bz_ext_d[INDEX101]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bzl += weight110 * (Bz_d[INDEX110] + Fext*Bz_ext_d[INDEX110]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Bzl += weight111 * (Bz_d[INDEX111] + Fext*Bz_ext_d[INDEX111]);
 
-                // #pragma acc atomic update
+                #pragma acc atomic update
 				Exl += weight000 * (Ex_d[INDEX000] + Fext*Ex_ext_d[INDEX000]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Exl += weight001 * (Ex_d[INDEX001] + Fext*Ex_ext_d[INDEX001]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Exl += weight010 * (Ex_d[INDEX010] + Fext*Ex_ext_d[INDEX010]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Exl += weight011 * (Ex_d[INDEX011] + Fext*Ex_ext_d[INDEX011]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Exl += weight100 * (Ex_d[INDEX100] + Fext*Ex_ext_d[INDEX100]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Exl += weight101 * (Ex_d[INDEX101] + Fext*Ex_ext_d[INDEX101]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Exl += weight110 * (Ex_d[INDEX110] + Fext*Ex_ext_d[INDEX110]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Exl += weight111 * (Ex_d[INDEX111] + Fext*Ex_ext_d[INDEX111]);
 
-                // #pragma acc atomic update
+                #pragma acc atomic update
 				Eyl += weight000 * (Ey_d[INDEX000] + Fext*Ey_ext_d[INDEX000]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Eyl += weight001 * (Ey_d[INDEX001] + Fext*Ey_ext_d[INDEX001]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Eyl += weight010 * (Ey_d[INDEX010] + Fext*Ey_ext_d[INDEX010]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Eyl += weight011 * (Ey_d[INDEX011] + Fext*Ey_ext_d[INDEX011]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Eyl += weight100 * (Ey_d[INDEX100] + Fext*Ey_ext_d[INDEX100]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Eyl += weight101 * (Ey_d[INDEX101] + Fext*Ey_ext_d[INDEX101]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Eyl += weight110 * (Ey_d[INDEX110] + Fext*Ey_ext_d[INDEX110]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Eyl += weight111 * (Ey_d[INDEX111] + Fext*Ey_ext_d[INDEX111]);
 
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Ezl += weight000 * (Ez_d[INDEX000] + Fext*Ez_ext_d[INDEX000]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Ezl += weight001 * (Ez_d[INDEX001] + Fext*Ez_ext_d[INDEX001]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Ezl += weight010 * (Ez_d[INDEX010] + Fext*Ez_ext_d[INDEX010]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Ezl += weight011 * (Ez_d[INDEX011] + Fext*Ez_ext_d[INDEX011]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Ezl += weight100 * (Ez_d[INDEX100] + Fext*Ez_ext_d[INDEX100]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Ezl += weight101 * (Ez_d[INDEX101] + Fext*Ez_ext_d[INDEX101]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Ezl += weight110 * (Ez_d[INDEX110] + Fext*Ez_ext_d[INDEX110]);
-				// #pragma acc atomic update
+				#pragma acc atomic update
                 Ezl += weight111 * (Ez_d[INDEX111] + Fext*Ez_ext_d[INDEX111]);				
     
 			#else
@@ -1446,17 +1425,23 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		yp = yptilde + vptilde * dt;
 		zp = zptilde + wptilde * dt;
 
-        #ifdef GPU
-            #pragma acc wait
-        #endif
+        // #ifdef GPU
+        //     #pragma acc wait
+        // #endif
 
         //TODO: Any alternatives to #pragma acc wait?
 
+        #pragma acc atomic write
 		x[rest] = xp;
+        #pragma acc atomic write
 		y[rest] = yp;
+        #pragma acc atomic write
 		z[rest] = zp;
+        #pragma acc atomic write
 		u[rest] = up;
+        #pragma acc atomic write
 		v[rest] = vp;
+        #pragma acc atomic write
 		w[rest] = wp;
 	
 	//* END OF ALL THE PARTICLES (end of #pragma acc parallel loop)
@@ -2184,7 +2169,10 @@ int Particles3D::mover_relativistic_celeste(Grid * grid, VirtualTopology3D * vct
 	  return (0);                   // exit succcesfully (hopefully)
 }
 
-int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is){
+//? ===================================================================================================================== ?//
+
+int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is)
+{
 
   /* -- NOTE: Hardcoded option -- */
   enum {LINEAR,INITIAL,FFIELD};
@@ -2592,50 +2580,50 @@ int Particles3D::particle_repopulator(Grid* grid,VirtualTopology3D* vct, Field* 
   return(0); // exit succcesfully (hopefully)
 }
 
+//? ===================================================================================================================== ?//
 
-int Particles3D::particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is){
+int Particles3D::particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EMf, int is)
+{
+    //* -- NOTE: Hardcoded option -- *//
+    enum {LINEAR,INITIAL,FFIELD};
+    int rtype = FFIELD;
 
-  /* -- NOTE: Hardcoded option -- */
-  enum {LINEAR,INITIAL,FFIELD};
-  int rtype = FFIELD;
-  /* -- END NOTE -- */
+    //   if (vct->getCartesian_rank()==0)
+    //     cout << "*** Reflector species " << ns << " ***" << endl;
 
-//   if (vct->getCartesian_rank()==0){
-//     cout << "*** Reflector species " << ns << " ***" << endl;
-//   }
-  double weights[2][2][2];
-  double B_mag;
-  double bdotn;
-  double bxin ;
-  double byin ;
-  double bzin ;
-  double vdotb;
-  double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
-  double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
-  double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
-  double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
-  double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
-  double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
+    double weights[2][2][2];
+    double B_mag;
+    double bdotn;
+    double bxin ;
+    double byin ;
+    double bzin ;
+    double vdotb;
+    double ***Ex = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEx());
+    double ***Ey = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEy());
+    double ***Ez = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getEz());
+    double ***Bx = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx());
+    double ***By = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy());
+    double ***Bz = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz());
 
-  double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
-  double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
-  double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
+    double ***Bx_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBx_ext());
+    double ***By_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBy_ext());
+    double ***Bz_ext = asgArr3(double, grid->getNXN(), grid->getNYN(), grid->getNZN(), EMf->getBz_ext());
 
-  double Fext = EMf->getFext();
+    double Fext = EMf->getFext();
 
-  double Exl = 0.0;
-  double Eyl = 0.0;
-  double Ezl = 0.0;
-  double Bxl = 0.0;
-  double Byl = 0.0;
-  double Bzl = 0.0;
-  int ix;
-  int iy;
-  int iz;
-  double  FourPI =16*atan(1.0);
-  int avail;
-  long long store_nop=nop;
-  double vtestin, vtestout,vabsin,vabsout;
+    double Exl = 0.0;
+    double Eyl = 0.0;
+    double Ezl = 0.0;
+    double Bxl = 0.0;
+    double Byl = 0.0;
+    double Bzl = 0.0;
+    int ix;
+    int iy;
+    int iz;
+    double  FourPI =16*atan(1.0);
+    int avail;
+    long long store_nop=nop;
+    double vtestin, vtestout,vabsin,vabsout;
 
   ////////////////////////
   // INJECTION FROM XLEFT
@@ -2696,7 +2684,7 @@ int Particles3D::particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EM
       	      get_Bl(weights, ix, iy, iz, Bxl, Byl, Bzl, Bx, By, Bz, Bx_ext, By_ext, Bz_ext, Fext);
 
 
-      	       B_mag      = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
+      	       B_mag = sqrt(Bxl*Bxl+Byl*Byl+Bzl*Bzl);
      	       bdotn = Bxl /abs(Bxl+1e-10);
       	       bxin = -Bxl/(B_mag+1e-10)*bdotn;
       	       byin = -Byl/(B_mag+1e-10)*bdotn;
@@ -2713,9 +2701,8 @@ int Particles3D::particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EM
     }
 
   }
-//   if (vct->getCartesian_rank()==0){
+//   if (vct->getCartesian_rank()==0)
 //     cout << "*** Reflector: number of particles " << nop << " ***" << endl;
-//   }
 
   //********************//
   // COMMUNICATION
@@ -2736,6 +2723,8 @@ int Particles3D::particle_reflector(Grid* grid,VirtualTopology3D* vct, Field* EM
 
   return(0); // exit succcesfully (hopefully)
 }
+
+//? ===================================================================================================================== ?//
 
 /** interpolation Particle->Grid only for pressure tensor */
 void Particles3D::interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
@@ -2774,6 +2763,9 @@ void Particles3D::interpP2G_onlyP(Field * EMf, Grid * grid, VirtualTopology3D * 
     EMf->addPzz(temp, ix, iy, iz, ns);
   }
 }
+
+//? ===================================================================================================================== ?//
+
 /** interpolation Particle->Grid only charge density, current */
 void Particles3D::interpP2G_notP(Field * EMf, Grid * grid, VirtualTopology3D * vct) {
   double weight[2][2][2];
