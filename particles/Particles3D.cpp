@@ -1138,7 +1138,7 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
   	#endif
 	
 	//? Iterate over each particle
-	#pragma acc parallel loop private(xp, yp, zp, up, vp, wp, xptilde, yptilde, zptilde, uptilde, vptilde, wptilde)
+	#pragma acc parallel loop
     for (long long rest = 0; rest < nop; rest++) 
 	{
         //* NOTE: #pragma acc kernels loop independent does not improve
@@ -1425,11 +1425,10 @@ int Particles3D::mover_PC(Grid * grid, VirtualTopology3D * vct, Field * EMf)
 		yp = yptilde + vptilde * dt;
 		zp = zptilde + wptilde * dt;
 
-        // #ifdef GPU
-        //     #pragma acc wait
-        // #endif
-
         //TODO: Any alternatives to #pragma acc wait?
+        #ifdef GPU
+            #pragma acc wait
+        #endif
 
         #pragma acc atomic write
 		x[rest] = xp;
